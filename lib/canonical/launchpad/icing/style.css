@@ -1,6 +1,7 @@
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
+dt dfn {font-style: normal; font-weight: bold;}
 tr {vertical-align: top;}
 
 /* === Overall presentation === */
@@ -12,6 +13,9 @@ body {
   margin: 0;
   padding: 0;
   background-color: #FFFFFF;
+}
+dd {
+  margin-bottom: 1em;
 }
 td {
   font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
@@ -87,7 +91,7 @@ h1 {
 }
 h2 {
   font-weight: bold;
-  margin: 0 0 0.75em;
+  margin: 0.5em 0 0.75em;
   padding: 0;
   color: #000000;
   font-size: 1.4em;
@@ -505,7 +509,6 @@ ul#applicationchooser li#applicationchooser_selected {
   list-style: none;
 }
 #actions li {
-  border-bottom: 1px solid #D2D2D2;
   margin: 0;
 }
 #actions li a {
@@ -611,6 +614,10 @@ ul#applicationchooser li#applicationchooser_selected {
   text-indent: -9999px;
   overflow: hidden;
 }
+#structuralobject, #applications {
+  position: relative;
+  z-index: 1;
+}
 #structuralobjectheading {
   background: none;
   color: black;
@@ -620,12 +627,12 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading img {
   float: left;
-  margin: 0px 0px 0px 10px;
+  margin: 0;
 }
 #structuralobjectheading .main {
   font-weight: bold;
   margin: 20px 0 0;
-  font-size: 1.5em;
+  font-size: 2.5em;
 }
 #structuralobjectchildren {
   float: left;
@@ -651,7 +658,16 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_left.gif);
   background-repeat: repeat-y;
   background-position: top left;
+  position: relative;
+  top: -10px;
 }
+* html #mainarea div.t {
+  top: 0;
+}
+#singlecolumn h1 {padding-top: 1em; position: relative; z-index: 1;}
+* html #singlecolumn h1 {padding-top: 0;}
+#singlecolumn div.t {top: -20px;}
+
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -701,6 +717,7 @@ ul#applicationchooser li#applicationchooser_selected {
   top: 47px;
   left: 0px;
   width: 350px;
+  z-index: 100;
 }
 #help_panel.closed {
   left: -318px !important;
@@ -1131,11 +1148,12 @@ body {
 }
 .central {
   clear: both;
+  font-size: 1.75em;
   margin: auto;
   padding: 2em 0;
   width: auto;
 }
-.central, .central input {
+.central input {
   font-size: 1em;
 }
 .central table {
@@ -1177,26 +1195,25 @@ img.mugshot {display: block;}
 div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
-div.section {
+div.left div.portlet, div.right div.portlet {
   border: dotted #ccc;
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
 }
-div.left div.section {
+div.left div.portlet {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;
 }
-div.right div.section {
+div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.columns {clear: both;}
-div.three.columns .column {
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.middle, div.three.column.right {
+  clear: none;
   float: left;
-  width: 33%;
 }
-
 .title {
   font-weight: bold;
 }
@@ -1224,10 +1241,12 @@ ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
 ul.branch, li.branch                 {list-style-image: url(/@@/branch);}
 ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
+ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
+ul.product, li.product               {list-style-image: url(/@@/product);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.external.link, li.external.link   {list-style-image: url(/@@/link);}

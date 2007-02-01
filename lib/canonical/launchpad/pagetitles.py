@@ -455,7 +455,7 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search Projects in Launchpad'
+launchpad_search = 'Search projects in Launchpad'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 

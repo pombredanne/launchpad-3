@@ -773,14 +773,21 @@ class Button:
     def renderActive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.large.gif" />\n'
-            '%(text)s\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.large.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
     def renderInactive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.mono.gif" />\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.mono.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
     def renderButton(self, is_active):
@@ -808,12 +815,12 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(register="Register your project."),
-        Button(code="Publish your code."),
+        ProductsButton(register="Register your project so it can benefit from Launchpad&rsquo;s features."),
+        Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track specifications."),
-        Button(translations="Localize your software."),
-        Button(answers="Help your users.")
+        Button(blueprints="Track specifications to approval and implementation."),
+        Button(translations="Localize software into your favorite language."),
+        Button(answers="Ask and answer questions about software.")
         ]
 
     def render(self):
