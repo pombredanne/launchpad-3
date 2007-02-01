@@ -24,8 +24,8 @@ sudo -u postgres /usr/lib/postgresql/8.1/bin/initdb \
 	--pgdata=$main \
 	--encoding=UNICODE --locale=C
 sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
-sudo -u postgres ln -s /etc/postgresql-common/postgresql.crt $main/server.crt
-sudo -u postgres ln -s /etc/postgresql-common/postgresql.pem $main/server.key
+sudo -u postgres ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem $main/server.crt
+sudo -u postgres ln -s /etc/ssl/private/ssl-cert-snakeoil.key $main/server.key
 
 echo Applying postgresql configuration changes...
 
@@ -66,6 +66,9 @@ sudo patch /etc/postgresql/8.1/main/postgresql.conf <<'EOF'
 +add_missing_from=false
 +# Force use of indexes, to assist in tuning queries
 +enable_seqscan=false
+
+ #---------------------------------------------------------------------------
+ # CUSTOMIZED OPTIONS
 EOF
 
 if [ -f /etc/postgresql/8.1/main/start.conf ]; then
