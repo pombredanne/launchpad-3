@@ -322,6 +322,13 @@ class BugTaskView(LaunchpadView):
 
         self.handleSubscriptionRequest()
 
+    def userIsMentor(self):
+        """Is the user offering mentorship on this bug?"""
+        for mentoring_offer in self.context.bug.mentoring_offers:
+            if self.user == mentoring_offer.owner:
+                return True
+        return False
+
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
         return (

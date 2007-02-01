@@ -28,8 +28,8 @@
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
 
-    <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
+
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
   </content>
 
@@ -131,6 +131,17 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-givefeedback.pt"
     />
+
+  <browser:generalform
+    name="+mentor"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.IMentoringOffer"
+    class="canonical.launchpad.browser.MentoringOfferView"
+    fields="team"
+    arguments="team"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-mentoringoffer.pt">
+  </browser:generalform>
 
   <browser:generalform
     name="+addsubscriber"

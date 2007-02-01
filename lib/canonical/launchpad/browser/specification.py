@@ -266,6 +266,14 @@ class SpecificationView(LaunchpadView):
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
 
+    @cachedproperty
+    def userIsMentor(self):
+        """Is the user offering mentorship on this bug?"""
+        for mentoring_offer in self.context.mentoring_offers:
+            if self.user == mentoring_offer.owner:
+                return True
+        return False
+
 
 class SpecificationAddView(SQLObjectAddView):
 

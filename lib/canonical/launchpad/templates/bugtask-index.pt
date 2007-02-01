@@ -123,6 +123,9 @@
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
   </tal:mentors>
+  <tal:block condition="not: view/userIsMentor">
+    &raquo; <a href="+mentor">Offer mentoring to someone fixing this bug</a>
+  </tal:block>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
               condition="bug_branches">

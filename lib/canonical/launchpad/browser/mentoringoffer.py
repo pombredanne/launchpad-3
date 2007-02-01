@@ -13,7 +13,12 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad.interfaces import IMentoringOffer, ILaunchBag, IBug
+from canonical.launchpad.interfaces import (
+    IBug,
+    IBugTask,
+    IMentoringOffer,
+    ILaunchBag,
+    )
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
@@ -27,13 +32,15 @@ class MentoringOfferView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
-        context = IBug(context)
+        if IBugTask.providedBy(context):
+            # in the case of seeing this on a bug task, we treat it as a Bug
+            context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
     def process(self, team):
         user = getUtility(ILaunchBag).user
         self.context.offerMentoring(user, team)
-        return 'Thank you for offering to mentor Bug #%s' % (self.context.id)
+        return 'Thank you for this mentorship offer.'
 
 
 class RetractMentoringOfferView(GeneralFormView):
@@ -48,6 +55,6 @@ class RetractMentoringOfferView(GeneralFormView):
         if confirmation:
             user = getUtility(ILaunchBag).user
             self.context.retractMentoring(user)
-            return 'Mentoring retracted for bug #%d' % (self.context.id)
+            return 'Mentoring retracted'
 
 

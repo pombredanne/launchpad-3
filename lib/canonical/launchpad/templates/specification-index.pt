@@ -59,6 +59,19 @@
     </tal:has_milestone>
   </div>
 
+  <tal:mentors define="mentoring_offers context/mentoring_offers"
+               condition="mentoring_offers">
+    <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <img src="/@@/user">
+        <a tal:attributes="href mentoring_offer/owner/fmt:url"
+           tal:content="mentoring_offer/owner/browsername">foobar</a>
+      </tal:block>
+  </tal:mentors>
+  <tal:block condition="not: view/userIsMentor">
+    &raquo; <a href="+mentor">Offer mentoring for this implementation</a>
+  </tal:block>
+
   <p class="lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
   </p>

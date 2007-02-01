@@ -848,6 +848,8 @@ specification_dependency = 'Create a specification dependency'
 
 specification_deptree = 'Complete dependency tree'
 
+specification_mentoringoffer = 'Offer to mentor the feature implemention.'
+
 specification_milestone = 'Target feature to milestone'
 
 specification_people = 'Change specification assignee, drafter, and reviewer'

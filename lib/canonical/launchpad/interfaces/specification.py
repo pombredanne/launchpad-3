@@ -193,6 +193,7 @@ class ISpecification(IHasOwner):
         readonly=True)
 
     # joins
+    mentoring_offers = Attribute('Offers to mentor anyone working on this.')
     subscriptions = Attribute('The set of subscriptions to this spec.')
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
@@ -252,6 +253,15 @@ class ISpecification(IHasOwner):
         'proposed as a goal for a specific distro release or product '
         'series and the drivers of that release/series have accepted '
         'the goal.')
+
+    # mentoring
+    def offerMentoring(user, team):
+        """Record that the user is willing to mentor anyone who is trying to
+        implement this feature.
+        """
+
+    def retractMentoring(user):
+        """Remove the offer of mentoring for this feature from this user."""
 
     # lifecycle management
     def updateLifecycleStatus(user):

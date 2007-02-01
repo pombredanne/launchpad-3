@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
 from zope.interface import implements
+from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
@@ -20,7 +21,11 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbranch import (
@@ -106,6 +111,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
+    mentoring_offers = SQLMultipleJoin(
+            'MentoringOffer', joinColumn='specification', orderBy='id')
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
@@ -241,6 +248,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if fbreq.reviewer.id == person.id:
                 reqlist.append(fbreq)
         return reqlist
+
+    def offerMentoring(self, user, team):
+        """See ISpecification."""
+        # if an offer exists, then update the team
+        for mentoringoffer in self.mentoring_offers:
+            if mentoringoffer.user == user:
+                mentoringoffer.team = team
+                return mentorship
+        # if no offer exists, create one from scratch
+        mentoringoffer = MentoringOffer(owner=user, team=team,
+            specification=self)
+        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        return mentoringoffer
+
+    def retractMentoring(self, user):
+        """See ISpecification."""
+        for mentoringoffer in self.mentoring_offers:
+            if mentoringoffer.user.id == user.id:
+                notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+                MentoringOffer.delete(mentoringoffer.id)
+                break
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""
