@@ -119,7 +119,7 @@
     <resource name="subscriber-essential" file="../images/star_on.gif" />
     <resource name="subscriber-inessential" file="../images/star_off.gif" />
     <resource name="team" file="../images/nyet.png" />
-    <resource name="team-mini" file="../images/nyet-mini.png" />
+    <resource name="team-mini" file="../images/team-mini.png" />
     <resource name="team-heading" file="../images/nyet-heading.png" />
     <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="ticket" file="../images/ticket.png" />

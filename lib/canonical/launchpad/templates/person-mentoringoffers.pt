@@ -33,7 +33,7 @@
       <tr>
         <th>Date</th>
         <th>For</th>
-        <th>Work</th>
+        <th>What</th>
       </tr>
     </thead>
     <tbody>
@@ -45,7 +45,7 @@
           </span>
         </td>
         <td>
-          <img src="/@@/user" />
+          <img src="/@@/team-mini" />
           <a tal:content="offer/team/browsername"
              tal:attributes="href offer/team/fmt:url">foobar</a>
         </td>
