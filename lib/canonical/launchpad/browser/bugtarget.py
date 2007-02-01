@@ -121,28 +121,6 @@ class FileBugViewBase(LaunchpadFormView):
 
         return {'packagename': self.context.name}
 
-    def getSelectedProduct(self):
-        if self.widgets['product'].hasValidInput():
-            return self.widgets['product'].getInputValue()
-        else:
-            return None
-
-    def getSearchContext(self):
-        """Return the IProduct or IDistribution for this context."""
-        context = self.context
-
-        if IProject.providedBy(context):
-            return self.getSelectedProduct()
-        if IDistribution.providedBy(context) or IProduct.providedBy(context):
-            return context
-        else:
-            assert IDistributionSourcePackage.providedBy(context), (
-                "Expected a bug filing context that provides one of "
-                "IDistribution, IProduct, or IDistributionSourcePackage. "
-                "Got: %r" % context)
-
-            return context.distribution
-
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
         if self.widget_errors.get("packagename"):
@@ -200,7 +178,7 @@ class FileBugViewBase(LaunchpadFormView):
                 if product.official_malone]
             return len(products_using_malone) > 0
         else:
-            return self.getSearchContext().official_malone
+            return self.getMainContext().official_malone
 
     def getMainContext(self):
         if IDistributionSourcePackage.providedBy(self.context):
@@ -239,7 +217,7 @@ class FileBugViewBase(LaunchpadFormView):
             # manually set the chosen distribution as the context.
             context = distribution
         elif IProject.providedBy(context):
-            context = self.getSelectedProduct()
+            context = data['product']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -438,7 +416,13 @@ class FileBugGuidedView(FileBugViewBase):
         title = self.getSearchText()
         if not title:
             return []
-        search_context = self.getSearchContext()
+        search_context = self.getMainContext()
+        if IProject.providedBy(search_context):
+            assert self.widgets['product'].hasValidInput(), (
+                "This method should be called only when we know which"
+                " product the user selected.")
+            search_context = self.widgets['product'].getInputValue()
+
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         else:
@@ -524,13 +508,13 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
 
     field_names = ['product', 'title', 'comment']
 
-    def getSearchContext(self):
-        return self.getSelectedProduct()
-
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        selected_product = self.getSelectedProduct()
+        assert self.widgets['product'].hasValidInput(), (
+            "This method should be called only when we know which"
+            " product the user selected.")
+        selected_product = self.widgets['product'].getInputValue()
         return selected_product.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
 
