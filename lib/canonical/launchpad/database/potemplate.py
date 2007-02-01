@@ -207,7 +207,8 @@ class POTemplate(SQLBase, RosettaStats):
         "See IPOTemplate"
         return POTemplate.select('''
             id <> %s AND
-            potemplatename = %s
+            potemplatename = %s AND
+            iscurrent = TRUE
             ''' % sqlvalues (self.id, self.potemplatename.id),
             orderBy=['datecreated'])
 
@@ -217,14 +218,16 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
-                productseries = %s
+                productseries = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
         elif self.distrorelease and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
                 distrorelease = %s AND
-                sourcepackagename = %s
+                sourcepackagename = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id,
                     self.distrorelease.id, self.sourcepackagename.id),
                 orderBy=['id'])
@@ -576,7 +579,7 @@ class POTemplate(SQLBase, RosettaStats):
                 'importer': entry_to_import.importer.displayname,
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.url,
+                'file_link': entry_to_import.content.http_url,
                 'import_title': self.displayname
                 }
 

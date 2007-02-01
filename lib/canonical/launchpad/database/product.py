@@ -565,7 +565,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False):
+                      reviewed=False, gotchi=None, emblem=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -574,7 +574,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed)
+            programminglang=programminglang, reviewed=reviewed, gotchi=gotchi,
+            emblem=emblem)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
@@ -584,7 +585,6 @@ class ProductSet:
         product.development_focus = trunk
 
         return product
-
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

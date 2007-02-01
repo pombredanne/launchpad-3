@@ -1269,6 +1269,9 @@ ul.menuroot {
   color: darkblue;
   cursor: default;
 }
+.item img {
+  vertical-align: middle;
+}
 .menu .item.first, .scrollbutton.up {
   border-top-width: 1px;
 }

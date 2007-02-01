@@ -9,7 +9,16 @@ __all__ = ('IPOSelection', )
 
 class IPOSelection(Interface):
     """The selection of a translation in a PO file (published) or in Rosetta
-    (active)."""
+    (active).
+
+    There is a single POSelection for each plural form of every POMsgSet.
+    If there is no activesubmission, publishedsubmission is used as a
+    translation for POMsgSet.
+
+    date_reviewed is the datetime of last update of this POMsgSet/pluralform,
+    which includes deactivation of any of the submissions (eg. translating it
+    to empty string from web UI).
+    """
 
     pomsgset = Attribute("The PO message set for which is this sighting.")
     pluralform = Attribute("The # of pluralform that we are sighting.")
@@ -27,3 +36,10 @@ class IPOSelection(Interface):
     date_reviewed = Datetime(
         title=u'The date when this message was reviewed for last time.',
         required=False)
+
+    def isNewerThan(timestamp):
+        """Whether the selection is active and newer than the given timestamp.
+
+        :arg timestamp: A DateTime object with a timestamp.
+
+        """
