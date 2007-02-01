@@ -46,6 +46,7 @@ from canonical.launchpad.browser.distroreleasesourcepackagerelease import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
+from canonical.launchpad.browser.mentoringoffer import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
 from canonical.launchpad.browser.packagerelationship import *

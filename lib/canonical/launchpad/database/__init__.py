@@ -80,6 +80,7 @@ from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
 from canonical.launchpad.database.bountysubscription import *
+from canonical.launchpad.database.mentoringoffer import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *

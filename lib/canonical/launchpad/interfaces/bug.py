@@ -152,6 +152,7 @@ class IBug(IMessageTarget):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
+    mentoring_offers = Attribute('Offers to mentor this bug fix')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
@@ -271,6 +272,15 @@ class IBug(IMessageTarget):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
+
+    # Mentoring
+    def offerMentoring(user, team):
+        """Record that the user is willing to mentor anyone who is trying to
+        fix this bug.
+        """
+
+    def retractMentoring(user):
+        """Remove the offer of mentoring for this bug from this user."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""

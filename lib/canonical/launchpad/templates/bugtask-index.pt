@@ -114,6 +114,16 @@
       This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
 
+  <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+               condition="mentoring_offers">
+    <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <img src="/@@/user">
+        <a tal:attributes="href mentoring_offer/owner/fmt:url"
+           tal:content="mentoring_offer/owner/browsername">foobar</a>
+      </tal:block>
+  </tal:mentors>
+
   <tal:branches define="bug_branches context/bug/bug_branches"
               condition="bug_branches">
     <p tal:condition="context/bug/private"

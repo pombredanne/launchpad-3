@@ -467,6 +467,17 @@
       template="../templates/bug-subscription.pt" />
 
     <browser:generalform
+      name="+mentor"
+      for="canonical.launchpad.interfaces.IBugTask"
+      schema="canonical.launchpad.interfaces.IMentoringOffer"
+      class="canonical.launchpad.browser.MentoringOfferView"
+      fields="team"
+      arguments="team"
+      permission="launchpad.AnyPerson"
+      template="../templates/bug-mentoringoffer.pt">
+    </browser:generalform>
+
+    <browser:generalform
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.ICve"

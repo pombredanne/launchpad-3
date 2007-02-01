@@ -145,6 +145,8 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
+bug_mentoringoffer = ContextId('Offer to mentor Bug #%d')
+
 def bug_nominate_for_release(context, view):
     return view.label
 

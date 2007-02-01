@@ -40,6 +40,7 @@ from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
@@ -153,6 +154,8 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    mentoring_offers = SQLMultipleJoin(
+            'MentoringOffer', joinColumn='bug', orderBy='id')
     # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
@@ -449,6 +452,27 @@ class Bug(SQLBase):
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
             self.linkCVE(cve)
+
+    def offerMentoring(self, user, team):
+        """See IBug."""
+        # if an offer exists, then update the team
+        for mentoringoffer in self.mentoring_offers:
+            if mentoringoffer.user == user:
+                mentoringoffer.team = team
+                return mentorship
+        # if no offer exists, create one from scratch
+        mentoringoffer = MentoringOffer(owner=user, team=team,
+            bug=self)
+        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        return mentoringoffer
+
+    def retractMentoring(self, user):
+        """See IBug."""
+        for mentoringoffer in self.mentoring_offers:
+            if mentoringoffer.user.id == user.id:
+                notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+                MentoringOffer.delete(mentoringoffer.id)
+                break
 
     def getMessageChunks(self):
         """See IBug."""
