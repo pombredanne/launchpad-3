@@ -3,8 +3,8 @@
 Any administrator of a team can add new members to that team.
 
     >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
-    >>> browser.open('http://launchpad.dev/~myemail/+members')
-    >>> browser.getLink('Add a new member').click()
+    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> browser.getLink('Add New Member').click()
     >>> browser.url
     'http://launchpad.dev/~myemail/+addmember'
     >>> browser.getControl('New member').value = 'cprov'
@@ -13,7 +13,7 @@ Any administrator of a team can add new members to that team.
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of my own team changed.
+    Celso Providelo (cprov) was added as a member of my own team.
 
 
 Let's make sure that 'cprov' is now an Approved member of 'myemail'
@@ -36,7 +36,7 @@ If the new member is already an approved member of that team, we'll say that.
 
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) is already a member of my own team changed.
+    Celso Providelo (cprov) is already a member of my own team.
 
 
 On the other hand, if the member is among the inactive/proposed members of
@@ -58,4 +58,5 @@ successfully added.
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of my own team changed.
+    Celso Providelo (cprov) was added as a member of my own team.
+
