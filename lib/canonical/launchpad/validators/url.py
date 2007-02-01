@@ -29,8 +29,9 @@ def valid_absolute_url(name):
     # as well.
     from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
-    if scheme == 'sftp':
-        return True
+    # note that URL checking is also done inside the database, in
+    # trusted.sql, the valid_absolute_url function, and that code uses
+    # stdlib urlparse, not our customized version.
     if not (scheme and netloc):
         return False
     return True
