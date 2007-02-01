@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 
-from zope.schema import Datetime, Choice
+from zope.schema import Datetime, Choice, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner

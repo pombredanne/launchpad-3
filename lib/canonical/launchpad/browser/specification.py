@@ -170,7 +170,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Retract mentoring'
         user = getUtility(ILaunchBag).user
         enabled = self.context.isMentor(user)
-        return Link('+nomentor', text, icon='remove', enabled=enabled)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         text = 'Subscribe someone'
@@ -249,6 +249,7 @@ class SpecificationView(LaunchpadView):
         sub = request.form.get('subscribe')
         upd = request.form.get('update')
         unsub = request.form.get('unsubscribe')
+        retract_mentoring = request.form.get('retract_mentoring')
         essential = request.form.get('essential', False)
         if self.user and request.method == 'POST':
             if sub is not None:
@@ -260,6 +261,10 @@ class SpecificationView(LaunchpadView):
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
+            elif retract_mentoring is not None and \
+                self.context.isMentor(self.user):
+                self.context.retractMentoring(self.user)
+                self.notices.append('You are no longer offering mentoring.')
 
         if self.user is not None:
             # establish if this user has a review queued on this spec

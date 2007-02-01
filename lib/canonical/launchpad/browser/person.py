@@ -13,6 +13,7 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
+    'TeamSpecsMenu',
     'BaseListView',
     'PeopleListView',
     'TeamListView',
@@ -328,7 +329,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs',
+             'softwarebugs', 'mentoring']
 
     def assignedbugs(self):
         text = 'Assigned'
@@ -346,12 +348,23 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Subscribed'
         return Link('+subscribedbugs', text, icon='bugs')
 
+    def mentoring(self):
+        text = 'Mentoring'
+        return Link('+mentoring', text, icon='info')
+
 
 class TeamBugsMenu(PersonBugsMenu):
 
     usedfor = ITeam
     facet = 'bugs'
-    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs',
+             'mentorships']
+
+    def mentorships(self):
+        target = '+onramp'
+        text = 'Onramp'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -360,7 +373,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap']
+             'workload', 'mentoring', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -394,6 +407,10 @@ class PersonSpecsMenu(ApplicationMenu):
             self.context.browsername)
         return Link('+specfeedback', text, summary, icon='info')
 
+    def mentoring(self):
+        text = 'Mentoring'
+        return Link('+mentoring', text, icon='info')
+
     def workload(self):
         text = 'Workload'
         summary = 'Show all specification work assigned'
@@ -403,6 +420,18 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
+
+
+class TeamSpecsMenu(PersonSpecsMenu):
+
+    usedfor = ITeam
+    facet = 'specifications'
+
+    def mentoring(self):
+        target = '+onramp'
+        text = 'Onramp'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
 
 
 class CommonMenuLinks:
@@ -546,8 +575,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def mentorships(self):
         target = '+onramp'
-        text = 'Onramp (mentorships)'
-        return Link(target, text, icon='info')
+        text = 'Onramp'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):

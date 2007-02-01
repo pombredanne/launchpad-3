@@ -152,6 +152,8 @@ def bug_nominate_for_release(context, view):
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
+bug_retractmentoring = 'Retract offer of mentoring'
+
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
@@ -843,6 +845,8 @@ specification_linkbug = ContextTitle(
 specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
+
+specification_retractmentoring = 'Retract offer of mentoring'
 
 specification_superseding = 'Mark specification as superseded by another'
 

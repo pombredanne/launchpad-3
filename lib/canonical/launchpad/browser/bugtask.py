@@ -279,13 +279,21 @@ class BugTaskView(LaunchpadView):
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
+        self.notices = []
+
         # Make sure we always have the current bugtask.
         if not IBugTask.providedBy(context):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
 
-        self.notices = []
+        retract_mentoring = request.form.get('retract_mentoring')
+        if self.user and request.method == 'POST':
+            if retract_mentoring is not None and \
+                self.context.bug.isMentor(self.user):
+                self.context.bug.retractMentoring(self.user)
+                self.notices.append('You are no longer offering mentoring.')
+
 
     def initialize(self):
         """Set up the needed widgets."""

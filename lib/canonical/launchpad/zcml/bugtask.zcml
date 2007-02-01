@@ -477,6 +477,13 @@
       template="../templates/bug-mentoringoffer.pt">
     </browser:generalform>
 
+    <browser:page
+      name="+retractmentoring"
+      for="canonical.launchpad.interfaces.IBugTask"
+      class="canonical.launchpad.browser.BugTaskView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bug-retractmentoring.pt" />
+
     <browser:generalform
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
