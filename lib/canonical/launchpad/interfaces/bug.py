@@ -385,7 +385,7 @@ class IBugAddForm(IBug):
 
 
 class IProjectBugAddForm(IBugAddForm):
-
+    """Create a bug for an IProject."""
     product = Choice(
         title=_("Product"), required=True,
         vocabulary="ProjectProductsUsingMalone")

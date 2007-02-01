@@ -502,7 +502,9 @@ class FileBugGuidedView(FileBugViewBase):
 
 
 class ProjectFileBugGuidedView(FileBugGuidedView):
+    """Guided filebug pages for IProject."""
 
+    # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
 
@@ -520,7 +522,9 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
 
 
 class ProjectFileBugAdvancedView(FileBugAdvancedView):
+    """Advanced filebug page for IProject."""
 
+    # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
     schema = IProjectBugAddForm
 
