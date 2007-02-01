@@ -205,7 +205,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             distinct=True)
         via_bugs = MentoringOffer.select('''
             BugTask.distribution = %s AND
-            BugTask.bug = MentoringOffer.specification
+            BugTask.bug = MentoringOffer.bug
             ''' % sqlvalues(self.id),
             clauseTables=['BugTask'],
             distinct=True)

@@ -18,8 +18,8 @@
 
 <div metal:fill-slot="main">
 
-<tal:mentoring_available define="offers context/mentoring_offers"
-                         condition="offers">
+<tal:def_offers define="offers context/mentoring_offers">
+<tal:mentoring_available condition="offers">
 
   <p>
     This list describes bugs and features related to
@@ -65,7 +65,7 @@
 
 </tal:mentoring_available>
 
-<tal:no_mentoring condition="not: context/mentoring_offers">
+<tal:no_mentoring condition="not: offers">
   <p>
     Nobody has yet offered to mentor bug fixes or feature implementations
     related to <span tal:replace="context/displayname">Mozilla</span>.
@@ -78,6 +78,7 @@
     prove their worth.
   </p>
 </tal:no_mentoring>
+</tal:def_offers>
 
 </div>
 </body>

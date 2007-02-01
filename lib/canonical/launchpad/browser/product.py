@@ -178,6 +178,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'reassign', 'top_contributors',
+        'mentorship',
         'distributions', 'packages', 'branch_add', 'series_add',
         'launchpad_usage', 'administer', 'rdf']
 
@@ -204,6 +205,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentorship'
+        return Link('+onramp', text, icon='info')
 
     def packages(self):
         text = 'Published Packages'

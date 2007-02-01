@@ -104,8 +104,8 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf',
-             'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'top_contributors', 'mentorship',
+             'rdf', 'changetranslators']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -123,6 +123,10 @@ class ProjectOverviewMenu(ApplicationMenu):
     def top_contributors(self):
         text = 'Top Contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentorship'
+        return Link('+onramp', text, icon='info')
 
     def rdf(self):
         text = structured(
