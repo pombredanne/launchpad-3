@@ -1,14 +1,20 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['MentoringOffer', ]
+__all__ = [
+    'MentoringOffer',
+    'MentorshipManager',
+    ]
 
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLRelatedJoin)
 
-from canonical.launchpad.interfaces import IMentoringOffer
+from canonical.launchpad.interfaces import (
+    IMentoringOffer,
+    IMentorshipManager,
+    )
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -38,4 +44,17 @@ class MentoringOffer(SQLBase):
         if self.bug:
             return self.bug
         return self.specification
+
+
+class MentorshipManager:
+    """See IMentorshipManager."""
+
+    implements(IMentorshipManager)
+
+    displayname = 'the Mentorship Manager'
+    title = 'Mentorship Manager'
+
+    @property
+    def mentoring_offers(self):
+        return MentoringOffer.select()
 

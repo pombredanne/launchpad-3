@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IHasMentoringOffers',
     'IMentoringOffer',
+    'IMentorshipManager',
     ]
 
 
@@ -40,4 +41,12 @@ class IHasMentoringOffers(Interface):
 
     mentoring_offers = Attribute(
         "The list of mentoring offers related to this object.")
+
+
+class IMentorshipManager(IHasMentoringOffers):
+    """An object which gives us an overview of mentorship in Launchpad."""
+
+    displayname = Attribute('Display name')
+    title = Attribute('Title')
+
 

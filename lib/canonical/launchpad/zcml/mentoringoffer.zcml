@@ -10,6 +10,27 @@
     <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
   </content>
 
+
+  <!-- MentorshipManager -->
+  <securedutility
+    class="canonical.launchpad.database.MentorshipManager"
+    provides="canonical.launchpad.interfaces.IMentorshipManager">
+    <allow interface="canonical.launchpad.interfaces.IMentorshipManager" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IMentorshipManager"
+    path_expression="string:+mentorship"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IMentorshipManager"
+    name="+onramp"
+    />
+
+
+  <!-- IHasMentoringOffers -->
   <browser:pages
     for="canonical.launchpad.interfaces.IHasMentoringOffers"
     permission="zope.Public">

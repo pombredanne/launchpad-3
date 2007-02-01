@@ -9,7 +9,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -22,7 +21,7 @@
 <tal:mentoring_available condition="offers">
 
   <p>
-    This list describes bugs and features related to
+    This list describes bugs and features in
     <span tal:replace="context/displayname">Mozilla</span>
     which someone has offered to mentor.
   </p>
