@@ -27,6 +27,26 @@
     detailed information about the open source product in question.
   </div>
 
+      <ul class="buttons">
+        <li>
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but_sml_reportabug.gif" />
+          </a>
+        </li>
+        <li>
+          <a href="+addticket">
+            <img
+              alt="Request support"
+              src="/+icing/but_sml_requestsupport.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="+translations">
+            <img alt="Help translate" src="/+icing/but_sml_helptranslate.gif" />
+          </a>
+        </li>
+      </ul>
       <ul tal:condition="context/homepageurl">
         <li class="external link">
           <a tal:attributes="href context/homepageurl">
@@ -36,7 +56,7 @@
         </li>
       </ul>
       <div class="left">
-        <div class="section">
+        <div class="portlet">
           <h2>Timeline</h2>
 
   <div class="productSeries" tal:repeat="series view/sorted_serieslist">
