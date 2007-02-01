@@ -1,5 +1,3 @@
-<tal:comment condition="nothing">
-<!-- commented out because it times out. -->
 <div class="portlet" tal:condition="view/getTopFiveContributors">
   <h2>Top contributors</h2>
   <div class="portletBody portletContent">
@@ -13,4 +11,3 @@
   </div>
 
 </div>
-</tal:comment>

@@ -45,9 +45,9 @@ top contributors by category (Bugs, Specs, Translation, etc).
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print find_portlet(
-    ...     anon_browser.contents, 'Top five contributors').renderContents()
+    ...     anon_browser.contents, 'Top contributors').renderContents()
     <BLANKLINE>
-    <h2>Top five contributors</h2>
+    <h2>Top contributors</h2>
     ...Sample Person...
     ...Mark Shuttleworth...
     ...Foo Bar...
@@ -81,9 +81,9 @@ contributor of that project.
 
     >>> anon_browser.open('http://launchpad.dev/mozilla')
     >>> print find_portlet(
-    ...     anon_browser.contents, 'Top five contributors').renderContents()
+    ...     anon_browser.contents, 'Top contributors').renderContents()
     <BLANKLINE>
-    <h2>Top five contributors</h2>
+    <h2>Top contributors</h2>
     ...Sample Person...
     ...Mark Shuttleworth...
     ...Foo Bar...
