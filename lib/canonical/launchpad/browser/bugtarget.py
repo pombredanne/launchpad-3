@@ -127,7 +127,7 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             return None
 
-    def getProductOrDistroFromContext(self):
+    def getSearchContext(self):
         """Return the IProduct or IDistribution for this context."""
         context = self.context
 
@@ -194,7 +194,19 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        return self.getProductOrDistroFromContext().official_malone
+        if IProject.providedBy(self.context):
+            products_using_malone = [
+                product for product in self.context.products
+                if product.official_malone]
+            return len(products_using_malone) > 0
+        else:
+            return self.getSearchContext().official_malone
+
+    def getMainContext(self):
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -426,7 +438,7 @@ class FileBugGuidedView(FileBugViewBase):
         title = self.getSearchText()
         if not title:
             return []
-        search_context = self.getProductOrDistroFromContext()
+        search_context = self.getSearchContext()
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         else:
@@ -511,16 +523,8 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
 
     field_names = ['product', 'title', 'comment']
-    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
-        "../templates/project-filebug-search.pt")
-    template = _SEARCH_FOR_DUPES
 
-    def getProductsUsingMalone(self):
-        return [
-            product for product in self.context.products
-            if product.official_malone]
-
-    def getProductOrDistroFromContext(self):
+    def getSearchContext(self):
         return self.getSelectedProduct()
 
     @cachedproperty
@@ -537,16 +541,6 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     schema = IProjectBugAddForm
 
     field_names = ['product', 'title', 'comment', 'security_related']
-
-    def contextUsesMalone(self):
-        """Does the context use Malone as its official bugtracker?"""
-        return len(self.getProductsUsingMalone()) > 0
-
-    def getProductsUsingMalone(self):
-        return [
-            product for product in self.context.products
-            if product.official_malone]
-
 
 
 class FileBugInPackageView(FileBugViewBase):
