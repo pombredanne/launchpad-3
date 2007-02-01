@@ -858,7 +858,7 @@ class ProductBazaarView(LaunchpadView):
     @cachedproperty
     def products(self):
         return sorted(
-            getUtility(IProductSet).getProductsWithCode(),
+            getUtility(IProductSet).getProductsWithBranches(),
             key=lambda product: product.displayname.lower())
 
     @cachedproperty

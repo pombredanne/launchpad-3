@@ -559,7 +559,7 @@ class ProductSet:
             return default
         return product
 
-    def getProductsWithCode(self):
+    def getProductsWithBranches(self):
         """See IProductSet."""
         return Product.select(
             'Product.id = Branch.product',

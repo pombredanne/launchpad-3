@@ -15,7 +15,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
     cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -101,6 +101,9 @@ class Branch(SQLBase):
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
 
     @property
     def related_bugs(self):
@@ -246,6 +249,17 @@ class BranchSet:
         branches = Branch.select()
         return branches.prejoin(['author', 'product'])
 
+    def count(self):
+        """See IBranchSet."""
+        return Branch.select().count()
+
+    def countBranchesWithAssociatedBugs(self):
+        """See IBranchSet."""
+        return Branch.select(
+            'Branch.id = BugBranch.branch',
+            clauseTables=['BugBranch'],
+            distinct=True).count()
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
@@ -255,14 +269,17 @@ class BranchSet:
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
         if not home_page:
             home_page = None
+        if date_created is None:
+            date_created = UTC_NOW
         return Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard)
+            home_page=home_page, whiteboard=whiteboard,
+            date_created=date_created)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
@@ -326,7 +343,6 @@ class BranchSet:
             ''', clauseTables = ['Product', 'ProductSeries'])
         return query.prejoin(['author'])
             
-
     def getBranchSummaryByProduct(self):
         """See IBranchSet."""
         cur = cursor()
@@ -343,6 +359,34 @@ class BranchSet:
             result[product_id] = {'branch_count' : branch_count,
                                   'last_commit' : last_commit}
         return result
+
+    def getRecentlyChangedBranches(self, branch_count):
+        """See IBranchSet."""
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = Person.id
+            AND Person.name <> 'vcs-imports'
+            '''
+        branches = Branch.select(query, clauseTables=['Person'],
+            orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyImportedBranches(self, branch_count):
+        """See IBranchSet."""
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = Person.id
+            AND Person.name = 'vcs-imports'
+            '''
+        branches = Branch.select(query, clauseTables=['Person'],
+            orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyRegisteredBranches(self, branch_count):
+        """See IBranchSet."""
+
+        branches = Branch.select(orderBy=['-date_created'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""

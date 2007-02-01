@@ -347,9 +347,9 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
-    def getProductsWithCode():
-        """Return an iterator over products that have branches."""
-
+    def getProductsWithBranches():
+        """Return an iterator over all products that have branches."""
+        
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
