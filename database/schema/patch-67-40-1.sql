@@ -27,5 +27,5 @@ CREATE INDEX karmacache__sourcepackagename__distribution__karmavalue__idx
 ALTER TABLE KarmaCache ADD CONSTRAINT sourcepackagename_required_distribution
     CHECK (sourcepackagename IS NULL OR distribution IS NOT NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 41, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 40, 1);
 
