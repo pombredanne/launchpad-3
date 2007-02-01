@@ -69,6 +69,14 @@
                               />
                             </a>
                           </li>
+                          <li>
+                            <a href="/products/+with-code">
+                              <img
+                                alt="Products with code"
+                                src="/+icing/but_lrg_productswithcode.gif"
+                              />
+                            </a>
+                          </li>
                         </ul>
                         <div class="columns">
                           <div class="three column left">

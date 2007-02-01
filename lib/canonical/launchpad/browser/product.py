@@ -40,6 +40,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
@@ -854,19 +855,27 @@ class ProductReassignmentView(ObjectReassignmentView):
 class ProductBazaarView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
 
-    def initialize(self):
-        LaunchpadView.initialize(self)
-        # unwrapping the security proxies, so can add to the dict
-        self.summary = {}
-        summaries = getUtility(IBranchSet).getBranchSummaryByProduct()
-        for key, value in summaries.iteritems():
-            self.summary[key] = dict(value)
-        
-        products = getUtility(IProductSet).getProductsWithCode()
-        self.products = sorted(
-            products, key=lambda product: product.displayname.lower())
+    @cachedproperty
+    def products(self):
+        return sorted(
+            getUtility(IProductSet).getProductsWithCode(),
+            key=lambda product: product.displayname.lower())
 
+    @cachedproperty
+    def summaries(self):
+        # unwrapping the security proxies, so can add to the dict
+        result = {}
+        branchset = getUtility(IBranchSet)
+        summaries = branchset.getBranchSummaryByProduct()
+        for key, value in summaries.iteritems():
+            result[key] = dict(value)
+
+        for branch in branchset.getDevelopmentFocusBranches():
+            result[branch.product.id]['dev_branch'] = branch
+        
         for product in self.products:
             branch_url = canonical_url(product, rootsite='code')
-            self.summary[product.id]['branch_url'] = branch_url
-       
+            result[product.id]['branch_url'] = branch_url
+
+        return result
+        

@@ -455,3 +455,25 @@ the corner cases.
   >>> another = branchset.get(2)
   >>> branchset.getLastCommitForBranches([branch, another])
   {<Branch ...>: None, <Branch ...>: None}
+
+== Getting the development focus branches for products ==
+
+One of the primary initial code pages will be the "products with code" page.
+In order to entice the user to click through, one of the links for each
+product will be the development focus branch if there is one.
+
+Lets make gnome terminal have a user branch as the dev focus.
+
+  >>> login('test@canonical.com')
+  >>> gterm_main = branchset.getByUniqueName('~name12/gnome-terminal/main')
+  >>> gterm_product.development_focus.user_branch = gterm_main
+  >>> syncUpdate(gterm_product.development_focus)
+  
+  >>> branches = branchset.getDevelopmentFocusBranches()
+  >>> import operator
+  >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+  ...     print branch.unique_name
+  ~name12/gnome-terminal/main
+  ~vcs-imports/evolution/main
+
+

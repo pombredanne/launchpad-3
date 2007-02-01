@@ -317,6 +317,16 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getDevelopmentFocusBranches(self):
+        """See IBranchSet."""
+        query = Branch.select('''
+            (Branch.id = ProductSeries.import_branch OR
+            Branch.id = ProductSeries.user_branch) AND
+            ProductSeries.id = Product.development_focus
+            ''', clauseTables = ['Product', 'ProductSeries'])
+        return query.prejoin(['author'])
+            
+
     def getBranchSummaryByProduct(self):
         """See IBranchSet."""
         cur = cursor()

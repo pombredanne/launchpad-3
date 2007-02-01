@@ -301,6 +301,13 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    def getDevelopmentFocusBranches():
+        """Return branches that are associated with the products dev series.
+
+        The branches will be either the import branches if imported, or
+        the user branches if native.
+        """
+
     def getBranchSummaryByProduct():
         """Return a list of simple summary objects."""
 

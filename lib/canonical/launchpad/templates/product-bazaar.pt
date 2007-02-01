@@ -15,17 +15,28 @@
       <tr>
         <th class="initial-sort">Product</th>
         <th>Branches</th>
+        <th>Development Branch</th>
         <th>Last commit</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="product view/products">
-        <tal:summary define="summary python:view.summary[product.id]">
+        <tal:summary define="summary python:view.summaries[product.id]">
         <td><a tal:attributes="href summary/branch_url"
                tal:content="product/displayname">
           A Product
         </a></td>
         <td><span tal:replace="summary/branch_count">1</span></td>
+        <td>
+          <tal:has_dev_branch condition="summary/dev_branch|nothing">
+          <a tal:attributes="href summary/dev_branch/fmt:url;
+                             title summary/dev_branch/displayname"
+             tal:content="summary/dev_branch/name">
+          name</a>
+          <span tal:condition="python: summary['dev_branch'].owner.name == 'vcs-imports'">
+            (imported)</span>
+          </tal:has_dev_branch>
+        </td>
         <td><span tal:replace="summary/last_commit">sometime</span></td>
         </tal:summary>
       </tr>
