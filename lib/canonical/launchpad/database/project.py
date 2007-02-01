@@ -25,6 +25,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -103,6 +104,25 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    @property
+    def mentoring_offers(self):
+        """See IProject"""
+        via_specs = MentoringOffer.select('''
+            Product.project = %s AND
+            Specification.product = Product.id AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            Product.project = %s AND
+            BugTask.product = Product.id AND
+            BugTask.bug = MentoringOffer.bug
+            ''' % sqlvalues(self.id),
+            clauseTables=['Product', 'BugTask'],
+            distinct=True)
+        return via_specs.union(via_bugs)
 
     @property
     def has_any_specifications(self):

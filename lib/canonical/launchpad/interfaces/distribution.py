@@ -15,6 +15,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, PillarNameField)
@@ -30,7 +31,7 @@ class DistributionNameField(PillarNameField):
 
 
 class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, IKarmaContext):
+                    IHasSecurityContact, IKarmaContext, IHasMentoringOffers):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")

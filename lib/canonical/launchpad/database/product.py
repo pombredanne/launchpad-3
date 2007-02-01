@@ -36,6 +36,7 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.supportcontact import SupportContact
@@ -351,6 +352,23 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             return packages[0]
         # capitulate
         return None
+
+    @property
+    def mentoring_offers(self):
+        """See IProduct"""
+        via_specs = MentoringOffer.select('''
+            Specification.product = %s AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id),
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            BugTask.product = %s AND
+            BugTask.bug = MentoringOffer.bug
+            ''' % sqlvalues(self.id),
+            clauseTables=['BugTask'],
+            distinct=True)
+        return via_specs.union(via_bugs)
 
     @property
     def translationgroups(self):

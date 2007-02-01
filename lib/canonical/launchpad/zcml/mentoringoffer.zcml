@@ -10,4 +10,12 @@
     <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
   </content>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasMentoringOffers"
+    permission="zope.Public">
+    <browser:page
+      name="+onramp"
+      template="../templates/hasmentoringoffers-onramp.pt" />
+  </browser:pages>
+
 </configure>

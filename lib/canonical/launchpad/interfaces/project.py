@@ -16,7 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
-    valid_webref)
+    IHasMentoringOffers, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -28,7 +28,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
+class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext,
+               IHasMentoringOffers):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

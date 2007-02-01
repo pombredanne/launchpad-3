@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMentoringOffers',
     'IMentoringOffer',
     ]
 
 
-from zope.interface import Attribute
+from zope.interface import Attribute, Interface
 
 from zope.schema import Datetime, Choice
 
@@ -33,4 +34,10 @@ class IMentoringOffer(IHasOwner):
     target = Attribute("The bug or specification for which mentoring is"
         "offered.")
 
+
+class IHasMentoringOffers(Interface):
+    """Used for objects which have mentoring offers."""
+
+    mentoring_offers = Attribute(
+        "The list of mentoring offers related to this object.")
 
