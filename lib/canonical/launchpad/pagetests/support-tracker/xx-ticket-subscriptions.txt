@@ -79,7 +79,7 @@ discussion about this question' checkbox:
     >>> user_browser.getControl('Message').value = (
     ...     "I restarted Firefox and the plug-in still doesn't work.")
     >>> user_browser.getControl(
-    ...     'E-mail me future discussion about this request').selected = True
+    ...     'E-mail me future discussion about this question').selected = True
     >>> user_browser.getControl("I'm Still Having This Problem").click()
 
 A notification message is displayed notifying of the subscription:
