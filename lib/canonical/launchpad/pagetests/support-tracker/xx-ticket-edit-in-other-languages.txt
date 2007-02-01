@@ -40,7 +40,7 @@ support contacts, a warning is displayed:
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/ubuntu/+ticket/5/+edit'
+    'http://answers.launchpad.dev/ubuntu/+ticket/5/+edit'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()

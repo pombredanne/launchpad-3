@@ -18,10 +18,38 @@ Let's get one from the database:
 
    >>> from canonical.launchpad.database import SourcePackageRelease
    >>> spr = SourcePackageRelease.get(14)
-   >>> print spr.name
-   mozilla-firefox
-   >>> print spr.version
-   0.9
+   >>> spr.name
+   u'mozilla-firefox'
+   >>> spr.version
+   u'0.9'
+   >>> spr.dateuploaded
+   datetime.datetime(...)
+
+'age' is a special property that performs on-the-fly:
+{{{
+NOW - dateuploaded
+}}}
+It returns a timedelta object:
+
+   >>> spr.age
+   datetime.timedelta(...)
+
+Check if the result match the locally calculated one:
+
+   >>> import datetime
+   >>> import pytz
+   >>> local_now = datetime.datetime.now(pytz.timezone('UTC'))
+
+   >>> expected_age = local_now - spr.dateuploaded
+   >>> spr.age.days == expected_age.days
+   True
+
+Modify dateuploaded to a certain number of days in the past and check
+if the 'age' result looks sane:
+
+   >>> spr.dateuploaded = (local_now - datetime.timedelta(days=10))
+   >>> spr.age.days == 10
+   True
 
 We can use the magic productrelease property to map this to a ProductRelease:
 
@@ -217,7 +245,7 @@ We need the commit to see the upload.
 
 Before the upload, the queue should be empty.
 
-   >>> translation_import_queue.entryCount()
+   >>> translation_import_queue.getAllEntries(target='distros').count()
    0
 
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
@@ -234,7 +262,7 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> translation_import_queue.entryCount()
+   >>> translation_import_queue.getAllEntries(target='distros').count()
    1
 
 Now, we need to do the final import. It's done as a two steps procedure.
@@ -250,6 +278,7 @@ The first one, approves the import.
     >>> (output, empty) = process.communicate()
     >>> print output
     INFO    The automatic approval system approved some entries.
+    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
 
 The second one, executes the import.

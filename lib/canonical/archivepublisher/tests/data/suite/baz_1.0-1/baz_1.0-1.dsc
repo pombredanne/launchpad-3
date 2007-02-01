@@ -13,9 +13,9 @@ Files:
  9c7965de3fdb4b0ff2af81c73b300103 555 baz_1.0-1.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFExJsLzlZDs26++kMRAux7AKCAaBmPHSts8lNSQs0XAtfEk+QNSQCeIJTb
-M1RYVNPXk4DF5wr64nBcS5A=
-=v9lJ
+iD8DBQFFt7Hqjn63CGxkqMURAsQqAJ92kjy1/kudkXR57c+jn2LYmbdMRQCdGYo8
+YEa36f5juXbWe2VtOM4AS7k=
+=9XHn
 -----END PGP SIGNATURE-----

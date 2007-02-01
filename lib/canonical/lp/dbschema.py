@@ -33,7 +33,9 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -1853,6 +1855,12 @@ class TicketSort(DBSchema):
     Sort tickets from oldset to newest.
     """)
 
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort tickets that recently received new information from the owner first.
+    """)
+
 
 class TicketStatus(DBSchema):
     """The current status of a Support Request
@@ -2658,6 +2666,76 @@ class BranchLifecycleStatus(DBSchema):
         """, sortkey=50)
 
 
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
+
+
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -2707,6 +2785,43 @@ class BranchReviewStatus(DBSchema):
         further changes.
         """)
 
+
+
+class BranchSubscriptionNotificationLevel(DBSchema):
+    """Branch Subscription Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to modifications
+    to branches whether it be to branch attributes in the UI, or
+    to the contents of the branch found by the branch scanner.
+    """
+
+    NOEMAIL = Item(0, """
+        No email
+
+        Do not send any email about changes to this branch.
+        """)
+
+    ATTRIBUTEONLY = Item(1, """
+        Branch attribute notifications only
+
+        Only send notifications for branch attribute changes such
+        as name, description and whiteboard.
+        """)
+
+    DIFFSONLY = Item(2, """
+        Branch diff notifications only
+
+        Only send notifications about new revisions added to this
+        branch.
+        """)
+
+    FULL = Item(3, """
+        Branch attribute and diff notifications
+
+        Send notifications for both branch attribute updates
+        and new revisions added to the branch.
+        """)
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status

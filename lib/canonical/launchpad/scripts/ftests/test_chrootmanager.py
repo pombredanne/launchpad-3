@@ -73,7 +73,7 @@ class TestChrootManager(TestCase):
 
         chroot_manager.add()
         self.assertEqual(
-            ["LibraryFileAlias: 57, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            ["LibraryFileAlias: 61, 5 bytes, 5088e6471ab02d4268002f529a02621c",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
              "/SECURITY (1) added."], chroot_manager._messages)
 
@@ -106,7 +106,7 @@ class TestChrootManager(TestCase):
 
         chroot_manager.update()
         self.assertEqual(
-            ["LibraryFileAlias: 57, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+            ["LibraryFileAlias: 61, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) updated."], chroot_manager._messages)
 

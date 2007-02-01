@@ -156,11 +156,13 @@ class TestBzrSync(BzrSyncTestCase):
     def test_empty_branch(self):
         # Importing an empty branch does nothing.
         self.syncAndCount()
+        self.assertEqual(self.db_branch.revision_count, 0)
 
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEqual(self.db_branch.revision_count, 1)
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
@@ -168,16 +170,17 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
-        self.assertEqual(self.db_branch.revision_count(), 0)
+        self.assertEqual(self.db_branch.revision_count, 0)
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.
         self.commitRevision('first')
         self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEqual(self.db_branch.revision_count, 1)
         self.uncommitRevision()
         self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
-        self.assertEqual(self.db_branch.revision_count(), 1)
+        self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
 
@@ -211,6 +214,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision()
         self.commitRevision(extra_parents=[merge_rev_id])
         self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
+        self.assertEqual(self.db_branch.revision_count, 3)
 
         # now do a sync with a the shorter history.
         old_revision_history = self.bzr_branch.revision_history()
@@ -225,6 +229,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
+        self.assertEqual(self.db_branch.revision_count, 2)
 
     def test_last_scanned_id_recorded(self):
         # test that the last scanned revision ID is recorded

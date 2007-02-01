@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers)
+    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
+    IBugBranch)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -602,6 +603,16 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.private
+
+
+class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    permission = 'launchpad.Edit'
+    usedfor = IBugBranch
+
+    def __init__(self, bug_branch):
+        # The same permissions as for the BugBranch's bug should apply
+        # to the BugBranch itself.
+        self.obj = bug_branch.bug
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):

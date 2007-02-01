@@ -66,6 +66,17 @@
         lp:url="karmaaction/$action/+index">
     </browser:editform>
 
+    <!-- KarmaCacheManager -->
+    <content class="canonical.launchpad.database.KarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.KarmaCacheManager"
+        provides="canonical.launchpad.interfaces.IKarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </securedutility>
+
     <!-- KarmaActionSet -->
     <content class="canonical.launchpad.database.KarmaActionSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaActionSet" />
