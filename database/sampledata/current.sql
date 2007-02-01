@@ -6416,7 +6416,7 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (700, 748, 0, 657, 1, '2006-12-13 21:19:06.369142', 66, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (701, 749, 0, 658, 1, '2006-12-13 21:19:06.369142', 66, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (702, 750, 0, 659, 2, '2007-01-05 13:04:20.092506', 56, 1);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (703, 752, 0, 660, 2, '2007-01-19 13:00:41.049464', 12, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (703, 752, 0, 661, 2, '2007-01-19 13:00:41.049464', 12, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (704, 3, 0, 659, 2, '2006-12-22 11:47:14.827772', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (705, 752, 0, 659, 2, '2007-01-24 19:15:32.620698', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (706, 752, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1);

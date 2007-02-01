@@ -29,7 +29,7 @@ class POMsgSetMixIn:
     the methods and properties defined here.
     """
 
-    @cachedproperty
+    @property
     def pluralforms(self):
         """See IPOMsgSet."""
         if self.potmsgset.getPOMsgIDs().count() > 1:

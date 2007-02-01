@@ -249,7 +249,7 @@ This method returns a set of submissions that have translations for the
 same msgid as the given IPOMsgSet across the whole system.
 
   # Get a message that has an active translation.
-  >>> pomsgset_translated = POMsgSet.get(751)
+  >>> pomsgset_translated = POMsgSet.get(752)
   >>> print pomsgset_translated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "evolution"
   >>> pomsgid = pomsgset_translated.potmsgset.getPOMsgIDs()[0]
