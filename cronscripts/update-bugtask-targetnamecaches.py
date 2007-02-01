@@ -11,11 +11,12 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IBugTaskSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.config import config
 
 _default_lock_file = '/var/lock/launchpad-targetnamecacheupdater.lock'
@@ -55,11 +56,11 @@ if __name__ == '__main__':
     log = logger(options, 'update-bugtask-targetnamecaches')
     log.info("Updating targetname cache of bugtasks.")
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error("lockfile %s already exists, exiting", _default_lock_file)
         sys.exit(1)
 
     try:
