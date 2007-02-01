@@ -249,13 +249,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 reqlist.append(fbreq)
         return reqlist
 
+    def isMentor(self, user):
+        """See ISpecification."""
+        for mentoring_offer in self.mentoring_offers:
+            if user == mentoring_offer.owner:
+                return True
+        return False
+
     def offerMentoring(self, user, team):
         """See ISpecification."""
         # if an offer exists, then update the team
         for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.user == user:
+            if mentoringoffer.owner == user:
                 mentoringoffer.team = team
-                return mentorship
+                return mentoringoffer
         # if no offer exists, create one from scratch
         mentoringoffer = MentoringOffer(owner=user, team=team,
             specification=self)
@@ -265,7 +272,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def retractMentoring(self, user):
         """See ISpecification."""
         for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.user.id == user.id:
+            if mentoringoffer.owner.id == user.id:
                 notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
                 MentoringOffer.delete(mentoringoffer.id)
                 break

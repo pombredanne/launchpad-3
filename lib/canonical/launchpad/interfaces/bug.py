@@ -274,6 +274,9 @@ class IBug(IMessageTarget):
         """
 
     # Mentoring
+    def isMentor(user):
+        """True if the user is offering mentoring for this bug."""
+
     def offerMentoring(user, team):
         """Record that the user is willing to mentor anyone who is trying to
         fix this bug.

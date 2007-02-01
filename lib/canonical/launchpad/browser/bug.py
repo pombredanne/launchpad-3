@@ -80,7 +80,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+             'offermentoring', 'retractmentoring', 'filebug',
              'activitylog']
 
     def __init__(self, context):
@@ -164,6 +165,18 @@ class BugContextMenu(ContextMenu):
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE Link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
+
+    def offermentoring(self):
+        text = 'Offer mentoring'
+        user = getUtility(ILaunchBag).user
+        enabled = not self.context.bug.isMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentoring'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.bug.isMentor(user)
+        return Link('+nomentor', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target

@@ -324,10 +324,7 @@ class BugTaskView(LaunchpadView):
 
     def userIsMentor(self):
         """Is the user offering mentorship on this bug?"""
-        for mentoring_offer in self.context.bug.mentoring_offers:
-            if self.user == mentoring_offer.owner:
-                return True
-        return False
+        return self.context.bug.isMentor(self.user)
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""

@@ -569,6 +569,8 @@ person_index = ContextDisplayName('%s in Launchpad')
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
+person_mentoringoffers = ContextTitle('Mentoring offered by %s')
+
 person_packages = ContextDisplayName('Packages maintained by %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
@@ -984,6 +986,8 @@ team_members = ContextBrowsername(smartquote('"%s" members'))
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)
+
+team_mentoringoffers = ContextTitle('Mentoring available for %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
 

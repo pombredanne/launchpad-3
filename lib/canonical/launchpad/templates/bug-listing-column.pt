@@ -1,0 +1,6 @@
+<img src="/@@/bug" />
+#<span tal:replace="context/id">12345</span>
+<a tal:content="context/title/fmt:shorten/50"
+   tal:attributes="href context/fmt:url">
+   Problems with skinny cows</a>
+

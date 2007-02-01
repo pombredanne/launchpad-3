@@ -20,7 +20,7 @@ class MentoringOffer(SQLBase):
 
     implements(IMentoringOffer)
 
-    _defaultOrder = ['id']
+    _defaultOrder = ['bug', 'id']
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)

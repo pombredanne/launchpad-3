@@ -26,7 +26,7 @@ class IMentoringOffer(IHasOwner):
         description=_("Working on this item would be good practise for "
             "joining which team?"),
         vocabulary='UserTeamsParticipation')
-    datecreated = Datetime(
+    date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
     # properties

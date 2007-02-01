@@ -88,7 +88,9 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'supersede',
+             'dependencytree',
+             'offermentoring', 'retractmentoring',
+             'linksprint', 'supersede',
              'retarget', 'administer', 'linkbranch']
 
     @enabled_with_permission('launchpad.Admin')
@@ -157,6 +159,18 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
+
+    def offermentoring(self):
+        text = 'Offer mentoring'
+        user = getUtility(ILaunchBag).user
+        enabled = not self.context.isMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentoring'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.isMentor(user)
+        return Link('+nomentor', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         text = 'Subscribe someone'
@@ -269,10 +283,7 @@ class SpecificationView(LaunchpadView):
     @cachedproperty
     def userIsMentor(self):
         """Is the user offering mentorship on this bug?"""
-        for mentoring_offer in self.context.mentoring_offers:
-            if self.user == mentoring_offer.owner:
-                return True
-        return False
+        return self.context.isMentor(self.user)
 
 
 class SpecificationAddView(SQLObjectAddView):

@@ -427,6 +427,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editlanguages', 'editwikinames', 'editircnicknames',
              'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
+             'mentoringoffers',
              'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
@@ -479,6 +480,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    def mentoringoffers(self):
+        target = '+mentoring'
+        text = 'Offers of mentoring'
+        return Link(target, text, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
@@ -515,7 +521,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'common_edithomepage', 'members', 'add_member',
-             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
+             'editemail', 'polls', 'add_poll', 'mentorships',
+             'joinleave', 'reassign',
              'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
@@ -536,6 +543,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+members'
         text = 'All Members'
         return Link(target, text, icon='people')
+
+    def mentorships(self):
+        target = '+onramp'
+        text = 'Onramp (mentorships)'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):

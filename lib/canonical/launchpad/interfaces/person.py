@@ -286,6 +286,10 @@ class IPerson(IHasSpecifications):
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
+    team_mentorships = Attribute(
+        "All the offers of mentoring which are relevant to this team.")
+    mentoring_offers = Attribute(
+        "All the offers of mentoring which have been made by this person.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,

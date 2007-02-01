@@ -159,6 +159,10 @@ class Person(SQLBase):
         orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
+    team_mentorships = SQLMultipleJoin('MentoringOffer', joinColumn='team',
+        orderBy='-id', prejoins=['owner', 'bug', 'specification'])
+    mentoring_offers = SQLMultipleJoin('MentoringOffer', joinColumn='owner',
+        orderBy='-id', prejoins=['team', 'bug', 'specification'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')

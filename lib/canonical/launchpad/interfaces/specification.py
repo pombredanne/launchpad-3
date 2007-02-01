@@ -255,6 +255,9 @@ class ISpecification(IHasOwner):
         'the goal.')
 
     # mentoring
+    def isMentor(user):
+        """True if the user is offering mentoring for this specification."""
+
     def offerMentoring(user, team):
         """Record that the user is willing to mentor anyone who is trying to
         implement this feature.

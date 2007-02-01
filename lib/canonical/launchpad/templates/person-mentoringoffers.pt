@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Offers of help and mentorship</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+<tal:mentoring_available define="offers context/mentoring_offers"
+                         condition="offers">
+
+  <p>
+    This list describes bugs and features which 
+    <span tal:replace="context/browsername">Foo Bar</span>
+    has offered to mentor.
+  </p>
+
+  <h2>Mentorships</h2>
+
+  <table class="listing sortable" id="mentorships">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>For</th>
+        <th>Work</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="offer offers">
+        <td>
+          <span tal:content="offer/date_created/fmt:date"
+                tal:attributes="title offer/date_created/fmt:time">
+            2007-15-13
+          </span>
+        </td>
+        <td>
+          <img src="/@@/user" />
+          <a tal:content="offer/team/browsername"
+             tal:attributes="href offer/team/fmt:url">foobar</a>
+        </td>
+        <td>
+          <div tal:replace="structure offer/target/@@+listing-column" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</tal:mentoring_available>
+
+<tal:no_mentoring condition="not: context/mentoring_offers">
+  <p>
+    <span tal:replace="context/browsername">Foo Bar</span>
+    has not yet offered to mentor bug fixes or feature implementations.
+    You can learn more about this
+    capability in Launchpad, which allows you to create an "onramp" of
+    bite-sized chunks of work for new people who want to contribute or to
+    prove their worth.
+  </p>
+</tal:no_mentoring>
+
+</div>
+</body>
+</html>
