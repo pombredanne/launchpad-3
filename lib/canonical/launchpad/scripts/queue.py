@@ -1,5 +1,8 @@
-# Copyright Canonical Limited 2006
+# Copyright Canonical Limited 2006-2007
 """Ftpmaster queue tool libraries."""
+
+# XXX: This should be renamed to ftpmasterqueue.py or just ftpmaster.py
+# as Launchpad contains lots of queues -- StuartBishop 20070131
 
 __metaclass__ = type
 
@@ -562,7 +565,7 @@ class QueueActionReject(QueueAction):
                     summary.append(
                         '%s (%s) was REJECTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
@@ -632,7 +635,7 @@ class QueueActionAccept(QueueAction):
                     summary.append(
                         '%s (%s) was ACCEPTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
                 # We send a notification email only if the upload
                 # was sourceful, or had exactly one customfile and

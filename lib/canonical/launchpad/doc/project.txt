@@ -1,25 +1,47 @@
-Project
-=======
+= Projects =
 
 A Project is basically a group of Products, making it possible to for
 example see all bugs in the Project's Product, or make them share a
 common external bug tracker.
 
+    # Some basic imports
+    >>> from canonical.launchpad.interfaces import IProjectSet, IProject
+    >>> from zope.interface.verify import verifyObject
+    >>> projectset = getUtility(IProjectSet)
+
+
+== Creating new projects ==
+
+When creating a new project there are a bunch of things we need to provide.
+While some of them (homepageurl, gotchi and emblem) are optional, others
+(name, displayname, title, summary, description and owner) are required).
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> test_project = projectset.new(
+    ...     name='project-test', displayname='Test Project', 
+    ...     title='Just a test project', homepageurl=None,
+    ...     summary='Mandatory summary', description='blah',
+    ...     owner=no_priv, gotchi=None, emblem=None)
+    >>> test_project.name
+    u'project-test'
+
+
+== Looking up existing projects ==
+
 We can get a project using IProjectSet, by supplying the project's name.
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IProjectSet, IProject
-
-    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> gnome = projectset['gnome']
     >>> gnome.name
     u'gnome'
+
     >>> verifyObject(IProject, gnome)
     True
 
 If there is no project with the specified name, a NotFoundError will be
 raised.
 
-    >>> getUtility(IProjectSet)['non-existant']
+    >>> projectset['non-existant']
     Traceback (most recent call last):
     ...
     NotFoundError:...
@@ -56,8 +78,7 @@ getByName() also accepts an argument to ignore inactive projects.
     None
 
 
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to generate filtered lists of specs on a project.
 

@@ -305,6 +305,8 @@ distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
+distribution_add = 'Register a new distribution'
+
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
@@ -924,9 +926,10 @@ sprintspecification_admin = 'Approve specification for sprint agenda'
 
 tickets_index = 'Launchpad support tracker'
 
-ticket_add = ContextDisplayName('Request support with %s')
+def ticket_add(context, view):
+    return view.pagetitle
 
-ticket_add_search = ContextDisplayName('Request support with %s')
+ticket_add_search = ticket_add
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 

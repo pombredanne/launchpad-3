@@ -3,19 +3,17 @@
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.content_types import guess_content_type
-from zope.component import getUtility
 from zope.schema import (
-    Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
     IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
+from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -113,6 +111,20 @@ class ITag(ITextLine):
 
     A text line which can be used as a simple text tag.
     """
+
+
+class IURIField(ITextLine):
+    """A URI.
+
+    A text line that holds a URI.
+    """
+    trailing_slash = Bool(
+        title=_('Whether a trailing slash is required for this field'),
+        required=False,
+        description=_('If set to True, then the path component of the URI '
+                      'must end in a slash.  If set to False, then the path '
+                      'component must not end in a slash.  If set to None, '
+                      'then no check is performed.'))
 
 
 class IBaseImageUpload(IBytes):
@@ -344,6 +356,66 @@ class ProductBugTracker(Choice):
             ob.bugtracker = value
 
 
+class URIField(TextLine):
+    implements(IURIField)
+
+    def __init__(self, allowed_schemes=(), allow_userinfo=True,
+                 allow_port=True, allow_query=True, allow_fragment=True,
+                 trailing_slash=None, **kwargs):
+        super(URIField, self).__init__(**kwargs)
+        self.allowed_schemes = set(allowed_schemes)
+        self.allow_userinfo = allow_userinfo
+        self.allow_port = allow_port
+        self.allow_query = allow_query
+        self.allow_fragment = allow_fragment
+        self.trailing_slash = trailing_slash
+
+    def _validate(self, value):
+        super(URIField, self)._validate(value)
+
+        # Local import to avoid circular imports:
+        from canonical.launchpad.webapp.uri import URI, InvalidURIError
+        try:
+            uri = URI(value)
+        except InvalidURIError, e:
+            raise LaunchpadValidationError(str(e))
+        
+        if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
+            raise LaunchpadValidationError(
+                'The URI scheme "%s" is not allowed.  Only URIs with '
+                'the following schemes may be used: %s'
+                % (uri.scheme, ', '.join(sorted(self.allowed_schemes))))
+
+        if not self.allow_userinfo and uri.userinfo is not None:
+            raise LaunchpadValidationError(
+                'A username may not be specified in the URI.')
+
+        if not self.allow_port and uri.port is not None:
+            raise LaunchpadValidationError(
+                'Non-default ports are not allowed.')
+
+        if not self.allow_query and uri.query is not None:
+            raise LaunchpadValidationError(
+                'URIs with query strings are not allowed.')
+
+        if not self.allow_fragment and uri.fragment is not None:
+            raise LaunchpadValidationError(
+                'URIs with fragment identifiers are not allowed.')
+
+        if self.trailing_slash is not None:
+            has_slash = uri.path.endswith('/')
+            if self.trailing_slash:
+                if not has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must end with a slash.')
+            else:
+                # Empty paths are normalised to a single slash, so
+                # allow that.
+                if uri.path != '/' and has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must not end with a slash.')
+
+
 class FieldNotBoundError(Exception):
     """The field is not bound to any object."""
 
@@ -371,7 +443,14 @@ class BaseImageUpload(Bytes):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")
         else:
-            return getattr(self.context, self.__name__)
+            try:
+                current = getattr(self.context, self.__name__)
+            except ForbiddenAttribute:
+                # When this field is used in add forms it gets bound to
+                # I*Set objects, which don't have the attribute represented
+                # by the field, so we need this hack here.
+                current = None
+            return current
 
     def _valid_image(self, image):
         """Check that the given image is under the given constraints."""
@@ -401,20 +480,8 @@ class BaseImageUpload(Bytes):
         self._valid_image(content)
 
     def set(self, object, value):
-        if value is not KEEP_SAME_IMAGE and value is not None:
-            value.seek(0)
-            content = value.read()
-            filename = value.filename
-            type, dummy = guess_content_type(name=filename, body=content)
-            img = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(content), file=StringIO(content),
-                contentType=type)
-            Bytes.set(self, object, img)
-        elif value is None:
-            Bytes.set(self, object, None)
-        else:
-            # Nothing to do; user wants to keep the existing image.
-            pass
+        if value is not KEEP_SAME_IMAGE:
+            Bytes.set(self, object, value)
 
 
 class LargeImageUpload(BaseImageUpload):
@@ -425,4 +492,11 @@ class LargeImageUpload(BaseImageUpload):
     max_dimensions = (200, 200)
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
+
+
+class SmallImageUpload(BaseImageUpload):
+
+    max_dimensions = (64, 64)
+    max_size = 25*1024
+    default_image_resource = '/@@/nyet-mini'
 

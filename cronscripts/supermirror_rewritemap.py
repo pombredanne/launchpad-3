@@ -27,9 +27,10 @@ import sys
 from optparse import OptionParser
 import logging
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.lp import initZopeless
 from canonical.config import config
@@ -49,11 +50,11 @@ def main():
 
     log = logger(options)
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error('Lockfile %s in use', _default_lock_file)
         sys.exit(1)
 
     try:
