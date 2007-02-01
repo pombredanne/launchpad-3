@@ -30,6 +30,7 @@ def bugtarget_filebug(bugtarget, summary):
 def commonSetUp(test):
     """Set up common for all tests."""
     setUp(test)
+    test.globs['filebug'] = bugtarget_filebug
     login('test@canonical.com')
     # Ensure that there are no fixed bugs in sample data that might
     # interfere with the tests.
@@ -41,13 +42,11 @@ def commonSetUp(test):
 def productSetUp(test):
     commonSetUp(test)
     test.globs['bugtarget'] = getUtility(IProductSet).getByName('firefox')
-    test.globs['filebug'] = bugtarget_filebug
 
 
 def distributionSetUp(test):
     commonSetUp(test)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['filebug'] = bugtarget_filebug
 
 
 def test_suite():

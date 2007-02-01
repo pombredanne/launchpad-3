@@ -58,7 +58,6 @@
             </tbody>
           </table>
           <ul class="cross-reference">
-          <!-- Waiting for bugs 79034 and 79035. -->
             <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>

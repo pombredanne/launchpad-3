@@ -48,7 +48,7 @@ by one.
 
 == Private Bugs ==
 
-Only bugs that the user has permission to view are inluded in the count.
+Only bugs that the user has permission to view are included in the count.
 
     >>> another_bug = filebug(bugtarget, 'Example Bug')
     >>> another_bug.private = True
