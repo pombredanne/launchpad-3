@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/tickets">
 
-  <h2>Related tickets</h2>
+  <h2>Related questions</h2>
 
   <div class="portletBody portletContent">
 
@@ -8,7 +8,7 @@
       <li class="ticket" tal:repeat="ticket context/tickets">
         <span tal:replace="ticket/target/displayname">Ubuntu</span>:
         <a tal:attributes="href ticket/fmt:url"
-           tal:content="ticket/title">spec title here</a>
+           tal:content="ticket/title">question title here</a>
       </li>
     </ul>
 
