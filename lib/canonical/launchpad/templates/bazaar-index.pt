@@ -11,6 +11,7 @@
         tal:content="structure context/@@+applicationbuttons/code"
       />
       <div id="mainarea" class="tab-code">
+        <h1>Code</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -19,24 +20,6 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <h1>Code</h1>
-                        <form class="central" action="/products" method="get">
-                          <p
-                            xtal:condition="view/error_message"
-                            xtal:content="view/error_message"
-                            class="error message"
-                          ><!-- Error message. --></p>
-                          <input
-                            id="text"
-                            type="text"
-                            name="text"
-                            size="50"
-                          />
-                          <input
-                            type="submit"
-                            value="Find a Project"
-                          />
-                        </form>
                         <p id="application-summary">
                           Launchpad lets you track branches of any product that
                           uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
@@ -88,7 +71,7 @@
                               <li>TBD</li>
                             </ul>
                           </div>
-                          <div class="three column center">
+                          <div class="three column middle">
                             <h2>Recently registered</h2>
                             <ul>
                               <li>TBD</li>
@@ -107,6 +90,23 @@
                             </ul>
                           </div>
                         </div>
+                        <form class="central" action="/products" method="get">
+                          <p
+                            xtal:condition="view/error_message"
+                            xtal:content="view/error_message"
+                            class="error message"
+                          ><!-- Error message. --></p>
+                          <input
+                            id="text"
+                            type="text"
+                            name="text"
+                            size="50"
+                          />
+                          <input
+                            type="submit"
+                            value="Find a Project"
+                          />
+                        </form>
                         <div class="clear"></div>
                         <div id="application-footer">
                           <div>

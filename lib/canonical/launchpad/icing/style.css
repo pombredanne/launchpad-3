@@ -91,7 +91,7 @@ h1 {
 }
 h2 {
   font-weight: bold;
-  margin: 0 0 0.75em;
+  margin: 0.5em 0 0.75em;
   padding: 0;
   color: #000000;
   font-size: 1.4em;
@@ -664,6 +664,10 @@ ul#applicationchooser li#applicationchooser_selected {
 * html #mainarea div.t {
   top: 0;
 }
+#singlecolumn h1 {padding-top: 1em; position: relative; z-index: 1;}
+* html #singlecolumn h1 {padding-top: 0;}
+#singlecolumn div.t {top: -20px;}
+
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -713,6 +717,7 @@ ul#applicationchooser li#applicationchooser_selected {
   top: 47px;
   left: 0px;
   width: 350px;
+  z-index: 100;
 }
 #help_panel.closed {
   left: -318px !important;
@@ -1204,12 +1209,11 @@ div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.columns {clear: both;}
-div.three.columns .column {
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.middle, div.three.column.right {
+  clear: none;
   float: left;
-  width: 33%;
 }
-
 .title {
   font-weight: bold;
 }
