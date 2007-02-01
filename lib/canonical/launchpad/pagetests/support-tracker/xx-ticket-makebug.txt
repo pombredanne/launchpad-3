@@ -1,6 +1,6 @@
-= Turning a Ticket into a Bug =
+= Turning a Question into a Bug =
 
-The ticket page shows a link to make the ticket into a bug.
+The question page shows a link to make the question into a bug.
 
   >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> createLink = browser.getLink('Create Bug Report')
@@ -8,8 +8,8 @@ The ticket page shows a link to make the ticket into a bug.
   True
 
 This link brings the user to page proposing to create a new bug based
-on the content of the support ticket. The bug description is set to the
-the ticket's description and the title is empty.
+on the content of the question. The bug description is set to the
+the question's description and the title is empty.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> createLink.click()
@@ -20,7 +20,7 @@ the ticket's description and the title is empty.
   >>> browser.getControl('Description').value
   "...I'm trying to learn about SVG..."
 
-Cancelling the request brings you back to the ticket page.
+Cancelling the request brings you back to the question page.
 
   >>> browser.getControl('Cancel').click()
   >>> browser.url
@@ -63,8 +63,8 @@ and description and redirects the user to the bug page.
   ...     print tag.string
   Browsing to the W3C SVG demo results in a blank page.
 
-The bug page will display a link to the originating ticket in the 'Related
-tickets' portlet:
+The bug page will display a link to the originating question in the 'Related
+questions' portlet:
 
   >>> soup('li', 'ticket')
   [<li class="ticket">
@@ -72,7 +72,7 @@ tickets' portlet:
    ...<a href=".../firefox/+ticket/2">Problem...
   </li>]
 
-A user can't create a bug report when a ticket has already a bug linked
+A user can't create a bug report when a question has already a bug linked
 to it.
 
   >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
@@ -83,7 +83,7 @@ to it.
     ..
   LinkNotFoundError...
 
-It works with distribution tickets as well.
+It works with distribution questions as well.
 
   >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5/+makebug')
   >>> browser.getControl('Summary').value = (

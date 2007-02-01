@@ -1,10 +1,10 @@
 = Answer Contacts =
 
-Each product and distros can have support contacts. Support contacts
-receive notifications for new tickets as well as changes to existing
+Each product and distros can have answer contacts. Answer contacts
+receive notifications for new questions as well as changes to existing
 ones.
 
-The list of support contacts is displayed in the 'Answer Contact'
+The list of answer contacts is displayed in the 'Answer Contact'
 portlet which is available on the 'Answers' facet of the product or
 distro.
 
@@ -19,8 +19,8 @@ distro.
       <i>There are no answer contacts.</i>
     </p>
 
-Anybody can become a support contact. To register as a support contact,
-the user clicks on the 'Support Contact' link:
+Anybody can become an answer contact. To register as an answer contact,
+the user clicks on the 'Answer Contact' link:
 
     >>> user_browser.getLink('Answer Contact').click()
     >>> soup = BeautifulSoup(user_browser.contents)
@@ -28,8 +28,8 @@ the user clicks on the 'Support Contact' link:
     <h1>Manage answer contacts</h1>
 
 That page displays a series of checkboxes. One for the user and one for
-each team that user is a member of. The user can register select any of
-these checkboxes to register himself or one of his team as a support
+each team that user is a member of. The user can select any of
+these checkboxes to register himself or one of his team as an answer
 contact. In our case, the user decides to register himself and the
 Landscape Developers team.
 
@@ -38,8 +38,8 @@ Landscape Developers team.
     >>> user_browser.getControl("Landscape Developers").selected = True
     >>> user_browser.getControl('Continue').click()
 
-Confirmation of the support contact registrations are displayed and the
-new support contacts appear in the 'Support Contacts' portlet:
+Confirmation of the answer contact registrations are displayed and the
+new answer contacts appear in the 'Answer Contacts' portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> for tag in soup.fetch('div', 'informational message'):
@@ -57,9 +57,9 @@ new support contacts appear in the 'Support Contacts' portlet:
       </li>
     </ul>
 
-To remove oneself from the support contacts, the user uses the same
-'Support Contact' link and uncheck himself or the team he want to remove
-from the support contact list.
+To remove oneself from the answer contacts, the user uses the same
+'Answer Contact' link and uncheck himself or the team he want to remove
+from the answer contact list.
 
     >>> user_browser.getLink('Answer Contact').click()
     >>> user_browser.getControl(
@@ -76,9 +76,9 @@ A confirmation message is displayed:
     >>> print soup.first('div', 'informational message').renderContents()
     Landscape Developers has been removed as an answer contact for Ubuntu.
 
-Since support contacts are notified of changes to ticket, they are also
+Since answer contacts are notified of changes to questions, they are also
 listed in the 'Also notified' list in the 'Subscribers' portlet on a
-ticket.
+question.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+ticket/7')

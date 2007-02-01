@@ -1,12 +1,12 @@
-= The Launchpad Ticket Tracker =
+= The Launchpad Answer Tracker =
 
-Launchpad has a "tech support request tracker" built in to it. So you
-can have your community provide technical support using Launchpad for
-any upstream application, or any distribution.
+Launchpad has an 'Answer Tracker' built in to it. So you can have your
+community answers user questions about any upstream application, or any
+distribution.
 
 == Products ==
 
-The product page displays the latest support requests in a portlet.
+The product page displays the latest questions in a portlet.
 
   >>> browser.open('http://launchpad.dev/firefox')
   >>> find_portlet(
@@ -16,7 +16,7 @@ The product page displays the latest support requests in a portlet.
     ...
   </div>
 
-Users can request support by going to the 'Answers' facet.
+Users can ask questions by going to the 'Answers' facet.
 
   >>> import re
   >>> supportLink = browser.getLink('Answers')
@@ -24,7 +24,7 @@ Users can request support by going to the 'Answers' facet.
   '.../firefox/+tickets'
   >>> supportLink.click()
 
-That page shows all the currently open support requests for the product.
+That page shows all the currently open questions for the product.
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
@@ -38,7 +38,7 @@ There is also a 'Ask Question' link to open a new question.
   >>> browser.getLink('Ask Question').url
   '.../firefox/+addticket'
 
-There are links to some common listing of support requests:
+There are links to some common listing of questions:
 
   >>> browser.getLink('Open').url
   '.../firefox/+tickets?...'
@@ -47,8 +47,8 @@ There are links to some common listing of support requests:
   >>> browser.getLink('My Questions').url
   '.../firefox/+mytickets'
 
-Information on a particular ticket can be seen by browsing to the ticket
-page.
+Information on a particular question can be seen by browsing to the
+question page.
 
   >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
   >>> browser.title
@@ -59,7 +59,7 @@ page.
 == Distributions ==
 
 Distributions also have the 'Answers' link and a section showing the
-'Latest support requests'.
+'Latest questions'.
 
   >>> browser.open('http://launchpad.dev/ubuntu')
   >>> browser.getLink('Answers').url
@@ -70,7 +70,7 @@ Distributions also have the 'Answers' link and a section showing the
     ...
   </div>
 
-To request support for the distro, one must go to the 'Answers' facet.
+To ask a question about the distro, one must go to the 'Answers' facet.
 
   >>> browser.getLink('Answers').click()
   >>> print browser.title
@@ -90,7 +90,7 @@ On that facet, we will find the same common listings:
 == Distroreleases ==
 
 On a distrorelease there is a "Ask Question" link, but note that it
-points at its distro, not itself. Support tickets are linked to distro,
+points at its distro, not itself. Questions are linked to distro,
 and optionally source package too.
 
   >>> browser.open('http://launchpad.dev/ubuntu/hoary')
@@ -120,7 +120,7 @@ As are the common listings:
   >>> browser.getLink('My Questions').url
   '.../ubuntu/hoary/+source/evolution/+mytickets'
 
-The support facet is also available on the distribution source package
+The 'Answers' facet is also available on the distribution source package
 page:
 
   >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
@@ -140,8 +140,8 @@ page:
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest ticket
-opened by that person.
+On the page about a person, there is a porlet showing the latest
+questions opened by that person.
 
   >>> browser.open('http://launchpad.dev/~name16')
   >>> find_portlet(browser.contents, 'Latest Foo Bar questions')
@@ -154,7 +154,7 @@ opened by that person.
   >>> browser.getLink('Firefox loses focus').url
   '.../firefox/+ticket/4'
 
-The 'Support' facet link will display a page listing all the tickets
+The 'Answers' facet link will display a page listing all the questions
 involving that person.
 
   >>> browser.getLink('Answers').url

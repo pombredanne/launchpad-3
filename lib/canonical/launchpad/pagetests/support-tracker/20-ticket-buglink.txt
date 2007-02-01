@@ -1,14 +1,14 @@
 = Bug Links =
 
-Ticket can be linked to bugs. A user should do that when the problem
-exposed in the ticket is related to a bug report.
+Questions can be linked to bugs. A user should do that when the problem
+exposed in the question is related to a bug report.
 
 == Adding Links ==
 
-Ticket #2 in firefox is about a user which has trouble displaying the
+Question #2 in firefox is about a user which has trouble displaying the
 SVG demo on the W3C site. There is an existing Malone bug report (#1)
 which describes that problem. A user that wants to document that
-relationship goes to the ticket and click the 'Link Existing Bug'.
+relationship goes to the question and click the 'Link Existing Bug'.
 
 This link is only available to registered user:
 
@@ -82,7 +82,7 @@ remove and clicks the 'Remove' button.
     >>> user_browser.getControl('#1: Firefox').selected = True
     >>> user_browser.getControl('Remove').click()
 
-The user is redirected to the support request page and a confirmation
+The user is redirected to the question page and a confirmation
 message is displayed:
 
     >>> user_browser.url

@@ -1,7 +1,7 @@
 = Question Subscriptions =
 
-Users can subscribe to specific tickets. When they are subscribed they
-will receive notifications for any changes to the ticket.
+Users can subscribe to specific questions. When they are subscribed they
+will receive notifications for any changes to the question.
 
 == Subscribing ==
 
@@ -42,9 +42,9 @@ name appears in the 'Subscribers' portlet:
 
 == Unsubscribing ==
 
-When the user is subscribed to the ticket, the 'Subscribe' link becomes
-an 'Unsubscribe' link. To unsubscribe, the user follows that link and
-then click on the 'Unsubscribe' button.
+When the user is subscribed to the question, the 'Subscribe' link
+becomes an 'Unsubscribe' link. To unsubscribe, the user follows that
+link and then click on the 'Unsubscribe' button.
 
     >>> link = user_browser.getLink('Unsubscribe')
     >>> link.url
@@ -57,7 +57,7 @@ then click on the 'Unsubscribe' button.
     >>> user_browser.getControl('Unsubscribe').click()
 
 A confirmation is displayed and the user, which was unsubscribed from
-the ticket, doesn't appear anymore in the subscribers portlet:
+the question, doesn't appear anymore in the subscribers portlet:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
@@ -72,8 +72,8 @@ the ticket, doesn't appear anymore in the subscribers portlet:
 == Subscribing While Posting A Message ==
 
 It is also possible to subscribe at the same time than posting a message
-on an existing ticket. The user can simply check the 'E-mail me future
-discussion about this request' checkbox:
+on an existing question. The user can simply check the 'E-mail me future
+discussion about this question' checkbox:
 
     >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/6')
     >>> user_browser.getControl('Message').value = (
@@ -95,7 +95,7 @@ A notification message is displayed notifying of the subscription:
     ...     print subscriber_link.renderContents()
     Sample Person
 
-When the person is already subscribed to the request, the checkbox
+When the person is already subscribed to the question, the checkbox
 doesn't appear on the page:
 
     >>> user_browser.getControl('E-mail me future')

@@ -1,9 +1,8 @@
-= Support Request Workflow =
+= Question Workflow =
 
-The status of a support request changes based on the action done by
-users on the request. To demonstrate the workflow, we will use the
-existing ticket #2 on the Firefox product which was filed by
-'Sample Person'.
+The status of a question changes based on the action done by users on
+it. To demonstrate the workflow, we will use the existing question #2 on
+the Firefox product which was filed by 'Sample Person'.
 
     # We will use one browser objects for the owner, and one for the user
     # providing support, 'No Privileges Person' here.
@@ -19,7 +18,7 @@ existing ticket #2 on the Firefox product which was filed by
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
     # Define some utility functions to retrieve easily the last comment
-    # added and the status of the request.
+    # added and the status of the question.
     >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
     ...     soup = BeautifulSoup(contents)
@@ -31,7 +30,7 @@ existing ticket #2 on the Firefox product which was filed by
 
 == Logging In ==
 
-To participate in a support request, the user must be logged in.
+To participate in a question, the user must be logged in.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2')
@@ -41,12 +40,12 @@ To participate in a support request, the user must be logged in.
 
 == Requesting for More Information ==
 
-It's not unusual that the original message of a support request is terse
+It's not unusual that the original message of a question is terse
 and quite vague. In these cases, to help the user, some more information
 will be required.
 
-To request for more information from the ticket owner, a user enters the
-question in the 'Message' field and clicks on the
+To request for more information from the question owner, a user enters
+the question in the 'Message' field and clicks on the
 'Add Information Request' button.
 
     >>> support_browser.open(
@@ -55,8 +54,8 @@ question in the 'Message' field and clicks on the
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
 
-The message was added to the request and the status of the ticket
-was changed to 'Needs information':
+The message was added to the question and its status was changed to
+'Needs information':
 
     >>> print find_request_status(support_browser.contents)
     Needs information
@@ -74,8 +73,8 @@ you an error.
 
 == Answering with More Information ==
 
-When the request is in the 'Needs information' state, it means that the
-request owner should come back and provide more information. He can do
+When the question is in the 'Needs information' state, it means that the
+question owner should come back and provide more information. He can do
 so by entering the reply in the 'Message' box and clicking on the
 "I'm Providing More Information" button.
 
@@ -87,7 +86,8 @@ so by entering the reply in the 'Message' box and clicking on the
     >>> owner_browser.getControl("I'm Providing More Information").click()
 
 Once the owner replied with the, hopefully, requested information, the
-status is changed to Open and his answer appended to the request.
+status is changed to Open and his answer appended to the question
+discusson.
 
     >>> print find_request_status(owner_browser.contents)
     Open
@@ -97,8 +97,8 @@ status is changed to Open and his answer appended to the request.
 
 == Giving an Answer ==
 
-Once the request is clarified, it is easier for a user to give an answer
-to the request. This is done by entering the answer in the 'Message' box
+Once the question is clarified, it is easier for a user to give an
+answer. This is done by entering the answer in the 'Message' box
 and clicking the 'Add Answer' button.
 
     >>> support_browser.open(
@@ -108,8 +108,8 @@ and clicking the 'Add Answer' button.
     ...     "support enabled. You can use apt-get or adept to upgrade.")
     >>> support_browser.getControl('Add Answer').click()
 
-This moves the the support request to the Answered state and adds the
-answer to the request:
+This moves the the question to the Answered state and adds the
+answer to the end of the discussion:
 
     >>> print find_request_status(support_browser.contents)
     Answered
@@ -120,7 +120,7 @@ answer to the request:
 
 == Confirming an Answer ==
 
-When the owner comes back on the request page, he will now see a new
+When the owner comes back on the question page, he will now see a new
 'This Solved my Problem' button near the answer.
 
     >>> owner_browser.open(
@@ -130,14 +130,14 @@ When the owner comes back on the request page, he will now see a new
     <input type="submit" name="field.actions.confirm"
      value="This Solved my Problem" />
 
-(Not altough we have three comments on the support request, that's the
-only one that has this button. Only answers have this button.)
+(Not altough we have three comments on the question, that's the only one
+that has this button. Only answers have this button.)
 
 Clicking that button will confirm that the answer solved the problem.
 
     >>> owner_browser.getControl('This Solved my Problem').click()
 
-This changes the status of the request to 'Solved' and mark
+This changes the status of the question to 'Solved' and mark
 'No Privileges Person' as the answerer.
 
     >>> print find_request_status(owner_browser.contents)
@@ -148,7 +148,7 @@ This changes the status of the request to 'Solved' and mark
     No Privileges Person
 
 Since no message can be provided when that button is clicked. A default
-confirmation message was appended to the request:
+confirmation message was appended to the question discussion:
 
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>User confirmed that the question is solved.</p>
@@ -165,15 +165,15 @@ The confirmed answer is also highlighted.
 
 == Adding a Comment ==
 
-When the request is Solved, it is possible to add comments to the
-request. The user simply enters the comment in the 'Message' box and
-clicks the 'Add Comment' button.
+When the question is Solved, it is still possible to add comments to it.
+The user simply enters the comment in the 'Message' box and clicks the
+'Add Comment' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "The example now displays correctly. Thanks.")
     >>> owner_browser.getControl('Add Comment').click()
 
-This appends the comment to the request and it doesn't change the
+This appends the comment to the question and it doesn't change its
 status:
 
     >>> print find_request_status(owner_browser.contents)
@@ -183,8 +183,8 @@ status:
 
 == Reopening ==
 
-It can happen that, altough the owner confirmed the request as solved,
-the original problem reappears. In this case, he can reopen the request
+It can happen that, altough the owner confirmed the question was solved,
+the original problem reappears. In this case, he can reopen the question
 by entering a new message and clicking the
 "I'm Still Having This Problem" button.
 
@@ -195,8 +195,8 @@ by entering a new message and clicking the
     ...     "correctly.")
     >>> owner_browser.getControl("I'm Still Having This Problem").click()
 
-This appends the new information to the request and changes the request
-status to 'Open'.
+This appends the new information to the question discussion and changes
+its status back to 'Open'.
 
     >>> print find_request_status(owner_browser.contents)
     Open
@@ -231,7 +231,7 @@ reopening portlet.
 
 == Self-Answer ==
 
-The owner can also gives an answer to his own request. He simply have
+The owner can also gives an answer to his own question. He simply have
 to enter his answer in the 'Message' box and click the
 'I Solved my Problem' button.
 
@@ -240,7 +240,8 @@ to enter his answer in the 'Message' box and click the
     ...     "available in Firefox 2.0.")
     >>> owner_browser.getControl("I Solved my Problem").click()
 
-This appends the message to the request and sets its status to 'Solved'.
+This appends the message to the quesiton and sets its status to
+'Solved'.
 
     >>> print find_request_status(owner_browser.contents)
     Solved
@@ -262,7 +263,7 @@ It also records the owner as the answerer and marks his answer with the
 
 = History =
 
-The history of the ticket is available on the 'History' page.
+The history of the question is available on the 'History' page.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2')
@@ -270,7 +271,7 @@ The history of the ticket is available on the 'History' page.
     >>> print anon_browser.title
     History of question #2
 
-It lists all the actions performed through workflow on the request:
+It lists all the actions performed through workflow on the question:
 
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> action_listing = soup.first('table', 'listing')

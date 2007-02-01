@@ -1,6 +1,6 @@
 = Editing a Question Posted in a non-English Language =
 
-Register a new support contact to change the list of supported languages.
+Register a new answer contact to change the list of supported languages.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
@@ -15,9 +15,9 @@ Register a new support contact to change the list of supported languages.
     >>> flush_database_updates()
     >>> logout()
 
-A user can change the language a request was written, either because
+A user can change the language a question was written, either because
 the language was wrongly set, or because he decided to rewrite the
-request in a language he speaks better.
+question in a language he speaks better.
 
 The language can be changed on the regular 'Edit Question' screen.
 
@@ -25,7 +25,7 @@ The language can be changed on the regular 'Edit Question' screen.
     >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5')
     >>> browser.getLink('Edit Question').click()
 
-That screen contains a selection field to allow changing the ticket's
+That screen contains a selection field to allow changing the question
 language. The list of available languages is determined by the user's
 preferred language. There is a link to allow changing this list:
 
@@ -33,7 +33,7 @@ preferred language. There is a link to allow changing this list:
     '.../people/+editlanguages'
 
 If he choose a language that is not spoken by any of the registered
-support contacts, a warning is displayed:
+answer contacts, a warning is displayed:
 
     >>> browser.getControl('Welsh').selected = True
     >>> browser.getControl('Summary').value = 'Gofyn cymorth'
