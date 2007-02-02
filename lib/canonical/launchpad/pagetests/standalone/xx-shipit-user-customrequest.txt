@@ -75,7 +75,7 @@ The quantities specified by the user must be positive integers.
   ...field.ubuntu_quantityx86...
   ...Quantities must be greater than or equal 0...
 
-  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
+  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '15'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
   'http://shipit.ubuntu.dev/specialrequest'
@@ -86,11 +86,13 @@ The quantities specified by the user must be positive integers.
   ...ten weeks...
 
 
-All custom requests with less than 39 CDs are automatically approved.
+All custom requests with less than $max_size_for_auto_approval CDs are
+automatically approved.
 
   >>> from canonical.launchpad.interfaces import ShipItConstants
-  >>> ShipItConstants.max_size_for_auto_approval
-  39
+  >>> max_cds = ShipItConstants.max_size_for_auto_approval
+  >>> max_cds
+  15
 
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -98,13 +100,14 @@ All custom requests with less than 39 CDs are automatically approved.
   >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
   >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
-  10
+  15
   >>> logout()
 
-But custom requests with more than 39 CDs have to be approved before they
-can be shipped.
+But custom requests with more than $max_size_for_auto_approval CDs have to
+be approved before they can be shipped.
 
-  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '51'
+  >>> quantity = str(max_cds + 1)
+  >>> browser.getControl(name='field.ubuntu_quantityx86').value = quantity
   >>> browser.getControl('Change Request').click()
 
   >>> login(ANONYMOUS)
@@ -127,8 +130,8 @@ approval.
 
 
 If later the user asks for standard quantities of CDs of a different flavour,
-the request will still be pending approval, becuase it contains more than 39
-CDs in total.
+the request will still be pending approval, becuase it contains more than
+$max_size_for_auto_approval CDs in total.
 
   >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> browser.url
@@ -185,7 +188,8 @@ of this same distrorelease.
   >>> logout()
 
 His shipped request contained only Ubuntu and Kubuntu CDs, so a request for
-Edubuntu CDs that is under the 39 CDs limit will be auto approved.
+Edubuntu CDs that is under the $max_size_for_auto_approval CDs limit will
+be auto approved.
 
   >>> browser.open('http://shipit.edubuntu.dev/specialrequest')
   >>> browser.url

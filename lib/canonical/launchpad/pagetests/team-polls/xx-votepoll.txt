@@ -1,0 +1,84 @@
+# XXX: Test disabled due to Bug #82788 -- StuartBishop 20070202
+#
+# = Voting on polls =
+# 
+# # XXX: Merge this test with standalone/xx-poll-voting.txt
+# # -- Guilherme Salgado, 2006-01-19
+# 
+# For convenience we provide an option for when the user doesn't want to vote
+# yet.
+# 
+#   >>> team_admin_browser = browser
+#   >>> team_admin_browser.addHeader(
+#   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+#   >>> team_admin_browser.open(
+#   ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
+#   >>> not_yet_voted_message = 'You have not yet voted in this poll.'
+#   >>> not_yet_voted_message in team_admin_browser.contents
+#   True
+# 
+#   >>> team_admin_browser.getControl(name='newoption').value = ["donotvote"]
+#   >>> team_admin_browser.getControl(name='continue').click()
+# 
+#   >>> chose_not_to_vote_message = "You chose not to vote yet."
+#   >>> chose_not_to_vote_message in team_admin_browser.contents
+#   True
+# 
+# 
+# == Closed polls ==
+# 
+# It's not possible to vote on closed polls, even if we manually craft the URL.
+# 
+#     >>> team_admin_browser.open(
+#     ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004')
+#     >>> print find_tag_by_id(
+#     ...     team_admin_browser.contents, 'region-content').renderContents()
+#     <BLANKLINE>
+#     ...
+#     <h2>Voting has closed</h2>
+#     ...
+# 
+#     >>> team_admin_browser.open(
+#     ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004/+vote-simple')
+#     >>> print find_tag_by_id(
+#     ...     team_admin_browser.contents, 'region-content').renderContents()
+#     <BLANKLINE>
+#     <div>
+#     <p class="informational message">
+#           This poll is already closed.
+#         </p>
+#     </div>
+#     <BLANKLINE>
+# 
+#     >>> team_admin_browser.getControl(name='continue')
+#     Traceback (most recent call last):
+#     ...
+#     LookupError: name 'continue'
+# 
+# The same is true for condorcet polls too.
+# 
+#     >>> team_admin_browser.open(
+#     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004')
+#     >>> print find_tag_by_id(
+#     ...     team_admin_browser.contents, 'region-content').renderContents()
+#     <BLANKLINE>
+#     ...
+#     <h2>Voting has closed</h2>
+#     ...
+# 
+#     >>> team_admin_browser.getControl(name='continue')
+#     Traceback (most recent call last):
+#     ...
+#     LookupError: name 'continue'
+# 
+#     >>> team_admin_browser.open(
+#     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+vote-condorcet')
+#     >>> print find_tag_by_id(
+#     ...     team_admin_browser.contents, 'region-content').renderContents()
+#     <BLANKLINE>
+#     <div>
+#     <p class="informational message">
+#           This poll is already closed.
+#         </p>
+#     </div>
+#     <BLANKLINE>

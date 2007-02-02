@@ -367,7 +367,8 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packagebugs")
 >>> check("/~sabdfl/+packages")
 
->>> check("/+code")
+# XXX: Disabled due to Bug #82772 -- StuartBishop 20070202
+# >>> check("/+code")
 >>> check("/+code/+portlet-importstats")
 >>> check("/+code/series", auth=True)
 >>> check("/+code/series/+bazaar-index", auth=True)

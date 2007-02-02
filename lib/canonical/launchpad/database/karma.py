@@ -6,26 +6,26 @@ __all__ = [
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
+    'KarmaCacheManager',
     'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
     'KarmaContextMixin',
     ]
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQLObject imports
 from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
+from sqlobject.sqlbuilder import AND
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
     IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
-    IDistribution)
+    IDistribution, IKarmaCacheManager, NotFoundError, IProject)
 
 
 class Karma(SQLBase):
@@ -117,6 +117,58 @@ class KarmaCache(SQLBase):
         notNull=False)
 
 
+class KarmaCacheManager:
+    """See IKarmaCacheManager."""
+    implements(IKarmaCacheManager)
+
+    def new(self, value, person_id, category_id, product_id=None, distribution_id=None,
+            sourcepackagename_id=None):
+        """See IKarmaCacheManager."""
+        return KarmaCache(
+            karmavalue=value, person=person_id, category=category_id,
+            product=product_id, distribution=distribution_id,
+            sourcepackagename=sourcepackagename_id)
+
+    def updateKarmaValue(self, value, person_id, category_id, product_id=None,
+                         distribution_id=None, sourcepackagename_id=None):
+        """See IKarmaCacheManager."""
+        entry = self._getEntry(
+            person_id=person_id, category_id=category_id, product_id=product_id,
+            distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)
+        if entry is None:
+            raise NotFoundError("KarmaCache not found: %s" % vars())
+        else:
+            entry.karmavalue = value
+            entry.syncUpdate()
+
+    def deleteEntry(self, person_id, category_id, product_id=None, distribution_id=None,
+                    sourcepackagename_id=None):
+        """See IKarmaCacheManager."""
+        entry = self._getEntry(
+            person_id=person_id, category_id=category_id, product_id=product_id,
+            distribution_id=distribution_id, sourcepackagename_id=sourcepackagename_id)
+        if entry is None:
+            raise NotFoundError("KarmaCache not found: %s" % vars())
+        else:
+            entry.destroySelf()
+
+    def _getEntry(self, person_id, category_id, product_id=None, distribution_id=None,
+                  sourcepackagename_id=None):
+        """Return the KarmaCache entry with the given arguments.
+        
+        Return None if it's not found.
+        """
+        # Can't use selectBy() because product/distribution/sourcepackagename
+        # may be None.
+        query = AND(
+            KarmaCache.q.personID == person_id,
+            KarmaCache.q.categoryID == category_id,
+            KarmaCache.q.productID == product_id,
+            KarmaCache.q.distributionID == distribution_id,
+            KarmaCache.q.sourcepackagenameID == sourcepackagename_id)
+        return KarmaCache.selectOne(query)
+
+
 class KarmaPersonCategoryCacheView(SQLBase):
     """See IKarmaPersonCategoryCacheView."""
     implements(IKarmaPersonCategoryCacheView)
@@ -178,19 +230,27 @@ class KarmaContextMixin:
     def getTopContributors(self, category=None, limit=None):
         """See IKarmaContext."""
         from canonical.launchpad.database.person import Person
+        join_clause = ""
         if IProduct.providedBy(self):
-            context_name = 'product'
+            where_clause = "product = %d" % self.id
         elif IDistribution.providedBy(self):
-            context_name = 'distribution'
+            where_clause = "distribution = %d" % self.id
+        elif IProject.providedBy(self):
+            where_clause = "Project.id = %d" % self.id
+            join_clause = """
+                JOIN Product ON KarmaCache.product = Product.id
+                JOIN Project ON Product.project = Project.id
+                """
         else:
             raise AssertionError(
-                "Not a product nor a distribution: %r" % self)
+                "Not a product, project or distribution: %r" % self)
 
         query = """
             SELECT person, SUM(karmavalue) AS sum_karmavalue
             FROM KarmaCache
-            WHERE %s = %d
-            """ % (context_name, self.id)
+            %(join_clause)s
+            WHERE %(where_clause)s
+            """ % {'join_clause': join_clause, 'where_clause': where_clause}
         if category is not None:
             query += " AND category = %s" % sqlvalues(category)
         query += " GROUP BY person ORDER BY sum_karmavalue DESC"
