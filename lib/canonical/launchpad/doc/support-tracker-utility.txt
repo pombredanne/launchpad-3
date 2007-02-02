@@ -69,6 +69,17 @@ The status parameter can also take a list of statuses.
     mailto: problem in webpage                Solved mozilla-firefox in ubuntu
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
 
+=== language ===
+
+The language parameter can be used to select only tickets written in a
+particular language.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> for t in ticket_set.searchTickets(language=spanish):
+    ...     print t.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
+
 === Combination ===
 
 The returned sets of tickets is the intersection of the sets delimited
@@ -112,3 +123,11 @@ TicketSort.NEWEST_FIRST.
     11 u'Continue playing after shutdown'          Ubuntu
      5 u'Installation failed'                      Ubuntu
      4 u'Firefox loses focus and gets stuck'       Mozilla Firefox
+
+== getTicketLanguages() ==
+
+The getTicketLanguages() method returns the set of languages in which
+tickets are written in Launchpad.
+
+    >>> sorted([language.code for language in ticket_set.getTicketLanguages()])
+    [u'en', u'es', u'pt_BR']

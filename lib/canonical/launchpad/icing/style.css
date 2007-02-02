@@ -1,63 +1,97 @@
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
+
+.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+.clearfix {display: inline-table;}
+/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hiding from MSIE for Mac */
+
+abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
+address {font-style: inherit;}
+* html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
+dt dfn {font-style: normal; font-weight: bold;}
+dd {margin-bottom: 1em;}
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ddd;
+  min-width: 1em;
+}
+label {white-space: nowrap;}
+legend {font-weight: bold;}
+legend legend {font-weight: normal;}
+.listbox { /* a scrolling list of checkboxes or radio buttons */
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
+  overflow: auto;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
+}
+
+thead {vertical-align: bottom;}
 tr {vertical-align: top;}
+th {text-align: right;}
+thead th, tr.thead th {text-align: center;}
+/* make <wbr> work with Opera */
+/* XXX: 20061026 jamesh Disabled since BjornT reported display problems */
+/* wbr:after {content: "\00200B"} */
 
 /* === Overall presentation === */
-body {
+
+html {
   position: relative;
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
+  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8pt;
   color: #656565;
-  margin: 0;
-  padding: 0;
   background-color: #FFFFFF;
 }
-td {
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 1em;
-  color: #656565;
-}
-body.smallText #wrapper {font-size: 1em;}  
-body.mediumText #wrapper {font-size: 1.2em;}  
-body.largeText #wrapper {font-size: 1.4em;}
-body.smallText #central_column {font-size: 1em;}  
-body.mediumText #central_column {font-size: 1.2em;}
-body.largeText #central_column {font-size: 1.4em;}
-:link {
-  color: #039;
-  text-decoration: none;
-} 
-:link:hover, :visited:hover {
-  text-decoration: underline;
-}
-:link:active, :visited:active {
-  color: #36c;
-}
-:visited {
-  color: #324c7f;
-  text-decoration: none;
-}
+body {margin: 0; padding: 0;}
 
-input, select {
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 10px;
+:link                         {color: #039;    text-decoration: none;} 
+:link:hover, :visited:hover   {                text-decoration: underline;}
+:link:active, :visited:active {color: #36c;}
+:visited                      {color: #324c7f; text-decoration: none;}
+
+h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
+h1 {font-size: 2.25em; margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
+h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
+h5 {font-size: 1em;    margin: 0;              padding: 0;}
+h6 {font-size: 1em;    margin: 0;              padding: 0;}
+
+/* --- Form controls --- */
+
+form {border: 0; margin: 0; padding: 0;}
+input, select, textarea {
+  background-color: #fff;
   color: #656565;
-  background-color: #FFFFFF;
-  margin: 0;}
-  textarea {font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 11px;
-  color: #656565;
-  background-color: #FFFFFF;
+  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   margin: 0;
 }
+input, select {font-size: 10px;}
+textarea {font-size: 11px;}
+
+/* --- Other --- */
+
 a img {
   border: none;
-}
-form {
-  border: 0;
-  margin: 0;
-  padding: 0;
 }
 form.primary.search {
   margin-bottom: 2em;
@@ -77,47 +111,6 @@ hr {
   border-top: 2px solid #000000;
   overflow: hidden;
   display: none;
-}
-h1 {
-  font-weight: bold;
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-size: 1.75em;
-}
-h2 {
-  font-weight: bold;
-  margin: 0 0 0.75em;
-  padding: 0;
-  color: #000000;
-  font-size: 1.4em;
-}
-h3 {
-  font-weight: bold;
-  margin: 1em 0 0 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-}
-h4 {
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-weight: normal;
-  font-size: 1em;
-}
-h5 {
-  margin: 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-  font-weight: normal;
-}
-h6 {
-  margin: 0;
-  padding: 0;
-  color: #FF0000;
-  font-weight: bold;
 }
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
@@ -143,6 +136,11 @@ p {
   color: #FF0000;
   font-weight: bold;
 }
+.debug {
+  background: none;
+  color: #f09;
+}
+
 .anchor {
   height: 1px;
   overflow: hidden;
@@ -409,6 +407,9 @@ ul#applicationchooser li#applicationchooser_selected {
   color: #FFFFFF;
   font-weight: bold;
 }
+#portlets #actions h2 {
+  background-image: url(leftnav_bg_uncollapsible.gif);
+}
 #portlets .portlet h2:hover {
   background-color: #A3A3A3;
   text-decoration: none;
@@ -502,7 +503,6 @@ ul#applicationchooser li#applicationchooser_selected {
   list-style: none;
 }
 #actions li {
-  border-bottom: 1px solid #D2D2D2;
   margin: 0;
 }
 #actions li a {
@@ -608,6 +608,10 @@ ul#applicationchooser li#applicationchooser_selected {
   text-indent: -9999px;
   overflow: hidden;
 }
+#structuralobject, #applications {
+  position: relative;
+  z-index: 1;
+}
 #structuralobjectheading {
   background: none;
   color: black;
@@ -617,12 +621,12 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading img {
   float: left;
-  margin: 0px 0px 0px 10px;
+  margin: 0;
 }
 #structuralobjectheading .main {
   font-weight: bold;
   margin: 20px 0 0;
-  font-size: 1.5em;
+  font-size: 2.5em;
 }
 #structuralobjectchildren {
   float: left;
@@ -648,7 +652,16 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_left.gif);
   background-repeat: repeat-y;
   background-position: top left;
+  position: relative;
+  top: -10px;
 }
+* html #mainarea div.t {
+  top: 0;
+}
+#singlecolumn h1 {padding-top: 1em; position: relative; z-index: 1;}
+* html #singlecolumn h1 {padding-top: 0;}
+#singlecolumn div.t {top: -20px;}
+
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -698,6 +711,7 @@ ul#applicationchooser li#applicationchooser_selected {
   top: 47px;
   left: 0px;
   width: 350px;
+  z-index: 100;
 }
 #help_panel.closed {
   left: -318px !important;
@@ -784,9 +798,9 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-left: 4px solid #FEFCF0;
   border-right: 4px solid #FEFCF0;
 }
-h1, h2, h3 { /* On Overview tab or tab-less pages */
-  background: none;
-  color: #90b51a; /* darkest color from locationbar_em_bg.gif */
+body.tab-overview #actions {background-color: #e6eed3;}
+body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
+  background-color: #83ad23;
 }
 
 /* Code: */
@@ -828,11 +842,13 @@ body.tab-branches #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FCF4F2;
 }
 body.tab-branches #actions {background-color: #ffc;}
-body.tab-branches #actions h2 {background-color: #f3cb00;}
+body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
+  background-color: #d18b39;
+}
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
 .tab-branches #application-footer strong {
   background: none;
-  color: #f3cb00; /* "it fits nicely with the Bazaar logo" -- sabdfl */
+  color: #d18b39;
 }
 
 /* Bugs: */
@@ -874,11 +890,13 @@ body.tab-bugs #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-bugs #actions {background-color: #fee;}
-body.tab-bugs #actions h2 {background-color: #c03;}
+body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
+  background-color: #9f2b33;
+}
 .tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
 .tab-bugs table.listing thead {
   background: none;
-  color: #c03;
+  color: #9f2b33;
 }
 
 /* Blueprints: */
@@ -916,12 +934,14 @@ body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover 
   background-color: #FEFCF0;
 }
 body.tab-specifications #actions {background-color: #eff;}
-body.tab-specifications #actions h2 {background-color: #159cc8;}
+body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
+  background-color: #3594bb;
+}
 .tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
 .tab-specifications #application-footer strong,
 .tab-specifications table.listing thead {
   background: none;
-  color: #159cc8; /* darkest color from mainarea_tab4-* */
+  color: #3594bb;
 }
 .specstatusAPPROVED             {color: green;}
 .specstatusPENDINGAPPROVAL      {color: #f09;}
@@ -970,7 +990,7 @@ body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {
-  background-color: #159CC8;
+  background-color: #3594bb;
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-translations #mainarea div#portlets div.portlet.active a:hover {
@@ -990,12 +1010,14 @@ body.tab-translations #mainarea #portlets .portlet.active div {
   border-right: 4px solid #f1f9fc;
 }
 body.tab-translations #actions {background-color: #fcf;}
-body.tab-translations #actions h2 {background-color: #962667;}
+body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
+  background-color: #bb3a84;
+}
 .tab-translations h1, .tab-translations h2, .tab-translations h3,
 .tab-translations #application-footer strong,
 .tab-translations table.listing thead {
   background: none;
-  color: #962667; /* darkest color from mainarea_tab5-* */
+  color: #bb3a84;
 }
 
 /* Answers: */
@@ -1017,7 +1039,7 @@ body.tab-support #mainarea ul#applicationchooser li.tab-support {
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a,
 body.tab-support #mainarea div#portlets div.portlet.active a {
-  background-color: #3F3CCC;
+  background-color: #3840be;
 }
 body.tab-support #mainarea #portlets .portlet.active h2 a:hover,
 body.tab-support #mainarea div#portlets div.portlet.active a:hover {
@@ -1037,11 +1059,13 @@ body.tab-support #mainarea #portlets .portlet.active div {
   border-right: 4px solid #F4F4FC;
 }
 body.tab-support #actions {background-color: #eef;}
-body.tab-support #actions h2 {background-color: #3f3ccc;}
+body.tab-support #actions h2, body.tab-support #actions h2:hover {
+  background-color: #3840be;
+}
 .tab-support h1, .tab-support h2, .tab-support h3,
 .tab-support #application-footer strong, .tab-support table.listing thead {
   background: none;
-  color: #3f3ccc;
+  color: #3840be;
 }
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
@@ -1114,11 +1138,12 @@ body {
 }
 .central {
   clear: both;
+  font-size: 1.75em;
   margin: auto;
   padding: 2em 0;
   width: auto;
 }
-.central, .central input {
+.central input {
   font-size: 1em;
 }
 .central table {
@@ -1160,26 +1185,25 @@ img.mugshot {display: block;}
 div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
-div.section {
+div.left div.portlet, div.right div.portlet {
   border: dotted #ccc;
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
 }
-div.left div.section {
+div.left div.portlet {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;
 }
-div.right div.section {
+div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.columns {clear: both;}
-div.three.columns .column {
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.middle, div.three.column.right {
+  clear: none;
   float: left;
-  width: 33%;
 }
-
 .title {
   font-weight: bold;
 }
@@ -1207,10 +1231,12 @@ ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.blueprint, li.blueprint           {list-style-image: url(/@@/blueprint);}
 ul.branch, li.branch                 {list-style-image: url(/@@/branch);}
 ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
+ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
+ul.product, li.product               {list-style-image: url(/@@/product);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.external.link, li.external.link   {list-style-image: url(/@@/link);}

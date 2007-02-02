@@ -4,15 +4,16 @@
 
 import _pythonpath
 
-import logging, sys
+import sys
 from optparse import OptionParser
 
 from zope.component.exceptions import ComponentLookupError
 
+from contrib.glock import GlobalLock
+
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.mail.incoming import handleMail
 from canonical.launchpad.interfaces import IMailBox
 
@@ -27,7 +28,7 @@ def main(args):
     
     log = logger(options, 'process-mail')
 
-    lockfile = LockFile('/var/lock/launchpad-process-mail.lock', logger=log)
+    lockfile = GlobalLock('/var/lock/launchpad-process-mail.lock', logger=log)
     lockfile.acquire()
 
     try:
