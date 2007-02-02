@@ -13,14 +13,16 @@ CREATE TABLE MentoringOffer (
   date_created      timestamp without time zone NOT NULL
                         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   team              integer NOT NULL REFERENCES Person,
-  bug               integer,
-  specification     integer,
-  CONSTRAINT context_required CHECK
-      ((bug IS NOT NULL OR specification IS NOT NULL) AND NOT
-       (bug IS NOT NULL AND specification IS NOT NULL)),
+  bug               integer REFERENCES Bug,
+  specification     integer REFERENCES Specification,
+  CONSTRAINT context_required CHECK (bug IS NULL <> specification IS NULL),
   CONSTRAINT single_offer_per_bug_key UNIQUE (bug, owner),
   CONSTRAINT single_offer_per_spec_key UNIQUE (specification, owner)
   );
+
+
+CREATE INDEX mentoringoffer__owner__idx ON MentoringOffer(owner);
+CREATE INDEX mentoringoffer__team__idx ON MentoringOffer(team);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 87, 0);
 

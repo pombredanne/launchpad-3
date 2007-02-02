@@ -206,7 +206,7 @@ COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or oth
 
 -- MentoringOffer
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wants to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it becomes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
-COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated.';
+COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, designated as "the team which will most benefit from the bug fix or spec implementation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" idea - the list is the "onramp" to membership in the relevant team.';
 
 
 -- Product
