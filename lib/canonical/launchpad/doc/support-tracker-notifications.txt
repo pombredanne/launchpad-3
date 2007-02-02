@@ -277,6 +277,14 @@ a notification.
     A PowerMac 7200.
     <BLANKLINE>
 
+The notification for new messages on the ticket contain a 'References'
+header to the previous message for threading purpose.
+
+    >>> print notifications[0]['References']
+    <...>
+    >>> notifications[0]['References'] == ubuntu_ticket.messages[-2].rfc822msgid
+    True
+
 We already saw the notifications sent for the requestInfo() and
 giveInfo() transitions, let's see the other ones.
 

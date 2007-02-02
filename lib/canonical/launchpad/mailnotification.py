@@ -1157,6 +1157,19 @@ class TicketModifiedDefaultNotification(TicketNotification):
         else:
             return prefix + self.ticket.title
 
+    def getHeaders(self):
+        """Add a References header."""
+        headers = TicketNotification.getHeaders(self)
+        if self.new_message:
+            # XXX flacoste 2007/02/02 The first message cannot contain
+            # a References because we don't create a Message instance
+            # for the ticket description, so we don't have a Message-ID.
+            index = list(self.ticket.messages).index(self.new_message)
+            if index > 0:
+                headers['References'] = (
+                    self.ticket.messages[index-1].rfc822msgid)
+        return headers
+
     def shouldNotify(self):
         """Only send a notification when a message was added or some
         metadata was changed.
