@@ -404,6 +404,12 @@
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
 
+    <!-- Confirm the database is the correct revision level -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.database.revision.confirm_dbrevision_on_startup"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -419,5 +425,23 @@
         attributes="publishTraverse"
         />
     </content>
+
+    <!-- the URI class -->
+    <class class="canonical.launchpad.webapp.uri.URI">
+      <allow attributes="scheme userinfo host port path query fragment 
+          authority hier_part
+          __str__ __repr__ __eq__ __ne__ replace resolve append contains
+          ensureSlash ensureNoSlash" />
+    </class>
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
 
 </configure>

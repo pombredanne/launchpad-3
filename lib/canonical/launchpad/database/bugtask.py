@@ -5,7 +5,8 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter']
+    'get_bug_privacy_filter',
+    'search_value_to_where_condition']
 
 import urllib
 import cgi

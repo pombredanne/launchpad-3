@@ -13,9 +13,9 @@ Files:
  1e35b810764f140af9616de8274e6e73 537 bar_1.0-1.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEKyfBK8hAFiBoeJURAt2vAJ95aAyZ5K3m1JOFt8uOKrwQaWOoYACffbCR
-9tyMFhiROvhUR6KvrXZ6THo=
-=d7nj
+iD8DBQFFt7Cojn63CGxkqMURAo6FAJ9ZUagUNtYpmZrqFwL6LXDKOUSOPwCdFqPa
+BdrMeT+0Hg+yMS69uO+qJRI=
+=mjFU
 -----END PGP SIGNATURE-----
