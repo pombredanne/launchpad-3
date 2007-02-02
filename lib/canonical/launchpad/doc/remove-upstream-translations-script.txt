@@ -36,6 +36,10 @@ We can remove all translations from a concrete potemplate.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Jordi Mallach
+    DEBUG   Removed 0 submissions
+    DEBUG   After the removal, latest submission came from: Jordi Mallach
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Before the removal, latest submission came from: Valentina Commissari
     DEBUG   Removed 12 submissions
@@ -69,6 +73,10 @@ Or with a concrete language.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Jordi Mallach
+    DEBUG   Removed 0 submissions
+    DEBUG   After the removal, latest submission came from: Jordi Mallach
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Before the removal, latest submission came from: Valentina Commissari
     DEBUG   Removed 12 submissions

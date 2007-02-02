@@ -217,6 +217,74 @@ The same for deactivating a membership.
     The Launchpad team
 
 
+== Membership expiration warnings ==
+
+When we get close to the expiration date of a given membership, an expiration
+warning is sent to the member, so that he can contact the team's
+administrators in case he wants to retain that membership. This is done by
+the flag-expired-memberships cronscript, which uses
+ITeamMembership.sendExpirationWarningEmail to do its job.
+
+    >>> sabdfl_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     sabdfl, ubuntu_team)
+    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'Mark Shuttleworth <mark@hbd.com>'
+    >>> notification['Subject']
+    'Launchpad: ubuntu-team team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Mark Shuttleworth
+    <BLANKLINE>
+    On 2050-03-03, ... weeks from now, your membership of the
+    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    To prevent this membership from expiring, you should get in touch
+    with one of the team's administrators:
+    Alexander Limi (limi) <http://launchpad.dev/~limi>
+    Colin Watson (kamion) <http://launchpad.dev/~kamion>
+    Foo Bar (name16) <http://launchpad.dev/~name16>
+    Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
+    Mark Shuttleworth (sabdfl) <http://launchpad.dev/~sabdfl>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
+    ...     ubuntu_team, personset.getByName('guadamen'))
+    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'mark@hbd.com'
+    >>> notification['Subject']
+    'Launchpad: guadamen team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi,
+    <BLANKLINE>
+    On 2049-02-03, ... weeks from now, the membership of
+    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
+    GuadaMen (guadamen) Launchpad team is due to expire.
+    <http://launchpad.dev/~guadamen>
+    <BLANKLINE>
+    To prevent this membership from expiring, you should get in touch
+    with one of the team's administrators:
+    Foo Bar (name16) <http://launchpad.dev/~name16>
+    Ubuntu Team (ubuntu-team) <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    If the membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+
+
 == Some special cases ==
 
 When creating a new team, the owner has his membership's status changed from

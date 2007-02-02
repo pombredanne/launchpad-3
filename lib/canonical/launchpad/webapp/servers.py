@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.notifications import (
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.opstats import OpStats
@@ -254,12 +254,12 @@ class LaunchpadRequestPublicationFactory:
         vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(vhrp.vhostconfig.rooturl)
+        rooturlobj = URI(vhrp.vhostconfig.rooturl)
 
         requestfactory = ApplicationServerSettingRequestFactory(
             vhrp.requestfactory,
-            rooturlobj.hostname,
-            rooturlobj.addressingscheme,
+            rooturlobj.host,
+            rooturlobj.scheme,
             rooturlobj.port)
         return requestfactory, vhrp.publicationfactory
 

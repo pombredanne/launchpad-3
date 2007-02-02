@@ -161,18 +161,31 @@
         First, you need to register a SSH key from your person's page. Click on
         your name at the top of any Launchpad page when logged in to go to your
         person's page.
-        To create a hosted branch, use the <code>bzr push</code> command. When
-        registering the first branch for a product, you may have to use the
-        <code>--create-prefix</code> option. The destination URL must be of the
-        form <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>product</var>/<wbr></wbr><var>branch</var></code>
+        To create a hosted branch, use the <code>bzr push</code> command. The
+        destination URL must be of the form:
+      </p>
+      <blockquote>
+        <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>product</var>/<wbr></wbr><var>branch</var></code>
+      </blockquote>
+      <p>
         where <var>user</var> is your short name in Launchpad
         (omitted if it is the same as your system login or is specified in
         <code>ssh</code> configuration),
         <var>registrant</var> is your short name in Launchpad
-        (which can be a team name for shared branches),
+        (which can be a team name for a shared branch),
         <var>product</var> is the Launchpad product the branch belongs to,
-        and <var>name</var> is the short name of the branch.
+        and <var>name</var> is the short name of the branch
+        (if you are uploading your main development branch,
+        <code>devel</code> is a good generic name).
       </p>
+      <p>
+        For example, if your Launchpad user name were <code>john</code>, and
+        you wanted to upload a personal branch of the <code>froboize</code>
+        product, you could use the following command:
+      </p>
+      <blockquote>
+        bzr push sftp://john@bazaar.launchpad.net/~john/froboize/devel
+      </blockquote>
       <p>
         To create a shared branch to which multiple people can commit and push,
         as with CVS or Subversion, use the name of a team you belong to as the
