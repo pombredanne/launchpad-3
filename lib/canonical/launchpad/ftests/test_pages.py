@@ -10,7 +10,7 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, Comment, NavigableString
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
@@ -70,11 +70,36 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'content'})
 
 
+def extract_text(soup):
+    """Return the text stripped of all tags.
+
+    >>> soup = BeautifulSoup(
+    ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
+    >>> extract_text(soup)
+    u'Titlefoo bar'
+    """
+    # XXX Tim Penhey 22-01-2007
+    # At the moment this does not nicely give whitespace between
+    # tags that would have visual separation when rendered.
+    # eg. <p>foo</p><p>bar</p>
+    result = u''
+    for node in soup:
+        # skip comments
+        if isinstance(node, Comment):
+            pass
+        elif isinstance(node, NavigableString):
+            result = result + unicode(node)
+        else:
+            result = result + extract_text(node)
+    return result
+
+
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['extract_text'] = extract_text
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -205,6 +230,7 @@ def test_suite():
 
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
+    suite.addTest(doctest.DocTestSuite())
     return suite
 
 if __name__ == '__main__':
