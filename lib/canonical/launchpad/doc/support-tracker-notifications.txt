@@ -60,6 +60,13 @@ sent:
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
 
+The notification also includes a 'X-Launchpad-Question' header that
+contains information about the ticket.
+
+    >>> print add_notification['X-Launchpad-Question']
+    distribution=ubuntu; sourcepackage=None; status=Open;
+    assignee=None; priority=Normal
+
 Register the Ubuntu Team as Ubuntu's support contact, so that they get
 notified about the changes as well:
 

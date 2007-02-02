@@ -961,6 +961,33 @@ class TicketNotification:
         """
         raise NotImplementedError
 
+    def getHeaders(self):
+        """Return additional headers to add to the email.
+
+        Default implementation adds a X-Launchpad-Question header.
+        """
+        headers = dict()
+        if self.ticket.distribution:
+            if self.ticket.sourcepackagename:
+                sourcepackage = self.ticket.sourcepackagename.name
+            else:
+                sourcepackage = 'None'
+            target = 'distribution=%s; sourcepackage=%s;' % (
+                self.ticket.distribution.name, sourcepackage)
+        else:
+            target = 'product=%s;' % self.product.name
+        if self.ticket.assignee:
+            assignee = self.ticket.assignee.name
+        else:
+            assignee = 'None'
+
+        headers['X-Launchpad-Question'] = (
+            '%s status=%s; assignee=%s; priority=%s' % (
+                target, self.ticket.status.title, assignee,
+                self.ticket.priority.title))
+
+        return headers
+
     def getRecipients(self):
         """Return the recipient of the notification.
 
@@ -1018,11 +1045,12 @@ class TicketNotification:
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
+        headers = self.getHeaders()
         for notified_person in self.getRecipients():
             for address in contactEmailAddresses(notified_person):
                 if address not in sent_addrs:
                     simple_sendmail(
-                        from_address, address, subject, body)
+                        from_address, address, subject, body, headers)
                     sent_addrs.add(address)
 
     @property
