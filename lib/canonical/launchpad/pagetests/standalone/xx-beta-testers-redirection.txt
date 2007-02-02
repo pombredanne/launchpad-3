@@ -23,10 +23,10 @@ person:
   case of a URL that could not be displayed, so I am using old pagetest
   syntax here.
 
-If a normal user goes to the main page, it will load as normal:
+If a normal user goes to a page on the site, it will load as normal:
 
     >>> print http('''
-    ... GET / HTTP/1.1
+    ... GET /ubuntu HTTP/1.1
     ... Host: launchpad.dev
     ... Authorization: Basic test@canonical.com:test
     ... ''')
@@ -36,14 +36,14 @@ If a normal user goes to the main page, it will load as normal:
 In contrast, members of the beta testers get redirected:
 
     >>> print http('''
-    ... GET / HTTP/1.1
+    ... GET /ubuntu HTTP/1.1
     ... Host: launchpad.dev
     ... Authorization: Basic beta-admin@launchpad.net:test
     ... ''')
     HTTP/1.1 303 See Other
     Content-Length: 0
     Content-Type: text/plain
-    Location: http://beta.launchpad.dev/
+    Location: http://beta.launchpad.dev/ubuntu
     <BLANKLINE>
 
 The redirection is controlled by the beta_testers_redirection_host
@@ -55,7 +55,7 @@ config item.  If it is set to None, no redirection occurs:
     >>> config.launchpad.beta_testers_redirection_host = None
 
     >>> print http('''
-    ... GET / HTTP/1.1
+    ... GET /ubuntu HTTP/1.1
     ... Host: launchpad.dev
     ... Authorization: Basic beta-admin@launchpad.net:test
     ... ''')
@@ -65,6 +65,30 @@ config item.  If it is set to None, no redirection occurs:
 Set the redirection host back for the rest of the tests:
 
     >>> config.launchpad.beta_testers_redirection_host = 'beta.launchpad.dev'
+
+
+So that beta testers can still access the production site, the front
+page of Launchpad does not redirect.
+
+    >>> print http('''
+    ... GET / HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... ''')
+    HTTP/1.1 200 Ok
+    ...
+
+This is so that the user can make use of some client side JS on that
+page that sets a cookie to inhibit the redirection:
+
+    >>> print http('''
+    ... GET /ubuntu HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic beta-admin@launchpad.net:test
+    ... Cookie: inhibit_beta_redirect="1"
+    ... ''')
+    HTTP/1.1 200 Ok
+    ...
 
 
 The redirection also works for URLs below the root, and with query

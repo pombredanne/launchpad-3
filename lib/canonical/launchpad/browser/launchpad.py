@@ -448,6 +448,14 @@ class LaunchpadRootNavigation(Navigation):
         return MergedCalendar()
 
     def _getBetaRedirectionView(self):
+        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
+            return None
+
+        # If we are looking at the front page, don't redirect:
+        if self.request['PATH_INFO'] == '/':
+            return None
+        
         # If no redirection host is set, don't redirect.
         mainsite_host = config.launchpad.vhosts.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
