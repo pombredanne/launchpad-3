@@ -22,7 +22,8 @@ from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
 
 
 def utf8(x):
@@ -266,7 +267,7 @@ def saltFromDigest(digest):
 
 class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorageV2"""
-    implements(IUserDetailsStorageV2)
+    implements(IHostedBranchStorage, IUserDetailsStorageV2)
     
     def __init__(self, connectionPool):
         """Constructor.
@@ -369,6 +370,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         }
 
     def getBranchesForUser(self, personID):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._getBranchesForUserInteraction, personID)
 
@@ -399,6 +401,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return branches
 
     def fetchProductID(self, productName):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._fetchProductIDInteraction, productName)
 
@@ -417,6 +420,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return productID
 
     def createBranch(self, personID, productID, branchName):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._createBranchInteraction, personID, productID,
                   branchName)
