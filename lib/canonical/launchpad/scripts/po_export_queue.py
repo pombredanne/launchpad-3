@@ -7,6 +7,7 @@ import tempfile
 import textwrap
 from StringIO import StringIO
 
+from psycopg import ProgrammingError
 from zope.component import getUtility
 
 from canonical.config import config
@@ -14,13 +15,10 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
-    MOCompiler, MOCompilationError, RosettaWriteTarFile)
-from canonical.launchpad.components.poparser import (
-    POInvalidInputError)
+    MOCompiler, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
-from canonical.librarian.interfaces import LibrarianFailure
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -360,10 +358,18 @@ def process_single_object_request(obj, format):
 
     try:
         result.url = handler.get_librarian_url()
-    except (LibrarianFailure, POInvalidInputError, MOCompilationError):
+    except (KeyboardInterrupt, SystemExit):
+        # We should never catch KeyboardInterrupt or SystemExit.
+        raise
+    except ProgrammingError:
+        # It's a DB exception, we don't catch it either, the export
+        # should be done again in a new transaction.
+        raise
+    except:
+        # The export for the current entry failed with an unexpected error, we
+        # add the entry to the list of errors.
         result.add_failure(obj)
-        # The export for the current entry failed, we can remove the specific
-        # logger to catch warnings.
+        # We can remove the specific logger to catch warnings.
         result.remove_warnings_logger()
         return result
     else:
@@ -398,7 +404,16 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except (LibrarianFailure, POInvalidInputError, MOCompilationError):
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch KeyboardInterrupt or SystemExit.
+            raise
+        except ProgrammingError:
+            # It's a DB exception, we don't catch it either, the export
+            # should be done again in a new transaction.
+            raise
+        except:
+            # The export for the current entry failed with an unexpected error, we
+            # add the entry to the list of errors.
             result.add_failure(filename)
         else:
             result.add_success(filename)
@@ -453,24 +468,23 @@ def process_queue(transaction_manager, logger):
             return
 
         person, potemplate, objects, format = request
-        logger.debug('Exporting objects for person %d, PO template %d' %
-            (person.id, potemplate.id))
+        logger.debug('Exporting objects for %s, related to template %s' % (
+            person.displayname, potemplate.displayname))
 
         try:
             process_request(person, objects, format)
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
-        except:
-            # If something unexpected goes wrong, we shouldn't break other
-            # exports.
+        except ProgrammingError:
+            # We had a DB error, we don't try to recover it here, just exit
+            # from the script and next run will retry the export.
             logger.error(
-                "An exception was raised when exporting files for %s" % (
+                "A DB exception was raised when exporting files for %s" % (
                     person.displayname),
                 exc_info=True)
             transaction_manager.abort()
-            transaction_manager.begin()
-
+            break
 
         # This is here in case we need to process the same file twice in the
         # same queue run. If we try to do that all in one transaction, the

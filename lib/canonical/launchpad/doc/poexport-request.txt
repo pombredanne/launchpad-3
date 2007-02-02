@@ -4,6 +4,9 @@ Rosetta PO Export Request Queue
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
@@ -40,8 +43,7 @@ Here's the stuff they're going to request.
 
 And here's them making the request.
 
-  >>> from canonical.launchpad.database import POExportRequestSet
-  >>> request_set = POExportRequestSet()
+  >>> request_set = getUtility(IPOExportRequestSet)
   >>> request_set.addRequest(person, None, [ca, cs])
 
 Now we request that the queue be processed.
@@ -52,7 +54,8 @@ Now we request that the queue be processed.
 
   >>> from canonical.launchpad.scripts.po_export_queue import process_queue
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template pmount in
+  Ubuntu Hoary package "pmount"
 
 We need to make sure the Librarian data has settled into place.
 
@@ -117,7 +120,8 @@ Now let's see what happens if one of the PO files is broken.
   >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [hr, ca])
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template
+  pmount in Ubuntu Hoary package "pmount"
 
   >>> transaction.commit()
 
@@ -154,7 +158,8 @@ files:
   >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [hr])
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template pmount in
+  Ubuntu Hoary package "pmount"
 
   >>> transaction.commit()
 
@@ -175,7 +180,8 @@ Let's try requesting an export in MO format:
   >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [ca], RosettaFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template pmount in
+  Ubuntu Hoary package "pmount"
 
   >>> transaction.commit()
 
@@ -222,12 +228,24 @@ Let's test the .mo compilation.
   ...
   MOCompilationError: ...
 
-Finally, test running the script directly to be sure the user has the correct
-rights.
-We need to request again some files:
+Finally, the code should work when executed from the script. This is a good
+way that the user used by the script has the needed rights to use the
+database.
 
-  >>> request_set = POExportRequestSet()
+
+  # We need to request again some files.
+  # Some are for distroreleases.
+  >>> ca.potemplate.distrorelease is None
+  False
+  >>> cs.potemplate.distrorelease is None
+  False
   >>> request_set.addRequest(person, None, [ca, cs])
+
+  # And others are for productseries.
+  >>> product_template = potemplate.get(1)
+  >>> product_template.productseries is None
+  False
+  >>> request_set.addRequest(person, product_template)
   >>> transaction.commit()
 
 And run the script.
@@ -242,7 +260,10 @@ And run the script.
   >>> (output, empty) = process.communicate()
   >>> print output
   INFO    creating lockfile
-  DEBUG   Exporting objects for person 1, PO template 2
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
+  in Ubuntu Hoary package "pmount"
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template
+  evolution-2.2 in Evolution trunk
   INFO    Done.
   DEBUG   Removing lock file: /var/lock/rosetta-export-queue.lock
   <BLANKLINE>

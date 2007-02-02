@@ -179,8 +179,8 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
             ),
-    'po_export_queue.txt': FunctionalDocFileSuite(
-            '../doc/po_export_queue.txt',
+    'poexport-queue.txt': FunctionalDocFileSuite(
+            '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'librarian.txt': FunctionalDocFileSuite(
