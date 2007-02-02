@@ -498,7 +498,7 @@
         <description>
             Rosetta-specific configuration options
         </description>
-        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="no" />
+        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="yes" />
         <section name="*" type="poimport" attribute="poimport" required="no" />
         <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
@@ -508,7 +508,7 @@
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
