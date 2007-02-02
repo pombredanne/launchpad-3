@@ -29,6 +29,7 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -359,13 +360,15 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         via_specs = MentoringOffer.select('''
             Specification.product = %s AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id),
+            ''' % sqlvalues(self.id) + """ AND NOT
+            (""" + Specification.completeness_clause +")",
             clauseTables=['Specification'],
             distinct=True)
         via_bugs = MentoringOffer.select('''
             BugTask.product = %s AND
             BugTask.bug = MentoringOffer.bug
-            ''' % sqlvalues(self.id),
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause + ")",
             clauseTables=['BugTask'],
             distinct=True)
         return via_specs.union(via_bugs)

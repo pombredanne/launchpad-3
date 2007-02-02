@@ -200,13 +200,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         via_specs = MentoringOffer.select('''
             Specification.distribution = %s AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id),
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + Specification.completeness_clause + ")",
             clauseTables=['Specification'],
             distinct=True)
         via_bugs = MentoringOffer.select('''
             BugTask.distribution = %s AND
             BugTask.bug = MentoringOffer.bug
-            ''' % sqlvalues(self.id),
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause +")",
             clauseTables=['BugTask'],
             distinct=True)
         return via_specs.union(via_bugs)

@@ -46,7 +46,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
-    BugAttachmentType, DistributionReleaseStatus)
+    BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -453,6 +453,13 @@ class Bug(SQLBase):
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
             self.linkCVE(cve)
+
+    # Several other classes need to generate lists of bugs, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+        BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
     def isMentor(self, user):
         """See IBug."""

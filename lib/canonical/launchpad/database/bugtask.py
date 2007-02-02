@@ -158,6 +158,17 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    # Several other classes need to generate lists of bug tasks, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+                BugTask.status IN ( %d, %d )
+                """ % (
+                    dbschema.BugTaskStatus.REJECTED.value,
+                    dbschema.BugTaskStatus.FIXRELEASED.value,
+                    )
+
     @property
     def conjoined_master(self):
         """See IBugTask."""
