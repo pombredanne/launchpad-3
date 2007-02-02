@@ -398,7 +398,7 @@ def process_multi_object_request(objects, format):
 
         try:
             contents = handler.get_contents()
-        except (LibrarianFailure, POInvalidInputError):
+        except (LibrarianFailure, POInvalidInputError, MOCompilationError):
             result.add_failure(filename)
         else:
             result.add_success(filename)
@@ -456,13 +456,26 @@ def process_queue(transaction_manager, logger):
         logger.debug('Exporting objects for person %d, PO template %d' %
             (person.id, potemplate.id))
 
-        process_request(person, objects, format)
+        try:
+            process_request(person, objects, format)
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch KeyboardInterrupt or SystemExit.
+            raise
+        except:
+            # If something unexpected goes wrong, we shouldn't break other
+            # exports.
+            logger.error(
+                "An exception was raised when exporting files for %s" % (
+                    person.displayname),
+                exc_info=True)
+            transaction_manager.abort()
+            transaction_manager.begin()
+
 
         # This is here in case we need to process the same file twice in the
         # same queue run. If we try to do that all in one transaction, the
         # second time we get to the file we'll get a Librarian lookup error
         # because files are not accessible in the same transaction as they're
         # created.
-
         transaction_manager.commit()
 

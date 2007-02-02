@@ -395,7 +395,7 @@ class ITicketSet(Interface):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
+                      language=None, sort=None):
         """Search tickets in any context.
 
         :search_text: A string that is matched against the ticket
@@ -405,10 +405,17 @@ class ITicketSet(Interface):
         :status: A sequence of TicketStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
         :sort:  An attribute of TicketSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
         """
+
+    def getTicketLanguages():
+        """Return the set of ILanguage used by all launchpad tickets."""
 
 
 # These schemas are only used by browser/ticket.py and should really live
