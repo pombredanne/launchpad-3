@@ -105,6 +105,8 @@ Foo Bar, and one to Ubuntu Team:
 
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print edit_notification['Subject']
+    [Support #...]: Installer doesn't work on a Mac
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Support request #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
@@ -208,7 +210,7 @@ workflow action done.
     ['support@ubuntu.com', 'test@canonical.com']
     >>> support_notification = notifications[0]
     >>> support_notification['Subject']
-    "[Support #...]: Re: Installer doesn't work on a Mac"
+    "Re: [Support #...]: Installer doesn't work on a Mac"
 
 For workflow notifications, the content of the notification is slightly
 different based on whether you are the request owner or somebody else.
@@ -321,16 +323,29 @@ Notification received by the owner:
 === Notifications for reopen() ===
 
 (This example will also show that comments are wrapped for 72 columns
-display)
+display.)
 
     >>> login('test@canonical.com')
-    >>> message = ubuntu_ticket.reopen(
-    ...     "I really need some help. I tried googling a bit but didn't find "
-    ...     "anything useful.\n\nPlease provide some help to a newbie.")
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> email_msg = getUtility(IMessageSet).fromText(
+    ...     subject=(
+    ...         "Re: [Support %d]: Installer doesn't work on "
+    ...         "a Mac" % ubuntu_ticket.id),
+    ...     content=(
+    ...         "I really need some help. I tried googling a bit but didn't "
+    ...         "find anything useful.\n\nPlease provide some help to a "
+    ...         "newbie."),
+    ...     owner=sample_person)
+    >>> message = ubuntu_ticket.reopen(email_msg)
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
+
+Notice also how the 'Re' handling is handled nicely:
+
+    >>> print notifications[0]['Subject']
+    Re: [Support #...]: Installer doesn't work on a Mac
 
 Default notification when the owner reopens the request:
 

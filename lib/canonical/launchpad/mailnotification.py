@@ -851,7 +851,7 @@ def notify_bug_attachment_added(bugattachment, event):
 
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
-    
+
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
@@ -878,7 +878,7 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
         else:
             templatename = 'new-member-notification.txt'
-        
+
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
@@ -1116,11 +1116,18 @@ class TicketModifiedDefaultNotification(TicketNotification):
         """When a comment is added, its title is used as the subject,
         otherwise the ticket title is used.
         """
+        prefix = '[Support #%s]: ' % self.ticket.id
         if self.new_message:
-            return '[Support #%s]: %s' % (
-                self.ticket.id, self.new_message.subject)
+            subject = self.new_message.subject
+            if prefix in self.new_message.subject:
+                return subject
+            elif subject[0:4] in ['Re: ', 'RE: ']:
+                # Place prefix after possible reply prefix.
+                return subject[0:4] + prefix + subject[4:]
+            else:
+                return prefix + subject
         else:
-            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+            return prefix + self.ticket.title
 
     def shouldNotify(self):
         """Only send a notification when a message was added or some
