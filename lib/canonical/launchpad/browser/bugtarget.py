@@ -10,7 +10,9 @@ __all__ = [
     "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FileBugInPackageView"
+    "FileBugInPackageView",
+    "ProjectFileBugGuidedView",
+    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -32,9 +34,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
-    ITemporaryStorageManager)
+    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    IProjectBugAddForm, ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
@@ -130,20 +132,6 @@ class FileBugViewBase(LaunchpadFormView):
 
         return {'packagename': self.context.name}
 
-    def getProductOrDistroFromContext(self):
-        """Return the IProduct or IDistribution for this context."""
-        context = self.context
-
-        if IDistribution.providedBy(context) or IProduct.providedBy(context):
-            return context
-        else:
-            assert IDistributionSourcePackage.providedBy(context), (
-                "Expected a bug filing context that provides one of "
-                "IDistribution, IProduct, or IDistributionSourcePackage. "
-                "Got: %r" % context)
-
-            return context.distribution
-
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
         if self.widget_errors.get("packagename"):
@@ -195,7 +183,19 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        return self.getProductOrDistroFromContext().official_malone
+        if IProject.providedBy(self.context):
+            products_using_malone = [
+                product for product in self.context.products
+                if product.official_malone]
+            return len(products_using_malone) > 0
+        else:
+            return self.getMainContext().official_malone
+
+    def getMainContext(self):
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -223,6 +223,8 @@ class FileBugViewBase(LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
+        elif IProject.providedBy(context):
+            context = data['product']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -433,7 +435,13 @@ class FileBugGuidedView(FileBugViewBase):
         title = self.getSearchText()
         if not title:
             return []
-        search_context = self.getProductOrDistroFromContext()
+        search_context = self.getMainContext()
+        if IProject.providedBy(search_context):
+            assert self.widgets['product'].hasValidInput(), (
+                "This method should be called only when we know which"
+                " product the user selected.")
+            search_context = self.widgets['product'].getInputValue()
+
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         else:
@@ -510,6 +518,36 @@ class FileBugGuidedView(FileBugViewBase):
 
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
+
+
+class ProjectFileBugGuidedView(FileBugGuidedView):
+    """Guided filebug pages for IProject."""
+
+    # Make inheriting the base class' actions work.
+    actions = FileBugGuidedView.actions
+    schema = IProjectBugAddForm
+
+    field_names = ['product', 'title', 'comment']
+
+    @cachedproperty
+    def most_common_bugs(self):
+        """Return a list of the most duplicated bugs."""
+        assert self.widgets['product'].hasValidInput(), (
+            "This method should be called only when we know which"
+            " product the user selected.")
+        selected_product = self.widgets['product'].getInputValue()
+        return selected_product.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+
+class ProjectFileBugAdvancedView(FileBugAdvancedView):
+    """Advanced filebug page for IProject."""
+
+    # Make inheriting the base class' actions work.
+    actions = FileBugAdvancedView.actions
+    schema = IProjectBugAddForm
+
+    field_names = ['product', 'title', 'comment', 'security_related']
 
 
 class FileBugInPackageView(FileBugViewBase):
