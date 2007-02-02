@@ -11,7 +11,8 @@ from zope.interface.verify import verifyObject
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IBranchDetailsStorage)
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
@@ -37,6 +38,10 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
+        self.failUnless(verifyObject(IUserDetailsStorageV2,
+                                     DatabaseUserDetailsStorageV2(None)))
+        self.failUnless(verifyObject(IHostedBranchStorage,
+                                     DatabaseUserDetailsStorageV2(None)))
 
     def test_getUser(self):
         # Getting a user should return a valid dictionary of details

@@ -32,6 +32,28 @@ def _enable_sftp_in_urlparse():
 # Extend urlparse to support sftp at module load time.
 _enable_sftp_in_urlparse()
 
+def _enable_bzr_ssh_in_urlparse():
+    """Teach the urlparse module about the bzr+ssh scheme.
+    
+    That allows the helpers in this module to operate usefully on bzr+ssh URLs
+    
+    >>> urlparse('bzr+ssh://example.com/code/branch')
+    ('bzr+ssh', 'example.com', '/code/branch', '', '', '')
+    """
+    if 'bzr+ssh' not in urlparse_module.uses_netloc:
+        urlparse_module.uses_netloc.append('bzr+ssh')
+    if 'bzr+ssh' not in urlparse_module.uses_relative:
+        urlparse_module.uses_relative.append('bzr+ssh')
+
+
+# Extend this version of urlparse (used by the launchpad validators)
+# to support bzr+ssh at module load time
+# note that additional URL checking is done inside the database
+# (database/schema/trusted.sql, the valid_absolute_url function)
+# the database code uses plain stdlib urlparse, not this customized
+# version, so be sure to teach trusted.sql about any new URL
+# schemes which are added here.
+_enable_bzr_ssh_in_urlparse()
 
 def urlappend(baseurl, path):
     """Append the given path to baseurl.

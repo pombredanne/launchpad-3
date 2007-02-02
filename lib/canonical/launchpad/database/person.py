@@ -1105,11 +1105,6 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def activities(self):
-        """See IPerson."""
-        return Karma.selectBy(person=self)
-
-    @property
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
@@ -1443,7 +1438,8 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s"""
+            POTemplate.distrorelease = %s AND
+            POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distrorelease),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,
