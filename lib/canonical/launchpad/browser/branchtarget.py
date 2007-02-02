@@ -11,13 +11,15 @@ __all__ = [
 
 import operator
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (IPerson, IProduct,
-                                            IBranchLifecycleFilter)
+from canonical.launchpad.interfaces import (
+    IBranchLifecycleFilter, IBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -43,8 +45,10 @@ class BranchTargetView(LaunchpadFormView):
     @cachedproperty
     def branches(self):
         """All branches related to this target, sorted for display."""
-        # A cache to avoid repulling data from the database, which can be
-        # particularly expensive
+        # Separate the public property from the underlying virtual method.
+        return self._branches()
+
+    def _branches(self):
         branches = self.context.branches
         items = shortlist(branches, 8000, hardlimit=10000)
         return sorted(items, key=operator.attrgetter('sort_key'))
@@ -62,7 +66,7 @@ class BranchTargetView(LaunchpadFormView):
         if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
             branches = self.branches
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
-            branches = [branch for branch in self.context.branches
+            branches = [branch for branch in self.branches
                         if branch.lifecycle_status in self.CURRENT_SET]
         else:
             # BranchLifecycleStatus and BranchLifecycleStatusFilter
@@ -70,7 +74,7 @@ class BranchTargetView(LaunchpadFormView):
             # status to compare against, we know that we can just
             # index into the enumeration with the value.
             show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
-            branches = [branch for branch in self.context.branches
+            branches = [branch for branch in self.branches
                         if branch.lifecycle_status == show_status]
         return sorted(branches, key=operator.attrgetter('sort_key'))
 
@@ -164,6 +168,20 @@ class PersonBranchesView(BranchTargetView):
     The context must provide IPerson.
     """
 
+    def _branches(self):
+        """All branches related to this target, sorted for display."""
+        # A cache to avoid repulling data from the database, which can be
+        # particularly expensive
+        branches = set(self.context.branches)
+        branches.update(self._team_branches_set)
+        items = shortlist(branches, 8000, hardlimit=10000)
+        return sorted(items, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def _team_branches_set(self):
+        teams = self.context.teams_participated_in
+        return set(getUtility(IBranchSet).getBranchesForOwners(teams))
+
     @cachedproperty
     def _authored_branch_set(self):
         """Set of branches authored by the person."""
@@ -197,6 +215,8 @@ class PersonBranchesView(BranchTargetView):
             return {'title': 'Author', 'sortkey': 10}
         if branch in self._registered_branch_set:
             return {'title': 'Registrant', 'sortkey': 20}
+        if branch in self._team_branches_set:
+            return {'title': 'Team Branch', 'sortkey': 40}
         assert branch in self._subscribed_branch_set, (
             "Unable determine role of person %r for branch %r" % (
             self.context.name, branch.unique_name))
