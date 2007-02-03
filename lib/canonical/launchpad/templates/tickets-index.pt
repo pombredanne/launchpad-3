@@ -20,7 +20,7 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <form class="central" action="/+tickets" method="get">
+                        <form class="central" action="+tickets" method="get">
                           <table style="margin-left: 0;">
                             <tbody>
                               <tr>
@@ -28,12 +28,13 @@
                                   <input
                                     id="text"
                                     type="text"
-                                    name="text"
+                                    name="field.search_text"
                                     size="50"
                                   />
                                 </td>
                                 <td>
                                   <input
+                                    name="field.actions.search"
                                     type="submit"
                                     value="Search Questions"
                                   />
