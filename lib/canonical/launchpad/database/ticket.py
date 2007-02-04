@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -485,11 +486,17 @@ class TicketSet:
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
-    def searchTickets(self, search_text=None,
+    def searchTickets(self, search_text=None, language=None,
                       status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketSet"""
         return TicketSearch(
-            search_text=search_text, status=status, sort=sort).getResults()
+            search_text=search_text, status=status, language=language,
+            sort=sort).getResults()
+
+    def getTicketLanguages(self):
+        """See ITicketSet"""
+        return set(Language.select('Language.id = Ticket.language',
+            clauseTables=['Ticket'], distinct=True))
 
     @staticmethod
     def new(title=None, description=None, owner=None,

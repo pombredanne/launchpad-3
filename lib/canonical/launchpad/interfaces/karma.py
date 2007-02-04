@@ -211,8 +211,6 @@ class IKarmaContext(Interface):
         """Return a dict mapping categories to the top contributors (and their
         karma) of this context on that specific category.
 
-        This context must implement either IProduct or IDistribution.
-
         For each category, limit the number of contributors returned to the
         given limit, if it's not None.
 
@@ -222,8 +220,6 @@ class IKarmaContext(Interface):
     def getTopContributors(category=None, limit=None):
         """Return the people with the highest amount of Karma, and their
         karma, on this context.
-
-        The given context must implement either IProduct or IDistribution.
 
         The number of people returned is limited to the given limit, if it's
         not None.

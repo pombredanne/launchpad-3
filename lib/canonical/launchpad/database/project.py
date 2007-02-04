@@ -24,6 +24,7 @@ from canonical.lp.dbschema import (
     SpecificationFilter)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -32,7 +33,7 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 
-class Project(SQLBase, BugTargetBase):
+class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner)

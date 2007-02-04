@@ -441,10 +441,10 @@ we will need it later for other tests.
    ...
    ...     orig_templates = sorted(
    ...         orig_distrorelease.currentpotemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...     dest_templates = sorted(
    ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
    ...     output_text = u''
    ...     for i in range(len(orig_templates)):
