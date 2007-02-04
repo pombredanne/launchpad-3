@@ -21,11 +21,13 @@ address {font-style: inherit;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
 kbd {
+  background-color: #ddd;
   border: 1px solid;
   border-color: white gray gray white;
   color: black;
-  background-color: #ddd;
+  margin: 1px;
   min-width: 1em;
+  outline: 1px #666;
 }
 label {white-space: nowrap;}
 legend {font-weight: bold;}
@@ -43,7 +45,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
-
+table {border-collapse: collapse;}
 thead {vertical-align: bottom;}
 tr {vertical-align: top;}
 th {text-align: right;}
@@ -380,6 +382,9 @@ ul#applicationchooser li:hover {
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
+
+/* --- Portlets --- */
+
 #portlets {
   float: left;
   width: 200px;
@@ -463,20 +468,9 @@ ul#applicationchooser li#applicationchooser_selected {
   background-color: #A3A3A3;
   text-decoration: none;
 }
-#XXXportlets .portlet ul li a {
-  float: left;
-  width: 180px;
-  height: auto !important;
-  display: block;
-  background-color: #EBEBEB;
-  padding: 3px 6px 3px 6px !important;
-  color: #717171;
-  border-bottom: 1px solid #D2D2D2;
-}
 #portlets .portlet ul li a:hover {
-  background-color: #EBEBEB;
+  background-color: #fff;
   text-decoration: underline;
-  color: #414141;
 }
 #portlets .portlet.active h2 a {
   background-color: #9BC11B;
@@ -647,21 +641,23 @@ ul#applicationchooser li#applicationchooser_selected {
 #singlecolumn #mainarea {
   margin-left: 0;
 }
+#mainarea {position: relative; top: -10px;} /* reduces pillargotchi~tab gap */
+* html #mainarea {top: 0;}
+#singlecolumn #mainarea {top: -20px;}
+* html #singlecolumn #mainarea {top: 0;}
+#singlecolumn h1 {
+  padding-bottom: 0;
+  padding-top: 1em;
+  position: relative;
+  z-index: 1;
+}
+* html #singlecolumn h1 {padding-top: 0;}
 #mainarea div.t {
   width: 100%;
   background-image: url(mainarea_left.gif);
   background-repeat: repeat-y;
   background-position: top left;
-  position: relative;
-  top: -10px;
 }
-* html #mainarea div.t {
-  top: 0;
-}
-#singlecolumn h1 {padding-top: 1em; position: relative; z-index: 1;}
-* html #singlecolumn h1 {padding-top: 0;}
-#singlecolumn div.t {top: -20px;}
-
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -1111,7 +1107,7 @@ body {
   width: 200px;
 }
 #singlecolumn {
-  margin: 40px 0px 20px 38px;
+  margin: 20px 0px 20px 38px;
 }
 
 /* ====== Content area styles ====== */
@@ -1253,48 +1249,22 @@ fieldset {
 
 /* === Tables === */
 
-table {
-  border-collapse: collapse;
-}
-table.latest th, table.latest td {
-  padding-bottom: 2em;
-}
-table.summary {
-  margin: 0 auto;
-}
-table.summary tr {
-  border: dotted #ccc;
-  border-width: 1px 0;
-}
-table.summary td {
-  padding-left: 0.5em;
-}
+table {margin: 0 auto; with: 100%;}
+table.latest th, table.latest td {padding-bottom: 2em;}
+table.summary {margin: 0 auto;}
+table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;
   margin: 0;
   padding: 0;
 }
-th {
-  text-align: right;
-}
-th, td {
-  padding: 0.25em;
-}
-th.icon, td.icon {
-  vertical-align: top;
-  white-space: nowrap;
-  width: 1px;
-}
-th.icon.left, td.icon.left {
-  padding-right: 0;
-}
-th.icon.right, td.icon.right {
-  padding-left: 0;
-}
-th.nowrap, td.nowrap {
-  white-space: nowrap;
-}
-thead th, tfoot th, table.contributions th {text-align: left;}
+th, td {padding: 0.25em;}
+th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
+th.icon.left, td.icon.left {padding-right: 0;}
+th.icon.right, td.icon.right {padding-left: 0;}
+th.nowrap, td.nowrap {white-space: nowrap;}
+tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
@@ -1304,51 +1274,51 @@ table.contributions td {vertical-align: middle; width: 16px;}
 table.listing {
   margin-top: 0.5em;
 }
-table.listing, table.listing>tbody {
-  border: 1px solid #d2d2d2;
+
+/* --- Listing tables --- */
+
+table.listing {margin: 1em 0;}
+table.listing, table.listing tbody {
+  border-bottom: 1px solid #d2d2d2;
   width: 100%;
 }
-table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
+table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
   background-color: #fff;
 }
-table.listing tfoot td {
-  border: 1px solid #d2d2d2;
-}
-table.listing>thead>tr>td {
-  border: none;
-}
-tr.highlight { /* highlight specific table entry */
-  background-color: #fdd;
-}
-table.listing>tr.note, table.listing>tbody>tr.note {
-  font-size: smaller;
-}
-tr.amount, td.amount {
-  text-align: right;
-}
-table.listing th, table.listing td {
-  padding: 0.125em 0.25em;
-}
-table.listing th {
-  font-size: 1.125em;
-  white-space: nowrap;
-}
-table.listing>tr>td, table.listing>tbody>tr>td {
-  border: 1px #d2d2d2;
-  border-style: dotted none none none;
-}
-table.listing>tr.note>td, table.listing>tbody>tr.note>td {
-  border-style: none;
-}
-table.listing img {
-  vertical-align: middle;
-}
-table.listing tr.secondary>th, table.listing tr.secondary td {
-  border-top: none;
-}
+table.listing tfoot td {border: 1px solid #d2d2d2;}
+table.listing thead td {border: none;}
+tr.highlight {background-color: #ff9;}
+table.listing tr.note {font-size: smaller;}
+tr.amount, td.amount {text-align: right;}
+table.listing th, table.listing td {padding: 0.25em;}
+table.listing th {font-size: 1.125em; white-space: nowrap;}
+table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
+table.listing tr.note td {border-style: none;}
+table.listing img {vertical-align: middle;}
+table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
 table.duplicate.listing * {color: #999;}
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {
-  display: none;
+
+/* --- Sortable tables --- */
+
+table.sortable a.sortheader {
+  color:#666666;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
 }
+table.sortable img.sortarrow {
+  padding-left: 2px;
+}
+th.ascending {
+  background-image: url(/@@/arrowDown);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+th.descending {
+  background-image: url(/@@/arrowUp);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {display: none;}
