@@ -38,7 +38,6 @@ class BazaarApplicationView:
         self.seriesset = getUtility(IProductSeriesSet)
 
     def branch_count(self):
-        """List of all branches in the system."""
         return getUtility(IBranchSet).count()
 
     def product_count(self):

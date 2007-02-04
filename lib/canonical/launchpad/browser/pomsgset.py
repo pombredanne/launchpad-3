@@ -48,16 +48,21 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 # Translation-related formatting functions
 #
 
-def contract_rosetta_tabs(text):
-    """Replace Rosetta representation of tabs with their native characters."""
-    return helpers.text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
+def contract_rosetta_escapes(text):
+    """Replace Rosetta escape sequences with the real characters."""
+    return helpers.text_replaced(text, {'[tab]': '\t',
+                                        r'\[tab]': '[tab]',
+                                        '[nbsp]' : u'\u00a0',
+                                        r'\[nbsp]' : '[nbsp]' })
 
 
-def expand_rosetta_tabs(unicode_text):
-    """Replace tabs with their Rosetta representations."""
-    return helpers.text_replaced(unicode_text,
-                                 {u'\t': TranslationConstants.TAB_CHAR,
-                                  u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED})
+def expand_rosetta_escapes(unicode_text):
+    """Replace characters needing a Rosetta escape sequences."""
+    escapes = {u'\t': TranslationConstants.TAB_CHAR,
+               u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED,
+               u'\u00a0' : TranslationConstants.NO_BREAK_SPACE_CHAR,
+               u'[nbsp]' : TranslationConstants.NO_BREAK_SPACE_CHAR_ESCAPED }
+    return helpers.text_replaced(unicode_text, escapes)
 
 
 def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
@@ -115,7 +120,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
             lines[i] = formatted_line
 
-    return expand_rosetta_tabs(newline.join(lines))
+    return expand_rosetta_escapes(newline.join(lines))
 
 
 def convert_newlines_to_web_form(unicode_text):
@@ -685,7 +690,7 @@ class BaseTranslationView(LaunchpadView):
 
             # Get new value introduced by the user.
             raw_value = form[msgset_ID_LANGCODE_translation_PLURALFORM_new]
-            value = contract_rosetta_tabs(raw_value)
+            value = contract_rosetta_escapes(raw_value)
 
             if self.user_is_official_translator:
                 # Let's see the section that we are interested on based on the

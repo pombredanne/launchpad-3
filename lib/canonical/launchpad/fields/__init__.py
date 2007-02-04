@@ -4,7 +4,7 @@ from StringIO import StringIO
 from textwrap import dedent
 
 from zope.schema import (
-    Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
     IBytes, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
@@ -111,6 +111,20 @@ class ITag(ITextLine):
 
     A text line which can be used as a simple text tag.
     """
+
+
+class IURIField(ITextLine):
+    """A URI.
+
+    A text line that holds a URI.
+    """
+    trailing_slash = Bool(
+        title=_('Whether a trailing slash is required for this field'),
+        required=False,
+        description=_('If set to True, then the path component of the URI '
+                      'must end in a slash.  If set to False, then the path '
+                      'component must not end in a slash.  If set to None, '
+                      'then no check is performed.'))
 
 
 class IBaseImageUpload(IBytes):
@@ -340,6 +354,66 @@ class ProductBugTracker(Choice):
         else:
             ob.official_malone = False
             ob.bugtracker = value
+
+
+class URIField(TextLine):
+    implements(IURIField)
+
+    def __init__(self, allowed_schemes=(), allow_userinfo=True,
+                 allow_port=True, allow_query=True, allow_fragment=True,
+                 trailing_slash=None, **kwargs):
+        super(URIField, self).__init__(**kwargs)
+        self.allowed_schemes = set(allowed_schemes)
+        self.allow_userinfo = allow_userinfo
+        self.allow_port = allow_port
+        self.allow_query = allow_query
+        self.allow_fragment = allow_fragment
+        self.trailing_slash = trailing_slash
+
+    def _validate(self, value):
+        super(URIField, self)._validate(value)
+
+        # Local import to avoid circular imports:
+        from canonical.launchpad.webapp.uri import URI, InvalidURIError
+        try:
+            uri = URI(value)
+        except InvalidURIError, e:
+            raise LaunchpadValidationError(str(e))
+        
+        if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
+            raise LaunchpadValidationError(
+                'The URI scheme "%s" is not allowed.  Only URIs with '
+                'the following schemes may be used: %s'
+                % (uri.scheme, ', '.join(sorted(self.allowed_schemes))))
+
+        if not self.allow_userinfo and uri.userinfo is not None:
+            raise LaunchpadValidationError(
+                'A username may not be specified in the URI.')
+
+        if not self.allow_port and uri.port is not None:
+            raise LaunchpadValidationError(
+                'Non-default ports are not allowed.')
+
+        if not self.allow_query and uri.query is not None:
+            raise LaunchpadValidationError(
+                'URIs with query strings are not allowed.')
+
+        if not self.allow_fragment and uri.fragment is not None:
+            raise LaunchpadValidationError(
+                'URIs with fragment identifiers are not allowed.')
+
+        if self.trailing_slash is not None:
+            has_slash = uri.path.endswith('/')
+            if self.trailing_slash:
+                if not has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must end with a slash.')
+            else:
+                # Empty paths are normalised to a single slash, so
+                # allow that.
+                if uri.path != '/' and has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must not end with a slash.')
 
 
 class FieldNotBoundError(Exception):
