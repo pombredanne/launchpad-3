@@ -33,7 +33,7 @@
           </a>
 
           <!-- BugBranch badges -->
-          <tal:bugbranch repeat="branch python:context.bug_branches[bugtask]">
+          <tal:bugbranch repeat="branch python:view.bug_branches[bugtask]">
             <a tal:attributes="href branch/fmt:url;
                                title branch/displayname">
               <img src="/@@/branch" />

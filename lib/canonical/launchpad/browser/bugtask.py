@@ -1362,8 +1362,10 @@ class BugTaskSearchListingView(LaunchpadView):
             bug_id_mapping.setdefault(
                 bugbranch.bug.id, []).append(bugbranch.branch)
         context.bug_branches = {}
+        self.bug_branches = {}
         for task in batch:
             context.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
+            self.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
