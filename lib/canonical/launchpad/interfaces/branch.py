@@ -20,28 +20,35 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, Whiteboard
+from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.validation import valid_branch_url
 
-class BranchUrlField(TextLine):
+class BranchURIField(URIField):
 
-    def _validate(self, url):
+    def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        url = url.rstrip('/')
-        TextLine._validate(self, url)
-        if IBranch.providedBy(self.context) and self.context.url == url:
-            return # url was not changed
-        if (url + '/').startswith(config.launchpad.supermirror_root):
+        from canonical.launchpad.webapp.uri import URI
+
+        super(BranchURIField, self)._validate(value)
+        # URIField has already established that we have a valid URI
+        uri = URI(value)
+        supermirror_root = URI(config.launchpad.supermirror_root)
+        if supermirror_root.contains(uri):
             message = _(
                 "Don't manually register a bzr branch on "
                 "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
                 "is registered automatically.")
             raise LaunchpadValidationError(message)
-        branch = getUtility(IBranchSet).getByUrl(url)
+
+        if IBranch.providedBy(self.context) and self.context.url == str(uri):
+            return # url was not changed
+
+        branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
                 "The bzr branch <a href=\"%s\">%s</a> is already registered "
@@ -67,13 +74,17 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
-    url = BranchUrlField(
+    url = BranchURIField(
         title=_('Branch URL'), required=True,
+        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+        allow_userinfo=False,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False,
         description=_("The URL where the Bazaar branch is hosted. This is "
             "the URL used to checkout the branch. The only branch format "
             "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."),
-        constraint=valid_webref)
+            "www.bazaar-vcs.org for more information."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -116,10 +127,12 @@ class IBranch(IHasOwner):
 
 
     # Home page attributes
-    home_page = TextLine(
+    home_page = URIField(
         title=_('Web Page'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
         description=_("The URL of a web page describing the branch, "
-                      "if there is such a page."), constraint=valid_webref)
+                      "if there is such a page."))
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
     home_page_locked = Bool(
@@ -213,6 +226,9 @@ class IBranch(IHasOwner):
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
     def has_subscription(person):
         """Is this person subscribed to the branch?"""
 
@@ -271,6 +287,12 @@ class IBranchSet(Interface):
 
     all = Attribute("All branches in the system.")
 
+    def count():
+        """Return the number of branches in the database."""
+
+    def countBranchesWithAssociatedBugs():
+        """Return the number of branches that have bugs associated."""
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 
@@ -279,7 +301,7 @@ class IBranchSet(Interface):
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None):
+            summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
     def getByUniqueName(self, unique_name, default=None):
@@ -299,6 +321,26 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getRecentlyChangedBranches(branch_count):
+        """Return a list of branches that have been recently updated.
+
+        The list will contain at most branch_count items, and excludes
+        branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyImportedBranches(branch_count):
+        """Return a list of branches that have been recently imported.
+
+        The list will contain at most branch_count items, and only
+        has branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyRegisteredBranches(branch_count):
+        """Return a list of branches that have been recently registered.
+
+        The list will contain at most branch_count items.
+        """
 
     def getLastCommitForBranches(branches):
         """Return a map of branch to last commit time."""

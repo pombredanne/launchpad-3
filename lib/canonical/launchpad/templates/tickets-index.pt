@@ -11,6 +11,7 @@
         tal:content="structure context/@@+applicationbuttons/answers"
       />
       <div id="mainarea" class="tab-translations">
+        <h1>Answers</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -19,8 +20,7 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <h1>Answers</h1>
-                        <form class="central" action="/bugs" method="get">
+                        <form class="central" action="+tickets" method="get">
                           <table style="margin-left: 0;">
                             <tbody>
                               <tr>
@@ -28,12 +28,13 @@
                                   <input
                                     id="text"
                                     type="text"
-                                    name="text"
+                                    name="field.search_text"
                                     size="50"
                                   />
                                 </td>
                                 <td>
                                   <input
+                                    name="field.actions.search"
                                     type="submit"
                                     value="Search Questions"
                                   />
@@ -64,6 +65,13 @@
                                       type="text"
                                     />
                                   </label>
+
+        <input type="hidden" name="field.sort" value="by relevancy" />
+        <input type="hidden" name="field.status" value="Open" />
+        <input type="hidden" name="field.status" value="Needs information" />
+        <input type="hidden" name="field.status" value="Answered" />
+        <input type="hidden" name="field.status" value="Solved" />
+
                                 </td>
                                 <td>(<a href="choose">Choose&hellip;</a>)</td>
                               </tr>

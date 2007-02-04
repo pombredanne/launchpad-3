@@ -19,6 +19,7 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IBranchLifecycleFilter, IBranchSet, IBugBranchSet, IPerson, IProduct)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -51,7 +52,8 @@ class BranchTargetView(LaunchpadFormView):
         # A cache to avoid repulling data from the database, which can be
         # particularly expensive
         branches = self.context.branches
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+        items = shortlist(branches, 8000, hardlimit=10000)
+        return sorted(items, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
     def branch_bugs(self):
@@ -131,7 +133,7 @@ class BranchTargetView(LaunchpadFormView):
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            branches = self.branches
+            branches = self.context.branches
         else:
             url = self.request.getURL()
             if '+authoredbranches' in url:
@@ -141,8 +143,19 @@ class BranchTargetView(LaunchpadFormView):
             elif '+subscribedbranches' in url:
                 branches = self.context.subscribed_branches
             else:
-                branches = self.branches
-        for branch in branches:
+                branches = self.context.branches
+
+        # Currently 500 branches is causing a timeout in the rendering of
+        # the page template, and since we don't want it taking too long,
+        # we are going to limit it here to 250 until we add batching.
+        # This method is only called for the detailed listing pages,
+        # which include more embedded queries, and hence take longer.
+        # This is the reason for the different numbers above and here.
+        # We don't want to make them configurable as this might show
+        # intent that the solution will hang around when really it
+        # is a temporary fix.
+        #    -- Tim Penhey 2006-10-10
+        for branch in shortlist(branches, 200, hardlimit=250):
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
             else:

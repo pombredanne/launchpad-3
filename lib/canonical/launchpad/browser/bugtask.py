@@ -1597,6 +1597,17 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IDistributionSourcePackage(self.context, None)
 
+    def getBugsFixedElsewhereInfo(self):
+        """Return a dict with count and URL of bugs fixed elsewhere."""
+        fixed_elsewhere = self.context.searchTasks(
+            BugTaskSearchParams(self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            only_resolved_upstream=True, omit_dupes=True))
+        search_url = (
+            "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
+                canonical_url(self.context))
+        return dict(count=fixed_elsewhere.count(), url=search_url)
+
 
 class BugTargetView(LaunchpadView):
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""

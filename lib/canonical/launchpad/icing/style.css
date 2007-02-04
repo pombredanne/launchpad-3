@@ -1,67 +1,97 @@
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
+
+.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+.clearfix {display: inline-table;}
+/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hiding from MSIE for Mac */
+
+abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
+address {font-style: inherit;}
+* html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
 dt dfn {font-style: normal; font-weight: bold;}
+dd {margin-bottom: 1em;}
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ddd;
+  min-width: 1em;
+}
+label {white-space: nowrap;}
+legend {font-weight: bold;}
+legend legend {font-weight: normal;}
+.listbox { /* a scrolling list of checkboxes or radio buttons */
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
+  overflow: auto;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
+}
+
+thead {vertical-align: bottom;}
 tr {vertical-align: top;}
+th {text-align: right;}
+thead th, tr.thead th {text-align: center;}
+/* make <wbr> work with Opera */
+/* XXX: 20061026 jamesh Disabled since BjornT reported display problems */
+/* wbr:after {content: "\00200B"} */
 
 /* === Overall presentation === */
-body {
+
+html {
   position: relative;
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
+  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8pt;
   color: #656565;
-  margin: 0;
-  padding: 0;
   background-color: #FFFFFF;
 }
-dd {
-  margin-bottom: 1em;
-}
-td {
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 1em;
-  color: #656565;
-}
-body.smallText #wrapper {font-size: 1em;}  
-body.mediumText #wrapper {font-size: 1.2em;}  
-body.largeText #wrapper {font-size: 1.4em;}
-body.smallText #central_column {font-size: 1em;}  
-body.mediumText #central_column {font-size: 1.2em;}
-body.largeText #central_column {font-size: 1.4em;}
-:link {
-  color: #039;
-  text-decoration: none;
-} 
-:link:hover, :visited:hover {
-  text-decoration: underline;
-}
-:link:active, :visited:active {
-  color: #36c;
-}
-:visited {
-  color: #324c7f;
-  text-decoration: none;
-}
+body {margin: 0; padding: 0;}
 
-input, select {
-  font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 10px;
+:link                         {color: #039;    text-decoration: none;} 
+:link:hover, :visited:hover   {                text-decoration: underline;}
+:link:active, :visited:active {color: #36c;}
+:visited                      {color: #324c7f; text-decoration: none;}
+
+h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
+h1 {font-size: 2.25em; margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
+h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
+h5 {font-size: 1em;    margin: 0;              padding: 0;}
+h6 {font-size: 1em;    margin: 0;              padding: 0;}
+
+/* --- Form controls --- */
+
+form {border: 0; margin: 0; padding: 0;}
+input, select, textarea {
+  background-color: #fff;
   color: #656565;
-  background-color: #FFFFFF;
-  margin: 0;}
-  textarea {font-family: trebuchet ms, tahoma, arial, verdana, sans-serif;
-  font-size: 11px;
-  color: #656565;
-  background-color: #FFFFFF;
+  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   margin: 0;
 }
+input, select {font-size: 10px;}
+textarea {font-size: 11px;}
+
+/* --- Other --- */
+
 a img {
   border: none;
-}
-form {
-  border: 0;
-  margin: 0;
-  padding: 0;
 }
 form.primary.search {
   margin-bottom: 2em;
@@ -81,47 +111,6 @@ hr {
   border-top: 2px solid #000000;
   overflow: hidden;
   display: none;
-}
-h1 {
-  font-weight: bold;
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-size: 1.75em;
-}
-h2 {
-  font-weight: bold;
-  margin: 0 0 0.75em;
-  padding: 0;
-  color: #000000;
-  font-size: 1.4em;
-}
-h3 {
-  font-weight: bold;
-  margin: 1em 0 0 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-}
-h4 {
-  margin: 0;
-  padding: 0px 0px 10px 0px;
-  color: #000000;
-  font-weight: normal;
-  font-size: 1em;
-}
-h5 {
-  margin: 0;
-  padding: 0;
-  color: #000000;
-  font-size: 1em;
-  font-weight: normal;
-}
-h6 {
-  margin: 0;
-  padding: 0;
-  color: #FF0000;
-  font-weight: bold;
 }
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
@@ -147,6 +136,11 @@ p {
   color: #FF0000;
   font-weight: bold;
 }
+.debug {
+  background: none;
+  color: #f09;
+}
+
 .anchor {
   height: 1px;
   overflow: hidden;
@@ -664,6 +658,10 @@ ul#applicationchooser li#applicationchooser_selected {
 * html #mainarea div.t {
   top: 0;
 }
+#singlecolumn h1 {padding-top: 1em; position: relative; z-index: 1;}
+* html #singlecolumn h1 {padding-top: 0;}
+#singlecolumn div.t {top: -20px;}
+
 #mainarea div.u {
   width: 100%;
   background-image: url(mainarea_right.gif);
@@ -713,6 +711,7 @@ ul#applicationchooser li#applicationchooser_selected {
   top: 47px;
   left: 0px;
   width: 350px;
+  z-index: 100;
 }
 #help_panel.closed {
   left: -318px !important;
@@ -802,10 +801,6 @@ body.tab-overview #mainarea #portlets .portlet.active div {
 body.tab-overview #actions {background-color: #e6eed3;}
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
-}
-h1, h2, h3 { /* On Overview tab or tab-less pages */
-  background: none;
-  color: #83ad23;
 }
 
 /* Code: */
@@ -1204,12 +1199,11 @@ div.right div.portlet {
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
-div.three.columns {clear: both;}
-div.three.columns .column {
+div.three.column {width: 33%;}
+div.three.column.left, div.three.column.middle, div.three.column.right {
+  clear: none;
   float: left;
-  width: 33%;
 }
-
 .title {
   font-weight: bold;
 }

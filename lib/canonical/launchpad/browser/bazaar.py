@@ -10,7 +10,7 @@ import operator
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
@@ -37,10 +37,14 @@ class BazaarApplicationView:
         self.request = request
         self.seriesset = getUtility(IProductSeriesSet)
 
-    def branches(self):
-        """List of all branches in the system."""
-        branches = self.context.all
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+    def branch_count(self):
+        return getUtility(IBranchSet).count()
+
+    def product_count(self):
+        return getUtility(IProductSet).getProductsWithBranches().count()
+
+    def branches_with_bugs_count(self):
+        return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
         return self.seriesset.importcount()
@@ -73,6 +77,18 @@ class BazaarApplicationView:
                     count += 1
                     continue
         return count
+
+    def recentlyChangedBranches(self):
+        """Return the five most recently changed branches."""
+        return getUtility(IBranchSet).getRecentlyChangedBranches(5)
+
+    def recentlyImportedBranches(self):
+        """Return the five most recently imported branches."""
+        return getUtility(IBranchSet).getRecentlyImportedBranches(5)
+
+    def recentlyRegisteredBranches(self):
+        """Return the five most recently registered branches."""
+        return getUtility(IBranchSet).getRecentlyRegisteredBranches(5)
 
 
 class BazaarApplicationNavigation(Navigation):
