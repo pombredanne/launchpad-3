@@ -146,7 +146,7 @@ class BranchView(LaunchpadView):
 
     def upload_url(self):
         """The URL the logged in user can use to upload to this branch."""
-        return 'sftp://%s@bazaar.canonical.com/%s' % (
+        return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
 
     def missing_title_or_summary_text(self):
