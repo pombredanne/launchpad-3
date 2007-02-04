@@ -52,14 +52,6 @@
                                   />
                             </a>
                           </li>
-                          <li>
-                            <a href="/products/+with-code">
-                              <img
-                                alt="Products with code"
-                                src="/+icing/but_lrg_productswithcode.gif"
-                              />
-                            </a>
-                          </li>
                         </ul>
                         <div class="columns">
                           <div class="three column left">
@@ -113,10 +105,12 @@
                         <div class="clear"></div>
                         <div id="application-footer">
                           <div>
+                            <a href="/+code/+products-with-code">
                             <strong tal:content="view/branch_count">123</strong>
                             branches registered in
                             <strong tal:content="view/product_count">1234</strong>
                             products
+                            </a>
                           </div>
                           <div>
                             <strong tal:content="view/import_count">123</strong>
@@ -192,7 +186,7 @@
         product, you could use the following command:
       </p>
       <blockquote>
-        bzr push sftp://john@bazaar.launchpad.net/~john/froboize/devel
+        bzr push sftp://john@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~john/<wbr></wbr>froboize/<wbr></wbr>devel
       </blockquote>
       <p>
         To create a shared branch to which multiple people can commit and push,

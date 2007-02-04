@@ -4,16 +4,24 @@
 
 __metaclass__ = type
 
-__all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
+__all__ = [
+    'BazaarApplicationView',
+    'BazaarApplicationNavigation',
+    'BazaarProductView',
+    ]
 
 import operator
 
 from zope.component import getUtility
+
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
-    Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
+    ApplicationMenu, canonical_url, enabled_with_permission,
+    Link, Navigation, stepto)
 import canonical.launchpad.layers
 
 
@@ -101,3 +109,31 @@ class BazaarApplicationNavigation(Navigation):
     def series(self):
         return getUtility(IProductSeriesSet)
 
+
+class BazaarProductView:
+    """Browser class for products gettable with Bazaar."""
+
+    @cachedproperty
+    def products(self):
+        return sorted(
+            getUtility(IProductSet).getProductsWithBranches(),
+            key=lambda product: product.displayname.lower())
+
+    @cachedproperty
+    def summaries(self):
+        # unwrapping the security proxies, so can add to the dict
+        result = {}
+        branchset = getUtility(IBranchSet)
+        summaries = branchset.getBranchSummaryByProduct()
+        for key, value in summaries.iteritems():
+            result[key] = dict(value)
+
+        for branch in branchset.getDevelopmentFocusBranches():
+            result[branch.product.id]['dev_branch'] = branch
+        
+        for product in self.products:
+            branch_url = canonical_url(product, rootsite='code')
+            result[product.id]['branch_url'] = branch_url
+
+        return result
+        

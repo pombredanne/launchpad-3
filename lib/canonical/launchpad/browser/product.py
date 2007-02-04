@@ -25,7 +25,6 @@ __all__ = [
     'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductLaunchpadUsageEditView',
-    'ProductBazaarView',
     ]
 
 from operator import attrgetter
@@ -40,7 +39,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
@@ -375,7 +373,7 @@ def _sort_distros(a, b):
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall', 'withCode']
+    links = ['register', 'listall']
 
     def register(self):
         text = 'Register a Product'
@@ -384,10 +382,6 @@ class ProductSetContextMenu(ContextMenu):
     def listall(self):
         text = 'List All Products'
         return Link('+all', text, icon='list')
-
-    def withCode(self):
-        text = 'Products with Code'
-        return Link('+with-code', text, icon='list')
 
 
 class ProductView:
@@ -851,31 +845,3 @@ class ProductReassignmentView(ObjectReassignmentView):
             if release.owner == oldOwner:
                 release.owner = newOwner
 
-
-class ProductBazaarView(LaunchpadView):
-    """Browser class for products gettable with Bazaar."""
-
-    @cachedproperty
-    def products(self):
-        return sorted(
-            getUtility(IProductSet).getProductsWithBranches(),
-            key=lambda product: product.displayname.lower())
-
-    @cachedproperty
-    def summaries(self):
-        # unwrapping the security proxies, so can add to the dict
-        result = {}
-        branchset = getUtility(IBranchSet)
-        summaries = branchset.getBranchSummaryByProduct()
-        for key, value in summaries.iteritems():
-            result[key] = dict(value)
-
-        for branch in branchset.getDevelopmentFocusBranches():
-            result[branch.product.id]['dev_branch'] = branch
-        
-        for product in self.products:
-            branch_url = canonical_url(product, rootsite='code')
-            result[product.id]['branch_url'] = branch_url
-
-        return result
-        

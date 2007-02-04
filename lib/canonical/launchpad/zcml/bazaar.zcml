@@ -49,6 +49,15 @@
             lp:url="/+code/+portlet-importstats" />
     </browser:pages>
 
+  <browser:page
+    name="+products-with-code"
+    lp:url="+code/+products-with-code"
+    for="canonical.launchpad.interfaces.IBazaarApplication"
+    permission="zope.Public"
+    facet="branches"
+    class="canonical.launchpad.browser.BazaarProductView"
+    template="../templates/product-bazaar.pt" />
+
 <xmlrpc:view
   for="canonical.launchpad.interfaces.IBazaarApplication"
   interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
