@@ -338,7 +338,9 @@ class CursorWrapper:
                 if (errorstr.startswith(
                     'ERROR:  canceling query due to user request') or
                     errorstr.startswith(
-                    'ERROR:  canceling statement due to statement timeout')):
+                    'ERROR:  canceling statement due to statement timeout') or
+                    errorstr.startswith(
+                    'ERROR:  cancelling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
         # Fix Bug 31755. There are unavoidable race conditions when handling

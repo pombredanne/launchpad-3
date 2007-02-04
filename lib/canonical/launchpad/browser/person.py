@@ -1650,7 +1650,10 @@ class PersonGPGView(LaunchpadView):
 
     def keyserver_url(self):
         assert self.fingerprint
-        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+        url = getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+        # Our servers use an internal keyserver which users can't access.
+        # We must point them to the ubuntu keyserver. See bug 81269
+        return url.replace('keyserver.internal', 'keyserver.ubuntu.com', 1)
 
     def form_action(self):
         permitted_actions = [
