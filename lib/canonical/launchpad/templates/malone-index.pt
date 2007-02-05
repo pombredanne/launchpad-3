@@ -11,6 +11,7 @@
         tal:content="structure context/@@+applicationbuttons/bugs"
       />
       <div id="mainarea" class="tab-bugs">
+        <h1>Bugs</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -25,7 +26,6 @@
                           class="error message"
                         >Error message.</p>
                         <form class="central" action="/bugs" method="get">
-                          <h1>Search bug reports</h1>
                           <table style="margin-left: 0;">
                             <tbody>
                               <tr>

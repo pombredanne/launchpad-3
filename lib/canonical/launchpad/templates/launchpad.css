@@ -1,163 +1,5 @@
-/* === Things browsers should do, but don't: === */
-
-.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-}
-.clearfix {display: inline-table;}
-/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
-* html .clearfix {height: 1%;}
-.clearfix {display: block;}
-/* End hiding from MSIE for Mac */
-
-abbr[title], acronym[title] {
-  border-bottom: 1px dotted Black;
-  color: Black;
-  background-color: transparent;
-  cursor: help;
-}
-address {
-  font-style: inherit;
-}
-* html body {
-  word-wrap: break-word; /* stops floats dropping in IE 5.5/6 */
-}
-dd {
-  margin-bottom: 1em;
-}
-dt dfn {
-  font-style: inherit;
-  font-weight: bold;
-}
-img {
-  border: none;
-}
-kbd {
-  border: 1px solid;
-  border-color: white gray gray white;
-  color: black;
-  background-color: #ddd;
-  min-width: 1em;
-}
-label {
-  white-space: nowrap;
-}
-legend {
-  font-weight: bold;
-}
-legend legend {
-  font-weight: normal;
-}
-tr {
-  vertical-align: top;
-}
-th {
-  text-align: right;
-}
-thead {
-  vertical-align: bottom;
-}
-thead th, tr.thead th {
-  text-align: center;
-}
-
-.listbox { /* a scrolling list of checkboxes or radio buttons */
-  border: 1px solid #8cacbb;
-  display: inline-block;
-  max-height: 12em;
-  overflow: auto;
-  overflow: -moz-scrollbars-vertical;
-}
-.listbox label {
-  background-color: #f6f6f6;
-  border: solid white;
-  border-width: 0 0 1px 0;
-  display: block;
-}
-
-/* make <wbr> work with Opera */
-/* XXX: 20061026 jamesh
- * Disabled for now, since BjornT reported display problems
- */
-/*
-wbr:after {
-  content: "\00200B"
-}
-*/
-
-
 /* === Global Launchpad design: === */
 
-.debug {
-  background: none;
-  color: #f09;
-}
-
-body {
-  background-color: #fcfcfc;
-  color: black;
-  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
-  margin: 0;
-  padding: 0;
-}
-.body {
-  margin: 1em 1%;
-}
-.columns {
-  margin: 1em 0;
-}
-:visited {
-  background: none;
-  color: #66a;
-}
-:link, .hierarchy :visited, .footer :visited,
-.facets :visited, .portlet :visited {
-  background: none;
-  color: #000088;
-}
-:link:active, :visited:active {
-  background: none;
-  color: #c00;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  background: none;
-  color: #708a96;
-  font-size: 100%;
-  font-weight: normal;
-  text-align: left;
-}
-h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
-h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
-  color: inherit;
-}
-h1 {
-  font-size: 1.6em;
-  margin: 0 0 0.5em;
-  padding-top: 0;
-}
-h2 {
-  font-size: 1.25em;
-  margin: 0.5em 0;
-}
-h3 {
-  font-size: 1.1em;
-  margin-bottom: 0.5em;
-}
-h4, h5, h6 {
-  font-size: 1em;
-  margin-bottom: 0;
-}
-h5.languages {
-  background-image: url(/@@/languages);
-  background-repeat: no-repeat;
-}
-label {
-  font-weight: bold;
-}
 pre {
   color: black;
   background-color: #dee7ec;
@@ -266,11 +108,6 @@ ul {
 }
 ol {
   margin: 0.5em 0 0 1.5em;
-}
-
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {
-    display: none;
 }
 
 #portal-column-one .portlet, #portal-column-two .portlet,
@@ -683,38 +520,6 @@ tr.highlight {
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
 .importanceUNDECIDED { color: #999; }
-
-/* Spec definition, delivery and priority */
-
-.specstatusIMPLEMENTED     { color: Green; }
-.specstatusINFORMATIONAL   { color: Green; }
-.specstatusAPPROVED        { color: Black; }
-.specstatusPENDINGAPPROVAL { color: #f09; }
-.specstatusPENDINGREVIEW   { color: #f09; }
-.specstatusDRAFT           { color: #930; }
-.specstatusNEW             { color: Red; }
-.specstatusSUPERSEDED      { color: Gray; }
-.specstatusOBSOLETE        { color: Gray; }
-
-.specpriorityNOTFORUS      { color: Gray; }
-.specpriorityUNDEFINED     { color: Gray; }
-.specpriorityLOW           { color: Black; }
-.specpriorityMEDIUM        { color: Orange; }
-.specpriorityHIGH          { color: Red; }
-.specpriorityESSENTIAL     { color: Red; }
-
-.specdeliveryUNKNOWN            {color: Gray; }
-.specdeliveryNOTSTARTED         {color: Gray; }
-.specdeliveryDEFERRED           {color: Red; }
-.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
-.specdeliveryBLOCKED            {color: Red; }
-.specdeliverySTARTED            {color: Blue; }
-.specdeliverySLOW               {color: Red; }
-.specdeliveryGOOD               {color: Blue; }
-.specdeliveryBETA               {color: Orange; }
-.specdeliveryNEEDSREVIEW        {color: Purple; }
-.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
-.specdeliveryIMPLEMENTED        {color: Green; }
 
 .branchstatusMATURE             {color: DarkGreen;}
 .branchstatusDEVELOPMENT        {color: DarkRed;}
@@ -1269,6 +1074,9 @@ ul.menuroot {
   color: darkblue;
   cursor: default;
 }
+.item img {
+  vertical-align: middle;
+}
 .menu .item.first, .scrollbutton.up {
   border-top-width: 1px;
 }
@@ -1329,8 +1137,7 @@ ul.menuroot {
   z-index: 2;
 }
 * html .container {
-  background: url(/@@/arrowRight.gif) 
-                center right no-repeat;
+  background: url(/@@/arrowRight) center right no-repeat;
 }
 * html .menu .item {
   float: none;

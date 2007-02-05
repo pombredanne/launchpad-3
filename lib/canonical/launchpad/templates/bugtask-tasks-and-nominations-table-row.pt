@@ -28,7 +28,7 @@
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 3px">
-        <img src="/@@/package-source" alt="package"
+        <img src="/@@/pkg-source" alt="package"
              tal:condition="view/shouldShowPackageIcon" />
         <img src="/@@/product" alt="product"
              tal:condition="view/shouldShowProductIcon" />

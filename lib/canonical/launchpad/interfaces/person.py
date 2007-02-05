@@ -19,8 +19,7 @@ __all__ = [
     ]
 
 
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -28,15 +27,15 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, PasswordField, StrippedTextLine)
+    BlacklistableContentNameField, LargeImageUpload, PasswordField,
+    SmallImageUpload, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.tickettarget import (
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi, validate_new_team_email,
-    validate_new_person_email)
+    validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -118,22 +117,19 @@ class IPerson(IHasSpecifications):
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of your home page. Edit this and it will be "
-            "displayed for all the world to see. It is NOT a wiki so you "
-            "cannot undo changes."))
-    emblem = Bytes(
+            "displayed for all the world to see."))
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this team."),
-        constraint=valid_emblem)
-    gotchi = Bytes(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this team."))
+    gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 50k in size. "
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."),
-        constraint=valid_gotchi)
+            "Make the most of it."))
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
@@ -211,7 +207,7 @@ class IPerson(IHasSpecifications):
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
-        'The caches of karma scores, by ' 'karma category.')
+        'The caches of karma scores, by karma category.')
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
@@ -239,7 +235,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
@@ -295,8 +290,9 @@ class IPerson(IHasSpecifications):
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = Text(title=_('Team Description'), required=False,
-                           readonly=False)
+    teamdescription = Text(
+        title=_('Team Description'), required=False, readonly=False,
+        description=_('Use plain text; URLs will be linkified'))
 
     preferredemail = TextLine(
         title=_("Preferred Email Address"),
@@ -312,20 +308,20 @@ class IPerson(IHasSpecifications):
         readonly=True)
 
     defaultmembershipperiod = Int(
-        title=_('Number of days a subscription lasts'), required=False,
+        title=_('Subscription period'), required=False,
         description=_(
             "The number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
-            "approving it. A value of 0 means subscriptions never expire."))
+            "approving it. Leave this empty or set to 0 for subscriptions to "
+            "never expire."))
 
     defaultrenewalperiod = Int(
-        title=_('Number of days a renewed subscription lasts'),
+        title=_('Renewal period'),
         required=False,
         description=_(
-            "The number of days a subscription lasts after "
-            "being renewed. You can customize the lengths of "
-            "individual renewals. A value of 0 means "
-            "renewals last as long as new memberships."))
+            "The number of days a subscription lasts after being renewed. "
+            "You can customize the lengths of individual renewals. Leave "
+            "this empty or set to 0 for subscriptions to never expire."))
 
     defaultexpirationdate = Attribute(
         "The date, according to team's default values, in which a newly "
@@ -362,6 +358,8 @@ class IPerson(IHasSpecifications):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
@@ -377,6 +375,22 @@ class IPerson(IHasSpecifications):
         (A to Z) by name.
         """
 
+    def getBugContactOpenBugCounts(user):
+        """Return open bug counts for this bug contact's packages.
+
+            :user: The user doing the search. Private bugs that this
+                   user doesn't have access to won't be included in the
+                   count.
+
+        Returns a list of dictionaries, where each dict contains:
+
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that ar In Progress.
+        """
+
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one."""
 
@@ -384,6 +398,17 @@ class IPerson(IHasSpecifications):
         """The branch associated to this person and product with this name.
 
         The product_name may be None.
+        """
+
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there are more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called from a team object, because of
+        https://launchpad.net/bugs/30789.
         """
 
     def isTeam():
@@ -507,30 +532,35 @@ class IPerson(IHasSpecifications):
 
         Teams cannot call this method because they're not allowed to
         login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipStatus() method) by
+        subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
         """Add person as a member of this team.
 
-        Make sure status is either APPROVED or PROPOSED and add a
-        TeamMembership entry for this person with the given status, reviewer,
-        and reviewer comment. This method is also responsible for filling
-        the TeamParticipation table in case the status is APPROVED.
+        Add a TeamMembership entry for this person with the given status,
+        reviewer, and reviewer comment. This method is also responsible for
+        filling the TeamParticipation table in case the status is APPROVED or
+        ADMIN.
+
+        The reviewer is the user who made the given person a member of this
+        team.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
-                            comment=None):
-        """Set the status of the person's membership on this team.
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
 
-        Also set all other attributes of TeamMembership, which are <comment>,
-        <reviewer> and <dateexpires>. This method will ensure that we only
-        allow the status transitions specified in the TeamMembership spec.
-        It's also responsible for filling/cleaning the TeamParticipation
-        table when the transition requires it and setting the expiration
-        date, reviewer and reviewercomment.
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+        
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -641,6 +671,19 @@ class ITeam(IPerson):
     The teamowner should never be None.
     """
 
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this team's home page. It should be no bigger than 100k in "
+            "size."))
+
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "This team's name as you would like it displayed throughout "
+                "Launchpad."))
+
 
 class IPersonSet(Interface):
     """The set of Persons."""
@@ -717,7 +760,11 @@ class IPersonSet(Interface):
         """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language."""
+        """Return people who translated strings in distroRelease to language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.

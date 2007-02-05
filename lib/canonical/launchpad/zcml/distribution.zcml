@@ -188,7 +188,7 @@
         class="canonical.launchpad.browser.BugTaskSearchListingView"
         permission="zope.Public"
         facet="bugs"
-        template="../templates/distribution-bugs.pt"
+        template="../templates/bugtarget-bugs.pt"
         />
 
     <browser:page
@@ -274,15 +274,13 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:editform
+    <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         permission="launchpad.Edit"
+        class="canonical.launchpad.browser.DistributionEditView"
         name="+edit"
-        schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
-        fields="displayname title summary description"
-        template="../templates/distribution-edit.pt"
-        lp:url="/distros/$Distribution.name/+edit" />
+        template="../templates/distribution-edit.pt" />
 
     <browser:page
         name="+launchpad"
@@ -297,7 +295,7 @@
         name="+driver"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
+        class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
         fields="driver"
         facet="overview"
         permission="launchpad.Edit"
@@ -309,14 +307,13 @@
         name="+uploadadmin"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
+        class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
         fields="upload_admin upload_sender"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/distribution-uploadadmin.pt"
         lp:url="/$Project.name/+uploadadmin">
     </browser:editform>
-
 
     <browser:editform
         name="+selectmemberteam"
@@ -430,23 +427,13 @@
         class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+add"
         for="canonical.launchpad.interfaces.IDistributionSet"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        label="Register a distribution in Soyuz"
-        fields="name displayname title summary description domainname owner
-                members"
-        content_factory="canonical.launchpad.database.Distribution"
-        class="canonical.launchpad.browser.DistributionSetAddView"
+        class="canonical.launchpad.browser.DistributionAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/distros/+add">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+        template="../templates/distribution-add.pt" />
 
     <browser:menus
         module="canonical.launchpad.browser.distribution"

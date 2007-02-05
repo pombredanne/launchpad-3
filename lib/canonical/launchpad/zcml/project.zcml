@@ -226,6 +226,21 @@
       template="../templates/bounty-add.pt"
       />
 
+    <facet facet="support">
+        <browser:page
+            name="+addticket"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.ProjectAddTicketView"
+            permission="launchpad.AnyPerson"
+            />
+        <browser:page
+            name="+portlet-latesttickets"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.ProjectLatestTicketsView"
+            permission="zope.Public"
+            />
+    </facet>
+
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
@@ -258,11 +273,11 @@
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
         <browser:page
-            name="+all" 
+            name="+all"
             template="../templates/projects-all.pt"
             lp:url="/projects/+all" />
         <browser:page
-            name="+index" 
+            name="+index"
             template="../templates/projects-index.pt"
             lp:url="/projects/+index" />
     </browser:pages>

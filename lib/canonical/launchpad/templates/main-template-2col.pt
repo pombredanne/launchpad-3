@@ -14,6 +14,11 @@
     <!-- Launchpad style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/launchpad.css?rev=2);</style>
+    <style
+      tal:define="dbname modules/canonical.config/config/dbname"
+      tal:condition="python: dbname!='launchpad_prod'"
+      type="text/css"
+    >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
@@ -107,7 +112,7 @@
           </div>
         </div>
         <div class="visualClear">&nbsp;</div>
-      </div><!-- class="body" -->
+      </div>
     <div class="footer">
       <a href="/bugs">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;
@@ -116,7 +121,7 @@
       <a href="/bazaar">Bazaar</a> &ndash;
       Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
+      <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> &ndash;
       <a href="/faq">FAQ</a> &ndash;
       <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
           build

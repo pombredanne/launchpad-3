@@ -24,6 +24,7 @@ from canonical.lp.dbschema import (
     SpecificationFilter)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -32,7 +33,7 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 
-class Project(SQLBase, BugTargetBase):
+class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner)
@@ -258,24 +259,8 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner):
-        r"""See canonical.launchpad.interfaces.project.IProjectSet
-
-        >>> ps = getUtility(IProjectSet)
-        >>> p = ps.new(
-        ...     name=u'footest',
-        ...     displayname=u'T\N{LATIN SMALL LETTER E WITH ACUTE}st',
-        ...     title=u'The T\N{LATIN SMALL LETTER E WITH ACUTE}st Project',
-        ...     homepageurl=None,
-        ...     summary=u'Mandatory Summary',
-        ...     description=u'Blah',
-        ...     owner=1
-        ...     )
-        >>> p.name
-        u'footest'
-        >>> p.displayname
-        u'T\xe9st'
-        """
+            description, owner, gotchi, emblem):
+        """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
             displayname=displayname,
@@ -284,7 +269,9 @@ class ProjectSet:
             description=description,
             homepageurl=homepageurl,
             owner=owner,
-            datecreated=UTC_NOW)
+            datecreated=UTC_NOW,
+            gotchi=gotchi,
+            emblem=emblem)
 
     def count_all(self):
         return Project.select().count()

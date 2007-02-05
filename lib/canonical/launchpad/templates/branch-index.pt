@@ -34,7 +34,13 @@
     <i>This branch has no summary.</i>
   </p>
 
+  <tal:comment condition="nothing">
+    <!-- Branch URLs -->
+  </tal:comment>
   <tal:pull-branch condition="context/url">
+    <tal:comment condition="nothing">
+      <!-- This is a mirror branch, display two URLs -->
+    </tal:comment>
     <div>
       <b>Location:</b>
       <span class="lesser" tal:content="context/url">
@@ -54,6 +60,9 @@
   </tal:pull-branch>
 
   <tal:hosted-branch condition="not:context/url">
+    <tal:comment condition="nothing">
+      <!-- This is an upload branch, one URL and upload directions -->
+    </tal:comment>
     <div>
       <b>Hosted on Launchpad:</b>
       <span class="lesser" tal:content="view/supermirror_url" class="lesser">
@@ -63,7 +72,68 @@
     <p class="discreet lesser">
       This URL is intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </p>    
+    </p>
+
+    <tal:not-logged-in condition="not:view/user">
+      <tal:comment condition="nothing">
+        <!-- The user is not logged in -->
+      </tal:comment>
+      <p id="upload-directions" tal:condition="not:context/owner/isTeam">
+        Only
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/browsername">Person</a>
+        can upload to this branch. If this is you,
+        <a href="+login">log in</a> for directions.
+      </p>
+      <p id="upload-directions" tal:condition="context/owner/isTeam">
+        Members of
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/browsername">Team</a>
+        can upload to this branch. <a href="+login">Log in</a> for directions.
+      </p>
+    </tal:not-logged-in>
+
+    <tal:logged-in condition="view/user">
+      <tal:cannot-upload condition="not:view/user_can_upload">
+        <tal:comment condition="nothing">
+          <!-- The user is logged in but cannot upload to the branch -->
+        </tal:comment>
+        <p id="upload-directions" tal:condition="not:context/owner/isTeam">
+          You cannot upload to this branch. Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/browsername">Person</a>
+          can upload to this branch.
+        </p>
+        <p id="upload-directions" tal:condition="context/owner/isTeam">
+          You cannot upload to this branch. Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/browsername">Team</a>
+          can upload to this branch.
+          <a tal:attributes="href string:${context/owner/fmt:url}/+join">Join
+            the team</a>.
+        </p>
+      </tal:cannot-upload>
+
+      <tal:can-upload condition="view/user_can_upload">
+        <tal:comment condition="nothing">
+          <!-- The user is logged in and can upload to the branch -->
+        </tal:comment>
+        <div id="upload-directions">
+          You can <b>upload</b> to this branch at:
+          <span class="lesser" tal:content="view/upload_url">
+            sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed
+          </span>
+        </div>
+        <tal:comment condition="nothing">
+          <!-- Directions to set the SSH key -->
+        </tal:comment>
+        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+          To authenticate with the Launchpad branch upload service, you need
+          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+            register a SSH key </a>.
+        </p>
+      </tal:can-upload>
+    </tal:logged-in>
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
@@ -137,21 +207,21 @@
   <ul style="list-style: none">
     <li tal:condition="context/product">
       <a tal:attributes="href string:${context/product/fmt:url}/+branches">
-	Other <tal:product replace="context/product/displayname" /> branches
+        Other <tal:product replace="context/product/displayname" /> branches
       </a>
     </li>
     <li>
       <tal:author condition="context/author">
-	<a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
-	  Other branches authored by <tal:person
-	  replace="context/author/displayname">Author</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
+          Other branches authored by <tal:person
+          replace="context/author/displayname">Author</tal:person>
+        </a>
       </tal:author>
       <tal:no-author condition="not:context/author">
-	<a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
-	  Other branches registered (and not authored) by <tal:person
-	  replace="context/owner/displayname">Owner</tal:person>
-	</a>
+        <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+          Other branches registered (and not authored) by <tal:person
+          replace="context/owner/displayname">Owner</tal:person>
+        </a>
       </tal:no-author>
     </li>
   </ul>

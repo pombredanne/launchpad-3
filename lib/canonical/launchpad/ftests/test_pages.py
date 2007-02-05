@@ -10,7 +10,7 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, NavigableString
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
@@ -24,7 +24,7 @@ class DuplicateIdError(Exception):
 
 
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
     elements_with_id = soup.findAll(attrs={'id': id})
     if not elements_with_id:
@@ -55,9 +55,10 @@ def find_portlet(content, name):
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h2').renderContents()
-        if name == whitespace_re.sub(' ', portlet_title.strip()):
-            return portlet
+        if portlet.find('h2'):
+            portlet_title = portlet.find('h2').renderContents()
+            if name == whitespace_re.sub(' ', portlet_title.strip()):
+                return portlet
     return None
 
 
@@ -70,11 +71,32 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
+def extract_text(soup):
+    """Return the text stripped of all tags.
+
+    >>> soup = BeautifulSoup('<html><h1>Title</h1><p>foo bar</p></html>')
+    >>> extract_text(soup)
+    u'Titlefoo bar'
+    """
+    # XXX Tim Penhey 22-01-2007
+    # At the moment this does not nicely give whitespace between
+    # tags that would have visual separation when rendered.
+    # eg. <p>foo</p><p>bar</p>
+    result = u''
+    for node in soup:
+        if isinstance(node, NavigableString):
+            result = result + unicode(node)
+        else:
+            result = result + extract_text(node)
+    return result
+
+
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['extract_text'] = extract_text
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -205,6 +227,7 @@ def test_suite():
 
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
+    suite.addTest(doctest.DocTestSuite())
     return suite
 
 if __name__ == '__main__':

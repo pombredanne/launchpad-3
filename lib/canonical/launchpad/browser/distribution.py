@@ -12,7 +12,7 @@ __all__ = [
     'DistributionAllPackagesView',
     'DistributionEditView',
     'DistributionSetView',
-    'DistributionSetAddView',
+    'DistributionAddView',
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
@@ -27,16 +27,14 @@ from datetime import datetime
 import operator
 
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    ILaunchBag, ILaunchpadRoot, NotFoundError)
+    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
+    ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -47,9 +45,10 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, RedirectionNavigation, StandardLaunchpadFacets,
-    stepthrough, stepto)
+    stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class DistributionNavigation(
@@ -392,14 +391,26 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionEditView(SQLObjectEditView):
-    """View class that lets you edit a Distribution object.
-
-    It redirects to the main distribution page after a successful edit.
-    """
+class DistributionRedirectingEditView(SQLObjectEditView):
+    """A deprecated view to be used by the +driver and +uploadadmin pages."""
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class DistributionEditView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    label = "Change distribution details"
+    field_names = ['displayname', 'title', 'summary', 'description',
+                   'gotchi', 'emblem']
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -428,23 +439,17 @@ class DistributionSetView:
         return self.context.count()
 
 
-class DistributionSetAddView(AddView):
+class DistributionAddView(LaunchpadFormView):
 
-    __used_for__ = IDistributionSet
+    schema = IDistribution
+    label = "Create a new distribution"
+    field_names = ["name", "displayname", "title", "summary", "description",
+                   "gotchi", "emblem", "domainname", "members"]
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the distribution
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise Unauthorized(
-                "Need an authenticated user in order to create a"
-                " distribution.")
+    @action("Save", name='save')
+    def save_action(self, action, data):
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -453,13 +458,11 @@ class DistributionSetAddView(AddView):
             description=data['description'],
             domainname=data['domainname'],
             members=data['members'],
-            owner=owner)
+            owner=self.user,
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
-        self._nextURL = data['name']
-        return distribution
-
-    def nextURL(self):
-        return self._nextURL
+        self.next_url = canonical_url(distribution)
 
 
 class DistributionBugContactEditView(SQLObjectEditView):

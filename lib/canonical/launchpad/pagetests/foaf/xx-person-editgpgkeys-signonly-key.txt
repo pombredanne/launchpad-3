@@ -215,7 +215,7 @@ Ask for a re-validation of the key.
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
-  An email was sent to test@canonical.com with instructions to reactivate...
+  A message has been sent to test@canonical.com with instructions to reactivate...
 
 Open the page again and check that the key is still displayed, pending
 revalidation.

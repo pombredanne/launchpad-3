@@ -6,19 +6,10 @@ any upstream application, or any distribution.
 
 == Products ==
 
-The product page displays the latest support requests in a portlet.
-
-  >>> browser.open('http://launchpad.dev/firefox')
-  >>> find_portlet(
-  ...    browser.contents, 'Latest support requests')
-  <div class="portlet">
-    <h2>Latest support requests</h2>
-    ...
-  </div>
-
-Users can request support by going to the 'Support' facet.
+From a product page, people can ask questions by clicking the 'Answers' tab.
 
   >>> import re
+  >>> browser.open('http://launchpad.dev/firefox')
   >>> support_link_label = re.compile('^Support$')
   >>> supportLink = browser.getLink(support_link_label)
   >>> supportLink.url
@@ -59,20 +50,12 @@ page.
 
 == Distributions ==
 
-Distributions also have the 'Support' link and a section showing the
-'Latest support requests'.
+Distributions also have the 'Support' link.
+To request support for the distro, one must go to the 'Support' facet.
 
   >>> browser.open('http://launchpad.dev/ubuntu')
   >>> browser.getLink('Support').url
   '.../ubuntu/+tickets'
-  >>> find_portlet(browser.contents, 'Latest support requests')
-  <div class="portlet">
-    <h2>Latest support requests</h2>
-    ...
-  </div>
-
-To request support for the distro, one must go to the 'Support' facet.
-
   >>> browser.getLink('Support').click()
   >>> print browser.title
   Support requests for Ubuntu

@@ -1,0 +1,103 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en" lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
+>
+  <body>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
+      <metal:search
+        use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+      />
+      <div class="columns">
+        <div class="two column left">
+          <img alt="" src="/@@/nyet-mugshot" title="pie chart here" />
+        </div>
+        <div class="two column right">
+          <h2>Key contacts</h2>
+          <table class="summary" style="width: 100%;">
+            <tbody>
+              <tr>
+                <th>Driver:</th>
+                <td>
+                  <tal:none condition="not:context/driver">None set</tal:none>
+                  <a
+                    tal:condition="context/driver"
+                    tal:attributes="href context/driver/fmt:url"
+                    tal:content="context/driver/displayname"
+                  >John Smith</a>
+                </td>
+              </tr>
+              <tr tal:define="bugcontact context/bugcontact|context/distribution/bugcontact">
+                <th>Bug contact:</th>
+                <td>
+                  <tal:none condition="not:bugcontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="bugcontact"
+                    tal:attributes="href bugcontact/fmt:url"
+                    tal:content="bugcontact/displayname"
+                  >Bob Johnson</a>
+                </td>
+              </tr>
+              <tr tal:define="securitycontact context/security_contact|context/distribution/security_contact">
+                <th>Security contact:</th>
+                <td>
+                  <tal:none condition="not:securitycontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="securitycontact"
+                    tal:attributes="href securitycontact/fmt:url"
+                    tal:content="securitycontact/displayname"
+                  >Billy Anderson</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul class="cross-reference">
+            <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
+              <a tal:attributes="href fixed_elsewhere/url">
+                <strong tal:content="fixed_elsewhere/count">42</strong>
+                bugs fixed elsewhere
+              </a>
+            </li>
+            <!-- Waiting for bug 79034. -->
+            <li tal:condition="nothing">
+              <a href="">
+                <strong tal:content="nothing"></strong>
+                open CVE bugs
+              </a>
+            </li>
+          </ul>
+          <ul class="buttons">
+            <li>
+              <a href="+filebug">
+                <img
+                  alt="Report a bug"
+                  src="/+icing/but_sml_reportabug.gif"
+                />
+              </a>
+            </li>
+            <li>
+              <a href="+addticket">
+                <img
+                  alt="Request support"
+                  src="/+icing/but_sml_requestsupport.gif"
+                />
+              </a>
+            </li>
+          </ul>
+        </div><!-- two column right -->
+      </div><!-- columns -->
+      <div class="clear"></div>
+      <div class="section">
+        <tal:reported replace="structure context/@@+portlet-latestbugs" />
+        <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
+      </div>
+    </div><!-- main -->
+  </body>
+</html>
+<!-- 1-0 in-progress Needs pie chart (bug 74718), CVE count (bug 79034), fixed-elsewhere count (bug 79035). -->

@@ -487,7 +487,9 @@ class LaunchpadFunctionalLayer(
 
     @classmethod
     def testSetUp(cls):
-        pass
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
     @classmethod
     def testTearDown(cls):
@@ -496,6 +498,10 @@ class LaunchpadFunctionalLayer(
         # If tests forget to logout, we can do it for them.
         if is_logged_in():
             logout()
+
+        # Reset any statistics
+        from canonical.launchpad.webapp.opstats import OpStats
+        OpStats.resetStats()
 
 
 class LaunchpadZopelessLayer(
@@ -532,11 +538,8 @@ class LaunchpadZopelessLayer(
 
     @classmethod
     def testTearDown(cls):
-        from canonical.launchpad.ftests.harness import (
-                LaunchpadZopelessTestSetup
-                )
-        LaunchpadZopelessTestSetup.txn.abort()
-        LaunchpadZopelessTestSetup.txn.uninstall()
+        cls.txn.abort()
+        cls.txn.uninstall()
         if ZopelessTransactionManager._installed is not None:
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
@@ -544,18 +547,28 @@ class LaunchpadZopelessLayer(
 
     @classmethod
     def commit(cls):
-        from canonical.launchpad.ftests.harness import (
-                LaunchpadZopelessTestSetup
-                )
-        LaunchpadZopelessTestSetup.txn.commit()
+        cls.txn.commit()
 
     @classmethod
     def abort(cls):
+        cls.txn.abort()
+
+    @classmethod
+    def switchDbUser(cls, dbuser):
+        cls.alterConnection(dbuser=dbuser)
+
+    @classmethod
+    def alterConnection(cls, **kw):
+        """Reset the connection, and reopen the connection by calling
+        initZopeless with the given keyword arguments.
+        """
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
                 )
-        LaunchpadZopelessTestSetup.txn.abort()
-
+        cls.txn.abort()
+        cls.txn.uninstall()
+        cls.txn = initZopeless(**kw)
+        LaunchpadZopelessTestSetup.txn = cls.txn
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):
