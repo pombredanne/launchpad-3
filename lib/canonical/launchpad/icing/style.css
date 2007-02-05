@@ -46,6 +46,7 @@ legend legend {font-weight: normal;}
   display: block;
 }
 table {border-collapse: collapse;}
+textarea {display: block;}
 thead {vertical-align: bottom;}
 tr {vertical-align: top;}
 th {text-align: right;}
@@ -87,8 +88,14 @@ input, select, textarea {
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   margin: 0;
 }
-input, select {font-size: 10px;}
-textarea {font-size: 11px;}
+input[type="text"], input[type="submit"], input[type="reset"], textarea {
+  font-size: 1em; /* Forces a readable font size in Safari */
+}
+input.urlTextType {width: 100%;}
+.fieldRequired, .fieldOptional {color: #999;}
+.formHelp {margin-bottom: 1em;}
+textarea {width: 100%;}
+.discreet {font-size: 75%;}
 
 /* --- Other --- */
 
@@ -341,9 +348,7 @@ ul#menuroot em {
   font-size: 11px;
   font-weight: bold;
 }
-#logincontrol a {
-  color: #000000;
-}
+#logincontrol a {color: #000000;}
 ul#applicationchooser {
   float: right;
   width: 510px;
@@ -1087,6 +1092,7 @@ body {
   padding-top: 60px;
 }
 #maincontent, #portlets {
+  display: inline;
   float: left;
   position: relative;
 }
@@ -1101,7 +1107,7 @@ body {
   right: 240px;
 }
 * html #portlets { /* Works around Internet Explorer bug */
-  left: 0;
+  left: 20px;
 }
 #portlets .portlet {
   width: 200px;
@@ -1249,7 +1255,6 @@ fieldset {
 
 /* === Tables === */
 
-table {margin: 0 auto; with: 100%;}
 table.latest th, table.latest td {padding-bottom: 2em;}
 table.summary {margin: 0 auto;}
 table.summary tr {border: dotted #ccc; border-width: 1px 0;}
@@ -1271,17 +1276,11 @@ table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
 table.contributions td {vertical-align: middle; width: 16px;}
-table.listing {
-  margin-top: 0.5em;
-}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 1em 0;}
-table.listing, table.listing tbody {
-  border-bottom: 1px solid #d2d2d2;
-  width: 100%;
-}
+table.listing {margin: 0; width: 100%;}
+table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
   background-color: #fff;
@@ -1297,6 +1296,11 @@ table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
 table.listing img {vertical-align: middle;}
 table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
+table.listing table tbody, table.listing table thead,
+table.listing table thead th, table.listing tfoot tr,
+table.listing table tfoot td, table.listing table td {
+  border: none;
+}
 table.duplicate.listing * {color: #999;}
 
 /* --- Sortable tables --- */
