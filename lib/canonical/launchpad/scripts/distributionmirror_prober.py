@@ -52,8 +52,8 @@ class ProberProtocol(HTTPClient):
 
         Uses factory.host and factory.path
         """
-        self.sendCommand('HEAD', self.factory.path)
-        self.sendHeader('HOST', self.factory.host)
+        self.sendCommand('HEAD', self.factory.request_path)
+        self.sendHeader('HOST', self.factory.request_host)
         self.endHeaders()
         
     def handleStatus(self, version, status, message):
@@ -129,10 +129,6 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        if self.host not in host_requests:
-            host_requests[self.host] = 0
-        if self.host not in host_timeouts:
-            host_timeouts[self.host] = 0
 
     def probe(self):
         if should_skip_host(self.host):
@@ -146,7 +142,7 @@ class ProberFactory(protocol.ClientFactory):
 
     def connect(self):
         host_requests[self.host] += 1
-        reactor.connectTCP(self.host, self.port, self)
+        reactor.connectTCP(self.request_host, self.request_port, self)
 
     def failWithTimeoutError(self):
         host_timeouts[self.host] += 1
@@ -169,12 +165,7 @@ class ProberFactory(protocol.ClientFactory):
 
     def setURL(self, url):
         self.url = url
-        proxy = os.getenv('http_proxy')
-        if proxy:
-            scheme, host, port, path = _parse(proxy)
-            path = url
-        else:
-            scheme, host, port, path = _parse(url)
+        scheme, host, port, path = _parse(url)
         # XXX: We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
@@ -183,11 +174,29 @@ class ProberFactory(protocol.ClientFactory):
         # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(scheme)
+
         if scheme and host:
             self.scheme = scheme
             self.host = host
             self.port = port
-        self.path = path
+            self.path = path
+
+        if self.host not in host_requests:
+            host_requests[self.host] = 0
+        if self.host not in host_timeouts:
+            host_timeouts[self.host] = 0
+
+        # If the http_proxy variable is set, we want to use it as the host
+        # we're going to connect to.
+        proxy = os.getenv('http_proxy')
+        if proxy:
+            scheme, host, port, dummy = _parse(proxy)
+            path = url
+
+        self.request_scheme = scheme
+        self.request_host = host
+        self.request_port = port
+        self.request_path = path
 
 
 def _parse(url, defaultPort=80):
@@ -261,7 +270,7 @@ class ConnectionSkipped(ProberError):
 
     def __str__(self):
         return ("Connection skipped because of too many timeouts on this "
-                "host. It will be retrieved on the next probing run.")
+                "host. It will be retried on the next probing run.")
 
 
 class UnknownURLScheme(ProberError):
