@@ -322,6 +322,7 @@ class NascentUpload:
         self.warnings = ""
         self.librarian = getUtility(ILibraryFileAliasSet)
         self.signer = None
+        self.siginingkey = None
         self.permitted_components = self.policy.getDefaultPermittedComponents()
         self._arch_verified = False
         self._native_checked = False
@@ -2077,42 +2078,44 @@ class NascentUpload:
 
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
-        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes_basename, self.changes["filecontents"])
+        self.queue_root = self.distrorelease.createQueueEntry(
+            pocket=self.policy.pocket,
+            changesfilename=self.changes_basename,
+            changesfilecontent=self.changes["filecontents"],
+            signingkey=self.signingkey)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
+            self.queue_root.addSource(self.policy.sourcepackagerelease)
+
         # If we're binaryful, add the build
         if self.binaryful and not self.single_custom:
             # We cannot rely on the distrorelease coming in for a binary
             # release because it is always set to 'autobuild' by the builder.
             # We instead have to take it from the policy which gets instructed
             # by the buildd master during the upload.
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
+            self.queue_root.pocket = self.policy.build.pocket
+            self.queue_root.addBuild(self.policy.build)
+
         # Finally, add any custom files.
         for uploaded_file in self.files:
             if uploaded_file.custom:
-                queue_root.addCustom(
-                    self.librarian.create(
+                custom_file = self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,
                     open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
-
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
+                    uploaded_file.content_type)
+                self.queue_root.addCustom(
+                    custom_file, uploaded_file.custom_type)
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
         if not self.is_new():
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
+                self.queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
+                self.queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):

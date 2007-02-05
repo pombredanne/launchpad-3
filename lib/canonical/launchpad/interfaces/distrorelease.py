@@ -338,14 +338,19 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(pocket, changesfilename, changesfilecontent,
+                         signingkey=None):
         """Create a queue item attached to this distrorelease and the given
         pocket.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.
+
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
+
+        'signingkey' is the IGPGKey used to sign the changesfile or None if
+        the changesfile is unsigned.
         """
 
     def newArch(architecturetag, processorfamily, official, owner):

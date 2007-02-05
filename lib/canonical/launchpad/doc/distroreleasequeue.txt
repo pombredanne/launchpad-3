@@ -249,6 +249,59 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   ...
   AssertionError
 
+
+== Upload Signing Key ==
+
+IDistroReleaseQueue.signingkey should store the IGPGKey reference to
+the key used to sign the changesfile when it applies (insecure policy
+uploads).
+
+It's mainly used to identify sponsored uploads, when someone with
+rights to upload to ubuntu (mostly MOTU) signed over package changes
+done by someone else.
+
+Let's process a new upload:
+
+  >>> bar_ok = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
+  ...     "bar_1.0-1_source.changes", MockLogger())
+  >>> bar_ok.policy.setOptions(MockOptions())
+  >>> bar_ok.process()
+  >>> success, msgs = bar_ok.do_accept()
+  >>> success
+  True
+
+  >>> signed_queue = bar_ok.queue_root
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistroReleaseQueue, IGPGKey)
+
+  >>> verifyObject(IDistroReleaseQueue, signed_queue)
+  True
+
+  >>> verifyObject(IGPGKey, signed_queue.signingkey)
+  True
+
+Let's check the IPerson entities related to this source upload:
+
+  >>> signed_src = signed_queue.sources[0].sourcepackagerelease
+
+  >>> signed_src.creator.displayname
+  u'Daniel Silverstone'
+
+  >>> signed_src.maintainer.displayname
+  u'Launchpad team'
+
+  >>> signed_queue.signingkey.owner.displayname
+  u'Foo Bar'
+
+Based on this information we can conclude that source 'bar' is
+maintained by 'Launchpad Team', was modified by 'Daniel Silverstone'
+and sponsored by 'Foo Bar'.
+
+
+== IHasQueueItems ==
+
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
 of IDistroReleaseQueue entries.
