@@ -14,7 +14,7 @@
 * html .clearfix {height: 1%;}
 .clearfix {display: block;}
 /* End hiding from MSIE for Mac */
-
+.visualClear {display: block; clear: both;} /* XXX Remove this */
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
@@ -74,7 +74,7 @@ body {margin: 0; padding: 0;}
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
 h1 {font-size: 2.25em; margin: 0;              padding: 0px 0px 10px 0px;}
 h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
-h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h3 {font-size: 1.25em; margin: 0.5em 0 0 0;    padding: 0;}
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
@@ -102,6 +102,17 @@ textarea {width: 100%;}
 a img {
   border: none;
 }
+
+/* see launchpad.js:activateCollapsables() */
+.collapsible legend a, .collapsible legend a:visited {
+  text-decoration: none;
+  color: #000088;
+}
+img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
+.collapsible legend a span {text-decoration: underline;}
+.collapsible {padding: 0; margin: 0;}
+.collapsed {border: none; margin-bottom: 0;}
+
 form.primary.search {
   margin-bottom: 2em;
 }
@@ -111,6 +122,12 @@ form.primary.search {
 @media screen {
   .notforscreen {display:none;}
 }
+
+.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted {padding: 0.5em;}
+.highlighted h3 {margin-top: 0;}
+.unhighlighted {padding: 0 0.5em;}
+
 hr {
   border: 0;
   margin: 8px 0px 0px 0px;
@@ -761,7 +778,8 @@ a.open, a.closed {
 
 #application-footer strong {font-weight: normal;}
 
-/* Overview: */
+/* --- Overview --- */
+
 body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
 }
@@ -804,7 +822,8 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
 
-/* Code: */
+/* --- Code --- */
+
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
 }
@@ -852,7 +871,15 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-/* Bugs: */
+.branchstatusMATURE       {color: #090;}
+.branchstatusDEVELOPMENT  {color: #900;}
+.branchstatusEXPERIMENTAL {color: #930;}
+.branchstatusMERGED       {color: #666;}
+.branchstatusABANDONED    {color: #666;}
+.branchstatusNEW          {color: black;}
+
+/* --- Bugs --- */
+
 body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
 }
@@ -900,7 +927,22 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-/* Blueprints: */
+.statusUNCONFIRMED  { color: #993300; }
+.statusNEEDSINFO    { color: Red; }
+.statusCONFIRMED    { color: Red; }
+.statusINPROGRESS   { color: Black; }
+.statusFIXRELEASED  { color: Black; }
+.statusFIXCOMMITTED { color: Black; }
+.statusREJECTED     { color: Gray; }
+.importanceCRITICAL  { color: Red; }
+.importanceHIGH      { color: #ff6600; }
+.importanceMEDIUM    { color: Green; }
+.importanceLOW       { color: Black; }
+.importanceWISHLIST  { color: Blue; }
+.importanceUNDECIDED { color: #999; }
+
+/* --- Blueprints --- */
+
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
 }
@@ -971,8 +1013,8 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
 
+/* --- Translations --- */
 
-/* Translations: */
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
@@ -1021,7 +1063,8 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
   color: #bb3a84;
 }
 
-/* Answers: */
+/* --- Answers --- */
+
 body.tab-support #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
 }
@@ -1068,6 +1111,16 @@ body.tab-support #actions h2, body.tab-support #actions h2:hover {
   background: none;
   color: #3840be;
 }
+
+.ticketstatusOPEN      {color: black;}
+.ticketstatusNEEDSINFO {color: black;}
+.ticketstatusANSWERED  {color: green;}
+.ticketstatusSOLVED    {color: green;}
+.ticketstatusEXPIRED   {color: red;}
+.ticketstatusINVALID   {color: red;}
+
+
+/* --- Other --- */
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
