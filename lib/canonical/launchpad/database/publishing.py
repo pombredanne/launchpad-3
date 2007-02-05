@@ -18,7 +18,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
@@ -175,7 +175,7 @@ class ArchiveSafePublisherBase:
             # already published (usually when we use -C
             # publish-distro.py option)
             self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
+            self.datepublished = UTC_NOW
 
 
 class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
