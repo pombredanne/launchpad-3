@@ -498,7 +498,7 @@
         <description>
             Rosetta-specific configuration options
         </description>
-        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="yes" />
+        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="no" />
         <section name="*" type="poimport" attribute="poimport" required="no" />
         <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
