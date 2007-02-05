@@ -25,7 +25,7 @@ from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
 from canonical.database.sqlbase import quote
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.diskpool import poolify
 from canonical.archivepublisher.tagfiles import parse_tagfile
@@ -629,8 +629,8 @@ class SourcePackagePublisher:
             status=PackagePublishingStatus.PENDING,
             component=component.id,
             section=section.id,
-            datecreated=nowUTC,
-            datepublished=nowUTC,
+            datecreated=UTC_NOW,
+            datepublished=UTC_NOW,
             pocket=self.pocket,
             archive=self.distrorelease.main_archive
             )
@@ -901,8 +901,8 @@ class BinaryPackagePublisher:
             priority = priority,
             distroarchrelease = self.distroarchrelease.id,
             status = PackagePublishingStatus.PENDING,
-            datecreated = nowUTC,
-            datepublished = nowUTC,
+            datecreated = UTC_NOW,
+            datepublished = UTC_NOW,
             pocket = self.pocket,
             datesuperseded = None,
             supersededby = None,

@@ -35,6 +35,11 @@
       layer="canonical.launchpad.layers.AnswersLayer"
       name="+tickets"
       />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      layer="canonical.launchpad.layers.BugsLayer"
+      name="+assignedbugs"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"
@@ -126,6 +131,9 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           lp:url="/~$Person.name/+bounties" />
+      <browser:page
+          name="+portlet-working-on"
+          template="../templates/person-portlet-working-on.pt" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"

@@ -452,7 +452,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distrorelease = %s
+                POTemplate.distrorelease = %s AND
+                POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -472,7 +473,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
-        for potemplate in self.potemplates:
+        for potemplate in self.currentpotemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()
@@ -512,9 +513,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.iscurrent = TRUE AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
+            orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
@@ -1268,8 +1270,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 FROM
                     POTemplate AS pt
                 WHERE
-                    pt.distrorelease = %s''' % sqlvalues(
-                    self, self.parentrelease))
+                    pt.distrorelease = %s AND pt.iscurrent = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
 
             logger_object.info('Filling POTMsgSet table...')
             cur.execute('''

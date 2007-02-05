@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -179,11 +180,11 @@ class MenuBase(UserAttributeCache):
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""
         try:
-            return allvhosts.configs[site].rooturl
+            return URI(allvhosts.configs[site].rooturl)
         except KeyError:
             raise AssertionError('unknown site', site)
 
-    def iterlinks(self, requesturl=None):
+    def iterlinks(self, requesturi=None):
         """See IMenu."""
         if not self._initialized:
             self.initialize()
@@ -196,7 +197,7 @@ class MenuBase(UserAttributeCache):
             "The following names may not be links: %s" %
             ', '.join(self._forbiddenlinknames))
 
-        contexturlobj = Url(canonical_url(self.context))
+        contexturlobj = URI(canonical_url(self.context))
 
         if self.enable_only is ALL_LINKS:
             enable_only = set(self.links)
@@ -221,24 +222,22 @@ class MenuBase(UserAttributeCache):
 
             # Set the .url attribute of the link, using the menu's context.
             if link.site is None:
-                # the protohost has no trailing slash.
-                rootsite = contexturlobj.protohost
+                rootsite = contexturlobj.resolve('/')
             else:
-                # Strip trailing slash from the root URL for this site.
-                rootsite = self._rootUrlForSite(link.site)[:-1]
-            targeturlobj = Url(link.target)
-            if targeturlobj.addressingscheme:
-                link.url = link.target
-            elif link.target.startswith('/'):
-                link.url = '%s%s' % (rootsite, link.target)
-            else:
-                link.url = '%s%s%s' % (
-                    rootsite, contexturlobj.pathslash, link.target)
+                rootsite = self._rootUrlForSite(link.site)
+            # Is the target a full URI already?
+            try:
+                link.url = URI(link.target)
+            except InvalidURIError:
+                if link.target.startswith('/'):
+                    link.url = rootsite.resolve(link.target)
+                else:
+                    link.url = rootsite.resolve(contexturlobj.path).append(
+                        link.target)
 
             # Make the link unlinked if it is a link to the current page.
-            if requesturl is not None:
-                linkurlobj = Url(link.url)
-                if requesturl == linkurlobj:
+            if requesturi is not None:
+                if requesturi.ensureSlash() == link.url.ensureSlash():
                     link.linked = False
             yield link
 
@@ -260,11 +259,11 @@ class FacetMenu(MenuBase):
     def _get_link(self, name):
         return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
 
-    def iterlinks(self, requesturl=None, selectedfacetname=None):
+    def iterlinks(self, requesturi=None, selectedfacetname=None):
         """See IFacetMenu."""
         if selectedfacetname is None:
             selectedfacetname = self.defaultlink
-        for link in MenuBase.iterlinks(self, requesturl=requesturl):
+        for link in MenuBase.iterlinks(self, requesturi=requesturi):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True

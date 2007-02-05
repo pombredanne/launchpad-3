@@ -207,7 +207,7 @@ class IPerson(IHasSpecifications):
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
-        'The caches of karma scores, by ' 'karma category.')
+        'The caches of karma scores, by karma category.')
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
@@ -235,7 +235,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
@@ -402,6 +401,17 @@ class IPerson(IHasSpecifications):
         """The branch associated to this person and product with this name.
 
         The product_name may be None.
+        """
+
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there are more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called from a team object, because of
+        https://launchpad.net/bugs/30789.
         """
 
     def isTeam():
@@ -753,7 +763,11 @@ class IPersonSet(Interface):
         """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language."""
+        """Return people who translated strings in distroRelease to language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.

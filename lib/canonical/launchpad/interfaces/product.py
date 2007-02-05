@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Description, ProductBugTracker, Summary, Title)
+    Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
@@ -118,33 +118,33 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Date Created'),
         description=_("""The date this product was created in Launchpad."""))
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The product home page. Please include
             the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The full URL of this product's wiki, if it has one.
             Please include the http://"""))
 
-    screenshotsurl = TextLine(
+    screenshotsurl = URIField(
         title=_('Screenshots URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The full URL for screenshots of this product,
             if available. Please include the http://"""))
 
-    downloadurl = TextLine(
+    downloadurl = URIField(
         title=_('Download URL'),
+        required=False,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The full URL where downloads for this product
-            are located, if available. Please include the http://"""),
-        constraint=valid_webref,
-        required=False)
+            are located, if available. Please include the http://"""))
 
     programminglang = TextLine(
         title=_('Programming Language'),

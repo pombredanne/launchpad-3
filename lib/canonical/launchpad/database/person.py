@@ -535,6 +535,34 @@ class Person(SQLBase):
             return Branch.selectOneBy(owner=self, product=product,
                                       name=branch_name)
 
+    def findPathToTeam(self, team):
+        """See IPerson."""
+        assert not self.isTeam()
+        assert team.isTeam()
+        path = [team]
+        team = self._getDirectMemberIParticipateIn(team)
+        while team != self:
+            path.insert(0, team)
+            team = self._getDirectMemberIParticipateIn(team)
+        return path
+
+    def _getDirectMemberIParticipateIn(self, team):
+        """Return a direct member of the given team that this person
+        participates in.
+
+        If there are more than one direct member of the given team that this
+        person participates in, the one with the oldest creation date is
+        returned.
+        """
+        query = AND(
+            TeamMembership.q.teamID == team.id,
+            TeamMembership.q.personID == Person.q.id,
+            TeamParticipation.q.teamID == Person.q.id,
+            TeamParticipation.q.personID == self.id)
+        clauseTables = ['TeamMembership', 'TeamParticipation']
+        return Person.selectFirst(
+            query, clauseTables=clauseTables, orderBy='datecreated')
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -1080,11 +1108,6 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def activities(self):
-        """See IPerson."""
-        return Karma.selectBy(person=self)
-
-    @property
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
@@ -1418,7 +1441,8 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s"""
+            POTemplate.distrorelease = %s AND
+            POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distrorelease),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,

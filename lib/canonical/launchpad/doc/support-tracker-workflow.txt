@@ -494,6 +494,7 @@ ticket without changing its status.
     >>> login('no-priv@canonical.com')
     >>> old_status = ticket.status
     >>> old_datelastresponse = ticket.datelastresponse
+    >>> old_datelastquery = ticket.datelastquery
     >>> comment = ticket.addComment(
     ...     no_priv, 'This is a comment.',
     ...     datecreated=now_plus_two_hours)
