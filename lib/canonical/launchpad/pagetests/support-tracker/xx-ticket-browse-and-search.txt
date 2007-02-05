@@ -138,10 +138,10 @@ enters his search key and hit the 'Search' button.
 Unfortunately, the search doesn't return any similar requests:
 
     >>> print browser.title
-    Support requests about "firefox is slow" for Ubuntu
+    Support requests matching "firefox is slow" for Ubuntu
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no support requests about "firefox is slow" for Ubuntu with the
-    requested statuses.
+    There are no support requests matching "firefox is slow" for Ubuntu with
+    the requested statuses.
 
 Joe observes under the search widget that there are checkboxes to select
 the ticket status to search. He notices that only some statuses are selected.
@@ -268,7 +268,7 @@ enters 'Evolution' as a keyword and hits the search button.
     >>> browser.getControl('Search').click()
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no answered support requests about "Evolution" for Ubuntu.
+    There are no answered support requests matching "Evolution" for Ubuntu.
 
 === My Requests ===
 
@@ -358,10 +358,10 @@ Like all other report, this one is searchable:
     >>> user_browser.getControl(name='field.search_text').value = 'evolution'
     >>> user_browser.getControl('Search').click()
     >>> print user_browser.title
-    Support requests about "evolution" needing your attention for Ubuntu
+    Support requests matching "evolution" needing your attention for Ubuntu
     >>> print find_main_content(
     ...     user_browser.contents).first('p').renderContents()
-    No support requests about "evolution" need your attention for Ubuntu.
+    No support requests matching "evolution" need your attention for Ubuntu.
 
 If there is no support requests needing the user's attention,
 a message informing him of this fact is displayed.
