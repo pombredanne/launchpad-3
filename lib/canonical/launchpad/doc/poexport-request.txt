@@ -72,9 +72,7 @@ Let's read our mail.
   >>> from canonical.launchpad.mail.stub import test_emails
   >>> len(test_emails)
   1
-  >>> from_addr, to_addrs, body = test_emails[0]
-  >>> from_addr
-  'bounces@canonical.com'
+  >>> from_addr, to_addrs, body = test_emails.pop()
   >>> to_addrs
   ['mark@hbd.com']
   >>> print_mail_body(body)
@@ -107,77 +105,9 @@ Let's download it and make sure the contents look ok.
   rosetta-pmount/ca.po
   rosetta-pmount/cs.po
 
-Now let's see what happens if one of the PO files is broken.
-
-  >>> hr = potemplate.getPOFileByLang('hr')
-  >>> hr.header = 'Content-Type: text/plain; charset=broken\n'
-  >>> hr.sync()
-  >>> hr.export()
-  Traceback (most recent call last):
-  ...
-  POInvalidInputError: Unknown charset u'broken'
-
-  >>> test_emails[:] = []
-  >>> request_set.addRequest(person, None, [hr, ca])
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for Mark Shuttleworth, related to template
-  pmount in Ubuntu Hoary package "pmount"
-
-  >>> transaction.commit()
-
-We should have two extra emails, one to the error reports mailing list and
-another to the person who made the request.
-
-  >>> len(test_emails)
-  2
-  >>> from_addr, to_addrs1, body = test_emails[0]
-  >>> from_addr, to_addrs2, body = test_emails[1]
-  >>> sorted(to_addrs1 + to_addrs2)
-  ['launchpad-error-reports@lists.canonical.com', 'mark@hbd.com']
-  >>> print_mail_body(body)
-  > 
-  > Hello Mark Shuttleworth,
-  > 
-  > Rosetta has finished exporting your requested files.
-  > However, problems were encountered exporting the
-  > following files:
-  > 
-  >  * hr.po
-  > 
-  > The Rosetta team has been notified of this problem. Please
-  > reply to this email for further assistance.
-  > 
-  > Of the 2 files you requested, Rosetta successfully exported
-  > 1, which can be downloaded from the following location:
-  > 
-  >     http://localhost:58000/.../rosetta-pmount.tar.gz
-
-We should get a slightly different email if we didn't manage to export any
-files:
-
-  >>> test_emails[:] = []
-  >>> request_set.addRequest(person, None, [hr])
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for Mark Shuttleworth, related to template pmount in
-  Ubuntu Hoary package "pmount"
-
-  >>> transaction.commit()
-
-  >>> len(test_emails)
-  2
-  >>> from_addr, to_addrs, body = test_emails[0]
-  >>> print_mail_body(body)
-  > 
-  > Hello Mark Shuttleworth,
-  > 
-  > Rosetta encountered problems exporting the files you
-  > requested. The Rosetta team has been notified of this
-  > problem. Please reply to this email for further assistance.
-
 Let's try requesting an export in MO format:
 
   >>> from canonical.lp.dbschema import RosettaFileFormat
-  >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [ca], RosettaFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for Mark Shuttleworth, related to template pmount in
@@ -187,7 +117,17 @@ Let's try requesting an export in MO format:
 
   >>> len(test_emails)
   1
-  >>> from_addr, to_addrs, body = test_emails[0]
+  >>> from_addr, to_addrs, body = test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+  >>> print_mail_body(body)
+  > 
+  > Hello Mark Shuttleworth,
+  > 
+  > The files you requested from Rosetta are ready for download
+  > from the following location:
+  > 
+  >     http://localhost:58000/.../ca.mo
   >>> url = extract_url(body)
 
 We will need to define a helper function.
@@ -232,16 +172,15 @@ Finally, the code should work when executed from the script. This is a good
 way that the user used by the script has the needed rights to use the
 database.
 
+To go thru all code paths, the export should have requests for distributions
+and products.
 
   # We need to request again some files.
-  # Some are for distroreleases.
   >>> ca.potemplate.distrorelease is None
   False
   >>> cs.potemplate.distrorelease is None
   False
   >>> request_set.addRequest(person, None, [ca, cs])
-
-  # And others are for productseries.
   >>> product_template = potemplate.get(1)
   >>> product_template.productseries is None
   False

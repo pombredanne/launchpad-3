@@ -17,6 +17,7 @@ import logging
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from urllib2 import URLError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
@@ -55,7 +56,8 @@ from canonical.launchpad.components.poimport import (
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -822,7 +824,7 @@ class POFile(SQLBase, RosettaStats):
             # without them, we always do a full export.
             try:
                 return self.fetchExportCache()
-            except (LookupError, LibrarianFailure):
+            except (LookupError, URLError):
                 # There is an error getting a cached export from Librarian.
                 # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
                 # for bug #1887. Something produces LookupError exception and
@@ -839,7 +841,14 @@ class POFile(SQLBase, RosettaStats):
 
         if included_obsolete:
             # Update the cache if the request includes obsolete messages.
-            self.updateExportCache(contents)
+            try:
+                self.updateExportCache(contents)
+            except UploadFailed:
+                # For some reason, we were not able to upload the exported
+                # file in librarian, that's fine. It only means that next
+                # time, we will do a full export again.
+                logging.warning(
+                    "Error uploading a cached file into librarian", exc_info=1)
 
         return contents
 
