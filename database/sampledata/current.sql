@@ -522,6 +522,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -2887,6 +2890,13 @@ INSERT INTO nameblacklist (id, regexp, "comment") VALUES (2, '^admin', NULL);
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 
+ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE officialbugtag ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
 
 INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (1, 1, 1, 16, '2006-10-16 18:31:44.328897');
@@ -2973,7 +2983,6 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (51, 'Helge Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, '''helg'':2A ''kreutzm'':1A ''kreutzmann'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (52, 'No Privileges Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''priv'':3A ''person'':6A ''no-priv'':1A ''privileg'':5A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (53, 'testing Spanish team', NULL, 13, NULL, 'testing-spanish-team', NULL, '''team'':4A,7A ''test'':2A,5A ''spanish'':3A,6A ''testing-spanish-team'':1A', NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (54, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''admin'':3A ''shipit'':2A,4A ''administr'':5A ''shipit-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (55, 'Marilize Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2A ''coetze'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2A ''mallach'':3A', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3A ''launchpad'':1A,2A', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
@@ -2987,6 +2996,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, '''janitor'':4A,7A ''support'':2A,5A ''tracker'':3A,6A ''support-tracker-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, '''diogo'':2A ''matsubara'':1A,3A', NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, '''team'':2A,5A ''janitor'':4A,7A ''membership'':3A,6A ''team-membership-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''shipit'':2A,4A ''admins2'':3A ''administr'':5A ''shipit-admins2'':1A', NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3700,8 +3710,7 @@ INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "ty
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (4, 17, 'never-closes2', 'A second random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 3, '2006-10-16 18:31:44.616371');
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (5, 17, 'never-closes3', 'A third random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 1, '2006-10-16 18:31:44.617218');
 INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (6, 17, 'never-closes4', 'A public poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 1, '2007-01-16 18:31:44.615511');
-INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition,
-"type", allowspoilt, secrecy, date_created) VALUES (7, 17, 'not-yet-opened', 'A public poll that has not opened yet', '2024-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 1, '2007-01-16 18:31:44.615511');
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy, date_created) VALUES (7, 17, 'not-yet-opened', 'A public poll that has not opened yet', '2024-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 1, '2007-01-16 18:31:44.615511');
 
 
 ALTER TABLE poll ENABLE TRIGGER ALL;
@@ -8808,14 +8817,14 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (6, 28, NULL, 55, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A', NULL, 3);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (7, 27, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A', NULL, 1);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (12, 6, NULL, NULL, '2006-03-08 18:38:24.526648', NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A', NULL, 0);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (13, 54, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL, 0);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (13, 243601, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL, 0);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (14, 8, 55, NULL, '2005-05-19 18:38:24.526648', NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 1, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (15, 23, 55, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 2, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (16, 56, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Some
 Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL, 1);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (19, 54, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', '''maril'':1A ''coetze'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', '''maril'':1A ''coetze'':2A', NULL, 1);
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -9385,7 +9394,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (42, 50, 53, 2, '2005-07-12 14:34:36.906758', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (43, 46, 53, 2, '2005-07-12 14:35:44.635842', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (44, 16, 53, 2, '2005-07-12 14:36:09.587753', NULL, 13, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 243601, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (47, 12, 32, 6, '2005-09-28 20:08:08.248467', '2007-08-29 00:00:00', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (48, 56, 30, 2, '2005-10-07 12:22:54.947939', NULL, 13, NULL);
@@ -9481,7 +9490,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (83, 53, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (84, 53, 50);
 INSERT INTO teamparticipation (id, team, person) VALUES (85, 53, 46);
 INSERT INTO teamparticipation (id, team, person) VALUES (86, 53, 16);
-INSERT INTO teamparticipation (id, team, person) VALUES (87, 54, 55);
+INSERT INTO teamparticipation (id, team, person) VALUES (87, 243601, 55);
 INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
 INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
@@ -9655,7 +9664,6 @@ INSERT INTO validpersonorteamcache (id) VALUES (50);
 INSERT INTO validpersonorteamcache (id) VALUES (51);
 INSERT INTO validpersonorteamcache (id) VALUES (52);
 INSERT INTO validpersonorteamcache (id) VALUES (53);
-INSERT INTO validpersonorteamcache (id) VALUES (54);
 INSERT INTO validpersonorteamcache (id) VALUES (55);
 INSERT INTO validpersonorteamcache (id) VALUES (56);
 INSERT INTO validpersonorteamcache (id) VALUES (57);
@@ -9666,6 +9674,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (61);
 INSERT INTO validpersonorteamcache (id) VALUES (63);
 INSERT INTO validpersonorteamcache (id) VALUES (64);
 INSERT INTO validpersonorteamcache (id) VALUES (65);
+INSERT INTO validpersonorteamcache (id) VALUES (243601);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
