@@ -3,22 +3,22 @@ Rosetta officially from a IProject's translations page.
 
 GNOME is a good example, it has products with translations.
 
-  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
+  >>> browser.open('http://translations.launchpad.dev/gnome')
   >>> print browser.url
-  http://translations.launchpad.dev/gnome/+translations
+  http://translations.launchpad.dev/gnome
 
 Evolution being one with translations and being used officially
 
   >>> browser.getLink('Evolution').click()
   >>> print browser.url
-  http://translations.launchpad.dev/evolution/+translations
+  http://translations.launchpad.dev/evolution
 
   # We should use goBack() here but can't because of ZC #645:
   # zope.testbrowser truncates document content after goBack().
   #>>> browser.goBack()
-  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
+  >>> browser.open('http://translations.launchpad.dev/gnome')
   >>> print browser.url
-  http://translations.launchpad.dev/gnome/+translations
+  http://translations.launchpad.dev/gnome
 
 Netapplet is another product of GNOME project. It has translations, but it's not
 using Rosetta officially, so it's not in this page.
@@ -50,9 +50,9 @@ It's not using Rosetta officially
 
 And it has translations.
 
-  >>> browser.open('http://translations.launchpad.dev/netapplet/+translations')
+  >>> browser.open('http://translations.launchpad.dev/netapplet')
   >>> print browser.url
-  http://translations.launchpad.dev/netapplet/+translations
+  http://translations.launchpad.dev/netapplet
 
   >>> netapplet_template = browser.getLink('View Template & All Languages...')
   >>> print netapplet_template.url
@@ -61,9 +61,9 @@ And it has translations.
 The translations page has also a link to the product search page to see
 whether a product is registered in Launchpad.
 
-  >>> browser.open('http://translations.launchpad.dev/gnome/+translations')
+  >>> browser.open('http://translations.launchpad.dev/gnome')
   >>> print browser.url
-  http://translations.launchpad.dev/gnome/+translations
+  http://translations.launchpad.dev/gnome
   >>> browser.getLink('registered with Launchpad').click()
   >>> print browser.url
   http://translations.launchpad.dev/products
