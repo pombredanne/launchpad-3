@@ -9,13 +9,10 @@ GNOME is a good example, it has products with translations.
 
 Evolution being one with translations and being used officially
 
-  >>> browser.getLink('Evolution').click()
-  >>> print browser.url
+  >>> evo_link = browser.getLink('Evolution')
+  >>> print evo_link.url
   http://translations.launchpad.dev/evolution
 
-  # We should use goBack() here but can't because of ZC #645:
-  # zope.testbrowser truncates document content after goBack().
-  #>>> browser.goBack()
   >>> browser.open('http://translations.launchpad.dev/gnome')
   >>> print browser.url
   http://translations.launchpad.dev/gnome
@@ -43,10 +40,12 @@ Netapplet is in fact a product belonging to GNOME project.
 
 It's not using Rosetta officially
 
-  >>> print find_portlet(browser.contents, 'Network Applet')
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     print tag
   <...
-  ...Product status:...
-  ...Doesn&rsquo;t use Rosetta...
+  ...Status:...
+  ...Active...
+  ...Doesn&rsquo;t use Translations...
 
 And it has translations.
 

@@ -51,7 +51,7 @@
               <img alt="" src="/@@/product" />
               <a tal:content="product/displayname"
                  tal:attributes="
-                   href string:${product/fmt:url}/+translations">Evolution</a>
+                   href product/fmt:url">Evolution</a>
             </td>
             <td>
               <span tal:replace="product/title">
