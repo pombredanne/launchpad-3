@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -250,6 +251,27 @@ class HandleReleaseTestCase(unittest.TestCase):
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('42.0')
         self.assertEqual(release.files.count(), 1)
+
+    def test_handleReleaseUnableToParseVersion(self):
+        # Test that handleRelease() handles the case where a version can't be
+        # parsed from the url given.
+        ztm = self.layer.txn
+        output = StringIO()
+        logging.basicConfig(level=logging.CRITICAL)
+        logger = logging.getLogger()
+        logger.addHandler(logging.StreamHandler(output))
+        prf = ProductReleaseFinder(ztm, logger)
+
+        # create a release tarball
+        fp = open(os.path.join(
+            self.release_root, 'evolution-42.0.tar.gz'), 'w')
+        fp.write('foo')
+        fp.close()
+
+        url = self.release_url + '/evolution420.tar.gz'
+        prf.handleRelease('evolution', 'trunk', url)
+        self.assertEqual(
+            "Unable to parse version from %s\n" % url, output.getvalue())
 
 
 def test_suite():

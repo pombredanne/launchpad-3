@@ -5,36 +5,37 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProjectNavigation',
-    'ProjectSetNavigation',
-    'ProjectEditView',
     'ProjectAddProductView',
-    'ProjectSetView',
+    'ProjectAddTicketView',
     'ProjectAddView',
+    'ProjectLatestTicketsView',
+    'ProjectNavigation',
+    'ProjectEditView',
+    'ProjectSetNavigation',
+    'ProjectSetView',
     'ProjectRdfView',
     ]
 
-from urllib import quote as urlquote
-
-from zope.component import getUtility
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
+    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     ILaunchpadRoot, NotFoundError)
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.ticket import TicketAddView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -174,8 +175,11 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
+
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -280,10 +284,12 @@ class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
     field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl']
+                   'description', 'homepageurl', 'gotchi', 'emblem']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
@@ -295,7 +301,9 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user)
+            owner=self.user,
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
     @property
@@ -330,3 +338,51 @@ class ProjectRdfView(object):
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+
+class ProjectAddTicketView(TicketAddView):
+    """View that handles creation of a ticket from an IProject context."""
+
+    search_field_names = ['product'] + TicketAddView.search_field_names
+
+    def setUpFields(self):
+        # Add a 'product' field to the beginning of the form.
+        TicketAddView.setUpFields(self)
+        self.form_fields = self.createProductField() + self.form_fields
+
+    def createProductField(self):
+        """Create a Choice field to select one of the project's products."""
+        return form.Fields(
+            Choice(
+                __name__='product', vocabulary='ProjectProducts',
+                title=_('Product'),
+                description=_(
+                    'Choose the product for which you need support.'),
+                required=True),
+            render_context=self.render_context)
+
+    @property
+    def pagetitle(self):
+        """The current page title."""
+        return _('Request support with a product from ${project}',
+                 mapping=dict(project=self.context.displayname))
+
+    @property
+    def ticket_target(self):
+        """The ITicketTarget to use is the selected product."""
+        if self.widgets['product'].hasValidInput():
+            return self.widgets['product'].getInputValue()
+        else:
+            return None
+
+
+# XXX flacoste 2006-12-13 This should be removed and the
+# TicketTargetLatestTicketsView used instead once we add a
+# searchTickets() method to IProject. This will happen when
+# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
+class ProjectLatestTicketsView:
+    """Empty view to allow rendering of the default template used by
+    TicketAddView.
+    """
+
+    def __call__(self):
+        return u''
