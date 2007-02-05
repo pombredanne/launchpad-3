@@ -24,6 +24,7 @@ from canonical.functional import (
         FunctionalTestSetup, FunctionalDocFileSuite,
         )
 from canonical.config import config
+from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
@@ -78,9 +79,7 @@ def _reconnect_sqlos(dbuser=None):
     # Confirm that the database adapter *really is* connected and connected
     # to the right database
     assert da.isConnected(), 'Failed to reconnect'
-    cur = da._v_connection.cursor()
-    cur.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
-    assert cur.fetchone()[0] > 0, 'Sample data not loaded!'
+    confirm_dbrevision()
 
     # Confirm that the SQLOS connection cache has been emptied, so access
     # to SQLBase._connection will get a fresh Tranaction
