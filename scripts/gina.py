@@ -25,11 +25,12 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.lp import initZopeless, dbschema
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
-from canonical.launchpad.scripts.lockfile import LockFile
 
 from canonical.launchpad.scripts.gina import ExecutionError
 from canonical.launchpad.scripts.gina.katie import Katie
@@ -88,11 +89,10 @@ def main():
             if target not in possible_targets:
                 parser.error("No Gina target %s in config file" % target)
 
-    lockfile = LockFile(options.lockfile, timeout=timedelta(days=1),
-                        logger=log)
+    lockfile = GlobalLock(options.lockfile, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
+    except LockAlreadyAcquired:
         log.info('Lockfile %s already locked. Exiting.', options.lockfile)
         sys.exit(1)
 

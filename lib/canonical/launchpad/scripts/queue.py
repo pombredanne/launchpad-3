@@ -1,5 +1,8 @@
-# Copyright Canonical Limited 2006
+# Copyright Canonical Limited 2006-2007
 """Ftpmaster queue tool libraries."""
+
+# XXX: This should be renamed to ftpmasterqueue.py or just ftpmaster.py
+# as Launchpad contains lots of queues -- StuartBishop 20070131
 
 __metaclass__ = type
 
