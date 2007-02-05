@@ -153,6 +153,11 @@ class TeamMembership(SQLBase):
         self.reviewer = reviewer
         self.reviewercomment = reviewercomment
 
+        if (old_status not in [admin, approved]
+            and status in [admin, approved]):
+            # Inactive member has become active; update datejoined
+            self.datejoined = datetime.now(pytz.timezone('UTC'))
+
         self.syncUpdate()
 
         # XXX: The logic here is not correct, as deactivated or expired
