@@ -25,6 +25,8 @@ class UpdateBranches(LaunchpadScript):
         config.launchpad.errorreports.oops_prefix = oops_prefix
         errordir = config.branchscanner.errorreports.errordir
         config.launchpad.errorreports.errordir = errordir
+        copy_to_zlog = config.branchscanner.errorreports.copy_to_zlog
+        config.launchpad.errorreports.copy_to_zlog = copy_to_zlog
 
         BranchScanner(self.txn, self.logger).scanAllBranches()
 
