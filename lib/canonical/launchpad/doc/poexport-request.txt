@@ -243,8 +243,7 @@ And run the script.
   >>> print output
   INFO    creating lockfile
   DEBUG   Exporting objects for person 1, PO template 2
-  INFO    Done.
-  DEBUG   Removing lock file: /var/lock/rosetta-export-queue.lock
+  DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
 
 
