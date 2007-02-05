@@ -268,6 +268,28 @@ class TestBzrSyncModified(BzrSyncTestCase):
         self.bzrsync.close()
         BzrSyncTestCase.tearDown(self)
 
+    def test_ancient_revision(self):
+        # test that we can sync revisions with negative, fractional timestamps.
+
+        class FakeRevision:
+            """A revision with a negative, fractional timestamp.
+            """
+            revision_id = 'rev42'
+            parent_ids = ['rev1', 'rev2']
+            committer = self.AUTHOR
+            message = self.LOG
+            timestamp = -4.5
+            timezone = 0
+
+        counts = self.getCounts()
+
+        # sync the revision
+        self.bzrsync.syncRevision(FakeRevision)
+
+        # confirm that it synced correctly
+        self.assertCounts(counts, new_revisions=1, new_numbers=0,
+                          new_parents=2, new_authors=0)
+
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
         class FakeRevision:

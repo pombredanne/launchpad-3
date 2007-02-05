@@ -12,7 +12,7 @@ __all__ = [
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 from zope.component import getUtility
@@ -155,8 +155,13 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
-            revision_date = datetime.fromtimestamp(
-                bzr_revision.timestamp, tz=UTC)
+
+            # Work around Python bug #1646728.
+            # See https://launchpad.net/bugs/81544.
+            int_timestamp = int(bzr_revision.timestamp)
+            revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
+            revision_date += timedelta(seconds=bzr_revision.timestamp
+                                       - int_timestamp)
 
             db_revision = getUtility(IRevisionSet).new(
                 revision_id=revision_id,
