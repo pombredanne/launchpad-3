@@ -1,54 +1,5 @@
 /* === Global Launchpad design: === */
 
-/* Board-like comment CSS */
-
-.boardComment {
-  border: 1px solid #364970;
-  margin-bottom: 1.5em;
-  margin-top: 1em;
-  position: relative;
-}
-
-/* Board-like comment CSS */
-
-.boardComment {
-  border: 1px solid #364970;
-  margin-bottom: 1.5em;
-  margin-top: 1em;
-  position: relative;
-}
-
-/* Fix for IE float bug */
-* html .boardComment {
-  float: left;
-  clear: both;
-  width: 99%;
-}
-
-
-.boardCommentDetails {
-  font-size: 80%;
-  border: 1px solid #364970;
-  border-style: none none solid none;
-  background-color: #eee;
-  padding: 0.25em 12px;
-}
-
-.boardCommentBody {
-  padding: 0.5em 12px 0;
-}
-
-.boardCommentContent {
-  line-height: 1.5em;
-}
-
-.boardCommentContent pre {
-  background-color: white;
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
 /* Various custom list formats: */
 ul.add>li, li.add {
   list-style-image: url(/@@/add);
