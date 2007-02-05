@@ -271,6 +271,20 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.user,
                                       data['product'],
                                       data['name'])
+    def script_hook(self):
+        return '''<script type="text/javascript">
+
+        function populate_name() {
+          populate_branch_name_from_url('%(name)s', '%(url)s')
+        }
+        var url_field = document.getElementById('%(url)s');
+        // Since it is possible that the form could be submitted without
+        // the onblur getting called, and onblur can be called without
+        // onchange being fired, set them both, and handle it in the function.
+        url_field.onchange = populate_name;
+        url_field.onblur = populate_name;
+        </script>''' % { 'name' : self.widgets['name'].name,
+                         'url' : self.widgets['url'].name } 
 
 
 class PersonBranchAddView(BranchAddView):
