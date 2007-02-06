@@ -28,6 +28,9 @@
 
   </div>
 
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
+
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 
 <metal:block fill-slot="help">

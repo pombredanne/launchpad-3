@@ -1256,8 +1256,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 FROM
                     POTemplate AS pt
                 WHERE
-                    pt.distrorelease = %s''' % sqlvalues(
-                    self, self.parentrelease))
+                    pt.distrorelease = %s AND pt.iscurrent = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
 
             logger_object.info('Filling POTMsgSet table...')
             cur.execute('''
