@@ -65,6 +65,14 @@
             template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
 
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.FileBugInPackageView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
        methods="filebug"

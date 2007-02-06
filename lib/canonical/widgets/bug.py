@@ -17,7 +17,8 @@ from zope.schema import Choice
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.launchpad.interfaces import (
-    IBugSet, NotFoundError, UnexpectedFormData)
+    IBugSet, IDistribution, IDistributionSourcePackage, IProduct,
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
@@ -94,13 +95,11 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
     implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
     template = ViewPageTemplateFile('templates/filebug-target.pt')
+    default_option = "package"
 
     def __init__(self, field, request):
         BrowserWidget.__init__(self, field, request)
         fields = [
-            Choice(
-                __name__='target_type', title=u'Target Type',
-                required=True, values=[u'product', u'package']),
             Choice(
                 __name__='product', title=u'Product',
                 required=False, vocabulary='Product'),
@@ -122,8 +121,8 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
         for option in ['package', 'product']:
             attributes = dict(
                 type='radio', name=self.name, value=option,
-                id='%s.%s' % (self.name, option))
-            if self.request.form.get(self.name, 'package') == option:
+                id='%s.option.%s' % (self.name, option))
+            if self.request.form.get(self.name, self.default_option) == option:
                 attributes['checked'] = 'checked'
             self.options[option] = renderElement('input', **attributes)
 
@@ -145,8 +144,10 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
             return self.product_widget.getInputValue()
         elif form_value == 'package':
             distribution = self.distribution_widget.getInputValue()
-            if self.package_widget.hasInput():
+            if (self.package_widget.hasInput() and
+                self.package_widget.getInputValue() is not None):
                 package_name = self.package_widget.getInputValue()
+
                 source_name, binary_name = distribution.guessPackageNames(
                     package_name.name)
                 return distribution.getSourcePackage(source_name)
@@ -154,6 +155,21 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
                 return distribution
         else:
             raise UnexpectedFormData("No valid option was selected.")
+
+    def setRenderedValue(self, value):
+        if IProduct.providedBy(value):
+            self.default_option = 'product'
+            self.product_widget.setRenderedValue(value)
+        elif IDistribution.providedBy(value):
+            self.default_option = 'package'
+            self.distribution_widget.setRenderedValue(value)
+        elif IDistributionSourcePackage.providedBy(value):
+            self.default_option = 'package'
+            self.distribution_widget.setRenderedValue(value.distribution)
+            self.package_widget.setRenderedValue(value.sourcepackagename)
+        else:
+            raise AssertionError('Not a valid value: %r' % value)
+
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""

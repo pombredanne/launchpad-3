@@ -11,15 +11,18 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IGeneralBugAddForm',
     'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -389,6 +392,14 @@ class IProjectBugAddForm(IBugAddForm):
     product = Choice(
         title=_("Product"), required=True,
         vocabulary="ProjectProductsUsingMalone")
+
+
+class IGeneralBugAddForm(IBugAddForm):
+    """Create a bug for an anything."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
+        required=True)
 
 
 class IBugSet(Interface):

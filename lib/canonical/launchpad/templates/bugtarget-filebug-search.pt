@@ -6,7 +6,7 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestbugs" />
+  <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -18,10 +18,6 @@
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
     <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_info">
-        Please describe the bug in a few words, for example, "weather
-        applet crashes on logout":
-      </p>
 
       <table class="form" metal:fill-slot="widgets">
         <tal:title_widget
@@ -29,6 +25,21 @@
             tal:condition="widget">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
         </tal:title_widget>
+
+        <tal:distribution
+            tal:define="widget nocall:view/widgets/bugtarget|nothing"
+            tal:condition="widget">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:distribution>
+
+        <tr>
+          <td colspan="2">
+            <p>
+          Please describe the bug in a few words, for example, "weather
+          applet crashes on logout":
+            </p>
+          </td>
+        </tr>
         <tal:title_widget tal:define="widget nocall:view/widgets/title">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
         </tal:title_widget>

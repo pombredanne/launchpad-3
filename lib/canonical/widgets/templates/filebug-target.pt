@@ -14,7 +14,7 @@
   </tr>
   <tr>
     <td align="right">
-      <label tal:attributes="for string:${view/name}.package">
+      <label tal:attributes="for string:${view/name}.option.package">
         Package
       </label>
     </td>
