@@ -203,7 +203,6 @@ And run the script.
   in Ubuntu Hoary package "pmount"
   DEBUG   Exporting objects for Mark Shuttleworth, related to template
   evolution-2.2 in Evolution trunk
-  INFO    Done.
   DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
 

@@ -531,10 +531,13 @@ At this point, librarian is not available, but the export is still working.
   True
   >>> old_cached_file_id = pofile.exportfile.id
   >>> len(pofile.export()) > 0
-  WARNING:root:Error fetching a cached file from librarian
+  ERROR:root:Error fetching a cached file from librarian
   Traceback (most recent call last):
   ...
   LookupError: ...
+  WARNING:root:Error uploading a cached file into librarian
+  ...
+  UploadFailed: (111, 'Connection refused')
   True
 
 Although the cache is still pointing to previous value because it cannot be
