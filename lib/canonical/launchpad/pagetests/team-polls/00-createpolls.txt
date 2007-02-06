@@ -31,8 +31,8 @@ easily guess it.
 Now we're logged in as Jeff Waugh which is a team administrator and thus can
 create a new poll.
 
-  >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team/+polls')
-  >>> team_admin_browser.getLink('Set up a new poll').click()
+  >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team')
+  >>> team_admin_browser.getLink('Create a New Poll').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+newpoll'
 

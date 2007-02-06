@@ -207,7 +207,7 @@ class IPerson(IHasSpecifications):
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
-        'The caches of karma scores, by ' 'karma category.')
+        'The caches of karma scores, by karma category.')
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
@@ -235,7 +235,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")

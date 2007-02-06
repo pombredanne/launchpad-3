@@ -129,6 +129,10 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
+        if self.host not in host_requests:
+            host_requests[self.host] = 0
+        if self.host not in host_timeouts:
+            host_timeouts[self.host] = 0
 
     def probe(self):
         if should_skip_host(self.host):
@@ -197,6 +201,17 @@ class ProberFactory(protocol.ClientFactory):
         self.request_host = host
         self.request_port = port
         self.request_path = path
+
+
+def _parse(url, defaultPort=80):
+    """Parse the given URL returning the scheme, host, port and path."""
+    scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
+    port = defaultPort
+    if ':' in host:
+        host, port = host.split(':')
+        assert port.isdigit()
+        port = int(port)
+    return scheme, host, port, path
 
 
 def _parse(url, defaultPort=80):

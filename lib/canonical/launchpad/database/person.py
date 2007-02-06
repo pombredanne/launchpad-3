@@ -169,7 +169,7 @@ class Person(SQLBase):
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
-        if self._SO_val_teamownerID is not None:
+        if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
     # specification-related joins
@@ -1103,11 +1103,6 @@ class Person(SQLBase):
     def guessedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
-
-    @property
-    def activities(self):
-        """See IPerson."""
-        return Karma.selectBy(person=self)
 
     @property
     def pendinggpgkeys(self):
