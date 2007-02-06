@@ -70,6 +70,42 @@ class TestPublishDistro(TestNativePublishingBase):
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
 
+    def testRunWithEmptySuites(self):
+        """Try a publish-distro run on empty suites in careful_apt mode
+
+        Expect it to create all indexes, including current 'Release' file
+        for the empty suites specified.
+        """
+        rc, out, err = self.runPublishDistro(
+            ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
+
+        self.assertEqual(0, rc)
+
+        # Check "Release" files
+        release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
+        self.assertTrue(os.path.exists(release_path))
+
+        release_path = "%s/hoary-test-backports/Release" % self.config.distsroot
+        self.assertTrue(os.path.exists(release_path))
+
+        release_path = "%s/hoary-test/Release" % self.config.distsroot
+        self.assertFalse(os.path.exists(release_path))
+
+        # Check some index files
+        index_path = (
+            "%s/hoary-test-updates/main/binary-i386/Packages"
+            % self.config.distsroot)
+        self.assertTrue(os.path.exists(index_path))
+
+        index_path = (
+            "%s/hoary-test-backports/main/binary-i386/Packages"
+            % self.config.distsroot)
+        self.assertTrue(os.path.exists(index_path))
+
+        index_path = (
+            "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
+        self.assertFalse(os.path.exists(index_path))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

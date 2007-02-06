@@ -15,7 +15,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.lp.dbschema import PackagePublishingPriority
+from canonical.lp.dbschema import (
+    PackagePublishingPriority, PackagePublishingPocket)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
@@ -174,6 +175,58 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         apt_conf = fa.generateConfig()
         assert len(file(apt_conf).readlines()) == 23
         assert fa.runApt(apt_conf) == 0
+
+    def testGenerateConfigEmptyCareful(self):
+        """Generate apt-ftparchive config for an specific empty suite.
+
+        By passing 'careful_apt' option associated with 'allowed_suite'
+        we can publish only a specific group of the suites even if they
+        are still empty. It makes APT clients happier during development
+        cycle.
+        """
+        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+        from canonical.archivepublisher.publishing import Publisher
+
+        allowed_suites = set()
+        allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
+
+        publisher = Publisher(self._logger, self._config, self._dp,
+                              self._distribution, allowed_suites=allowed_suites)
+        fa = FTPArchiveHandler(self._logger, self._config, self._dp,
+                               self._distribution, publisher)
+
+        fa.createEmptyPocketRequests(fullpublish=True)
+
+        fa.publishOverrides([], [])
+
+        fa.publishFileLists([], [])
+
+        apt_conf = fa.generateConfig(fullpublish=True)
+        self.assertTrue(os.path.exists(apt_conf))
+
+        apt_conf_content = file(apt_conf).read()
+        self.assertTrue(apt_conf_content)
+
+        sample_content = file(
+            os.path.join(
+            self._sampledir, 'apt_conf_single_empty_suite_test')).read()
+        self.assertEqual(apt_conf_content, sample_content)
+
+        self.assertEqual(fa.runApt(apt_conf), 0)
+
+        self.assertTrue(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test-updates", "main",
+                         "binary-i386", "Packages")))
+        self.assertTrue(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test-updates", "main",
+                         "source", "Sources")))
+
+        self.assertFalse(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test", "main",
+                         "binary-i386", "Packages")))
+        self.assertFalse(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test", "main",
+                         "source", "Sources")))
 
 
 class TestFTouch(unittest.TestCase):

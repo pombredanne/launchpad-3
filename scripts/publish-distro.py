@@ -147,7 +147,7 @@ def main():
     try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                    options.careful or options.careful_apt)
     try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                   options.careful)
+                   options.careful or options.careful_apt)
 
     log.debug("Ciao")
 

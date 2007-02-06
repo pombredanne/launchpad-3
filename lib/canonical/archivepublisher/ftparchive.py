@@ -183,9 +183,15 @@ class FTPArchiveHandler:
         for distrorelease in self.distro:
             components = self._config.componentsForRelease(distrorelease.name)
             for pocket, suffix in pocketsuffix.items():
-                if (not fullpublish and
-                    not self.publisher.isDirty(distrorelease, pocket)):
-                    continue
+                if not fullpublish:
+                    if not self.publisher.isDirty(distrorelease, pocket):
+                        continue
+                else:
+                    if (self.publisher.allowed_suites and not
+                        (distrorelease.name, pocket) in
+                        self.publisher.allowed_suites):
+                        continue
+
                 for comp in components:
                     self.createEmptyPocketRequest(distrorelease, suffix, comp)
 
@@ -241,9 +247,14 @@ class FTPArchiveHandler:
         """Collect packages that need overrides generated, and generate them."""
         for distrorelease in self.distro.releases:
             for pocket in PackagePublishingPocket.items:
-                if (not fullpublish and
-                    not self.publisher.isDirty(distrorelease, pocket)):
-                    continue
+                if not fullpublish:
+                    if not self.publisher.isDirty(distrorelease, pocket):
+                        continue
+                else:
+                    if (self.publisher.allowed_suites and not
+                        (distrorelease.name, pocket) in
+                        self.publisher.allowed_suites):
+                        continue
 
                 spphs = SourcePackagePublishingHistory.select(
                     """
@@ -451,9 +462,14 @@ class FTPArchiveHandler:
         """Collect currently published FilePublishings and write file lists."""
         for distrorelease in self.distro.releases:
              for pocket in pocketsuffix:
-                if (not fullpublish and
-                    not self.publisher.isDirty(distrorelease, pocket)):
-                    continue
+                if not fullpublish:
+                    if not self.publisher.isDirty(distrorelease, pocket):
+                        continue
+                else:
+                    if (self.publisher.allowed_suites and not
+                        (distrorelease.name, pocket) in
+                        self.publisher.allowed_suites):
+                        continue
 
                 spps = SourcePackageFilePublishing.select(
                     """
@@ -596,11 +612,16 @@ class FTPArchiveHandler:
                 if not fullpublish:
                     if not self.publisher.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping a-f stanza for %s/%s" %
-                                           (distrorelease_name, pocket))
+                                           (distrorelease_name, pocket.name))
                         continue
                     if not distrorelease.isUnstable():
                         # See similar condition in Publisher.B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE
+                else:
+                    if (self.publisher.allowed_suites and not
+                        (distrorelease.name, pocket) in
+                        self.publisher.allowed_suites):
+                        continue
 
                 subtext = self.generateConfigForPocket(apt_config,
                             distrorelease, distrorelease_name, pocket)
