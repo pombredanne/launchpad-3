@@ -63,7 +63,7 @@ class HTTPServerTestSetup(TacTestSetup):
 class TestProberProtocolAndFactory(TwistedTestCase):
 
     def setUp(self):
-        self.orig_proxy = os.getenv('http_proxy', '')
+        self.orig_proxy = os.getenv('http_proxy')
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
@@ -75,7 +75,13 @@ class TestProberProtocolAndFactory(TwistedTestCase):
                      '404': u'http://localhost:%s/invalid-mirror' % self.port}
 
     def tearDown(self):
-        os.environ['http_proxy'] = self.orig_proxy
+        if self.orig_proxy is None:
+            try:
+                del os.environ['http_proxy']
+            except KeyError:
+                pass
+        else:
+            os.environ['http_proxy'] = self.orig_proxy
         return self.listening_port.stopListening()
 
     def _createProberAndProbe(self, url):
@@ -103,6 +109,25 @@ class TestProberProtocolAndFactory(TwistedTestCase):
         reactor.connectTCP = fakeConnect
         def restore_connect(result, orig_connect):
             self.failUnlessEqual(prober.connecting_to, 'squid.internal')
+            reactor.connectTCP = orig_connect
+            return None
+        deferred = prober.probe()
+        return deferred.addCallback(restore_connect, orig_connect)
+
+    def test_connect_to_host_when_http_proxy_does_not_exist(self):
+        try:
+            del os.environ['http_proxy']
+        except KeyError:
+            pass
+        prober = ProberFactory(self.urls['200'])
+        def fakeConnect(host, port, factory):
+            factory.connecting_to = host
+            factory.succeeded('200')
+        prober.connecting_to = None
+        orig_connect = reactor.connectTCP
+        reactor.connectTCP = fakeConnect
+        def restore_connect(result, orig_connect):
+            self.failUnlessEqual(prober.connecting_to, 'localhost')
             reactor.connectTCP = orig_connect
             return None
         deferred = prober.probe()
