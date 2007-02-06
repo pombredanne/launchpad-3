@@ -15,6 +15,6 @@ Changes:
  .
    * Initial version
 Files: 
- 17f8c64f303bda29caabc38b5ea110b5 542 devel optional netapplet_2.0-fake.dsc
+ e23b0994ab4689698a8fde113708c18d 542 devel optional netapplet_2.0-fake.dsc
  fc1464e5985b962a042d5354452f361d 164 devel optional netapplet_2.0.orig.tar.gz
  1e35b810764f140af9616de8274e6e73 537 devel optional netapplet_2.0-fake.diff.gz

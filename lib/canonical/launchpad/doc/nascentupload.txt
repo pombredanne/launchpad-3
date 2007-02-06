@@ -594,8 +594,34 @@ Chuck it all away again
 
 == Announcements ==
 
-NascentUpload announces accepted uploads to the submitter and to the
-target distrorelease changeslist.
+NascentUpload announces uploads according its final status (NEW,
+APPROVED, UNAPPROVED) and its destination pocket:
+
+ * NEW: submitter set (changes signer, Changed-by and maintainer)
+   receives an 'new' warning
+
+ * UNAPPROVED: submitter set receives an 'unapproved' warning.
+
+ * APPROVED to RELEASE: submitter set receives an 'acceptance'
+   warning and the target distrorelease changeslist address
+   receives an 'announcement' message.
+
+ * APPROVED to BACKPORTS: submitter set receives an 'acceptance'
+   warning ('announcement' is skipped).
+
+ * APPROVED to SECURITY: only the 'announcement' to the target
+   distrorelease.changeslist is sent ('acceptance' warning is skipped).
+
+
+Before the actual tests, let's adjust 'changeslist' address on related
+distroreleases:
+
+  >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
+  >>> warty = ubuntu['warty']
+  >>> warty.changeslist = "warty-announce@lists.ubuntu.com"
+
+
+Upload to RELEASE pocket:
 
   >>> netapplet_src = NascentUpload(
   ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
@@ -613,22 +639,17 @@ target distrorelease changeslist.
 
   >>> import email
   >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'dapper-announce@lists.ubuntu.com']
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
-However, it suppresses the announcements when the upload is submitted to
-BACKPORTS pocket, in order to avoid noise on changeslist.
-Only the uploader signer is warned by email:
+
+Upload to BACKPORTS pocket:
 
   >>> netapplet_src = NascentUpload(
   ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
   ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
-
-Forces this upload to "warty-backports":
-
   >>> local_options = MockOptions()
   >>> local_options.distrorelease = "warty-backports"
   >>> netapplet_src.policy.setOptions(local_options)
-
   >>> netapplet_src.process()
   >>> netapplet_src.rejected
   False
@@ -645,6 +666,34 @@ Forces this upload to "warty-backports":
 
   >>> [email.message_from_string(str(m))['To'] for m in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+
+
+Upload to SECURITY pocket:
+
+  >>> netapplet_src = NascentUpload(
+  ...     findPolicyByName('security'), datadir('netapplet_2.0-fake'),
+  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
+  >>> local_options = MockOptions()
+  >>> local_options.distrorelease = "warty-security"
+  >>> netapplet_src.policy.setOptions(local_options)
+
+  >>> netapplet_src.process()
+  >>> netapplet_src.rejected
+  False
+
+  >>> netapplet_src.logger = MockLogger()
+  >>> result, msgs = netapplet_src.do_accept()
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Skipping acceptance message, it is a SECURITY upload.
+
+  >>> len(msgs)
+  1
+
+  >>> [email.message_from_string(str(m))['To'] for m in msgs]
+  ['warty-announce@lists.ubuntu.com']
+
 
 Chuck it all away again
 
