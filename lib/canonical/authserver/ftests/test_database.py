@@ -239,7 +239,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.cursor.execute("""
             SELECT mirror_request_time FROM Branch
             WHERE id = %d""" % row_id)
-        return self.cursor.fetchone()[0]
+        [mirror_request_time] = self.cursor.fetchone()
+        return mirror_request_time
 
     def test_initialMirrorRequest(self):
         # The default 'mirror_request_time' for a newly created hosted branch
@@ -259,7 +260,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(self.cursor, hosted_branch_id)
         self.cursor.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-        current_db_time = self.cursor.fetchone()[0]
+        [current_db_time] = self.cursor.fetchone()
         self.assertEqual(current_db_time, self._getTime(hosted_branch_id))
 
     def test_authUser(self):
