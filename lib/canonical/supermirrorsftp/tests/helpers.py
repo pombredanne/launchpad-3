@@ -17,15 +17,15 @@ class AvatarTestCase(TwistedTestCase):
     def setUp(self):
         self.tmpdir = self.mktemp()
         os.mkdir(self.tmpdir)
-        # A basic user dict, 'bob' is a member of no teams (aside from the user
-        # themself).
+        # A basic user dict, 'alice' is a member of no teams (aside from the
+        # user themself).
         self.aliceUserDict = {
             'id': 1,
             'name': 'alice',
             'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
         }
 
-        # An slightly more complex user dict for a user, 'alice', that is also a
+        # An slightly more complex user dict for a user, 'bob', who is also a
         # member of a team.
         self.bobUserDict = {
             'id': 2,
