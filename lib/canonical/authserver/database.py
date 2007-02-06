@@ -502,6 +502,14 @@ class DatabaseBranchDetailsStorage:
         # prevent obsolete vcs-imports branches that are no longer associated
         # to a ProductSeries from being mirrored every time.
         # -- DavidAllouche 2006-12-22
+
+        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
+        # mirrored if their mirror_request_time is not NULL or if they haven't
+        # been mirrored in the last 24 hours. The latter behaviour is a
+        # fail-safe and should probably be removed once we trust the
+        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
+        # -- jml, 2007-01-31
+
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
             FROM Branch INNER JOIN Person ON Branch.owner = Person.id

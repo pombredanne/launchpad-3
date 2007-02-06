@@ -707,10 +707,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Hosted branches which haven't been mirrored for a whole day should be
         # mirrored even if they haven't asked for it.
 
-        # XXX: This behaviour is a fail-safe and should probably be removed
-        # once we trust the mirror_request_time behavior.
-        # -- jml, 2007-01-31
-
         # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
         # and has not had a mirror requested
         self.failUnless(self.isBranchInPullQueue(25))
