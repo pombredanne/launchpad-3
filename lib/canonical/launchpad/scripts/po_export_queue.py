@@ -208,9 +208,9 @@ class ExportResult:
             Of the %d files you requested, Rosetta successfully exported
             %d, which can be downloaded from the following location:
 
-            \t%s''' % (
+            \t%s''') % (
                 person.browsername, failure_list, total_count, success_count,
-                self.url))
+                self.url)
 
     def _getSuccessEmailBody(self, person):
         """Send an email notification about the export working."""
@@ -261,9 +261,10 @@ class ExportResult:
                 Hello admins,
 
                 Rosetta encountered problems exporting some files requested by
-                %s. This means we have a bug in Launchpad that needs to be
-                fixed to be able to proceed with this export. You can see the
-                list of failed files with the error we got:
+                %s. This means we have a bug in
+                Launchpad that needs to be fixed to be able to proceed with
+                this export. You can see the list of failed files with the
+                error we got:
 
                 %s''') % (
                     person.browsername, self._getErrorLines())
@@ -275,7 +276,7 @@ class ExportResult:
                 subject='Translation download errors: %s' % self.name,
                 body=admins_email_body)
 
-    def add_failure(self, name):
+    def addFailure(self, name):
         """Add name as an export that failed.
 
         The failures are stored at self.failures dictionary using the entry
@@ -290,7 +291,7 @@ class ExportResult:
         # And store it.
         self.failures[name] = exception.read()
 
-    def add_success(self, name):
+    def addSuccess(self, name):
         """Add name as an export that succeed.
 
         The success are stored at self.success list.
@@ -322,10 +323,10 @@ def process_single_object_request(obj, format):
     except:
         # The export for the current entry failed with an unexpected error, we
         # add the entry to the list of errors.
-        result.add_failure(filename)
+        result.addFailure(filename)
         return result
     else:
-        result.add_success(filename)
+        result.addSuccess(filename)
         return result
 
 def process_multi_object_request(objects, format):
@@ -360,9 +361,9 @@ def process_multi_object_request(objects, format):
         except:
             # The export for the current entry failed with an unexpected error, we
             # add the entry to the list of errors.
-            result.add_failure(filename)
+            result.addFailure(filename)
         else:
-            result.add_success(filename)
+            result.addSuccess(filename)
             archive.add_file('rosetta-%s/%s' % (name, filename), contents)
 
     archive.close()
