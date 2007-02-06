@@ -8,7 +8,8 @@ from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, WidgetInputError)
+    ConversionError, IInputWidget, InputErrors, MissingInputError,
+    WidgetInputError)
 from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -102,7 +103,7 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
         fields = [
             Choice(
                 __name__='product', title=u'Product',
-                required=False, vocabulary='Product'),
+                required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
                 required=True, vocabulary='Distribution'),
@@ -141,15 +142,43 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
         """See zope.app.form.interfaces.IInputWidget."""
         form_value = self.request.form.get(self.name)
         if form_value == 'product':
-            return self.product_widget.getInputValue()
+            try:
+                return self.product_widget.getInputValue()
+            except MissingInputError:
+                raise LaunchpadValidationError('Please enter a product name')
+            except ConversionError:
+                entered_name = self.request.form.get("%s.product" % self.name)
+                raise LaunchpadValidationError(
+                    "There is no product named '%s' registered in"
+                    " Launchpad", entered_name)
         elif form_value == 'package':
-            distribution = self.distribution_widget.getInputValue()
-            if (self.package_widget.hasInput() and
-                self.package_widget.getInputValue() is not None):
-                package_name = self.package_widget.getInputValue()
+            try:
+                distribution = self.distribution_widget.getInputValue()
+            except ConversionError:
+                entered_name = self.request.form.get(
+                    "%s.distribution" % self.name)
+                raise LaunchpadValidationError(
+                    "There is no distribution named '%s' registered in"
+                    " Launchpad", entered_name)
 
-                source_name, binary_name = distribution.guessPackageNames(
-                    package_name.name)
+            if self.package_widget.hasInput():
+                try:
+                    package_name = self.package_widget.getInputValue()
+                except ConversionError:
+                    entered_name = self.request.form.get(
+                        '%s.package' % self.name)
+                    raise LaunchpadValidationError(
+                        "The source package '%s' is not published in %s",
+                        entered_name, distribution.displayname)
+                if package_name is None:
+                    return distribution
+                try:
+                    source_name, binary_name = distribution.guessPackageNames(
+                        package_name.name)
+                except NotFoundError:
+                    raise LaunchpadValidationError(
+                        "The source package '%s' is not published in %s",
+                        package_name.name, distribution.displayname)
                 return distribution.getSourcePackage(source_name)
             else:
                 return distribution

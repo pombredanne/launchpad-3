@@ -45,10 +45,10 @@ By default the first option is selected:
         <td>
           <label>
             <input class="radioType" checked="checked"
-                   id="field.bugtarget.package" name="field.bugtarget"
+                   id="field.bugtarget.option.package" name="field.bugtarget"
                    type="radio" value="package" />
     ...
-            <input class="radioType" id="field.bugtarget.product"
+            <input class="radioType" id="field.bugtarget.option.product"
                    name="field.bugtarget" type="radio" value="product" />
     ...
 
@@ -70,7 +70,7 @@ by getInputValue().
     >>> selected_distribution.name
     u'ubuntu'
 
-If an non-existant distribution name is provided, a conversion error is
+If an non-existant distribution name is provided, a widget error is
 raised.
 
     >>> form['field.bugtarget.distribution'] = 'invalid'
@@ -81,7 +81,8 @@ raised.
     >>> selected_distribution = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    ConversionError:...
+    LaunchpadValidationError: There is no distribution named 'invalid'
+                              registered in Launchpad
 
 If no distribution name is given at all, a MissingInput error is raised.
 
@@ -116,7 +117,7 @@ source package is returned.
     >>> selected_package.name
     u'evolution'
 
-If a non-existant package is selected, a ConversionError is raised.
+If a non-existant package is selected, a widget error is raised.
 
     >>> form['field.bugtarget.package'] = 'non-existant'
     >>> widget = FileBugTargetWidget(
@@ -126,7 +127,22 @@ If a non-existant package is selected, a ConversionError is raised.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    ConversionError:...
+    LaunchpadValidationError: The source package 'non-existant' is not
+                              published in Ubuntu
+
+The same error is displayed when an existing source package name that
+isn't published is selected.
+
+    >>> form['field.bugtarget.package'] = 'thunderbird'
+    >>> widget = FileBugTargetWidget(
+    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    >>> widget.hasInput()
+    True
+    >>> selected_package = widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: The source package 'thunderbird' is not
+                              published in Ubuntu
 
 
 == Selecting a product ==
@@ -146,7 +162,7 @@ If a product is selected, the product with the given name is returned.
     >>> selected_product.name
     u'firefox'
 
-If a non-existant product name is entered, a Conversion error is raised.
+If a non-existant product name is entered, a widget error is raised.
 
     >>> form['field.bugtarget.product'] = u'non-existant'
     >>> widget = FileBugTargetWidget(
@@ -156,9 +172,10 @@ If a non-existant product name is entered, a Conversion error is raised.
     >>> selected_product = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    ConversionError:...
+    LaunchpadValidationError: There is no product named 'non-existant'
+                              registered in Launchpad
 
-If no product name is given at all, a MissingInput error is raised.
+If no product name is given at all, a widget error is raised.
 
     >>> del form['field.bugtarget.product']
     >>> widget = FileBugTargetWidget(
@@ -168,4 +185,4 @@ If no product name is given at all, a MissingInput error is raised.
     >>> selected_distribution = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    MissingInputError:...
+    LaunchpadValidationError: Please enter a product name
