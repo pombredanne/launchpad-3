@@ -824,12 +824,16 @@ class POFile(SQLBase, RosettaStats):
             # without them, we always do a full export.
             try:
                 return self.fetchExportCache()
-            except (LookupError, URLError):
-                # There is an error getting a cached export from Librarian.
+            except LookupError:
                 # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
                 # for bug #1887. Something produces LookupError exception and
                 # we don't know why. This will allow us to provide an export
                 # in those cases.
+                logging.error(
+                    "Error fetching a cached file from librarian", exc_info=1)
+            except URLError:
+                # There is a problem getting a cached export from Librarian.
+                # Log it and do a full export.
                 logging.warning(
                     "Error fetching a cached file from librarian", exc_info=1)
 

@@ -299,7 +299,7 @@ class ExportResult:
         self.successes.append(name)
 
 
-def process_single_object_request(obj, format):
+def process_single_object_request(obj, format, logger):
     """Process a request for a single object.
 
     Returns an ExportResult object. The object must be a PO template or a PO
@@ -324,12 +324,16 @@ def process_single_object_request(obj, format):
         # The export for the current entry failed with an unexpected error, we
         # add the entry to the list of errors.
         result.addFailure(filename)
+        # And log the error.
+        logger.error(
+            "A unexpected exception was raised when exporting %s" % obj.title,
+            exc_info=True)
         return result
     else:
         result.addSuccess(filename)
         return result
 
-def process_multi_object_request(objects, format):
+def process_multi_object_request(objects, format, logger):
     """Process an export request for many objects.
 
     This function creates a tarball containing all of the objects requested,
@@ -359,9 +363,14 @@ def process_multi_object_request(objects, format):
             # should be done again in a new transaction.
             raise
         except:
-            # The export for the current entry failed with an unexpected error, we
-            # add the entry to the list of errors.
+            # The export for the current entry failed with an unexpected
+            # error, we add the entry to the list of errors.
             result.addFailure(filename)
+            # And log the error.
+            logger.error(
+                "A unexpected exception was raised when exporting %s" % (
+                    obj.title),
+                exc_info=True)
         else:
             result.addSuccess(filename)
             archive.add_file('rosetta-%s/%s' % (name, filename), contents)
@@ -381,7 +390,7 @@ def process_multi_object_request(objects, format):
 
     return result
 
-def process_request(person, objects, format):
+def process_request(person, objects, format, logger):
     """Process a request for an export of Rosetta files.
 
     After processing the request a notification email is sent to the requester
@@ -391,9 +400,9 @@ def process_request(person, objects, format):
     """
 
     if len(objects) == 1:
-        result = process_single_object_request(objects[0], format)
+        result = process_single_object_request(objects[0], format, logger)
     else:
-        result = process_multi_object_request(objects, format)
+        result = process_multi_object_request(objects, format, logger)
 
     result.notify(person)
 
@@ -417,7 +426,7 @@ def process_queue(transaction_manager, logger):
             person.displayname, potemplate.displayname))
 
         try:
-            process_request(person, objects, format)
+            process_request(person, objects, format, logger)
         except psycopg.Error:
             # We had a DB error, we don't try to recover it here, just exit
             # from the script and next run will retry the export.
