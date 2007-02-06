@@ -46,18 +46,20 @@ def update_karma_cache():
     # the extra WHEN clause.
     log.info("Calculating everyones karma")
     cur.execute("""
-        SELECT person, category, product, distribution, sourcepackagename,
-               ROUND(SUM(
-            CASE WHEN datecreated + %(karma_expires_after)s::interval
+        SELECT person, category, product, distribution, Product.project,
+            ROUND(SUM(
+            CASE WHEN karma.datecreated + %(karma_expires_after)s::interval
                 <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' THEN 0
             ELSE points * (1 - extract(
-                EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - datecreated
+                EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                karma.datecreated
                 ) / extract(EPOCH FROM %(karma_expires_after)s::interval))
             END
             ))
-        FROM Karma, KarmaAction
-        WHERE action = KarmaAction.id
-        GROUP BY person, category, product, distribution, sourcepackagename
+        FROM Karma
+        JOIN KarmaAction ON action = KarmaAction.id
+        LEFT JOIN Product ON product = Product.id
+        GROUP BY person, category, product, distribution, Product.project
         """, vars())
 
     # Suck into RAM to avoid tieing up resources on the DB.
@@ -101,7 +103,7 @@ def update_karma_cache():
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
     for (person_id, category_id, product_id, distribution_id,
-         sourcepackagename_id, points) in results:
+         project_id, points) in results:
         points *= scaling[category_id] # Scaled
         log.debug(
             "Setting person_id=%(person_id)d, category_id=%(category_id)d, "
@@ -110,25 +112,31 @@ def update_karma_cache():
 
         points = int(points)
         context = {'product_id': product_id,
-                   'distribution_id': distribution_id,
-                   'sourcepackagename_id': sourcepackagename_id}
-        if points <= 0:
-            # Don't allow our table to bloat with inactive users
-            try:
-                karmacachemanager.deleteEntry(
-                    person_id, category_id, **context)
-            except NotFoundError:
-                # Nothing to delete
-                pass
-        else:
-            try:
-                # Try to update
-                karmacachemanager.updateKarmaValue(
-                    points, person_id, category_id, **context)
-            except NotFoundError:
-                # Row didn't exist; do an insert.
-                karmacachemanager.new(
-                    points, person_id, category_id, **context)
+                   'project_id': project_id,
+                   'distribution_id': distribution_id}
+        try:
+            # Try to update
+            karmacachemanager.updateKarmaValue(
+                points, person_id, category_id, **context)
+            log.debug("Updated karmacache for person=%s, points=%s, "
+                      "category=%s, context=%s"
+                      % (person_id, points, category_id, context))
+        except NotFoundError:
+            # Row didn't exist; do an insert.
+            karmacachemanager.new(
+                points, person_id, category_id, **context)
+            log.debug("Created karmacache for person=%s, points=%s, "
+                      "category=%s, context=%s"
+                      % (person_id, points, category_id, context))
+
+    # Delete the entries we're going to replace.
+    cur.execute("DELETE FROM KarmaCache WHERE category IS NULL")
+    # XXX: It may also be necessary to delete all entries with a project !=
+    # NULL and a product == NULL, since these are other calculated values.
+    # We need to do this before calculating the total caches.
+
+    # Don't allow our table to bloat with inactive users
+    cur.execute("DELETE FROM KarmaCache WHERE karmavalue <= 0")
 
     # VACUUM KarmaCache since we have just touched every record in it
     cur.execute("""VACUUM KarmaCache""")
@@ -145,7 +153,8 @@ def update_karma_cache():
         UPDATE KarmaTotalCache SET karma_total=sum_karmavalue
         FROM (
             SELECT person AS sum_person, SUM(karmavalue) AS sum_karmavalue
-            FROM KarmaCache GROUP BY person
+            FROM KarmaCache
+            GROUP BY person
             ) AS sums
         WHERE KarmaTotalCache.person = sum_person
         """)
@@ -171,6 +180,63 @@ def update_karma_cache():
         GROUP BY person
         """)
     ## cur.execute("COMMIT")
+
+    # Now we must issue some SUM queries to insert the karma totals for: 
+    # - All actions of a person on a given product
+    # - All actions of a person on a given distribution
+    # - All actions of a person on a given project
+    # - All actions with a specific category of a person on a given project
+
+    # XXX: This is done as the last step because we don't want to include
+    # these values in our calculation of KarmaTotalCache
+
+    # - All actions of a person on a given product
+    cur.execute("""
+        INSERT INTO KarmaCache 
+            (person, category, karmavalue, product, distribution,
+             sourcepackagename, project)
+        SELECT person, NULL, SUM(karmavalue), product, NULL, NULL, NULL
+        FROM KarmaCache
+        WHERE product IS NOT NULL
+        GROUP BY person, product
+        """)
+
+    # - All actions of a person on a given distribution
+    cur.execute("""
+        INSERT INTO KarmaCache 
+            (person, category, karmavalue, product, distribution,
+             sourcepackagename, project)
+        SELECT person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
+        FROM KarmaCache
+        WHERE distribution IS NOT NULL
+        GROUP BY person, distribution
+        """)
+
+    # - All actions of a person on a given project
+    cur.execute("""
+        INSERT INTO KarmaCache 
+            (person, category, karmavalue, product, distribution,
+             sourcepackagename, project)
+        SELECT person, NULL, SUM(karmavalue), NULL, NULL, NULL, project
+        FROM KarmaCache
+        WHERE project IS NOT NULL
+        GROUP BY person, project
+        """)
+
+    # - All actions with a specific category of a person on a given project
+    # XXX: This has to be the latest step; otherwise the rows inserted here
+    # will be included in the calculation of the overall karma of a person on
+    # a given project.
+    cur.execute("""
+        INSERT INTO KarmaCache 
+            (person, category, karmavalue, product, distribution,
+             sourcepackagename, project)
+        SELECT person, category, SUM(karmavalue), NULL, NULL, NULL, project
+        FROM KarmaCache
+        WHERE project IS NOT NULL
+            AND category IS NOT NULL
+        GROUP BY person, category, project
+        """)
 
 
 if __name__ == '__main__':

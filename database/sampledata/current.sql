@@ -1726,52 +1726,52 @@ ALTER TABLE jabberid ENABLE TRIGGER ALL;
 
 ALTER TABLE karma DISABLE TRIGGER ALL;
 
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (2, '2001-07-05 05:24:07.414864', 12, 2, NULL, 1, 9);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (3, '2001-07-05 05:24:07.415443', 12, 3, NULL, 1, 14);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (4, '2001-07-05 05:24:07.415915', 12, 4, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (5, '2001-07-05 05:24:07.416384', 12, 5, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (6, '2001-07-05 05:24:07.416837', 12, 6, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (7, '2001-07-05 05:24:07.41729', 12, 7, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (8, '2001-07-05 05:24:07.417756', 12, 8, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (9, '2001-07-05 05:24:07.418209', 12, 9, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (10, '2001-07-13 14:43:02.452716', 12, 9, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (11, '2001-08-03 12:04:50.669962', 16, 9, NULL, 1, 19);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (12, '2001-08-04 01:15:48.241836', 16, 9, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (13, '2001-08-10 16:30:32.295049', 12, 9, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (14, '2001-08-10 16:30:47.448639', 12, 9, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (15, '2001-10-14 15:12:29.602117', 16, 1, NULL, 1, 1);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (16, '2001-10-14 15:12:29.602117', 16, 1, 8, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (17, '2001-10-28 09:10:17.13237', 12, 1, 12, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (18, '2001-10-28 09:10:47.344393', 16, 17, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (19, '2001-10-28 09:11:07.93721', 16, 8, 13, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (20, '2001-11-02 15:14:22.177596', 12, 22, 9, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (21, '2001-11-02 15:14:22.177596', 12, 22, 6, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (22, '2001-02-23 16:42:14.080227', 16, 1, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (23, '2001-02-23 16:42:40.288553', 12, 17, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (24, '2001-02-23 16:43:25.744534', 12, 21, NULL, 1, 22);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (25, '2001-02-23 16:43:25.744534', 12, 9, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (26, '2001-02-22 19:42:21.890299', 16, 1, NULL, 1, 17);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (27, '2001-03-06 10:11:02.729077', 16, 9, 14, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (28, '2001-01-02 00:00:00', 1, 22, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (29, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (30, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (31, '2001-01-02 00:00:00', 1, 22, 13, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (32, '2001-01-02 00:00:00', 1, 22, 11, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (33, '2001-01-02 00:00:00', 1, 22, 15, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (34, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (35, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (36, '2001-01-02 00:00:00', 1, 23, 15, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (37, '2001-01-02 00:00:00', 1, 23, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (38, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (39, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (40, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-01-02 00:00:00', 1, 22, 12, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (44, '2001-12-13 21:19:05.833412', 16, 10, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2001-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (47, '2001-12-23 16:23:11.856461', 13, 14, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (2, '2020-07-05 05:24:07.414864', 12, 2, NULL, 1, 9);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (3, '2020-07-05 05:24:07.415443', 12, 3, NULL, 1, 14);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (4, '2020-07-05 05:24:07.415915', 12, 4, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (5, '2020-07-05 05:24:07.416384', 12, 5, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (6, '2020-07-05 05:24:07.416837', 12, 6, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (7, '2020-07-05 05:24:07.41729', 12, 7, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (8, '2020-07-05 05:24:07.417756', 12, 8, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (9, '2020-07-05 05:24:07.418209', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (10, '2020-07-13 14:43:02.452716', 12, 9, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (11, '2020-08-03 12:04:50.669962', 16, 9, NULL, 1, 19);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (12, '2020-08-04 01:15:48.241836', 16, 9, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (13, '2020-08-10 16:30:32.295049', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (14, '2020-08-10 16:30:47.448639', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (15, '2020-10-14 15:12:29.602117', 16, 1, NULL, 1, 1);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (16, '2020-10-14 15:12:29.602117', 16, 1, 8, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (17, '2020-10-28 09:10:17.13237', 12, 1, 12, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (18, '2020-10-28 09:10:47.344393', 16, 17, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (19, '2020-10-28 09:11:07.93721', 16, 8, 13, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (20, '2020-11-02 15:14:22.177596', 12, 22, 9, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (21, '2020-11-02 15:14:22.177596', 12, 22, 6, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (22, '2020-02-23 16:42:14.080227', 16, 1, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (23, '2020-02-23 16:42:40.288553', 12, 17, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (24, '2020-02-23 16:43:25.744534', 12, 21, NULL, 1, 22);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (25, '2020-02-23 16:43:25.744534', 12, 9, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (26, '2020-02-22 19:42:21.890299', 16, 1, NULL, 1, 17);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (27, '2020-03-06 10:11:02.729077', 16, 9, 14, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (28, '2020-01-02 00:00:00', 1, 22, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (29, '2020-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (30, '2020-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (31, '2020-01-02 00:00:00', 1, 22, 13, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (32, '2020-01-02 00:00:00', 1, 22, 11, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (33, '2020-01-02 00:00:00', 1, 22, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (34, '2020-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (35, '2020-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (36, '2020-01-02 00:00:00', 1, 23, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (37, '2020-01-02 00:00:00', 1, 23, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (38, '2020-01-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (39, '2020-01-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (40, '2020-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2020-01-02 00:00:00', 1, 22, 12, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2020-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2020-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (44, '2020-12-13 21:19:05.833412', 16, 10, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2020-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2020-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (47, '2020-12-23 16:23:11.856461', 13, 14, 5, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -1833,28 +1833,49 @@ ALTER TABLE karmaaction ENABLE TRIGGER ALL;
 
 ALTER TABLE karmacache DISABLE TRIGGER ALL;
 
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (783, 16, 2, 14, NULL, 1, 19);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (784, 16, 2, 8, NULL, 1, 17);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (785, 12, 2, 8, NULL, 1, 22);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (786, 1, 6, 15, 5, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (787, 16, 2, 17, 8, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (788, 1, 6, 61, 4, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (789, 16, 2, 17, NULL, 1, 1);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (790, 12, 6, 40, 6, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (791, 16, 2, 9, 14, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (792, 16, 2, 17, 13, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (793, 12, 2, 1, NULL, 1, 14);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (794, 1, 6, 49, NULL, 1, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (795, 12, 2, 17, 12, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (796, 1, 6, 17, 15, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (797, 12, 6, 40, 9, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (798, 1, 6, 15, 13, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (799, 12, 2, 26, NULL, 1, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (800, 1, 6, 15, 12, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (801, 1, 6, 15, 11, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (802, 16, 2, 14, 5, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (803, 12, 2, 105, 4, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (804, 16, 2, 17, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (893, 16, 2, 309, NULL, 1, 19);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (894, 16, 2, 300, NULL, 1, 17);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (895, 12, 2, 300, NULL, 1, 22);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (896, 1, 6, 417, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (897, 16, 2, 313, 8, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (898, 1, 6, 1739, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (899, 16, 2, 313, NULL, 1, 1);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (900, 16, 2, 300, 14, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (901, 12, 6, 443, 6, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (903, 16, 2, 313, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (904, 12, 2, 29, NULL, 1, 14);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (905, 1, 6, 1392, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (906, 12, 2, 313, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (907, 13, 3, 296, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (908, 1, 6, 487, 15, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (909, 12, 6, 443, 9, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (910, 1, 6, 417, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (911, 12, 2, 756, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (912, 1, 6, 417, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (913, 16, 3, 5875, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (914, 1, 6, 417, 11, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (915, 16, 2, 309, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (916, 16, 2, 456, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (917, 12, 2, 2156, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (918, 12, NULL, 313, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (919, 1, NULL, 1739, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (920, 1, NULL, 417, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (921, 16, NULL, 6184, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (922, 13, NULL, 296, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (923, 16, NULL, 313, 8, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (924, 1, NULL, 417, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (925, 16, NULL, 313, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (926, 1, NULL, 1392, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (927, 12, NULL, 443, 6, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (928, 12, NULL, 2156, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (929, 16, NULL, 300, 14, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (930, 12, NULL, 443, 9, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (931, 1, NULL, 487, 15, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (932, 12, NULL, 1085, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (933, 1, NULL, 417, 11, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (934, 16, NULL, 922, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (935, 1, NULL, 417, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (936, 16, NULL, 456, 4, NULL, NULL);
 
 
 ALTER TABLE karmacache ENABLE TRIGGER ALL;
@@ -1876,9 +1897,10 @@ ALTER TABLE karmacategory ENABLE TRIGGER ALL;
 
 ALTER TABLE karmatotalcache DISABLE TRIGGER ALL;
 
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (57, 1, 187);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (58, 12, 237);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (67, 1, 10572);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (68, 12, 8880);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (69, 13, 592);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (70, 16, 16976);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
@@ -2537,7 +2559,6 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (59, 59, 'salgado-mugshot.jpg', 'image/jpeg', NULL, '2006-07-31 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 
-
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
 
 
@@ -2599,7 +2620,6 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (58, '2006-12-13 21:18:28.796588', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (59, '2006-05-24 09:31:29.606407', NULL, 2, 'fabb42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
-
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
 
