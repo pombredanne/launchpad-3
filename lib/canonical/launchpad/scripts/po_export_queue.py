@@ -5,9 +5,9 @@ __metaclass__ = type
 import tempfile
 import textwrap
 import traceback
-from StringIO import StringIO
+import psycopg
 
-from psycopg import ProgrammingError
+from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
@@ -316,7 +316,7 @@ def process_single_object_request(obj, format):
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
-    except ProgrammingError:
+    except psycopg.Error:
         # It's a DB exception, we don't catch it either, the export
         # should be done again in a new transaction.
         raise
@@ -354,7 +354,7 @@ def process_multi_object_request(objects, format):
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
-        except ProgrammingError:
+        except psycopg.Error:
             # It's a DB exception, we don't catch it either, the export
             # should be done again in a new transaction.
             raise
@@ -418,7 +418,7 @@ def process_queue(transaction_manager, logger):
 
         try:
             process_request(person, objects, format)
-        except ProgrammingError:
+        except psycopg.Error:
             # We had a DB error, we don't try to recover it here, just exit
             # from the script and next run will retry the export.
             logger.error(
