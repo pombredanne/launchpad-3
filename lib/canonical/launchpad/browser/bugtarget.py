@@ -287,14 +287,20 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        for attachment in extra_data.attachments:
-            bug.addAttachment(
-                self.user, attachment['content'], attachment['description'],
-                None, attachment['filename'],
-                content_type=attachment['content_type'])
-            notifications.append(
-                'The file "%s" was attached to the bug report.' % cgi.escape(
-                    attachment['filename']))
+        if extra_data.attachments:
+            # Attach all the comments to a single empty comment.
+            attachment_comment = bug.newMessage(
+                owner=self.user, subject=bug.followup_subject(), content=None)
+            for attachment in extra_data.attachments:
+                bug.addAttachment(
+                    owner=self.user, file_=attachment['content'],
+                    description=attachment['description'],
+                    comment=attachment_comment,
+                    filename=attachment['filename'],
+                    content_type=attachment['content_type'])
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' % 
+                        cgi.escape(attachment['filename']))
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:

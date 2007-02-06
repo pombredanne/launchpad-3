@@ -4,7 +4,6 @@
 
 from sqlobject.sqlbuilder import SQLConstant
 
-nowUTC = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-UTC_NOW = nowUTC # All upper because this is the constants module
+UTC_NOW = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 
 DEFAULT = SQLConstant("DEFAULT")

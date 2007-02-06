@@ -97,14 +97,14 @@ Two attachments were added.
     attachment1
     Attachment description.
 
-And four comments were added, including the two empty comments that were
+And three comments were added, including the empty comment that was
 created for the attachments.
 
     >>> def print_comments(page):
     ...     main_content = find_main_content(page)
     ...     for comment in main_content('div', 'boardCommentBody'):
-    ...         if comment.li:
-    ...             print "Attachment: %s" % comment.li.a.renderContents()
+    ...         for li_tag in comment('li'):
+    ...             print "Attachment: %s" % li_tag.a.renderContents()
     ...         print comment.div.renderContents()
     ...         print "-"*40
     >>> print_comments(user_browser.contents)
@@ -113,7 +113,6 @@ created for the attachments.
     <p>This should be added as another comment.</p>
     ----------------------------------------
     Attachment: attachment1
-    ----------------------------------------
     Attachment: Attachment description.
     ----------------------------------------
 
@@ -155,25 +154,17 @@ Two attachments were added.
     attachment1
     Attachment description.
 
-And four comments were added, including the two empty comments that were
+And three comments were added, including the empty comment that was
 created for the attachments.
 
-    >>> def print_comments(page):
-    ...     main_content = find_main_content(page)
-    ...     for comment in main_content('div', 'boardCommentBody'):
-    ...         if comment.li:
-    ...             print "Attachment: %s" % comment.li.a.renderContents()
-    ...         print comment.div.renderContents()
-    ...         print "-----------------------------------------"
     >>> print_comments(user_browser.contents)
     <p>This should be added as a comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     <p>This should be added as another comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     Attachment: attachment1
-    -----------------------------------------
     Attachment: Attachment description.
-    -----------------------------------------
+    ----------------------------------------
 
 === Initial bug summary ===
 
