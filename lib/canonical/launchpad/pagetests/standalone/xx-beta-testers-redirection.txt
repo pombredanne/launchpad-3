@@ -68,7 +68,9 @@ Set the redirection host back for the rest of the tests:
 
 
 So that beta testers can still access the production site, the front
-page of Launchpad does not redirect.
+page of Launchpad does not redirect.  They will also see a message
+explaining why they get redirected, and provide a link to disable the
+redirection for 2 hours:
 
     >>> print http('''
     ... GET / HTTP/1.1
@@ -76,6 +78,21 @@ page of Launchpad does not redirect.
     ... Authorization: Basic beta-admin@launchpad.net:test
     ... ''')
     HTTP/1.1 200 Ok
+    ...
+    <div class="informational message">
+    <script type="text/javascript">
+      function inhibit_beta_redirect() {
+         var expire = new Date()
+         expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
+         document.cookie = ('inhibit_beta_redirect=1; Path=/; Domain=.launchpad.dev; Expires=' +
+                            expire.toGMTString())
+      }</script>
+    <p>As a member of the Launchpad Beta Testers team, you will be
+    redirected to the beta site when viewing Launchpad pages other than
+    the front page.</p>
+    <p>To disable this redirection for 2 hours, click <a
+    href="javascript:inhibit_beta_redirect()">here</a>.</p>
+    </div>
     ...
 
 This is so that the user can make use of some client side JS on that

@@ -19,6 +19,16 @@
 
 <div metal:fill-slot="main">
 
+  <div class="informational message" tal:condition="view/isBetaUser">
+    <script type="text/javascript"
+            tal:content="view/getInhibitRedirectScript"></script>
+    <p>As a member of the Launchpad Beta Testers team, you will be
+    redirected to the beta site when viewing Launchpad pages other than
+    the front page.</p>
+    <p>To disable this redirection for 2 hours, click <a
+    href="javascript:inhibit_beta_redirect()">here</a>.</p>
+  </div>
+
   <p i18n:translate="">
     Launchpad is a collection of services for products in the open source
     universe. You can <a href="/products">register your product</a>,
