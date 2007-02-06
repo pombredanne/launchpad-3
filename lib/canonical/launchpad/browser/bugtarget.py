@@ -102,6 +102,7 @@ class FileBugViewBase(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     extra_bug_data = None
+    can_decide_security_contact = True
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
@@ -507,6 +508,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
+    can_decide_security_contact = False
 
     field_names = ['product', 'title', 'comment']
 
@@ -527,6 +529,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
     schema = IProjectBugAddForm
+    can_decide_security_contact = False
 
     field_names = ['product', 'title', 'comment', 'security_related']
 

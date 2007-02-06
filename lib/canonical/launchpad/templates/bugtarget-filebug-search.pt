@@ -24,11 +24,11 @@
       </p>
 
       <table class="form" metal:fill-slot="widgets">
-        <tal:title_widget
+        <tal:product_widget
             tal:define="widget nocall:view/widgets/product|nothing"
             tal:condition="widget">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:title_widget>
+        </tal:product_widget>
         <tal:title_widget tal:define="widget nocall:view/widgets/title">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
         </tal:title_widget>
