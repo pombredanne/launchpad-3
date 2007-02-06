@@ -4,13 +4,24 @@ __metaclass__ = type
 
 import re
 
+from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
-from zope.app.form.interfaces import ConversionError, WidgetInputError
+from zope.app.form.browser.widget import BrowserWidget, renderElement
+from zope.app.form.interfaces import (
+    ConversionError, IInputWidget, InputErrors, WidgetInputError)
+from zope.app.form.utility import setUpWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.interface import implements
+from zope.schema import Choice
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.interfaces import IBugSet, NotFoundError
+from canonical.launchpad.interfaces import (
+    IBugSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.interfaces import (
+    IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class BugWidget(IntWidget):
@@ -75,3 +86,76 @@ class BugTagsWidget(TextWidget):
                 raise self._error
             else:
                 raise
+
+
+class FileBugTargetWidget(BrowserWidget, InputWidget):
+    """Widget for selecting a bug target in +filebug."""
+
+    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
+
+    template = ViewPageTemplateFile('templates/filebug-target.pt')
+
+    def __init__(self, field, request):
+        BrowserWidget.__init__(self, field, request)
+        fields = [
+            Choice(
+                __name__='target_type', title=u'Target Type',
+                required=True, values=[u'product', u'package']),
+            Choice(
+                __name__='product', title=u'Product',
+                required=False, vocabulary='Product'),
+            Choice(
+                __name__='distribution', title=u"Distribution",
+                required=True, vocabulary='Distribution'),
+            Choice(
+                __name__='package', title=u"Package",
+                required=False, vocabulary='SourcePackageName'),
+            ]
+        self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        for field in fields:
+            setUpWidget(
+                self, field.__name__, field, IInputWidget, prefix=self.name)
+
+    def setUpOptions(self):
+        """Set up options to be rendered."""
+        self.options = {}
+        for option in ['package', 'product']:
+            attributes = dict(
+                type='radio', name=self.name, value=option,
+                id='%s.%s' % (self.name, option))
+            if self.request.form.get(self.name, 'package') == option:
+                attributes['checked'] = 'checked'
+            self.options[option] = renderElement('input', **attributes)
+
+    def hasInput(self):
+        return self.name in self.request.form
+
+    def hasValidInput(self):
+        """See zope.app.form.interfaces.IInputWidget."""
+        try:
+            self.getInputValue()
+            return True
+        except (InputErrors, UnexpectedFormData):
+            return False
+
+    def getInputValue(self):
+        """See zope.app.form.interfaces.IInputWidget."""
+        form_value = self.request.form.get(self.name)
+        if form_value == 'product':
+            return self.product_widget.getInputValue()
+        elif form_value == 'package':
+            distribution = self.distribution_widget.getInputValue()
+            if self.package_widget.hasInput():
+                package_name = self.package_widget.getInputValue()
+                source_name, binary_name = distribution.guessPackageNames(
+                    package_name.name)
+                return distribution.getSourcePackage(source_name)
+            else:
+                return distribution
+        else:
+            raise UnexpectedFormData("No valid option was selected.")
+
+    def __call__(self):
+        """See zope.app.form.interfaces.IBrowserWidget."""
+        self.setUpOptions()
+        return self.template()
