@@ -204,7 +204,7 @@ And run the script.
   DEBUG   Exporting objects for Mark Shuttleworth, related to template
   evolution-2.2 in Evolution trunk
   INFO    Done.
-  DEBUG   Removing lock file: /var/lock/rosetta-export-queue.lock
+  DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
 
 
