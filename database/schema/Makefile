@@ -33,13 +33,11 @@ CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 # on production. It is generated using newbaseline.py in
 # sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
 # 
-REV=67
+REV=79
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=b0c9e0cc3a0152056e6cf7b98ef7e65c  launchpad-67-00-0.sql
+MD5SUM=30adb982e536b6f006aa65f2fe102971  launchpad-79-00-0.sql
 default: all
 
-# NB. Yes - we run fti.py twice. This should be fixed sometime, but
-# it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Installing tsearch2 into ts2 schema"
 	@ ${PYTHON} fti.py -q --setup-only -d ${TEST_DBNAME}
@@ -104,7 +102,7 @@ create: check
 	    	createlang -d ${TEST_DBNAME} plpgsql; \
 	fi
 	@ echo "* Creating functions"
-	@ psql -d ${TEST_DBNAME} -f trusted.sql | grep : | cat
+	@ psql -d ${TEST_DBNAME} -f trusted.sql   | grep : | cat
 	@ psql -d ${TEST_DBNAME} -f testfuncs.sql | grep : | cat
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
