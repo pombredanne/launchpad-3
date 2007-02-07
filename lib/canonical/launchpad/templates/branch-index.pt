@@ -121,7 +121,7 @@
         <div id="upload-directions">
           You can <b>upload</b> to this branch at:
           <span class="lesser" tal:content="view/upload_url">
-            sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed
+            sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
           </span>
         </div>
         <tal:comment condition="nothing">

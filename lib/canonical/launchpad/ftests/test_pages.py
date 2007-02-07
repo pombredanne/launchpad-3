@@ -94,12 +94,34 @@ def extract_text(soup):
     return result
 
 
+# XXX cprov 20070207: This function seems to be more specific to a particular
+# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+def parse_relationship_section(content):
+    """Parser package relationship section.
+
+    See package-relationship-pages.txt and related.
+    """
+    soup = BeautifulSoup(content)
+    section = soup.find('ul')
+    for li in section.findAll('li'):
+        if li.a:
+            link = li.a
+            whitespace_re = re.compile('\s+')
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
+            print 'LINK: "%s" -> %s' % (content, url)
+        else:
+            content = li.string.replace('\n', '').replace(' ', '')
+            print 'TEXT: "%s"' % content
+
+
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['extract_text'] = extract_text
+    test.globs['parse_relationship_section'] = parse_relationship_section
 
 
 class PageStoryTestCase(unittest.TestCase):

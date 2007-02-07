@@ -19,7 +19,7 @@
             <th>Name</th>
             <th>Title</th>
             <th>Active</th>
-            <th></th>
+            <th tal:condition="context/required:launchpad.Edit"></th>
           </tr>
         </thead>
         <tr tal:repeat="polloption context/getAllOptions">
@@ -29,7 +29,7 @@
             <tal:is_active condition="polloption/active">Yes</tal:is_active>
             <tal:inactive condition="not: polloption/active">No</tal:inactive>
           </td>
-          <td>
+          <td tal:condition="context/required:launchpad.Edit">
             [<a tal:attributes="href polloption/fmt:url">Edit</a>]
           </td>
         </tr>
