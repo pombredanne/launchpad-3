@@ -17,10 +17,15 @@ import logging
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from urllib2 import URLError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
+
+from canonical.config import config
+
+from canonical.cachedproperty import cachedproperty
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
@@ -51,7 +56,8 @@ from canonical.launchpad.components.poimport import (
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -646,7 +652,7 @@ class POFile(SQLBase, RosettaStats):
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
             'template': self.potemplate.displayname,
-            'file_link': entry_to_import.content.url,
+            'file_link': entry_to_import.content.http_url,
             'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname)
@@ -689,7 +695,8 @@ class POFile(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@launchpad.net>'
+        fromaddress = ('Rosetta SWAT Team <%s>' %
+                       config.rosetta.rosettaadmin.email)
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
@@ -723,11 +730,43 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
+        # XXX DaniloSegan 20070115: doing this with latestsubmission is just
+        # a workaround; see bug #78501 for suggestion about using
+        # latestselection instead
+        #
+        # When an active submission is deactivated, POSelection
+        # corresponding to a certain pomsgset (and plural form) is set
+        # to have active_submission as None.  Similarly for published
+        # submission.
+        #
+        # If such a POSelection without active_submission but with
+        # published_submission is deactivated, self.latestsubmission
+        # would be set to None.  In this situation the data model has
+        # no easy way of indication when the latest update was done,
+        # and we therefore return False to be on the safe side.
         if self.latestsubmission is None:
-            return True
+            return False
 
-        change_time = self.latestsubmission.datecreated
-        return change_time < self.exporttime
+        # If there are no activeselections, yet latestsubmission is defined,
+        # it must have been the case of deactivated translation (bug #78501)
+        po_selections = list(self.latestsubmission.active_selections)
+        # If there is any of the active or published submissions,
+        # we can get to a "root" POMsgSet which was last updated,
+        # and thus we can go through all the POSelections to find
+        # out the last updated date.
+        if len(po_selections) == 0:
+            # If there are no activeselections, then a publishedselection
+            # was deactivated, so lets use them to get at pomsgset
+            po_selections = list(self.latestsubmission.published_selections)
+            if len(po_selections) == 0:
+                # Again, if we can't get at the POMsgSet, we're simply
+                # returning False to be on the safe side
+                return False
+
+        # Otherwise, we can get the POMsgSet itself through any of the
+        # active selections, and then easily get to all POSelection's
+        # and check their last update date which is guaranteed to be correct
+        return not po_selections[0].pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -786,22 +825,34 @@ class POFile(SQLBase, RosettaStats):
             try:
                 return self.fetchExportCache()
             except LookupError:
-                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
-                # Something produces the LookupError exception and we don't
-                # know why. This will allow us to provide an export.
+                # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
+                # for bug #1887. Something produces LookupError exception and
+                # we don't know why. This will allow us to provide an export
+                # in those cases.
+                logging.error(
+                    "Error fetching a cached file from librarian", exc_info=1)
+            except URLError:
+                # There is a problem getting a cached export from Librarian.
+                # Log it and do a full export.
                 logging.warning(
                     "Error fetching a cached file from librarian", exc_info=1)
 
         contents = self.uncachedExport()
 
         if len(contents) == 0:
-            # The export is empty, this is completely broken, raised the
-            # exception.
+            # The export is empty, this is completely broken.
             raise ZeroLengthPOExportError, "Exporting %s" % self.title
 
         if included_obsolete:
             # Update the cache if the request includes obsolete messages.
-            self.updateExportCache(contents)
+            try:
+                self.updateExportCache(contents)
+            except UploadFailed:
+                # For some reason, we were not able to upload the exported
+                # file in librarian, that's fine. It only means that next
+                # time, we will do a full export again.
+                logging.warning(
+                    "Error uploading a cached file into librarian", exc_info=1)
 
         return contents
 

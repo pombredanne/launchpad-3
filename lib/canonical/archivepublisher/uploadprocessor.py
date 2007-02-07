@@ -174,7 +174,7 @@ class UploadProcessor:
         # PoppyInterface for the other locking place.
         fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
         try:
-            fsroot_lock.acquire()
+            fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
             fsroot_lock.release()

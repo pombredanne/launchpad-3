@@ -15,5 +15,5 @@ On the Bugs front page there is some statistics shown, showing:
   10 Remote Bugs
   5 Bug Trackers
   0 Web links
-  21 Bug Tasks
+  22 Bug Tasks
   2 CVE Bug Links

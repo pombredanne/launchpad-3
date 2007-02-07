@@ -34,19 +34,12 @@ class Schema(SQLBase):
 
     _table = 'Schema'
 
-    _columns = [
-        ForeignKey(name='owner', foreignKey='Person',
-            dbName='owner', notNull=True),
-        StringCol(name='name', dbName='name', notNull=True, alternateID=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        #BoolCol(name='extensible', dbName='extensible', notNull=True),
-        ]
-
-    _labelsJoin = SQLMultipleJoin('Label', joinColumn='schema')
-
-    def labels(self):
-        return iter(self._labelsJoin)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    name = StringCol(dbName='name', notNull=True, alternateID=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    #extensible = BoolCol(dbName='extensible', notNull=True)
+    labels = SQLMultipleJoin('Label', joinColumn='schema')
 
     def label(self, name):
         """SELECT * FROM Label WHERE Label.schema = id AND Label.name = name;
@@ -63,18 +56,11 @@ class Label(SQLBase):
 
     _table = 'Label'
 
-    _columns = [
-        ForeignKey(name='schema', foreignKey='Schema', dbName='schema',
-            notNull=True),
-        StringCol(name='name', dbName='name', notNull=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        ]
+    schema = ForeignKey(foreignKey='Schema', dbName='schema', notNull=True)
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True),
 
-    _personsJoin = SQLRelatedJoin('Person', joinColumn='label',
+    persons = SQLRelatedJoin('Person', joinColumn='label',
         otherColumn='person', intermediateTable='PersonLabel')
-
-    def persons(self):
-        for person in self._personsJoin:
-            yield person[0]
 

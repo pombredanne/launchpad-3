@@ -22,7 +22,6 @@ from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND
 from canonical.lp import initZopeless
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet)
@@ -199,9 +198,11 @@ class BzrSync:
             last_revision = self.bzr_history[-1]
         else:
             last_revision = NULL_REVISION
-        if last_revision != self.db_branch.last_scanned_id:
-            self.db_branch.last_scanned = UTC_NOW
-            self.db_branch.last_scanned_id = last_revision
+
+        revision_count = len(self.bzr_history)
+        if (last_revision != self.db_branch.last_scanned_id) or \
+           (revision_count != self.db_branch.revision_count):
+            self.db_branch.updateScannedDetails(last_revision, revision_count)
             did_something = True
 
         if did_something:
@@ -245,42 +246,3 @@ class BzrSync:
             self.trans_manager.abort()
 
         return did_something
-
-
-def main(branch_id):
-    # Load branch with the given branch_id.
-    trans_manager = initZopeless(dbuser="importd")
-    status = 0
-
-    # Prepare logger
-    class Formatter(logging.Formatter):
-        def format(self, record):
-            if record.levelno != logging.INFO:
-                record.prefix = record.levelname.lower()+": "
-            else:
-                record.prefix = ""
-            return logging.Formatter.format(self, record)
-    formatter = Formatter("%(prefix)s%(message)s")
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
-    logger = logging.getLogger("BzrSync")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-
-    branch = getUtility(IBranchSet).get(branch_id)
-    if branch is None:
-        logger.error("Branch not found: %d" % branch_id)
-        status = 1
-    else:
-        bzrsync = BzrSync(trans_manager, branch, logger=logger)
-        bzrsync.syncHistoryAndClose()
-    return status
-
-if __name__ == '__main__':
-    execute_zcml_for_scripts()
-
-    if len(sys.argv) != 2:
-        sys.exit("Usage: bzrsync.py <branch_id>")
-    branch_id = int(sys.argv[1])
-    status = main(branch_id)
-    sys.exit(status)

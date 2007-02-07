@@ -16,7 +16,7 @@ Test that the project edit page works when we POST changes.
   >>> user_browser.getControl('Description').value = 'New Description.'
   >>> user_browser.getControl('Homepage URL').value = 'http://new-url.com/'
   >>> user_browser.getControl(name='field.bugtracker').value = ['1']
-  >>> user_browser.getControl('Change').click()
+  >>> user_browser.getControl('Change Details').click()
 
   >>> user_browser.url
   'http://launchpad.dev/new-name'

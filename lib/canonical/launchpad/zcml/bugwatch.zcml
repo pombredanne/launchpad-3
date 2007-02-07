@@ -18,14 +18,13 @@
         for="canonical.launchpad.interfaces.IBugWatch"
         name="+edit" />
 
-    <browser:editform
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugWatch"
         name="+edit"
-        schema="canonical.launchpad.interfaces.IBugWatch"
-        class="canonical.launchpad.browser.BugRelatedObjectEditView"
+        class="canonical.launchpad.browser.BugWatchEditView"
         permission="launchpad.AnyPerson"
         template="../templates/bugwatch-editform.pt"
-        fields="bugtracker remotebug"
-        lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugWatch"
