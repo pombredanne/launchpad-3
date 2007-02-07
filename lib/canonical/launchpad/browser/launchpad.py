@@ -18,6 +18,7 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
+    'DefaultShortLink'
     ]
 
 import cgi
@@ -665,10 +666,12 @@ class StructuralObjectPresentationView(LaunchpadView):
         else:
             max_children = 4
             children = self.structuralpresentation.listChildren(max_children)
-            altchildcount = self.structuralpresentation.countAltChildren()
+            #altchildcount = self.structuralpresentation.countAltChildren()
+            altchildcount = len(altchildren)
 
         if children:
-            childcount = self.structuralpresentation.countChildren()
+            #childcount = self.structuralpresentation.countChildren()
+            childcount = len(children)
         else:
             childcount = 0
 
@@ -727,7 +730,7 @@ class StructuralObjectPresentation:
         return []
 
     def countChildren(self):
-        return 0
+        raise NotImplementedError()
 
     def listAltChildren(self, num):
         return None
@@ -866,3 +869,19 @@ class SearchProjectsView(LaunchpadView):
             return True
         else:
             return False
+
+
+class DefaultShortLink(LaunchpadView):
+    """Render a short link to an object.
+
+    This is a default implementation that assumes that context.title exists
+    and is what we want.
+    """
+
+    def render(self):
+        L = []
+        L.append('<a href="%s">' % canonical_url(self.context))
+        L.append(cgi.escape(self.context.title).replace(' ', '&nbsp;'))
+        L.append('</a>')
+        return u'\n'.join(L)
+
