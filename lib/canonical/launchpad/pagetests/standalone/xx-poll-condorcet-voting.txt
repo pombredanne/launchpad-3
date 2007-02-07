@@ -1,61 +1,7 @@
-  Test voting in all kind of polls we have (condorcet and simple, for now).
+# XXX: Merge this test with team-polls/xx-votepoll.txt
+# -- Guilherme Salgado, 2006-01-19
 
-  Logged in as name16 (which is a member of ubuntu-team), go to a poll that's
-  still open and get redirected to a page where it's possible to vote (and
-  see the current vote).
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+poll/never-closes HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~ubuntu-team/+poll/never-closes/+vote-simple
-  ...
-
-
-  And here we'll see the form which allows one to vote in the poll.
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Your current vote...
-  ...You have not yet voted in this poll...
-  ...Vote now...
-  ...<input type="radio" name="newoption" value="donotvote" checked />...
-  ...not voting yet...
-
-
-  Now we vote for "None of these options".
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... newoption=none&continue=Continue""")
-  HTTP/1.1 200 Ok
-  ...
-  ...Your vote has been recorded. If you want to view or change it later you must write down this key: ...
-  ...
-
-
-  If a non-member (Sample Person) guesses the voting URL and tries to vote,
-  he won't be allowed.
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...You can&#8217;t vote in this poll because you&#8217;re not...
-  ...a member of Ubuntu Team...
-
-
-  Now we go to a condorcet-style poll (which is still open) and see that apart
+  Go to a condorcet-style poll (which is still open) and check that apart
   from seeing our vote we can also change it.
 
   >>> print http(r"""

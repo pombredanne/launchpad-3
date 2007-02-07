@@ -44,22 +44,12 @@ Now we test if we edited it successfully.
 
 We can also change the product's icon/emblem.
 
-  >>> import os
-  >>> import canonical.launchpad
   >>> browser.getLink('Edit Product Details').click()
-  >>> icon = open(os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'images/sorry-closed.png'))
-  >>> browser.getControl(name='field.gotchi.action').value = ['change']
-  >>> browser.getControl(name='field.gotchi.image').add_file(
-  ...     icon, 'image/png', 'closed.png')
+  >>> browser.url
+  'http://launchpad.dev/firefox/+edit'
 
-  >>> emblem = open(os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'images/product.png'))
-  >>> browser.getControl(name='field.emblem.action').value = ['change']
-  >>> browser.getControl(name='field.emblem.image').add_file(
-  ...     emblem, 'image/gif', 'emblem.gif')
+  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
+  >>> set_gotchi_and_emblem(browser)
 
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> browser.url
@@ -69,9 +59,9 @@ And if we go back to that page we'll see the new images.
 
   >>> browser.getLink('Edit Product Details').click()
   >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.gif'
+  u'.../emblem.png'
   >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../closed.png'
+  u'.../icon.png'
 
 
 Setting Development Focus

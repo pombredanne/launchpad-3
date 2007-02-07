@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -73,17 +73,20 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturl(self):
+    def _requesturi(self):
         request = self._request
         if request is None:
             return None
-        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturlobj.pathnoslash.endswith(defaultviewname):
-            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
-        return requesturlobj
+        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
+            requesturiobj = URI(request.getURL(1))
+        query = request.get('QUERY_STRING')
+        if query:
+            requesturiobj = requesturiobj.replace(query=query)
+        return requesturiobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -92,7 +95,7 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturl=self._requesturl(),
+                requesturi=self._requesturi(),
                 selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
@@ -111,7 +114,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
     def context(self):
         menu = IContextMenu(self._context, None)
@@ -119,7 +122,7 @@ class MenuAPI:
             return  []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
 
 class CountAPI:

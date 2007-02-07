@@ -100,14 +100,7 @@
             <li><a href="+newproduct">Register another product</a></li>
           </ul>
         </div>
-        <div class="demo portlet">
-          <h2>Top contributors</h2>
-          <ul class="person">
-            <li>Dennis Kaarsemaker (3459 points)</li>
-            <li>Mateusz Drozdzyriski (2094 points)</li>
-            <li>Spoilerhead (364 points)</li>
-          </ul>
-        </div>
+        <div tal:replace="structure context/@@+portlet-top-contributors" />
       </div>
       <div class="right">
         <div tal:replace="structure context/@@+portlet-details" />

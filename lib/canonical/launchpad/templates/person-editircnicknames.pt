@@ -17,12 +17,8 @@
 
   <div metal:fill-slot="main">
 
-    <p
-      tal:define="feedback view/processIRCForm"
-      tal:condition="feedback" 
-      tal:content="feedback"
-      class="error message"
-    />
+    <p tal:condition="view/error_message" 
+      tal:content="view/error_message" class="error message" />
 
     <form name="edit_irc" action="" method="POST">
     <table>
