@@ -2153,36 +2153,38 @@ class NascentUpload:
 
             self.insert_into_queue()
 
-            # Known upload
-            if not self.is_new():
-                # UNAPPROVED comming from 'insecure' policy only sends
-                # accept message.
-                if not self.policy.autoApprove(self):
-                    interpolations["SUMMARY"] += (
-                        "\nThis upload awaits approval by a distro manager\n")
-                    return True, [accept_msg % interpolations]
+            # Unknown uploads
+            if self.is_new():
+                return True, [new_msg % interpolations]
 
-                # Auto-APPROVED uploads to BACKPORTS skips announcement.
-                # usually processed with 'sync' policy
-                if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
-                    self.logger.debug(
-                        "Skipping announcement, it is a BACKPORT.")
-                    return True, [accept_msg % interpolations]
+            # Known uploads
 
-                # Auto-APPROVED uploads to SECURITY skips accept message.
-                # usually processed with 'security' policy
-                if self.policy.pocket == PackagePublishingPocket.SECURITY:
-                    self.logger.debug(
-                        "Skipping acceptance message, it is a SECURITY upload.")
-                    return True, [announce_msg % interpolations]
+            # UNAPPROVED uploads coming from 'insecure' policy only sends
+            # acceptance message.
+            if not self.policy.autoApprove(self):
+                interpolations["SUMMARY"] += (
+                    "\nThis upload awaits approval by a distro manager\n")
+                return True, [accept_msg % interpolations]
 
-                # Fallback, all the rest comming from 'insecure' policy
-                return True, [
-                    accept_msg % interpolations,
-                    announce_msg % interpolations]
+            # Auto-APPROVED uploads to BACKPORTS skips announcement.
+            # usually processed with 'sync' policy
+            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
+                self.logger.debug(
+                    "Skipping announcement, it is a BACKPORT.")
+                return True, [accept_msg % interpolations]
 
-            # Unknown upload
-            return True, [new_msg % interpolations]
+            # Auto-APPROVED uploads to SECURITY skips acceptance message.
+            # usually processed with 'security' policy
+            if self.policy.pocket == PackagePublishingPocket.SECURITY:
+                self.logger.debug(
+                    "Skipping acceptance message, it is a SECURITY upload.")
+                return True, [announce_msg % interpolations]
+
+            # Fallback, all the rest comming from 'insecure' policy
+            # should send acceptance & announcement messages.
+            return True, [
+                accept_msg % interpolations,
+                announce_msg % interpolations]
 
         except Exception, e:
             # Any exception which occurs while processing an accept will

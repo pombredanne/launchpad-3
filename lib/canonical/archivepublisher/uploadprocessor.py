@@ -317,8 +317,7 @@ class UploadProcessor:
             mail_message = message_from_string(ascii_smash(mail_text))
 
             if mail_message['To'] is None:
-                self.log.debug("Unable to parse message for with empty To:")
-                self.log.debug("This will cause the sendmail() to assert.")
+                self.log.debug("Missing recipient: empty 'To' header")
                 print repr(mail_text)
                 continue
 

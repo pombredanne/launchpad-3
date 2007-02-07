@@ -695,7 +695,7 @@ Upload to SECURITY pocket:
   ['warty-announce@lists.ubuntu.com']
 
 
-Chuck it all away again
+Chuck it all away again.
 
   >>> transaction.abort()
 
