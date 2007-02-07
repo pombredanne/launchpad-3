@@ -65,7 +65,7 @@ contains information about the ticket.
 
     >>> print add_notification['X-Launchpad-Question']
     distribution=ubuntu; sourcepackage=None; status=Open;
-    assignee=None; priority=Normal
+    assignee=None; priority=Normal; language=en
 
 Register the Ubuntu Team as Ubuntu's support contact, so that they get
 notified about the changes as well:

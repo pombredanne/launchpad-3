@@ -966,25 +966,26 @@ class TicketNotification:
 
         Default implementation adds a X-Launchpad-Question header.
         """
+        ticket = self.ticket
         headers = dict()
         if self.ticket.distribution:
-            if self.ticket.sourcepackagename:
-                sourcepackage = self.ticket.sourcepackagename.name
+            if ticket.sourcepackagename:
+                sourcepackage = ticket.sourcepackagename.name
             else:
                 sourcepackage = 'None'
             target = 'distribution=%s; sourcepackage=%s;' % (
-                self.ticket.distribution.name, sourcepackage)
+                ticket.distribution.name, sourcepackage)
         else:
             target = 'product=%s;' % self.product.name
-        if self.ticket.assignee:
-            assignee = self.ticket.assignee.name
+        if ticket.assignee:
+            assignee = ticket.assignee.name
         else:
             assignee = 'None'
 
         headers['X-Launchpad-Question'] = (
-            '%s status=%s; assignee=%s; priority=%s' % (
-                target, self.ticket.status.title, assignee,
-                self.ticket.priority.title))
+            '%s status=%s; assignee=%s; priority=%s; language=%s' % (
+                target, ticket.status.title, assignee,
+                ticket.priority.title, ticket.language.code))
 
         return headers
 
