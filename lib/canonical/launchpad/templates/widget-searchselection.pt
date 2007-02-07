@@ -93,9 +93,7 @@
         </dl>
         </tal:results>
     
-        <div class="listingBar"
-            tal:condition="searchresults"
-            xtal:condition="result set is more than X items">
+        <div tal:condition="searchresults">
             
             <span class="next">
                 <a href="#">

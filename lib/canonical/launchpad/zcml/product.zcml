@@ -63,6 +63,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+translations" />
 
     <browser:menus
         module="canonical.launchpad.browser"

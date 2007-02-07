@@ -31,7 +31,7 @@ And viewing that page should show the updated information.
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> print soup.first('div', 'highlighted').renderContents().strip()
+  >>> print soup.first('div', 'report').renderContents().strip()
   <p>Hi! I'm trying to learn about SVG but I can't get it to work at
   all in firefox. Maybe there is a plugin? Help! Thanks. Mark</p>
   >>> print soup.first('h1').renderContents()

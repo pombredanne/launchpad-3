@@ -1,20 +1,20 @@
 Test that the project page for the mozilla project loads, accessing it through
 a facet that's not available for projects.
 
-  >>> browser.open('http://translations.launchpad.dev/mozilla')
+  >>> browser.open('http://answers.launchpad.dev/mozilla')
   >>> browser.title
   'The Mozilla Project in Launchpad'
 
   >>> browser.getLink('Mozilla Firefox').url
-  'http://translations.launchpad.dev/firefox'
+  'http://answers.launchpad.dev/firefox'
 
-  >>> browser.open('http://translations.launchpad.dev/mozilla')
+  >>> browser.open('http://answers.launchpad.dev/mozilla')
   >>> browser.getLink('Mozilla Thunderbird').url
-  'http://translations.launchpad.dev/thunderbird'
+  'http://answers.launchpad.dev/thunderbird'
 
-  >>> admin_browser.open('http://translations.launchpad.dev/mozilla')
+  >>> admin_browser.open('http://answers.launchpad.dev/mozilla')
   >>> admin_browser.getLink('Register another product').url
-  'http://translations.launchpad.dev/mozilla/+newproduct'
+  'http://answers.launchpad.dev/mozilla/+newproduct'
 
 Test that a product page for the firefox product in the mozilla project loads.
 
