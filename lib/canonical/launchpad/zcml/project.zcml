@@ -36,6 +36,11 @@
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+tickets"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
