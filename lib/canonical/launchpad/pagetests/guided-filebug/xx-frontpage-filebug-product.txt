@@ -49,20 +49,22 @@ page.
 
 == Advanced filebug page ==
 
-From the Project filebug page it's possible to go to the advanced
-filebug page.
+From the frontpage filebug page it's possible to go to the advanced
+filebug page and file a bug directly.
 
-    XXX user_browser.open('http://launchpad.dev/gnome')
-    XXX user_browser.getLink(url='+filebug').click()
-    XXX user_browser.getLink('complicated bug filing form').click()
-    XXX user_browser.url
-    'http://launchpad.dev/gnome/+filebug-advanced'
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink(url='+filebug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.title
+    'Report a bug'
 
-    XXX user_browser.getControl('Product').value = ['evolution']
-    XXX user_browser.getControl('Summary').value = 'Evolution crashes'
-    XXX user_browser.getControl('Further information').value = 'Crash.'
-    XXX user_browser.getControl('Submit Bug Report').click()
-    XXX user_browser.url
-    'http://launchpad.dev/evolution/+bug/...'
-    XXX user_browser.title
+    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'evolution'
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/evolution/+bug/...'
+    >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'

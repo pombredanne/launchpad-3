@@ -10,6 +10,7 @@ __all__ = [
     "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
+    "FrontPageFileBugAdvancedView",
     "FrontPageFileBugGuidedView",
     "ProjectFileBugGuidedView",
     "ProjectFileBugAdvancedView",
@@ -600,6 +601,28 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
             self.setFieldError("bugtarget", error.doc())
             errors.append(error)
         return errors
+
+
+class FrontPageFileBugAdvancedView(FileBugAdvancedView):
+    """Browser view class for the top-level +filebug-advanced page."""
+    schema = IFrontPageBugAddForm
+    custom_widget('bugtarget', FileBugTargetWidget)
+
+    # Make inheriting the base class' actions work.
+    actions = FileBugAdvancedView.actions
+    can_decide_security_contact = False
+
+    @property
+    def initial_values(self):
+        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
+
+    @property
+    def field_names(self):
+        return ['title', 'comment', 'security_related', 'bugtarget']
+
+    def contextUsesMalone(self):
+        """Say context uses Malone so that the filebug form is shown!"""
+        return True
 
 
 class BugTargetBugListingView:

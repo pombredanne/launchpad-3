@@ -72,6 +72,13 @@
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
+    <browser:page
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.FrontPageFileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
 
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
