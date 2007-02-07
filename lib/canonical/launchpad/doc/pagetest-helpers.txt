@@ -9,7 +9,7 @@ page tests in the starting namespace.
 
   >>> from canonical.launchpad.ftests.test_pages import (
   ...     find_tag_by_id, find_tags_by_class, find_portlet,
-  ...     find_main_content)
+  ...     find_main_content, parse_relationship_section)
 
 Each of these functions returns a BeautifulSoup "Tag" instance (or a
 list of such instances in the case of find_tags_by_class).  Printing
@@ -194,3 +194,36 @@ be used to do this:
   <...
   Main content area
   ...
+
+parse_relationship_section
+---------------------------
+
+Since the code to render Package Relationship is consolidated in one
+place, a method to parse this section and check built-in features was
+also created.
+
+This method is able to parse a rendered relationship_section and print
+a list of isolated attributes for each mentioned item.
+
+  >>> content = '''
+  ... <html>
+  ...   <ul>
+  ...     <li>
+  ...        <a href="somewhere">
+  ...          linked_item
+  ...        </a>
+  ...     </li>
+  ...     <li>
+  ...          not_linked_item
+  ...     </li>
+  ...     <li>
+  ...        <a href="somewhereelse">
+  ...          linked with spaces
+  ...        </a>
+  ...     </li>
+  ... '''
+
+  >>> parse_relationship_section(content)
+  LINK: "linked_item" -> somewhere
+  TEXT: "not_linked_item"
+  LINK: "linked with spaces" -> somewhereelse
