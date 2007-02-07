@@ -1150,7 +1150,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
             subject = self.new_message.subject
             if prefix in self.new_message.subject:
                 return subject
-            elif subject[0:4] in ['Re: ', 'RE: ']:
+            elif subject[0:4] in ['Re: ', 'RE: ', 're']:
                 # Place prefix after possible reply prefix.
                 return subject[0:4] + prefix + subject[4:]
             else:
