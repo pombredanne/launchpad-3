@@ -4,10 +4,8 @@ On the Bugs front page there is a link to file a bug.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
     >>> user_browser.getLink(url='+filebug').click()
-
-    XXX: should be 'http://bugs.launchpad.dev/+filebug'
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/bugs/+filebug'
+    >>> user_browser.title
+    'Report a bug'
 
 Since it's not known on what the bug should be filed on, the page asks
 for either a product or a package in a distribution.

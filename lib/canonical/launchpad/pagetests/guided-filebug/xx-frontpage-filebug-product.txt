@@ -4,10 +4,8 @@ On the Bugs front page there is a link to file a bug.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
     >>> user_browser.getLink(url='+filebug').click()
-
-    XXX: should be 'http://bugs.launchpad.dev/+filebug'
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/bugs/+filebug'
+    >>> user_browser.title
+    'Report a bug'
 
 Here we can select a product to file a bug on.
 
@@ -23,7 +21,6 @@ If we enter an non-existant product, we get an error message.
     ...     'SVG causes Firefox to crash')
     >>> user_browser.getControl('Continue').click()
 
-    XXX: better error message!
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
