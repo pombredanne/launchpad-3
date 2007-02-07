@@ -9,6 +9,7 @@ __all__ = [
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
+    'DistroReleaseAppointDriverView',
     'DistroReleaseAddView',
     ]
 
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -91,7 +93,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals this release'
         return Link('+driver', text, summary, icon='edit')
 
@@ -286,6 +288,12 @@ class DistroReleaseEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class DistroReleaseAppointDriverView(AppointDriverView):
+    """View class that lets you appoint the DistroRelease's driver."""
+
+    schema = IDistroRelease
 
 
 class DistroReleaseAddView(AddView):

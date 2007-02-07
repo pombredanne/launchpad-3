@@ -214,17 +214,14 @@
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />
 
-  <browser:editform
+  <browser:page
     name="+driver"
     for="canonical.launchpad.interfaces.IDistroRelease"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseEditView"
-    fields="driver"
+    class="canonical.launchpad.browser.DistroReleaseAppointDriverView"
     facet="overview"
     permission="launchpad.Edit"
     template="../templates/object-driver.pt"
-    lp:url="/$Distribution.name/$DistroRelease.name/+driver">
-  </browser:editform>
+    lp:url="/$Distribution.name/$DistroRelease.name/+driver" />
 
   <browser:addform
     name="+addmilestone"

@@ -1,0 +1,30 @@
+Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
+
+  >>> browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser.open('http://launchpad.dev/ubuntu/hoary')
+  >>> browser.getLink('Appoint Driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+driver'
+  >>> browser.title
+  'Appoint the driver for The Hoary Hedgehog Release'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+Redirect to the distro release overview page.
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of Hoary.
+
+  >>> project_portlet = find_portlet(browser.contents, 'Hoary release details')
+  >>> project_portlet.find(text='Drivers:').findNext('a').string
+  u'Sample Person'
+
