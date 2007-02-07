@@ -411,6 +411,20 @@ ProjectProductsVocabulary
 All the products in a project.
 
     >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProducts')
+
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
+    thunderbird: Mozilla Thunderbird
+
+ProjectProductsVocabularyUsingMalone
+-----------------------------------
+All the products in a project using Malone.
+
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
     >>> for product in mozilla_project.products:
     ...     print "%s: %s" % (product.name, product.official_malone)
     firefox: True
@@ -421,19 +435,6 @@ All the products in a project.
     >>> for term in mozilla_products_vocabulary:
     ...     print "%s: %s" %(term.token, term.title)
     firefox: Mozilla Firefox
-
-ProjectProductsVocabularyUsingMalone
------------------------------------
-All the products in a project using Malone.
-
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
-    >>> mozilla_products_vocabulary = vocabulary_registry.get(
-    ...     mozilla_project,'ProjectProducts')
-
-    >>> for term in mozilla_products_vocabulary:
-    ...     print "%s: %s" %(term.token, term.title)
-    firefox: Mozilla Firefox
-    thunderbird: Mozilla Thunderbird
 
 Non-Enumerable Vocabularies
 ===========================

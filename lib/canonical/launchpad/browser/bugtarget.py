@@ -107,6 +107,7 @@ class FileBugViewBase(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     extra_data_token = None
+    can_decide_security_contact = True
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -457,7 +458,6 @@ class FileBugGuidedView(FileBugViewBase):
         title = self.getSearchText()
         if not title:
             return []
-
         search_context = self.getSearchContext()
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
@@ -546,6 +546,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
+    can_decide_security_contact = False
 
     field_names = ['product', 'title', 'comment']
 
@@ -566,6 +567,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
     schema = IProjectBugAddForm
+    can_decide_security_contact = False
 
     field_names = ['product', 'title', 'comment', 'security_related']
 

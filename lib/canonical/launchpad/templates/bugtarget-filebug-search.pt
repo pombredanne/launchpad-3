@@ -20,17 +20,17 @@
     <div metal:use-macro="context/@@launchpad_form/form">
 
       <table class="form" metal:fill-slot="widgets">
-        <tal:title_widget
+        <tal:product_widget
             tal:define="widget nocall:view/widgets/product|nothing"
             tal:condition="widget">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:title_widget>
+        </tal:product_widget>
 
-        <tal:distribution
+        <tal:bugtarget
             tal:define="widget nocall:view/widgets/bugtarget|nothing"
             tal:condition="widget">
           <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:distribution>
+        </tal:bugtarget>
 
         <tr>
           <td colspan="2">
