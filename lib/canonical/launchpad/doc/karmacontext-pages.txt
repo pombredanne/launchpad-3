@@ -17,9 +17,12 @@ contributors on a given context and the top contributors by category.
     >>> topcontributors = create_view(evolution, '+topcontributors')
     >>> contributors = topcontributors._getTopContributorsWithLimit(limit=3)
     >>> [(contrib.person.name, contrib.karmavalue) for contrib in contributors]
+    [(u'name16', 79), (u'carlos', 4)]
 
     >>> contributors = topcontributors.top_contributors_by_category
     >>> for category, contribs in contributors.items():
     ...     print category, [(contrib.person.name, contrib.karmavalue)
     ...                      for contrib in contribs]
+    Translations in Rosetta [(u'name16', 74), (u'carlos', 4)]
+    Bug Management [(u'name16', 5)]
 

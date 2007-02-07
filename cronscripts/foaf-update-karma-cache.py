@@ -19,6 +19,11 @@ class KarmaCacheUpdater(LaunchpadScript):
         karmavalue for each category of actions we have and update his entry
         in the KarmaCache table. If a user doesn't have an entry for that
         category in KarmaCache a new one will be created.
+
+        Entries in the KarmaTotalCache table will also be created/updated for
+        each user which has entries in the KarmaCache table. Any user which
+        doesn't have any entries in the KarmaCache table has its entries
+        removed from the KarmaTotalCache table as well.
         """
         self.logger.info("Updating Launchpad karma caches")
 
@@ -82,10 +87,10 @@ class KarmaCacheUpdater(LaunchpadScript):
             DELETE FROM KarmaCache
              WHERE project IS NOT NULL AND product IS NULL""")
 
-        # Don't allow our table to bloat with inactive users
+        # Don't allow our table to bloat with inactive users.
         self.cur.execute("DELETE FROM KarmaCache WHERE karmavalue <= 0")
 
-        # VACUUM KarmaCache since we have just touched every record in it
+        # VACUUM KarmaCache since we have just touched every record in it.
         self.cur.execute("""VACUUM KarmaCache""")
 
     def B_update_karmatotalcache(self):
@@ -95,7 +100,7 @@ class KarmaCacheUpdater(LaunchpadScript):
             DELETE FROM KarmaTotalCache
             WHERE person NOT IN (SELECT person FROM KarmaCache)
             """)
-        # Update existing records
+        # Update existing records.
         self.cur.execute("""
             UPDATE KarmaTotalCache SET karma_total=sum_karmavalue
             FROM (
@@ -134,12 +139,13 @@ class KarmaCacheUpdater(LaunchpadScript):
     def C_add_karmacache_sums(self):
         self.logger.info("Step C: Calculating KarmaCache sums")
         # We must issue some SUM queries to insert the karma totals for: 
-        # - All actions of a person on a given product
-        # - All actions of a person on a given distribution
-        # - All actions of a person on a given project
-        # - All actions with a specific category of a person on a given project
+        # - All actions of a person on a given product.
+        # - All actions of a person on a given distribution.
+        # - All actions of a person on a given project.
+        # - All actions with a specific category of a person on a given
+        #   project.
 
-        # - All actions of a person on a given product
+        # - All actions of a person on a given product.
         self.cur.execute("""
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
@@ -150,7 +156,7 @@ class KarmaCacheUpdater(LaunchpadScript):
             GROUP BY person, product
             """)
 
-        # - All actions of a person on a given distribution
+        # - All actions of a person on a given distribution.
         self.cur.execute("""
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
@@ -161,7 +167,7 @@ class KarmaCacheUpdater(LaunchpadScript):
             GROUP BY person, distribution
             """)
 
-        # - All actions of a person on a given project
+        # - All actions of a person on a given project.
         self.cur.execute("""
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
@@ -173,9 +179,9 @@ class KarmaCacheUpdater(LaunchpadScript):
             """)
 
         # - All actions with a specific category of a person on a given project
-        # XXX: This has to be the latest step; otherwise the rows inserted here
-        # will be included in the calculation of the overall karma of a person on
-        # a given project.
+        # IMPORTANT: This has to be the latest step; otherwise the rows
+        # inserted here will be included in the calculation of the overall
+        # karma of a person on a given project.
         self.cur.execute("""
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
