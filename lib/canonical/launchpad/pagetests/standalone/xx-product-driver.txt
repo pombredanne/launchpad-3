@@ -1,0 +1,28 @@
+Appoint Sample Person as the driver of Firefox product.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> browser.getLink('Appoint Driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/+driver'
+  >>> browser.title
+  'Appoint the driver for Mozilla Firefox'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+Redirect to the product's overview page.
+
+  >>> browser.url
+  'http://launchpad.dev/firefox'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of the product.
+
+  >>> project_portlet = find_portlet(browser.contents, 'Mozilla Firefox')
+  >>> project_portlet.find(text='Driver:').findNext('a').string
+  u'Sample Person'
