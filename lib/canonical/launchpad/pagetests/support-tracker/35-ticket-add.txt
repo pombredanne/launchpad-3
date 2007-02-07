@@ -126,10 +126,8 @@ redirect the user to the ticket page.
     >>> user_browser.title
     'mozilla-firefox in ubuntu support request #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> soup.first('div', 'highlighted')
-    <div class="highlighted">
-    <p>I use Ubuntu on AMD64 ...
-    </div>
+    >>> soup.first('div', 'report')
+    <div class="report"><p>I use Ubuntu on AMD64 ...</div>
 
 The user automatically got subscribed to this new ticket.
 

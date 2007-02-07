@@ -115,10 +115,8 @@ details of the ticket are available.
     >>> browser.title
     'Ubuntu support request #7: ...Slow system...'
     >>> soup = BeautifulSoup(browser.contents)
-    >>> soup('div', 'highlighted')
-    [<div class="highlighted">
-    <p>I get really poor hard drive performance.</p>
-    </div>]
+    >>> soup('div', 'report')
+    [<div class="report"><p>I get really poor hard drive performance.</p></div>]
 
 == Searching Support Requests ==
 
