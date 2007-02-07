@@ -177,10 +177,7 @@ class BugTaskAssigneeWidget(Widget):
         field = self.context
         bugtask = field.context
         if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+            return bugtask.assignee.unique_displayname
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.

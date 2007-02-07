@@ -66,7 +66,7 @@ But it is assigned to another user:
   True
 
   >>> widget.getAssigneeDisplayValue()
-  u'mark@hbd.com'
+  u'Mark Shuttleworth (sabdfl)'
 
 The widget has input:
 
@@ -165,7 +165,7 @@ Which means it's not assigned to another user:
   False
 
   >>> widget.getAssigneeDisplayValue()
-  u'foo.bar@canonical.com'
+  u'Foo Bar (name16)'
 
 The widget has input:
 

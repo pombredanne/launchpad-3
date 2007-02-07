@@ -8,9 +8,7 @@ style widget) "speaks", i.e., its allowed values.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IEmailAddressSet, IOpenLaunchBag,
-    ...     IProductSet, IProjectSet)
-    >>> from canonical.lp.dbschema import EmailAddressStatus
+    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> launchbag = getUtility(IOpenLaunchBag)
@@ -164,9 +162,10 @@ All the teams the person is an active member of.
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
-    7
+    8
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
@@ -487,7 +486,7 @@ The search does a case-insensitive, substring match.
     2
     >>> [(term.token, term.title) for term in package_name_terms]
     [('linux-2.6.12', u'this kernel is like the crystal method: a temple o...'),
-     ('linux-source-2.6.15', u'Source of: cdrkit')]
+     ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
 
 BinaryPackageNameVocabulary
 ---------------------------
@@ -515,13 +514,13 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'), ('mozilla-firefox', 'Not yet built')]
+    [('mozilla', 'Not yet built'), ('mozilla-firefox', u'Source of: mozilla-firefox')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
     1
     >>> [(term.token, term.title) for term in spn_terms]
-    [('pmount', u'Source of: at')]
+    [('pmount', u'Source of: pmount')]
 
 LanguageVocabulary
 ------------------
@@ -848,6 +847,14 @@ None) or any team.
 
     >>> list(vocab.search(None))
     []
+
+We can do token lookups using either a person's name or a person's email
+address.
+
+    >>> vocab.getTermByToken('name16').value.displayname
+    u'Foo Bar'
+    >>> vocab.getTermByToken('foo.bar@canonical.com').value.displayname
+    u'Foo Bar'
 
 Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.

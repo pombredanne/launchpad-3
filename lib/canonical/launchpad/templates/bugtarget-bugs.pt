@@ -57,15 +57,15 @@
               </tr>
             </tbody>
           </table>
-          <ul class="cross-reference" tal:condition="nothing">
-          <!-- Waiting for bugs 79034 and 79035. -->
-            <li>
-              <a href="">
-                <strong tal:content="nothing"></strong>
+          <ul class="cross-reference">
+            <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
+              <a tal:attributes="href fixed_elsewhere/url">
+                <strong tal:content="fixed_elsewhere/count">42</strong>
                 bugs fixed elsewhere
               </a>
             </li>
-            <li>
+            <!-- Waiting for bug 79034. -->
+            <li tal:condition="nothing">
               <a href="">
                 <strong tal:content="nothing"></strong>
                 open CVE bugs
