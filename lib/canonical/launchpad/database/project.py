@@ -17,26 +17,29 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByTicketOwner,
+    NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.ticket import TicketTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(IProject, ISearchableByTicketOwner)
 
     _table = "Project"
 
@@ -205,6 +208,25 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
+
+
+    # ITicketCollection
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
+                      sort=None, owner=None, needs_attention_from=None):
+        """See ITicketCollection."""
+        return TicketTargetSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
+            product=self.products).getResults()
+
+    def getTicketLanguages(self):
+        """See ITicketCollection."""
+        product_ids = sqlvalues(*self.products)
+        return set(Language.select(
+            'Language.id = language AND product IN (%s)' % ', '.join(
+                product_ids),
+            clauseTables=['Ticket'], distinct=True))
 
 
 class ProjectSet:
