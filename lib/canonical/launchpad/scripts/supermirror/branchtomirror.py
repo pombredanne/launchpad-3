@@ -179,6 +179,10 @@ class BranchToMirror:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
+        except (KeyboardInterrupt, SystemExit):
+            # Do not record OOPS for those exceptions.
+            raise
+
         except:
             # Any exception not handled specially is recorded as OOPS.
             self._record_oops(logger)

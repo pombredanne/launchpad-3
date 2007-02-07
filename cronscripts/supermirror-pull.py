@@ -24,7 +24,7 @@ if __name__ == '__main__':
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
 
-    # Customize the oops reporting config
+    # Customize the oops reporting config.
     oops_prefix = config.supermirror.errorreports.oops_prefix
     config.launchpad.errorreports.oops_prefix = oops_prefix
     errordir = config.supermirror.errorreports.errordir
