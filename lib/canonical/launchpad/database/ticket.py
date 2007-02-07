@@ -29,6 +29,11 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    TicketAction, TicketSort, TicketStatus,
+    TicketParticipation, TicketPriority, Item)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
@@ -39,10 +44,6 @@ from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import (
-    EnumCol, TicketAction, TicketSort, TicketStatus,
-    TicketParticipation, TicketPriority, Item)
 
 
 class notify_ticket_modified:

@@ -13,8 +13,9 @@ from sqlobject import ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (EnumCol, RosettaTranslationOrigin,
+from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet

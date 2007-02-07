@@ -15,31 +15,33 @@ from zope.component import getUtility
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import shortlist
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
 from canonical.lp.dbschema import (
-    EnumCol, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageUrgency, SourcePackageFormat,
     SourcePackageFileType, BuildStatus, TicketStatus,
     PackagePublishingStatus)
 
+from canonical.librarian.interfaces import ILibrarianClient
+
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-
+from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
 
-from canonical.launchpad.database.ticket import Ticket
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-
-from canonical.launchpad.database.files import SourcePackageReleaseFile
-from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)

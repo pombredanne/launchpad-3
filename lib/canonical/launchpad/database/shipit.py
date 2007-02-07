@@ -22,18 +22,22 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
+
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour,
+    ShippingService, ShippingRequestStatus)
+
 from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
-    ShippingService, ShippingRequestStatus)
 from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,

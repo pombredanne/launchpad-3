@@ -18,17 +18,29 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, SQLConstant
+
+from canonical.database import postgresql
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database import postgresql
+
+from canonical.foaf import nickname
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
+
+from canonical.lp.dbschema import (
+    BugTaskImportance, BugTaskStatus, SSHKeyType,
+    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
+    LoginTokenType, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -62,15 +74,7 @@ from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
 from canonical.launchpad.database.ticket import TicketPersonSearch
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, EnumCol, SSHKeyType,
-    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
-    LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
 from canonical.launchpad.searchbuilder import any
-
-from canonical.foaf import nickname
-from canonical.cachedproperty import cachedproperty
 
 
 class ValidPersonOrTeamCache(SQLBase):
