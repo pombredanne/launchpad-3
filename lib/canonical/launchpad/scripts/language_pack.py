@@ -13,6 +13,7 @@ from shutil import copyfileobj
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
     cursor)
@@ -178,7 +179,7 @@ def send_upload_notification(recipients, distribution_name, release_name,
         components = component
 
     simple_sendmail(
-        from_addr='rosetta@canonical.com',
+        from_addr=config.rosetta.rosettaadmin.email,
         to_addrs=recipients,
         subject='Language pack export complete',
         body=

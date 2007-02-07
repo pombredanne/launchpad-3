@@ -12,6 +12,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
 import canonical.launchpad.layers
@@ -20,19 +21,13 @@ import canonical.launchpad.layers
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
     facet = 'branches'
-    links = ['importer', 'all_branches']
+    links = ['importer']
 
     @enabled_with_permission('launchpad.Admin')
     def importer(self):
         target = 'series/'
         text = 'Branch Importer'
         summary = 'Manage CVS and SVN Trunk Imports'
-        return Link(target, text, summary, icon='branch')
-
-    def all_branches(self):
-        target = '+all-branches'
-        text = 'Show All Branches'
-        summary = 'Listing every branch registered in The Bazaar'
         return Link(target, text, summary, icon='branch')
 
 
@@ -46,7 +41,8 @@ class BazaarApplicationView:
     def branches(self):
         """List of all branches in the system."""
         branches = self.context.all
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+        items = shortlist(branches, 8000, hardlimit=10000)
+        return sorted(items, key=operator.attrgetter('sort_key'))
 
     def import_count(self):
         return self.seriesset.importcount()

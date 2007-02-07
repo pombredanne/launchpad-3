@@ -184,8 +184,8 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
             ),
-    'po_export_queue.txt': FunctionalDocFileSuite(
-            '../doc/po_export_queue.txt',
+    'poexport-queue.txt': FunctionalDocFileSuite(
+            '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'librarian.txt': FunctionalDocFileSuite(
@@ -273,6 +273,11 @@ special = {
             '../doc/bug-export.txt',
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'uri.txt': FunctionalDocFileSuite(
+            '../doc/uri.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
             ),
     'package-cache.txt': LayeredDocFileSuite(
             '../doc/package-cache.txt',

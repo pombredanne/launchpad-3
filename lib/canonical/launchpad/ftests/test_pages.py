@@ -24,7 +24,7 @@ class DuplicateIdError(Exception):
 
 
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
     elements_with_id = soup.findAll(attrs={'id': id})
     if not elements_with_id:

@@ -40,6 +40,25 @@ from canonical.lp.dbschema import (
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
     SpecificationStatus)
 
+
+class NoImportBranchError(Exception):
+    """Raised when ProductSeries.importUpdated finds not import branch.
+
+    This exception should never be caught. It exists only for unit testing.
+    """
+
+
+class DatePublishedSyncError(Exception):
+    """Raised by ProductSeries.importUpdated if datepublishedsync
+    should not be set.
+
+    If import_branch.date_last_mirrored is NULL, datepublishedsync should not
+    have been set because the import has not been published yet.
+
+    This exception should never be caught. It exists only for unit testing.
+    """
+
+
 class ProductSeriesSet:
     implements(IProductSeriesSet)
 
@@ -70,8 +89,6 @@ class ProductSeries(SQLBase, BugTargetBase):
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -88,6 +105,11 @@ class ProductSeries(SQLBase, BugTargetBase):
     datefinished = UtcDateTimeCol(default=None)
     dateprocessapproved = UtcDateTimeCol(default=None)
     datesyncapproved = UtcDateTimeCol(default=None)
+    # controlling the freshness of an import
+    syncinterval = IntervalCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
+    datepublishedsync = UtcDateTimeCol(
+        dbName='date_published_sync', default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
@@ -386,6 +408,24 @@ class ProductSeries(SQLBase, BugTargetBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
+
+    def importUpdated(self):
+        """See IProductSeries."""
+        if self.import_branch is None:
+            raise NoImportBranchError(
+                "importUpdated called for series %d,"
+                " but import_branch is NULL." % (self.id,))
+        if self.datepublishedsync is not None:
+            if self.import_branch.last_mirrored is None:
+                raise DatePublishedSyncError(
+                    "importUpdated called for series %d,"
+                    " where datepublishedsync is set,"
+                    " but import_branch.last_mirror is NULL."
+                    % (self.id,))
+        if self.datelastsynced < self.import_branch.last_mirrored:
+            self.datepublishedsync = self.datelastsynced
+        self.datelastsynced = UTC_NOW
+
 
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
