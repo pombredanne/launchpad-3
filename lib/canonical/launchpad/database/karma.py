@@ -224,9 +224,8 @@ class KarmaContextMixin:
     def getTopContributors(self, category=None, limit=None):
         """See IKarmaContext."""
         from canonical.launchpad.database.person import Person
-        join_clause = ""
         if IProduct.providedBy(self):
-            where_clause = "product = %d AND project IS NULL" % self.id
+            where_clause = "product = %d" % self.id
         elif IDistribution.providedBy(self):
             where_clause = (
                 "distribution = %d AND sourcepackagename IS NULL" % self.id)
@@ -245,13 +244,12 @@ class KarmaContextMixin:
         query = """
             SELECT person, karmavalue
             FROM KarmaCache
-            %(join_clause)s
             WHERE %(where_clause)s
             %(category_filter)s
             ORDER BY karmavalue DESC
             %(limit)s
-            """ % {'join_clause': join_clause, 'where_clause': where_clause,
-                   'category_filter': category_filter, 'limit': limit_filter}
+            """ % {'where_clause': where_clause, 'limit': limit_filter,
+                   'category_filter': category_filter}
 
         cur = cursor()
         cur.execute(query)
