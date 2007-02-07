@@ -10,7 +10,7 @@ __all__ = [
     "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FileBugInPackageView",
+    "FrontPageFileBugGuidedView",
     "ProjectFileBugGuidedView",
     "ProjectFileBugAdvancedView",
     ]
@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     IProduct, IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
     IProjectBugAddForm, ITemporaryStorageManager, IMaloneApplication,
-    IGeneralBugAddForm)
+    IFrontPageBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
@@ -229,8 +229,7 @@ class FileBugViewBase(LaunchpadFormView):
         elif IProject.providedBy(context):
             context = data['product']
         elif IMaloneApplication.providedBy(context):
-            # XXX: should use data['bugtarget']
-            context = self.widgets['bugtarget'].getInputValue()
+            context = data['bugtarget']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -435,6 +434,7 @@ class FileBugGuidedView(FileBugViewBase):
         return self.showFileBugForm()
 
     def getSearchContext(self):
+        """Return the context used to search for similar bugs."""
         if IDistributionSourcePackage.providedBy(self.context):
             return self.context
 
@@ -572,9 +572,9 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     field_names = ['product', 'title', 'comment', 'security_related']
 
 
-class FileBugInPackageView(FileBugGuidedView):
-    """Browser view class for the top-level filebug-in-package page."""
-    schema = IGeneralBugAddForm
+class FrontPageFileBugGuidedView(FileBugGuidedView):
+    """Browser view class for the top-level +filebug page."""
+    schema = IFrontPageBugAddForm
     custom_widget('bugtarget', FileBugTargetWidget)
 
     # Make inheriting the base class' actions work.

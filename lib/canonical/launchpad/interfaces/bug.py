@@ -11,7 +11,7 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
-    'IGeneralBugAddForm',
+    'IFrontPageBugAddForm',
     'IProjectBugAddForm',
     ]
 
@@ -394,8 +394,8 @@ class IProjectBugAddForm(IBugAddForm):
         vocabulary="ProjectProductsUsingMalone")
 
 
-class IGeneralBugAddForm(IBugAddForm):
-    """Create a bug for an anything."""
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
 
     bugtarget = Object(
         schema=IBugTarget, title=_("Where did you find the bug?"),

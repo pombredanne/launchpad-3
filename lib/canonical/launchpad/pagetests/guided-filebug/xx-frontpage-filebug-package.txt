@@ -28,7 +28,7 @@ If we enter an non-existant source package, we get an error message.
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    The source package 'non-existant' is not published in Ubuntu
+    There is no source package name 'non-existant' published in Ubuntu
 
 Selecting a valid package will take us to the next filebug step.
 

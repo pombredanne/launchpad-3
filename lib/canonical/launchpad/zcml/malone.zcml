@@ -68,7 +68,7 @@
     <browser:page
         name="+filebug"
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        class="canonical.launchpad.browser.FileBugInPackageView"
+        class="canonical.launchpad.browser.FrontPageFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
