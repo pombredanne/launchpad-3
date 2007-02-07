@@ -1166,6 +1166,22 @@ def upstream_status_vocabulary_factory(context):
     return SimpleVocabulary(terms)
 
 
+class BugListingBatchNavigator(TableBatchNavigator):
+    def __init__(self, *args, **kwargs):
+        TableBatchNavigator.__init__(self, *args, **kwargs)
+        # Now load the bug-branch links for this batch
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+            self.currentBatch())
+        # map from the bug id to the branches
+        bug_id_mapping = {}
+        for bugbranch in bugbranches:
+            bug_id_mapping.setdefault(
+                bugbranch.bug.id, []).append(bugbranch.branch)
+        self.bug_branches = {}
+        for task in self.currentBatch():
+            self.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -1348,24 +1364,9 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
 
-        return TableBatchNavigator(
+        return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size,
-            callback=self.loadBugBranchesForBatch)
-
-    def loadBugBranchesForBatch(self, context, batch):
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
-            batch)
-        # map from the bug id to the branches
-        bug_id_mapping = {}
-        for bugbranch in bugbranches:
-            bug_id_mapping.setdefault(
-                bugbranch.bug.id, []).append(bugbranch.branch)
-        context.bug_branches = {}
-        self.bug_branches = {}
-        for task in batch:
-            context.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
-            self.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
+            size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
