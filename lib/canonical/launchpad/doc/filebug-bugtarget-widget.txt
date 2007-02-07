@@ -127,7 +127,7 @@ If a non-existant package is selected, a widget error is raised.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: The source package 'non-existant' is not
+    LaunchpadValidationError: There is no source package name 'non-existant'
                               published in Ubuntu
 
 The same error is displayed when an existing source package name that
@@ -141,7 +141,7 @@ isn't published is selected.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: The source package 'thunderbird' is not
+    LaunchpadValidationError: There is no source package name 'thunderbird'
                               published in Ubuntu
 
 

@@ -168,7 +168,7 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form.get(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "The source package '%s' is not published in %s",
+                        "There is no source package name '%s' published in %s",
                         entered_name, distribution.displayname)
                 if package_name is None:
                     return distribution
@@ -177,7 +177,7 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
                         package_name.name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "The source package '%s' is not published in %s",
+                        "There is no source package name '%s' published in %s",
                         package_name.name, distribution.displayname)
                 return distribution.getSourcePackage(source_name)
             else:
@@ -186,6 +186,7 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
             raise UnexpectedFormData("No valid option was selected.")
 
     def setRenderedValue(self, value):
+        """See IWidget."""
         if IProduct.providedBy(value):
             self.default_option = 'product'
             self.product_widget.setRenderedValue(value)
