@@ -748,16 +748,10 @@ class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
             return 'no title'
 
     def listChildren(self, num):
-        return ['name%s' % n for n in range(num)]
-
-    def countChildren(self):
-        return 50
+        return []
 
     def listAltChildren(self, num):
-        return ['altname%s' % n for n in range(num)]
-
-    def countAltChildren(self):
-        return 4
+        return None
 
 
 class Button:
