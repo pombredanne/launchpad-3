@@ -111,17 +111,10 @@ class DistributionSOP(StructuralObjectPresentation):
         return self.context.title
 
     def listChildren(self, num):
-        # XXX mpt 20061004: list architectures, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
+        return self.context.releases[:num]
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):

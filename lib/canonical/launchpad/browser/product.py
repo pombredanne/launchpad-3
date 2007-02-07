@@ -129,17 +129,11 @@ class ProductSOP(StructuralObjectPresentation):
         return self.context.title
 
     def listChildren(self, num):
-        # XXX mpt 20061004: product series, most recent first
-        return []
-
-    def countChildren(self):
-        return 0
+        # product series, most recent first
+        return list(self.context.serieslist[:num])
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):

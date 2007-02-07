@@ -1,24 +1,21 @@
 <div id="structuralobjectchildren">
-  <tal:if condition="python:view.num_lists == 0">
-    (no children)
-  </tal:if>
   <tal:if condition="python:view.num_lists == 1">
     <span class="primary">
       <span tal:repeat="child view/children"
-            tal:replace="child" />
-      <span tal:condition="view/more_children">more</span>
+            tal:replace="structure child/@@+shortlink" />
+      <span tal:condition="view/more_children">&hellip;</span>
     </span>
   </tal:if>
   <tal:if condition="python:view.num_lists == 2">
     <span class="primary">
       <span tal:repeat="child view/children"
-            tal:replace="child" />
-      <span tal:condition="view/more_children">more</span>
+            tal:replace="structure child/@@+shortlink" />
+      <span tal:condition="view/more_children">&hellip;</span>
     </span>
     <span class="secondary">
       <span tal:repeat="child view/altchildren"
-            tal:replace="child" />
-      <span tal:condition="view/more_altchildren">more</span>
+            tal:replace="structure child/@@+shortlink" />
+      <span tal:condition="view/more_altchildren">&hellip;</span>
     </span>
   </tal:if>
 </div>
