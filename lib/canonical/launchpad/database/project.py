@@ -104,6 +104,16 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
+    def translatables(self):
+        """See IProject."""
+        return Product.select('''
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''',
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
+
     @property
     def has_any_specifications(self):
         """See IHasSpecifications."""
