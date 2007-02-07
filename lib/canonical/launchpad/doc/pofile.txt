@@ -392,7 +392,7 @@ Security tests
 
 Import the function that will help us to do this test.
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
 
 A Launchpad admin must have permission to edit an IPOFile always.
     >>> login('foo.bar@canonical.com')

@@ -31,19 +31,21 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
     IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
-    IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
+    ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
+    valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured)
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.textwidgets import StrippedTextWidget

@@ -34,7 +34,7 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class TraversalError(NotFoundError):
