@@ -51,7 +51,7 @@
       <ul class="home">
         <li><a tal:attributes="href frontpage" title="Home">Home</a></li>
       </ul>
-      <div style="color:white;font-size:120%">Welcome to the Launchpad private beta.  Bug reports and feedback welcome.  Please do not post screenshots publicly.</div>
+      <div style="color:white;font-size:120%">Welcome to the Launchpad private beta.  Please do not post screenshots publicly.  Bug reports and feedback welcome.</div>
     </div>
 
     <div id="locationbar">
