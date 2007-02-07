@@ -126,6 +126,10 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
             if self.request.form.get(self.name, self.default_option) == option:
                 attributes['checked'] = 'checked'
             self.options[option] = renderElement('input', **attributes)
+        self.package_widget.onKeyPress = (
+            "selectWidget('%s.option.package', event)" % self.name)
+        self.product_widget.onKeyPress = (
+            "selectWidget('%s.option.product', event)" % self.name)
 
     def hasInput(self):
         return self.name in self.request.form
