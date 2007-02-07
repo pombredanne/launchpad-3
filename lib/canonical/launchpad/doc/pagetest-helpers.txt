@@ -198,8 +198,8 @@ be used to do this:
 parse_relationship_section
 ---------------------------
 
-Since the code to render Package Relationship is consolidate in one
-place, a method to parse this section and check built=in features was
+Since the code to render Package Relationship is consolidated in one
+place, a method to parse this section and check built-in features was
 also created.
 
 This method is able to parse a rendered relationship_section and print
@@ -226,8 +226,4 @@ a list of isolated attributes for each mentioned item.
   >>> parse_relationship_section(content)
   LINK: "linked_item" -> somewhere
   TEXT: "not_linked_item"
-  LINK: "linkedwithspaces" -> somewhereelse
-
-XXX cprov 20070111: Unfortunatelly, it purges more spaces than
-necessary, for instance, in 'linked with spaces'. I do not know how to
-sort this.
+  LINK: "linked with spaces" -> somewhereelse

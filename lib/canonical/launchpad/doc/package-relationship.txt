@@ -1,5 +1,4 @@
-Package Relationship Model
-===========================
+= Package Relationship Model =
 
 We call "package relationship" the DSC field which describes relation
 between the package in question and others availble:
@@ -20,7 +19,7 @@ For binaries we have:
  * provides
 
 Those lines contain a list of comma-separated relationship where each
-element follows this format::
+element follows this format:
 
     $NAME [($OPERATOR $VERSION)]
 
@@ -35,12 +34,11 @@ lines:
 
   >>> from apt_pkg import ParseDepends
 
-ParseDepends returns a 'list of lists of tuples' as::
+ParseDepends returns a 'list of lists of tuples' as:
 
   [ [('$NAME', '$VERSION', '$OPERATOR')],
     [('$NAME', '$VERSION', '$OPERATOR')],
-    ...
-  ]
+    ... ]
 
 So we need perform a small treatment on its result in order to have
 *sane* data:

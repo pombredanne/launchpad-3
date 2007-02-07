@@ -1,10 +1,10 @@
 = BinaryPackageRelease Pages =
 
-Page for a 'succesfully built' build provides link(s) to the produced
+The page for a 'successfully built' build provides link(s) to the produced
 binaries independent of their context, the raw IBinaryPackageRelease
 content class/page.
 
-Let's find a build with reasonable contents:
+Let's find a build that produced some binaries:
 
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
   >>> browser.getControl(name="build_state").value = ['built']
@@ -28,18 +28,18 @@ When rendering package relationships only existent packages contain
 links to within LP application, not found packages are rendered as
 simple text.
 
-"Provides" section contains one link to the 'mozilla-firefox' binary
-in the context in question, i.e., 'warty i386':
+This "Provides" section contains one link to the 'mozilla-firefox'
+binary in the context in question, i.e., 'warty i386':
 
   >>> provides_section = find_tag_by_id(browser.contents, 'provides')
-  >>> parse_relationship_section(provides_section)
+  >>> parse_relationship_section(str(provides_section))
   LINK: "mozilla-firefox" -> http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox
 
-"Depends" section contains only unsatisfied dependencies, which is
-rendered as text:
+This "Depends" section contains only unsatisfied dependencies, which
+is rendered as text:
 
   >>> depends_section = find_tag_by_id(browser.contents, 'depends')
-  >>> parse_relationship_section(depends_section)
+  >>> parse_relationship_section(str(depends_section))
   TEXT: "gcc-3.4(&gt;=3.4.1-4sarge1)"
   TEXT: "gcc-3.4(&lt;&lt;3.4.2)"
   TEXT: "gcc-3.4-base"

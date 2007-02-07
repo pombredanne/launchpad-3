@@ -35,6 +35,7 @@ def find_tag_by_id(content, id):
         raise DuplicateIdError(
             'Found %d elements with id %r' % (len(elements_with_id), id))
 
+
 def find_tags_by_class(content, class_):
     """Find and return the tags matching the given class(s)"""
     match_classes = set(class_.split())
@@ -44,6 +45,7 @@ def find_tags_by_class(content, class_):
         return match_classes.issubset(classes)
     soup = BeautifulSoup(content)
     return soup.findAll(attrs={'class': class_matcher})
+
 
 def find_portlet(content, name):
     """Find and return the portlet with the given title. Sequences of
@@ -58,6 +60,7 @@ def find_portlet(content, name):
             return portlet
     return None
 
+
 def find_main_content(content):
     """Find and return the main content area of the page"""
     soup = BeautifulSoup(content)
@@ -66,28 +69,27 @@ def find_main_content(content):
         return tag
     return soup.find(attrs={'id': 'content'})
 
+
+# XXX cprov 20070207: This function seems to be more specific to a particular
+# product (soyuz) than the rest. Maybe it belongs to somewhere else.
 def parse_relationship_section(content):
     """Parser package relationship section.
 
     See package-relationship-pages.txt and related.
     """
-    # XXX cprov 20070111: forcing it to be a text is required because
-    # most of the time we recieve a BeutifulSoup instance (returned from
-    # other helpers). However what does happen if the 'content' contains
-    # unicode data ?
-    soup = BeautifulSoup(str(content))
+    soup = BeautifulSoup(content)
     section = soup.find('ul')
     for li in section.findAll('li'):
         if li.a:
-            # XXX cprov 20070111: replace().replace() is ugly and doesn't
-            # work perfectly (see doc/pagetest-helpers.txt), but I
-            # don't feel like having the regexp-fu today.
-            content = li.a.string.replace('\n', '').replace(' ', '')
-            url = li.a['href']
+            link = li.a
+            whitespace_re = re.compile('\s+')
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
             print 'LINK: "%s" -> %s' % (content, url)
         else:
             content = li.string.replace('\n', '').replace(' ', '')
             print 'TEXT: "%s"' % content
+
 
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
