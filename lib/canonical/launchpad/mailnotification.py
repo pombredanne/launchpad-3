@@ -1165,6 +1165,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
             # XXX flacoste 2007/02/02 The first message cannot contain
             # a References because we don't create a Message instance
             # for the ticket description, so we don't have a Message-ID.
+            # Bug #83846
             index = list(self.ticket.messages).index(self.new_message)
             if index > 0:
                 headers['References'] = (
