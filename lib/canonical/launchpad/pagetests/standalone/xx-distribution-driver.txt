@@ -1,0 +1,31 @@
+Appoint Sample Person as the driver of the Ubuntu distribution.
+
+  >>> browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser.open('http://launchpad.dev/ubuntu')
+  >>> browser.getLink('Appoint Driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/+driver'
+  >>> browser.title
+  'Appoint the driver for Ubuntu Linux'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+Redirect to the distribution's overview page.
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of the distribution.
+
+  >>> project_portlet = find_portlet(
+  ...     browser.contents, 'Ubuntu distribution details')
+  >>> project_portlet.find(text='Driver:').findNext('a').string
+  u'Sample Person'
+
