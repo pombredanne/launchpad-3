@@ -6,4 +6,4 @@ ALTER TABLE Bug DROP activitytimestamp;
 ALTER TABLE Bug DROP communityscore;
 ALTER TABLE Bug DROP communitytimestamp;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 03, 0);
