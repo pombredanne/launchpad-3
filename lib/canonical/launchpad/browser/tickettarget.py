@@ -29,8 +29,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageSupportContacts, ISearchableByTicketOwner,
-    ISearchTicketsForm, ITicketTarget, NotFoundError)
+    IDistribution, ILanguageSet, IManageSupportContacts, IProject,
+    ISearchableByTicketOwner, ISearchTicketsForm, ITicketTarget,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -84,8 +85,10 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
-    # Set to true to display a column showing the ticket's target
-    displayTargetColumn = False
+    # Set to true to display a column showing the ticket's target.
+    @property
+    def displayTargetColumn(self):
+        return IProject.providedBy(self.context)
 
     # Will contain the parameters used by searchResults
     search_params = None

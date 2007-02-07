@@ -517,6 +517,61 @@ visiting the 'Subscribed' link in the support facet.
     ...     print ticket.first('a').renderContents()
     Slow system
 
+== Browsing and Searching Support Requests in a Project ==
+
+When going to the Support facet of a project, a listing of all the
+support requests filed against the project product is displayed.
+
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> browser.getLink('Support').click()
+    >>> print browser.title
+    Support requests for the Mozilla Project
+
+The results are displayed in a format similar to the Person reports:
+there is an 'In' column displaying where the requests was filed.
+
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.tbody.fetch('tr'):
+    ...     ticket_title = ticket.first(
+    ...         'td', 'ticket').first('a').renderContents()
+    ...     ticket_target = ticket.first(
+    ...         'td', 'ticket-target').first('a').renderContents()
+    ...     print ticket_title, ticket_target
+    Newly installed plug-in doesn't seem to be used Mozilla Firefox
+    Firefox loses focus and gets stuck  Mozilla Firefox
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    Firefox cannot render Bank Site     Mozilla Firefox
+
+That listing is searchable:
+
+    >>> browser.getControl(name='field.search_text').value = 'SVG'
+    >>> browser.getControl('Search').click()
+
+    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
+    >>> for ticket in tickets.fetch('td', 'ticket'):
+    ...     print ticket.first('a').renderContents()
+    Problem showing the SVG demo on W3C site
+
+The same standard reports than on regular TicketTarget are avaiable:
+
+    >>> browser.getLink('Open').click()
+    >>> print browser.title
+    Open support requests for the Mozilla Project
+
+    >>> browser.getLink('Answered').click()
+    >>> print browser.title
+    Answered support requests for the Mozilla Project
+
+    # The next two reports are only available to a logged-in user.
+    >>> user_browser.open('http://launchpad.dev/mozilla/+tickets')
+    >>> user_browser.getLink('My Requests').click()
+    >>> print user_browser.title
+    Support requests you made for the Mozilla Project
+
+    >>> user_browser.getLink('Need Attention').click()
+    >>> print user_browser.title
+    Support requests needing your attention for the Mozilla Project
+
 == Searching All Requests ==
 
 It is possible from the support tracker front page to search among all
