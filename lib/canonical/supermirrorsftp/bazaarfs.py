@@ -208,6 +208,27 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         return deferred.addCallback(cb)
 
 
+class WriteLoggingFile(osfs.OSFile):
+    """osfs.OSFile that keeps track of whether it has been written to.
+    """
+
+    def __init__(self, listener, path, name=None, parent=None):
+        self.listener = listener
+        osfs.OSFile.__init__(self, path, name, parent)
+
+    def open(self, flags):
+        if os.O_TRUNC & flags:
+            self.touch()
+        osfs.OSFile.open(self, flags)
+
+    def touch(self):
+        self.listener()
+
+    def writeChunk(self, offset, data):
+        self.touch()
+        osfs.OSFile.writeChunk(self, offset, data)
+
+
 class WriteLoggingDirectory(osfs.OSDirectory):
     def __init__(self, listener, path, name=None, parent=None):
         osfs.OSDirectory.__init__(self, path, name, parent)
@@ -218,6 +239,13 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         """
         def childWithListener(path, name, parent):
             return WriteLoggingDirectory(self.listener, path, name, parent)
+        return childWithListener
+
+    def childFileFactory(self):
+        """Return a child file which uses the same listener.
+        """
+        def childWithListener(path, name, parent):
+            return WriteLoggingFile(self.listener, path, name, parent)
         return childWithListener
 
     def createDirectory(self, name):

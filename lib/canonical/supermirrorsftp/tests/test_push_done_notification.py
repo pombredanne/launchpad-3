@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 
+import os
 import shutil
 import tempfile
 import unittest
@@ -94,7 +95,7 @@ class TestPushDoneNotification(AvatarTestCase):
         return d.addCallback(post_create)
 
 
-class WriteLoggingNode(unittest.TestCase):
+class WriteLoggingDirectory(unittest.TestCase):
 
     def setUp(self):
         testName = self.id().split('.')[-1]
@@ -164,6 +165,50 @@ class WriteLoggingNode(unittest.TestCase):
         self.directory.dirty = False
         subdir.remove()
         self.assertEqual(self.dirty, True)
+
+
+class WriteLoggingFile(unittest.TestCase):
+
+    def setUp(self):
+        testName = self.id().split('.')[-1]
+        self.dirty = False
+        self.tempDir = tempfile.mkdtemp(prefix=testName)
+        self.directory = bazaarfs.WriteLoggingDirectory(self.listener,
+                                                        self.tempDir)
+        self.file = self.directory.createFile('foo')
+        self.dirty = False
+
+    def tearDown(self):
+        shutil.rmtree(self.tempDir)
+
+    def listener(self):
+        self.dirty = True
+
+    def test_file_has_listener(self):
+        # The created file should refer to the listener of its parent directory.
+        self.assertEqual(self.listener, self.file.listener)
+
+    def test_writeChunk(self):
+        # Opening the file and writing to it should dirty the listener.
+        self.file.open(os.O_WRONLY)
+        self.file.writeChunk(0, 'the quick brown fox')
+        try:
+            self.assertEqual(True, self.dirty)
+        finally:
+            self.file.close()
+
+    def test_truncateFile(self):
+        # Opening the file with O_TRUNC and then closing it counts as a write.
+        self.file.open(os.O_TRUNC)
+        self.file.close()
+        self.assertEqual(True, self.dirty)
+
+    def test_readOnly(self):
+        # Opening the file as O_RDONLY and then closing it does not count as a
+        # write.
+        self.file.open(os.O_RDONLY)
+        self.file.close()
+        self.assertEqual(False, self.dirty)
 
 
 class BazaarFileTransferServerTests(AvatarTestCase):
