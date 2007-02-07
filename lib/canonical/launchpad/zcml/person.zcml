@@ -20,8 +20,6 @@
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
-      <!-- ITicketCollection -->
-      <allow attributes="getTicketLanguages" />
   </content>
 
   <browser:defaultView

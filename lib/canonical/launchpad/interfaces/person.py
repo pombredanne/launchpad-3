@@ -32,7 +32,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.ticket import TICKET_STATUS_DEFAULT_SEARCH
+from canonical.launchpad.interfaces.ticket import (
+    ITicketCollection, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -84,7 +85,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications):
+class IPerson(IHasSpecifications, ITicketCollection):
     """A Person."""
 
     id = Int(
@@ -627,7 +628,7 @@ class IPerson(IHasSpecifications):
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
                       language=None, sort=None, participation=None,
-                      needs_attention=False, ):
+                      needs_attention=False):
         """Search the person's tickets.
 
         See ITicketCollection for the description of the standard search
