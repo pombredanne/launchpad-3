@@ -17,14 +17,12 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
-import re
 
 from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
@@ -33,10 +31,11 @@ from canonical.launchpad.helpers import (
     browserLanguages, check_permission, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, validate_url, IProductSeries,
+    ISourcePackageNameSet, IProductSeries,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -94,7 +93,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
@@ -408,12 +407,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class ProductSeriesAppointDriverView(SQLObjectEditView):
+class ProductSeriesAppointDriverView(AppointDriverView):
     """View class that lets you appoint a driver for a ProductSeries object."""
 
-    def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
+    schema = IProductSeries
+
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):

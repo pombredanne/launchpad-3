@@ -136,17 +136,14 @@
         lp:url="/products/$Product.name/$ProductSeries.name/+edit"
       />
 
-    <browser:editform
+    <browser:page
         name="+driver"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="driver"
         class="canonical.launchpad.browser.ProductSeriesAppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"
-        lp:url="/$Product.name/$Series.name/+driver">
-    </browser:editform>
+        lp:url="/$Product.name/$Series.name/+driver" />
 
     <browser:addform
         name="+addrelease"

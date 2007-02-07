@@ -1,0 +1,30 @@
+Appoint Sample Person as the driver of Firefox 1.0 series.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox/1.0')
+  >>> browser.getLink('Appoint Driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/1.0/+driver'
+  >>> browser.title
+  'Appoint the driver for Mozilla Firefox Series: 1.0'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+Redirect to the series' overview page.
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/1.0'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of Firefox 1.0.
+
+  >>> project_portlet = find_portlet(
+  ...     browser.contents, 'Mozilla Firefox Series: 1.0')
+  >>> project_portlet.find(text='Drivers:').findNext('a').string
+  u'Sample Person'
+
