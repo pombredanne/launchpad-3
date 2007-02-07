@@ -15,18 +15,24 @@ Setup the stub KeyServer
 
 Sign only keys are registered on the standard +editpgpkeys page.
 
-  >>> user_browser.open('http://localhost/people/name12/+editpgpkeys')
-  >>> user_browser.title
+  >>> from zope.testbrowser.testing import Browser
+
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.title
   "Sample Person's OpenPGP keys"
 
 Claim a sign-only OpenPGP key:
 
   >>> fingerprint = '447DBF38C4F9C4ED752246B77D88913717B05A8F'
-  >>> user_browser.getControl(name="fingerprint").value = fingerprint
-  >>> user_browser.getControl('Import Key').click()
+  >>> browser.getControl(name="fingerprint").value = fingerprint
+  >>> browser.getControl('Import Key').click()
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
    A message has been sent to ...test@canonical.com... To confirm the
@@ -51,7 +57,7 @@ Do the usual procedure to extract the token URL
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
 
-Ensure token is ascii to avoid utf-8 mess in URL  
+Ensure token is ascii to avoid utf-8 mess in URL
 
   >>> base_path = '/token/%s' % token.encode('ascii')
 
@@ -72,9 +78,9 @@ database to a fixed value:
 Go to the link given in the email. Note that we get redirected to the
 sign-only key validation page instead of the regular sign-up page.
 
-  >>> user_browser.open('http://localhost' + base_path)
-  >>> user_browser.url
-  'http://localhost/token/.../+validatesignonlygpg'
+  >>> browser.open('http://launchpad.dev' + base_path)
+  >>> browser.url
+  'http://launchpad.dev/token/.../+validatesignonlygpg'
 
 We get redirected to the sign-only OpenPGP key validation page, which
 includes a phrase that must be signed by the user.  Some things to
@@ -84,10 +90,10 @@ note about the phrase:
 
 This should make us immune to replay attacks and encoding issues.
 
-  >>> user_browser.title
+  >>> browser.title
   'Confirm sign-only OpenPGP key'
 
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('pre'):
   ...     print tag.string
   Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
@@ -98,12 +104,12 @@ Below is a clear-signed version signed with a different key (DFD20543):
   >>> signedcontent = """
   ... -----BEGIN PGP SIGNED MESSAGE-----
   ... Hash: SHA1
-  ... 
+  ...
   ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
   ... Launchpad user name12.  2005-04-01 12:00:00 UTC
   ... -----BEGIN PGP SIGNATURE-----
   ... Version: GnuPG v1.4.1 (GNU/Linux)
-  ... 
+  ...
   ... iD8DBQFDcLOh2yWXVgK6XvYRAkpWAKDFHRpVJc2flFwpQMMxub4cl+TcCACgyciu
   ... s7GH1fQGOQMqpvpinwOjGto=
   ... =w7/b
@@ -112,14 +118,14 @@ Below is a clear-signed version signed with a different key (DFD20543):
 
 The key validation does not succeed with this key:
 
-  >>> user_browser.getControl(name="signedcontent").value = signedcontent
-  >>> user_browser.getControl('Confirm').click()
+  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl('Confirm').click()
 
   >>> message = (
   ...     'The key used to sign the content '
   ...     '(A419AE861E88BC9E04B9C26FBA2B9389DFD20543) is not the key you '
   ...     'were registering')
-  >>> message in user_browser.contents
+  >>> message in browser.contents
   True
 
 Next we try proceeding using a message with an invalid signature (in
@@ -128,22 +134,22 @@ this case, a truncated signature):
   >>> signedcontent = """
   ... -----BEGIN PGP SIGNED MESSAGE-----
   ... Hash: SHA1
-  ... 
+  ...
   ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
   ... Launchpad user name12.  2005-04-01 12:00:00 UTC
   ... -----BEGIN PGP SIGNATURE-----
   ... Version: GnuPG v1.4.1 (GNU/Linux)
-  ... 
+  ...
   ... """
 
 The key validation does not succeed with this key:
 
-  >>> user_browser.getControl(name="signedcontent").value = signedcontent
-  >>> user_browser.getControl('Confirm').click()
+  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl('Confirm').click()
 
   >>> message = (
   ...     'Launchpad could not verify your signature: No data')
-  >>> message in user_browser.contents
+  >>> message in browser.contents
   True
 
 Below is the clear-signed version of the message we are required to
@@ -152,12 +158,12 @@ sign, signed with the correct key:
   >>> signedcontent = """
   ... -----BEGIN PGP SIGNED MESSAGE-----
   ... Hash: SHA1
-  ... 
+  ...
   ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
   ... Launchpad user name12.  2005-04-01 12:00:00 UTC
   ... -----BEGIN PGP SIGNATURE-----
   ... Version: GnuPG v1.4.1 (GNU/Linux)
-  ... 
+  ...
   ... iD8DBQFDb8MIfYiRNxewWo8RAhtJAJ0TsZWBG9lDZEgterdNQxLI0F9ajACgmx+M
   ... fe5bet4x/Y8R576T9/VFso8=
   ... =JL4/
@@ -168,56 +174,56 @@ sign, signed with the correct key:
 Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
-  >>> user_browser.getControl(name="signedcontent").value = signedcontent
-  >>> user_browser.getControl('Confirm').click()
+  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl('Confirm').click()
 
 On success, redirect to Sample Person's home page.
 
-  >>> user_browser.url
-  'http://localhost/people/name12'
+  >>> browser.url
+  'http://launchpad.dev/~name12'
 
-  >>> '1024D/17B05A8F' in user_browser.contents
+  >>> '1024D/17B05A8F' in browser.contents
   True
 
 Check that the key has been imported:
 
-  >>> user_browser.getLink('OpenPGP Keys').click()
+  >>> browser.getLink('OpenPGP Keys').click()
 
-  >>> user_browser.title
+  >>> browser.title
   "Sample Person's OpenPGP keys"
 
-  >>> "1024D/17B05A8F" in user_browser.contents
+  >>> "1024D/17B05A8F" in browser.contents
   True
-  >>> "(sign only)" in user_browser.contents
+  >>> "(sign only)" in browser.contents
   True
 
 Mark the key as inactive.
 
-  >>> user_browser.getControl(name="DEACTIVATE_GPGKEY").value = ['2']
-  >>> user_browser.getControl('Deactivate Key').click()
+  >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['2']
+  >>> browser.getControl('Deactivate Key').click()
 
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
   Deactivated key(s): 1024D/17B05A8F
 
 Ask for a re-validation of the key.
 
-  >>> user_browser.getControl(name="REACTIVATE_GPGKEY").value = ['2']
-  >>> user_browser.getControl('Reactivate Key').click()
+  >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['2']
+  >>> browser.getControl('Reactivate Key').click()
 
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
-  An email was sent to test@canonical.com with instructions to reactivate...
+  A message has been sent to test@canonical.com with instructions to reactivate...
 
 Open the page again and check that the key is still displayed, pending
 revalidation.
 
-  >>> user_browser.reload()
-  >>> 'Keys pending validation' in user_browser.contents
+  >>> browser.reload()
+  >>> 'Keys pending validation' in browser.contents
   True
-  >>> '1024D/17B05A8F' in user_browser.contents
+  >>> '1024D/17B05A8F' in browser.contents
   True
 
 Now that the key has been validated, the login token is consumed:

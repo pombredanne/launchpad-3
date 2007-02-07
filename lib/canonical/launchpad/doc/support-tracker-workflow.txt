@@ -1,5 +1,4 @@
-Support Tracker Workflow
-========================
+= Support Tracker Workflow =
 
 The state of a support ticket is tracked through its status attribute.
 Six statuses are used to model a ticket lifecycle. These are defined
@@ -53,7 +52,7 @@ the Ubuntu Team that owns the distribution.
     >>> ubuntu.addSupportContact(sample_person)
     True
 
-    (Sanity check: the admin isn't in the team owning the distribution.)
+    # Sanity check: the admin isn't in the team owning the distribution.
     >>> stub.inTeam(ubuntu.owner)
     False
 
@@ -74,8 +73,7 @@ A ticket starts its lifecycle in the Open state.
 
 From there, we have four representative scenarios.
 
-1) Another user helps the submitter with his request
-----------------------------------------------------
+== 1) Another user helps the submitter with his request ==
 
 The most common scenario is where another user comes to help the
 submitter and answers his support request. This may involve exchanging
@@ -252,8 +250,7 @@ and answerer attributes are also updated.
     >>> ticket.answer == answer_message
     True
 
-2) Self-answer
---------------
+== 2) Self-answer ==
 
 Another scenario is for the case when the user comes back to answer the
 request himself. The giveAnswer() method is also used for that case.
@@ -286,8 +283,7 @@ the 'answer' attribute will contain the message that closed the request.
     >>> ticket.answer == self_answer_message
     True
 
-3) The request expires
-----------------------
+== 3) The request expires ==
 
 Another case is when nobody comes to answer the message, either because
 the request is too complex or too vague. These requests can be expired
@@ -336,8 +332,7 @@ attribute is updated.
     True
 
 
-4) The request is invalid
--------------------------
+== 4) The request is invalid ==
 
 Another scenario to handle is the case where the user posts a message
 that isn't really appropriate for the support tracker like a SPAM
@@ -359,13 +354,13 @@ request:
     >>> spam_ticket.canReject(marilize)
     False
 
-    (Support contact)
+    # Support contact
     >>> spam_ticket.canReject(sample_person)
     True
     >>> spam_ticket.canReject(ubuntu.owner)
     True
 
-    (Administrator)
+    # Administrator
     >>> spam_ticket.canReject(stub)
     True
 
@@ -406,8 +401,7 @@ dateanswered, answerer and answer attributes are also updated.
     >>> spam_ticket.dateanswered == now_plus_one_hour
     True
 
-Other scenarios
----------------
+== Other scenarios ==
 
 Many other scenarios are possible and some of those are probably more
 common than the ones we exposed. For example, it is likely that a user
@@ -421,8 +415,7 @@ these various possibilities here.
 (The ../interfaces/ftests/test_ticket_workflow.py functional test
 exercices all the various possible transitions.)
 
-Changing the ticket status
---------------------------
+== Changing the ticket status ==
 
 It is not possible to change the status attribute directly:
 
@@ -493,8 +486,7 @@ launchpad.Admin permission, an Unauthorized error is thrown:
       ...
     Unauthorized...
 
-Adding Comments Without Changing the Status
--------------------------------------------
+== Adding Comments Without Changing the Status ==
 
 There is an addComment() method that can be use to add a message to the
 ticket without changing its status.
@@ -502,6 +494,7 @@ ticket without changing its status.
     >>> login('no-priv@canonical.com')
     >>> old_status = ticket.status
     >>> old_datelastresponse = ticket.datelastresponse
+    >>> old_datelastquery = ticket.datelastquery
     >>> comment = ticket.addComment(
     ...     no_priv, 'This is a comment.',
     ...     datecreated=now_plus_two_hours)
@@ -519,13 +512,12 @@ attributes.
     >>> ticket.datelastquery == old_datelastquery
     True
 
-Events
-------
+== Events ==
 
 Each of the workflow methods will trigger a SQLObjectCreatedEvent for
 the message they create and a SQLObjectModifiedEvent for the ticket.
 
-    (Register an event listener that will print event it receives.)
+    # Register an event listener that will print event it receives.
     >>> from canonical.launchpad.event.interfaces import (
     ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
     >>> from canonical.launchpad.interfaces import ITicket
@@ -560,19 +552,17 @@ these events.
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
 
-    (Cleanup)
+    # Cleanup
     >>> ticketmessage_event_listener.unregister()
     >>> ticket_event_listener.unregister()
 
-Reopenings
-----------
+== Reopenings ==
 
 Whenever a ticket considered answered (in the SOLVED or INVALID state)
 is reopened, a TicketReopening is created.
 
-    (Let's register an event listener to notify us whenever a
-     TicketReopening is created.)
-
+    # Let's register an event listener to notify us whenever a
+    # TicketReopening is created.
     >>> from canonical.launchpad.interfaces import ITicketReopening
     >>> reopening_event_listener = TestEventListener(
     ...     ITicketReopening, ISQLObjectCreatedEvent, print_event)
@@ -623,7 +613,6 @@ prior status in the priorstate attribute:
     >>> print reopening.priorstate.name
     SOLVED
 
-
 Another example of a reopening, would be when the ticket status is set
 back to OPEN after having been rejected.
 
@@ -652,11 +641,10 @@ back to OPEN after having been rejected.
     >>> print reopening.priorstate.name
     INVALID
 
-    (Cleanup)
+    # Cleanup
     >>> reopening_event_listener.unregister()
 
-Using an IMessage as Explanation
---------------------------------
+== Using an IMessage as Explanation ==
 
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.

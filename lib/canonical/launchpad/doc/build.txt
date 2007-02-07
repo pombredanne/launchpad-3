@@ -35,7 +35,7 @@ Let's check the complex properties of a build object.
   True
 
   >>> firefox_build.buildlog = 34
-  >>> firefox_build.buildlog.url
+  >>> firefox_build.buildlog.http_url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
   >>> firefox_build.changesfile
@@ -324,7 +324,7 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  14
+  16
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -385,11 +385,11 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  10
+  11
 
   >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()
-  1
+  2
 
   >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
   >>> bob_pmount_builds.count()

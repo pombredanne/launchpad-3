@@ -6,6 +6,10 @@
    for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.TicketAddedNotification" />
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   handler="canonical.launchpad.mailnotification.TicketUnsupportedLanguageNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket

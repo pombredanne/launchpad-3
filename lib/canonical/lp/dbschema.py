@@ -33,8 +33,11 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -1816,16 +1819,13 @@ class TicketAction(DBSchema):
         was changed.
         """)
 
+# Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
 class TicketSort(DBSchema):
     """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
-
-    XXX flacoste 2006/08/29 This has nothing to do with database code and
-    is really part of the ITicketTarget definitions. We should find a way
-    to define enumerations in interface code and generate easily,
-    when required, the database implementation code.
     """
 
     RELEVANCY = Item(5, """
@@ -1855,11 +1855,21 @@ class TicketSort(DBSchema):
     Sort tickets from oldset to newest.
     """)
 
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort tickets that recently received new information from the owner first.
+    """)
+
 
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
     This enum tells us the current status of the support ticket.
+
+    The lifecycle of a support request is documented in
+    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    to update that document for any pertinent changes.
     """
 
     OPEN = Item(10, """
@@ -2656,6 +2666,76 @@ class BranchLifecycleStatus(DBSchema):
         """, sortkey=50)
 
 
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
+
+
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -2703,6 +2783,71 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
+        """)
+
+
+
+class BranchSubscriptionNotificationLevel(DBSchema):
+    """Branch Subscription Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to modifications
+    to branches whether it be to branch attributes in the UI, or
+    to the contents of the branch found by the branch scanner.
+    """
+
+    NOEMAIL = Item(0, """
+        No email
+
+        Do not send any email about changes to this branch.
+        """)
+
+    ATTRIBUTEONLY = Item(1, """
+        Branch attribute notifications only
+
+        Only send notifications for branch attribute changes such
+        as name, description and whiteboard.
+        """)
+
+    DIFFSONLY = Item(2, """
+        Branch diff notifications only
+
+        Only send notifications about new revisions added to this
+        branch.
+        """)
+
+    FULL = Item(3, """
+        Branch attribute and diff notifications
+
+        Send notifications for both branch attribute updates
+        and new revisions added to the branch.
+        """)
+
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = Item(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
         """)
 
 
@@ -3086,6 +3231,15 @@ class LoginTokenType(DBSchema):
         to claim it.
         """)
 
+    NEWPROFILE = Item(9, """
+        A user created a new Launchpad profile for another person.
+
+        Any Launchpad user can create new "placeholder" profiles to represent
+        people who don't use Launchpad. The person that a given profile
+        represents has to first use the token to finish the registration
+        process in order to be able to login with that profile.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type
@@ -3194,73 +3348,79 @@ class MirrorPulseType(DBSchema):
 class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
-    S128K = Item(1, """
+    S128K = Item(10, """
         128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
-    S256K = Item(2, """
+    S256K = Item(20, """
         256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
-    S512K = Item(3, """
+    S512K = Item(30, """
         512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
-    S1M = Item(4, """
+    S1M = Item(40, """
         1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
-    S2M = Item(5, """
+    S2M = Item(50, """
         2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
-    S10M = Item(6, """
+    S10M = Item(60, """
         10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
-    S100M = Item(7, """
+    S45M = Item(65, """
+        45 Mbps
+
+        The upstream link of this mirror can make up to 45 Mb per second.
+        """)
+
+    S100M = Item(70, """
         100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
         """)
 
-    S1G = Item(8, """
+    S1G = Item(80, """
         1 Gbps
 
         The upstream link of this mirror can make up to 1 gigabit per second.
         """)
 
-    S2G = Item(9, """
+    S2G = Item(90, """
         2 Gbps
 
         The upstream link of this mirror can make up to 2 gigabit per second.
         """)
 
-    S4G = Item(10, """
+    S4G = Item(100, """
         4 Gbps
 
         The upstream link of this mirror can make up to 4 gigabit per second.
         """)
 
-    S10G = Item(11, """
+    S10G = Item(110, """
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
-    S20G = Item(12, """
+    S20G = Item(120, """
         20 Gbps
 
         The upstream link of this mirror can make up to 20 gigabits per second.
@@ -3669,3 +3829,11 @@ class PersonCreationRationale(DBSchema):
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
         """)
+
+    USER_CREATED = Item(11, """
+        Created by a user to represent a person which does not uses Launchpad.
+
+        A user wanted to reference a person which is not a Launchpad user, so
+        he created this "placeholder" profile.
+        """)
+

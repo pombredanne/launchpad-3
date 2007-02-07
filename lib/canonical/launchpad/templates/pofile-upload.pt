@@ -7,8 +7,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:isadmin condition="context/required:launchpad.Admin">
-
         <h1>Upload a new version of <span tal:replace="context/title" /></h1>
 
         <form action="+upload" method="POST" enctype="multipart/form-data">
@@ -60,23 +58,6 @@
                 </tr>
             </table>
         </form>
-  </tal:isadmin>
-  <tal:isnotadmin condition="not:context/required:launchpad.Admin">
-    <h1>Upload service is not available right now.</h1>
-    <p>
-      The upload service has been disabled to avoid regressions in
-      translations being caused by mass-approvals when submitting offline
-      translations. Read more about this in <a href="/bugs/68014">#68014</a>.
-    </p>
-    <p>
-      Please, contact us for any question you would have about this at
-      <a href="mailto:rosetta@launchpad.net">rosetta@launchpad.net</a>.
-    </p>
-    <p>
-      Thank you for your patience.
-    </p>
-  </tal:isnotadmin>
-
 </div>
 
 </body>

@@ -2,9 +2,9 @@ The bugtask search facility supports searching on a simple text
 string.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all HTTP/1.1
+  ... GET /firefox/+bugs?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/products/firefox/+bugs
+  ... Referer: http://localhost:9000/bugs/products/firefox/+bugs
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -17,7 +17,7 @@ string.
   way instead of displaying an empty table.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs?field.searchtext=fdsafsf&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all HTTP/1.1
+  ... GET /firefox/+bugs?field.searchtext=fdsafsf&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -30,7 +30,7 @@ string.
   it'll say so.
 
   >>> print http(r"""
-  ... GET /products/iso-codes/+bugs HTTP/1.1
+  ... GET /iso-codes/+bugs HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

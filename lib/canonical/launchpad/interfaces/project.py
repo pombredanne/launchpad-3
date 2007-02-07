@@ -9,17 +9,16 @@ __all__ = [
     'IProjectSet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref
-        )
+    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
+    valid_webref)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
 
 class ProjectNameField(PillarNameField):
@@ -29,7 +28,7 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -88,16 +87,16 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
@@ -119,6 +118,26 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         description=_("""The Freshmeat project name for this project,
             if it is in freshmeat."""),
         required=False)
+
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this project's home page. Edit this and it will "
+            "be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this project."))
+
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this project's home page. It should be no bigger than 100k in "
+            "size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -154,8 +173,7 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    def products():
-        """Return Products for this Project."""
+    products = Attribute(_("An iterator over the Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""
@@ -191,7 +209,8 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    def new(name, displayname, title, homepageurl, summary, description, owner):
+    def new(name, displayname, title, homepageurl, summary, description,
+            owner, gotchi, emblem):
         """Create and return a project with the given arguments."""
 
     def count_all():

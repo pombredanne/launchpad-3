@@ -3,14 +3,14 @@ We recently made obsolete two URLs in Malone:
 1. The Anorak bug listing URL:
 
   >>> print http(r"""
-  ... GET http://localhost:8085/malone/bugs HTTP/1.1
+  ... GET http://localhost:8085/bugs/bugs HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 404 Not Found
   ...
 
 There is currently no replacement for this URL, but
-/malone/bugs/$bug.id will continue to work, for the time being.
+/bugs/$bug.id will continue to work, for the time being.
 
 2. The tasks namespace:
 
@@ -22,6 +22,6 @@ There is currently no replacement for this URL, but
   ...
 
 Tasks are now accessed "contextually", like
-/products/firefox/+bugs/$bug.id. The entire /malone/tasks namespace
+/firefox/+bugs/$bug.id. The entire /bugs/tasks namespace
 has been obsoleted, to prevent user confusion over which ID to use
 when referring to a bug.

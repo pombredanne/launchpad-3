@@ -315,6 +315,7 @@ class NascentUpload:
             "%s <%s>" % (config.uploader.default_recipient_name,
                          config.uploader.default_recipient_address))
         self.recipients = []
+        self.dsc_signing_key = None
 
         self.logger = logger
         self.rejection_message = ""
@@ -427,7 +428,7 @@ class NascentUpload:
         # As a result, we use the think_* variables as a screen. If the
         # files_X value is true then think_X must also be true. However nothing
         # useful can be said of the other cases.
- 
+
         for uploaded_file in self.files:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 files_binaryful = True
@@ -587,26 +588,27 @@ class NascentUpload:
         Returns the key owner (person object), the key (gpgkey object) and
         the pyme signature as a three-tuple
         """
+        self.logger.debug("Verifying signature on %s" % filename)
+
         try:
-            self.logger.debug("Verifying signature on %s" % filename)
-            sig = getUtility(IGPGHandler).getVerifiedSignature(
+            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 file(os.path.join(self.fsroot, filename), "rb").read())
-
-            key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
-
-            if key is None:
-                raise UploadError("Signing key not found within launchpad.")
-
-            if key.active == False:
-                raise UploadError(
-                    "File %s is signed with a deactivated key %s"
-                    % (filename, key.keyid))
-
-            return key.owner, key, sig
-
         except GPGVerificationError, e:
-            raise UploadError("GPG verification of %s failed: %s" % (filename,
-                                                                    str(e)))
+            raise UploadError(
+                "GPG verification of %s failed: %s" % (filename, str(e)))
+
+        key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
+
+        if key is None:
+            raise UploadError("Signing key not found within launchpad.")
+
+        if key.active == False:
+            raise UploadError(
+                "File %s is signed with a deactivated key %s"
+                % (filename, key.keyid))
+
+        return key.owner, key, sig
+
 
     def _find_signer(self):
         """Find the signer and signing key for the .changes file.
@@ -756,7 +758,7 @@ class NascentUpload:
         except NotFoundError:
             raise UploadError(
                 "Unable to find distrorelease: %s" % changes["distribution"])
-            
+
     @cachedproperty
     def distro(self):
         """Simply propogate the distro of the policy."""
@@ -1069,7 +1071,6 @@ class NascentUpload:
             self.reject("%s: changes file doesn't list 'source' in "
                         "Architecture field." % (uploaded_file.filename))
 
-        self.dsc_signing_key=None
         if uploaded_file.type == 'dsc' and not self.policy.unsigned_dsc_ok:
             try:
                 who, key, sig = self.verify_sig(uploaded_file.full_filename)
@@ -1529,7 +1530,7 @@ class NascentUpload:
         # that the upload is a lower version than can be found in backports,
         # unless the upload is going to backports.
         # See bug 34089.
-        
+
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1879,7 +1880,7 @@ class NascentUpload:
                     summary.append("     -> Component: %s Section: %s" % (
                         uploaded_file.component,
                         uploaded_file.section))
-                
+
         return "\n".join(summary)
 
     def is_new(self):
@@ -1891,6 +1892,16 @@ class NascentUpload:
 
     def insert_source_into_db(self):
         """Insert the source into the database and inform the policy."""
+        component_name = self._find_dsc().component
+        section_name = self._find_dsc().section
+        # rebuild the changes author line as specified in bug # 30621,
+        # new line containing:
+        # ' -- <CHANGED-BY>  <DATE>'
+        changes_author = (
+            '\n -- %s   %s' %
+            (self.changes['changed-by'], self.changes['date']))
+        changes_content = self.changes['changes'] + changes_author
+
         arg_sourcepackagename = self.spn
         arg_version = self.changes['version']
         arg_maintainer = self.dsc_maintainer['person']
@@ -1901,23 +1912,30 @@ class NascentUpload:
             self.dsc_contents.get('build-depends-indep', ''))
         arg_architecturehintlist = guess_encoding(
             self.dsc_contents.get('architecture', ''))
-        component_name = self._find_dsc().component
         arg_component = getUtility(IComponentSet)[component_name]
-        section_name = self._find_dsc().section
         arg_section = getUtility(ISectionSet)[section_name]
         arg_creator = self.changed_by['person'].id
         arg_urgency = urgency_map[self.changes['urgency'].lower()]
-        # rebuild the changes author line as specified in bug # 30621,
-        # new line containing:
-        # ' -- <CHANGED-BY>  <DATE>'
-        changes_author = ('\n -- %s   %s' % (self.changes['changed-by'],
-                                             self.changes['date']))
-        changes_content = self.changes['changes'] + changes_author
         arg_changelog = guess_encoding(changes_content)
 
         arg_dsc = guess_encoding(self.dsc_contents['filecontents'])
         arg_dscsigningkey = self.dsc_signing_key
         arg_manifest = None
+        # extra fields required to generate archive indexes in future.
+        arg_dsc_maintainer_rfc822 = guess_encoding(
+            self.dsc_contents['maintainer'])
+        arg_dsc_format = guess_encoding(
+            self.dsc_contents['format'])
+        arg_dsc_binaries = guess_encoding(
+            self.dsc_contents['binary'])
+        # Standards version do not apply for installer uploads
+        # see bug #75874 for further information.
+        if self.dsc_contents.has_key('standards-version'):
+            arg_dsc_standards_version = guess_encoding(
+                self.dsc_contents['standards-version'])
+        else:
+            arg_dsc_standards_version = None
+
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=arg_sourcepackagename,
@@ -1934,7 +1952,11 @@ class NascentUpload:
             dsc=arg_dsc,
             dscsigningkey=arg_dscsigningkey,
             section=arg_section,
-            manifest=arg_manifest
+            manifest=arg_manifest,
+            dsc_maintainer_rfc822=arg_dsc_maintainer_rfc822,
+            dsc_standards_version=arg_dsc_standards_version,
+            dsc_format=arg_dsc_format,
+            dsc_binaries=arg_dsc_binaries,
             ))
 
         for uploaded_file in self.dsc_files:
@@ -2132,17 +2154,38 @@ class NascentUpload:
 
             self.insert_into_queue()
 
+            # Unknown uploads
             if self.is_new():
                 return True, [new_msg % interpolations]
-            else:
-                if self.policy.autoApprove(self):
-                    return True, [accept_msg % interpolations,
-                                  announce_msg % interpolations]
-                else:
-                    interpolations["SUMMARY"] += ("\nThis upload awaits "
-                                                  "approval by a distro "
-                                                  "manager\n")
-                    return True, [accept_msg % interpolations]
+
+            # Known uploads
+
+            # UNAPPROVED uploads coming from 'insecure' policy only sends
+            # acceptance message.
+            if not self.policy.autoApprove(self):
+                interpolations["SUMMARY"] += (
+                    "\nThis upload awaits approval by a distro manager\n")
+                return True, [accept_msg % interpolations]
+
+            # Auto-APPROVED uploads to BACKPORTS skips announcement.
+            # usually processed with 'sync' policy
+            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
+                self.logger.debug(
+                    "Skipping announcement, it is a BACKPORT.")
+                return True, [accept_msg % interpolations]
+
+            # Auto-APPROVED uploads to SECURITY skips acceptance message.
+            # usually processed with 'security' policy
+            if self.policy.pocket == PackagePublishingPocket.SECURITY:
+                self.logger.debug(
+                    "Skipping acceptance message, it is a SECURITY upload.")
+                return True, [announce_msg % interpolations]
+
+            # Fallback, all the rest comming from 'insecure' policy
+            # should send acceptance & announcement messages.
+            return True, [
+                accept_msg % interpolations,
+                announce_msg % interpolations]
 
         except Exception, e:
             # Any exception which occurs while processing an accept will

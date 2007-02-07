@@ -1,7 +1,7 @@
 First, let's make sure we can see the page listing all registered remote bug
 trackers.
 
-  >>> user_browser.open('http://launchpad.dev/malone/bugtrackers/')
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/')
   >>> user_browser.title
   'Bug trackers registered in Malone'
 
@@ -9,7 +9,7 @@ Now we are going to add a bug tracker. First, can we see the form?
 
   >>> user_browser.getLink('Register Bug Tracker').click()
   >>> user_browser.url
-  'http://launchpad.dev/malone/bugtrackers/+newbugtracker'
+  'http://launchpad.dev/bugs/bugtrackers/+newbugtracker'
 
   >>> user_browser.title
   'Register an external bug tracker'
@@ -55,7 +55,7 @@ new tracker.
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/malone/bugtrackers/testtrac'
+  'http://launchpad.dev/bugs/bugtrackers/testtrac'
 
   >>> user_browser.title
   'Bug tracker \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d'
@@ -80,7 +80,7 @@ new tracker.
 If we try to add a bugtracker with the same name of a existing one, we'll get
 a nice error message.
 
-  >>> user_browser.open('http://launchpad.dev/malone/bugtrackers/+newbugtracker')
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
  
   >>> user_browser.getControl('Name').value = 'testtrac'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
@@ -97,11 +97,11 @@ a nice error message.
 
 And lets see if we can edit the newly added bugtracker.
 
-  >>> user_browser.open('http://launchpad.dev/malone/bugtrackers/testtrac/')
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
   >>> user_browser.getLink('Change Details').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/malone/bugtrackers/testtrac/+edit'
+  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
 
   >>> user_browser.title
   'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
@@ -113,7 +113,7 @@ And lets see if we can edit the newly added bugtracker.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/malone/bugtrackers/testtrac'
+  'http://launchpad.dev/bugs/bugtrackers/testtrac'
 
 And now the test tracker should have been updated:
 

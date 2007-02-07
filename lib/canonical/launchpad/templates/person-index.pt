@@ -20,6 +20,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-working-on" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>
 
@@ -30,8 +31,8 @@
   <h1 tal:content="context/browsername" />
 
   <img
-    tal:condition="context/hackergotchi"
-    tal:attributes="src context/hackergotchi/secure_url"
+    tal:condition="context/gotchi"
+    tal:attributes="src context/gotchi/getURL"
     style="float: right; margin: 0 0 0.5em 0.5em"
     alt=""
   />
@@ -41,7 +42,8 @@
   </tal:homepage>
   <tal:description condition="context/teamdescription">
     <b>About this team:</b>
-    <span tal:replace="context/teamdescription">DESCRIPTION</span>
+    <span tal:replace="structure context/teamdescription/fmt:text-to-html">
+      DESCRIPTION</span>
   </tal:description>
 
   <h2>Details</h2>
@@ -154,7 +156,7 @@
         </p>
         <ul>
           <li tal:repeat="team subteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
@@ -170,7 +172,7 @@
         </p>
         <ul>
           <li tal:repeat="team superteams">
-            <a tal:attributes="href string:../${team/name}"
+            <a tal:attributes="href team/fmt:url"
                tal:content="team/browsername">name</a>
           </li>
         </ul>
@@ -223,7 +225,24 @@
           You are a member of this team.
         </p>
         <p tal:condition="not: view/userIsActiveMember">
-          You are not a member of this team.
+          <tal:foo tal:condition="not: view/userIsParticipant">
+            You are not a member of this team.
+          </tal:foo>
+          <tal:foo tal:condition="view/userIsParticipant">
+            You are an indirect member of this team:
+            <br />
+            <a tal:attributes="href view/user/fmt:url"
+               tal:content="view/user/displayname">
+              Guilherme Salgado
+            </a>
+            <tal:path repeat="team view/findUserPathToTeam">
+              -&gt;
+              <a tal:attributes="href team/fmt:url"
+                 tal:content="team/displayname">
+                Launchpad Developers
+              </a>
+            </tal:path>
+          </tal:foo>
         </p>
       </tal:block>
     </tal:block>
@@ -236,9 +255,20 @@
 
   <p><span tal:replace="context/browsername" /> does not use Launchpad.
     <tal:block condition="context/creation_comment">
-      (This page was created on 
+      This page was created on
       <span tal:replace="context/datecreated/fmt:date" />
-      <span tal:replace="context/creation_comment" />.)
+      <tal:user-created
+        condition="context/creation_rationale/enumvalue:USER_CREATED">
+        by <a tal:attributes="href context/registrant/fmt:url">
+        <span tal:replace="context/registrant/browsername">Foo</span></a>,
+        and the reason given by that user for its creation is:
+        <em tal:content="structure context/creation_comment/fmt:text-to-html">
+          reason</em>
+      </tal:user-created>
+      <tal:not-user-created
+        condition="not: context/creation_rationale/enumvalue:USER_CREATED">
+        <strong tal:content="context/creation_comment" />.
+      </tal:not-user-created>
     </tal:block>
     <tal:block condition="not: context/creation_comment">
       (This page was created on 

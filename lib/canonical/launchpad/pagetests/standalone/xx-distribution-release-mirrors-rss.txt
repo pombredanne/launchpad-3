@@ -3,9 +3,9 @@ To provide information about release mirrors to the ubuntu.com website (and
 any other application/website who may want to list the existing mirrors) we
 provide an RSS feed with information about all official release mirrors.
 
-    >>> browser.open('http://launchpad.dev/distros/ubuntu/+cdmirrors-rss')
+    >>> browser.open('http://launchpad.dev/ubuntu/+cdmirrors-rss')
     >>> browser.url
-    'http://launchpad.dev/distros/ubuntu/+cdmirrors-rss'
+    'http://launchpad.dev/ubuntu/+cdmirrors-rss'
     >>> print browser.headers['content-type']
     text/xml;charset=utf-8
 
@@ -21,7 +21,7 @@ provide an RSS feed with information about all official release mirrors.
           <title>Releases-mirror</title>
           <link>http://localhost:11375/valid-mirror/releases</link>
           <description>...</description>
-          <mirror:bandwidth>5</mirror:bandwidth>
+          <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
             <mirror:continent>Asia</mirror:continent>
             <mirror:country>British Indian Ocean Territory</mirror:country>

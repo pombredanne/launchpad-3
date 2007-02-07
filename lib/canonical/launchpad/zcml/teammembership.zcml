@@ -15,7 +15,14 @@
     </securedutility>
 
     <content class="canonical.launchpad.database.TeamMembership">
-        <allow interface="canonical.launchpad.interfaces.ITeamMembership"/>
+        <require 
+            permission="zope.Public"
+            attributes="team person reviewer status datejoined dateexpires
+                        reviewercomment statusname is_admin is_owner
+                        isExpired sendExpirationWarningEmail" />
+        <require 
+            permission="launchpad.Edit"
+            attributes="setStatus" />
         <require 
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ITeamMembership" />
@@ -24,6 +31,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.ITeamMembership"
         path_expression="string:+member/${person/name}"
+        rootsite="mainsite"
         attribute_to_parent="team" />
 
     <browser:defaultView

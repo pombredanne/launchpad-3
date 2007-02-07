@@ -17,10 +17,15 @@ import logging
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from urllib2 import URLError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
+
+from canonical.config import config
+
+from canonical.cachedproperty import cachedproperty
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
@@ -46,11 +51,14 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import translation_import, OldPOImported
+from canonical.launchpad.components.poimport import (
+    translation_import, OldPOImported, NotExportedFromRosetta)
 from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.webapp import canonical_url
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -591,6 +599,7 @@ class POFile(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOFile."""
+        flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 pofile=self,
                 status=RosettaImportStatus.APPROVED,
@@ -608,6 +617,18 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
+        # While importing a file, there are two kinds of errors:
+        #
+        # - Errors that prevent us to parse the file. That's a global error,
+        #   is handled with exceptions and will not change any data other than
+        #   the status of that file to note the fact that its import failed.
+        #
+        # - Errors in concrete messages included in the file to import. That's
+        #   a more localised error that doesn't affect the whole file being
+        #   imported. It allows us to accept other translations so we accept
+        #   everything but the messages with errors. We handle it returning a
+        #   list of faulty messages.
+        import_rejected = False
         try:
             if entry_to_import.path.lower().endswith('.xpi'):
                 importer = MozillaSupport(
@@ -631,67 +652,55 @@ class POFile(SQLBase, RosettaStats):
                                                      path,
                                                      self.language)
             errors = translation_import(self, newtranslation,
-                                        entry_to_import.importer)
-        except (POSyntaxError, POInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+                                        entry_to_import.importer,
+                                        entry_to_import.is_published)
+        except NotExportedFromRosetta:
+            # We got a file that was not exported from Rosetta as a non
+            # published upload. We log it and select the email template.
             if logger:
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
-            return
+            template_mail = 'poimport-not-exported-from-rosetta.txt'
+            import_rejected = True
+        except (POSyntaxError, POInvalidInputError):
+            # The import failed with a format error. We log it and select the
+            # email template.
+            if logger:
+                logger.warning(
+                    'Error importing %s' % self.title, exc_info=1)
+            template_mail = 'poimport-syntax-error.txt'
+            import_rejected = True
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
-            # it.
-            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
-            # kind of error with the new TranslationValidation feature.
-            entry_to_import.status = RosettaImportStatus.FAILED
+            # it. We also log this problem and select the email template.
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
-            return
-
-        # Request a sync of 'self' as we need to use real datetime values.
-        self.sync()
+            template_mail = 'poimport-got-old-version.txt'
+            import_rejected = True
 
         # Prepare the mail notification.
-
         msgsets_imported = POMsgSet.select(
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
-
-        UTC = pytz.timezone('UTC')
-        # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
-        # solution defined by PresentingLengthsOfTime spec when it's
-        # implemented.
-        elapsedtime = (
-            datetime.datetime.now(UTC) - entry_to_import.dateimported)
-        elapsedtime_text = ''
-        hours = elapsedtime.seconds / 3600
-        minutes = (elapsedtime.seconds % 3600) / 60
-        if elapsedtime.days > 0:
-            elapsedtime_text += '%d days ' % elapsedtime.days
-        if hours > 0:
-            elapsedtime_text += '%d hours ' % hours
-        if minutes > 0:
-            elapsedtime_text += '%d minutes ' % minutes
-
-        if len(elapsedtime_text) > 0:
-            elapsedtime_text += 'ago'
-        else:
-            elapsedtime_text = 'just requested'
 
         replacements = {
             'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': elapsedtime_text,
-            'numberofmessages': msgsets_imported,
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
-            'template': self.potemplate.displayname
+            'template': self.potemplate.displayname,
+            'file_link': entry_to_import.content.http_url,
+            'numberofmessages': msgsets_imported,
+            'import_title': '%s translations for %s' % (
+                self.language.displayname, self.potemplate.displayname)
             }
 
-        if len(errors):
-            # There were errors.
+        if import_rejected:
+            # We got an error that prevented us to import any translation, we
+            # need to notify the user.
+            subject = 'Import problem - %s - %s' % (
+                self.language.displayname, self.potemplate.displayname)
+        elif len(errors):
+            # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
                 pomsgset = error['pomsgset']
@@ -709,25 +718,30 @@ class POFile(SQLBase, RosettaStats):
             replacements['numberofcorrectmessages'] = (msgsets_imported -
                 len(errors))
 
-            template_mail = 'poimport-error.txt'
+            template_mail = 'poimport-with-errors.txt'
             subject = 'Translation problems - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
         else:
+            # The import was successful.
             template_mail = 'poimport-confirmation.txt'
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
 
         # Send the email.
-        template_file = os.path.join(
-            os.path.dirname(canonical.launchpad.__file__),
-            'emailtemplates', template_mail)
-        template = open(template_file).read()
+        template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
+        fromaddress = ('Rosetta SWAT Team <%s>' %
+                       config.rosetta.rosettaadmin.email)
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
+
+        if import_rejected:
+            # There were no imports at all and the user needs to review that
+            # file, we tag it as FAILED.
+            entry_to_import.status = RosettaImportStatus.FAILED
+            return
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
@@ -752,11 +766,43 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
+        # XXX DaniloSegan 20070115: doing this with latestsubmission is just
+        # a workaround; see bug #78501 for suggestion about using
+        # latestselection instead
+        #
+        # When an active submission is deactivated, POSelection
+        # corresponding to a certain pomsgset (and plural form) is set
+        # to have active_submission as None.  Similarly for published
+        # submission.
+        #
+        # If such a POSelection without active_submission but with
+        # published_submission is deactivated, self.latestsubmission
+        # would be set to None.  In this situation the data model has
+        # no easy way of indication when the latest update was done,
+        # and we therefore return False to be on the safe side.
         if self.latestsubmission is None:
-            return True
+            return False
 
-        change_time = self.latestsubmission.datecreated
-        return change_time < self.exporttime
+        # If there are no activeselections, yet latestsubmission is defined,
+        # it must have been the case of deactivated translation (bug #78501)
+        po_selections = list(self.latestsubmission.active_selections)
+        # If there is any of the active or published submissions,
+        # we can get to a "root" POMsgSet which was last updated,
+        # and thus we can go through all the POSelections to find
+        # out the last updated date.
+        if len(po_selections) == 0:
+            # If there are no activeselections, then a publishedselection
+            # was deactivated, so lets use them to get at pomsgset
+            po_selections = list(self.latestsubmission.published_selections)
+            if len(po_selections) == 0:
+                # Again, if we can't get at the POMsgSet, we're simply
+                # returning False to be on the safe side
+                return False
+
+        # Otherwise, we can get the POMsgSet itself through any of the
+        # active selections, and then easily get to all POSelection's
+        # and check their last update date which is guaranteed to be correct
+        return not po_selections[0].pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -815,22 +861,34 @@ class POFile(SQLBase, RosettaStats):
             try:
                 return self.fetchExportCache()
             except LookupError:
-                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
-                # Something produces the LookupError exception and we don't
-                # know why. This will allow us to provide an export.
+                # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
+                # for bug #1887. Something produces LookupError exception and
+                # we don't know why. This will allow us to provide an export
+                # in those cases.
+                logging.error(
+                    "Error fetching a cached file from librarian", exc_info=1)
+            except URLError:
+                # There is a problem getting a cached export from Librarian.
+                # Log it and do a full export.
                 logging.warning(
                     "Error fetching a cached file from librarian", exc_info=1)
 
         contents = self.uncachedExport()
 
         if len(contents) == 0:
-            # The export is empty, this is completely broken, raised the
-            # exception.
+            # The export is empty, this is completely broken.
             raise ZeroLengthPOExportError, "Exporting %s" % self.title
 
         if included_obsolete:
             # Update the cache if the request includes obsolete messages.
-            self.updateExportCache(contents)
+            try:
+                self.updateExportCache(contents)
+            except UploadFailed:
+                # For some reason, we were not able to upload the exported
+                # file in librarian, that's fine. It only means that next
+                # time, we will do a full export again.
+                logging.warning(
+                    "Error uploading a cached file into librarian", exc_info=1)
 
         return contents
 

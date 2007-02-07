@@ -176,19 +176,18 @@ Updater and get a bug watch and a bugtask to test with.
 
     >>> login('bugwatch@bugs.launchpad.net')
     >>> bug_watch_updater = getUtility(ILaunchBag).user
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> print len(bug_three.bugtasks)
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> print len(bug_one.bugtasks)
     3
-    >>> debian_task = bug_three.bugtasks[0]
+    >>> debian_task = bug_one.bugtasks[2]
     >>> print debian_task.targetname
     mozilla-firefox (Debian)
 
     >>> print debian_task.status.title
-    Unconfirmed
+    Confirmed
 
     >>> debian_bugwatch = debian_task.bugwatch
-    >>> debian_bugwatch.remotestatus is None
-    True
+    >>> old_remotestatus = debian_bugwatch.remotestatus
 
 When a bugtask is modified, an SQLObjectModifiedEvent is fired off in
 order to trigger mail notification. Let's register a listener, so that
@@ -210,8 +209,8 @@ will be fired off, even though the remote status stays the same.
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> old_lastchanged = debian_bugwatch.lastchanged
     >>> debian_bugwatch.updateStatus(
-    ...     debian_bugwatch.remotestatus, BugTaskStatus.CONFIRMED)
-    Unconfirmed => Confirmed
+    ...     debian_bugwatch.remotestatus, BugTaskStatus.UNCONFIRMED)
+    Confirmed => Unconfirmed
 
 The lastchanged isn't updated, though, since it indicates when the
 remotestatus changed. The bug watch can change the status of its bug
@@ -221,21 +220,21 @@ status mapping.
     >>> debian_bugwatch.lastchanged == old_lastchanged
     True
 
-    >>> debian_bugwatch.remotestatus is None
+    >>> debian_bugwatch.remotestatus == old_remotestatus
     True
     >>> print debian_task.status.title
-    Confirmed
+    Unconfirmed
 
 If only the remote status is changed, not the bugtask's status, no
 event is fired off. The remote status is simply a string, it doesn't
 have to be convertable to a real Malone status.
 
-    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.CONFIRMED)
+    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.UNCONFIRMED)
 
     >>> debian_bugwatch.remotestatus
     u'some status'
     >>> print debian_task.status.title
-    Confirmed
+    Unconfirmed
 
 The lastchanged was updated, though.
 
@@ -257,9 +256,10 @@ Finally, let's make sure that bug notifications were added:
     ...         bug_notification.bug.id,
     ...         bug_notification.message.owner.displayname)
     ...     print bug_notification.message.text_contents
-    Bug 3 changed by Bug Watch Updater:
+    Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
-           Status: Unconfirmed => Confirmed
+       Importance: Low => Unknown
+           Status: Confirmed => Unconfirmed
 
     >>> event_listener.unregister()
 

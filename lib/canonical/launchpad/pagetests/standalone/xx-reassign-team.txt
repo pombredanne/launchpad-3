@@ -6,7 +6,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/admins/+reassign HTTP/1.1
+  ... GET /~admins/+reassign HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -17,7 +17,7 @@
   so he can do everything.
 
   >>> print http(r"""
-  ... GET /people/admins/+reassign HTTP/1.1
+  ... GET /~admins/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -33,7 +33,7 @@
   Now he reassigns the team to name16.
 
   >>> print http(r"""
-  ... POST /people/admins/+reassign HTTP/1.1
+  ... POST /~admins/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... 
   ... field.owner=name16&existing=existing&CHANGE_OWNER=Change+Owner""")
@@ -46,7 +46,7 @@
   And here we see name16 (Foo Bar) as the new owner.
 
   >>> print http(r"""
-  ... GET /people/admins/ HTTP/1.1
+  ... GET /~admins/ HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

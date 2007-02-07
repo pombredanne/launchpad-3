@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, ISourcePackageNameSet,
     IHasQueueItems, IPublishing)
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -450,7 +450,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distrorelease = %s
+                POTemplate.distrorelease = %s AND
+                POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -470,7 +471,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
-        for potemplate in self.potemplates:
+        for potemplate in self.currentpotemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()
@@ -510,9 +511,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.iscurrent = TRUE AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
+            orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
@@ -602,7 +604,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket):
+    def getSourcePackagePublishing(self, status, pocket, component=None):
         """See IDistroRelease."""
         orderBy = ['SourcePackageName.name']
 
@@ -618,11 +620,19 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackagePublishingHistory.pocket=%s
             """ %  sqlvalues(self.id, status, pocket)
 
+        if component:
+            clause += (
+                " AND SourcePackagePublishingHistory.component=%s" %
+                sqlvalues(component)
+                )
+
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
-                                   sourcename=None, orderBy=None):
+    def getBinaryPackagePublishing(self, name=None, version=None,
+                                   archtag=None, sourcename=None,
+                                   orderBy=None, pocket=None,
+                                   component=None):
         """See IDistroRelease."""
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
@@ -660,6 +670,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         if sourcename:
             query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
 
+        if pocket:
+            query.append(
+                'BinaryPackagePublishingHistory.pocket = %s'
+                % sqlvalues(pocket))
+
+        if component:
+            query.append(
+                'BinaryPackagePublishingHistory.component = %s'
+                % sqlvalues(component))
+
         query = " AND ".join(query)
 
         result = BinaryPackagePublishingHistory.select(
@@ -684,28 +704,23 @@ class DistroRelease(SQLBase, BugTargetBase):
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, status, name, pocket)
 
-    def createUploadedSourcePackageRelease(self, sourcepackagename,
-            version, maintainer, dateuploaded, builddepends,
-            builddependsindep, architecturehintlist, component,
-            creator, urgency, changelog, dsc, dscsigningkey, section,
-            manifest):
+    def createUploadedSourcePackageRelease(
+        self, sourcepackagename, version, maintainer, dateuploaded,
+        builddepends, builddependsindep, architecturehintlist, component,
+        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries):
         """See IDistroRelease."""
-        return SourcePackageRelease(uploaddistrorelease=self,
-                                    sourcepackagename=sourcepackagename,
-                                    version=version,
-                                    maintainer=maintainer,
-                                    dateuploaded=dateuploaded,
-                                    builddepends=builddepends,
-                                    builddependsindep=builddependsindep,
-                                    architecturehintlist=architecturehintlist,
-                                    component=component,
-                                    creator=creator,
-                                    urgency=urgency,
-                                    changelog=changelog,
-                                    dsc=dsc,
-                                    dscsigningkey=dscsigningkey,
-                                    section=section,
-                                    manifest=manifest)
+        return SourcePackageRelease(
+            uploaddistrorelease=self, sourcepackagename=sourcepackagename,
+            version=version, maintainer=maintainer, dateuploaded=dateuploaded,
+            builddepends=builddepends, builddependsindep=builddependsindep,
+            architecturehintlist=architecturehintlist, component=component,
+            creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, manifest=manifest,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
+            dsc_standards_version=dsc_standards_version,
+            dsc_binaries=dsc_binaries)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""
@@ -727,7 +742,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             return section
         raise NotFoundError(name)
 
-    def removeOldCacheItems(self):
+    def removeOldCacheItems(self, log):
         """See IDistroRelease."""
 
         # get the set of package names that should be there
@@ -749,9 +764,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         # remove the cache entries for binary packages we no longer want
         for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
+                log.debug(
+                    "Removing binary cache for '%s' (%s)"
+                    % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, ztm=None):
+    def updateCompletePackageCache(self, log, ztm):
         """See IDistroRelease."""
 
         # get the set of package names to deal with
@@ -774,15 +792,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         # packages
         counter = 0
         for bpn in bpns:
-            self.updatePackageCache(bpn)
+            log.debug("Considering binary '%s'" % bpn.name)
+            self.updatePackageCache(bpn, log)
             counter += 1
             if counter > 99:
                 counter = 0
                 if ztm is not None:
+                    log.debug("Committing")
                     ztm.commit()
 
 
-    def updatePackageCache(self, binarypackagename):
+    def updatePackageCache(self, binarypackagename, log):
         """See IDistroRelease."""
 
         # get the set of published binarypackagereleases
@@ -801,6 +821,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                           'DistroArchRelease'],
             distinct=True)
         if bprs.count() == 0:
+            log.debug("No binary releases found.")
             return
 
         # find or create the cache entry
@@ -809,6 +830,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             binarypackagename = %s
             """ % sqlvalues(self.id, binarypackagename.id))
         if cache is None:
+            log.debug("Creating new binary cache entry.")
             cache = DistroReleasePackageCache(
                 distrorelease=self,
                 binarypackagename=binarypackagename)
@@ -824,6 +846,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         summaries = set()
         descriptions = set()
         for bpr in bprs:
+            log.debug("Considering binary version %s" % bpr.version)
             summaries.add(bpr.summary)
             descriptions.add(bpr.description)
 
@@ -857,6 +880,26 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distrorelease=self)
+
+    def getLastUploads(self):
+        """See IDistroRelease."""
+        query = """
+        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
+        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
+        AND distroreleasequeue.status=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+
+        last_uploads = SourcePackageRelease.select(
+            query, limit=5, prejoins=['sourcepackagename'],
+            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
+                          'DistroReleaseQueueSource'],
+            orderBy=['-distroreleasequeue.id'])
+
+        distro_sprs = [
+            self.getSourcePackageRelease(spr) for spr in last_uploads]
+
+        return distro_sprs
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
@@ -1213,8 +1256,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 FROM
                     POTemplate AS pt
                 WHERE
-                    pt.distrorelease = %s''' % sqlvalues(
-                    self, self.parentrelease))
+                    pt.distrorelease = %s AND pt.iscurrent = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
 
             logger_object.info('Filling POTMsgSet table...')
             cur.execute('''
@@ -1697,13 +1740,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def getPendingPublications(self, pocket, is_careful):
         """See IPublishing."""
-        dirty_pockets = set()
-        log.debug("Publishing %s-%s" % (self.title, pocket.name))
-
         queries = ['distrorelease = %s' % sqlvalues(self)]
-
         # careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
@@ -1711,9 +1750,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         queries.append('status IN %s' % sqlvalues(statuses))
 
-        # restrict to a specific pocket if it is given.
-        if pocket is not None:
-            queries.append('pocket = %s' % sqlvalues(pocket))
+        # restrict to a specific pocket.
+        queries.append('pocket = %s' % sqlvalues(pocket))
 
         # exclude RELEASE pocket if the distrorelease was already released,
         # since it should not change.
@@ -1721,11 +1759,18 @@ class DistroRelease(SQLBase, BugTargetBase):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        spphs = SourcePackagePublishingHistory.select(
+        publications = SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="-id")
 
+        return publications
+
+    def publish(self, diskpool, log, pocket, is_careful=False):
+        """See IPublishing."""
+        log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs:
+
+        dirty_pockets = set()
+        for spph in self.getPendingPublications(pocket, is_careful):
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)
@@ -1733,7 +1778,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, is_careful)
+            more_dirt = dar.publish(diskpool, log, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets

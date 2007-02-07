@@ -1,11 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter']
+    'get_bug_privacy_filter',
+    'search_value_to_where_condition']
 
 import urllib
 import cgi
@@ -13,6 +14,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
+from sqlobject.sqlbuilder import SQLConstant
 
 import pytz
 
@@ -24,13 +26,16 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, IProductSeriesBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
+    ConjoinedBugTaskEditError)
+from canonical.launchpad.helpers import shortlist
 
 
 debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
@@ -45,43 +50,62 @@ debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
 
-          - products first
+          - products first, followed by their productseries tasks
           - distro tasks, followed by their distrorelease tasks
           - ubuntu first among the distros
     """
     if bugtask.product:
         product_name = bugtask.product.name
+        productseries_name = None
+    elif bugtask.productseries:
+        productseries_name = bugtask.productseries.name
+        product_name = bugtask.productseries.product.name
     else:
         product_name = None
+        productseries_name = None
+
     if bugtask.distribution:
         distribution_name = bugtask.distribution.name
     else:
         distribution_name = None
+
     if bugtask.distrorelease:
         distrorelease_name = bugtask.distrorelease.version
         distribution_name = bugtask.distrorelease.distribution.name
     else:
         distrorelease_name = None
+
     if bugtask.sourcepackagename:
         sourcepackage_name = bugtask.sourcepackagename.name
     else:
         sourcepackage_name = None
-    # and move ubuntu to the top
+
+    # Move ubuntu to the top.
     if distribution_name == 'ubuntu':
         distribution_name = '-'
-    return (bugtask.bug.id, distribution_name, product_name,
-            distrorelease_name, sourcepackage_name)
+
+    return (
+        bugtask.bug.id, distribution_name, product_name, productseries_name,
+        distrorelease_name, sourcepackage_name)
 
 
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
-    _defaultOrder = ['distribution', 'product', 'distrorelease',
-                     'milestone', 'sourcepackagename']
+    _defaultOrder = ['distribution', 'product', 'productseries',
+                     'distrorelease', 'milestone', 'sourcepackagename']
+    _CONJOINED_ATTRIBUTES = (
+        "status", "importance", "assignee", "milestone",
+        "date_assigned", "date_confirmed", "date_inprogress",
+        "date_closed")
+    _NON_CONJOINED_STATUSES = (dbschema.BugTaskStatus.REJECTED,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
+        notNull=False, default=None)
+    productseries = ForeignKey(
+        dbName='productseries', foreignKey='ProductSeries',
         notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
@@ -134,6 +158,158 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    @property
+    def conjoined_master(self):
+        """See IBugTask."""
+        conjoined_master = None
+        if (IDistroBugTask.providedBy(self) and
+            self.distribution.currentrelease is not None):
+            current_release = self.distribution.currentrelease
+            for bt in shortlist(self.bug.bugtasks):
+                if (bt.distrorelease == current_release and
+                    bt.sourcepackagename == self.sourcepackagename):
+                    conjoined_master = bt
+                    break
+        elif IUpstreamBugTask.providedBy(self):
+            assert self.product.development_focus is not None, (
+                'A product should always have a development series.')
+            devel_focus = self.product.development_focus
+            for bt in shortlist(self.bug.bugtasks):
+                if bt.productseries == devel_focus:
+                    conjoined_master = bt
+                    break
+
+        if (conjoined_master is not None and
+            conjoined_master.status in self._NON_CONJOINED_STATUSES):
+            conjoined_master = None
+        return conjoined_master
+
+    @property
+    def conjoined_slave(self):
+        """See IBugTask."""
+        conjoined_slave = None
+        if IDistroReleaseBugTask.providedBy(self):
+            distribution = self.distrorelease.distribution
+            if self.distrorelease != distribution.currentrelease:
+                # Only current release tasks are conjoined.
+                return None
+            sourcepackagename = self.sourcepackagename
+            for bt in shortlist(self.bug.bugtasks):
+                if (bt.distribution == distribution and
+                    bt.sourcepackagename == self.sourcepackagename):
+                    conjoined_slave = bt
+                    break
+        elif IProductSeriesBugTask.providedBy(self):
+            product = self.productseries.product
+            if self.productseries != product.development_focus:
+                # Only developement focus tasks are conjoined.
+                return None
+            for bt in shortlist(self.bug.bugtasks):
+                if bt.product == product:
+                    conjoined_slave = bt
+                    break
+
+        if (conjoined_slave is not None and
+            self.status in self._NON_CONJOINED_STATUSES):
+            conjoined_slave = None
+        return conjoined_slave
+    # XXX: Conjoined bugtask synching methods. We override these methods
+    # individually, to avoid cycle problems if we were to override
+    # _SO_setValue instead. This indicates either a bug or design issue
+    # in SQLObject. -- Bjorn Tillenius, 2006-10-31
+    # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
+    # _set_foo method below.
+    def _set_status(self, value):
+        if value not in self._NON_CONJOINED_STATUSES:
+            self._setValueAndUpdateConjoinedBugTask("status", value)
+        else:
+            self._SO_set_status(value)
+
+    def _set_assignee(self, value):
+        self._setValueAndUpdateConjoinedBugTask("assignee", value)
+
+    def _set_importance(self, value):
+        self._setValueAndUpdateConjoinedBugTask("importance", value)
+
+    def _set_milestone(self, value):
+        self._setValueAndUpdateConjoinedBugTask("milestone", value)
+
+    def _set_sourcepackagename(self, value):
+        old_sourcepackagename = self.sourcepackagename
+        self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
+        self._syncSourcePackages(old_sourcepackagename)
+
+    def _syncSourcePackages(self, prev_sourcepackagename):
+        """Synchronize changes to source packages with other distrotasks.
+
+        If one distroreleasetask's source package is changed, all the
+        other distroreleasetasks with the same distribution and source
+        package has to be changed, as well as the corresponding
+        distrotask.
+        """
+        if self.distrorelease is not None:
+            distribution = self.distrorelease.distribution
+        else:
+            distribution = self.distribution
+        if distribution is not None:
+            for bugtask in self.related_tasks:
+                if bugtask.distrorelease:
+                    related_distribution = bugtask.distrorelease.distribution
+                else:
+                    related_distribution = bugtask.distribution
+                if (related_distribution == distribution and
+                    bugtask.sourcepackagename == prev_sourcepackagename):
+                    bugtask.sourcepackagename = self.sourcepackagename
+
+    def _set_date_assigned(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
+
+    def _set_date_confirmed(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_confirmed", value)
+
+    def _set_date_inprogress(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_inprogress", value)
+
+    def _set_date_closed(self, value):
+        self._setValueAndUpdateConjoinedBugTask("date_closed", value)
+
+    def _setValueAndUpdateConjoinedBugTask(self, colname, value):
+        if self._isConjoinedBugTask():
+            raise ConjoinedBugTaskEditError(
+                "This task cannot be edited directly.")
+        # The conjoined slave is updated before the master one because,
+        # for distro tasks, conjoined_slave does a comparison on
+        # sourcepackagename, and the sourcepackagenames will not match
+        # if the conjoined master is altered before the conjoined slave!
+        conjoined_bugtask = self.conjoined_slave
+        if conjoined_bugtask:
+            conjoined_attrsetter = getattr(
+                conjoined_bugtask, "_SO_set_%s" % colname)
+            conjoined_attrsetter(value)
+
+        attrsetter = getattr(self, "_SO_set_%s" % colname)
+        attrsetter(value)
+
+    def _isConjoinedBugTask(self):
+        return self.conjoined_master is not None
+
+    def _syncFromConjoinedSlave(self):
+        """Ensure the conjoined master is synched from its slave.
+
+        This method should be used only directly after when the
+        conjoined master has been created after the slave, to ensure
+        that they are in sync from the beginning.
+        """
+        conjoined_slave = self.conjoined_slave
+
+        for synched_attr in self._CONJOINED_ATTRIBUTES:
+            slave_attr_value = getattr(conjoined_slave, synched_attr)
+            # Bypass our checks that prevent setting attributes on
+            # conjoined masters by calling the underlying sqlobject
+            # setter methods directly.
+            attrsetter = getattr(self, "_SO_set_%s" % synched_attr)
+            attrsetter(slave_attr_value)
+
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
@@ -145,11 +321,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX: we should use a specific SQLObject API here to avoid the
         # privacy violation.
         #   -- kiko, 2006-03-21
-        if self._SO_val_productID is not None:
+        if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self._SO_val_distroreleaseID is not None:
+        elif self.productseriesID is not None:
+            alsoProvides(self, IProductSeriesBugTask)
+        elif self.distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
-        elif self._SO_val_distributionID is not None:
+        elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
@@ -160,6 +338,8 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask"""
         if IUpstreamBugTask.providedBy(self):
             root_target = self.product
+        elif IProductSeriesBugTask.providedBy(self):
+            root_target = self.productseries.product
         elif IDistroReleaseBugTask.providedBy(self):
             root_target = self.distrorelease.distribution
         elif IDistroBugTask.providedBy(self):
@@ -169,9 +349,10 @@ class BugTask(SQLBase, BugTaskMixin):
         return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
-        # We need to overwrite this method to make sure whenever we change a
-        # single attribute of a BugTask the targetnamecache column is updated.
         SQLBase._SO_setValue(self, name, value, fromPython, toPython)
+
+        # The bug target may have just changed, so update the
+        # targetnamecache.
         if name != 'targetnamecache':
             self.updateTargetNameCache()
 
@@ -206,13 +387,14 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change in the status, so nothing to do.
             return
 
+        old_status = self.status
+        self.status = new_status
+
         if new_status == dbschema.BugTaskStatus.UNKNOWN:
             # Ensure that all status-related dates are cleared,
             # because it doesn't make sense to have any values set for
             # date_confirmed, date_closed, etc. when the status
             # becomes UNKNOWN.
-            self.status = new_status
-
             self.date_confirmed = None
             self.date_inprogress = None
             self.date_closed = None
@@ -224,7 +406,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((self.status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
+        if ((old_status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
             (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
@@ -233,13 +415,13 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
+        if ((old_status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
             (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
 
-        if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+        if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = now
 
@@ -256,8 +438,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if new_status < dbschema.BugTaskStatus.INPROGRESS:
             self.date_inprogress = None
-
-        self.status = new_status
 
     def transitionToAssignee(self, assignee):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -324,6 +504,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' %  self.target.name
+        elif IProductSeriesBugTask.providedBy(self):
+            header_value = 'product=%s; productseries=%s;' %  (
+                self.productseries.product.name, self.productseries.name)
         elif IDistroBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
@@ -342,6 +525,8 @@ class BugTask(SQLBase, BugTaskMixin):
                  'distroreleasename': self.distrorelease.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
+        else:
+            raise AssertionError('Unknown BugTask context: %r' % self)
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
@@ -420,7 +605,8 @@ class BugTaskSet:
         "milestone": "BugTask.milestone",
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated",
-        "date_last_updated": "Bug.date_last_updated"}
+        "date_last_updated": "Bug.date_last_updated",
+        "date_closed": "BugTask.date_closed"}
 
     title = "A set of bug tasks"
 
@@ -432,6 +618,36 @@ class BugTaskSet:
             raise NotFoundError("BugTask with ID %s does not exist" %
                                 str(task_id))
         return bugtask
+
+    def findSimilar(self, user, summary, product=None, distribution=None,
+                    sourcepackagename=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.bug import Bug
+        search_params = BugTaskSearchParams(user)
+        constraint_clauses = ['BugTask.bug = Bug.id']
+        if product:
+            search_params.setProduct(product)
+            constraint_clauses.append(
+                'BugTask.product = %s' % sqlvalues(product))
+        elif distribution:
+            search_params.setDistribution(distribution)
+            constraint_clauses.append(
+                'BugTask.distribution = %s' % sqlvalues(distribution))
+            if sourcepackagename:
+                search_params.sourcepackagename = sourcepackagename
+                constraint_clauses.append(
+                    'BugTask.sourcepackagename = %s' % sqlvalues(
+                        sourcepackagename))
+        else:
+            raise AssertionError('Need either a product or distribution.')
+
+        if not summary:
+            return BugTask.select('1 = 2')
+
+        search_params.searchtext = nl_phrase_search(
+            summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
+        return self.search(search_params)
 
     def search(self, params):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -449,6 +665,7 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
+            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -512,6 +729,13 @@ class BugTaskSet:
                 "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
                 " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
+            if params.orderby is None:
+                # Unordered search results aren't useful, so sort by relevance
+                # instead.
+                params.orderby = [
+                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                    SQLConstant(
+                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -605,7 +829,7 @@ class BugTaskSet:
                         AND RelatedBugTask.id != BugTask.id
                         AND ((
                             RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s) 
+                            RelatedBugTask.status %s)
                             OR (
                             RelatedBugTask.product IS NOT NULL AND
                             RelatedBugTask.bugwatch IS NULL AND
@@ -638,8 +862,9 @@ class BugTaskSet:
 
         return bugtasks
 
-    def createTask(self, bug, owner, product=None, distribution=None,
-                   distrorelease=None, sourcepackagename=None,
+    def createTask(self, bug, owner, product=None, productseries=None,
+                   distribution=None, distrorelease=None,
+                   sourcepackagename=None,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
@@ -659,22 +884,38 @@ class BugTaskSet:
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact)
 
-        if not product and not distribution:
-            assert distrorelease is not None, 'Got no bugtask target'
-            assert distrorelease != distrorelease.distribution.currentrelease, (
-                'Bugtasks cannot be opened on the current release.')
+        assert (product or productseries or distribution or distrorelease), (
+            'Got no bugtask target')
 
-        bugtask = BugTask(
+        non_target_create_params = dict(
             bug=bug,
-            product=product,
-            distribution=distribution,
-            distrorelease=distrorelease,
-            sourcepackagename=sourcepackagename,
             status=status,
             importance=importance,
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        bugtask = BugTask(
+            product=product,
+            productseries=productseries,
+            distribution=distribution,
+            distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            **non_target_create_params)
+
+        if distribution:
+            # Create tasks for accepted nominations if this is a source
+            # package addition.
+            accepted_nominations = [
+                nomination for nomination in bug.getNominations(distribution)
+                if nomination.isApproved()]
+            for nomination in accepted_nominations:
+                accepted_release_task = BugTask(
+                    distrorelease=nomination.distrorelease,
+                    sourcepackagename=sourcepackagename,
+                    **non_target_create_params)
+
+        if bugtask.conjoined_slave:
+            bugtask._syncFromConjoinedSlave()
 
         return bugtask
 
@@ -731,7 +972,7 @@ class BugTaskSet:
             "Bug.datecreated",
             "Bug.date_last_updated"])
         # Bug ID is unique within bugs on a product or source package.
-        if (params.product or 
+        if (params.product or
             (params.distribution and params.sourcepackagename) or
             (params.distrorelease and params.sourcepackagename)):
             in_unique_context = True
@@ -745,6 +986,9 @@ class BugTaskSet:
         # strings.
         ambiguous = True
         for orderby_col in orderby:
+            if isinstance(orderby_col, SQLConstant):
+                orderby_arg.append(orderby_col)
+                continue
             if orderby_col.startswith("-"):
                 col_name = self.getOrderByColumnDBName(orderby_col[1:])
                 order_clause = "-" + col_name

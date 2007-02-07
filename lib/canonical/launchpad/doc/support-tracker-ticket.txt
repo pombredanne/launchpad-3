@@ -1,5 +1,4 @@
-Support Tracker System
-======================
+= Support Tracker System =
 
 Launchpad includes a tech support ticket tracker. Tickets are created
 and accessed using the ITicketTarget interface. This interface is
@@ -34,8 +33,7 @@ ITicketTarget attribute.
 (The complete ITicketTarget interface is documented in
 ../interfaces/ftests/tickettarget.txt.)
 
-ITicket
--------
+== ITicket ==
 
 Tickets are manipulated through the ITicket interface:
 
@@ -71,14 +69,19 @@ And the creation time is recorded in the datecreated attribute:
     >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
     True
 
-The target onto which the ticket was created is available throught the
-attribute:
+The target onto which the ticket was created is available through the
+'target' attribute:
 
     >>> firefox_ticket.target == firefox
     True
 
-Subscriptions and Notifications
--------------------------------
+It is also possible to adapt a ticket to its ITicketTarget.
+
+    >>> target = ITicketTarget(firefox_ticket)
+    >>> verifyObject(ITicketTarget, target)
+    True
+
+== Subscriptions and Notifications ==
 
 Whenever a ticket is created or changed, email notifications will be
 sent. To receive such notification, one can subscribe to the bug using
@@ -112,27 +115,25 @@ the getDirectSubscribers() method.
 
 There is also a list of 'indirect' subscribers to the ticket. These
 are persons that didn't explicitely subscribed to the ticket, but that
-will receive notifications for other reason. The only current reason is
-because they are a support contact for the ticket target.
+will receive notifications for other reason. Support contacts for the
+ticket target are part of the indirect subscribers list.
 
-    (There is no support contact on the firefox product)
+    # There is no support contact on the firefox product.
     >>> [person.displayname
     ...     for person in firefox_ticket.getIndirectSubscribers()]
     []
     >>> firefox.addSupportContact(no_priv)
     True
-    >>> import operator
-    >>> notified = sorted(firefox_ticket.getIndirectSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname
+    ...  for person in firefox_ticket.getIndirectSubscribers()]
     [u'No Privileges Person']
 
 There is a special case for when the ticket's is associated to a source
 package. The support contacts for both the distribution and the source
 package are part of the indirect subscribers list.
 
-    (Let's register some support contacts for the distribution and
-    the package.)
+    # Let's register some support contacts for the distribution and
+    # the package.
     >>> list(ubuntu.support_contacts)
     []
     >>> list(firefox_package.support_contacts)
@@ -147,25 +148,30 @@ package are part of the indirect subscribers list.
     ...     "The FnordsHighlighter theme doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_ticket.subscriptions]
     [u'Sample Person']
-    >>> notified = sorted(package_ticket.getIndirectSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> [person.displayname
+    ...  for person in package_ticket.getIndirectSubscribers()]
     [u'No Privileges Person', u'Ubuntu Team']
+
+The ticket's assignee is also part of the indirect subscription list:
+
+    >>> login('foo.bar@canonical.com')
+    >>> package_ticket.assignee = getUtility(IPersonSet).getByName('name16')
+    >>> [person.displayname
+    ...  for person in package_ticket.getIndirectSubscribers()]
+    [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
 
 Notifications are sent to the list of direct and indirect subscribers.
 The notification recipients list can be obtained by using the
 getSubscribers() method.
 
-    >>> notified = sorted(firefox_ticket.getSubscribers(),
-    ...                   key=operator.attrgetter('displayname'))
-    >>> [person.displayname for person in notified]
+    >>> login('no-priv@canonical.com')
+    >>> [person.displayname for person in firefox_ticket.getSubscribers()]
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the ticket notifications can be found in
 'support-tracker-notifications.txt'.)
 
-Workflow
---------
+== Workflow ==
 
 A ticket status should not be manipulated directly but through the
 workflow methods.
@@ -173,8 +179,7 @@ workflow methods.
 The complete ticket workflow is documented in
 'support-tracker-workflow.txt'.
 
-Bug Linking
------------
+== Bug Linking ==
 
 Ticket implements the IBugLinkTarget interface which makes it possible
 to link bug report to ticket.
@@ -204,29 +209,3 @@ When the link is removed, the owner is unsubscribed:
     <TicketBug...>
     >>> bug7.isSubscribed(firefox_ticket.owner)
     False
-
-ITicketSet
-----------
-
-ITicketSet can be used to get a ticket with a specific id:
-
-    >>> from canonical.launchpad.interfaces import ITicketSet
-    >>> ticket_set = getUtility(ITicketSet)
-    >>> verifyObject(ITicketSet, ticket_set)
-    True
-
-    >>> ticket_one = ticket_set.get(1)
-    >>> ticket_one.title
-    u'Firefox cannot render Bank Site'
-
-If no ticket exists, a default value is returned:
-
-    >>> default = object()
-    >>> ticket_nonexistant = ticket_set.get(123456, default=default)
-    >>> ticket_nonexistant is default
-    True
-
-If no default value is given, None is returned:
-
-    >>> ticket_set.get(123456) is None
-    True

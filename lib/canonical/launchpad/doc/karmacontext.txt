@@ -3,18 +3,26 @@ Karma Context
 
 Now that we track the Product/Distribution in which a given karma-giving
 action was performed, we're able to find out who contributes the most to a
-given product.  We can have this on a per-category (Bug Management,
-Translations, etc) basis or in general, across all categories.
+given product/project/distribution.  We can have this on a per-category
+(Bug Management, Translations, etc) basis or in general, across all
+categories.
 
     >>> import operator
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
-    ...     ISourcePackageNameSet, IDistributionSet)
+    ...     ISourcePackageNameSet, IDistributionSet, IKarmaContext)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> verifyObject(IKarmaContext, firefox)
+    True
+    >>> verifyObject(IKarmaContext, ubuntu)
+    True
+    >>> verifyObject(IKarmaContext, firefox.project)
+    True
 
     >>> [(person.name, karmavalue)
     ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
@@ -32,7 +40,7 @@ Translations, etc) basis or in general, across all categories.
     [(u'sabdfl', 61L)]
 
 We also have a way of retrieving the top contributors of a given
-product/distribution grouped by categories.
+product/project/distribution grouped by categories.
 
     >>> contributors = ubuntu.getTopContributorsGroupedByCategory(limit=2)
     >>> sorted_categories = sorted(contributors.keys(),
@@ -44,5 +52,25 @@ product/distribution grouped by categories.
     Bug Management: [(u'name16', 39L), (u'name12', 35L)]
     Specification Tracking: [(u'sabdfl', 49L)]
 
+The top contributors of a project are the ones with the most karma in all
+products of that project.
 
+Note that Foo Bar's karma on the mozilla project is the sum of Foo Bar's
+karma on the firefox and thunderbird products, which are both part of
+the mozilla project.
+
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in firefox.project.getTopContributors(limit=3)]
+    [(u'name12', 105L), (u'sabdfl', 61L), (u'name16', 34L)]
+
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
+    [(u'name12', 105L), (u'sabdfl', 61L), (u'name16', 17L)]
+
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    >>> thunderbird.project == firefox.project
+    True
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in thunderbird.getTopContributors(limit=3)]
+    [(u'name16', 17L)]
 

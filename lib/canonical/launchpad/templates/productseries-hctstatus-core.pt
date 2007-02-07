@@ -10,11 +10,11 @@
   provide us with the location of the upstream branch so that it can be
   imported into the Bazaar. Please do so
   <a tal:attributes="href
-  string:/products/${context/product/name}/${context/name}/+source">
+  string:/${context/product/name}/${context/name}/+source">
     here
   </a>. Once you have provided us with revision control details for this
   upstream branch, we can import that branch into
-  <a href="/bazaar/">The Bazaar</a>, and HCT will be able to work with
+  <a href="/+code/">The Bazaar</a>, and HCT will be able to work with
   packages based on it.</p>
 
 </tal:block>

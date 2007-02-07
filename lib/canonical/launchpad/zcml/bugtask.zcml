@@ -31,11 +31,12 @@
                            bug_subscribers" />
         <require
             permission="launchpad.View"
-            attributes="product sourcepackagename distribution
+            attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks asEmailHeaderValue
-                        target_uses_malone bugtask_branches" />
+                        target_uses_malone bugtask_branches
+                        conjoined_master conjoined_slave" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -48,7 +49,7 @@
         -->
         <require
             permission="launchpad.Edit"
-            set_attributes="product sourcepackagename distribution
+            set_attributes="product productseries sourcepackagename distribution
                             distrorelease milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks
@@ -90,19 +91,19 @@
           template="../templates/bugtarget-portlet-search.pt" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugView"
-      permission="zope.Public">
-      <browser:page
-          name="+activity"
-          template="../templates/bug-activity.pt"
-          lp:url="malone/bugs/$Bug.id/activity" />
-      <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
-    </browser:pages>
+      permission="launchpad.View"
+      name="+activity"
+      template="../templates/bug-activity.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      class="canonical.launchpad.browser.BugTaskTableRowView"
+      name="+bugtasks-and-nominations-table-row"
+      permission="launchpad.View"
+      template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IBugTask"
@@ -211,6 +212,7 @@
     <browser:page
         name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugView"
         permission="launchpad.Edit"
         template="../templates/bug-comment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addcomment" />
@@ -221,6 +223,13 @@
         class="canonical.launchpad.browser.BugMessageAddFormView"
         permission="launchpad.Edit"
         template="../templates/bug-comment-add-form.pt" />
+
+    <browser:page
+        name="+nominate"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugNominationView"
+        permission="launchpad.View"
+        template="../templates/bug-nominate-for-release.pt" />
 
     <browser:generalform
         name="+addbranch"
@@ -263,12 +272,18 @@
         name="+index" />
 
     <browser:page
-        name="+upstreamtask"
+        name="+choose-affected-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-choose-affected-product.pt" />
+
+    <browser:page
+        name="+add-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask"
-        lp:url="malone/bugs/$Bug.id/+upstreamtask">
+        attribute="render_upstreamtask">
     </browser:page>
 
     <browser:page
@@ -302,6 +317,36 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product milestone status importance assignee
                 bugwatch statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
+
+    <browser:generalform
+        name="+editstatus-page"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        fields="milestone status importance assignee bugwatch
+                statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit.pt">
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
+
+    <browser:generalform
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        fields="milestone status importance assignee bugwatch
+                statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
@@ -370,14 +415,6 @@
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:generalform>
 
-    <browser:page
-        name="+backport"
-        for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskBackportView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-backport-fixing.pt"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         name="+index" />
@@ -421,14 +458,6 @@
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:generalform>
-
-    <browser:page
-      name="+backport"
-      for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskBackportView"
-      permission="launchpad.AnyPerson"
-      template="../templates/bugtask-backport-fixing.pt"
-      />
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"

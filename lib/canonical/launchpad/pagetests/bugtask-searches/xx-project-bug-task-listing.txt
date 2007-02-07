@@ -2,7 +2,7 @@ Sample Person views the bug task listing for the Mozilla
 project.  Bugs in the Firefox product are displayed.
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+bugs HTTP/1.1
+  ... GET /mozilla/+bugs HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

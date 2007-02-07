@@ -16,7 +16,10 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget']
+           'LaunchpadEditFormView', 'action', 'custom_widget',
+           'RedirectionNavigation', 'RedirectionView',
+           'expand_numbers','sorted_version_numbers',
+           'sorted_dotted_numbers']
 
 import re
 
@@ -35,8 +38,9 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, stepto, LaunchpadXMLRPCView)
-
+    redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
+from canonical.launchpad.webapp.sorting import (
+    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 
 def smartquote(str):
     """Return a copy of the string provided, with smartquoting applied.
@@ -66,6 +70,35 @@ class GetitemNavigation(Navigation):
 
     def traverse(self, name):
         return self.context[name]
+
+
+class RedirectionNavigation(Navigation):
+    """Class for navigation that redirects suburls elsewhere.
+
+    Used when reparenting parts of Launchpad when we don't want to break
+    old URLs.
+    """
+    # Subclasses should override this to the new root
+    redirection_root_url = None
+
+    redirection_status = 301 # Default is a permanent redirect
+
+    def traverse(self, name):
+        """Consume the rest of the URL, and use it to return a
+           RedirectionView.
+        """
+        target = urlappend(self.redirection_root_url, name)
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            target = urlappend(target, nextstep)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            target = target + '?' + query_string
+
+        return RedirectionView(target, self.request, self.redirection_status)
 
 
 class StandardLaunchpadFacets(FacetMenu):

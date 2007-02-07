@@ -4,7 +4,8 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView']
+           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView',
+           'DistributionMirrorReassignmentView']
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
@@ -20,6 +21,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IDistributionMirror, validate_distribution_mirror_schema)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.cachedproperty import cachedproperty
 
 
@@ -33,7 +35,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['proberlogs', 'edit', 'admin']
+    links = ['proberlogs', 'edit', 'admin', 'reassign']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -44,6 +46,11 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     def proberlogs(self):
         text = 'Prober logs'
         return Link('+prober-logs', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def reassign(self):
+        text = 'Change Owner'
+        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -129,4 +136,11 @@ class DistributionMirrorEditView(SQLObjectEditView):
 
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
+
+
+class DistributionMirrorReassignmentView(ObjectReassignmentView):
+
+    @property
+    def contextName(self):
+        return self.context.title
 

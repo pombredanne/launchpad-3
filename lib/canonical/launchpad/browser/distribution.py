@@ -11,11 +11,12 @@ __all__ = [
     'DistributionAllPackagesView',
     'DistributionEditView',
     'DistributionSetView',
-    'DistributionSetAddView',
+    'DistributionAddView',
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
     'DistributionReleaseMirrorsRSSView',
+    'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
@@ -25,15 +26,14 @@ from datetime import datetime
 import operator
 
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError, ILaunchBag)
+    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
+    ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -42,9 +42,11 @@ from canonical.launchpad.browser.tickettarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, StandardLaunchpadFacets, stepthrough, stepto)
+    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class DistributionNavigation(
@@ -80,12 +82,22 @@ class DistributionNavigation(
         return self.context.getSpecification(name)
 
 
-class DistributionSetNavigation(GetitemNavigation):
+class DistributionSetNavigation(RedirectionNavigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
+
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid distribution name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -355,14 +367,26 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionEditView(SQLObjectEditView):
-    """View class that lets you edit a Distribution object.
-
-    It redirects to the main distribution page after a successful edit.
-    """
+class DistributionRedirectingEditView(SQLObjectEditView):
+    """A deprecated view to be used by the +driver and +uploadadmin pages."""
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class DistributionEditView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    label = "Change distribution details"
+    field_names = ['displayname', 'title', 'summary', 'description',
+                   'gotchi', 'emblem']
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -391,23 +415,17 @@ class DistributionSetView:
         return self.context.count()
 
 
-class DistributionSetAddView(AddView):
+class DistributionAddView(LaunchpadFormView):
 
-    __used_for__ = IDistributionSet
+    schema = IDistribution
+    label = "Create a new distribution"
+    field_names = ["name", "displayname", "title", "summary", "description",
+                   "gotchi", "emblem", "domainname", "members"]
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the distribution
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise Unauthorized(
-                "Need an authenticated user in order to create a"
-                " distribution.")
+    @action("Save", name='save')
+    def save_action(self, action, data):
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -416,13 +434,11 @@ class DistributionSetAddView(AddView):
             description=data['description'],
             domainname=data['domainname'],
             members=data['members'],
-            owner=owner)
+            owner=self.user,
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
-        self._nextURL = data['name']
-        return distribution
-
-    def nextURL(self):
-        return self._nextURL
+        self.next_url = canonical_url(distribution)
 
 
 class DistributionBugContactEditView(SQLObjectEditView):
@@ -487,8 +503,8 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionReleaseMirrorsRSSView(LaunchpadView):
-    """The RSS feed for release mirrors."""
+class DistributionMirrorsRSSBaseView(LaunchpadView):
+    """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
         self.now = datetime.utcnow()
@@ -498,6 +514,26 @@ class DistributionReleaseMirrorsRSSView(LaunchpadView):
             'content-type', 'text/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for archive mirrors."""
+
+    heading = 'Archive Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.archive_mirrors
+
+
+class DistributionReleaseMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for release mirrors."""
+
+    heading = 'CD Mirrors'
+
+    @property
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):

@@ -32,7 +32,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
 
-
 from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
@@ -214,9 +213,6 @@ class POFileUploadView(POFileView):
             # The form was not submitted or the user is not logged in.
             return
 
-        if not helpers.check_permission('launchpad.Admin', self.context):
-            raise UnexpectedFormData('Only admins can use this form.')
-
         file = self.form['file']
 
         if not isinstance(file, FileUpload):
@@ -285,7 +281,7 @@ class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
     This view is based on BaseTranslationView and implements the API
-    defined by tht class.
+    defined by that class.
 
     Note that DummyPOFiles are presented if there is no POFile in the
     database but the user wants to translate it. See how POTemplate

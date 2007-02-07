@@ -23,6 +23,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch)
 from canonical.launchpad.database.specificationbug import (
     SpecificationBug)
 from canonical.launchpad.database.specificationfeedback import (
@@ -122,6 +124,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
+    branch_links = SQLMultipleJoin('SpecificationBranch',
+        joinColumn='specification',
+        orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -547,6 +552,19 @@ class Specification(SQLBase, BugLinkTargetMixin):
         blocked = set()
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
+
+    # branches
+    def getBranchLink(self, branch):
+        return SpecificationBranch.selectOneBy(
+            specificationID=self.id, branchID=branch.id)
+        
+    def linkBranch(self, branch, summary=None):
+        branchlink = self.getBranchLink(branch)
+        if branchlink is not None:
+            return branchlink
+        return SpecificationBranch(specification=self,
+                                   branch=branch,
+                                   summary=summary)
 
 
 class SpecificationSet:

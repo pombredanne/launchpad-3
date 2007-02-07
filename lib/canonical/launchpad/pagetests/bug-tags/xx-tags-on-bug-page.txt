@@ -2,9 +2,9 @@ If we look at a bug which hasn't got any tags we can see that there's a
 message saying that there are no tags, together with a link to edit
 them.
 
-    >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+    >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1'
+    'http://launchpad.dev/firefox/+bug/1'
     >>> 'Tags:' in user_browser.contents
     False
 
@@ -13,7 +13,7 @@ Let's follow the link and specify some tags:
     >>> user_browser.getLink(
     ...     text="edit", url="+edit").click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+    'http://launchpad.dev/firefox/+bug/1/+edit'
 
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
@@ -40,10 +40,10 @@ Let's specify two valid tags.
 Since they are new tags, we have to confirm them.
 
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+    'http://launchpad.dev/firefox/+bug/1/+edit'
     >>> user_browser.getControl('Yes, define new tag', index=0).click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1'
+    'http://launchpad.dev/firefox/+bug/1'
 
 Now the tags will be displayed on the bug page:
 
@@ -60,7 +60,7 @@ happen.
     >>> user_browser.getLink(
     ...     text="edit", url="+edit").click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+    'http://launchpad.dev/firefox/+bug/1/+edit'
 
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
@@ -69,7 +69,7 @@ happen.
     >>> tags.value = "foo bar"
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1'
+    'http://launchpad.dev/firefox/+bug/1'
 
 Let's delete the tags we added.
 
@@ -80,18 +80,18 @@ Let's delete the tags we added.
     >>> user_browser.getControl('Tags').value = ''
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1'
+    'http://launchpad.dev/firefox/+bug/1'
 
 If we look at a bug having tags, the displayed tags are links, linking
 to the list of all bugs having that tag in this context.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bug/2')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bug/2')
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bug/2'
+    'http://launchpad.dev/ubuntu/+bug/2'
 
     >>> anon_browser.getLink('dataloss').click()
     >>> anon_browser.url
-    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+    'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_bugtasks(text):

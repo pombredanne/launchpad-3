@@ -17,7 +17,7 @@
                             country content official_candidate" />
         <require
             permission="launchpad.Admin"
-            set_attributes="official_approved" />
+            set_attributes="official_approved owner" />
     </content>
 
     <browser:defaultView
@@ -73,6 +73,14 @@
         fields="official_approved"
         template="../templates/distributionmirror-mark-official.pt">
     </browser:editform>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.DistributionMirrorReassignmentView"
+        name="+reassign"
+        template="../templates/object-reassignment.pt">
+    </browser:page>
 
     <browser:page
         name="+prober-logs"

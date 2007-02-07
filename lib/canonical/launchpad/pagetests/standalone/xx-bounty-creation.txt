@@ -14,7 +14,7 @@ or project or distribution. Note this is a bad idea.
 First we test if the name field validator is working
 
   >>> print http(r"""
-  ... POST /products/firefox/+addbounty HTTP/1.1
+  ... POST /firefox/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1948
   ... Content-Type: multipart/form-data; boundary=---------------------------33938214415580350852058287477
@@ -64,7 +64,7 @@ First we test if the name field validator is working
 Now let's create a bounty for the Firefox product.
 
   >>> print http(r"""
-  ... POST /products/firefox/+addbounty HTTP/1.1
+  ... POST /firefox/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1948
   ... Content-Type: multipart/form-data; boundary=---------------------------33938214415580350852058287477
@@ -122,7 +122,7 @@ And let's view it, making sure it is linked to Firefox.
 OK, we should also be able to see the +addbounty page on a Project.
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+addbounty HTTP/1.1
+  ... GET /mozilla/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -131,7 +131,7 @@ OK, we should also be able to see the +addbounty page on a Project.
 Let's test it!
 
   >>> print http(r"""
-  ... POST /projects/mozilla/+addbounty HTTP/1.1
+  ... POST /mozilla/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1948
   ... Content-Type: multipart/form-data; boundary=---------------------------33938214415580350852058287477
@@ -189,7 +189,7 @@ And let's view it, making sure it is linked to Firefox.
 And lastly, on a Distribution.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+addbounty HTTP/1.1
+  ... GET /ubuntu/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -197,7 +197,7 @@ And lastly, on a Distribution.
 
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+addbounty HTTP/1.1
+  ... POST /ubuntu/+addbounty HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1948
   ... Content-Type: multipart/form-data; boundary=---------------------------33938214415580350852058287477

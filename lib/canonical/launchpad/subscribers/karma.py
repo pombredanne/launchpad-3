@@ -14,17 +14,24 @@ def bug_created(bug, event):
     assert len(bug.bugtasks) >= 1
     _assignKarmaUsingBugContext(event.user, bug, 'bugcreated')
 
-
-def bugtask_created(bugtask, event):
-    """Assign karma to the user which created <bugtask>."""
+def _assign_karma_using_bugtask_context(person, bugtask, actionname):
+    """Extract the right context from the bugtask and assign karma."""
     distribution = bugtask.distribution
     if bugtask.distrorelease is not None:
         # This is a Distro Release Task, so distribution is None and we
         # have to get it from the distrorelease.
         distribution = bugtask.distrorelease.distribution
-    event.user.assignKarma(
-        'bugtaskcreated', product=bugtask.product, distribution=distribution,
+    product = bugtask.product
+    if bugtask.productseries is not None:
+        product = bugtask.productseries.product
+    person.assignKarma(
+        actionname, product=product, distribution=distribution,
         sourcepackagename=bugtask.sourcepackagename)
+
+
+def bugtask_created(bugtask, event):
+    """Assign karma to the user which created <bugtask>."""
+    _assign_karma_using_bugtask_context(event.user, bugtask, 'bugtaskcreated')
 
 
 def _assignKarmaUsingBugContext(person, bug, actionname):
@@ -34,14 +41,7 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     for task in bug.bugtasks:
         if task.status == BugTaskStatus.REJECTED:
             continue
-        distribution = task.distribution
-        if task.distrorelease is not None:
-            # This is a Distro Release Task, so distribution is None and we
-            # have to get it from the distrorelease.
-            distribution = task.distrorelease.distribution
-        person.assignKarma(
-            actionname, product=task.product, distribution=distribution,
-            sourcepackagename=task.sourcepackagename)
+        _assign_karma_using_bugtask_context(person, task, actionname)
 
 
 def bug_comment_added(bugmessage, event):
@@ -88,13 +88,6 @@ def bugtask_modified(bugtask, event):
 
     assert task_delta is not None
 
-    if IDistroBugTask.providedBy(bugtask):
-        distribution = bugtask.distribution
-    elif IDistroReleaseBugTask.providedBy(bugtask):
-        distribution = bugtask.distrorelease.distribution
-    else:
-        distribution = None
-
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
         BugTaskStatus.REJECTED: 'bugrejected',
@@ -104,16 +97,11 @@ def bugtask_modified(bugtask, event):
         new_status = task_delta.status['new']
         actionname = actionname_status_mapping.get(new_status)
         if actionname is not None:
-            user.assignKarma(
-                actionname, product=bugtask.product,
-                distribution=distribution,
-                sourcepackagename=bugtask.sourcepackagename)
+            _assign_karma_using_bugtask_context(user, bugtask, actionname)
 
     if task_delta.importance is not None:
-        user.assignKarma(
-            'bugtaskimportancechanged', product=bugtask.product,
-            distribution=distribution,
-            sourcepackagename=bugtask.sourcepackagename)
+        _assign_karma_using_bugtask_context(
+            user, bugtask, 'bugtaskimportancechanged')
 
 
 def spec_created(spec, event):

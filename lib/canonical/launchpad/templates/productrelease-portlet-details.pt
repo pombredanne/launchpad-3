@@ -6,13 +6,13 @@
 
             <b>Registrant:</b><br />
             <img alt="" src="/@@/user" />
-            <a tal:attributes="href string:/people/${context/owner/name}"
+            <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername"
                class="link">ownername</a><br />
 
             <b>Product:</b>
             <a href="#"
-               tal:attributes="href string:/products/${context/product/name}/"
+               tal:attributes="href context/product/fmt:url"
                tal:content="context/product/displayname"
                class="link">product displayname</a><br />
 

@@ -124,6 +124,21 @@ class LoginToken(SQLBase):
         subject = "Finish your Launchpad registration"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
+    def sendProfileCreatedEmail(self, profile, comment):
+        """See ILoginToken."""
+        template = get_email_template('profile-created.txt')
+        replacements = {'token_url': canonical_url(self),
+                        'requester': self.requester.browsername,
+                        'comment': comment,
+                        'profile_url': canonical_url(profile)}
+        message = template % replacements
+
+        headers = {'Reply-To': self.requester.preferredemail.email}
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        subject = "Launchpad profile"
+        simple_sendmail(
+            fromaddress, str(self.email), subject, message, headers=headers)
+
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
         template = get_email_template('request-merge.txt')

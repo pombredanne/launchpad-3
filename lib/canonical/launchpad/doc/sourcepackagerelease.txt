@@ -5,6 +5,12 @@ The SourcePackageRelease table represents a particular release of a
 SourcePackageName, but isn't tied to any particular DistroRelease
 as the same release can appear in many.
 
+In a very basic explanation, this table caches the attributes of an
+uploaded DSC (Debian Source Control) file.
+
+This model allow us to have more granular control of the fields,
+enabling faster searches, faster readings and model constraints.
+
 Basic attributes
 ----------------
 
@@ -12,10 +18,38 @@ Let's get one from the database:
 
    >>> from canonical.launchpad.database import SourcePackageRelease
    >>> spr = SourcePackageRelease.get(14)
-   >>> print spr.name
-   mozilla-firefox
-   >>> print spr.version
-   0.9
+   >>> spr.name
+   u'mozilla-firefox'
+   >>> spr.version
+   u'0.9'
+   >>> spr.dateuploaded
+   datetime.datetime(...)
+
+'age' is a special property that performs on-the-fly:
+{{{
+NOW - dateuploaded
+}}}
+It returns a timedelta object:
+
+   >>> spr.age
+   datetime.timedelta(...)
+
+Check if the result match the locally calculated one:
+
+   >>> import datetime
+   >>> import pytz
+   >>> local_now = datetime.datetime.now(pytz.timezone('UTC'))
+
+   >>> expected_age = local_now - spr.dateuploaded
+   >>> spr.age.days == expected_age.days
+   True
+
+Modify dateuploaded to a certain number of days in the past and check
+if the 'age' result looks sane:
+
+   >>> spr.dateuploaded = (local_now - datetime.timedelta(days=10))
+   >>> spr.age.days == 10
+   True
 
 We can use the magic productrelease property to map this to a ProductRelease:
 
@@ -82,6 +116,67 @@ Abort transaction to avoid error propagation of the new attributes:
    >>> transaction.abort()
 
 
+Verify the creation of a new ISourcePackageRelease based on the
+IDistroRelease API:
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
+  >>> from canonical.database.constants import UTC_NOW
+  >>> from canonical.lp.dbschema import SourcePackageUrgency
+
+  >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+All the arguments to create an ISourcePackageRelease are obtained when
+processing a source upload, see more details in nascentupload.txt.
+Some of the 20 required arguments are foreign keys or DB contants:
+
+  >>> arg_name = getUtility(ISourcePackageNameSet)['pmount']
+  >>> arg_comp = getUtility(IComponentSet)['universe']
+  >>> arg_sect = getUtility(ISectionSet)['web']
+  >>> arg_key = getUtility(IGPGKeySet).get(1)
+  >>> arg_dateuploaded = UTC_NOW
+  >>> arg_maintainer = hoary.owner
+  >>> arg_creator = hoary.owner
+  >>> arg_urgency = SourcePackageUrgency.LOW
+
+'manifest' is the only nullable FK:
+
+  >>> arg_manifest = None
+
+The other argurments are strings:
+
+  >>> version = '0.0.99'
+  >>> dsc = 'smashed dsc...'
+  >>> changelog = 'contigous text....'
+  >>> archhintlist = 'any'
+  >>> builddepends = 'cdbs, debhelper (>= 4.1.0), libsysfs-dev, libhal-dev'
+  >>> builddependsindep = ''
+  >>> dsc_maintainer_rfc822 = 'Foo Bar <foo@bar.com>'
+  >>> dsc_standards_version = '2.6.1'
+  >>> dsc_format = '1.0'
+  >>> dsc_binaries = 'pmount'
+
+Having proper arguments in hand we can create a new
+ISourcePackageRelease, it will automatically set the
+'uploaddistrorelease' to the API entry point, in this case Hoary.
+
+  >>> new_spr = hoary.createUploadedSourcePackageRelease(
+  ...     arg_name, version, arg_maintainer, arg_dateuploaded,
+  ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
+  ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
+  ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+  ...     dsc_binaries)
+
+  >>> new_spr.uploaddistrorelease.name
+  u'hoary'
+  >>> new_spr.version
+  u'0.0.99'
+
+Throw away the DB changes:
+
+  >>> transaction.abort()
+
+
 Verify the 'meta_binary' attribute:
 
    >>> spr_test = SourcePackageRelease.get(20)
@@ -113,7 +208,7 @@ It also offers an easy way of checking the number of tickets open on the
 package in the distribution:
 
    >>> print spr.open_ticket_count
-   1
+   0
 
 Nobody's having trouble with firefox!
 
@@ -150,7 +245,7 @@ We need the commit to see the upload.
 
 Before the upload, the queue should be empty.
 
-   >>> translation_import_queue.entryCount()
+   >>> translation_import_queue.getAllEntries(target='distros').count()
    0
 
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
@@ -167,7 +262,7 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> translation_import_queue.entryCount()
+   >>> translation_import_queue.getAllEntries(target='distros').count()
    1
 
 Now, we need to do the final import. It's done as a two steps procedure.
@@ -182,7 +277,9 @@ The first one, approves the import.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    The automatic approval system approved some entries.
+    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
 
 The second one, executes the import.
@@ -195,6 +292,7 @@ The second one, executes the import.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
 

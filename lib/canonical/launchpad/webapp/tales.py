@@ -13,6 +13,7 @@ import math
 import os.path
 import re
 import rfc822
+from xml.sax.saxutils import unescape as xml_unescape
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -31,7 +32,7 @@ from canonical.launchpad.interfaces import (
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -72,17 +73,20 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturl(self):
+    def _requesturi(self):
         request = self._request
         if request is None:
             return None
-        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturlobj.pathnoslash.endswith(defaultviewname):
-            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
-        return requesturlobj
+        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
+            requesturiobj = URI(request.getURL(1))
+        query = request.get('QUERY_STRING')
+        if query:
+            requesturiobj = requesturiobj.replace(query=query)
+        return requesturiobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -91,7 +95,7 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturl=self._requesturl(),
+                requesturi=self._requesturi(),
                 selectedfacetname=self._selectedfacetname))
 
     def application(self):
@@ -104,7 +108,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
     def context(self):
         menu = IContextMenu(self._context, None)
@@ -112,7 +116,7 @@ class MenuAPI:
             return  []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
 
 class CountAPI:
@@ -716,24 +720,36 @@ def re_substitute(pattern, replace_match, replace_nomatch, string):
     return ''.join(parts)
 
 
-def split_chars(word, nchars):
-    """Return the first num characters of the word, plus the remainder.
+def next_word_chunk(word, pos, minlen, maxlen):
+    """Return the next chunk of the word of length between minlen and maxlen.
+
+    Shorter word chunks are preferred, preferably ending in a non
+    alphanumeric character.  The index of the end of the chunk is also
+    returned.
 
     This function treats HTML entities in the string as single
     characters.  The string should not include HTML tags.
     """
-    chars = []
-    while word and len(chars) < nchars:
-        if word[0] == '&':
+    nchars = 0
+    endpos = pos
+    while endpos < len(word):
+        # advance by one character
+        if word[endpos] == '&':
             # make sure we grab the entity as a whole
-            pos = word.find(';')
-            assert pos >= 0, 'badly formed entity: %r' % word
-            chars.append(word[:pos+1])
-            word = word[pos+1:]
+            semicolon = word.find(';', endpos)
+            assert semicolon >= 0, 'badly formed entity: %r' % word[endpos:]
+            endpos = semicolon + 1
         else:
-            chars.append(word[0])
-            word = word[1:]
-    return ''.join(chars), word
+            endpos += 1
+        nchars += 1
+        if nchars >= maxlen:
+            # stop if we've reached the maximum chunk size
+            break
+        if nchars >= minlen and not word[endpos-1].isalnum():
+            # stop if we've reached the minimum chunk size and the last
+            # character wasn't alphanumeric.
+            break
+    return word[pos:endpos], endpos
 
 
 def add_word_breaks(word):
@@ -746,20 +762,11 @@ def add_word_breaks(word):
     preferably after puctuation.
     """
     broken = []
-    while word:
-        chars, word = split_chars(word, 7)
-        broken.append(chars)
-        # If the leading characters don't end with puctuation, grab
-        # more characters.
-        if chars[-1].isalnum() and word != '':
-            for i in range(8):
-                chars, word = split_chars(word, 1)
-                broken.append(chars)
-                if not (chars[-1].isalnum() and word != ''):
-                    break
-        if word != '':
-            broken.append('<wbr></wbr>')
-    return ''.join(broken)
+    pos = 0
+    while pos < len(word):
+        chunk, pos = next_word_chunk(word, pos, 7, 15)
+        broken.append(chunk)
+    return '<wbr></wbr>'.join(broken)
 
 
 break_text_pat = re.compile(r'''
@@ -837,10 +844,10 @@ class FormattersAPI:
             title = cgi.escape(title, quote=True)
             return '<a href="%s" title="%s">%s</a>' % (url, title, text)
         elif match.group('url') is not None:
-            # The text will already have been cgi escaped.
-            # We still need to escape quotes for the url.
-            url = match.group('url')
-            # Search for punctuation to strip off the end of the URL
+            # The text will already have been cgi escaped.  We temporarily
+            # unescape it so that we can strip common trailing characters
+            # that aren't part of the URL.
+            url = xml_unescape(match.group('url'))
             match = FormattersAPI._re_url_trailers.search(url)
             if match:
                 trailers = match.group(1)
@@ -848,8 +855,9 @@ class FormattersAPI:
             else:
                 trailers = ''
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), add_word_breaks(url),
-                trailers)
+                cgi.escape(url, quote=True),
+                add_word_breaks(cgi.escape(url)),
+                cgi.escape(trailers))
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -974,7 +982,7 @@ class FormattersAPI:
 
     # a pattern to match common trailing punctuation for URLs that we
     # don't want to include in the link.
-    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
+    _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""

@@ -3,7 +3,7 @@ Rosetta officially) are controlled by the +launchpad page. Anonymous
 doesn't have access to the page:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+launchpad HTTP/1.1
+  ... GET /ubuntu/+launchpad HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -13,7 +13,7 @@ doesn't have access to the page:
 Neither does Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+launchpad HTTP/1.1
+  ... GET /ubuntu/+launchpad HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -22,7 +22,7 @@ Neither does Sample Person:
 Foo Bar has access to the page, though:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+launchpad HTTP/1.1
+  ... GET /ubuntu/+launchpad HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -37,7 +37,7 @@ Foo Bar can edit the values as well. Afterwards he gets redirected to
 the distribution index page:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+launchpad HTTP/1.1
+  ... POST /ubuntu/+launchpad HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=----------QXxp0JqS8QGKEJaR6rljsl
   ... 
@@ -58,13 +58,13 @@ the distribution index page:
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/distros/ubuntu
+  Location: http://localhost:9000/ubuntu
 
 On the distribution page we can see that it doesn't use Malone and
 Rosetta anymore:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/ HTTP/1.1
+  ... GET /ubuntu/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

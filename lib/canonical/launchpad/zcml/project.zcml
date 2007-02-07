@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
@@ -34,16 +34,9 @@
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        name="+rosetta-index" />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectView"
-        lp:url="Rosetta/projects/$Project.name">
+        permission="zope.Public">
         <browser:page
             name="+index"
             facet="overview"
@@ -60,36 +53,19 @@
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
         <browser:page
-            name="+rosetta-index"
-            facet="translations"
-            template="../templates/project-rosetta-index.pt"
-            lp:url="Rosetta/projects/$Project.name/+index" />
-        <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt"
             />
 
        <!-- Projects portlets -->
        <browser:page
-            name="+portlet-languages"
-            facet="translations"
-            template="../templates/project-portlet-languages.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
-       <browser:page
             name="+portlet-bounties"
             facet="bounties"
-            template="../templates/object-portlet-bounties.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-bounties" />
-       <browser:page
-            name="+portlet-trackers"
-            facet="bugs"
-            template="../templates/project-portlet-trackers.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
+            template="../templates/object-portlet-bounties.pt" />
        <browser:page
             name="+portlet-details"
             facet="overview"
-            template="../templates/project-portlet-details.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-details" />
+            template="../templates/project-portlet-details.pt" />
     </browser:pages>
 
     <browser:page
@@ -226,6 +202,21 @@
       template="../templates/bounty-add.pt"
       />
 
+    <facet facet="support">
+        <browser:page
+            name="+addticket"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.ProjectAddTicketView"
+            permission="launchpad.AnyPerson"
+            />
+        <browser:page
+            name="+portlet-latesttickets"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.ProjectLatestTicketsView"
+            permission="zope.Public"
+            />
+    </facet>
+
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
@@ -248,7 +239,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:pages
@@ -258,11 +249,11 @@
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
         <browser:page
-            name="+all" 
+            name="+all"
             template="../templates/projects-all.pt"
             lp:url="/projects/+all" />
         <browser:page
-            name="+index" 
+            name="+index"
             template="../templates/projects-index.pt"
             lp:url="/projects/+index" />
     </browser:pages>
@@ -276,10 +267,6 @@
             name="+review"
             template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
-        <browser:page
-            name="+syncreview"
-            template="../templates/bazaar-sync-review.pt"
-            lp:url="/projects/+syncreview" />
     </browser:pages>
 
 </configure>

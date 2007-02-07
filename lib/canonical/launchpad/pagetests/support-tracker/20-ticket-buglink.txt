@@ -1,11 +1,9 @@
-Bug Links
-=========
+= Bug Links =
 
 Ticket can be linked to bugs. A user should do that when the problem
 exposed in the ticket is related to a bug report.
 
-Adding Links
-------------
+== Adding Links ==
 
 Ticket #2 in firefox is about a user which has trouble displaying the
 SVG demo on the W3C site. There is an existing Malone bug report (#1)
@@ -15,14 +13,14 @@ relationship goes to the ticket and click the 'Link Existing Bug'.
 This link is only available to registered user:
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> anon_browser.getLink(url='+linkbug').click()
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> user_browser.getLink('Link Existing Bug').click()
 
 To link the bug, the user enters the bug ID and clicks the 'Add'
@@ -44,13 +42,13 @@ bug number.
 
     >>> user_browser.getLink('Bugs Listing').click()
     >>> user_browser.url
-    '.../products/firefox/+bugs'
+    '.../firefox/+bugs'
 
-    (We should use goBack() here but can't because of ZC #645:
-    zope.testbrowser truncates document content after goBack().)
+    # We should use goBack() here but can't because of ZC #645:
+    # zope.testbrowser truncates document content after goBack().
     #>>> user_browser.goBack()
     >>> user_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2/+linkbug')
+    ...     'http://launchpad.dev/firefox/+ticket/2/+linkbug')
 
 The user now enters the correct bug number and after clicking the
 'Link' button, the bug will now be listed under the 'Related Bugs'
@@ -70,9 +68,7 @@ A notification is also displayed.
     <div class="informational message">Added link to bug #1:
     ...Firefox does not support SVG...</div>
 
-
-Removing Links
---------------
+== Removing Links ==
 
 To remove bug links, the user uses the 'Remove Bug Link' action.
 
@@ -90,21 +86,19 @@ The user is redirected to the support request page and a confirmation
 message is displayed:
 
     >>> user_browser.url
-    '.../products/firefox/+ticket/2'
+    '.../firefox/+ticket/2'
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
     >>> soup.first('div', {'id': 'portlet-related-bugs'}) is None
     True
 
+== Link to Private Bugs ==
 
-Link to Private Bugs
---------------------
-
-    (Let's mark bug #6 as private and only accessible by an
-    administrator.
-    XXX flacoste 2006/08/22 This should use a private bug in our
-    sample data, see bug #57307.)
+    # Let's mark bug #6 as private and only accessible by an
+    # administrator.
+    # XXX flacoste 2006/08/22 This should use a private bug in our
+    # sample data, see bug #57307.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -118,11 +112,10 @@ Link to Private Bugs
 A regular user shouldn't be able to link to a private bug he doesn't
 have access to:
 
-    (We use the no-priv user here because sample person is subscribed
-    and thus has access to the private bug.)
-    >>> browser.addHeader('Authorization',
-    ...     'Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    # We use the no-priv user here because sample person is subscribed
+    # and thus has access to the private bug.
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
     >>> browser.getLink('Link Existing Bug').click()
     >>> browser.getControl('Bug ID').value = '6'
     >>> browser.getControl('Link').click()
@@ -135,7 +128,7 @@ An administrator (or another user having access to the bug) should be
 able to link to that bug.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> admin_browser.getLink('Link Existing Bug').click()
     >>> admin_browser.getControl('Bug ID').value = '6'
     >>> admin_browser.getControl('Link').click()
@@ -150,7 +143,7 @@ An anonymous visitor (or a user that doesn't have access to the bug)
 will only see that a private bug is linked.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
@@ -159,7 +152,7 @@ will only see that a private bug is linked.
 
 Only the administrator will be able to unlink the bug.
 
-    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
     >>> browser.getLink('Remove Bug Link').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('p', 'informational message')

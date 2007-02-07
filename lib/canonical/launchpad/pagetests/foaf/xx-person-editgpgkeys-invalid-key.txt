@@ -7,7 +7,6 @@ Imports and setup of stub keyserver:
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, ILoginTokenSet)
-  >>> from canonical.launchpad.webapp import canonical_url
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
   >>> tokenset = getUtility(ILoginTokenSet)
@@ -29,7 +28,7 @@ The following keys are used in these tests:
 Attempts to claim a revoked OpenPGP key fail:
 
   >>> print http(r"""
-  ... POST /people/name12/+editpgpkeys HTTP/1.1
+  ... POST /~name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -47,7 +46,7 @@ Attempts to claim a revoked OpenPGP key fail:
 Attempts to claim an expired OpenPGP key also fail:
 
   >>> print http(r"""
-  ... POST /people/name12/+editpgpkeys HTTP/1.1
+  ... POST /~name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded

@@ -7,6 +7,11 @@
 
     <content class="canonical.launchpad.database.DistroComponentUploader">
         <allow interface="canonical.launchpad.interfaces.IDistroComponentUploader" />
+      <require
+          permission="launchpad.Admin"
+          set_attributes="uploader"
+          />
+
     </content>
 
 </configure>

@@ -1,6 +1,4 @@
-
-Support Contacts
-================
+= Support Contacts =
 
 Each product and distros can have support contacts. Support contacts
 receive notifications for new tickets as well as changes to existing
@@ -10,7 +8,7 @@ The list of support contacts is displayed in the 'Support Contact'
 portlet which is available on the 'Support' facet of the product or
 distro.
 
-    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='portlet-support-contacts')
@@ -52,10 +50,10 @@ new support contacts appear in the 'Support Contacts' portlet:
     >>> soup.first('div', id='portlet-support-contacts').first('ul')
      <ul class="people">
       <li>
-        <a href=".../people/name12">Sample Person</a>
+        <a href=".../~landscape-developers">Landscape Developers</a>
       </li>
       <li>
-        <a href=".../people/landscape-developers">Landscape Developers</a>
+        <a href=".../~name12">Sample Person</a>
       </li>
     </ul>
 
@@ -83,7 +81,7 @@ listed in the 'Also notified' list in the 'Subscribers' portlet on a
 ticket.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+ticket/7')
+    ...     'http://launchpad.dev/ubuntu/+ticket/7')
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='ticket-subscribers')
     >>> also_notified = portlet.first('b')
@@ -92,8 +90,6 @@ ticket.
     >>> also_notified.findNextSibling('ul')
     <ul class="people">
       <li>
-        <a href=".../people/name12">Sample Person</a>
+        <a href=".../~name12">Sample Person</a>
       </li>
     </ul>
-
-

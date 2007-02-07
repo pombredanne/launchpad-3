@@ -6,8 +6,10 @@ import unittest, doctest
 from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
-    suite = doctest.DocTestSuite('canonical.widgets.password')
+    suite = unittest.TestSuite()
     suite.layer = LaunchpadFunctionalLayer
+    suite.addTest(doctest.DocTestSuite('canonical.widgets.password'))
+    suite.addTest(doctest.DocTestSuite('canonical.widgets.textwidgets'))
     return suite
 
 if __name__ == '__main__':

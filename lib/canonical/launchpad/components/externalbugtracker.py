@@ -197,8 +197,13 @@ class Bugzilla(ExternalBugTracker):
         url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        url = urllib2.urlopen(request, data=post_data)
-        page_contents = url.read()
+        page = urllib2.urlopen(request, data=post_data)
+        page_contents = page.read()
+        if page.url != url:
+            # If the URL wasn't the same as we expected, give up --
+            # urllib2 shouldn't redirect POSTs as it doesn't know how to.
+            raise BugTrackerConnectError(self.baseurl,
+                    "POST was redirected from %s to %s" % (url, page.url))
         return page_contents
 
     def _parseDOMString(self, contents):
@@ -245,8 +250,9 @@ class Bugzilla(ExternalBugTracker):
         else:
             resolution = ''
 
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA']:
+        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
+            # STARTED: OOO Issuezilla
            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:
@@ -343,15 +349,29 @@ class Bugzilla(ExternalBugTracker):
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        bug_nodes = document.getElementsByTagName(bug_tag)
         self.remote_bug_status = {}
+        bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
-            bug_id_nodes = bug_node.getElementsByTagName(id_tag)
-            assert len(bug_id_nodes) == 1, "Should be only one id node."
+            # We use manual iteration to pick up id_tags instead of
+            # getElementsByTagName because the latter does a recursive
+            # search, and in some documents we've found the id_tag to
+            # appear under other elements (such as "has_duplicates") in
+            # the document hierarchy.
+            bug_id_nodes = [node for node in bug_node.childNodes if
+                            node.nodeName == id_tag]
+            if not bug_id_nodes:
+                # Something in the output is really weird; this will
+                # show up as a bug not found, but we can catch that
+                # later in the error logs.
+                continue
             bug_id_node = bug_id_nodes[0]
             assert len(bug_id_node.childNodes) == 1, (
                 "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
+            # This assertion comes in late so we can at least tell what
+            # bug caused this crash.
+            assert len(bug_id_nodes) == 1, \
+                "Should be only one id node, but %s had %s." % (bug_id, len(bug_id_nodes))
 
             status_nodes = bug_node.getElementsByTagName(status_tag)
             if not status_nodes:

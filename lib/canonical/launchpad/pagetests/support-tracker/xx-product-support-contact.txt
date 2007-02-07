@@ -1,7 +1,7 @@
 Anonymous doesn't have access to the page:
 
   >>> print http(r"""
-  ... GET /products/firefox/+support-contact HTTP/1.1
+  ... GET /firefox/+support-contact HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -11,7 +11,7 @@ Anonymous doesn't have access to the page:
 Sample Person has access to the page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+support-contact HTTP/1.1
+  ... GET /firefox/+support-contact HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """, handle_errors=False)
   HTTP/1.1 200 Ok
@@ -21,7 +21,7 @@ Add Foo Bar, Launchpad Developers and the Ubuntu Team as support
 contacts.
 
   >>> print http(r"""
-  ... POST /products/firefox/+support-contact HTTP/1.1
+  ... POST /firefox/+support-contact HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=----------bZSuYgnw4ENVX5W0chYGPT
   ... 
@@ -54,13 +54,13 @@ contacts.
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://.../products/firefox/+tickets
+  Location: http://.../firefox/+tickets
   ...
 
 Remove Foo Bar and the Ubuntu team as support contacts.
 
   >>> print http(r"""
-  ... POST /products/firefox/+support-contact HTTP/1.1
+  ... POST /firefox/+support-contact HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=----------8yNh6b7Mg5GIP3C0U679Ue
   ... 
@@ -85,6 +85,6 @@ Remove Foo Bar and the Ubuntu team as support contacts.
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://.../products/firefox/+tickets
+  Location: http://.../firefox/+tickets
   ...
 

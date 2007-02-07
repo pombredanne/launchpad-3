@@ -1,16 +1,19 @@
+(We will use the advanced filebug form in the examples below, to skip
+searching for dupes.)
+
 Filing a public bug on an upstream will subscribe the bug contact, as
 well.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
+    >>> browser.open("http://launchpad.dev/firefox/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a public bug"
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/products/firefox/+bug/11
+    http://launchpad.dev/firefox/+bug/11
 
 Now sabdfl, because he's the bug reporter, and guadamen, because they
 are the product bug contact are subscribed to this bug:
@@ -41,7 +44,7 @@ subscribed, because Firefox does not have a security contact.
     True
     >>> logout()
 
-    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
+    >>> browser.open("http://launchpad.dev/firefox/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
@@ -50,7 +53,7 @@ subscribed, because Firefox does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/products/firefox/+bug/12
+    http://launchpad.dev/firefox/+bug/12
 
     >>> logout()
     >>> login("mark@hbd.com")

@@ -1,0 +1,52 @@
+<script type="text/javascript">
+  function toggleFormVisibility(row) {
+    if (row.style.display=="none") {
+      row.style.display = "table-row";
+    } else {
+      row.style.display = "none";
+    }
+    return false;
+  }
+</script>
+
+<table class="listing"
+       cellpadding="0" cellspacing="0"
+       style="width: 100%; margin-bottom: 1px; margin-top: 2px;">
+  <thead>
+    <tr>
+      <th>Affects</th>
+      <th>Status</th>
+      <th>Importance</th>
+      <th>Assigned To</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tal:bugtask-or-nomination repeat="task_or_nom view/getBugTasksAndNominations">
+      <tal:block content="structure task_or_nom/@@+bugtasks-and-nominations-table-row" />
+    </tal:bugtask-or-nomination>
+  </tbody>
+
+</table>
+
+<div style="font-size: 80%; text-align: right; margin-bottom: 1em;"
+     tal:define="current_bugtask view/currentBugTask">
+
+  Also affects:
+  <span style="white-space: nowrap">
+      <img src="/@@/add" alt="+" />
+      <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
+         title="Mark this bug as occurring upstream">
+        Upstream&hellip;
+      </a>
+  </span>
+
+  <span style="white-space: nowrap">
+      <img src="/@@/add" alt="+" />
+      <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
+         title="Mark this bug as occurring in a distro package">
+        Distribution&hellip;
+      </a>
+  </span>
+
+</div>

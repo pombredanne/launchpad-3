@@ -10,8 +10,8 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-bugcontacts" />
+    <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-latestbugs" />
     <div tal:replace="structure context/@@+portlet-latesttickets" />
   </metal:leftportlets>

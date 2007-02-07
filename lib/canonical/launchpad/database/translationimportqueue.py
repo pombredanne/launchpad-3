@@ -10,6 +10,7 @@ import tarfile
 import os.path
 import datetime
 import re
+import pytz
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
@@ -237,6 +238,14 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
+        if self.is_published and pofile.path != self.path:
+            # This entry comes from upstream, which means that the path we got
+            # is exactly the right one. If it's different from what pofile
+            # has, that would mean that either the entry changed its path
+            # since previous upload or that we had to guess it and now that we
+            # got the right path, we should fix it.
+            pofile.path = self.path
+
         if (sourcepackagename is None and
             potemplate.sourcepackagename is not None):
             # We didn't know the sourcepackagename when we called this method,
@@ -459,6 +468,31 @@ class TranslationImportQueueEntry(SQLBase):
                 self.productseries)
 
         return TranslationImportQueueEntry.select(query)
+
+    def getElapsedTimeText(self):
+        """See ITranslationImportQueue."""
+        UTC = pytz.timezone('UTC')
+        # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
+        # solution defined by PresentingLengthsOfTime spec when it's
+        # implemented.
+        elapsedtime = (
+            datetime.datetime.now(UTC) - self.dateimported)
+        elapsedtime_text = ''
+        hours = elapsedtime.seconds / 3600
+        minutes = (elapsedtime.seconds % 3600) / 60
+        if elapsedtime.days > 0:
+            elapsedtime_text += '%d days ' % elapsedtime.days
+        if hours > 0:
+            elapsedtime_text += '%d hours ' % hours
+        if minutes > 0:
+            elapsedtime_text += '%d minutes ' % minutes
+
+        if len(elapsedtime_text) > 0:
+            elapsedtime_text += 'ago'
+        else:
+            elapsedtime_text = 'just requested'
+
+        return elapsedtime_text
 
 
 class TranslationImportQueue:

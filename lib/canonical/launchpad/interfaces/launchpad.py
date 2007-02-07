@@ -69,7 +69,9 @@ class ILaunchpadCelebrities(Interface):
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
+    launchpad = Attribute("The Launchpad product.")
     support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    team_membership_janitor = Attribute("The Team Membership Janitor.")
 
 
 class ICrowd(Interface):
@@ -320,10 +322,12 @@ class IAging(Interface):
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
 
+
 class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
+
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')

@@ -5,16 +5,16 @@ Carlos is a translator who translates things into Spanish with Rosetta.
 He is on Rosetta About page and wants to change his preferred languages.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/rosetta/+about')
+  >>> browser.open('http://launchpad.dev/translations/+about')
   >>> browser.url
-  'http://launchpad.dev/rosetta/+about'
+  'http://launchpad.dev/translations/+about'
 
 So, he looks for the 'Select Languages...' link, and clicks on that which 
 should take him to his +editlanguages page.
 
   >>> browser.getLink('Select Languages...').click()
   >>> browser.url
-  'http://launchpad.dev/people/carlos/+editlanguages'
+  'http://launchpad.dev/~carlos/+editlanguages'
 
 So far, he has Spanish selected as one of his preferred languages, but not 
 Welsh. 
@@ -35,8 +35,11 @@ Spanish will no longer be selected, and Welsh will.
 After he submits the form, he should again be redirected back to Rosetta's
 About page, and it should contain notices about the changes he made.
 
-  >>> browser.url
-  'http://launchpad.dev/rosetta/+about'
+  # XXX: salgado 2006-11-21: This test is commented out because of
+  # http://www.zope.org/Collectors/Zope3-dev/710
+  >> browser.url
+  'http://launchpad.dev/translations/+about'
+
   >>> print browser.contents
   <!DOCTYPE...
   ...Added Welsh to your preferred languages...
@@ -45,9 +48,9 @@ About page, and it should contain notices about the changes he made.
 And finally, lets revisit the +editlanguages page to check if the languages
 have been properly selected.
 
-  >>> browser.open('http://launchpad.dev/people/carlos/+editlanguages')
+  >>> browser.open('http://launchpad.dev/~carlos/+editlanguages')
   >>> browser.url
-  'http://launchpad.dev/people/carlos/+editlanguages'
+  'http://launchpad.dev/~carlos/+editlanguages'
   >>> browser.getControl('Spanish').selected
   False
   >>> browser.getControl('Welsh').selected
@@ -58,11 +61,16 @@ When a user doesn't have a preferred language set, we determine it from the
 user's browser headers. If his browser send us any non-utf8 encoded string in 
 the Accept-Language header, we won't consider that as a valid language code.
 
+We are also pretending that this request is coming from someone in
+Serbia (194.247.192.33), to test country detection.  Proxies add
+'X-Forwarded-For' header, which is what the code is handling.
+
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
+  >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
-  >>> browser.open('http://launchpad.dev/people/name12/+editlanguages')
+  >>> browser.open('http://launchpad.dev/~name12/+editlanguages')
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> def print_languages(rosetta_pref_page, portlet='preferred'):
@@ -79,3 +87,48 @@ the Accept-Language header, we won't consider that as a valid language code.
 
   >>> print_languages(browser.contents, portlet='browser')
   Portuguese (Brazil)
+
+Now we are checking that the country is properly detected.  Since we
+don't have data for languages spoken in Serbia, we get information
+about how to contact Rosetta Admins to update it.
+
+  >>> country_portlet = find_portlet(browser.contents,
+  ...     'Languages in Serbia and Montenegro')
+  >>> print country_portlet.find('li', 'languages')
+  None
+  >>> print country_portlet.first('a')['href']
+  mailto:rosetta@launchpad.net
+
+We also have a page under the launchpad root, called +editmylanguages, with
+launchpad.AnyPerson as permission. This is the page to which we direct
+non-logged in users to edit their preferred languages.
+
+  >>> anon_browser.handleErrors = True
+  >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
+  >>> anon_browser.url
+  'http://launchpad.dev/+editmylanguages/+login'
+
+  >>> anon_browser.open('http://launchpad.dev/+editmylanguages/+login')
+  >>> anon_browser.getControl('E-mail address:', index=0).value = (
+  ...     'no-priv@canonical.com')
+  >>> anon_browser.getControl('Password:').value = 'test'
+  >>> anon_browser.getControl(name='loginpage_submit_login').click()
+  >>> anon_browser.url
+  'http://launchpad.dev/~no-priv/+editlanguages'
+
+
+For backwards compatibility we keep do a redirect from the old /rosetta/prefs
+page to the new one. Note that this is a permanent redirect, since the old
+page has been deprecated.
+
+  # XXX: Should use an absolute URL on the Location header here, once
+  # https://launchpad.net/bugs/72849 is fixed.
+  # -- Guilherme Salgado, 2006-11-22
+  >>> print http(r"""
+  ... GET /translations/prefs HTTP/1.1
+  ... Host: launchpad.dev
+  ... """)
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: /+editmylanguages
+

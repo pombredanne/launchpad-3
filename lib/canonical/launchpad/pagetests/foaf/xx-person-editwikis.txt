@@ -3,7 +3,7 @@
   First we check existing wikinames.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost/people/name16/+editwikinames')
+  >>> browser.open('http://localhost/~name16/+editwikinames')
   >>> print browser.contents
   <...
   ...Ubuntu Wiki name...
@@ -19,7 +19,7 @@
   >>> browser.getControl(name='newwikiname').value = 'FooBar2'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
   >>> print browser.contents
   <...
   ...You cannot have two Ubuntu WikiNames...
@@ -32,7 +32,7 @@
   >>> browser.getControl(name='newwikiname').value = 'GuilhermeSalgado'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
   >>> print browser.contents
   <...
   ...The WikiName https://wiki.ubuntu.com/GuilhermeSalgado is already
@@ -46,7 +46,7 @@
   >>> browser.getControl(name='newwikiname').value = 'FooBar'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
   >>> print browser.contents
   <...
   ...Neither Wiki nor WikiName can be empty....
@@ -59,7 +59,7 @@
   >>> browser.getControl(name='newwikiname').value = 'FooBar'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
 
   This new wiki is added in 'Other wiki names' section.
 
@@ -88,7 +88,7 @@
   >>> browser.getControl(name='newwikiname').value = 'FooBar'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
   >>> for message in find_tags_by_class(browser.contents, 'message'):
   ...     print message.renderContents()
   The WikiName http://foo.bar/wiki/FooBar already belongs to you.
@@ -100,7 +100,7 @@
   >>> browser.getControl(name=wikiname_input_id).value = 'FooBar2'
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
 
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('input', attrs=dict(name=wiki_input_id))['value']
@@ -113,7 +113,7 @@
   >>> browser.getControl('Remove').selected = True
   >>> browser.getControl('Save Changes').click()
   >>> browser.url
-  'http://localhost/people/name16/+editwikinames'
+  'http://localhost/~name16/+editwikinames'
 
   And make sure it's not in the database anymore.
 

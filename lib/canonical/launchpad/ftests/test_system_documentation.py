@@ -130,6 +130,17 @@ def bugNotificationSendingTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
+def statisticianSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.statistician.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def statisticianTearDown(test):
+    logout()
+    LaunchpadZopelessTestSetup().tearDown()
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     layer = kw.pop('layer')
@@ -168,8 +179,8 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
             ),
-    'po_export_queue.txt': FunctionalDocFileSuite(
-            '../doc/po_export_queue.txt',
+    'poexport-queue.txt': FunctionalDocFileSuite(
+            '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'librarian.txt': FunctionalDocFileSuite(
@@ -257,6 +268,16 @@ special = {
             '../doc/bug-export.txt',
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'uri.txt': FunctionalDocFileSuite(
+            '../doc/uri.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=FunctionalLayer
+            ),
+    'package-cache.txt': LayeredDocFileSuite(
+            '../doc/package-cache.txt',
+            setUp=statisticianSetUp, tearDown=statisticianTearDown,
+            optionflags=default_optionflags, layer=ZopelessLayer
             ),
     }
 

@@ -11,16 +11,9 @@
     <br />
     Your preferred languages list reflects the languages we think you are
     most interested in.
-    <tal:logged-in condition="request/lp:person">
-      Choose "<a tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
-      >Select languages...</a>"
-    </tal:logged-in>
-    <tal:not-logged-in condition="not: request/lp:person">
-      <a tal:attributes="href string:${request/URL}/+login">Login</a>
-      and select your preferred languages
-    </tal:not-logged-in>
-    to ensure that the languages you speak are included in
-    all translation pages.
+    Choose "<a href="/+editmylanguages">Select languages...
+    </a>" to ensure that the languages you speak are included in all
+    translation pages.
   </div>
 </div>
 

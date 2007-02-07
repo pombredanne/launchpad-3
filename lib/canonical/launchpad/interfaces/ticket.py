@@ -13,15 +13,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-
 from zope.schema import (
-    Datetime, Bool, Int, Choice, Text, TextLine, List, Object)
-
-from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
-from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
-from canonical.lp.dbschema import TicketStatus, TicketPriority
+     Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
+from canonical.launchpad.interfaces.tickettarget import (
+        TICKET_STATUS_DEFAULT_SEARCH)
+from canonical.lp.dbschema import TicketStatus, TicketPriority
+
+
 
 class InvalidTicketStateError(Exception):
     """Error raised when the ticket is in an invalid state.
@@ -29,6 +31,7 @@ class InvalidTicketStateError(Exception):
     Error raised when a workflow action cannot be executed because the
     ticket is in an invalid state.
     """
+
 
 class ITicket(IHasOwner):
     """A single support request, or trouble ticket."""
@@ -50,6 +53,11 @@ class ITicket(IHasOwner):
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
+    # XXX flacoste 2006/10/28 It should be more precise to define a new
+    # vocabulary that excludes the English variants.
+    language = Choice(
+        title=_('Language'), vocabulary='LanguageVocabulary',
+        description=_('The language in which this request is written.'))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,
@@ -95,8 +103,7 @@ class ITicket(IHasOwner):
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the request.'))
     # other attributes
-    target = Attribute('The product or distribution to which this ticket '
-        'belongs.')
+    target = Attribute('The ITicketTarget that is associated to this ticket.')
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
@@ -363,18 +370,15 @@ class ITicket(IHasOwner):
 
     def getIndirectSubscribers():
         """Return the set of persons who are implicitely subscribed to this
-        ticket. That will be the ticket's target support contact list.
+        ticket. That will be include the support contacts for the ticket's
+        target as well as the ticket's assignee.
         """
 
 
-# Interfaces for containers
 class ITicketSet(Interface):
     """A container for tickets."""
 
     title = Attribute('Title')
-
-    latest_tickets = Attribute("The 10 most recently created support "
-        "requests in Launchpad.")
 
     def get(ticket_id, default=None):
         """Return the ticket with the given id.
@@ -386,9 +390,33 @@ class ITicketSet(Interface):
         """Return the tickets that are expired.
 
         This should return all the tickets in the Open or Needs information
-        state that didn't receive any new comments in the last
-        <days_before_expiration> days.
+        state, without an assignee, that didn't receive any new comments in
+        the last <days_before_expiration> days.
         """
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      language=None, sort=None):
+        """Search tickets in any context.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+        """
+
+    def getTicketLanguages():
+        """Return the set of ILanguage used by all launchpad tickets."""
+
 
 # These schemas are only used by browser/ticket.py and should really live
 # there. See Bug #66950.
@@ -400,6 +428,10 @@ class ITicketAddMessageForm(Interface):
     """
 
     message = Text(title=_('Message'), required=False)
+
+    subscribe_me = Bool(
+        title=_('E-mail me future discussion about this request'),
+        required=False, default=False)
 
 
 class ITicketChangeStatusForm(Interface):

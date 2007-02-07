@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
-    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
+    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
+    IBugBranch)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -49,6 +50,14 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditBugNominationStatus(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = IBugNomination
+
+    def checkAuthenticated(self, user):
+        return check_permission("launchpad.Driver", self.obj.target)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -485,6 +494,11 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
+        if self.obj.conjoined_master is not None:
+            # It's never allowed to edit this bugtask directly, it
+            # should be edited through conjoined_master.
+            return False
+
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -589,6 +603,16 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.private
+
+
+class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    permission = 'launchpad.Edit'
+    usedfor = IBugBranch
+
+    def __init__(self, bug_branch):
+        # The same permissions as for the BugBranch's bug should apply
+        # to the BugBranch itself.
+        self.obj = bug_branch.bug
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
@@ -835,9 +859,10 @@ class AdminTicket(AdminByAdminsTeam):
     usedfor = ITicket
 
     def checkAuthenticated(self, user):
-        """Allow only admins and ticket target owners"""
+        """Allow only admins and owners of the ticket pillar target."""
+        context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(self.obj.target.owner))
+                user.inTeam(context.owner))
 
 
 class ModerateTicket(AdminTicket):

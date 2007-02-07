@@ -121,7 +121,9 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    if scheme == "sftp":
+    # urlparse in the stdlib does not correctly parse the netloc from
+    # sftp and bzr+ssh schemes, so we have to manually check those
+    if scheme in ("sftp", "bzr+ssh"):
         return 1
     if not (scheme and netloc):
         return 0
@@ -285,10 +287,11 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, product)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+        INSERT INTO PillarName (name, product, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name OR NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE product=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -302,10 +305,11 @@ CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, project)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+        INSERT INTO PillarName (name, project, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name or NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE project=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;

@@ -6,6 +6,7 @@ __all__ = [
     'SourcePackageTicketTargetMixin',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 from zope.interface import implements
@@ -20,14 +21,14 @@ from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
     PackagePublishingStatus)
 
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -35,7 +36,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket, TicketSet
+from canonical.launchpad.database.ticket import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -46,11 +48,12 @@ from canonical.launchpad.database.build import Build
 class SourcePackageTicketTargetMixin:
     """Implementation of ITicketTarget for SourcePackage."""
 
-    def newTicket(self, owner, title, description, datecreated=None):
+    def newTicket(self, owner, title, description, language=None,
+                  datecreated=None):
         """See ITicketTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self.distribution,
+            language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
     def getTicket(self, ticket_id):
@@ -67,19 +70,18 @@ class SourcePackageTicketTargetMixin:
             return None
         return ticket
 
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, owner=None,
-                      sort=None):
+    def searchTickets(self, **search_criteria):
         """See ITicketTarget."""
-        return TicketSet.search(
+        return TicketTargetSearch(
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, search_text=search_text,
-            status=status, owner=owner, sort=sort)
+            sourcepackagename=self.sourcepackagename,
+            **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
+        return SimilarTicketsSearch(
+            title, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename).getResults()
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -111,13 +113,33 @@ class SourcePackageTicketTargetMixin:
     @property
     def support_contacts(self):
         """See ITicketTarget."""
+        support_contacts = set()
+        support_contacts.update(self.direct_support_contacts)
+        support_contacts.update(self.distribution.support_contacts)
+        return sorted(support_contacts, key=attrgetter('displayname'))
+
+    @property
+    def direct_support_contacts(self):
+        """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
+        return sorted(
+            [contact.person for contact in support_contacts],
+            key=attrgetter('displayname'))
 
-        return shortlist(
-            [support_contact.person for support_contact in support_contacts],
-            longest_expected=100)
+    def getSupportedLanguages(self):
+        """See ITicketTarget."""
+        return get_supported_languages(self)
+
+    def getTicketLanguages(self):
+        """See ITicketTarget."""
+        return set(Language.select(
+            'Language.id = language AND distribution = %s AND '
+            'sourcepackagename = %s'
+                % sqlvalues(self.distribution, self.sourcepackagename),
+            clauseTables=['Ticket'], distinct=True))
+
 
 
 class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):

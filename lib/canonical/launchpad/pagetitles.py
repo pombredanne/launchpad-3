@@ -4,39 +4,42 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
-webapp, because webapp is not domain-specific, and should not be put in browser,
-because this would make webapp depend on browser. SteveA has a plan to fix this
-overall soon.
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
+put in webapp, because webapp is not domain-specific, and should not be
+put in browser, because this would make webapp depend on browser. SteveA
+has a plan to fix this overall soon.
 
-This module contains string or unicode literals assigned to names, or functions
-such as this one:
+This module contains string or unicode literals assigned to names, or
+functions such as this one:
 
   def bug_index(context, view):
       return 'Bug %s: %s' % (context.id, context.title)
 
 The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the function
-bug_index given about is for the page template bug-index.pt.
+the page templates, but with hyphens changed to underscores.  So, the
+function bug_index given about is for the page template bug-index.pt.
 
-If the function needs to include details from the request, this is available
-from view.request.  However, these functions should not access view.request.
-Instead, the view class should make a function or attribute available that
-provides the required information.
+If the function needs to include details from the request, this is
+available from view.request.  However, these functions should not access
+view.request.  Instead, the view class should make a function or
+attribute available that provides the required information.
 
-If the function returns None, it means that the default page title for the
-whole of Launchpad should be used.  This is defined in the variable
+If the function returns None, it means that the default page title for
+the whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-There are shortcuts for some common substitutions at the top of this module.
+There are shortcuts for some common substitutions at the top of this
+module.
 
-The strings and functions for page titles are arranged in alphabetical order
-after the helpers.
+The strings and functions for page titles are arranged in alphabetical
+order after the helpers.
 
 """
 __metaclass__ = type
 
 from zope.component import getUtility
+
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
 
@@ -48,12 +51,6 @@ class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
             context.bug.id, context.targetname, context.bug.title)
-
-
-class BugTaskBackportingTitle:
-    def __call__(self, context, view):
-        return "Bug #%d in %s - Backport fix to releases" % (
-            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -148,6 +145,9 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
+def bug_nominate_for_release(context, view):
+    return view.label
+
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
@@ -169,6 +169,10 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+def bugnomination_edit(context, view):
+    return 'Manage nomination for bug #%d in %s' % (
+        context.bug.id, context.target.bugtargetname)
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
@@ -187,15 +191,30 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_backport_fixing = BugTaskBackportingTitle()
+bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
 
-bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+bugtarget_filebug_search = ContextTitle('Report a bug about %s')
+
+def bugtarget_filebug_simple(context, view):
+    if hasattr(context, "title"):
+        # We're generating a title for a contextual bug filing page.
+        ContextTitle('Report a bug about %s')
+    else:
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+
+bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = bugtask_confirm_unlinked
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -283,6 +302,8 @@ distributionmirror_index = ContextTitle('Mirror %s')
 distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -377,15 +398,17 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-foaf_adminrequestmerge = 'Merge Launchpad accounts'
+people_adminrequestmerge = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge request sent'
+people_mergerequest_sent = 'Merge request sent'
 
-foaf_newteam = 'Register a new team in Launchpad'
+people_newperson = 'Create a new Launchpad profile'
 
-foaf_requestmerge_multiple = 'Merge Launchpad accounts'
+people_newteam = 'Register a new team in Launchpad'
 
-foaf_requestmerge = 'Merge Launchpad accounts'
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -401,7 +424,7 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
-launchpad_feedback = 'Help us improve Launchpad'
+launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -429,6 +452,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_search = 'Search Launchpad Projects'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -849,7 +874,11 @@ specification_subscription = 'Subscribe to specification'
 
 specification_queue = 'Queue specification for review'
 
+specification_linkbranch = 'Link branch to specification'
+
 specifications_index = ContextTitle('%s')
+
+specificationbranch_status = 'Edit specification branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -893,11 +922,12 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad tech support system'
+tickets_index = 'Launchpad support tracker'
 
-ticket_add = ContextDisplayName('Request support with %s')
+def ticket_add(context, view):
+    return view.pagetitle
 
-ticket_add_search = ContextDisplayName('Request support with %s')
+ticket_add_search = ticket_add
 
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
@@ -964,6 +994,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 def ticket_listing(context, view):
     return view.pagetitle

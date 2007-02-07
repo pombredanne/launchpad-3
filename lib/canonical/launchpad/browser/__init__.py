@@ -21,6 +21,7 @@ from canonical.launchpad.browser.bugcomment import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
+from canonical.launchpad.browser.bugnomination import *
 from canonical.launchpad.browser.bugpackageinfestation import *
 from canonical.launchpad.browser.bugsubscription import *
 from canonical.launchpad.browser.bugtarget import *
@@ -65,6 +66,7 @@ from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.specification import *
+from canonical.launchpad.browser.specificationbranch import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
 from canonical.launchpad.browser.specificationgoal import *
@@ -73,10 +75,11 @@ from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.sprint import *
 from canonical.launchpad.browser.sprintattendance import *
 from canonical.launchpad.browser.sprintspecification import *
-from canonical.launchpad.browser.ticket import *
-from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
+from canonical.launchpad.browser.temporaryblobstorage import *
+from canonical.launchpad.browser.ticket import *
+from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *

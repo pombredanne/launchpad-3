@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -51,7 +52,7 @@ from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad import _
 
 
-class ProductSeriesNavigation(Navigation):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
 
@@ -77,7 +78,7 @@ class ProductSeriesNavigation(Navigation):
 class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    enable_only = ['overview', 'specifications', 'translations']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):

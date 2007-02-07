@@ -53,9 +53,9 @@ class BugLinkView(LaunchpadFormView):
             return
         bug_props = {'bugid': bug.id, 'title': bug.title}
         response.addNotification(
-            _('Added link to bug #$bugid: '
-              '\N{left double quotation mark}$title'
-              '\N{right double quotation mark}.', mapping=bug_props))
+            _(u'Added link to bug #$bugid: '
+              u'\N{left double quotation mark}$title'
+              u'\N{right double quotation mark}.', mapping=bug_props))
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         self.next_url = canonical_url(self.context)

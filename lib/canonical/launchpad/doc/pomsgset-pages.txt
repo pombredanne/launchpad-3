@@ -59,6 +59,14 @@ information.
     >>> pomsgset_page_view.has_plural_form_information
     True
 
+Also, we should get the timestamp when we started so we can detect changes
+done when we started this request. We cannot check for its concrete value
+or we could introduce a time bomb in the system so we check that it's not
+None.
+
+    >>> pomsgset_page_view.lock_timestamp is None
+    False
+
 
 The subview: POMsgSetView
 -------------------------
@@ -81,16 +89,6 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-How many lines does the message have.
-
-    >>> subview.max_lines_count
-    1
-
-And as it has only one line, it's not a multi line message set.
-
-    >>> subview.is_multi_line
-    False
-
 It does not have a plural msgid.
 
     >>> subview.msgid_plural is None
@@ -103,8 +101,25 @@ And thus, it only has one translation.
 
 Which is the one we wanted.
 
-    >>> subview.getTranslation(0)
+    >>> subview.getActiveTranslation(0)
     u'libreta de direcciones de Evolution'
+
+As we didn't submit the form, the getTranslation method will return None.
+
+    >>> subview.getTranslation(0) is None
+    True
+
+If we request a plural form that is not valid, we get an AssertionError.
+
+    >>> subview.getActiveTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
+
+    >>> subview.getTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 
 Web presentation
@@ -168,7 +183,8 @@ And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-The test system should reset this msgid to its original value for other tests.
+    >>> import transaction
+    >>> transaction.commit()
 
 
 Submitting translations
@@ -179,14 +195,15 @@ update.
 
 But first, let's see current values.
 
-    >>> subview.context.pofile.updateStatistics()
-    (7, 0, 0)
-    >>> subview.context.pofile.currentCount()
+    >>> pomsgset = POMsgSet.get(1)
+    >>> pomsgset.pofile.updateStatistics()
+    (7, 0, 1)
+    >>> pomsgset.pofile.currentCount()
     7
-    >>> subview.context.pofile.updatesCount()
+    >>> pomsgset.pofile.updatesCount()
     0
-    >>> subview.context.pofile.rosettaCount()
-    0
+    >>> pomsgset.pofile.rosettaCount()
+    1
 
 Now we do the submit.
 
@@ -196,22 +213,102 @@ Now we do the submit.
     ...     form={
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0': 'Foo',
+    ...         'msgset_1_es_translation_0_new_checkbox': True,
+    ...         'msgset_1_es_translation_0_new': 'Foo',
+    ...         'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+
+And when we initialise the view class, we detect that we missed the timestamp
+that allow us to know whether we are working with latest submitted value or
+someone updated the database while we were working on those translations.
+
+    >>> pomsgset_page_view.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: We didn't find the timestamp...
+
+We do a new submit, but this time including a lock_timestamp field.
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=SERVER_URL,
+    ...     form={
+    ...         'lock_timestamp': '2006-11-28T13:00:00+00:00',
+    ...         'alt': None,
+    ...         'msgset_1': None,
+    ...         'msgset_1_es_translation_0_radiobutton':
+    ...             'msgset_1_es_translation_0_new',
+    ...         'msgset_1_es_translation_0_new': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_page_view.initialize()
-    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> transaction.commit()
+    >>> flush_database_updates()
+
+This time we didn't get any problem with the submission, and we can see that
+statistics were updated accordly.
+
+    >>> pomsgset = POMsgSet.get(1)
+    >>> pomsgset.pofile.currentCount()
+    7
+    >>> pomsgset.pofile.updatesCount()
+    1
+    >>> pomsgset.pofile.rosettaCount()
+    1
+
+Now, let's see how the system prevents a submission that has a timestamp older
+than when last active translation was submitted.
+
+    >>> from zope.app import datetimeutils
+    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> old_timestamp_text = '2006-11-28T12:30:00+00:00'
+    >>> old_timestamp = datetimeutils.parseDatetimetz(old_timestamp_text)
+    >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
+
+We can see here that translation in pomsgset is newer than old_timestamp.
+
+    >>> pomsgset.isNewerThan(old_timestamp)
+    True
+
+And current value
+
+    >>> pomsgset.active_texts
+    [u'Foo']
+
+We do the submission with that lock_timestamp.
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=SERVER_URL,
+    ...     form={
+    ...         'lock_timestamp': old_timestamp_text,
+    ...         'alt': None,
+    ...         'msgset_1': None,
+    ...         'msgset_1_es_translation_0_radiobutton':
+    ...             'msgset_1_es_translation_0_new',
+    ...         'msgset_1_es_translation_0_new': 'Foos',
+    ...         'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> pomsgset_page_view.initialize()
+    >>> for notification in pomsgset_page_view.request.notifications:
+    ...     notification.message
+    'There is an error in the translation you provided. Please correct it before continuing.'
+    >>> pomsgset_page_view.error
+    u'Somebody else changed this translation since you started. To avoid accidentally reverting work done by others, we added your translations as suggestions, so please review current values.'
     >>> transaction.commit()
 
-And check again.
+This submission is not saved because there is another modification, this
+means that timestamps remain unchanged.
 
-    >>> pomsgset_page_view.context.pofile.currentCount()
-    7
-    >>> pomsgset_page_view.context.pofile.updatesCount()
-    1
-    >>> pomsgset_page_view.context.pofile.rosettaCount()
-    0
+    >>> pomsgset.isNewerThan(old_timestamp)
+    True
+
+And active text too
+
+    >>> pomsgset.active_texts
+    [u'Foo']
 
 
 Bogus translation submission
@@ -223,9 +320,11 @@ considered?
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL=SERVER_URL,
     ...     form={
+    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...         'alt': None,
     ...         'msgset_2': None,
-    ...         'msgset_2_es_translation_0': 'Foo',
+    ...         'msgset_2_es_translation_0_new': 'Foo',
+    ...         'msgset_2_es_translation_0_new_checkbox': True,
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)

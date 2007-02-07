@@ -365,7 +365,7 @@ there were no recent uploads there.
 
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('UP', u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+    [('UP', u'http://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
 
 If the mirror has no HTTP base url, we'll use the FTP one.
 
@@ -375,7 +375,7 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('UP', u'ftp://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
     >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 The same goes for the warty i386 mirror, in which we had one upload on
@@ -425,7 +425,7 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness()
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('UP', u'ftp://foo.bar.com/pub/pool/main/l/linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb')]
+    [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar_1.0_all.deb')]
     >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 
@@ -452,6 +452,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Archive Mirrors
     INFO    Probed 3 mirrors.
     INFO    Disabled 1 mirror(s) that were previously enabled.
@@ -466,6 +467,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
     INFO    Disabled 1 mirror(s) that were previously enabled.
@@ -483,6 +485,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
@@ -499,6 +502,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
     INFO    Done.
@@ -521,6 +525,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     ...     stderr=subprocess.PIPE)
     >>> stdout, stderr = prober.communicate()
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
     INFO    Enabled 1 mirror(s) that were previously disabled.

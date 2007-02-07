@@ -8,7 +8,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        path_expression="string:malone"
+        path_expression="string:bugs"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
@@ -45,17 +45,18 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"
-        lp:url="malone/+index" />
+        lp:url="bugs/+index" />
 
     <!-- pages for the malone application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.MaloneView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
             name="+about"
             template="../templates/malone-about.pt"
-            lp:url="malone/+about" />
+            lp:url="bugs/+about" />
         <browser:page
             name="+portlet-about"
             template="../templates/malone-portlet-about.pt" />
@@ -81,7 +82,7 @@
        template="../templates/malone-portlet-bugmail-filtering-faq.pt"
        permission="zope.Public" />
 
-    <!-- Preserve the /malone/assigned link to prevent linkrot. This will now
+    <!-- Preserve the /bugs/assigned link to prevent linkrot. This will now
          redirect into the FOAF +assignedbugs. -->
     <browser:page
         for="canonical.launchpad.interfaces.IMaloneApplication"
@@ -89,5 +90,5 @@
         class="canonical.launchpad.browser.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
-        lp:url="malone/assigned" />
+        lp:url="bugs/assigned" />
 </configure>

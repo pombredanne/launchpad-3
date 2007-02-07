@@ -27,5 +27,10 @@
     </p>
   </div>
 </div>
+
+<p metal:fill-slot="help">Rejecting a support request will change its status
+  to <emph>Invalid</emph>. By default, it won't appear in listings anymore.
+  Give an appropriate reason why you are rejecting the request.
+</p>
 </body>
 </html>

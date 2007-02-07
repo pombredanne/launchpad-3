@@ -1,0 +1,58 @@
+= Things a person is working on =
+
+The +portlet-working-on portlet shows up to 5 bugtaks with an InProgress
+status that are assigned to a given person.
+
+Since there are no InProgress bugtaks assigned to Sample Person, the portlet
+will be empty.
+
+    >>> browser.open('http://launchpad.dev/~name12/+portlet-working-on')  
+    >>> browser.contents
+    '\n'
+
+We'll then change the statuses of some bugs that are already assigned to
+Sample Person.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet, IPersonSet)
+    >>> login('test@canonical.com')
+    >>> params = BugTaskSearchParams(
+    ...     user=None, assignee=getUtility(IPersonSet).getByName('name12'))
+    >>> for task in getUtility(IBugTaskSet).search(params):
+    ...     task.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> logout()
+    >>> flush_database_updates()
+
+Let's see what we got on the portlet now.
+
+    >>> browser.open('http://launchpad.dev/~name12/+portlet-working-on')  
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for tag in soup.findAll('li'):
+    ...     print tag.find('a').renderContents()
+    <BLANKLINE>
+    5. Firefox install instructions should be complete
+    <BLANKLINE>
+    <BLANKLINE>
+    2. Blackhole Trash folder
+    <BLANKLINE>
+
+The portlet even has a link for us to see all bugs that Sample Person is
+working on.
+
+    >>> browser.getLink('Show the complete list').click()
+    >>> browser.url
+    'http://launchpad.dev/...In+Progress'
+
+Which obviously contains only the above two bugs we changed statuses.
+
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> for link in table.findAll('a'):
+    ...     print link.renderContents()
+    Firefox install instructions should be complete
+    Blackhole Trash folder
+

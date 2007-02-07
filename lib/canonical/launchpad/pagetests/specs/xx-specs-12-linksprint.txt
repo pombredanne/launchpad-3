@@ -10,7 +10,7 @@ First we open the page for the spec on Support <canvas> objects from the
 sample data. We will use Sample Person, who has no special privileges.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/products/firefox/+spec/canvas')
+  >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
   >>> browser.isHtml
   True
   >>> 'Accepted' in browser.contents # make sure the page is not polluted
@@ -30,7 +30,7 @@ Now  with a POST, we try to Add the spec to the Guacamole sprint.
   >>> sprint_field.value = ['uds-guacamole']
   >>> browser.getControl('Add').click()
   >>> browser.url # we should have been redirected to the spec page
-  'http://.../products/firefox/+spec/canvas'
+  'http://.../firefox/+spec/canvas'
 
 Now we test to see if the sprint was added correctly to the
 specification page.
@@ -59,7 +59,7 @@ It's VERY IMPORTANT that this test pass because we cannot test this in
 doctests, since it depends on Browser View code to work (the database
 classes don't know about their own permissions and security).
 
-  >>> browser.open('http://blueprints.launchpad.dev/distros/kubuntu/+spec/kde-desktopfile-langpacks')
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks')
   >>> 'Accepted' in browser.contents
   False
   >>> browser.getLink('Propose for meeting agenda').click()
@@ -82,7 +82,7 @@ Now go and change that and verify.
 
   >>> browser.getLink('Accepted').click()
   >>> browser.url
-  'http://.../distros/kubuntu/+spec/kde-desktopfile-langpacks/paris'
+  'http://.../kubuntu/+spec/kde-desktopfile-langpacks/paris'
   >>> browser.getControl('Decline').click()
   >>> 'Declined' not in browser.contents
   False

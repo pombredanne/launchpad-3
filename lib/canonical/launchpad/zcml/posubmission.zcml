@@ -9,4 +9,11 @@
       <allow interface="canonical.launchpad.interfaces.IPOSubmission"/>
     </content>
 
+    <!-- POSubmissionSet -->
+    <securedutility
+        class="canonical.launchpad.database.POSubmissionSet"
+        provides="canonical.launchpad.interfaces.IPOSubmissionSet">
+        <allow interface="canonical.launchpad.interfaces.IPOSubmissionSet" />
+    </securedutility>
+
 </configure>

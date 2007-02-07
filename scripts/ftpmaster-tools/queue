@@ -68,7 +68,7 @@ def main():
     options, args = parser.parse_args()
 
     if options.queue_name not in name_queue_map:
-        print "Unable to map queue name %s" % options.queue
+        print 'Unable to map queue name "%s"' % options.queue_name
         return 1
 
     distribution_name = options.distribution_name

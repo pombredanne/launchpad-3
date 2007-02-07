@@ -13,9 +13,9 @@ Files:
  47bbc226f689a212554415cb8e247a8d 711 bar_1.0-5.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFETqoh7KBXuXyZSjARAtS8AJ98/NP1mxt5A+bHXc9T+5+tieuS3wCgsviZ
-0TlHmytIsmZxPu5eCwPNXzY=
-=5HyK
+iD8DBQFFt7wtjn63CGxkqMURAigaAKCCKoXJtKqORXD/DyLX8p8+VlQBvQCfQkWB
+xppVMBk+DOO3Ig/Wf3tw/d8=
+=zGM+
 -----END PGP SIGNATURE-----

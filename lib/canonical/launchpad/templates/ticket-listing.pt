@@ -7,7 +7,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-supportcontacts|nothing" />
-  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-details|nothing" />
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-supportcontacts" />
 </metal:leftportlets>
@@ -32,17 +32,26 @@
      tal:define="tickets view/searchResults">
 
   <div id="ticket-search-form">
-    <form method="get" id="ticket-search-form" action="">
+    <form method="get" id="ticket-search-form" action=""
+          tal:attributes="action request/URL">
       <tal:searchbox replace="structure view/widgets/search_text" />
 
       <tal:sort replace="structure view/widgets/sort" />
 
       <input tal:replace="structure view/search_action/render" />
 
+      <label tal:condition="view/show_all_languages_checkbox"
+              style="font-weight: normal">
+        <input name="all_languages" value="1" type="checkbox"
+                tal:attributes="checked python:request.form.get('all_languages') and 'checked' or ''" />
+        <tal:label i18n:translate="">All Languages</tal:label>
+      </label>
+
       <tal:status define="widget nocall:view/widgets/status|nothing"
                   condition="nocall: widget">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:status>
+
     </form>
   </div>
 
@@ -52,6 +61,20 @@
       No support requests.
     </p>
   </tal:no-results>
+
+  <p class="informational message"
+     tal:condition="not: view/all_languages_shown" i18n:translate="">
+    Only support requests in
+      <tal:languages i18n:name="languages">
+        <tal:language_loop repeat="lang view/displayed_languages">
+          <span tal:replace="lang/englishname"
+            /><tal:comma condition="not: repeat/lang/end">,</tal:comma>
+        </tal:language_loop>
+      </tal:languages>
+    are displayed. To see support requests in other languages, either
+    <a href="/+editmylanguages">change your preferred</a> languages
+    or select the &ldquo;All Languages&rdquo; option.
+  </p>
 
   <tal:block condition="tickets/batch">
     <div class="lesser" tal:content="structure tickets/@@+navigation-links-upper" />
@@ -94,8 +117,10 @@
           </td>
           <td class="ticket-target"
               tal:condition="view/displayTargetColumn"
-              tal:content="structure python:view.formatTarget(ticket)"
-              >Firefox</td>
+              ><a href="#"
+                  tal:define="target ticket/target"
+                  tal:attributes="href string:${target/fmt:url}/+tickets"
+                  tal:content="target/displayname">Firefox</a></td>
           <td tal:condition="view/displaySourcePackageColumn"
               tal:content="structure python:view.formatSourcePackageName(ticket)"
               >mozilla-firefox</td>
@@ -109,5 +134,17 @@
     <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
   </tal:block>
 </div>
+
+<metal:help fill-slot="help">
+  <p>This listing displays the support requests matching the selected
+    criteria in this context (distribution, product, person, sourcepackage).
+  </p>
+  <p>The search criteria for the current listing can be modified directly at
+    the top of the page.
+  </p>
+  <p>If you hover the mouse over a support request, the beginning of its
+    description will pop-up after a few seconds.
+  </p>
+</metal:help>
 </body>
 </html>

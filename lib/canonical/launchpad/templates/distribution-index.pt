@@ -19,7 +19,8 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-top-contributors" />
+  <!-- XXX: Removed pending performance refactoring - StuartBishop 20061206 -->
+  <div tal:condition="nothing" tal:replace="structure context/@@+portlet-top-contributors" />
   <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:rightportlets>
 

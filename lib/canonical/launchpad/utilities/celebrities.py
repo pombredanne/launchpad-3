@@ -97,5 +97,8 @@ class LaunchpadCelebrities:
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
-    support_tracker_janitor = CelebrityDescriptor(IPersonSet,
-                                                  'support-tracker-janitor')
+    launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
+    support_tracker_janitor = CelebrityDescriptor(
+        IPersonSet, 'support-tracker-janitor')
+    team_membership_janitor = CelebrityDescriptor(
+        IPersonSet, 'team-membership-janitor')

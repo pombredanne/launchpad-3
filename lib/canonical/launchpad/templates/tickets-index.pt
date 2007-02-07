@@ -5,34 +5,75 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one" />
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two" />
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
+    <h1 i18n:translate="">Support Tracker</h1>
 
-      <h1>Tech support</h1>
-      <p>
-        Launchpad&#8217;s tech support system
-        lets people request help with applications or distributions,
-        and lets anyone help resolve those requests.
-      </p>
-      <h2>Latest support requests</h2>
+    <p i18n:translate="">Launchpad includes a full technical support request
+      tracker. Your users can file support requests and your community can
+      help to resolve those requests.
+    </p>
+
+    <p id="requests-count"
+        i18n:translate="">The support tracker contains
+      <tal:count i18n:name="count" tal:content="view/requests_count">
+        318
+      </tal:count> requests.
+    </p>
+
+    <div id="search-tickets">
+      <h2 i18n:translate="">Search All Tickets</h2>
+
+      <form method="get" action="+tickets">
+        <input class="textType" id="field.search_text"
+               name="field.search_text" size="20" type="text" value=""  />
+
+        <input type="submit" id="field.actions.search"
+                name="field.actions.search" value="Search" class="button" />
+
+        <input type="hidden" name="field.sort" value="by relevancy" />
+        <input type="hidden" name="field.status" value="Open" />
+        <input type="hidden" name="field.status" value="Needs information" />
+        <input type="hidden" name="field.status" value="Answered" />
+        <input type="hidden" name="field.status" value="Solved" />
+      </form>
+    </div>
+
+    <div id="latest-requests-made">
+      <h2 i18n:translate="">Latest requests made</h2>
       <table>
         <tal:ticket
-          repeat="ticket context/latest_tickets"
+          repeat="ticket view/latest_requests_made"
           content="structure ticket/@@+listing-detailed"
         />
       </table>
-      <p>
-        These requests are from across the whole of Launchpad.
-        To see the requests for a <a href="/products">product</a> or
-        <a href="/distros/">distribution</a>,
-        visit the page for that product or distribution.
-      </p>
     </div>
+
+    <div id="latest-requests-resolved">
+      <h2 i18n:translate="">Latest requests resolved</h2>
+      <table>
+        <tal:ticket
+          repeat="ticket view/latest_requests_resolved"
+          content="structure ticket/@@+listing-detailed"
+        />
+      </table>
+    </div>
+  </div>
+
+  <metal:help fill-slot="help">
+    <p>This page gives you a quick overview of the recent
+    activity in the Launchpad support tracker.
+    </p>
+    <p>To post a new support request, navigate to the product or distribution
+      you are having a problem with and use the <emph>Request Support</emph>
+      menu item.
+    </p>
+    <p><a href="https://help.launchpad.net/SupportTrackerDocumentation">Extensive
+        documention</a> for the support tracker application is available in the
+      Help wiki.</p>
+  </metal:help>
   </body>
 </html>

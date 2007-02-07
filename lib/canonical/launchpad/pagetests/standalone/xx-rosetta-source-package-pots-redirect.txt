@@ -1,7 +1,7 @@
 Checks that the '+pots/' page redirects always to the '+translations' one.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/ HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+pots/ HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... """)
   HTTP/1.1 303 See Other
@@ -12,10 +12,10 @@ Checks that the '+pots/' page redirects always to the '+translations' one.
 Checks that the '+pots' page redirects always to the '+translations' one.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots HTTP/1.1
+  ... GET /ubuntu/hoary/+source/evolution/+pots HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: .../distros/ubuntu/hoary/+source/evolution/+pots...
+  Location: .../ubuntu/hoary/+source/evolution/+pots...
 

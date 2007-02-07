@@ -26,6 +26,7 @@ __all__ = [
     'ProductLaunchpadUsageEditView',
     ]
 
+from operator import attrgetter
 from warnings import warn
 
 import zope.security.interfaces
@@ -37,11 +38,13 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError)
+    ICalendarOwner, ITranslationImportQueue, NotFoundError,
+    ILaunchpadRoot)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -56,8 +59,11 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadView,
     LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    RedirectionNavigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough,
+    structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.widgets.image import ImageAddWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -94,12 +100,22 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(GetitemNavigation):
+class ProductSetNavigation(RedirectionNavigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
+
+    @property
+    def redirection_root_url(self):
+        return canonical_url(getUtility(ILaunchpadRoot))
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid product name
+        if self.context.getByName(name) is None:
+            raise NotFoundError(name)
+        return RedirectionNavigation.traverse(self, name)
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -460,6 +476,15 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def sorted_serieslist(self):
+        """Return the series list from the product with the dev focus first."""
+        series_list = list(self.context.serieslist)
+        series_list.remove(self.context.development_focus)
+        # now sort the list by name with newer versions before older
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
 
 class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
@@ -670,14 +695,16 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl',
-                   'sourceforgeproject', 'freshmeatproject', 'wikiurl',
-                   'screenshotsurl', 'downloadurl', 'programminglang',
-                   'reviewed']
+                   'description', 'project', 'homepageurl', 'gotchi',
+                   'emblem', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang', 'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     label = "Register an upstream open source product"
     product = None
@@ -724,7 +751,9 @@ class ProductAddView(LaunchpadFormView):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
-            reviewed=data['reviewed'])
+            reviewed=data['reviewed'],
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.product))
 
     @property

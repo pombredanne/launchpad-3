@@ -29,3 +29,9 @@ class POSelection(SQLBase):
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
 
+    def isNewerThan(self, timestamp):
+        """See IPOSelection."""
+        if (self.activesubmission is not None and
+            self.date_reviewed > timestamp):
+            return True
+        return False

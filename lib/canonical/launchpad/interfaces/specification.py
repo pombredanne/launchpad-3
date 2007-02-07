@@ -204,10 +204,7 @@ class ISpecification(IHasOwner):
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-
-
-    all_deps = Attribute("All dependencies, recursively")
-    all_blocked = Attribute("All specs blocked on this, recursively.")
+    branch_links = Attribute('The entries that link the branches to the spec')
 
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
@@ -316,6 +313,13 @@ class ISpecification(IHasOwner):
 
     def removeDependency(specification):
         """Remove any dependency of this spec on the spec provided."""
+
+    # branches
+    def getBranchLink(branch):
+        """Return the SpecificationBranch link for the branch, or None."""
+    
+    def linkBranch(branch, summary=None):
+        """Link the given branch to this specification."""
 
 
 # Interfaces for containers

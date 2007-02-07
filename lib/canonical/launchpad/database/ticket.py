@@ -1,7 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Ticket', 'TicketSet']
+__all__ = [
+    'SimilarTicketsSearch',
+    'Ticket',
+    'TicketTargetSearch',
+    'TicketPersonSearch',
+    'TicketSet']
 
 import operator
 from email.Utils import make_msgid
@@ -16,8 +21,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidTicketStateError, ILaunchpadCelebrities, IMessage,
-    IPerson, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, InvalidTicketStateError, ILanguage, ILanguageSet,
+    ILaunchpadCelebrities, IMessage, IPerson, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -25,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -83,14 +90,16 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
+    language = ForeignKey(
+        dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
         schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
-    priority = EnumCol(schema=TicketPriority, notNull=True,
-        default=TicketPriority.NORMAL)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
-    answerer = ForeignKey(dbName='answerer', notNull=False,
-        foreignKey='Person', default=None)
+    priority = EnumCol(
+        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+    answerer = ForeignKey(
+        dbName='answerer', notNull=False, foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -98,12 +107,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    product = ForeignKey(dbName='product', foreignKey='Product',
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False,
+        default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=False, default=None)
-    sourcepackagename = ForeignKey(dbName='sourcepackagename',
-        foreignKey='SourcePackageName', notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
@@ -127,7 +138,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         if self.product:
             return self.product
-        return self.distribution
+        elif self.sourcepackagename:
+            return self.distribution.getSourcePackage(
+                self.sourcepackagename.name)
+        else:
+            return self.distribution
 
     @property
     def followup_subject(self):
@@ -142,12 +157,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
-    def _isTargetOwnerOrAdmin(self, user):
-        """Check whether user is a target owner or admin."""
-        admin = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.target.owner) or user.inTeam(admin)
-
     # Workflow methods
+
+    # The lifecycle of a support request is documented in
+    # https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    # to update that document for any pertinent changes.
     @notify_ticket_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
         """See ITicket."""
@@ -290,7 +304,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         for contact in self.target.support_contacts:
             if user.inTeam(contact):
                 return True
-        return self._isTargetOwnerOrAdmin(user)
+        admin = getUtility(ILaunchpadCelebrities).admin
+        # self.target can return a source package, we want the
+        # pillar target.
+        context = self.product or self.distribution
+        return user.inTeam(context.owner) or user.inTeam(admin)
 
     @notify_ticket_modified()
     def reject(self, user, comment, datecreated=None):
@@ -359,21 +377,21 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         direct = set(self.getDirectSubscribers())
         indirect = set(self.getIndirectSubscribers())
-        return sorted(direct.union(indirect), key=operator.attrgetter('name'))
+        return sorted(
+            direct.union(indirect), key=operator.attrgetter('displayname'))
 
     def getDirectSubscribers(self):
         """See ITicket."""
-        return self.subscribers
+        return sorted(self.subscribers, key=operator.attrgetter('displayname'))
 
     def getIndirectSubscribers(self):
         """See ITicket."""
-        support_contacts = set(self.target.support_contacts)
-        if self.sourcepackagename:
-            source_package = self.target.getSourcePackage(
-                self.sourcepackagename.name)
-            support_contacts.update(source_package.support_contacts)
+        subscribers = set(self.target.support_contacts)
 
-        return sorted(support_contacts, key=operator.attrgetter('name'))
+        if self.assignee:
+            subscribers.add(self.assignee)
+
+        return sorted(subscribers, key=operator.attrgetter('displayname'))
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_ticket_dates=True):
@@ -454,11 +472,6 @@ class TicketSet:
         """See ITicketSet."""
         self.title = 'Launchpad'
 
-    @property
-    def latest_tickets(self):
-        """See ITicketSet."""
-        return Ticket.select(orderBy='-datecreated')[:10]
-
     def findExpiredTickets(self, days_before_expiration):
         """See ITicketSet."""
         return Ticket.select(
@@ -468,143 +481,172 @@ class TicketSet:
                             current_timestamp -interval '%s days'))
                     AND
                     datelastquery  < (current_timestamp - interval '%s days')
+                    AND assignee IS NULL
             """ % sqlvalues(
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
+    def searchTickets(self, search_text=None, language=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketSet"""
+        return TicketSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort).getResults()
+
+    def getTicketLanguages(self):
+        """See ITicketSet"""
+        return set(Language.select('Language.id = Ticket.language',
+            clauseTables=['Ticket'], distinct=True))
+
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            datecreated=None):
+            datecreated=None, language=None):
         """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
+        if language is None:
+            language = getUtility(ILanguageSet)['en']
         ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename, datecreated=datecreated)
+            product=product, distribution=distribution, language=language,
+            sourcepackagename=sourcepackagename, datecreated=datecreated,
+            datelastquery=datecreated)
 
         # Subscribe the submitter
         ticket.subscribe(owner)
 
         return ticket
 
-    @staticmethod
-    def _contextConstraints(product=None, distribution=None,
-                            sourcepackagename=None):
-        """Return the list of constraints that should be applied to limit
-        searches to a given context."""
-        assert product is not None or distribution is not None
-        if sourcepackagename:
-            assert distribution is not None
+    def get(self, ticket_id, default=None):
+        """See ITicketSet."""
+        try:
+            return Ticket.get(ticket_id)
+        except SQLObjectNotFound:
+            return default
+
+
+class TicketSearch:
+    """Base object for searching tickets.
+
+    The search parameters are specified at creation time and getResults()
+    is used to retrieve the tickets matching the search criteria.
+    """
+
+    def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                 language=None, needs_attention_from=None, sort=None,
+                 product=None, distribution=None, sourcepackagename=None):
+        self.search_text = search_text
+
+        if zope_isinstance(status, Item):
+            self.status = [status]
+        else:
+            self.status = status
+
+        if ILanguage.providedBy(language):
+            self.language = [language]
+        else:
+            self.language = language
+
+        self.sort = sort
+        if needs_attention_from is not None:
+            assert IPerson.providedBy(needs_attention_from), (
+                "expected IPerson, got %r" % needs_attention_from)
+        self.needs_attention_from = needs_attention_from
+
+        self.product = product
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+
+    def getTargetConstraints(self):
+        """Return the constraints related to the ITicketTarget context."""
+        if self.sourcepackagename:
+            assert self.distribution is not None, (
+                "Distribution must be specified if sourcepackage is not None")
 
         constraints = []
-        if product:
-            constraints.append('Ticket.product = %s' % product.id)
-        elif distribution:
-            constraints.append('Ticket.distribution = %s' % distribution.id)
-            if sourcepackagename:
-                constraints.append('Ticket.sourcepackagename = %s' % sourcepackagename.id)
+
+        if self.product:
+            constraints.append('Ticket.product = %s' % sqlvalues(self.product))
+        elif self.distribution:
+            constraints.append(
+                'Ticket.distribution = %s' % sqlvalues(self.distribution))
+            if self.sourcepackagename:
+                constraints.append(
+                    'Ticket.sourcepackagename = %s' % sqlvalues(
+                        self.sourcepackagename))
 
         return constraints
 
-    @staticmethod
-    def findSimilar(title, product=None, distribution=None,
-                    sourcepackagename=None):
-        """Common implementation for ITicketTarget.findSimilarTickets()."""
-        constraints = TicketSet._contextConstraints(
-            product, distribution, sourcepackagename)
-        query = nl_phrase_search(title, Ticket, " AND ".join(constraints))
-        return TicketSet.search(query, sort=TicketSort.RELEVANCY,
-                                product=product, distribution=distribution,
-                                sourcepackagename=sourcepackagename)
+    def getTableJoins(self):
+        """Return the tables that should be joined for the constraints."""
+        if self.needs_attention_from:
+            return self.getMessageJoins(self.needs_attention_from)
+        else:
+            return []
 
-    @staticmethod
-    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None, owner=None, product=None, distribution=None,
-               sourcepackagename=None):
-        """Common implementation for ITicketTarget.searchTickets()."""
-        constraints = TicketSet._contextConstraints(
-            product, distribution, sourcepackagename)
+    def getMessageJoins(self, person):
+        """Create the joins needed to select constraints on the messages by a
+        particular person."""
+        return [
+            ('LEFT OUTER JOIN TicketMessage '
+             'ON TicketMessage.ticket = Ticket.id'),
+            ('LEFT OUTER JOIN Message ON TicketMessage.message = Message.id '
+             'AND Message.owner = %s' % sqlvalues(person))]
 
-        prejoins = []
-        if product:
-            prejoins.append('product')
-        elif distribution:
-            prejoins.append('distribution')
-            if sourcepackagename:
-                prejoins.append('sourcepackagename')
+    def getConstraints(self):
+        """Return a list of SQL constraints to use for this search."""
 
-        if owner:
-            assert IPerson.providedBy(owner), (
-                "expected IPerson, got %r" % owner)
-            constraints.append('Ticket.owner = %s' % owner.id)
+        constraints = self.getTargetConstraints()
 
-        return TicketSet._commonSearch(
-            constraints, prejoins, search_text, status, sort)
-
-    @staticmethod
-    def searchByPerson(
-        person, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-        participation=None, sort=None):
-        """Implementation for ITicketActor.searchTickets()."""
-
-        if participation is None:
-            participation = TicketParticipation.items
-        elif zope_isinstance(participation, Item):
-            participation = [participation]
-
-        participations_filter = []
-        for participation_type in participation:
-            participations_filter.append(
-                TicketSet.queryByParticipationType[participation_type] % {
-                    'personId': person.id})
-
-        constraints = ['Ticket.id IN (%s)' %
-                       '\nUNION '.join(participations_filter)]
-        prejoins = ['product', 'distribution', 'sourcepackagename']
-
-        return TicketSet._commonSearch(
-            constraints, prejoins, search_text, status, sort)
-
-    queryByParticipationType = {
-        TicketParticipation.ANSWERER:
-            "SELECT id FROM Ticket WHERE answerer = %(personId)s",
-        TicketParticipation.SUBSCRIBER:
-            "SELECT ticket FROM TicketSubscription "
-            "WHERE person = %(personId)s",
-        TicketParticipation.OWNER:
-            "SELECT id FROM Ticket WHERE owner = %(personId)s",
-        TicketParticipation.COMMENTER:
-            "SELECT ticket FROM TicketMessage "
-            "JOIN Message ON (message = Message.id) "
-            "WHERE owner = %(personId)s",
-        TicketParticipation.ASSIGNEE:
-            "SELECT id FROM Ticket WHERE assignee = %(personId)s"}
-
-    @staticmethod
-    def _commonSearch(constraints, prejoins, search_text, status, sort):
-        """Implement search for the criteria common to search and
-        searchByPerson.
-        """
-        if search_text is not None:
-            constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
-
-        if zope_isinstance(status, Item):
-            status = [status]
-        if status:
+        if self.search_text is not None:
             constraints.append(
-                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+                'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
 
-        orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
+        if self.status:
+            constraints.append('Ticket.status IN %s' % sqlvalues(
+                list(self.status)))
 
-        return Ticket.select(' AND '.join(constraints), prejoins=prejoins,
-                             orderBy=orderBy)
+        if self.needs_attention_from:
+            constraints.append('''(
+                (Ticket.owner = %(person)s
+                    AND Ticket.status IN %(owner_status)s)
+                OR (Ticket.owner != %(person)s AND
+                    Ticket.status = %(open_status)s AND
+                    Message.owner = %(person)s)
+                )''' % sqlvalues(
+                    person=self.needs_attention_from,
+                    owner_status=[
+                        TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
+                    open_status=TicketStatus.OPEN))
 
-    @staticmethod
-    def _orderByFromTicketSort(search_text, sort):
+        if self.language:
+            constraints.append(
+                'Ticket.language IN (%s)'
+                    % ', '.join(sqlvalues(*self.language)))
+
+        return constraints
+
+    def getPrejoins(self):
+        """Return a list of tables that should be prejoined on this search."""
+        # The idea is to prejoin all dependant tables, except if the
+        # object will be the same in all rows because it is used as a
+        # search criteria.
+        if self.product or self.sourcepackagename:
+            # Will always be the same product or sourcepackage.
+            return ['owner']
+        elif self.distribution:
+            # Same distribution, sourcepackagename will vary.
+            return ['owner', 'sourcepackagename']
+        else:
+            # TicketTarget will vary.
+            return ['owner', 'product', 'distribution', 'sourcepackagename']
+
+    def getOrderByClause(self):
+        """Return the ORDER BY clause to use to order this search's results."""
+        sort = self.sort
         if sort is None:
-            if search_text:
+            if self.search_text:
                 sort = TicketSort.RELEVANCY
             else:
                 sort = TicketSort.NEWEST_FIRST
@@ -615,20 +657,158 @@ class TicketSet:
         elif sort is TicketSort.STATUS:
             return ["Ticket.status", "-Ticket.datecreated"]
         elif sort is TicketSort.RELEVANCY:
-            if search_text:
+            if self.search_text:
                 # SQLConstant is a workaround for bug 53455
                 return [SQLConstant(
-                            "-rank(Ticket.fti, ftq(%s))" % quote(search_text)),
+                            "-rank(Ticket.fti, ftq(%s))" % quote(
+                                self.search_text)),
                         "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
+        elif sort is TicketSort.RECENT_OWNER_ACTIVITY:
+            return ['-Ticket.datelastquery']
         else:
             raise AssertionError, "Unknown TicketSort value: %s" % sort
 
-    def get(self, ticket_id, default=None):
-        """See ITicketSet."""
-        try:
-            return Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return default
+    def getResults(self):
+        """Return the tickets that match this query."""
+        query = ''
+        constraints = self.getConstraints()
+        if constraints:
+            query += (
+                'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
+                    '\n'.join(self.getTableJoins()),
+                    ' AND '.join(constraints)))
+        return Ticket.select(
+            query, prejoins=self.getPrejoins(),
+            orderBy=self.getOrderByClause())
 
+
+class TicketTargetSearch(TicketSearch):
+    """Search tickets in an ITicketTarget context.
+
+    Used to implement ITicketTarget.search().
+    """
+
+    def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                 language=None, owner=None,  needs_attention_from=None,
+                 sort=None, product=None, distribution=None,
+                 sourcepackagename=None):
+        assert product is not None or distribution is not None, (
+            "Missing a product or distribution context.")
+        TicketSearch.__init__(
+            self, search_text=search_text, status=status, language=language,
+            needs_attention_from=needs_attention_from, sort=sort,
+            product=product, distribution=distribution,
+            sourcepackagename=sourcepackagename)
+
+        if owner:
+            assert IPerson.providedBy(owner), (
+                "expected IPerson, got %r" % owner)
+        self.owner = owner
+
+    def getConstraints(self):
+        """See TicketSearch."""
+        constraints = TicketSearch.getConstraints(self)
+        if self.owner:
+            constraints.append('Ticket.owner = %s' % self.owner.id)
+
+        return constraints
+
+    def getPrejoins(self):
+        """See TicketSearch."""
+        prejoins = TicketSearch.getPrejoins(self)
+        if self.owner and 'owner' in prejoins:
+            # Since it is constant, no need to prefetch it.
+            prejoins.remove('owner')
+        return prejoins
+
+
+class SimilarTicketsSearch(TicketSearch):
+    """Search tickets in a context using a similarity search algorithm.
+
+    This search object is used to implement
+    ITicketTarget.findSimilarTickets().
+    """
+
+    def __init__(self, title, product=None, distribution=None,
+                 sourcepackagename=None):
+        assert product is not None or distribution is not None, (
+            "Missing a product or distribution context.")
+        TicketSearch.__init__(
+            self, search_text=title, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
+
+        # Change the search text to use based on the native language
+        # similarity search algorithm.
+        self.search_text = nl_phrase_search(
+            title, Ticket, " AND ".join(self.getTargetConstraints()))
+
+
+class TicketPersonSearch(TicketSearch):
+    """Search tickets which are related to a particular person.
+
+    Used to implement IPerson.searchTickets().
+    """
+
+    def __init__(self, person, search_text=None,
+                 status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
+                 participation=None, needs_attention=False, sort=None):
+        if needs_attention:
+            needs_attention_from = person
+        else:
+            needs_attention_from = None
+
+        TicketSearch.__init__(
+            self, search_text=search_text, status=status, language=language,
+            needs_attention_from=needs_attention_from, sort=sort)
+
+        assert IPerson.providedBy(person), "expected IPerson, got %r" % person
+        self.person = person
+
+        if not participation:
+            self.participation = TicketParticipation.items
+        elif zope_isinstance(participation, Item):
+            self.participation = [participation]
+        else:
+            self.participation = participation
+
+    def getTableJoins(self):
+        """See TicketSearch."""
+        joins = TicketSearch.getTableJoins(self)
+
+        if TicketParticipation.SUBSCRIBER in self.participation:
+            joins.append(
+                'LEFT OUTER JOIN TicketSubscription '
+                'ON TicketSubscription.ticket = Ticket.id'
+                ' AND TicketSubscription.person = %s' % sqlvalues(
+                    self.person))
+
+        if TicketParticipation.COMMENTER in self.participation:
+            message_joins = self.getMessageJoins(self.person)
+            if not set(joins).intersection(set(message_joins)):
+                joins.extend(message_joins)
+
+        return joins
+
+    queryByParticipationType = {
+        TicketParticipation.ANSWERER: "Ticket.answerer = %s",
+        TicketParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
+        TicketParticipation.OWNER: "Ticket.owner = %s",
+        TicketParticipation.COMMENTER: "Message.owner = %s",
+        TicketParticipation.ASSIGNEE: "Ticket.assignee = %s"}
+
+    def getConstraints(self):
+        """See TicketSearch."""
+        constraints = TicketSearch.getConstraints(self)
+
+        participations_filter = []
+        for participation_type in self.participation:
+            participations_filter.append(
+                self.queryByParticipationType[participation_type] % sqlvalues(
+                    self.person))
+
+        if participations_filter:
+            constraints.append('(' + ' OR '.join(participations_filter) + ')')
+
+        return constraints

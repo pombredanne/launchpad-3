@@ -11,7 +11,7 @@ modify that to Drafting, so this test will not run standalone.
 
 >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 >>> browser.open(
-...     'http://blueprints.launchpad.dev/products/firefox/+spec/'
+...     'http://blueprints.launchpad.dev/firefox/+spec/'
 ...     + 'extension-manager-upgrades')
 >>> 'Drafting' in browser.contents
 True
@@ -19,7 +19,7 @@ True
 Make sure Bug 4116 stays fixed
 
 >>> browser.open(
-...     'http://blueprints.launchpad.dev/products/firefox/+spec/'
+...     'http://blueprints.launchpad.dev/firefox/+spec/'
 ...     + 'extension-manager-upgrades/+supersede'
 ...     )
 >>> superseded_control = browser.getControl('Superseded by')

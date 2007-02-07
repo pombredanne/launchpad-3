@@ -17,7 +17,7 @@ True
 
 Try renaming a project to a blacklisted name:
 
->>> admin_browser.open('http://launchpad.dev/projects/mozilla')
+>>> admin_browser.open('http://launchpad.dev/mozilla')
 >>> admin_browser.getLink('Edit Project Details').click()
 >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
 >>> admin_browser.getControl('Change Details').click()
@@ -27,7 +27,7 @@ True
 
 Same behavior for products:
 
->>> admin_browser.open('http://launchpad.dev/products/firefox')
+>>> admin_browser.open('http://launchpad.dev/firefox')
 >>> admin_browser.getLink('Administer').click()
 >>> admin_browser.getControl('Name').value = 'blacklisted'
 >>> admin_browser.getControl('Change').click()
@@ -36,10 +36,10 @@ True
 
 Same behavior for people:
 
->>> admin_browser.open('http://launchpad.dev/people/stub')
+>>> admin_browser.open('http://launchpad.dev/~stub')
 >>> admin_browser.getLink('Personal Details').click()
->>> admin_browser.getControl('Name', index=0).value = 'admin42'
->>> admin_browser.getControl('Change').click()
+>>> admin_browser.getControl('Name', index=1).value = 'admin42'
+>>> admin_browser.getControl('Save').click()
 >>> "The name 'admin42' has been blocked" in admin_browser.contents
 True
 
@@ -53,10 +53,10 @@ be a Launchpad Celebrity.
 We can edit the details of an object with a blacklisted name quite
 happily without generating 
 
->>> admin_browser.open('http://launchpad.dev/people/admins')
+>>> admin_browser.open('http://launchpad.dev/~admins')
 >>> admin_browser.getLink('Change Team Details').click()
 >>> admin_browser.getControl('Display Name').value = 'Different'
->>> admin_browser.getControl('Change').click()
+>>> admin_browser.getControl('Save').click()
 >>> 'error' in admin_browser.contents
 False
 >>> "has been blocked" in admin_browser.contents

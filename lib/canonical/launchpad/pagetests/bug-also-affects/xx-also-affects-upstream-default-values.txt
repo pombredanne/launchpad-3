@@ -1,24 +1,47 @@
 When indicating that a bug affects upstream, the product field is
-pre-populated with initial values if a packaging link is found.
+automatically chosen if a packaging link is found.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+bug/8')
+    ...  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8')
     >>> user_browser.getLink('Upstream').click()
-    >>> user_browser.getControl('Product').value
-    'firefox'
+    >>> user_browser.url
+    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8/+add-affected-product?field.product=firefox'
 
 If the source package has no upstream link. like thunderbird in Ubuntu,
 then the product widget will have no initial value.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+bug/8/+distrotask')
     >>> user_browser.getControl('Distribution').value = ['ubuntu']
     >>> user_browser.getControl('Source Package').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+source/thunderbird/+bug/8'
+    'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
 
     >>> user_browser.getLink('Upstream').click()
     >>> user_browser.getControl('Product').value
     ''
+
+A notification will is shown, prompting the user to add packaging
+information.
+
+    >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print notification.renderContents()
+    Please select the appropriate upstream product. This step...
+
+Let's follow the link and specify the packaging information.
+
+    >>> user_browser.getLink('updating the packaging information').click()
+    >>> user_browser.getControl(name='field.productseries').value = (
+    ...     'thunderbird/trunk')
+    >>> user_browser.getControl('Change').click()
+
+Now the upstream product will be chosen automatically also for
+thunderbird.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8')
+    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.url
+    'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8/+add-affected-product?field.product=thunderbird'

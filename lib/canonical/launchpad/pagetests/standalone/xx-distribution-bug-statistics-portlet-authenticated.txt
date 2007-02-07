@@ -3,7 +3,7 @@ statistics for the distro. Each statistic is a link to filter the
 listing to show just those bugs.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs HTTP/1.1
+  ... GET /debian/+bugs HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)

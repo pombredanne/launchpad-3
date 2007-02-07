@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'canonical_url', 'nearest', 'get_current_browser_request',
            'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto']
+           'stepthrough', 'redirection', 'stepto', 'RedirectionView']
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -188,7 +188,7 @@ class LaunchpadView(UserAttributeCache):
 
     def __call__(self):
         self.initialize()
-        if self.request.response.getStatus() in [302, 303]:
+        if self.request.response.getStatus() in [301, 302, 303, 307]:
             # Don't render the page on redirects.
             return u''
         else:

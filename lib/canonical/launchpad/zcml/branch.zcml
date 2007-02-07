@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- Branch -->
     <content class="canonical.launchpad.database.Branch">
         <allow interface="canonical.launchpad.interfaces.IBranch" />
@@ -44,12 +44,20 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
-            name="+portlet-subscribers"
-            template="../templates/branch-portlet-subscribers.pt" />
-        <browser:page
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
     </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
+      permission="zope.Public">
+    <browser:page
+        name="+portlet-specifications"
+        template="../templates/branch-portlet-specifications.pt" />
+    <browser:page
+        name="+portlet-subscribers"
+        template="../templates/branch-portlet-subscribers.pt" />
+  </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
@@ -82,17 +90,21 @@
   </browser:pages>
 
   <browser:page
+      for="*"
+      name="branch-filtering-macros"
+      permission="zope.Public"
+      template="../templates/branch-filtering-macros.pt" />
+
+  <browser:page
+      for="*"
+      name="branch-javascript-macros"
+      permission="zope.Public"
+      template="../templates/branch-javascript-macros.pt" />
+
+  <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="branches"
-    permission="launchpad.Edit"
-    template="../templates/branch-edit.pt" />
-
-  <browser:page
-    name="+lifecycle"
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchLifecycleView"
     facet="branches"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt" />

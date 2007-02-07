@@ -3,18 +3,19 @@
 __metaclass__ = type
 
 __all__ = [
+    'can_be_nominated_for_releases',
     'validate_url',
     'valid_http_url',
     'valid_ftp_url',
     'valid_rsync_url',
     'valid_webref',
+    'valid_branch_url',
     'non_duplicate_bug',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
-    'valid_emblem',
-    'valid_hackergotchi',
-    'valid_unregistered_email',
+    'validate_new_team_email',
+    'validate_new_person_email',
     'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
@@ -35,7 +36,6 @@ import re
 import string
 import urllib
 from textwrap import dedent
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
@@ -49,10 +49,25 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
+def can_be_nominated_for_releases(releases):
+    """Can the bug be nominated for these releases?"""
+    current_bug = getUtility(ILaunchBag).bug
+    unnominatable_releases = []
+    for release in releases:
+        if not current_bug.canBeNominatedFor(release):
+            unnominatable_releases.append(release.name.capitalize())
+
+    if unnominatable_releases:
+        raise LaunchpadValidationError(_(
+            "This bug has already been nominated for these releases: %s" %
+                ", ".join(unnominatable_releases)))
+
+    return True
+
 
 def _validate_ascii_printable_text(text):
     """Check if the given text contains only printable ASCII characters.
-    
+
     >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
     >>> print _validate_ascii_printable_text(
@@ -203,7 +218,7 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    """Returns True if web_ref is not a valid download URL, or raises a
+    """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
 
     >>> valid_webref('http://example.com')
@@ -229,6 +244,31 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_branch_url(branch_url):
+    """Returns True if web_ref is a valid download URL, or raises a
+    LaunchpadValidationError.
+
+    >>> valid_branch_url('http://example.com')
+    True
+    >>> valid_branch_url('https://example.com/foo/bar')
+    True
+    >>> valid_branch_url('ftp://example.com/~ming')
+    True
+    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_branch_url('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
+    """
+    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 def valid_ftp_url(url):
     if validate_url(url, ['ftp']):
@@ -319,54 +359,47 @@ def valid_cve_sequence(value):
             "%s is not a valid CVE number" % value))
 
 
-def _valid_image(image, max_size, max_dimensions):
-    """Check that the given image is under the given constraints.
-
-    :length: is the maximum size of the image, in bytes.
-    :dimensions: is a tuple of the form (width, height).
-    """
-    # No global import to avoid hard dependency on PIL being installed
-    import PIL.Image
-    if len(image) > max_size:
-        raise LaunchpadValidationError(_(dedent("""
-            This file exceeds the maximum allowed size in bytes.""")))
-    try:
-        image = PIL.Image.open(StringIO(image))
-    except IOError:
-        # cannot identify image type
-        raise LaunchpadValidationError(_(dedent("""
-            The file uploaded was not recognized as an image; please
-            check the file and retry.""")))
-    if image.size > max_dimensions:
-        raise LaunchpadValidationError(_(dedent("""
-            This image exceeds the maximum allowed width or height in
-            pixels.""")))
-    return True
-
-def valid_emblem(emblem):
-    return _valid_image(emblem, 9000, (16,16))
-
-def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 54000, (150,150))
-
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform,
-# because editing an already registered e-mail would fail if this constraint
-# is used.
-def valid_unregistered_email(email):
-    """Check that the given email is valid and that isn't registered to
-    another user."""
-
-    from canonical.launchpad.interfaces import IEmailAddressSet
-    if valid_email(email):
-        emailset = getUtility(IEmailAddressSet)
-        if emailset.getByEmail(email) is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                %s is already taken.""" % email)))
-        else:
-            return True
-    else:
+def _validate_email(email):
+    if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+
+def validate_new_team_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    _validate_email(email)
+    email = getUtility(IEmailAddressSet).getByEmail(email)
+    if email is not None:
+        raise LaunchpadValidationError(_(
+            '%s is already registered in Launchpad and is associated with '
+            '<a href="%s">%s</a>.'), email.email,
+            canonical_url(email.person), email.person.browsername)
+    return True
+
+
+def validate_new_person_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    
+    This validator is supposed to be used only when creating a new profile
+    using the /people/+newperson page, as the message will say clearly to the
+    user that the profile he's trying to create already exists, so there's no
+    need to create another one.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IPersonSet
+    _validate_email(email)
+    owner = getUtility(IPersonSet).getByEmail(email)
+    if owner is not None:
+        raise LaunchpadValidationError(_(
+            "The profile you're trying to create already exists: "
+            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
+    return True
+
 
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.

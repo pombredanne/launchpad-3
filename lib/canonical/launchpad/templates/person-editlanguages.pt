@@ -23,7 +23,7 @@
   </p>
 
   <form action="" method="post">
-    <input name="redirection_url" type="hidden" 
+    <input name="redirection_url" type="hidden"
            tal:attributes="value view/getRedirectionURL" />
     <div class="listbox">
       <div tal:repeat="language view/visible_checked_languages">

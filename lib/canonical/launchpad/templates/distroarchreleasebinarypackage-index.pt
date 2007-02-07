@@ -26,10 +26,13 @@
 
   <h2>Publishing history</h2>
 
-  <div tal:repeat="publishing context/publishing_history"
-       tal:replace="structure publishing/@@+listing-detailed" />
+  <div id="publishings">
+    <tal:publishings
+       repeat="publishing context/publishing_history"
+       replace="structure publishing/@@+listing-detailed" />
+  </div>
 
 </div>
 </body>
 </html>
- 
+

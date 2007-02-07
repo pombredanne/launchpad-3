@@ -34,5 +34,10 @@
     <oldvalue>NOT USED</oldvalue>
     <newvalue>NOT USED</newvalue>
   </activity>
+  <has_duplicates>
+    <issue_id>66342</issue_id>
+    <who>fst</who>
+    <when>2006-06-26 05:58:09</when>
+  </has_duplicates>
 </issue>
 

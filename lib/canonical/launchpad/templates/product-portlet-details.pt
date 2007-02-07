@@ -13,7 +13,7 @@
 
       <b>Registrant:</b><br />
       <img alt="" src="/@@/user" />
-      <a tal:attributes="href string:/people/${context/owner/name}"
+      <a tal:attributes="href context/owner/fmt:url"
          tal:content="context/owner/browsername"
          class="link">ownername
       </a>
@@ -56,7 +56,7 @@
       <img alt="" src="/@@/languages" />
       <tal:block condition="context/translationgroup">
       <a tal:attributes="href
-               string:/rosetta/groups/${context/translationgroup/name}/"
+               string:/translations/groups/${context/translationgroup/name}/"
          tal:content="context/translationgroup/title"
       >Group</a><br />
       </tal:block>
@@ -96,15 +96,18 @@
            tal:content="context/project/title"
            class="link">Project name</a><br />
       </tal:has-project>
-      <b>Registered series:</b>
-      <ul>
-        <li tal:repeat="series context/serieslist">
-          <a tal:attributes="href series/fmt:url"
-             tal:content="series/name">1.0</a>
-          <small tal:condition="python:series == context.development_focus"
-            >(development focus)</small>
-        </li>
-      </ul>
+      
+      <div id="registered-series">
+        <b>Registered series:</b>
+        <ul>
+          <li tal:repeat="series view/sorted_serieslist">
+            <a tal:attributes="href series/fmt:url"
+               tal:content="series/name">1.0</a>
+            <small tal:condition="python:series == context.development_focus"
+                   >(development focus)</small>
+          </li>
+        </ul>
+      </div>
 
     </div>
   </div>

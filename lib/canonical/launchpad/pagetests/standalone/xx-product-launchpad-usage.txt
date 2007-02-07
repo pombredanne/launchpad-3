@@ -7,10 +7,10 @@ use Sample Person, the registrant of Firefox..
   >>> registrant_browser.addHeader(
   ...     'Authorization', 'Basic test@canonical.com:test')
 
-  >>> registrant_browser.open('http://launchpad.dev/products/firefox')
+  >>> registrant_browser.open('http://launchpad.dev/firefox')
   >>> registrant_browser.getLink('Define Launchpad Usage').click()
   >>> registrant_browser.url
-  'http://launchpad.dev/products/firefox/+launchpad'
+  'http://launchpad.dev/firefox/+launchpad'
 
 
 Firefox is currently marked as using Malone. Let's specify that it

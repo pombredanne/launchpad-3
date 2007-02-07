@@ -89,12 +89,12 @@
         </form>
 
   <div tal:condition="not: context/bug/duplicateof"
-       tal:replace="structure context/@@+headline-tasks" />
+       tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
   <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
     <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
-    <div style="font-family: monospace;"
+    <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
 
     <div tal:define="tags context/bug/tags"

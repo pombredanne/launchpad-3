@@ -16,11 +16,13 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin"
+                            mirror_admin homepage_content emblem gotchi"
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
-              support_contacts" />
+            support_contacts direct_support_contacts getSupportedLanguages
+	    getTicketLanguages"
+	    />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>
@@ -33,11 +35,16 @@
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
+        layer="canonical.launchpad.layers.BugsLayer"
+        name="+bugs"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        name="+tickets"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -62,6 +69,14 @@
         permission="zope.Public"
         name="+archivemirrors"
         template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+archivemirrors-rss"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+        template="../templates/distribution-mirrors-rss.pt"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
@@ -235,37 +250,13 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:generalform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug"
-        fields="packagename title comment security_related"
-        class="canonical.launchpad.browser.FileBugView"
-        facet="bugs"
-        keyword_arguments="packagename title comment security_related"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtarget-filebug.pt"
-        lp:url="/distros/$Distribution.name/+filebug">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="50" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:generalform>
-
-    <browser:editform
+    <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         permission="launchpad.Edit"
+        class="canonical.launchpad.browser.DistributionEditView"
         name="+edit"
-        schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
-        fields="displayname title summary description"
-        template="../templates/distribution-edit.pt"
-        lp:url="/distros/$Distribution.name/+edit" />
+        template="../templates/distribution-edit.pt" />
 
     <browser:page
         name="+launchpad"
@@ -280,7 +271,7 @@
         name="+driver"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
+        class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
         fields="driver"
         facet="overview"
         permission="launchpad.Edit"
@@ -292,14 +283,13 @@
         name="+uploadadmin"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
+        class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
         fields="upload_admin upload_sender"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/distribution-uploadadmin.pt"
         lp:url="/$Project.name/+uploadadmin">
     </browser:editform>
-
 
     <browser:editform
         name="+selectmemberteam"
@@ -384,11 +374,6 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
@@ -397,11 +382,9 @@
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IDistributionSet"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <!-- XXX: WTF is distros-index hooked onto +bugs for
-              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
@@ -411,10 +394,6 @@
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages
@@ -424,23 +403,13 @@
         class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+add"
         for="canonical.launchpad.interfaces.IDistributionSet"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        label="Register a distribution in Soyuz"
-        fields="name displayname title summary description domainname owner
-                members"
-        content_factory="canonical.launchpad.database.Distribution"
-        class="canonical.launchpad.browser.DistributionSetAddView"
+        class="canonical.launchpad.browser.DistributionAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/distros/+add">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+        template="../templates/distribution-add.pt" />
 
     <browser:menus
         module="canonical.launchpad.browser.distribution"

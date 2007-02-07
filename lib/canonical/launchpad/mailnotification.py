@@ -17,8 +17,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, ITeamMembershipSet)
+    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, IProductSeriesBugTask,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -26,7 +26,7 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TicketAction
+from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -391,7 +391,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
         change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.url
+        change_info += "   %s" % added_attachment.libraryfile.http_url
         changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
@@ -611,8 +611,10 @@ def get_task_delta(old_task, new_task):
     old_task and new_task.
     """
     changes = {}
-    if (IUpstreamBugTask.providedBy(old_task) and
-        IUpstreamBugTask.providedBy(new_task)):
+    if ((IUpstreamBugTask.providedBy(old_task) and
+         IUpstreamBugTask.providedBy(new_task)) or
+        (IProductSeriesBugTask.providedBy(old_task) and
+         IProductSeriesBugTask.providedBy(new_task))):
         if old_task.product != new_task.product:
             changes["product"] = {}
             changes["product"]["old"] = old_task.product
@@ -847,25 +849,71 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
-def notify_join_request(event):
-    """Notify team administrators that a new membership is pending approval."""
-    if not event.user in event.team.proposedmembers:
-        return
-
+def notify_team_join(event):
+    """Notify team administrators that a new joined (or tried to) the team.
+    
+    If the team's policy is Moderated, the email will say that the membership
+    is pending approval. Otherwise it'll say that the user has joined the team
+    and who added that person to the team.
+    """
     user = event.user
     team = event.team
-    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
-    assert tm is not None
-    to_addrs = team.getTeamAdminsEmailAddresses()
-    replacements = {'browsername': user.browsername,
-                    'name': user.name,
-                    'teamname': team.browsername,
-                    'url': canonical_url(tm)}
-    msg = get_email_template('pending-membership-approval.txt') % replacements
-    subject = "Launchpad: New %s member awaiting approval." % team.name
-    from_addr = config.noreply_from_address
-    headers = {"Reply-To": user.preferredemail.email}
-    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert membership is not None
+    reviewer = membership.reviewer
+    approved, admin = [
+        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+    admin_addrs = team.getTeamAdminsEmailAddresses()
+
+    from_addr = format_address('Launchpad', config.noreply_from_address)
+
+    if reviewer != user and membership.status in [approved, admin]:
+        # Somebody added this user as a member, we better send a notification
+        # to the user too.
+        member_addrs = contactEmailAddresses(user)
+
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+        if user.isTeam():
+            templatename = 'new-member-notification-for-teams.txt'
+        else:
+            templatename = 'new-member-notification.txt'
+        
+        template = get_email_template(templatename)
+        msg = template % {
+            'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'member': '%s (%s)' % (user.browsername, user.name),
+            'team': '%s (%s)' % (team.browsername, team.name)}
+        msg = MailWrapper().format(msg)
+        simple_sendmail(from_addr, member_addrs, subject, msg)
+
+        # The member's email address may be in admin_addrs too; let's remove
+        # it so the member don't get two notifications.
+        admin_addrs = set(admin_addrs).difference(set(member_addrs))
+
+    # Yes, we can have teams with no members; not even admins.
+    if not admin_addrs:
+        return
+
+    replacements = {
+        'person_name': "%s (%s)" % (user.browsername, user.name),
+        'team_name': "%s (%s)" % (team.browsername, team.name),
+        'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
+        'url': canonical_url(membership)}
+
+    headers = {}
+    if membership.status in [approved, admin]:
+        template = get_email_template('new-member-notification-for-admins.txt')
+        subject = (
+            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+    else:
+        template = get_email_template('pending-membership-approval.txt')
+        subject = (
+            "Launchpad: %s wants to join team %s" % (user.name, team.name))
+        headers = {"Reply-To": user.preferredemail.email}
+
+    msg = MailWrapper().format(template % replacements)
+    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
 class TicketNotification:
@@ -916,9 +964,35 @@ class TicketNotification:
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the ticket's subscribers.
+        Default to the ticket's subscribers that speaks the request languages.
+        If the ticket owner is subscribed, he's always consider to speak the
+        language. When a subscriber is a team and it doesn't have an email
+        set nor supported languages, only contacts the members that speaks
+        the supported language.
         """
-        return self.ticket.getSubscribers()
+        # Optimize the English case.
+        english = getUtility(ILanguageSet)['en']
+        ticket_language = self.ticket.language
+        if ticket_language == english:
+            return self.ticket.getSubscribers()
+
+        recipients = set()
+        skipped = set()
+        subscribers = set(self.ticket.getSubscribers())
+        while subscribers:
+            person = subscribers.pop()
+            if person == self.ticket.owner:
+                recipients.add(person)
+            elif ticket_language not in person.getSupportedLanguages():
+               skipped.add(person)
+            elif not person.preferredemail and not list(person.languages):
+                # For teams without an email address nor a set of supported
+                # languages, only notify the members that actually speak the
+                # language.
+                subscribers |= set(person.activemembers) - recipients - skipped
+            else:
+                recipients.add(person)
+        return recipients
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -951,6 +1025,21 @@ class TicketNotification:
                         from_address, address, subject, body)
                     sent_addrs.add(address)
 
+    @property
+    def unsupported_language(self):
+        """Whether the ticket language is unsupported or not."""
+        supported_languages = self.ticket.target.getSupportedLanguages()
+        return self.ticket.language not in supported_languages
+
+    @property
+    def unsupported_language_warning(self):
+        """Warning about the fact that the ticket is written in an
+        unsupported language."""
+        return get_email_template(
+                'ticket-unsupported-language-warning.txt') % {
+                'ticket_language': self.ticket.language.englishname,
+                'target_name': self.ticket.target.displayname}
+
 
 class TicketAddedNotification(TicketNotification):
     """Notification sent when a ticket is added."""
@@ -958,11 +1047,14 @@ class TicketAddedNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         ticket = self.ticket
-        return get_email_template('ticket_added.txt') % {
+        body = get_email_template('ticket_added.txt') % {
             'target_name': ticket.target.displayname,
             'ticket_id': ticket.id,
             'ticket_url': canonical_url(ticket),
             'comment': ticket.description}
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
 
 
 class TicketModifiedDefaultNotification(TicketNotification):
@@ -1056,10 +1148,10 @@ class TicketModifiedDefaultNotification(TicketNotification):
         return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
-        """The default notification goes to all ticket susbcribers except
-        the owner.
+        """The default notification goes to all ticket susbcribers that
+        speaks the request language, except the owner.
         """
-        return [person for person in self.ticket.getSubscribers()
+        return [person for person in TicketNotification.getRecipients(self)
                 if person != self.ticket.owner]
 
     # Header template used when a new message is added to the ticket.
@@ -1135,6 +1227,41 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
             return [self.ticket.owner]
         else:
             return []
+
+    def getBody(self):
+        """See TicketNotification."""
+        body = TicketModifiedDefaultNotification.getBody(self)
+        if self.unsupported_language:
+            body += self.unsupported_language_warning
+        return body
+
+
+class TicketUnsupportedLanguageNotification(TicketNotification):
+    """Notification sent to support contacts for unsupported languages."""
+
+    def getSubject(self):
+        """See TicketNotification."""
+        return '[Support #%s]: (%s) %s' % (
+            self.ticket.id, self.ticket.language.englishname,
+            self.ticket.title)
+
+    def shouldNotify(self):
+        return self.unsupported_language
+
+    def getRecipients(self):
+        """Notify all the support contacts."""
+        return self.ticket.target.support_contacts
+
+    def getBody(self):
+        """See TicketNotification."""
+        ticket = self.ticket
+        return get_email_template('ticket-unsupported-languages-added.txt') % {
+            'target_name': ticket.target.displayname,
+            'ticket_id': ticket.id,
+            'ticket_url': canonical_url(ticket),
+            'ticket_language': ticket.language.englishname,
+            'comment': ticket.description}
+
 
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""

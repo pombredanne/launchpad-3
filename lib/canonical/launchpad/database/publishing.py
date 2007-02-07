@@ -1,24 +1,26 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+
 __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
            'SecureBinaryPackagePublishingHistory',
            'SourcePackagePublishingHistory',
-           'BinaryPackagePublishingHistory'
+           'BinaryPackagePublishingHistory',
+           'IndexStanzaFields',
            ]
+
+from warnings import warn
+import operator
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
 from canonical.launchpad.interfaces import (
-    ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -28,7 +30,14 @@ from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
 
-from warnings import warn
+
+# XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
+def makePoolPath(source_name, component_name):
+    """Return the pool path for a given source name and component name."""
+    from canonical.archivepublisher.diskpool import poolify
+    import os
+    return os.path.join(
+        'pool', poolify(source_name, component_name))
 
 
 class ArchiveFilePublisherBase:
@@ -153,62 +162,6 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      schema=PackagePublishingPocket)
 
 
-class SourcePackagePublishingView(SQLBase):
-    """Source package information published and thus due for putting on disk.
-    """
-
-    implements(ISourcePackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True, immutable=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
-                     schema=PackagePublishingPocket)
-
-
-class BinaryPackagePublishingView(SQLBase):
-    """Binary package information published and thus due for putting on disk.
-    """
-
-    implements(IBinaryPackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
-    binarypackagename = StringCol(dbName='binarypackagename', unique=False,
-                                  default=None, notNull=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True)
-    # XXX: this should really be an EnumCol but the publisher needs to be
-    # updated to cope with the change. -- kiko, 2006-08-16
-    priority = IntCol(dbName='priority', unique=False, default=None,
-                      notNull=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
-                     schema=PackagePublishingPocket)
-
-
 class ArchiveSafePublisherBase:
     """Base class to grant ability to publish a record in a safe manner."""
 
@@ -222,7 +175,7 @@ class ArchiveSafePublisherBase:
             # already published (usually when we use -C
             # publish-distro.py option)
             self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
+            self.datepublished = UTC_NOW
 
 
 class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
@@ -325,6 +278,43 @@ class ArchivePublisherBase:
         else:
             self.secure_record.setPublished()
 
+    def getIndexStanza(self):
+        """See IArchivePublisher"""
+        fields = self.buildIndexStanzaFields()
+        return fields.makeOutput()
+
+
+class IndexStanzaFields:
+    """Store and format ordered Index Stanza fields."""
+
+    def __init__(self):
+        self.fields = []
+
+    def append(self, name, value):
+        """Append an (field, value) tuple to the internal list.
+
+        Then we can use the FIFO-like behaviour in makeOutput().
+        """
+        self.fields.append((name, value))
+
+    def makeOutput(self):
+        """Return a line-by-line aggregation of appended fields.
+
+        Empty fields values will cause the exclusion of the field.
+        The output order will preserve the insertion order, FIFO.
+        """
+        output_lines = []
+        for name, value in self.fields:
+            if not value:
+                continue
+            # do not add separation space for the special field 'Files'
+            if name != 'Files':
+                value = ' %s' % value
+
+            output_lines.append('%s:%s' % (name, value))
+
+        return '\n'.join(output_lines)
+
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record.
@@ -418,6 +408,32 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s" % (name, release.version,
                                 self.distrorelease.name)
 
+    def buildIndexStanzaFields(self):
+        """See IArchivePublisher"""
+        # special fields preparation
+        spr = self.sourcepackagerelease
+        pool_path = makePoolPath(spr.name, self.component.name)
+        files_subsection = ''.join(
+            ['\n %s %s %s' % (spf.libraryfile.content.md5,
+                              spf.libraryfile.content.filesize,
+                              spf.libraryfile.filename)
+             for spf in spr.files])
+        # options filling
+        fields = IndexStanzaFields()
+        fields.append('Package', spr.name)
+        fields.append('Binary', spr.dsc_binaries)
+        fields.append('Version', spr.version)
+        fields.append('Maintainer', spr.dsc_maintainer_rfc822)
+        fields.append('Build-Depends', spr.builddepends)
+        fields.append('Build-Depends-Indep', spr.builddependsindep)
+        fields.append('Architecture', spr.architecturehintlist)
+        fields.append('Standards-Version', spr.dsc_standards_version)
+        fields.append('Format', spr.dsc_format)
+        fields.append('Directory', pool_path)
+        fields.append('Files', files_subsection)
+
+        return fields
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -479,3 +495,48 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s %s" % (name, release.version,
                                    distrorelease.name,
                                    self.distroarchrelease.architecturetag)
+
+    def buildIndexStanzaFields(self):
+        """See IArchivePublisher"""
+        bpr = self.binarypackagerelease
+        spr = bpr.build.sourcepackagerelease
+
+        # binaries have only one file, the DEB
+        bin_file = bpr.files[0]
+        bin_filename = bin_file.libraryfile.filename
+        bin_size = bin_file.libraryfile.content.filesize
+        bin_md5 = bin_file.libraryfile.content.md5
+        # description field in index is an association of summary and
+        # description, as:
+        #
+        # Descrition: <SUMMARY>\n
+        #  <DESCRIPTION L1>
+        #  ...
+        #  <DESCRIPTION LN>
+        bin_description = (
+            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
+
+        fields = IndexStanzaFields()
+        fields.append('Package', bpr.name)
+        fields.append('Priority', self.priority.title)
+        fields.append('Section', self.section.name)
+        fields.append('Installed-Size', bpr.installedsize)
+        fields.append('Maintainer', spr.dsc_maintainer_rfc822)
+        fields.append(
+            'Architecture', bpr.build.distroarchrelease.architecturetag)
+        fields.append('Version', bpr.version)
+        fields.append('Replaces', bpr.replaces)
+        fields.append('Suggests', bpr.suggests)
+        fields.append('Provides', bpr.provides)
+        fields.append('Depends', bpr.depends)
+        fields.append('Conflicts', bpr.conflicts)
+        fields.append('Filename', bin_filename)
+        fields.append('Size', bin_size)
+        fields.append('MD5sum', bin_md5)
+        fields.append('Description', bin_description)
+
+        # XXX cprov 20061103: the extra override fields (Bugs, Origin and
+        # Task) included in the template be were not populated.
+        # When we have the information this will be the place to fill them.
+
+        return fields

@@ -28,9 +28,8 @@ class RosettaLayer(LaunchpadLayer):
     """The `RosettaLayer` layer."""
 TranslationsLayer = RosettaLayer
 
-class MaloneLayer(LaunchpadLayer):
-    """The `MaloneLayer` layer."""
-BugsLayer = MaloneLayer
+class BugsLayer(LaunchpadLayer):
+    """The `BugsLayer` layer."""
 
 class CodeLayer(LaunchpadLayer):
     """The `CodeLayer` layer."""

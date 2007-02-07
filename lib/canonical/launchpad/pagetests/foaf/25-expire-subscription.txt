@@ -8,7 +8,7 @@ variables:
 
   >>> import urllib
   >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
-  >>> browser.open("http://launchpad.dev/people/myemail/+member/name16",
+  >>> browser.open("http://launchpad.dev/~myemail/+member/name16",
   ...              urllib.urlencode(dict(
   ...                   admin="no",
   ...                   day=1,
@@ -29,7 +29,7 @@ Let's do it under the wraps:
   >>> foobar = Person.byName('name16')
   >>> team = Person.byName('myemail')
   >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
-  >>> tm.setStatus(TeamMembershipStatus.EXPIRED)
+  >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
 
 Persist the change:
 

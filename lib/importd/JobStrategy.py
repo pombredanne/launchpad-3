@@ -14,6 +14,12 @@ import CVS
 import cscvs
 import SCM
 
+from canonical.launchpad.webapp.uri import URI
+
+
+class ImportSanityError(Exception):
+    """Raised when an import fails sanity checks."""
+
 
 class JobStrategy:
     """I am the base strategy used to do a Job."""
@@ -85,6 +91,7 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
+        self._checkSanity()
         target_manager = aJob.makeTargetManager()
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
@@ -97,6 +104,13 @@ class CSCVSStrategy(JobStrategy):
         # a commit with a cscvs id of "MAIN.42". Then the incremental import
         # must start on revision 43. -- David Allouche 2006-10-31
         self._importIncrementally(target_path)
+
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server.
+
+        By default do no check. Subclasses may override this. If the import is
+        deemed unsafe, this method must raise ImportSanityError.
+        """
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -424,9 +438,34 @@ class CvsWorkingTree:
 
 
 class SVNStrategy(CSCVSStrategy):
+
+    def __init__(self):
+        CSCVSStrategy.__init__(self)
+        self._svn_url_whitelist = set([
+            'http://mg.pov.lt/gtimelog/svn',
+            'http://opensvn.csie.org/srb2d6',
+            'http://www.eigenheimstrasse.de/svn/josm',
+            'http://www2.cs.tum.edu/repos/cup/develop',
+            'https://svn.sourceforge.net/svnroot/aptoncd/0.1',
+            'https://svn.sourceforge.net/svnroot/comix',
+            'https://svn.sourceforge.net/svnroot/jubler/src',
+            'https://svn.sourceforge.net/svnroot/listengnome/releases/0.5.x',
+            'https://svn.sourceforge.net/svnroot/listengnome/trunk-0.5',
+            'https://svn.sourceforge.net/svnroot/scherzo',
+            'svn://elgg.net/elgg/devel',
+            'svn://mielke.cc/main/brltty',
+            'svn://svn.debian.org/gcccvs/branches/sid/gcc-defaults',
+            'svn://svn.xara.com/Trunk/XaraLX',
+            'svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc',
+            'https://numexp.org/svn/numexp-core',
+            'svn://svn.berlios.de/sax/sax-head',
+            'http://codespeak.net/svn/pypy/dist',
+         ])
+
     def getSVNDirPath(self, aJob, dir):
         """return the cvs working dir path"""
         return os.path.join(self.getWorkingDir(aJob,dir), "svnworking")
+
     def sourceDir(self):
         """get a source dir to work against"""
         if self.sourceDirectory is None:
@@ -441,7 +480,10 @@ class SVNStrategy(CSCVSStrategy):
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)
                     client=pysvn.Client()
-                    client.checkout(repository, path)
+                    # XXX: this should use the cscvs API, but it is currently
+                    # hardcoded to only work with repositories on the
+                    # filesystem. -- David Allouche 2007-01-29
+                    client.checkout(repository, path, ignore_externals=True)
             except Exception: # don't leave partial checkouts around
                 if os.access(path, os.F_OK):
                     shutil.rmtree(path)
@@ -454,3 +496,29 @@ class SVNStrategy(CSCVSStrategy):
         if self._tree is None:
             self._tree = SCM.tree(self.sourceDir())
         return self._tree
+
+    def _checkSanity(self):
+        """Run sanity checks to avoid putting excessive load on server."""
+        if self._sanityIsOverridden():
+            return
+        url = self.job.repository
+        if URI(url).path.endswith('/'):
+            # Non-canonicalized URLs will cause old unpatched svn servers to
+            # crash. We should also canonicalize the URLs to catch duplicates,
+            # but this provides belt-and-suspenders to avoid harming remote
+            # servers.
+            raise ImportSanityError(
+                'URL ends with a slash: %s' % url)
+        if '/trunk/' in URI(url).ensureSlash().path:
+            return
+        raise ImportSanityError(
+            'URL does not appear to be a SVN trunk: %s' % url)
+
+    def _sanityIsOverridden(self):
+        """Whether the sanity check for this import has been overridden.
+
+        At the moment, that just checks that the svn url is in an hardcoded
+        while-list. Eventually, that will check for a flag set by the operator
+        in the Launchpad web UI.
+        """
+        return self.job.repository in self._svn_url_whitelist

@@ -117,7 +117,7 @@ We ensure that multiple size and batch arguments supplied in the URL
   >>> request = build_request({'batch': [u"1", u"3"], 'start': [u'2', u'3']})
   >>> navigator = BatchNavigator(reindeer, request=request)
   >>> navigator.nextBatchURL()
-  ''
+  'http://www.example.com/foo?start=5&batch=5'
 
 Empty Batches
 -------------

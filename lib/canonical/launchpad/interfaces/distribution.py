@@ -9,7 +9,7 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Int, TextLine, Bool
+from zope.schema import Choice, Int, Text, TextLine, Bool
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
 
 class DistributionNameField(PillarNameField):
@@ -50,6 +51,23 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "The distribution summary. A short paragraph "
             "describing the goals and highlights of the distro."),
         required=True)
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this distribution's home page. Edit this and it "
+            "will be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this distribution."))
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this distribution's home page. It should be no bigger than 100k "
+            "in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),
@@ -227,21 +245,24 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         """Return a (distrorelease,pocket) tuple which is the given textual
         distroreleasename in this distribution."""
 
-    def removeOldCacheItems():
-        """Delete any cache records that are no longer needed for this
-        distribution, perhaps because all of the binary packages have been
-        removed from the archives.
+    def removeOldCacheItems(log):
+        """Delete any cache records for removed packages."""
+
+    def updateCompleteSourcePackageCache(log, ztm):
+        """Update the source package cache.
+
+        Consider every non-REMOVED sourcepackage.
+        'log' is required an only prints debug level information.
+        'ztm' is required for partial commits, every chunk of 50 updates
+        are committed.
         """
 
-    def updateCompleteSourcePackageCache():
-        """Update the source package cache, for all source packages in the
-        distribution.
-        """
+    def updateSourcePackageCache(log, sourcepackagename):
+        """Update cached source package details.
 
-    def updateSourcePackageCache(name):
-        """Update the cached source package details that are stored in
-        DistributionSourcePackageDetailsCache, for the source package with
-        name given as 'name'.
+        Update cache details for a given ISourcePackageName, including
+        generated binarypackage names, summary and description fti.
+        'log' is required and only prints debug level information.
         """
 
     def searchSourcePackages(text):
@@ -295,6 +316,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner):
+            members, owner, gotchi, emblem):
         """Creaste a new distribution."""
 
