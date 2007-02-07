@@ -2,8 +2,6 @@ SET client_min_messages=ERROR;
 
 DROP INDEX karmacache_unique_context_and_category;
 
-ALTER  TABLE karmacache ALTER COLUMN category DROP NOT NULL;
-
 ALTER  TABLE karmacache ADD COLUMN project integer
     REFERENCES Project(id);
 
