@@ -22,10 +22,11 @@
   >>> browser.getControl('HTTP URL').value = http_url
   >>> browser.getControl('Continue').click()
 
-  >>> message = (
-  ...   '%s is already registered by another distribution mirror.' % http_url)
-  >>> message in browser.contents
-  True
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for message in soup.findAll(attrs={'class': 'message'}):
+  ...     print message.renderContents()
+  The distribution mirror ... is already registered with this URL.
 
   We'll have to add some URLs to sample data to test the validator for FTP and
   Rsync URLs.
@@ -49,20 +50,20 @@
   >>> browser.getControl('FTP URL').value = ftp_url
   >>> browser.getControl('Continue').click()
 
-  >>> message = (
-  ...   '%s is already registered by another distribution mirror.' % ftp_url)
-  >>> message in browser.contents
-  True
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for message in soup.findAll(attrs={'class': 'message'}):
+  ...     print message.renderContents()
+  The distribution mirror ... is already registered with this URL.
 
   And for the Rsync URL
 
   >>> browser.getControl('Rsync URL').value = rsync_url
   >>> browser.getControl('Continue').click()
 
-  >>> message = (
-  ...   '%s is already registered by another distribution mirror.' % rsync_url)
-  >>> message in browser.contents
-  True
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for message in soup.findAll(attrs={'class': 'message'}):
+  ...     print message.renderContents()
+  The distribution mirror ... is already registered with this URL.
 
   Now we provide everything that is needed...
 
