@@ -83,7 +83,7 @@ originated itself:
   >>> print find_tag_by_id(browser.contents, 'source')
   <div id="source">
     <ul>
-      <li class="packages">
+      <li class="source package">
         <a href="http://localhost/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
       </li>
     </ul>
@@ -94,7 +94,7 @@ librarian URL and size:
 
   >>> print find_tag_by_id(browser.contents, 'files')
   <div id="files">
-    <ul class="packages">
+    <ul class="download">
       <li>
         <a href="http://localhost:58000/40/mozilla-firefox_0.9_i386.deb">mozilla-firefox_0.9_i386.deb</a>
         (3 bytes)

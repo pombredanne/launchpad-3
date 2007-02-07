@@ -42,7 +42,7 @@
 
   <div id="source">
     <ul>
-      <li class="packages">
+      <li class="source package">
         <a tal:define="spackage context/distributionsourcepackagerelease"
            tal:content="spackage/title"
            tal:attributes="href spackage/fmt:url">SOURCEPACKAGE</a>
@@ -53,7 +53,7 @@
   <h2>File download</h2>
 
   <div id="files">
-    <ul class="packages" tal:condition="context/files">
+    <ul class="download" tal:condition="context/files">
       <li tal:repeat="file context/files">
         <a tal:content="file/libraryfile/filename"
            tal:attributes="href file/libraryfile/http_url"></a>
