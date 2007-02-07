@@ -89,8 +89,8 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-  <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
-    <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
+      <div class="report">
+        <h2>Bug description <small>(<a href="+edit">edit</a>)</small></h2>
 
     <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
@@ -104,7 +104,7 @@
            tal:attributes="
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
-  </fieldset>
+  </div>
 
   <div style="margin-bottom: 1em; text-align: center">
     <span tal:condition="view/wasDescriptionModified" 

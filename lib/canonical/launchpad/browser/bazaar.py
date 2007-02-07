@@ -9,10 +9,12 @@ __all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
 import operator
 
 from zope.component import getUtility
+
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
 import canonical.launchpad.layers
@@ -39,10 +41,7 @@ class BazaarApplicationView:
         self.seriesset = getUtility(IProductSeriesSet)
 
     def branch_count(self):
-        """List of all branches in the system."""
-        branches = self.context.all
-        items = shortlist(branches, 8000, hardlimit=10000)
-        return sorted(items, key=operator.attrgetter('sort_key'))
+        return getUtility(IBranchSet).count()
 
     def product_count(self):
         return getUtility(IProductSet).getProductsWithBranches().count()
@@ -82,17 +81,20 @@ class BazaarApplicationView:
                     continue
         return count
 
-    def recentlyChangedBranches(self):
+    @cachedproperty
+    def recently_changed_branches(self):
         """Return the five most recently changed branches."""
-        return getUtility(IBranchSet).getRecentlyChangedBranches(5)
+        return list(getUtility(IBranchSet).getRecentlyChangedBranches(5))
 
-    def recentlyImportedBranches(self):
+    @cachedproperty
+    def recently_imported_branches(self):
         """Return the five most recently imported branches."""
-        return getUtility(IBranchSet).getRecentlyImportedBranches(5)
+        return list(getUtility(IBranchSet).getRecentlyImportedBranches(5))
 
-    def recentlyRegisteredBranches(self):
+    @cachedproperty
+    def recently_registered_branches(self):
         """Return the five most recently registered branches."""
-        return getUtility(IBranchSet).getRecentlyRegisteredBranches(5)
+        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(5))
 
 
 class BazaarApplicationNavigation(Navigation):
