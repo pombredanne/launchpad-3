@@ -579,7 +579,8 @@ class POTemplate(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file)
+                    file=file,
+                    logger=logger)
                 self.source_file = entry_to_import.content
                 self.source_file_format = entry_to_import.format
             else:
@@ -589,7 +590,8 @@ class POTemplate(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file)
+                    file=file,
+                    logger=logger)
             translation_import(self,
                                importer.getTemplate(entry_to_import.path),
                                entry_to_import.importer)

@@ -5,7 +5,7 @@ SET client_min_messages=ERROR;
    Firefox and OpenOffice import/export.
 */
 
-  -- Allow for recording if someone is essential to a spec discussions
+  -- Column which holds alternative message IDs for Firefox
 ALTER TABLE potmsgset
     ADD COLUMN alternative_msgid TEXT DEFAULT NULL;
 UPDATE potmsgset SET alternative_msgid=NULL;

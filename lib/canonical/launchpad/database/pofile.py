@@ -616,7 +616,8 @@ class POFile(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file)
+                    file=file,
+                    logger=logger)
             else:
                 importer = PoSupport(
                     path=entry_to_import.path,
@@ -624,7 +625,8 @@ class POFile(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file)
+                    file=file,
+                    logger=logger)
             newtranslation = importer.getTranslation(entry_to_import.
                                                      path,
                                                      self.language)

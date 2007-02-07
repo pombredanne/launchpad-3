@@ -18,13 +18,15 @@ class PoSupport:
     implements(ITranslationImport)
 
     def __init__(self, path, productseries=None, distrorelease=None,
-                 sourcepackagename=None, is_published=False, file=None):
+                 sourcepackagename=None, is_published=False, file=None,
+                 logger=None):
         self.basepath = path
         self.productseries = productseries
         self.distrorelease = distrorelease
         self.sourcepackagename = sourcepackagename
         self.is_published = is_published
         self.file = file
+        self.logger = logger
 
     @property
     def allentries(self):
