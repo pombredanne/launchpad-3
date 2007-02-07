@@ -22,6 +22,7 @@ person:
   I couldn't get testbrowser to tell me where it redirected to in the
   case of a URL that could not be displayed, so I am using old pagetest
   syntax here.
+      http://www.zope.org/Collectors/Zope3-dev/755
 
 If a normal user goes to a page on the site, it will load as normal:
 
@@ -159,3 +160,9 @@ redirected:
     HTTP/1.1 200 Ok
     ...
 
+
+  XXX: 20070207 jamesh
+  It would be good to check the workflow of an unauthenticated user
+  logs on to Launchpad as a user who is a member of the beta testers
+  team.  This really requires support from testbrowser for testing of
+  redirections to remote sites though.
