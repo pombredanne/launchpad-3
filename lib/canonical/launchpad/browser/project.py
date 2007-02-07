@@ -11,6 +11,7 @@ __all__ = [
     'ProjectLatestTicketsView',
     'ProjectNavigation',
     'ProjectEditView',
+    'ProjectAppointDriverView',
     'ProjectSetNavigation',
     'ProjectSetView',
     'ProjectRdfView',
@@ -31,6 +32,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.ticket import TicketAddView
+from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -198,6 +200,12 @@ class ProjectEditView(LaunchpadEditFormView):
             # If the project is inactive, we can't traverse to it
             # anymore.
             return canonical_url(getUtility(IProjectSet))
+
+
+class ProjectAppointDriverView(AppointDriverView):
+    """View class that lets you appoint the Project's driver."""
+
+    schema = IProject
 
 
 class ProjectAddProductView(LaunchpadFormView):

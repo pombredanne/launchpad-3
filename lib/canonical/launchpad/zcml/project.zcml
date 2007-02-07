@@ -152,17 +152,14 @@
         template="../templates/launchpad-editform.pt"
         lp:url="/projects/$Project.name/+changetranslators" />
 
-    <browser:editform
+    <browser:page
         name="+driver"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="driver"
-        class="canonical.launchpad.browser.ProjectEditView"
+        class="canonical.launchpad.browser.ProjectAppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
+        lp:url="/$Project.name/+driver" />
 
     <browser:page
         name="+newproduct"

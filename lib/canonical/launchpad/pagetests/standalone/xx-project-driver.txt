@@ -1,0 +1,28 @@
+Appoint Sample Person as the driver of the GNOME Project.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> browser.getLink('Appoint driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/gnome/+driver'
+  >>> browser.title
+  'Appoint the driver for The GNOME Project'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+Redirect to the project's overview page.
+
+  >>> browser.url
+  'http://launchpad.dev/gnome'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of the project.
+
+  >>> project_portlet = find_portlet(browser.contents, 'The GNOME Project')
+  >>> project_portlet.find(text='Driver:').findNext('a').string
+  u'Sample Person'
