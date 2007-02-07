@@ -627,7 +627,7 @@ class IPerson(IHasSpecifications):
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
                       language=None, sort=None, participation=None,
-                      needs_attention=False, ):
+                      needs_attention=False):
         """Search the person's tickets.
 
         See ITicketCollection for the description of the standard search
