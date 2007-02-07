@@ -17,7 +17,7 @@ import os
 
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
     """For /
-    
+
     Shows ~username and ~teamname directories for the user.
     """
     def __init__(self, avatar):
@@ -43,11 +43,11 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
 
     def setListenerFactory(self, factory):
         self.listenerFactory = factory
-    
+
 
 class SFTPServerUserDir(adhoc.AdhocDirectory):
     """For /~username
-    
+
     Ensures subdirectories are a launchpad product name, or possibly '+junk' if
     this is not inside a team directory.
 
@@ -71,7 +71,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
                     "Product ID is None should mean Name is +junk, got %r"
                     % (productName,))
 
-            self.putChild(productName, 
+            self.putChild(productName,
                           SFTPServerProductDir(avatar, lpid, productID,
                                                productName, branches, self))
 
@@ -85,7 +85,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         self.avatar = avatar
         self.userID = lpid
         self.junkAllowed = junkAllowed
-        
+
     def rename(self, newName):
         raise PermissionError(
             "renaming user directory %r is not allowed." % self.name)
@@ -104,7 +104,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
-                raise PermissionError( 
+                raise PermissionError(
                     "Directories directly under a user directory must be named "
                     "after a product name registered in Launchpad "
                     "<https://launchpad.net/>.")
@@ -137,7 +137,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
 
 class SFTPServerProductDir(adhoc.AdhocDirectory):
     """For /~username/product
-    
+
     Inside a product dir there can only be directories, which will be
     SFTPServerBranch instances.
     """
@@ -154,7 +154,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
             self.putChild(branchName,
                           SFTPServerBranch(avatar, branchID, branchName,
                                            parent))
-            
+
     def createDirectory(self, childName):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
@@ -165,7 +165,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # https://launchpad.net/products/launchpad/+bug/33223
         if self.exists(childName):
             # "mkdir failed" is the magic string that bzrlib will interpret to
-            # mean "already exists". 
+            # mean "already exists".
             raise VFSError("mkdir failed")
         deferred = self.avatar.createBranch(self.userID, self.productID,
                                             childName)
@@ -206,7 +206,7 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         def cb(productdir):
             return productdir.createDirectory(childName)
         return deferred.addCallback(cb)
-        
+
 
 class WriteLoggingDirectory(osfs.OSDirectory):
     def __init__(self, listener, path, name=None, parent=None):
@@ -242,7 +242,7 @@ class WriteLoggingDirectory(osfs.OSDirectory):
 
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
-    
+
     Anything is allowed here, except for tricks like symlinks that point above
     this point.
 
