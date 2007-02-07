@@ -27,7 +27,7 @@ If we enter an non-existant product, we get an error message.
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    Invalid value
+    There is no product named 'non-existant' registered in Launchpad
 
 Selecting a valid package will take us to the next filebug step.
 
