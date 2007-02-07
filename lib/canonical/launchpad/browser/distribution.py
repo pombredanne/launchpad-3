@@ -10,6 +10,7 @@ __all__ = [
     'DistributionView',
     'DistributionAllPackagesView',
     'DistributionEditView',
+    'DistributionAppointDriverView',
     'DistributionSetView',
     'DistributionAddView',
     'DistributionBugContactEditView',
@@ -36,6 +37,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
@@ -131,7 +133,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals for all releases'
         return Link('+driver', text, summary, icon='edit')
 
@@ -387,6 +389,12 @@ class DistributionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+
+class DistributionAppointDriverView(AppointDriverView):
+    """View that lets you appoint the Distribution's driver"""
+
+    schema = IDistribution
 
 
 class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
