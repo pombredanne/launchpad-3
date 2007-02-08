@@ -639,10 +639,12 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 20px 0 0;
   font-size: 2.5em;
 }
-#structuralobjectchildren {
-  float: left;
-  margin: 12px 0 0 0;
-  width: 25%;
+#structural-children {
+  clear: both;
+  font-size: 0.75em;
+  margin-top: 2em;
+  padding: 2em 0 0;
+  border-top: 1px dotted #ccc;
 }
 #applicationchooser {
   clear: both;
@@ -1133,13 +1135,6 @@ body.tab-support #actions h2, body.tab-support #actions h2:hover {
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
-}
-#structural-children {
-  clear: both;
-  font-size: 0.75em;
-  margin-top: 4em;
-  padding-top: 0;
-  border-top: 1px dotted #ccc;
 }
 /* Matthew's code for laying out the columns: */
 body {

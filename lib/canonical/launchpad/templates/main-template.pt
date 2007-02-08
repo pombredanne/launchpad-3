@@ -181,10 +181,10 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
-                      <div id="structural-children"
+                      <div
                         tal:define="structuralobject CONTEXTS/lp:structuralobject" 
                         tal:condition="structuralobject"
-                        tal:content="structure structuralobject/@@+structural-footer"
+                        tal:replace="structure structuralobject/@@+structural-footer"
                       />
                     </div>
                     <div id="portlets">
