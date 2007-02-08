@@ -1519,24 +1519,12 @@ class NascentUpload:
         """Return the published sources (parents) for a given file."""
         sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
             uploaded_file.package)
-        # When looking for published sources, to verify that an uploaded
-        # file has a usable version number, we must consider the special
-        # case of the backports pocket.
-        # Across the release, security and uploads pockets, we have one
-        # sequence of versions, and any new upload must have a higher
-        # version than the currently highest version across these pockets.
-        # Backports has its own version sequence, all higher than the
-        # highest we'll ever see in other pockets. So, it's not a problem
-        # that the upload is a lower version than can be found in backports,
-        # unless the upload is going to backports.
-        # See bug 34089.
-
-        if target_pocket is not PackagePublishingPocket.BACKPORTS:
-            exclude_pocket = PackagePublishingPocket.BACKPORTS
-            pocket = None
-        else:
-            exclude_pocket = None
-            pocket = PackagePublishingPocket.BACKPORTS
+        # XXX cprov 20070208: only check uploads version consistency against
+        # RELEASE pocket. We are relaxing constraints here since there are
+        # many corner cases that can be only identified manual during the
+        # mandatory review in queue-time. See bug #83976
+        pocket = PackagePublishingPocket.RELEASE
+        exclude_pocket = None
 
         candidates = self.distrorelease.getPublishedReleases(
             sourcename, include_pending=True, pocket=pocket,
@@ -1562,14 +1550,9 @@ class NascentUpload:
                 "%s: Unable to find arch: %s" % (uploaded_file.package,
                                                  archtag))
             return None
-        # Once again, consider the special case of backports. See comment
-        # in _getPublishedSources and bug 34089.
-        if target_pocket is not PackagePublishingPocket.BACKPORTS:
-            exclude_pocket = PackagePublishingPocket.BACKPORTS
-            pocket = None
-        else:
-            pocket = PackagePublishingPocket.BACKPORTS
-            exclude_pocket = None
+        # see the comment above in _getPublishedSources
+        pocket = PackagePublishingPocket.RELEASE
+        exclude_pocket = None
 
         candidates = dar.getReleasedPackages(
             binaryname, include_pending=True, pocket=pocket,
@@ -1585,62 +1568,6 @@ class NascentUpload:
                     break
 
         return candidates
-
-    def _checkSourceBackports(self, uploaded_file):
-        """Reject source upload if it is newer than that in BACKPORTS.
-
-        If the proposed source version is newer than the newest version
-        of the same source in BACKPORTS, the upload will be rejected.
-
-        It must not be called for uploads in BACKPORTS pocket itself,
-
-        It does nothing BACKPORTS does not contain any version of the
-        proposed source.
-        """
-        assert self.pocket != PackagePublishingPocket.BACKPORTS
-
-        backports = self._getPublishedSources(
-            uploaded_file, PackagePublishingPocket.BACKPORTS)
-
-        if not backports:
-            return
-
-        first_backport = backports[-1].sourcepackagerelease.version
-        proposed_version = uploaded_file.version
-
-        if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
-            self.reject("%s: Version newer than that in BACKPORTS. %s >= %s"
-                        % (uploaded_file.package, proposed_version,
-                           first_backport))
-
-
-    def _checkBinaryBackports(self, uploaded_file, archtag):
-        """Reject binary upload if it is newer than that in BACKPORTS.
-
-        If the proposed binary version is newer than the newest version
-        of the same binary in BACKPORTS, the upload will be rejected.
-
-        It must not be called for uploads in BACKPORTS pocket itself,
-
-        It does nothing BACKPORTS does not contain any version of the
-        proposed binary.
-        """
-        assert self.pocket != PackagePublishingPocket.BACKPORTS
-
-        backports = self._getPublishedBinaries(
-            uploaded_file, archtag, PackagePublishingPocket.BACKPORTS)
-
-        if not backports:
-            return
-
-        first_backport = backports[-1].binarypackagerelease.version
-        proposed_version = uploaded_file.version
-
-        if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
-            self.reject("%s: Version newer than that in BACKPORTS. %s >= %s"
-                        % (uploaded_file.package, proposed_version,
-                           first_backport))
-
 
     def find_and_apply_overrides(self):
         """Look in the db for each part of the upload to see if it's overridden
@@ -1691,9 +1618,6 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                if self.pocket != PackagePublishingPocket.BACKPORTS:
-                    self._checkSourceBackports(uploaded_file)
-
             elif not uploaded_file.is_source:
                 self.logger.debug("getPublishedReleases()")
 
@@ -1733,9 +1657,6 @@ class NascentUpload:
                     self.logger.debug("%s: (binary) NEW" % (
                         uploaded_file.package))
                     uploaded_file.new = True
-
-                if self.pocket != PackagePublishingPocket.BACKPORTS:
-                    self._checkBinaryBackports(uploaded_file, archtag)
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components

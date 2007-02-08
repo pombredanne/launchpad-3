@@ -371,63 +371,100 @@ created with the binary package name.
   >>> assert spn_set.queryByName('bar-bin') is None
 
 
-Check bahaviour of upload system for uploads to pocket BACKPORTS (see
-bug #34089 and #58144)
+== Pocket Version Consistency ==
 
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
+Check behaviour of upload system for uploads to across pockets (see
+bug #34089, #58144 and #83976 for further info)
+
+Let's start a new package series by uploading foo_1.0-1 in
+ubututest/breezy-RELEASE:
+
+  >>> expect_okays('foo_1.0-1', upload_policy='sync', is_new=True)
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO    NEW: foo_1.0-1.dsc
+  INFO     OK: foo_1.0.orig.tar.gz
+  INFO     OK: foo_1.0-1.diff.gz
+  ...
+  INFO    Distribution: breezy
+  ...
 
 Set ubuntutest/breezy as the "current release" to activate post-release
 pockets.
 
+  >>> from canonical.lp.dbschema import DistributionReleaseStatus
   >>> breezy.releasestatus = DistributionReleaseStatus.CURRENT
   >>> flush_database_updates()
   >>> transaction.commit()
 
-Update a version of source package "foo" to breezy-backports
-(backports requires manual approval):
+Since we are using 'sync' policy in the following tests the packages
+are auto-approved, however, in real environment the will come with
+'insecure' policy which will force than to wait approval in UNAPPROVED
+queue.
 
-  >>> expect_okays('foo_2.9-1', upload_policy='sync', is_new=True)
+Upload a version of source package "foo" to breezy-backports:
+
+  >>> expect_okays('foo_2.9-1', upload_policy='sync')
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_2.9-1.dsc
+  INFO     OK: foo_2.9-1.dsc
+  INFO         -> Component: main Section: devel
   INFO     OK: foo_2.9.orig.tar.gz
   INFO     OK: foo_2.9-1.diff.gz
   ...
+  INFO    Distribution: breezy-backports
+  ...
 
-Since we have 2.9-1 as the current version in -backports, we should
-not allow higher versions uploads to other pockets, so version 2.9-2
-of foo target to -updates should be rejected:
+Due the contraint relaxation requested by bug #83976, even having
+foo_2.9-1 as the current version in BACKPORTS, we should be able to
+upload foo_2.9-2 to -updates and in real conditions, if it strongly
+affects the users it should be rejected by the package reviewer,
+otherwise people can leave with this inconsistency:
 
   >>> expect_okays('foo_2.9-2', upload_policy='sync')
-  Traceback (most recent call last):
-  ...
-  AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    Rejected:
-  INFO    foo: Version newer than that in BACKPORTS. 2.9-2 >= 2.9-1
+  INFO     OK: foo_2.9-2.dsc
+  INFO         -> Component: main Section: devel
+  INFO     OK: foo_2.9-2.diff.gz
   ...
   INFO    Distribution: breezy-updates
   ...
 
-  >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_2.9-2'))
-  >>> os.remove(os.path.join(rejected_dir, 'foo_2.9-2.distro'))
+Same behaviour is expected for a version in SECURITY lower than that
+in PROPOSED:
 
-This new version of foo can only be uploaded to the -backports pocket itself:
+  >>> expect_okays('foo_2.9-4', upload_policy='sync')
 
-  >>> expect_okays('foo_2.9-2', upload_policy='sync', is_new=True,
-  ...              release='breezy-backports')
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_2.9-2.dsc
-  INFO     OK: foo_2.9-2.diff.gz
+  INFO     OK: foo_2.9-4.dsc
+  INFO         -> Component: main Section: devel
+  INFO     OK: foo_2.9-4.diff.gz
+  ...
+  INFO    Distribution: breezy-proposed
+  ...
+
+  >>> expect_okays('foo_2.9-3', upload_policy='sync')
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO     OK: foo_2.9-3.dsc
+  INFO         -> Component: main Section: devel
+  INFO     OK: foo_2.9-3.diff.gz
+  ...
+  INFO    Distribution: breezy-security
   ...
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
@@ -574,7 +611,7 @@ work done.
   >>> result
   0
 
-Check the logging to ensure breezy-security was skipped. This ensures
+Check the logging to ensure breezy-autotest was skipped. This ensures
 changes to what's uploaded in the test above don't break the assumptions
 of this test.
 
@@ -583,9 +620,9 @@ of this test.
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
   ...
-  DEBUG   Skipping a-f stanza for breezy/10
+  DEBUG   Skipping a-f stanza for breezy-autotest/0
   ...
-  DEBUG   Skipping release files for breezy/10
+  DEBUG   Skipping release files for breezy-autotest/0
   ...
 
 Check the breezy-security release file doesn't exhibit bug 54039.
