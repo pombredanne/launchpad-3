@@ -79,15 +79,15 @@ def parse_relationship_section(content):
     """
     soup = BeautifulSoup(content)
     section = soup.find('ul')
+    whitespace_re = re.compile('\s+')
     for li in section.findAll('li'):
         if li.a:
             link = li.a
-            whitespace_re = re.compile('\s+')
             content = whitespace_re.sub(' ', link.string.strip())
             url = link['href']
             print 'LINK: "%s" -> %s' % (content, url)
         else:
-            content = li.string.replace('\n', '').replace(' ', '')
+            content = whitespace_re.sub(' ', li.string.strip())
             print 'TEXT: "%s"' % content
 
 
