@@ -421,9 +421,9 @@ Upload a version of source package "foo" to breezy-backports:
 
 Due the contraint relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
-upload foo_2.9-2 to -updates and in real conditions, if it strongly
-affects the users it should be rejected by the package reviewer,
-otherwise people can leave with this inconsistency:
+upload foo_2.9-2 to UPDATES and in real conditions, if it strongly
+affects the users' system it should be rejected by the package
+reviewer, otherwise people can leave with this inconsistency.
 
   >>> expect_okays('foo_2.9-2', upload_policy='sync')
 
@@ -474,6 +474,8 @@ rest of the test:
   >>> flush_database_updates()
   >>> transaction.commit()
 
+
+== Staged Security Uploads ==
 
 Perform a staged (source-first) security upload, simulating a run of
 the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
