@@ -3,7 +3,7 @@
 A quick helper function to list the subscribed people.
 
   >>> def print_subscribers(contents):
-  ...     portlet = find_tags_by_class(admin_browser.contents, 'people')[0]
+  ...     portlet = find_tags_by_class(contents, 'people')[0]
   ...     people = portlet.fetch('a')
   ...     for person in people:
   ...         print person.renderContents()
@@ -25,20 +25,15 @@ In order to subscribe to a branch, the user must be logged in.
   ...
   LinkNotFoundError
 
-The admin_browser is set up as foo.bar@canonical.com which is the same
-as the basic auth that was sent before in the old style tests.
-
-  >>> admin_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
-
-Initially there should be no subscribers.
-
-  >>> print_subscribers(admin_browser.contents)
-
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
   >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
-  >>> subscribe = user_browser.getLink('Subscribe')
+
+Initially there should be no subscribers.
+
+  >>> print_subscribers(user_browser.contents)
+  >>> user_browser.getLink('Subscribe').click()
 
 On the subscribe page there is a cancel button.  This will take us back
 to the main branch page, and not subscribe us.
@@ -74,7 +69,7 @@ subscribed.
 There should be only one person subscribed to the branch now.  
 
   >>> print_subscribers(user_browser.contents)
-  Test User
+  Sample Person
 
 Now the link should say "Edit Subscription" in the actions menu.
 Lets go to that page.
@@ -87,7 +82,7 @@ alter anything to do with our subscription.
   >>> user_browser.getControl('Cancel').click()
   >>> print_informational_message(user_browser.contents)
   >>> print_subscribers(user_browser.contents)
-  Foo Bar
+  Sample Person
 
 Now back to the editing page to change the details of our subscription.
 
@@ -112,7 +107,7 @@ informational message for us to see.
   </li></ul>
 
   >>> print_subscribers(user_browser.contents)
-  Foo Bar
+  Sample Person
 
 We do not really want to be subscribed. We load the edit subcription page.
 

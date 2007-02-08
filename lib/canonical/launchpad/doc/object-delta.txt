@@ -40,7 +40,7 @@ and the new object instances.
 The simplest case is are recording of new values.  The changes property
 of the delta object just shows the field name and the new value.
 
-    >>> delta.record_new_values(['foo', 'bar', 'wiz'])
+    >>> delta.recordNewValues(['foo', 'bar', 'wiz'])
     >>> display_delta(delta.changes)
     bar: 'world'
     wiz: 2
@@ -49,7 +49,7 @@ An alternative to just returning the new values is to return
 both the old and the new values for a field value.
 
      >>> delta = ObjectDelta(old_obj, new_obj)
-     >>> delta.record_new_and_old(['foo', 'bar', 'wiz'])
+     >>> delta.recordNewAndOld(['foo', 'bar', 'wiz'])
      >>> display_delta(delta.changes)
      bar: 'hello' => 'world'
      wiz: 1 => 2
@@ -59,7 +59,7 @@ Examples for this would be associated bugs, specs or brances with the
 specified object.
 
     >>> delta = ObjectDelta(old_obj, new_obj)
-    >>> delta.record_list_added_and_removed('baz', 'added', 'removed')
+    >>> delta.recordListAddedAndRemoved('baz', 'added', 'removed')
     >>> display_delta(delta.changes)
     added: [4]
     removed: [1]
@@ -78,10 +78,10 @@ the resulting map through to the constructor for a real delta object.
     ...     self.wiz = wiz
 
     >>> obj_delta = ObjectDelta(old_obj, new_obj)
-    >>> obj_delta.record_new_values(['foo', 'bar'])
-    >>> obj_delta.record_new_and_old(['wiz'])
-    >>> obj_delta.record_list_added_and_removed('baz', 'baz_added',
-    ...                                         'baz_removed')
+    >>> obj_delta.recordNewValues(['foo', 'bar'])
+    >>> obj_delta.recordNewAndOld(['wiz'])
+    >>> obj_delta.recordListAddedAndRemoved('baz', 'baz_added',
+    ...                                     'baz_removed')
     >>> delta = TestDelta(**obj_delta.changes)
     >>> delta.foo
     >>> delta.bar
