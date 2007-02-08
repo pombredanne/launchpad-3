@@ -976,7 +976,7 @@ class TicketNotification:
             target = 'distribution=%s; sourcepackage=%s;' % (
                 ticket.distribution.name, sourcepackage)
         else:
-            target = 'product=%s;' % self.product.name
+            target = 'product=%s;' % ticket.product.name
         if ticket.assignee:
             assignee = ticket.assignee.name
         else:
