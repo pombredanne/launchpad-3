@@ -299,10 +299,11 @@ class SprintSet:
         return iter(Sprint.select(orderBy='-time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None):
+            summary=None, driver=None, home_page=None, gotchi=None,
+            emblem=None):
         """See ISprintSet."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,
-            home_page=home_page)
+            home_page=home_page, gotchi=gotchi, emblem=emblem)
 

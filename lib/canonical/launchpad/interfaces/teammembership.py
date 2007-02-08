@@ -21,7 +21,12 @@ class ITeamMembership(Interface):
     person = Int(title=_("Member"), required=True, readonly=False)
     reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
 
-    datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
+    datejoined = Text(
+        title=_("Date Joined"), required=True, readonly=True,
+        description=_(
+            "If this is an active membership, it contains the date in which "
+            "the membership was approved. If this is a proposed membership, "
+            "it contains the date the user asked to join."))
     dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
@@ -36,6 +41,11 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
+    def sendExpirationWarningEmail():
+        """Send an email to the member warning him that this membership will
+        expire soon.
+        """
+
     def setStatus(status, reviewer, reviewercomment=None):
         """Set the status of this membership.
         
@@ -49,11 +59,13 @@ class ITeamMembership(Interface):
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
 
-    def getMembershipsToExpire():
+    def getMembershipsToExpire(when=None):
         """Return all TeamMemberships that should be expired.
 
+        If when is None, we use datetime.now().
+
         A TeamMembership should be expired when its expiry date is prior or
-        equal to today and its status is either ADMIN or APPROVED.
+        equal to :when: and its status is either ADMIN or APPROVED.
         """
 
     def new(person, team, status, dateexpires=None, reviewer=None,

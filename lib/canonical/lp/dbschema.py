@@ -1856,6 +1856,12 @@ class TicketSort(DBSchema):
     Sort tickets from oldset to newest.
     """)
 
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort tickets that recently received new information from the owner first.
+    """)
+
 
 class TicketStatus(DBSchema):
     """The current status of a Support Request

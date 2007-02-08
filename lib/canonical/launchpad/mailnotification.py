@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBranch, IDistroBugTask, IDistroReleaseBugTask, ILanguageSet,
@@ -392,7 +393,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
         change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.url
+        change_info += "   %s" % added_attachment.libraryfile.http_url
         changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
@@ -852,7 +853,7 @@ def notify_bug_attachment_added(bugattachment, event):
 
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
-    
+
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
@@ -879,7 +880,7 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
         else:
             templatename = 'new-member-notification.txt'
-        
+
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
@@ -962,6 +963,34 @@ class TicketNotification:
         """
         raise NotImplementedError
 
+    def getHeaders(self):
+        """Return additional headers to add to the email.
+
+        Default implementation adds a X-Launchpad-Question header.
+        """
+        ticket = self.ticket
+        headers = dict()
+        if self.ticket.distribution:
+            if ticket.sourcepackagename:
+                sourcepackage = ticket.sourcepackagename.name
+            else:
+                sourcepackage = 'None'
+            target = 'distribution=%s; sourcepackage=%s;' % (
+                ticket.distribution.name, sourcepackage)
+        else:
+            target = 'product=%s;' % ticket.product.name
+        if ticket.assignee:
+            assignee = ticket.assignee.name
+        else:
+            assignee = 'None'
+
+        headers['X-Launchpad-Question'] = (
+            '%s status=%s; assignee=%s; priority=%s; language=%s' % (
+                target, ticket.status.title, assignee,
+                ticket.priority.title, ticket.language.code))
+
+        return headers
+
     def getRecipients(self):
         """Return the recipient of the notification.
 
@@ -1019,11 +1048,12 @@ class TicketNotification:
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
+        headers = self.getHeaders()
         for notified_person in self.getRecipients():
             for address in contactEmailAddresses(notified_person):
                 if address not in sent_addrs:
                     simple_sendmail(
-                        from_address, address, subject, body)
+                        from_address, address, subject, body, headers)
                     sent_addrs.add(address)
 
     @property
@@ -1117,11 +1147,32 @@ class TicketModifiedDefaultNotification(TicketNotification):
         """When a comment is added, its title is used as the subject,
         otherwise the ticket title is used.
         """
+        prefix = '[Support #%s]: ' % self.ticket.id
         if self.new_message:
-            return '[Support #%s]: %s' % (
-                self.ticket.id, self.new_message.subject)
+            subject = self.new_message.subject
+            if prefix in self.new_message.subject:
+                return subject
+            elif subject[0:4] in ['Re: ', 'RE: ', 're']:
+                # Place prefix after possible reply prefix.
+                return subject[0:4] + prefix + subject[4:]
+            else:
+                return prefix + subject
         else:
-            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+            return prefix + self.ticket.title
+
+    def getHeaders(self):
+        """Add a References header."""
+        headers = TicketNotification.getHeaders(self)
+        if self.new_message:
+            # XXX flacoste 2007/02/02 The first message cannot contain
+            # a References because we don't create a Message instance
+            # for the ticket description, so we don't have a Message-ID.
+            # Bug #83846
+            index = list(self.ticket.messages).index(self.new_message)
+            if index > 0:
+                headers['References'] = (
+                    self.ticket.messages[index-1].rfc822msgid)
+        return headers
 
     def shouldNotify(self):
         """Only send a notification when a message was added or some
@@ -1327,11 +1378,10 @@ def notify_specification_modified(spec, event):
         simple_sendmail_from_person(event.user, address, subject, body)
 
 
-# def send_branch_revisions_updated(branch, ):
 def notify_branch_modified(branch, event):
     """Notify the related people that a branch has been modifed."""
-    branch_delta = branch.getDelta(event.object_before_modification,
-                                   event.user)
+    branch_delta = BranchDelta.construct(
+        event.object_before_modification, branch, event.user)
     if branch_delta is None:
         return
 
@@ -1367,14 +1417,11 @@ def notify_branch_modified(branch, event):
                 info_lines.append('')
             info_lines.append('%s changed to:\n\n%s' % (title, delta))
 
-    # If the tip revision has changed, then show the log for the tip.
+    # If the tip revision has changed, then show the log for the tip
+    # if the revision is found.
     if branch_delta.last_scanned_id is not None:
         tip_revision = branch.getTipRevision()
-        if tip_revision is None:
-            # it's a ghost
-            info_lines.append('Latest revision is a ghost (%s)' % (
-                branch_delta.last_scanned_id))
-        else:
+        if tip_revision is not None:
             # show the log entry
             log_entry = tip_revision.log_body
             if info_lines:

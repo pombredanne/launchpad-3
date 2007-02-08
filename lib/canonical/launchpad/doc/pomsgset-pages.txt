@@ -236,7 +236,8 @@ We do a new submit, but this time including a lock_timestamp field.
     ...         'lock_timestamp': '2006-11-28T13:00:00+00:00',
     ...         'alt': None,
     ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
+    ...         'msgset_1_es_translation_0_radiobutton':
+    ...             'msgset_1_es_translation_0_new',
     ...         'msgset_1_es_translation_0_new': 'Foo',
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
@@ -284,8 +285,9 @@ We do the submission with that lock_timestamp.
     ...         'lock_timestamp': old_timestamp_text,
     ...         'alt': None,
     ...         'msgset_1': None,
+    ...         'msgset_1_es_translation_0_radiobutton':
+    ...             'msgset_1_es_translation_0_new',
     ...         'msgset_1_es_translation_0_new': 'Foos',
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
     ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)

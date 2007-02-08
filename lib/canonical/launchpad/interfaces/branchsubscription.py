@@ -31,11 +31,11 @@ class IBranchSubscription(Interface):
         vocabulary='BranchSubscriptionNotificationLevel',
         default=BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
         description=_(
-        'Select the desired amount of email notifications.'))
+            'Select the desired amount of email notifications.'))
     max_diff_lines = Choice(
         title=_('Generated Diff Size Limit'), required=True,
         vocabulary='BranchSubscriptionDiffSize',
         default=BranchSubscriptionDiffSize.ONEKLINES,
         description=_(
-        'Diffs greater than the specified number of lines will not be '
-        'sent to the subscriber.'))
+            'Diffs greater than the specified number of lines will not be '
+            'sent to the subscriber.'))

@@ -21,14 +21,12 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.database.revision import RevisionNumber, Revision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
-from canonical.launchpad.utilities import ObjectDelta
 
 
 class Branch(SQLBase):
@@ -128,7 +126,10 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See IBranch."""
-        return self.title or self.unique_name
+        if self.title:
+            return self.title
+        else:
+            return self.unique_name
 
     @property
     def sort_key(self):
@@ -171,7 +172,7 @@ class Branch(SQLBase):
     def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
         # can't subscribe twice
-        assert(not self.hasSubscription(person))
+        assert not self.hasSubscription(person), "User is already subscribed."
         return BranchSubscription(branch=self, person=person,
                                   notification_level=notification_level,
                                   max_diff_lines=max_diff_lines)
@@ -191,7 +192,7 @@ class Branch(SQLBase):
     def unsubscribe(self, person):
         """See IBranch."""
         subscription = self.getSubscription(person)
-        assert(subscription is not None)
+        assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
 
     # revision number manipulation
@@ -234,34 +235,11 @@ class Branch(SQLBase):
         
     def notificationRecipientAddresses(self):
         """See IBranch."""
-        related_people = [
-            self.owner, self.author]
-        related_people = [
-            person for person in related_people if person is not None]
-        # listify the subscribers
-        subscribers = [person for person in self.subscribers]
         addresses = set()
-        for person in related_people + subscribers:
+        for person in self.subscribers:
             addresses.update(contactEmailAddresses(person))
         return sorted(addresses)
 
-    def getDelta(self, old_branch, user):
-        """See IBranch.getDelta()"""
-        delta = ObjectDelta(old_branch, self)
-        delta.record_new_values(("summary", "whiteboard", "last_scanned_id"))
-        delta.record_new_and_old(("name", "lifecycle_status",
-                                  "revision_count", "title", "url"))
-        # delta.record_list_added_and_removed()
-        # XXX thumper 2006-12-21: add in bugs and specs
-        if delta.changes:
-            changes = delta.changes
-            changes["branch"] = self
-            changes["user"] = user
-
-            return BranchDelta(**changes)
-        else:
-            return None
-        
 
 class BranchSet:
     """The set of all branches."""
@@ -363,13 +341,9 @@ class BranchRelationship(SQLBase):
     """
 
     _table = 'BranchRelationship'
-    _columns = [
-        ForeignKey(name='subject', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        IntCol(name='label', dbName='label', notNull=True),
-        ForeignKey(name='object', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        ]
+    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
+    label = IntCol(dbName='label', notNull=True),
+    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
 
     def _get_src(self):
         return self.subject

@@ -99,7 +99,7 @@
                 <img alt="" src="/@@/download" />
               </td>
               <td>
-                <a tal:attributes="href entry/content/url"
+                <a tal:attributes="href entry/content/http_url"
                    tal:content="entry/path">po/foo.pot</a> in
                 <a tal:condition="entry/sourcepackage"
                    tal:content="entry/sourcepackage/title"

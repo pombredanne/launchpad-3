@@ -12,7 +12,7 @@ __all__ = [
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from StringIO import StringIO
 
 import pytz
@@ -168,13 +168,10 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
-            revision_date = datetime.fromtimestamp(
-                bzr_revision.timestamp, tz=UTC)
-
             db_revision = getUtility(IRevisionSet).new(
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
-                revision_date=revision_date,
+                revision_date=self._timestampToDatetime(bzr_revision.timestamp),
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
                 parent_ids=bzr_revision.parent_ids)
@@ -186,6 +183,24 @@ class BzrSync:
             self.trans_manager.abort()
 
         return did_something
+
+    def _timestampToDatetime(self, timestamp):
+        """Convert the given timestamp to a datetime object.
+
+        This works around a bug in Python that causes datetime.fromtimestamp
+        to raise an exception if it is given a negative, fractional timestamp.
+
+        :param timestamp: A timestamp from a bzrlib.revision.Revision
+        :type timestamp: float
+
+        :return: A datetime corresponding to the given timestamp.
+        """
+        # Work around Python bug #1646728.
+        # See https://launchpad.net/bugs/81544.
+        int_timestamp = int(timestamp)
+        revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
+        revision_date += timedelta(seconds=timestamp - int_timestamp)
+        return revision_date
 
     def syncRevisionNumbers(self):
         """Synchronise the revision numbers for the branch."""
@@ -272,16 +287,11 @@ class BzrSync:
             
         diff_content = StringIO()
         show_diff_trees(tree_old, tree_new, diff_content)
-        lines = diff_content.getvalue().split("\n")
-        numlines = len(lines)
-        return lines
+        return diff_content.getvalue().split("\n")
 
     def get_revision_message(self, bzr_revision):
         outf = StringIO()
-        lf = log_formatter('long',
-                           # show_ids=True,
-                           to_file=outf
-                           )
+        lf = log_formatter('long', to_file=outf)
         rev_id = bzr_revision.revision_id
         rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
         if rev1 == 0:
@@ -296,40 +306,3 @@ class BzrSync:
                  )
         return outf.getvalue()
 
-def main(branch_id):
-    # Load branch with the given branch_id.
-    trans_manager = initZopeless(dbuser="importd")
-    status = 0
-
-    # Prepare logger
-    class Formatter(logging.Formatter):
-        def format(self, record):
-            if record.levelno != logging.INFO:
-                record.prefix = record.levelname.lower()+": "
-            else:
-                record.prefix = ""
-            return logging.Formatter.format(self, record)
-    formatter = Formatter("%(prefix)s%(message)s")
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
-    logger = logging.getLogger("BzrSync")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-
-    branch = getUtility(IBranchSet).get(branch_id)
-    if branch is None:
-        logger.error("Branch not found: %d" % branch_id)
-        status = 1
-    else:
-        bzrsync = BzrSync(trans_manager, branch, logger=logger)
-        bzrsync.syncHistoryAndClose()
-    return status
-
-if __name__ == '__main__':
-    execute_zcml_for_scripts()
-
-    if len(sys.argv) != 2:
-        sys.exit("Usage: bzrsync.py <branch_id>")
-    branch_id = int(sys.argv[1])
-    status = main(branch_id)
-    sys.exit(status)

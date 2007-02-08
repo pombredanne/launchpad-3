@@ -38,7 +38,7 @@ The branch author should default to the current user. We clear it away so we
 can test the context links on the new branch page.
 
   >>> user_browser.getControl('Author').value
-  'test@canonical.com'
+  'name12'
   >>> user_browser.getControl('Author').value = ''
 
   >>> user_browser.getControl('Name').value = 'main'

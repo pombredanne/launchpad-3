@@ -4,4 +4,5 @@
 %(branch_title)s
 %(branch_url)s
 
-You received this email because either you are the owner of the branch or you are subscribed to this branch. To unsubscribe from this branch use go to %(unsubscribe_url)s.
+You received this email because you are subscribed to this branch.
+To unsubscribe from this branch use go to %(unsubscribe_url)s.
