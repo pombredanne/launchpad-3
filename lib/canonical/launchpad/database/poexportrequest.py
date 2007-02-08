@@ -8,8 +8,11 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import RosettaFileFormat
+
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
     IPOExportRequest
 
