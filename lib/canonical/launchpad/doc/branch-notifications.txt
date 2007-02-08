@@ -23,11 +23,16 @@ sent.
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.interfaces import IBranch, IBranchSet, IPersonSet
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from canonical.lp.dbschema import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
 
     >>> login('test@canonical.com')
     >>> test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
-    >>> branch.subscribe(test_user)
+    >>> branch.subscribe(
+    ...     test_user,
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
     <BranchSubscription ...> 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
@@ -156,7 +161,10 @@ Snapshot it for the delta
     >>> branch.revision_count = revision_count
     >>> branch.last_scanned_id = last_id
     >>> another_person = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
-    >>> branch.subscribe(another_person)
+    >>> branch.subscribe(
+    ...     another_person,
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
     <BranchSubscription ...>
     >>> notify(SQLObjectModifiedEvent(
     ...     branch, before_modification, ['revision_count', 'last_scanned_id']))
@@ -181,7 +189,6 @@ both the author and the subscriber
     >>> print body
     Content-Type: text/plain; charset="utf-8"
     ...
-    To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Branch ~name12/+junk/junk.dev] Ubuntu Junk Code
     ...
