@@ -1,5 +1,4 @@
-POTemplateSet
-=============
+= POTemplateSet =
 
 Test that the security setup for IPOTemplateSet is working
 
@@ -7,8 +6,7 @@ Test that the security setup for IPOTemplateSet is working
   >>> from canonical.launchpad.interfaces import IPOTemplateSet
   >>> potemplate_set = getUtility(IPOTemplateSet)
 
-getAllByName
-------------
+== getAllByName ==
 
 This method will return all IPOTemplate that have a given name.
 
@@ -23,15 +21,14 @@ This method will return all IPOTemplate that have a given name.
   >>> 'Template "evolution-2.2" in Evolution trunk' in titles
   True
 
-getAllOrderByDateLastUpdated
-----------------------------
+== getAllOrderByDateLastUpdated ==
 
 This method will give us all available IPOTemplate sorted by their
 modification date.
 
   >>> templates = list(potemplate_set.getAllOrderByDateLastUpdated())
   >>> len(templates)
-  8
+  9
   >>> templates[0].date_last_updated >= templates[5].date_last_updated
   True
   >>> templates[1].date_last_updated >= templates[5].date_last_updated
@@ -44,11 +41,9 @@ modification date.
   True
 
 
-POTemplateSubset
-================
+= POTemplateSubset= 
 
-getPOTemplateByName
--------------------
+== getPOTemplateByName ==
 
 This method gives us the IPOTemplate that belongs to this subset and its name
 is the given one.
@@ -62,8 +57,7 @@ is the given one.
   >>> print potemplate.title
   Template "evolution-2.2" in Evolution trunk
 
-getPOTemplateByPath
--------------------
+== getPOTemplateByPath ==
 
 This method gives us the IPOTemplate that belongs to this subset and its path
 in the source code is the given one.
@@ -73,8 +67,7 @@ in the source code is the given one.
   >>> print potemplate.title
   Template "evolution-2.2-test" in Evolution trunk
 
-getAllOrderByDateLastUpdated
-----------------------------
+== getAllOrderByDateLastUpdated ==
 
 This method will give us all available IPOTemplate for this subset sorted
 by their modification date.
@@ -85,8 +78,7 @@ by their modification date.
   >>> templates[0].date_last_updated >= templates[1].date_last_updated
   True
 
-getPOTemplateByTranslationDomain
---------------------------------
+== getPOTemplateByTranslationDomain ==
 
 This method gives us the IPOTemplate that belongs to this subset and its
 translation domain is the given one.
@@ -99,8 +91,7 @@ translation domain is the given one.
   >>> print potemplate.title
   Template "netapplet" in NetApplet trunk
 
-getClosestPOTemplate
---------------------
+== getClosestPOTemplate ==
 
 With this method, we get the IPOTemplate from this Subset that has the bigger
 part of the path in common.
@@ -140,8 +131,7 @@ But if we give the empty string or None, we get nothing
   >>> potemplatesubset.getClosestPOTemplate('') is None
   True
 
-POTemplate
-==========
+= POTemplate =
 
 Check that we can get IPOFile based on its path.
 
@@ -152,8 +142,7 @@ Check that we can get IPOFile based on its path.
   Spanish (es) translation of evolution-2.2 in Evolution trunk
 
 
-newPOFile
----------
+== newPOFile ==
 
 The Portuguese translation has not been started yet; therefore,
 when we call IPOTemplate.newPOFile() a POFile instance will
@@ -186,3 +175,64 @@ Or any fuzzy (need-review) entries:
   0
   >>> pofile.fuzzy_count
   0
+
+== relatives_by_name ==
+
+This property gives us an iterator of IPOTemplate objects that have the
+same IPOTemplateName and are 'current'.
+
+This is the template we are working with:
+
+  >>> potemplate.title
+  u'Template "evolution-2.2" in Evolution trunk'
+
+And this is the list of templates related with this one based on its
+IPOTemplateName:
+
+  >>> for relative_potemplate in potemplate.relatives_by_name:
+  ...     assert relative_potemplate.iscurrent
+  ...     print relative_potemplate.title
+  Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+
+== relatives_by_source ==
+
+This property gives us an iterator of IPOTemplate objects that are in the
+same context IProductSeries or IDistroRelease/ISourcePackageName and are
+'current'.
+
+First, we can see the relatives in a IProductSeries context.
+
+  >>> for relative_potemplate in potemplate.relatives_by_source:
+  ...     assert relative_potemplate.iscurrent
+  ...     print relative_potemplate.title
+  Template "evolution-2.2-test" in Evolution trunk
+
+Let's get a new IPOTemplate that belongs to an IDistroRelease:
+
+  >>> potemplate = POTemplate.get(4)
+  >>> print potemplate.title
+  Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+
+And this is the list of templates related with this one based on its
+context:
+
+  >>> for relative_potemplate in potemplate.relatives_by_source:
+  ...     assert relative_potemplate.iscurrent
+  ...     print relative_potemplate.title
+  Template "man" in Ubuntu Hoary package "evolution"
+
+But we can see that there is a third template in this context:
+
+  >>> not_current_template = POTemplate.get(9)
+  >>> not_current_template.productseries == potemplate.productseries
+  True
+  >>> not_current_template.distrorelease == potemplate.distrorelease
+  True
+  >>> not_current_template.sourcepackagename == potemplate.sourcepackagename
+  True
+
+And this is the explanation of not having it in previous lists,
+it's not current.
+
+  >>> not_current_template.iscurrent
+  False
