@@ -45,7 +45,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
     get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.karma import KarmaTotalCache
+from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -154,9 +154,6 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin(
-        'KarmaPersonCategoryCacheView', joinColumn='person',
-        orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
@@ -614,6 +611,19 @@ class Person(SQLBase):
     def searchTasks(self, search_params):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    @property
+    def karma_category_caches(self):
+        """See IPerson."""
+        return KarmaCache.select(
+            AND(
+                KarmaCache.q.personID == self.id,
+                KarmaCache.q.categoryID != None,
+                KarmaCache.q.productID == None,
+                KarmaCache.q.projectID == None,
+                KarmaCache.q.distributionID == None,
+                KarmaCache.q.sourcepackagenameID == None),
+            orderBy=['category'])
 
     @property
     def karma(self):
