@@ -221,9 +221,13 @@ a list of isolated attributes for each mentioned item.
   ...          linked with spaces
   ...        </a>
   ...     </li>
+  ...     <li>
+  ...          text with spaces
+  ...     </li>
   ... '''
 
   >>> parse_relationship_section(content)
   LINK: "linked_item" -> somewhere
   TEXT: "not_linked_item"
   LINK: "linked with spaces" -> somewhereelse
+  TEXT: "text with spaces"

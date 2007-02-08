@@ -21,8 +21,8 @@ Let's fill a IPackageRelationshipSet:
 
   >>> relationship_set.add(
   ...    name="test",
-  ...    operator="",
-  ...    version="",
+  ...    operator="=",
+  ...    version="1.0",
   ...    url=None)
 
 Note that iterations over PackageRelationshipSet are sorted
@@ -46,11 +46,11 @@ correctly like:
 
   <ul>
      <li>
-        <a href="package-one-lp-page">package-one (operator)</a>
+        <a href="package-one-lp-page">package-one [(operator version)]</a>
      </li>
      ...
      <li>
-        package-two
+        package-two [(operator version)]
      </li>
   </ul>
 
@@ -59,7 +59,7 @@ correctly like:
 
   >>> parse_relationship_section(pkg_rel_view())
   LINK: "foobar (&gt;= 1.0.2)" -> http://whatever/
-  TEXT: "test"
+  TEXT: "test (= 1.0)"
 
 
 Note that no link is rendered for IPackageReleationship where 'url' is
