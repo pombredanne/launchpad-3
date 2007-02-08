@@ -20,3 +20,41 @@ Test that the project edit page works when we POST changes.
 
   >>> user_browser.url
   'http://launchpad.dev/new-name'
+
+Regular users can't access the +review page.
+
+  >>> user_browser.getLink('Administer')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Test that we can access the +review page as a LP admin.
+
+  >>> admin_browser.open('http://launchpad.dev/new-name')
+  >>> admin_browser.getLink('Administer').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/new-name/+review'
+
+  >>> print admin_browser.contents
+  <...
+        <h1>Review upstream project details</h1>
+  ...
+
+Mark the project as reviewed.
+
+  >>> admin_browser.getControl('Reviewed').selected = True
+  >>> admin_browser.getControl('Change').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/new-name'
+
+The project portlet shows the status as reviewed.
+
+  >>> project_portlet = find_portlet(
+  ...     admin_browser.contents, 'New Title')
+  >>> for status in project_portlet.find(
+  ...     text='Project Status:').findAllNext('span'):
+  ...     print status
+  <span>Reviewed<br /></span>
+  <span>Active<br /></span>

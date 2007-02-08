@@ -126,20 +126,14 @@
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectEditView"
+        class="canonical.launchpad.browser.ProjectReviewView"
         facet="overview"
-        label="Review upstream project details"
-        fields="name displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject owner active
-                reviewed"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+review">
-    </browser:editform>
+        template="../templates/project-edit.pt"
+        lp:url="/projects/$Project.name/+review" />
 
     <browser:editform
         name="+changetranslators"
