@@ -36,4 +36,4 @@ ALTER TABLE revisionnumber_id_seq
 ALTER TABLE branchrevision ALTER COLUMN sequence DROP NOT NULL;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 05, 0);
