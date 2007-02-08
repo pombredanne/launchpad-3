@@ -1,3 +1,4 @@
+
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Run all of the pagetests, in priority order.
 
@@ -84,7 +85,6 @@ def extract_text(soup):
     # eg. <p>foo</p><p>bar</p>
     result = u''
     for node in soup:
-        # skip comments
         if isinstance(node, Comment):
             pass
         elif isinstance(node, NavigableString):

@@ -2,7 +2,7 @@
 
 There are several views of the branches related to a person.
 
-Branch lists for people now include branches that are owned by
+Branch lists for people also include branches that are owned by
 teams that the person is participating in.
 
 == Related Branches ==

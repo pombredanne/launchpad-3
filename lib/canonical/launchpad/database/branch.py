@@ -320,7 +320,7 @@ class BranchSet:
         if not owner_ids:
             return []
         branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
-        return branches.prejoin(['owner', 'product'])
+        return branches.prejoin(['product'])
 
 
 class BranchRelationship(SQLBase):

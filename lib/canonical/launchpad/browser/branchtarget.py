@@ -50,7 +50,7 @@ class BranchTargetView(LaunchpadFormView):
 
     def _branches(self):
         branches = self.context.branches
-        items = shortlist(branches, 8000, hardlimit=10000)
+        items = shortlist(branches, 1000, hardlimit=1500)
         return sorted(items, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
@@ -170,17 +170,18 @@ class PersonBranchesView(BranchTargetView):
 
     def _branches(self):
         """All branches related to this target, sorted for display."""
-        # A cache to avoid repulling data from the database, which can be
-        # particularly expensive
         branches = set(self.context.branches)
         branches.update(self._team_branches_set)
-        items = shortlist(branches, 8000, hardlimit=10000)
+        items = shortlist(branches, 1000, hardlimit=1500)
         return sorted(items, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
     def _team_branches_set(self):
         teams = self.context.teams_participated_in
-        return set(getUtility(IBranchSet).getBranchesForOwners(teams))
+        branches = shortlist(
+            getUtility(IBranchSet).getBranchesForOwners(teams),
+            1000, hardlimit=1500)
+        return set(branches)
 
     @cachedproperty
     def _authored_branch_set(self):
