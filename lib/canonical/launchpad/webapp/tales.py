@@ -26,8 +26,10 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
+    IPerson, IBugSet, NotFoundError
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
     )
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema

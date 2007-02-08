@@ -17,7 +17,8 @@ from zope.security.management import (
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadPrincipal, IAuthorization)
 
 steveIsFixingThis = False
 
@@ -40,7 +41,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         - Otherwise, deny.
         """
         # XXX: webapp shouldn't be depending on launchpad interfaces..
-        from canonical.launchpad.interfaces import IAuthorization
         from canonical.launchpad.interfaces import IPerson
 
         # This check shouldn't be needed, strictly speaking.

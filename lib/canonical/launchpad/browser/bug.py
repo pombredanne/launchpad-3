@@ -33,7 +33,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
+    IBugWatchSet, ICveSet, IDistributionSourcePackage,
     ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
@@ -45,6 +45,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget

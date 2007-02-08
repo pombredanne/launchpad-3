@@ -10,7 +10,7 @@ import cgi
 from zope.interface import implements
 from canonical.lp import decorates
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
     IFacetLink, ILink, ILinkData, IStructuredString
     )

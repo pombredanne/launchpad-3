@@ -11,7 +11,7 @@ In this test, we'll use a URL hierarchy /countries/England/+towns/London
 In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
 will put in canonical.launchpad.ftests.
 
-    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import Interface, Attribute, implements
 
     >>> class ICountrySet(Interface):

@@ -26,7 +26,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, ICanonicalUrlData, IPOTemplateSet,
+    ITranslationImportQueue, IPOTemplateSet,
     ILanguageSet, NotFoundError, UnexpectedFormData, IPOFileSet)
 
 from canonical.launchpad.webapp import (
@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from canonical.lp.dbschema import RosettaImportStatus
 
