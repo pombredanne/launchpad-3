@@ -7,12 +7,12 @@ __all__ = ['BugTargetBase']
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IProduct
 from canonical.launchpad.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
 
@@ -115,16 +115,37 @@ class BugTargetBase:
 
         return self.searchTasks(all_tasks_query)
 
+    def _getBugTaskContextClause(self):
+        """XXX"""
+        if IProduct.providedBy(self):
+            return 'BugTask.product = %s' % sqlvalues(self)
+        else:
+            raise AssertionError("Unknown IBugTarget: %r" % self)
+
     def getBugCounts(self, user, statuses=None):
         """See IBugTarget."""
         if statuses is None:
             statuses = BugTaskStatus.items
-        #XXX: This needs to be optimized, there should be only one db
-        #     query
-        bug_counts = {}
-        for status in statuses:
-            search_params = BugTaskSearchParams(
-                user, status=status, omit_dupes=True)
-            bugtasks = self.searchTasks(search_params)
-            bug_counts[status] = bugtasks.count()
-        return bug_counts
+
+        from_tables = ['BugTask', 'Bug']
+        count_column = """
+            SUM (CASE WHEN BugTask.status = %s
+                        THEN 1 ELSE 0 END) AS %s"""
+        select_columns = [
+            count_column % tuple(sqlvalues(status) + (status.name.lower(), ))
+            for status in statuses]
+        conditions = [
+            '(%s)' % self._getBugTaskContextClause(),
+            'BugTask.bug = Bug.id',
+            'Bug.duplicateof is NULL']
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        cur = cursor()
+        cur.execute(
+            "SELECT %s FROM BugTask, Bug WHERE %s" % (
+                ', '.join(select_columns), ' AND '.join(conditions)))
+        [counts] = cur.dictfetchall()
+        return dict(
+            [(status, counts[status.name.lower()]) for status in statuses])

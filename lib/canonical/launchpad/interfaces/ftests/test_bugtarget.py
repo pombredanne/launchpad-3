@@ -124,7 +124,7 @@ def test_suite():
 
     setUpMethods = [
         productSetUp,
-        productSetUp,
+        productSeriesSetUp,
         projectSetUp,
         distributionSetUp,
         distributionSourcePackageSetUp,
