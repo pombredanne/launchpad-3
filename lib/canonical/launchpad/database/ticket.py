@@ -687,12 +687,12 @@ class TicketSearch:
 class TicketTargetSearch(TicketSearch):
     """Search tickets in an ITicketTarget context.
 
-    Used to implement ITicketTarget.search().
+    Used to implement ITicketTarget.searchTickets().
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 language=None, owner=None,  needs_attention_from=None,
-                 sort=None, product=None, distribution=None,
+                 language=None, sort=None, owner=None,
+                 needs_attention_from=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
@@ -753,7 +753,7 @@ class TicketPersonSearch(TicketSearch):
 
     def __init__(self, person, search_text=None,
                  status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                 participation=None, needs_attention=False, sort=None):
+                 sort=None, participation=None, needs_attention=False):
         if needs_attention:
             needs_attention_from = person
         else:
