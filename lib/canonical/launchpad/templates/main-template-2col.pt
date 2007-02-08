@@ -32,9 +32,7 @@
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
     </div>
-    <div class="userLog">
-      <tal:login tal:content="structure context/@@login_status" />
-    </div>
+    <div id="logincontrol" tal:content="structure context/@@login_status" />
     <div class="columns">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
         <div id="portal-columns">

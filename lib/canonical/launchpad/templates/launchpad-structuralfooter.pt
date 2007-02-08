@@ -1,24 +1,27 @@
-<div id="structuralobjectchildren">
-  <tal:if condition="python:view.num_lists == 0">
-    (no children)
-  </tal:if>
-  <tal:if condition="python:view.num_lists == 1">
-    <span class="primary">
-      <span tal:repeat="child view/children"
-            tal:replace="child" />
-      <span tal:condition="view/more_children">more</span>
-    </span>
-  </tal:if>
-  <tal:if condition="python:view.num_lists == 2">
-    <span class="primary">
-      <span tal:repeat="child view/children"
-            tal:replace="child" />
-      <span tal:condition="view/more_children">more</span>
-    </span>
-    <span class="secondary">
-      <span tal:repeat="child view/altchildren"
-            tal:replace="child" />
-      <span tal:condition="view/more_altchildren">more</span>
-    </span>
-  </tal:if>
+<div
+  tal:condition="python:view.num_lists == 1"
+  id="structural-children"
+  class="primary"
+>
+  <tal:child repeat="child view/children">
+    <tal:link replace="structure child/@@+shortlink" /><tal:comma
+    condition="not:repeat/child/end">,</tal:comma>
+  </tal:child>
+  <tal:ellipsis condition="view/more_children">&hellip;</tal:ellipsis>
+</div>
+<div tal:condition="python:view.num_lists == 2" id="structural-children">
+  <div class="primary">
+    <tal:child repeat="child view/children">
+      <tal:link replace="structure child/@@+shortlink" /><tal:comma
+      condition="not:repeat/child/end">,</tal:comma>
+    </tal:child>
+    <tal:ellipsis condition="view/more_children">&hellip;</tal:ellipsis>
+  </div>
+  <div class="secondary">
+    <tal:child repeat="child view/altchildren">
+      <tal:link replace="structure child/@@+shortlink" /><tal:comma
+      condition="not:repeat/child/end">,</tal:comma>
+    </tal:child>
+    <tal:ellipsis condition="view/more_altchildren">&hellip;</tal:ellipsis>
+  </div>
 </div>
