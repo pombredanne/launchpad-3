@@ -23,7 +23,8 @@
           </a>
         </li>
         <li>
-          <a href="+addticket">
+          <a href="+addticket"
+             tal:attributes="href string:${context/distribution/fmt:url}/+addticket">
             <img
               alt="Ask a question"
               src="/+icing/but_sml_requestsupport.gif"
@@ -40,7 +41,7 @@
         <input size="35" type="text" name="text"/>
         <input type="submit" value="Find a Package"/>
       </form>
-      
+
       </tal:packages>
 
     <tal:block tal:condition="not: context/binarycount">

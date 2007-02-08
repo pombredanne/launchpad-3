@@ -25,7 +25,7 @@
         <li>
           <a href="+addticket">
             <img
-              alt="Request support"
+              alt="Ask a question"
               src="/+icing/but_sml_requestsupport.gif"
             />
           </a>
@@ -38,7 +38,7 @@
       </ul>
 
   <form name="search" action="+search" method="get">
-  
+
     <input type="text"
       name="text"
       size="35"
