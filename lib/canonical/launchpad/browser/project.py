@@ -84,16 +84,10 @@ class ProjectSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # XXX mpt 20061004: Products, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
+        return list(self.context.products[:num])
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class ProjectSetContextMenu(ContextMenu):
