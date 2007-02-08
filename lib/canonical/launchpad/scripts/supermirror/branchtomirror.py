@@ -13,6 +13,7 @@ import bzrlib.branch
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
 
@@ -44,8 +45,6 @@ class BranchToMirror:
         self.branch_id = branch_id
         self._source_branch = None
         self._dest_branch = None
-        assert self.dest is not None
-        assert self.source is not None
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
@@ -202,3 +201,16 @@ class BranchToMirror:
         return ("<BranchToMirror source=%s dest=%s at %x>" % 
                 (self.source, self.dest, id(self)))
 
+    def isUploadBranch(self):
+        """Whether this branch is pulled from the private SFTP area."""
+        upload_source_prefix = config.supermirrorsftp.branches_root
+        return self.source.startswith(upload_source_prefix)
+
+    def isImportBranch(self):
+        """Whether this branch is pulled from importd."""
+        import_source_prefix = config.launchpad.bzr_imports_root_url
+        return self.source.startswith(import_source_prefix)
+
+    def isMirrorBranch(self):
+        """Whether this branch is pulled from the internet."""
+        return not self.isUploadBranch() and not self.isImportBranch()
