@@ -685,6 +685,28 @@ ALTER TABLE branchrelationship DISABLE TRIGGER ALL;
 ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 
 
+ALTER TABLE branchrevision DISABLE TRIGGER ALL;
+
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
+
+
+ALTER TABLE branchrevision ENABLE TRIGGER ALL;
+
+
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL);
@@ -2996,7 +3018,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, '''janitor'':4A,7A ''support'':2A,5A ''tracker'':3A,6A ''support-tracker-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, '''diogo'':2A ''matsubara'':1A,3A', NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, '''team'':2A,5A ''janitor'':4A,7A ''membership'':3A,6A ''team-membership-janitor'':1A', NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''shipit'':2A,4A ''admins2'':3A ''administr'':5A ''shipit-admins2'':1A', NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''admin'':3A ''shipit'':2A,4A ''administr'':5A ''shipit-admin'':1A', NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8557,28 +8579,6 @@ INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
 ALTER TABLE revisionauthor ENABLE TRIGGER ALL;
 
 
-ALTER TABLE revisionnumber DISABLE TRIGGER ALL;
-
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
-
-
-ALTER TABLE revisionnumber ENABLE TRIGGER ALL;
-
-
 ALTER TABLE revisionparent DISABLE TRIGGER ALL;
 
 INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (1, 0, 5, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4');
@@ -8820,10 +8820,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (13, 243601, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL, 0);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (14, 8, 55, NULL, '2005-05-19 18:38:24.526648', NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 1, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (15, 23, 55, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 2, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled,
-daterequested, shockandawe, reason, highpriority, recipientdisplayname,
-addressline1, addressline2, organization, city, province, country, postcode,
-phone, fti, shipment, status) VALUES (16, 56, 55, NULL, '2006-03-01 19:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Some
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (16, 56, 55, NULL, '2006-03-01 19:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Some
 Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL, 1);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3, 4);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4, 4);
