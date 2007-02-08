@@ -41,7 +41,7 @@ def main():
     # control options
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
-                      help="select source and binaries with the same name")
+                      help="select source and all binaries from this source")
     parser.add_option("-B", "--binary-and-source", dest="binaryandsource",
                       default=False, action="store_true",
                       help="select source and binary (of the same name)")

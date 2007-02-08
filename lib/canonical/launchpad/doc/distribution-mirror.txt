@@ -225,12 +225,12 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource or MirrorDistroArchRelease, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
-mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
+mirror admin. This is done using IDistributionMirror.disable().
 Disabling a mirror causes it not to show up on the public mirror listings.
 
     >>> valid_mirror.enabled
     True
-    >>> valid_mirror.disableAndNotifyOwner()
+    >>> valid_mirror.disable(notify_owner=True)
 
     Commit, so the email is actually sent.
     >>> import transaction
@@ -255,6 +255,18 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     Enable the mirror again.
     >>> from canonical.launchpad.ftests import login
     >>> valid_mirror.enabled = True
+
+If we pass notify_owner=False to the disable() method, then we'll send a
+single notification to the distribution's mirror admins.
+
+    >>> valid_mirror.disable(notify_owner=False)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'mark@hbd.com,karl@canonical.com'
 
     Now we delete the MirrorProbeRecord we've just created, to make
     sure this mirror is probed by our prober script.
@@ -455,7 +467,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Archive Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirror(s) that were previously enabled.
+    INFO    Disabled http://launchpad.dev/.../archive-404-mirror
+    INFO    Enabled http://launchpad.dev/.../archive-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -470,7 +483,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirror(s) that were previously enabled.
+    INFO    Disabled http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -528,7 +541,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
-    INFO    Enabled 1 mirror(s) that were previously disabled.
+    INFO    Enabled http://launchpad.dev/ubuntu/+mirror/releases-mirror
     INFO    Done.
     <BLANKLINE>
 
