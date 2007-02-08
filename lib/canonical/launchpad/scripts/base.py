@@ -130,7 +130,7 @@ class LaunchpadScript:
 
             self.parser.add_option("-f", "--foo", dest="foo",
                 default="foobar-makes-the-world-go-round",
-                help="You're joking right")
+                help="You are joking, right?")
         """
 
     #
