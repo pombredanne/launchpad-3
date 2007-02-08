@@ -450,7 +450,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distrorelease = %s
+                POTemplate.distrorelease = %s AND
+                POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -470,7 +471,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
-        for potemplate in self.potemplates:
+        for potemplate in self.currentpotemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()
@@ -510,9 +511,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.iscurrent = TRUE AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
+            orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
@@ -879,6 +881,27 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distrorelease=self)
 
+    def getLastUploads(self):
+        """See IDistroRelease."""
+        query = """
+        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
+        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
+        AND distroreleasequeue.status=%s
+        AND distroreleasequeue.distrorelease=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
+
+        last_uploads = SourcePackageRelease.select(
+            query, limit=5, prejoins=['sourcepackagename'],
+            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
+                          'DistroReleaseQueueSource'],
+            orderBy=['-distroreleasequeue.id'])
+
+        distro_sprs = [
+            self.getSourcePackageRelease(spr) for spr in last_uploads]
+
+        return distro_sprs
+
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
@@ -1234,8 +1257,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 FROM
                     POTemplate AS pt
                 WHERE
-                    pt.distrorelease = %s''' % sqlvalues(
-                    self, self.parentrelease))
+                    pt.distrorelease = %s AND pt.iscurrent = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
 
             logger_object.info('Filling POTMsgSet table...')
             cur.execute('''
@@ -1718,13 +1741,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def getPendingPublications(self, pocket, is_careful):
         """See IPublishing."""
-        dirty_pockets = set()
-        log.debug("Publishing %s-%s" % (self.title, pocket.name))
-
         queries = ['distrorelease = %s' % sqlvalues(self)]
-
         # careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
@@ -1732,9 +1751,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             statuses.append(PackagePublishingStatus.PUBLISHED)
         queries.append('status IN %s' % sqlvalues(statuses))
 
-        # restrict to a specific pocket if it is given.
-        if pocket is not None:
-            queries.append('pocket = %s' % sqlvalues(pocket))
+        # restrict to a specific pocket.
+        queries.append('pocket = %s' % sqlvalues(pocket))
 
         # exclude RELEASE pocket if the distrorelease was already released,
         # since it should not change.
@@ -1742,11 +1760,18 @@ class DistroRelease(SQLBase, BugTargetBase):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        spphs = SourcePackagePublishingHistory.select(
+        publications = SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="-id")
 
+        return publications
+
+    def publish(self, diskpool, log, pocket, is_careful=False):
+        """See IPublishing."""
+        log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs:
+
+        dirty_pockets = set()
+        for spph in self.getPendingPublications(pocket, is_careful):
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)
@@ -1754,7 +1779,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, is_careful)
+            more_dirt = dar.publish(diskpool, log, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets

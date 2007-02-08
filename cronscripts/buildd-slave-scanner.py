@@ -12,6 +12,8 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
@@ -19,7 +21,6 @@ from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
         )
@@ -74,10 +75,10 @@ if __name__ == '__main__':
 
     log.info("Slave Scan Process Initiated.")
 
-    locker = LockFile(_default_lockfile, logger=log)
+    locker = GlobalLock(_default_lockfile, logger=log)
     try:
         locker.acquire()
-    except OSError:
+    except LockAlreadyAcquired:
         log.info("Cannot acquire lock.")
         # XXX cprov 20060625: do not scream on lock conflicts during the
         # edgy rebuild time.

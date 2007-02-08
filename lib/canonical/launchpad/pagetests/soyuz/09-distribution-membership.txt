@@ -28,5 +28,5 @@ Switch to admin, and check the link to change team members appears, and works.
   >>> admin_browser.contents
   '...Updated on...'
   >>> admin_browser.getControl("Members").value
-  'mark@hbd.com'
+  'sabdfl'
 

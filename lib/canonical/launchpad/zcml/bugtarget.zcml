@@ -16,6 +16,13 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetView"
+        name="+portlet-recently-touched-bugs"
+        permission="zope.Public"
+        template="../templates/bugtarget-portlet-recently-touched-bugs.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugListingPortletView"
         permission="zope.Public"
         name="+portlet-bugfilters"

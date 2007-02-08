@@ -20,6 +20,7 @@ You can ask an IBugTask for its representation as an email header value:
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> upstream_firefox_bugtask = bugtaskset.get(2)
     >>> upstream_firefox_bugtask_no_assignee = bugtaskset.get(13)
+    >>> upstream_firefox_bugtask_1_0 = bugtaskset.get(29)
     >>> debian_firefox_bugtask = bugtaskset.get(4)
     >>> ubuntu_firefox_bugtask = bugtaskset.get(17)
     >>> warty_firefox_bugtask = bugtaskset.get(16)
@@ -29,6 +30,10 @@ You can ask an IBugTask for its representation as an email header value:
 
     >>> upstream_firefox_bugtask_no_assignee.asEmailHeaderValue()
     u'product=firefox; status=Unconfirmed; importance=Medium; assignee=None;'
+
+    >>> upstream_firefox_bugtask_1_0.asEmailHeaderValue()
+    u'product=firefox; productseries=1.0; status=Unconfirmed;
+      importance=Undecided; assignee=None;'
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
     u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Confirmed; importance=Low; assignee=None;'

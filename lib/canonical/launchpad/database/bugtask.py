@@ -5,7 +5,8 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter']
+    'get_bug_privacy_filter',
+    'search_value_to_where_condition']
 
 import urllib
 import cgi
@@ -161,7 +162,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def conjoined_master(self):
         """See IBugTask."""
         conjoined_master = None
-        if IDistroBugTask.providedBy(self):
+        if (IDistroBugTask.providedBy(self) and
+            self.distribution.currentrelease is not None):
             current_release = self.distribution.currentrelease
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distrorelease == current_release and
@@ -169,6 +171,8 @@ class BugTask(SQLBase, BugTaskMixin):
                     conjoined_master = bt
                     break
         elif IUpstreamBugTask.providedBy(self):
+            assert self.product.development_focus is not None, (
+                'A product should always have a development series.')
             devel_focus = self.product.development_focus
             for bt in shortlist(self.bug.bugtasks):
                 if bt.productseries == devel_focus:
@@ -317,13 +321,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX: we should use a specific SQLObject API here to avoid the
         # privacy violation.
         #   -- kiko, 2006-03-21
-        if self._SO_val_productID is not None:
+        if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self._SO_val_productseriesID is not None:
+        elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self._SO_val_distroreleaseID is not None:
+        elif self.distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
-        elif self._SO_val_distributionID is not None:
+        elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
@@ -500,6 +504,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' %  self.target.name
+        elif IProductSeriesBugTask.providedBy(self):
+            header_value = 'product=%s; productseries=%s;' %  (
+                self.productseries.product.name, self.productseries.name)
         elif IDistroBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
@@ -518,6 +525,8 @@ class BugTask(SQLBase, BugTaskMixin):
                  'distroreleasename': self.distrorelease.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
+        else:
+            raise AssertionError('Unknown BugTask context: %r' % self)
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '

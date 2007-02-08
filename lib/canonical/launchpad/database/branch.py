@@ -336,13 +336,9 @@ class BranchRelationship(SQLBase):
     """
 
     _table = 'BranchRelationship'
-    _columns = [
-        ForeignKey(name='subject', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        IntCol(name='label', dbName='label', notNull=True),
-        ForeignKey(name='object', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        ]
+    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
+    label = IntCol(dbName='label', notNull=True),
+    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
 
     def _get_src(self):
         return self.subject

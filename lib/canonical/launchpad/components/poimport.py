@@ -8,6 +8,7 @@ import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, TranslationConstants,
         TranslationConflict)
@@ -170,7 +171,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                         'pomessage': pomessage,
                         'error-message': ("The msgid_Plural field has changed"
                             " since last time this .po file was\ngenerated,"
-                            " please notify this error to rosetta@ubuntu.com")
+                            " please report this error to %s" %
+                                          config.rosetta.rosettaadmin.email)
                     }
 
                     errors.append(error)

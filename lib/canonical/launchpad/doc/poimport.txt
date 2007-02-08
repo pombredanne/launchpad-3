@@ -195,6 +195,15 @@ Now let's get a PO file to import.
     >>> pofile = potemplate.newPOFile('cy')
     >>> pofile_id = pofile.id
 
+By default, we got a safe path to prevent collisions with other IPOFile.
+
+    >>> pofile.path
+    u'po/firefox-cy.po'
+
+Let's override the default good path with one we know is the right one.
+
+    >>> pofile.path = u'po/cy.po'
+
 It's newly created, so it has no message sets yet.
 
     >>> pofile.currentMessageSets().count()
@@ -486,7 +495,7 @@ Now, is time to check the notification email.
     ...
     5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
-    generated, please notify this error to rosetta@ubuntu.com":
+    generated, please report this error to ...
     <BLANKLINE>
     #, c-format
     msgid "Singular %d"
@@ -499,11 +508,13 @@ We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
 First, we are going to reactivate the entries that were already imported or
-failed.
+failed. Note that we'll only reactivate the entries we use in this test;
+We don't touch entries that were in the queue previously.
 
     >>> for entry in translation_import_queue:
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
-    ...         entry.status == RosettaImportStatus.FAILED):
+    ...         entry.status == RosettaImportStatus.FAILED) and (
+    ...         entry.productseries == series):
     ...         entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> transaction.commit()
@@ -518,10 +529,12 @@ And run the cronscript.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
 
 It's time to test the import queue.
@@ -601,6 +614,7 @@ Do the final import.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    The automatic approval system approved some entries.
     <BLANKLINE>
     >>> transaction.commit()
@@ -614,6 +628,7 @@ We need to run again the script to get those approved entries imported.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>

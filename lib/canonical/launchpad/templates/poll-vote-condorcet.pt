@@ -16,13 +16,14 @@
 
   <div metal:fill-slot="main">
 
+    <tal:open-poll condition="context/isOpen">
     <h1>Condorcet poll</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p
       tal:condition="view/feedback"
       tal:content="view/feedback"
-      class="error message"
+      class="informational message"
     />
 
     <div class="highlighted" style="font-size: 80%;">
@@ -49,7 +50,7 @@
       </tal:block>
     </tal:block>
 
-    <table cols="2">
+    <table cols="2" id="your-vote">
       <tr>
         <td>
           <h2>Your current vote</h2>
@@ -117,10 +118,16 @@
     </form>
     </tal:can-vote>
 
-      <p tal:condition="not: view/userCanVote" class="error message">
-        You can&#8217;t vote in this poll because you&#8217;re not
-        a member of <span tal:replace="context/team/browsername" />.
-      </p>
-    </div>
-  </body>
+    <p tal:condition="not: view/userCanVote" class="informational message">
+      You can&#8217;t vote in this poll because you&#8217;re not
+      a member of <span tal:replace="context/team/browsername" />.
+    </p>
+    </tal:open-poll> 
+
+    <p tal:condition="not: context/isOpen" class="informational message">
+      This poll is already closed.
+    </p>
+
+  </div>
+</body>
 </html>

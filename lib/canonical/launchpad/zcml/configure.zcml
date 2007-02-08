@@ -9,6 +9,7 @@
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
+    <include file="binaryandsourcepackagename.zcml" />
     <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
@@ -70,6 +71,7 @@
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="packagebugcontact.zcml" />
+    <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
     <include file="person.zcml" />

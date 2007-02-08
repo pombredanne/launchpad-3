@@ -57,9 +57,9 @@ put the person we will merge into some of those.
     >>> ubuntu_team.teamowner = marilize
 
     >>> ubuntu_translators = personset.getByName('ubuntu-translators')
-    >>> ubuntu_translators.addMember(marilize)
+    >>> ubuntu_translators.addMember(marilize, marilize)
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(marilize)
+    >>> rosetta_admins.addMember(marilize, marilize)
 
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.
@@ -68,7 +68,7 @@ Marilize and save it for later comparison.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> marilize_karma = marilize.assignKarma('bugfixed', product=firefox)
     >>> marilize_karma.id, marilize_karma.person.name
-    (44L, u'marilize')
+    (48L, u'marilize')
     >>> sampleperson_old_karma = sample.karma
 
 Branches whose owner is being merged are uniquified by appending '-N' where N
@@ -143,7 +143,7 @@ The Karma that was previously assigned to marilize is now assigned to name12
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> marilize_karma.id, marilize_karma.person.name
-    (44L, u'name12')
+    (48L, u'name12')
 
 Note that we don't bother migrating karma caches - it will just be reset next
 time the caches are rebuilt.

@@ -26,7 +26,7 @@ The form should have been filled with sample data values.
   >>> user_browser.getControl('Branch URL').value
   'http://trekkies.example.com/gnome-terminal/klingon'
   >>> user_browser.getControl('Author').value
-  'test@canonical.com'
+  'name12'
   >>> user_browser.getControl('Summary').value
   'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
 

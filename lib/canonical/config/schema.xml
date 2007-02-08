@@ -102,10 +102,30 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="script_errorreports">
+        <key name="errordir" datatype="string" required="no">
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
+        <key name="oops_prefix" datatype="string" required="yes">
+            <description>
+                A prefix for "OOPS" codes for this script.
+k            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
+    </sectiontype>
+
+
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
-            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            default="demo.launchpad.net, staging.launchpad.net, launchpad.net, launchpad.dev">
             <description>
                 Session cookies being sent to a subdomain of the parent
                 domains listed here will be sent to the parent domain,
@@ -472,6 +492,12 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net">
+            <description>
+                From-address used in PO import, export and language pack
+                notifications.
+            </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="poimport">
@@ -502,7 +528,7 @@
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
@@ -770,6 +796,8 @@
                 The database user for the branch-scanner to update branches.
             </description>
         </key>
+        <section name="*" type="script_errorreports" attribute="errorreports"
+            required="no" />
     </sectiontype>
 
     <sectiontype name="supermirrorsftp">

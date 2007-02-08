@@ -78,31 +78,42 @@ have only on binary.
 
 Check dependency related view attributes:
 
-XXX cprov 20060210: ohh ?! I would really expect True or False from
-something named 'has_foo'.
-
-  >>> assert pmount_view.has_build_depends() is None
+  >>> pmount_view.has_build_depends()
+  False
 
   >>> firefox_view.has_build_depends()
-  u'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)'
+  True
 
 Check the formatted dependency lines provided by the view class, they
-return a list of IPackageRelationship objects.
+return a IPackageRelationshipSet object (see package-relationship.txt).
 
-  >>> for dep in firefox_view.builddepends():
-  ...    dep.name, dep.signal, dep.version
-  ('gcc-3.4-base', None, '')
-  ('libc6', '>=', '2.3.2.ds1-4')
-  ('gcc-3.4', '>=', '3.4.1-4sarge1')
-  ('gcc-3.4', '<<', '3.4.2')
-  ('libstdc++6-dev', '>=', '3.4.1-4sarge1')
+  >>> firefox_parsed_depends = firefox_view.builddepends()
 
-  >>> for dep in firefox_view.builddependsindep():
-  ...    dep.name, dep.signal, dep.version
-  ('bacula-common', '=', '1.34.6-2')
-  ('bacula-director-common', '=', '1.34.6-2')
-  ('postgresql-client', '>=', '7.4')
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
+  >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
+  True
 
+  >>> for dep in firefox_parsed_depends:
+  ...    dep.name, dep.operator, dep.version, dep.url
+  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
+  ('gcc-3.4', '>=', '3.4.1-4sarge1', None)
+  ('gcc-3.4', '<<', '3.4.2', None)
+  ('gcc-3.4-base', None, '', None)
+  ('libc6', '>=', '2.3.2.ds1-4', None)
+  ('libstdc++6-dev', '>=', '3.4.1-4sarge1', None)
+
+  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep()
+
+  >>> verifyObject(IPackageRelationshipSet, firefox_parsed_dependsindep)
+  True
+
+  >>> for dep in firefox_parsed_dependsindep:
+  ...    dep.name, dep.operator, dep.version, dep.url
+  ('alsa-utils', None, '', u'http://launchpad.dev/ubuntu/warty/+source/alsa-utils')
+  ('bacula-common', '=', '1.34.6-2', None)
+  ('bacula-director-common', '=', '1.34.6-2', None)
+  ('postgresql-client', '>=', '7.4', None)
 
 Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
