@@ -10,7 +10,6 @@ __all__ = [
     'IKarmaActionSet',
     'IKarmaCache',
     'IKarmaCacheManager',
-    'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
     'IKarmaContext',
@@ -149,24 +148,6 @@ class IKarmaCacheManager(Interface):
         We expect the objects IDs (instead of the real objects) here because
         foaf-update-karma-cache.py (our only client) only has them.
         """
-
-
-class IKarmaPersonCategoryCacheView(Interface):
-    """A cached value of a person's karma, grouped by category."""
-
-    person = Int(
-        title=_("Person"), required=True, readonly=True,
-        description=_("The person which performed the actions of this "
-                      "category, and thus got the karma."))
-
-    category = Choice(
-        title=_("Category"), required=True, readonly=True,
-        vocabulary='KarmaCategory')
-
-    karmavalue = Int(
-        title=_("Karma Points"), required=True, readonly=True,
-        description=_("The karma points of all actions of this category "
-                      "performed by this person."))
 
 
 class IKarmaTotalCache(Interface):

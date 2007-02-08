@@ -7,7 +7,6 @@ __all__ = [
     'KarmaActionSet',
     'KarmaCache',
     'KarmaCacheManager',
-    'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
     'KarmaContextMixin',
@@ -24,8 +23,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
-    IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
-    IDistribution, IKarmaCacheManager, NotFoundError, IProject)
+    IKarmaTotalCache, IKarmaContext, IProduct, IDistribution,
+    IKarmaCacheManager, NotFoundError, IProject)
 
 
 class Karma(SQLBase):
@@ -163,21 +162,6 @@ class KarmaCacheManager:
         return KarmaCache.selectOne(query)
 
 
-class KarmaPersonCategoryCacheView(SQLBase):
-    """See IKarmaPersonCategoryCacheView."""
-    implements(IKarmaPersonCategoryCacheView)
-
-    _table = 'KarmaPersonCategoryCacheView'
-    _defaultOrder = ['category', 'id']
-
-    person = ForeignKey(
-        dbName='person', foreignKey='Person', notNull=True)
-    category = ForeignKey(
-        dbName='category', foreignKey='KarmaCategory', notNull=True)
-    karmavalue = IntCol(
-        dbName='karmavalue', notNull=True)
-
-
 class KarmaTotalCache(SQLBase):
     """A cached value of the total of a person's karma (all categories)."""
     implements(IKarmaTotalCache)
@@ -227,10 +211,9 @@ class KarmaContextMixin:
         if IProduct.providedBy(self):
             where_clause = "product = %d" % self.id
         elif IDistribution.providedBy(self):
-            where_clause = (
-                "distribution = %d AND sourcepackagename IS NULL" % self.id)
+            where_clause = "distribution = %d" % self.id
         elif IProject.providedBy(self):
-            where_clause = "project = %d AND product IS NULL" % self.id
+            where_clause = "project = %d" % self.id
         else:
             raise AssertionError(
                 "Not a product, project or distribution: %r" % self)

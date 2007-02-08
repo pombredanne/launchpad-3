@@ -133,13 +133,6 @@ ALTER TABLE KarmaCache DROP CONSTRAINT sourcepackagename_required_distribution;
 ALTER TABLE KarmaCache ADD CONSTRAINT sourcepackagename_requires_distribution
     CHECK (sourcepackagename IS NULL OR distribution IS NOT NULL);
 
--- We should drop this view unless it makes things particularly convenient
--- from Python.
---  CREATE OR REPLACE VIEW KarmaPersonCategoryCacheView AS
---      SELECT id, person, category, karmavalue
---      FROM karmacache
---      WHERE karmacache.category IS NOT NULL
---          AND product IS NULL AND distribution IS NULL AND project IS NULL;
 DROP VIEW KarmaPersonCategoryCacheView;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 04, 0);

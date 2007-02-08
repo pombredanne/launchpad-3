@@ -55,7 +55,7 @@ class KarmaCacheUpdater(LaunchpadScript):
         # adding the extra WHEN clause.
         karma_expires_after = '1 year'
         self.cur.execute("""
-            SELECT person, category, product, distribution, Product.project,
+            SELECT person, category, product, distribution,
                 ROUND(SUM(
                 CASE WHEN karma.datecreated + %s::interval
                     <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' THEN 0
@@ -67,8 +67,7 @@ class KarmaCacheUpdater(LaunchpadScript):
                 ))
             FROM Karma
             JOIN KarmaAction ON action = KarmaAction.id
-            LEFT JOIN Product ON product = Product.id
-            GROUP BY person, category, product, distribution, Product.project
+            GROUP BY person, category, product, distribution
             """, (karma_expires_after, karma_expires_after))
 
         # Suck into RAM to avoid tieing up resources on the DB.
@@ -85,7 +84,11 @@ class KarmaCacheUpdater(LaunchpadScript):
         self.cur.execute("DELETE FROM KarmaCache WHERE category IS NULL")
         self.cur.execute("""
             DELETE FROM KarmaCache
-             WHERE project IS NOT NULL AND product IS NULL""")
+            WHERE project IS NOT NULL AND product IS NULL""")
+        self.cur.execute("""
+            DELETE FROM KarmaCache
+            WHERE category IS NOT NULL AND project IS NULL AND product IS NULL
+                  AND distribution IS NULL AND sourcepackagename IS NULL""")
 
         # Don't allow our table to bloat with inactive users.
         self.cur.execute("DELETE FROM KarmaCache WHERE karmavalue <= 0")
@@ -144,6 +147,18 @@ class KarmaCacheUpdater(LaunchpadScript):
         # - All actions of a person on a given project.
         # - All actions with a specific category of a person on a given
         #   project.
+        # - All actions with a specific category of a person.
+
+        # - All actions with a specific category of a person.
+        self.cur.execute("""
+            INSERT INTO KarmaCache 
+                (person, category, karmavalue, product, distribution,
+                 sourcepackagename, project)
+            SELECT person, category, SUM(karmavalue), NULL, NULL, NULL, NULL
+            FROM KarmaCache
+            WHERE category IS NOT NULL
+            GROUP BY person, category
+            """)
 
         # - All actions of a person on a given product.
         self.cur.execute("""
@@ -172,10 +187,13 @@ class KarmaCacheUpdater(LaunchpadScript):
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
-            SELECT person, NULL, SUM(karmavalue), NULL, NULL, NULL, project
+            SELECT person, NULL, SUM(karmavalue), NULL, NULL, NULL,
+                   Product.project
             FROM KarmaCache
-            WHERE project IS NOT NULL
-            GROUP BY person, project
+            JOIN Product ON product = Product.id
+            WHERE Product.project IS NOT NULL AND product IS NOT NULL
+                  AND category IS NOT NULL
+            GROUP BY person, Product.project
             """)
 
         # - All actions with a specific category of a person on a given project
@@ -186,11 +204,13 @@ class KarmaCacheUpdater(LaunchpadScript):
             INSERT INTO KarmaCache 
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
-            SELECT person, category, SUM(karmavalue), NULL, NULL, NULL, project
+            SELECT person, category, SUM(karmavalue), NULL, NULL, NULL,
+                   Product.project
             FROM KarmaCache
-            WHERE project IS NOT NULL
-                AND category IS NOT NULL
-            GROUP BY person, category, project
+            JOIN Product ON product = Product.id
+            WHERE Product.project IS NOT NULL AND product IS NOT NULL
+                  AND category IS NOT NULL
+            GROUP BY person, category, Product.project
             """)
 
     def calculate_scaling(self, results):
@@ -207,7 +227,7 @@ class KarmaCacheUpdater(LaunchpadScript):
         # By calculating a scaling factor automatically, this slant will be
         # removed even as more events are added or scoring tweaked.
         points_per_category = {}
-        for dummy, category, dummy, dummy, dummy, points in results:
+        for dummy, category, dummy, dummy, points in results:
             if category not in points_per_category:
                 points_per_category[category] = 0
             points_per_category[category] += points
@@ -219,13 +239,13 @@ class KarmaCacheUpdater(LaunchpadScript):
                 scaling[category] = 1
             else:
                 scaling[category] = float(largest_total) / float(points)
-            self.logger.debug('Scaling %s by a factor of %0.4f' % (
-                categories[category], scaling[category]))
+            self.logger.debug('Scaling %s by a factor of %0.4f'
+                              % (categories[category], scaling[category]))
             max_scaling = config.karmacacheupdater.max_scaling
             if scaling[category] > max_scaling:
                 scaling[category] = max_scaling
                 self.logger.debug('Reducing %s scaling to %d to avoid spikes' 
-                    % (categories[category], max_scaling))
+                                  % (categories[category], max_scaling))
         return scaling
     
     def update_one_karma_cache_entry(self, entry, scaling):
@@ -235,31 +255,28 @@ class KarmaCacheUpdater(LaunchpadScript):
         that correspond to overall contributions across all categories. Look
         at C_add_summed_totals to see how the summed entries are generated.
         """
-        (person_id, category_id, product_id, distribution_id,
-                project_id, points) = entry
+        (person_id, category_id, product_id, distribution_id, points) = entry
         points *= scaling[category_id] # Scaled. wow.
-        self.logger.debug(
-            "Setting person_id=%d, category_id=%d, points=%d" 
-                % (person_id, category_id, points))
+        self.logger.debug("Setting person_id=%d, category_id=%d, points=%d" 
+                          % (person_id, category_id, points))
 
         points = int(points)
         context = {'product_id': product_id,
-                   'project_id': project_id,
                    'distribution_id': distribution_id}
 
         try:
             self.karmacachemanager.updateKarmaValue(
                 points, person_id, category_id, **context)
-            self.logger.debug("Updated karmacache for person=%s, "
-                      "points=%s, category=%s, context=%s"
-                      % (person_id, points, category_id, context))
+            self.logger.debug(
+                "Updated karmacache for person=%s, points=%s, category=%s, "
+                "context=%s" % (person_id, points, category_id, context))
         except NotFoundError:
             # Row didn't exist; do an insert.
             self.karmacachemanager.new(
                 points, person_id, category_id, **context)
-            self.logger.debug("Created karmacache for person=%s, "
-                      "points=%s, category=%s, context=%s"
-                      % (person_id, points, category_id, context))
+            self.logger.debug(
+                "Created karmacache for person=%s, points=%s, category=%s, "
+                "context=%s" % (person_id, points, category_id, context))
 
 
 if __name__ == '__main__':
