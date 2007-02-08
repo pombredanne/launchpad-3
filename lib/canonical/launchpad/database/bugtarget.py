@@ -114,3 +114,17 @@ class BugTargetBase:
             status=not_equals(BugTaskStatus.UNKNOWN))
 
         return self.searchTasks(all_tasks_query)
+
+    def getBugCounts(self, user, statuses=None):
+        """See IBugTarget."""
+        if statuses is None:
+            statuses = BugTaskStatus.items
+        #XXX: This needs to be optimized, there should be only one db
+        #     query
+        bug_counts = {}
+        for status in statuses:
+            search_params = BugTaskSearchParams(
+                user, status=status, omit_dupes=True)
+            bugtasks = self.searchTasks(search_params)
+            bug_counts[status] = bugtasks.count()
+        return bug_counts
