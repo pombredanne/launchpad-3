@@ -70,11 +70,33 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'content'})
 
 
+# XXX cprov 20070207: This function seems to be more specific to a particular
+# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+def parse_relationship_section(content):
+    """Parser package relationship section.
+
+    See package-relationship-pages.txt and related.
+    """
+    soup = BeautifulSoup(content)
+    section = soup.find('ul')
+    whitespace_re = re.compile('\s+')
+    for li in section.findAll('li'):
+        if li.a:
+            link = li.a
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
+            print 'LINK: "%s" -> %s' % (content, url)
+        else:
+            content = whitespace_re.sub(' ', li.string.strip())
+            print 'TEXT: "%s"' % content
+
+
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['parse_relationship_section'] = parse_relationship_section
 
 
 class PageStoryTestCase(unittest.TestCase):
