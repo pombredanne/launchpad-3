@@ -16,8 +16,8 @@ from persistent import IPersistent
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX These two import shims are actually necessary if we don't go over
-# the entire codebase and fix where the import should come from.
+# XXX These import shims are actually necessary if we don't go over the
+# entire codebase and fix where the import should come from.
 #   -- kiko, 2007-02-08
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag)
@@ -223,10 +223,12 @@ class IReadZODBAnnotation(Interface):
     def __delitem__(namespace):
         """Removes annotation at the given namespace."""
 
+
 class IWriteZODBAnnotation(Interface):
 
     def __setitem__(namespace, value):
         """Set a value as the annotation for the given namespace."""
+
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
@@ -294,21 +296,5 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
-
-# XXX: These need making into a launchpad version rather than the zope versions
-#      for the publisher simplification work.  SteveAlexander 2005-09-14
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-#
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
 
 

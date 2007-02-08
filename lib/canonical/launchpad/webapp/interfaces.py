@@ -357,6 +357,21 @@ class ILaunchpadBrowserApplicationRequest(
     """The request interface to the application for launchpad browser requests.
     """
 
+# XXX: These need making into a launchpad version rather than the zope versions
+#      for the publisher simplification work.  SteveAlexander 2005-09-14
+# class IEndRequestEvent(Interface):
+#     """An event which gets sent when the publication is ended"""
+#
+# # called in zopepublication's endRequest method, after ending
+# # the interaction.  it is used only by local sites, to clean
+# # up per-thread state.
+# class EndRequestEvent(object):
+#     """An event which gets sent when the publication is ended"""
+#     implements(IEndRequestEvent)
+#     def __init__(self, ob, request):
+#         self.object = ob
+#         self.request = request
+
 
 #
 #
