@@ -45,7 +45,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
     get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.karma import KarmaTotalCache
+from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -154,9 +154,6 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin(
-        'KarmaPersonCategoryCacheView', joinColumn='person',
-        orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
@@ -169,7 +166,7 @@ class Person(SQLBase):
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
-        if self._SO_val_teamownerID is not None:
+        if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
     # specification-related joins
@@ -532,6 +529,34 @@ class Person(SQLBase):
             return Branch.selectOneBy(owner=self, product=product,
                                       name=branch_name)
 
+    def findPathToTeam(self, team):
+        """See IPerson."""
+        assert not self.isTeam()
+        assert team.isTeam()
+        path = [team]
+        team = self._getDirectMemberIParticipateIn(team)
+        while team != self:
+            path.insert(0, team)
+            team = self._getDirectMemberIParticipateIn(team)
+        return path
+
+    def _getDirectMemberIParticipateIn(self, team):
+        """Return a direct member of the given team that this person
+        participates in.
+
+        If there are more than one direct member of the given team that this
+        person participates in, the one with the oldest creation date is
+        returned.
+        """
+        query = AND(
+            TeamMembership.q.teamID == team.id,
+            TeamMembership.q.personID == Person.q.id,
+            TeamParticipation.q.teamID == Person.q.id,
+            TeamParticipation.q.personID == self.id)
+        clauseTables = ['TeamMembership', 'TeamParticipation']
+        return Person.selectFirst(
+            query, clauseTables=clauseTables, orderBy='datecreated')
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -586,6 +611,19 @@ class Person(SQLBase):
     def searchTasks(self, search_params):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    @property
+    def karma_category_caches(self):
+        """See IPerson."""
+        return KarmaCache.select(
+            AND(
+                KarmaCache.q.personID == self.id,
+                KarmaCache.q.categoryID != None,
+                KarmaCache.q.productID == None,
+                KarmaCache.q.projectID == None,
+                KarmaCache.q.distributionID == None,
+                KarmaCache.q.sourcepackagenameID == None),
+            orderBy=['category'])
 
     @property
     def karma(self):
@@ -1077,11 +1115,6 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def activities(self):
-        """See IPerson."""
-        return Karma.selectBy(person=self)
-
-    @property
     def pendinggpgkeys(self):
         """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
@@ -1415,7 +1448,8 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s"""
+            POTemplate.distrorelease = %s AND
+            POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distrorelease),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,

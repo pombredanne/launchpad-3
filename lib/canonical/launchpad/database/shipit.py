@@ -456,21 +456,21 @@ class ShippingRequestSet:
                recipient_text=None, orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
-        clauseTables = set()
 
+        # We use subqueries To filter based on distrorelease/flavour so that
+        # we don't have to join the RequestedCDs table with a DISTINCT, which
+        # causes the query to run a _lot_ slower.
         if distrorelease is not None:
             queries.append("""
-                (RequestedCDs.request = ShippingRequest.id
-                 AND RequestedCDs.distrorelease = %s)
+                ShippingRequest.id IN (
+                    SELECT request FROM RequestedCDs WHERE distrorelease = %s)
                 """ % sqlvalues(distrorelease))
-            clauseTables.add('RequestedCDs')
 
         if flavour is not None:
             queries.append("""
-                (RequestedCDs.request = ShippingRequest.id
-                 AND RequestedCDs.flavour = %s)
+                ShippingRequest.id IN (
+                    SELECT request FROM RequestedCDs WHERE flavour = %s)
                 """ % sqlvalues(flavour))
-            clauseTables.add('RequestedCDs')
 
         if recipient_text:
             recipient_text = recipient_text.lower()
@@ -491,8 +491,7 @@ class ShippingRequestSet:
 
         query = " AND ".join(queries)
         return ShippingRequest.select(
-            query, clauseTables=clauseTables, distinct=True, orderBy=orderBy,
-            prejoins=["recipient"])
+            query, orderBy=orderBy, prejoins=["recipient"])
 
     def exportRequestsToFiles(
             self, priority, ztm,

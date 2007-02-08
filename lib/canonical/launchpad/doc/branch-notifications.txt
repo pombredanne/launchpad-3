@@ -1,6 +1,10 @@
 Email Notifications for Branches
 ================================
 
+Only subscribers get email notifications.  If the owner/author
+of the branch want to receive emails, then they need to subscribe
+to the branch.
+
 There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
  - when the branch scanner notices a change in the tip revision
@@ -11,56 +15,20 @@ have the appropriate information.
 Email Format
 ------------
 
-Here are a couple of helper functions to look at the inards
-of the emails.  If they are really useful, perhaps they
-sould be moved somewhere else and available to all tests.
-
-    >>> def check_email(email, To=None, From=None, Subject=None, contents=None):
-    ...   email_body = email[2]
-    ...   # email headers are terminated by a blank line
-    ...   email_headers = email_body.split('\n\n')[0]
-    ...   email_text = '\n\n'.join(email_body.split('\n\n')[1:])
-    ...   dump_body = False
-    ...   if To and ('To: %s' % To) not in email_headers:
-    ...     print "Expected To:", To
-    ...     dump_body = True
-    ...   if From and ('From: %s' % From) not in email_headers:
-    ...     print "Expected From:", From
-    ...     dump_body = True
-    ...   if Subject and ('Subject: %s' % Subject) not in email_headers:
-    ...     print "Expected Subject:", Subject
-    ...     dump_body = True
-    ...   if contents and contents not in email_text:
-    ...     print "Expected the following in the email:"
-    ...     print contents
-    ...     dump_body = True
-    ...   if dump_body:
-    ...     print "--- the email ---"
-    ...     print email_body
-
-    >>> def check_recipients(emails, addresses):
-    ...   found = []
-    ...   for email in emails:
-    ...     recipient = email[1]
-    ...     if len(recipient) != 1: print "Expected only one recipient"
-    ...     found.append(recipient[0])
-    ...   if sorted(found) != sorted(addresses):
-    ...     print "Expected: %s\nFound: %s" % (sorted(addresses),
-    ...                                        sorted(found))
-
-
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
 sent.
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet
+    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet, IPersonSet
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> login('test@canonical.com')
+    >>> test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
-
+    >>> branch.subscribe(test_user)
+    <BranchSubscription ...> 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
     >>> branch.whiteboard = 'This is the new whiteboard'
@@ -77,11 +45,26 @@ names just now, we'll pass them through anyway
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
-    >>> check_email(stub.test_emails[0],
-    ...   To='test@canonical.com',
-    ...   From='Sample Person <test@canonical.com>',
-    ...   Subject='[Branch ~name12/firefox/main] Mozilla Firefox Mainline',
-    ...   contents='Whiteboard changed to:\n\nThis is the new whiteboard\n\n')
+    >>> from_address, recipients, body = stub.test_emails.pop()
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/firefox/main] Mozilla Firefox Mainline
+    ...
+    Whiteboard changed to:
+    <BLANKLINE>
+    This is the new whiteboard
+    <BLANKLINE>
+    --
+    Mozilla Firefox Mainline
+    http://launchpad.dev/~name12/+branch/firefox/main
+    <BLANKLINE>
+    You received this email because you are subscribed to this branch.
+    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
+    nch/firefox/main/+subscribe.
+    
 
 The fields that are currently tracked with the delta, and cause
 an email to be sent out are:
@@ -95,14 +78,11 @@ an email to be sent out are:
   * last_scanned_id
 
 All but the last two are modified through the web UI, and the last
-two are modified by the branch scanner.  Now normally scripts don't
-emit emails, but we're going to have to change this for the branch
-scanner.
+two are modified by the branch scanner.  
 
 So, if all the UI fields are changed, you should get an email that looks
 something like this:
 
-    >>> stub.test_emails = []
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
 
     >>> before_modification = Snapshot(branch, providing=IBranch)
@@ -117,40 +97,54 @@ something like this:
     ...  'is not too long'
     >>> from canonical.lp.dbschema import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.DEVELOPMENT
-    
-    >>> notify(SQLObjectModifiedEvent(branch,
-    ...                               before_modification,
-    ...                               ['name','title','summary','url','whiteboard','lifecycle_status']))
+    >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, updated_fields))
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
-    >>> changed_fields = \
-    ...   '    Name: main =3D> new-name\n' \
-    ...   '    Title: Mozilla Firefox Mainline =3D> New title\n' \
-    ...   '    Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com' \
-    ...   '/mozilla--=\nMAIN--0 =3D> http://example.com/foo\n' \
-    ...   '    Status: New =3D> Development\n\n'
-    ...   'Summary changed to:\n\n'
-    ...   'A new summary\n\n'
-    ...   'Whiteboard changed to:\n\n'
-    ...   'This is a multiline whiteboard\n'
-    ...   'with a really long line that should invoke the splitting algorithm in the m=\n'
-    ...   'ail wrapper to make sure that the line is not too long\n'
-    >>> check_email(stub.test_emails[0],
-    ...   To='test@canonical.com',
-    ...   From='Sample Person <test@canonical.com>',
-    ...   Subject='[Branch ~name12/firefox/new-name] New title',
-    ...   contents=changed_fields)
+    >>> from_address, recipients, body = stub.test_emails.pop()
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/firefox/new-name] New title
+    ...
+        Name: main =3D> new-name
+        Title: Mozilla Firefox Mainline =3D> New title
+        Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--=
+    MAIN--0 =3D> http://example.com/foo
+        Status: New =3D> Development
+    <BLANKLINE>
+    Summary changed to:
+    <BLANKLINE>
+    A new summary
+    <BLANKLINE>
+    Whiteboard changed to:
+    <BLANKLINE>
+    This is a multiline whiteboard
+    with a really long line that should invoke the splitting algorithm in the m=
+    ail wrapper to make sure that the line is not too long
+    <BLANKLINE>
+    --
+    New title
+    http://launchpad.dev/~name12/+branch/firefox/new-name
+    <BLANKLINE>
+    You received this email because you are subscribed to this branch.
+    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
+    nch/firefox/new-name/+subscribe.
 
 
-According to the bazaar guys, if the revision_id is still the same at the
-tip of the branch, then the branch hasn't changed.  
+If the revision_id is still the same at the tip of the branch, then the
+branch hasn't changed.
 
-    >>> stub.test_emails = []
+
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.dev')
 
 Now make it have less revisions, and set a bogus last scanned id
+
     >>> revision_count = branch.revision_count
     >>> last_id = branch.last_scanned_id
     >>> branch.revision_count -= 2
@@ -161,28 +155,54 @@ Snapshot it for the delta
     >>> before_modification = Snapshot(branch, providing=IBranch)
     >>> branch.revision_count = revision_count
     >>> branch.last_scanned_id = last_id
-
-    >>> notify(SQLObjectModifiedEvent(branch,
-    ...                               before_modification,
-    ...                               ['revision_count', 'last_scanned_id']))
+    >>> another_person = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
+    >>> branch.subscribe(another_person)
+    <BranchSubscription ...>
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, ['revision_count', 'last_scanned_id']))
 
     >>> transaction.commit()
 
 Since there is a subscriber to this branch, it should go to 
-both the auther and the subscriber
+both the author and the subscriber
 
     >>> len(stub.test_emails)
     2
-    >>> check_recipients(stub.test_emails, ['test@canonical.com',
-    ...                                     'support@ubuntu.com'])
+    >>> all_recipients = set()
+    >>> for addresses in [recipients for fromaddr, recipients, body
+    ...                    in stub.test_emails]:
+    ...     all_recipients.update(addresses)
+    >>> for address in sorted(all_recipients):
+    ...     print address
+    support@ubuntu.com
+    test@canonical.com
 
+    >>> from_address, recipients, body = stub.test_emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/+junk/junk.dev] Ubuntu Junk Code
+    ...
+        Revision count: 4 =3D> 6
+    <BLANKLINE>
+    Log entry of last revision:
+    <BLANKLINE>
+    fix bug in bar
+    <BLANKLINE>
+    --
+    Ubuntu Junk Code
+    http://launchpad.dev/~name12/+branch/+junk/junk.dev
+    <BLANKLINE>
+    You received this email because you are subscribed to this branch.
+    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
+    nch/+junk/junk.dev/+subscribe.
 
-    >>> email = stub.test_emails[0]
-    >>> check_email(email,
-    ...   Subject='[Branch ~name12/+junk/junk.dev] Ubuntu Junk Code',
-    ...   contents='Revision count: 4 =3D> 6')
-    >>> check_email(email,
-    ...   contents='Log entry of last revision:\n\n'
-    ...            'fix bug in bar')
+    >>> from_address, recipients, body2 = stub.test_emails.pop()
 
+Make sure that the same email body goes out to both people.  The body
+is separated from the headers by a blank line.
 
+    >>> body.split('\n\n', 1)[1] == body2.split('\n\n', 1)[1]
+    True

@@ -16,7 +16,7 @@
 
   >>> bill_name = (
   ...     'Bill amazingly-huge-middle-name-almost-impossible-to-read Graham')
-  >>> team_admin_browser.getControl('Option name').value = bill_name
+  >>> team_admin_browser.getControl('Name').value = bill_name
   >>> team_admin_browser.getControl('Title').value = 'Bill Graham'
   >>> team_admin_browser.getControl('Add').click()
 
@@ -46,7 +46,7 @@
 
   >>> will_name = (
   ...     'Will amazingly-huge-middle-name-almost-impossible-to-read Graham')
-  >>> team_admin_browser.getControl('Option name').value = will_name
+  >>> team_admin_browser.getControl('Name').value = will_name
   >>> team_admin_browser.getControl('Title').value = ''
   >>> team_admin_browser.getControl('Add').click()
 
@@ -56,7 +56,7 @@
   If we try to add a new option with the same name of a existing option, we
   should get a nice error message
 
-  >>> team_admin_browser.getControl('Option name').value = bill_name 
+  >>> team_admin_browser.getControl('Name').value = bill_name 
   >>> team_admin_browser.getControl('Title').value = 'Bill Again'
   >>> team_admin_browser.getControl('Add').click()
 

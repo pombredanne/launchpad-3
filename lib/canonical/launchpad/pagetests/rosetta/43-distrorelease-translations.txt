@@ -110,7 +110,7 @@ file):
   >>> browser.getControl(name='show', index=1).value = ['untranslated']
   >>> browser.getControl('Filter').click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?start=0&batch=10&show=untranslated'
+  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated'
   >>> '10.' in browser.contents
   True
 
@@ -122,7 +122,7 @@ Now, lets also check that fuzzy entries show up as well.
   >>> browser.getControl(name='show', index=1).value = ['need_review']
   >>> browser.getControl('Filter').click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?start=0&batch=10&show=need_review'
+  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review'
   >>> "There are no messages that match this filtering." in browser.contents
   True
 
@@ -131,7 +131,7 @@ Finally, lets also check that translated entries show up as well.
   >>> browser.getControl(name='show', index=1).value = ['translated']
   >>> browser.getControl('Filter').click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?start=0&batch=10&show=translated'
+  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated'
   >>> "There are no messages that match this filtering." in browser.contents
   True
 

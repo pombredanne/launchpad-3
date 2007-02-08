@@ -50,7 +50,6 @@ from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
 from canonical.launchpad.browser.packagerelationship import *
-from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *

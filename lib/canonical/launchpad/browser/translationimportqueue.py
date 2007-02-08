@@ -28,7 +28,7 @@ from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, ICanonicalUrlData, IPOTemplateSet,
-    ILanguageSet, NotFoundError, UnexpectedFormData)
+    ILanguageSet, NotFoundError, UnexpectedFormData, IPOFileSet)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, canonical_url, LaunchpadFormView, action
     )

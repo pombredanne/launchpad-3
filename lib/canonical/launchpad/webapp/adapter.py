@@ -10,16 +10,15 @@ import time
 import warnings
 
 from zope.interface import implements
-from zope.app.rdb import ZopeConnection
 from zope.app.rdb.interfaces import DatabaseException
 from zope.publisher.interfaces import Retry
 
-from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
+from psycopgda.adapter import PsycopgAdapter, PsycopgConnection
 import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -338,7 +337,9 @@ class CursorWrapper:
                 if (errorstr.startswith(
                     'ERROR:  canceling query due to user request') or
                     errorstr.startswith(
-                    'ERROR:  canceling statement due to statement timeout')):
+                    'ERROR:  canceling statement due to statement timeout') or
+                    errorstr.startswith(
+                    'ERROR:  cancelling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
         # Fix Bug 31755. There are unavoidable race conditions when handling

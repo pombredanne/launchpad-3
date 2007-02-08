@@ -26,7 +26,7 @@ The form should have been filled with sample data values.
   >>> user_browser.getControl('Branch URL').value
   'http://trekkies.example.com/gnome-terminal/klingon'
   >>> user_browser.getControl('Author').value
-  'test@canonical.com'
+  'name12'
   >>> user_browser.getControl('Summary').value
   'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
 
@@ -44,17 +44,11 @@ We should be redirected to the branch page, check that our changes were taken
 into account. The trailing slash added to the URL must have been ignored.
 
 Since the details have been changed, emails should have been sent out.
-Emails go out to the owner, author and all the subscribers.  Now there
-are no subscribers, but the author is now a team which has four members,
-however only two have emails.  So there should be three emails.
+Emails go out to the all the subscribers.  Now there
+are no subscribers so there whould be no emails.
 
   >>> len(stub.test_emails)
-  3
-  >>> for email in sorted([tup[1][0] for tup in stub.test_emails]):
-  ...   print email
-  andrew.bennetts@ubuntulinux.com
-  foo.bar@canonical.com
-  test@canonical.com
+  0
 
   >>> user_browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'

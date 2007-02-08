@@ -12,7 +12,7 @@ class ObjectDelta:
         self.new_obj = new_obj
         self.changes = {}
 
-    def record_new_values(self, fields):
+    def recordNewValues(self, fields):
         """Updates changes based on changed field values."""
         for field_name in fields:
             old_val = getattr(self.old_obj, field_name, None)
@@ -20,7 +20,7 @@ class ObjectDelta:
             if old_val != new_val:
                 self.changes[field_name] = new_val
 
-    def record_new_and_old(self, fields):
+    def recordNewAndOld(self, fields):
         """Updates changes with old and new values for changed fields."""
         for field_name in fields:
             old_val = getattr(self.old_obj, field_name, None)
@@ -29,7 +29,7 @@ class ObjectDelta:
                 self.changes[field_name] = { 'old' : old_val,
                                              'new' : new_val }
                 
-    def record_list_added_and_removed(self, field, added_name, removed_name):
+    def recordListAddedAndRemoved(self, field, added_name, removed_name):
         """Calculates changes in list style attributes."""
         # As much as I'd love to use sets, they are unordered
         # and any differences returned are not necessarily
@@ -51,4 +51,3 @@ class ObjectDelta:
                 
         if removed_items:
             self.changes[removed_name] = removed_items
-            

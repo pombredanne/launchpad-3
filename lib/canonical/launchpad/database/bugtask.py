@@ -321,13 +321,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX: we should use a specific SQLObject API here to avoid the
         # privacy violation.
         #   -- kiko, 2006-03-21
-        if self._SO_val_productID is not None:
+        if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self._SO_val_productseriesID is not None:
+        elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self._SO_val_distroreleaseID is not None:
+        elif self.distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
-        elif self._SO_val_distributionID is not None:
+        elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
