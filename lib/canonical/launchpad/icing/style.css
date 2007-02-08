@@ -72,7 +72,7 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.25em; margin: 0;              padding: 0px 0px 10px 0px;}
+h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
 h3 {font-size: 1.25em; margin: 0.5em 0 0 0;    padding: 0;}
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
@@ -96,6 +96,7 @@ input.urlTextType {width: 100%;}
 .formHelp {margin-bottom: 1em;}
 textarea {width: 100%;}
 .discreet {font-size: 75%;}
+table.form {width: 100%;}
 
 /* --- Other --- */
 
@@ -639,10 +640,12 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 20px 0 0;
   font-size: 2.5em;
 }
-#structuralobjectchildren {
-  float: left;
-  margin: 12px 0 0 0;
-  width: 25%;
+#structural-children {
+  clear: both;
+  font-size: 0.75em;
+  margin-top: 2em;
+  padding: 2em 0 0;
+  border-top: 1px dotted #ccc;
 }
 #applicationchooser {
   clear: both;
@@ -1133,13 +1136,6 @@ body.tab-support #actions h2, body.tab-support #actions h2:hover {
 
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
-}
-#structural-children {
-  clear: both;
-  font-size: 0.75em;
-  margin-top: 4em;
-  padding-top: 0;
-  border-top: 1px dotted #ccc;
 }
 /* Matthew's code for laying out the columns: */
 body {
