@@ -40,6 +40,11 @@
     factory="canonical.launchpad.browser.DistroReleaseSOP"
     permission="zope.Public"
     />
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    provides="canonical.launchpad.interfaces.ITicketTarget"
+    factory="canonical.launchpad.components.ticket.distrorelease_to_tickettarget"
+    />
 
   <browser:navigation
     module="canonical.launchpad.browser"
@@ -283,4 +288,5 @@
     name="+mdz-specs.csv"
     attribute="mdzCsv"
     />
+
 </configure>
