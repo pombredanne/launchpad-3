@@ -14,6 +14,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
@@ -52,7 +53,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus, PackagePublishingStatus)
 

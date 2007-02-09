@@ -24,9 +24,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (quote_like, quote, SQLBase,
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, DistributionReleaseStatus,
     PackageUploadStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter)
 
@@ -898,7 +899,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
         AND packageuploadsource.packageupload=packageupload.id
         AND packageupload.status=%s
-        """ % sqlvalues(PackageUploadStatus.DONE)
+        AND packageupload.distrorelease=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],

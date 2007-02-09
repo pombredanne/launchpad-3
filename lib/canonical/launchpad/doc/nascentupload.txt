@@ -583,22 +583,25 @@ Chuck it all away again
 == Announcements ==
 
 NascentUpload announces uploads according its final status (NEW,
-APPROVED, UNAPPROVED) and its destination pocket:
+AUTO-APPROVED, UNAPPROVED) and its destination pocket:
 
- * NEW: submitter set (changes signer, Changed-by and maintainer)
-   receives an 'new' warning
+ * NEW to RELEASE (via insecure): submitter set (changes signer,
+   Changed-by and maintainer) receives an 'new' warning message.
 
- * UNAPPROVED: submitter set receives an 'unapproved' warning.
+ * UNAPPROVED to frozen-RELEASE/UPDATES/BACKPORTS/PROPOSED (via insecure):
+   submitter set receives an 'unapproved' warning (announcement is
+   sent after the upload gets reviewed by archive-admin at queue time).
 
- * APPROVED to RELEASE: submitter set receives an 'acceptance'
-   warning and the target distrorelease changeslist address
-   receives an 'announcement' message.
+ * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
+   'acceptance' warning and the target distrorelease changeslist
+   address receives an 'announcement' message.
 
- * APPROVED to BACKPORTS: submitter set receives an 'acceptance'
-   warning ('announcement' is skipped).
+ * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
+   'acceptance' warning ('announcement' is skipped).
 
- * APPROVED to SECURITY: only the 'announcement' to the target
-   distrorelease.changeslist is sent ('acceptance' warning is skipped).
+ * AUTO-APPROVED to SECURITY (via security): submitter set receives an
+   'acceptance' warning and the target distrorelease changeslist
+   address receives an 'announcement' message.
 
 
 Before the actual tests, let's adjust 'changeslist' address on related
@@ -609,7 +612,9 @@ distroreleases:
   >>> warty.changeslist = "warty-announce@lists.ubuntu.com"
 
 
-Upload to RELEASE pocket:
+AUTO-APPROVED upload to RELEASE pocket via sync policy (it presents
+the same behaviour than using insecure policy, apart of allowing
+unsigned changes):
 
   >>> netapplet_src = NascentUpload(
   ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
@@ -630,7 +635,7 @@ Upload to RELEASE pocket:
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
 
-Upload to BACKPORTS pocket:
+AUTO-APPROVED upload to BACKPORTS pocket via sync policy:
 
   >>> netapplet_src = NascentUpload(
   ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
@@ -656,7 +661,7 @@ Upload to BACKPORTS pocket:
   ['Daniel Silverstone <daniel.silverstone@canonical.com>']
 
 
-Upload to SECURITY pocket:
+AUTO-APPROVED upload to SECURITY pocket via security policy:
 
   >>> netapplet_src = NascentUpload(
   ...     findPolicyByName('security'), datadir('netapplet_2.0-fake'),
@@ -674,13 +679,12 @@ Upload to SECURITY pocket:
   DEBUG: Building recipients list.
   ...
   DEBUG: Setting it to ACCEPTED
-  DEBUG: Skipping acceptance message, it is a SECURITY upload.
 
   >>> len(msgs)
-  1
+  2
 
   >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['warty-announce@lists.ubuntu.com']
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'warty-announce@lists.ubuntu.com']
 
 
 Chuck it all away again.
