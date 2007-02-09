@@ -685,6 +685,28 @@ ALTER TABLE branchrelationship DISABLE TRIGGER ALL;
 ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 
 
+ALTER TABLE branchrevision DISABLE TRIGGER ALL;
+
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
+
+
+ALTER TABLE branchrevision ENABLE TRIGGER ALL;
+
+
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL);
@@ -8592,28 +8614,6 @@ INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
 
 
 ALTER TABLE revisionauthor ENABLE TRIGGER ALL;
-
-
-ALTER TABLE revisionnumber DISABLE TRIGGER ALL;
-
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
-
-
-ALTER TABLE revisionnumber ENABLE TRIGGER ALL;
 
 
 ALTER TABLE revisionparent DISABLE TRIGGER ALL;
