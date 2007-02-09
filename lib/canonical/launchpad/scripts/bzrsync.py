@@ -57,6 +57,7 @@ class BzrSync:
         except:
             self.bzr_branch.unlock()
             raise
+        self._did_something = []
 
     def close(self):
         """Explicitly release resources."""
@@ -66,6 +67,21 @@ class BzrSync:
         self.bzr_branch = None
         self.db_branch = None
         self.bzr_history = None
+
+    def didSomething(self):
+        assert len(self._did_something) > 0, "Not in transaction"
+        self._did_something[-1] = True
+
+    def transact(self, f, *a, **kw):
+        self._did_something.append(False)
+        self.trans_manager.begin()
+        try:
+            return f(*a, **kw)
+        finally:
+            if self._did_something.pop():
+                self.trans_manager.commit()
+            else:
+                self.trans_manager.abort()
 
     def syncHistoryAndClose(self):
         """Import all revisions in the branch and release resources.
@@ -81,8 +97,6 @@ class BzrSync:
     def syncHistory(self):
         """Import all revisions in the branch."""
         # Keep track if something was actually loaded in the database.
-        did_something = False
-
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
 
@@ -97,14 +111,10 @@ class BzrSync:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
                 continue
-            if self.syncRevision(revision):
-                did_something = True
+            self.transact(self.syncRevision, revision)
 
         # now synchronise the RevisionNumber objects
-        if self.syncRevisionNumbers():
-            did_something = True
-
-        return did_something
+        self.transact(self.syncRevisionNumbers)
 
     def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -114,12 +124,6 @@ class BzrSync:
         """
         revision_id = bzr_revision.revision_id
         self.logger.debug("synchronizing revision: %s", revision_id)
-
-        # If did_something is True, new information was found and
-        # loaded into the database.
-        did_something = False
-
-        self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         if db_revision is not None:
@@ -165,14 +169,7 @@ class BzrSync:
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
                 parent_ids=bzr_revision.parent_ids)
-            did_something = True
-
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
-
-        return did_something
+            self.didSomething()
 
     def syncRevisionNumbers(self):
         """Synchronise the revision numbers for the branch."""
@@ -180,18 +177,15 @@ class BzrSync:
             "synchronizing revision numbers for branch: %s",
             self.bzr_branch.base)
 
-        did_something = False
-        self.trans_manager.begin()
         # now synchronise the RevisionNumber objects
         for (index, revision_id) in enumerate(self.bzr_history):
             # sequence numbers start from 1
             sequence = index + 1
-            if self.syncRevisionNumber(sequence, revision_id):
-                did_something = True
+            self.transact(self.syncRevisionNumber, sequence, revision_id)
 
         # finally truncate any further revision numbers (if they exist):
         if self.db_branch.truncateHistory(len(self.bzr_history) + 1):
-            did_something = True
+            self.didSomething()
 
         # record that the branch has been updated.
         if len(self.bzr_history) > 0:
@@ -203,14 +197,7 @@ class BzrSync:
         if (last_revision != self.db_branch.last_scanned_id) or \
            (revision_count != self.db_branch.revision_count):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
-            did_something = True
-
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
-
-        return did_something
+            self.didSomething()
 
     def syncRevisionNumber(self, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
@@ -220,10 +207,6 @@ class BzrSync:
         :param revision_id: GUID of the revision
         :type revision_id: str
         """
-        did_something = False
-
-        self.trans_manager.begin()
-
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         db_revno = self.db_branch.getRevisionNumber(sequence)
 
@@ -232,17 +215,10 @@ class BzrSync:
         # replacement revision numbers will be created in their place.
         if db_revno is not None and db_revno.revision != db_revision:
             if self.db_branch.truncateHistory(sequence):
-                did_something = True
+                self.didSomething()
             db_revno = None
 
         if db_revno is None:
             db_revno = self.db_branch.createRevisionNumber(
                 sequence, db_revision)
-            did_something = True
-
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
-
-        return did_something
+            self.didSomething()
