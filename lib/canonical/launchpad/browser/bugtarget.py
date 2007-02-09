@@ -40,6 +40,7 @@ from canonical.launchpad.webapp import (
     urlappend)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.widgets.bug import BugTagsWidget
 
 
 class FileBugData:
@@ -103,6 +104,7 @@ class FileBugViewBase(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     extra_data_token = None
+    advanced_form = False
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -239,7 +241,8 @@ class FileBugViewBase(LaunchpadFormView):
         notifications = ["Thank you for your bug report."]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
-            security_related=security_related, private=private)
+            security_related=security_related, private=private,
+            tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -365,21 +368,22 @@ class FileBugAdvancedView(FileBugViewBase):
     # class!
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
     template = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-advanced.pt")
+    advanced_form = True
 
     @property
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        if IProduct.providedBy(context):
-            return ['title', 'comment', 'security_related']
-        else:
-            assert (
-                IDistribution.providedBy(context) or
-                IDistributionSourcePackage.providedBy(context))
-
-            return ['title', 'comment', 'security_related', 'packagename']
+        field_names = ['title', 'comment', 'security_related', 'tags']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
+        return field_names
 
     def showFileBugForm(self):
         return self.template()

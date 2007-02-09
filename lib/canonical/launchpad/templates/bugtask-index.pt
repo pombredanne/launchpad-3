@@ -97,7 +97,8 @@
     <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
 
-    <div tal:define="tags context/bug/tags"
+    <div id="bug-tags"
+         tal:define="tags context/bug/tags"
          tal:condition="tags"
          style="text-align: right; font-size: smaller; margin: 0; padding: 0">
       <b>Tags:</b>
