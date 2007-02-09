@@ -9,12 +9,13 @@ from sqlobject import ForeignKey, IntCol
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IBranchSubscription
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    EnumCol,
-    BranchSubscriptionNotificationLevel,
-    BranchSubscriptionDiffSize)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
+
+from canonical.launchpad.interfaces import IBranchSubscription
+
 
 class BranchSubscription(SQLBase):
     """A relationship between a person and a branch."""

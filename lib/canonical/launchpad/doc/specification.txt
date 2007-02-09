@@ -68,7 +68,7 @@ The Ubuntu distro is owned by the Ubuntu team, ubuntu-team. jdub is a member,
 and therefore should be able to edit any spec attached to it (but not
 specs attached to mozilla-firefox).
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> print ubuntu.owner.name
     ubuntu-team
     >>> jdub = Person.byName('jdub')
