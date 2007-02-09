@@ -257,6 +257,21 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
 
+    def test_get_revisions_empty(self):
+        bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        try:
+            self.assertEqual([], list(bzrsync.getRevisions()))
+        finally:
+            bzrsync.close()
+
+    def test_get_revisions_linear(self):
+        self.commitRevision(rev_id=u'rev-1')
+        bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        try:
+            self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
+        finally:
+            bzrsync.close()
+
 
 class TestBzrSyncModified(BzrSyncTestCase):
 

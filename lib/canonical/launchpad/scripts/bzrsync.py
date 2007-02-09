@@ -171,6 +171,13 @@ class BzrSync:
                 parent_ids=bzr_revision.parent_ids)
             self.didSomething()
 
+    def getRevisions(self):
+        """Generate a sequence of (sequence, revisionID) pairs to be inserted
+        into the branchrevision (nee revisionnumber) table."""
+        for (index, revision_id) in enumerate(self.bzr_history):
+            # sequence numbers start from 1
+            yield index + 1, revision_id
+
     def syncRevisionNumbers(self):
         """Synchronise the revision numbers for the branch."""
         self.logger.info(
@@ -178,9 +185,7 @@ class BzrSync:
             self.bzr_branch.base)
 
         # now synchronise the RevisionNumber objects
-        for (index, revision_id) in enumerate(self.bzr_history):
-            # sequence numbers start from 1
-            sequence = index + 1
+        for (sequence, revision_id) in self.getRevisions():
             self.transact(self.syncRevisionNumber, sequence, revision_id)
 
         # finally truncate any further revision numbers (if they exist):
