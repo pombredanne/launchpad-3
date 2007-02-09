@@ -759,23 +759,6 @@ class BugTaskEditView(GeneralFormView):
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        comment_on_change = self.request.form.get(
-            "%s.comment_on_change" % self.prefix)
-        if comment_on_change:
-            # There was a comment on this change, so make sure that a
-            # change was actually made.
-            changed = False
-            for field_name in data:
-                current_value = getattr(bugtask, field_name)
-                if current_value != data[field_name]:
-                    changed = True
-                    break
-
-            if not changed:
-                # Pass the change comment error message as a list because
-                # WidgetsError expects a list.
-                raise WidgetsError([
-                    "You provided a change comment without changing anything."])
         if bugtask.distrorelease is not None:
             distro = bugtask.distrorelease.distribution
         else:
