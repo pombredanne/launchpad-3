@@ -334,24 +334,24 @@ class BranchSet:
 
     def getRecentlyChangedBranches(self, branch_count):
         """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = '''
             Branch.last_scanned IS NOT NULL
-            AND Branch.owner = Person.id
-            AND Person.name <> 'vcs-imports'
-            '''
-        branches = Branch.select(query, clauseTables=['Person'],
-            orderBy=['-last_scanned'], limit=branch_count)
+            AND Branch.owner <> %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count):
         """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = '''
             Branch.last_scanned IS NOT NULL
-            AND Branch.owner = Person.id
-            AND Person.name = 'vcs-imports'
-            '''
-        branches = Branch.select(query, clauseTables=['Person'],
-            orderBy=['-last_scanned'], limit=branch_count)
+            AND Branch.owner = %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyRegisteredBranches(self, branch_count):

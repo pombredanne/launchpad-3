@@ -870,12 +870,17 @@ class DefaultShortLink(LaunchpadView):
 
     This is a default implementation that assumes that context.title exists
     and is what we want.
+    
+    This class can be used as a base class for simple short links by overriding the getLinkText() method.
     """
+
+    def getLinkText(self):
+        return self.context.title
 
     def render(self):
         L = []
         L.append('<a href="%s">' % canonical_url(self.context))
-        L.append(cgi.escape(self.context.title).replace(' ', '&nbsp;'))
+        L.append(cgi.escape(self.getLinkText()).replace(' ', '&nbsp;'))
         L.append('</a>')
         return u'\n'.join(L)
 

@@ -15,6 +15,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
+           'ProductSeriesShortLink',
            'get_series_branch_error']
 
 import cgi
@@ -39,7 +40,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -687,3 +688,8 @@ class ProductSeriesSourceSetView:
             html += ' selected'
         html += '>Stopped</option>\n'
 
+
+class ProductSeriesShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname

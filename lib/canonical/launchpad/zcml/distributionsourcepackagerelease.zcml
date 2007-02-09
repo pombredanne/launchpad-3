@@ -49,4 +49,12 @@
       />
   </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.DistributionSourcePackageReleaseShortLink"
+    attribute="__call__"
+    />
+
 </configure>

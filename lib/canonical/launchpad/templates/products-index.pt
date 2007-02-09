@@ -21,7 +21,6 @@
       <span tal:replace="context/count_buggy">5</span> have bugs reported,
       <span tal:replace="context/count_translatable">5</span> 
       have translations,
-      <span tal:replace="context/count_bounties">5</span> have bounties,
       <span tal:replace="context/count_featureful">5</span> have
       feature specifications registered,
       and <span tal:replace="context/count_reviewed">5</span>
