@@ -1693,6 +1693,35 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
+        # Update only the MentoringOffers that will not conflict
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET owner=%(to_id)d
+            WHERE owner=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE owner = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET team=%(to_id)d
+            WHERE team=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE team = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM MentoringOffer
+            WHERE owner=%(from_id)d OR team=%(from_id)d
+            ''' % vars())
+        skip.append(('mentoringoffer', 'owner'))
+        skip.append(('mentoringoffer', 'team'))
+
         # Update PackageBugContact entries
         cur.execute('''
             UPDATE PackageBugContact SET bugcontact=%(to_id)s
