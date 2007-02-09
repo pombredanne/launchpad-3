@@ -293,5 +293,3 @@ directly.
     ...     print tag
     bar
     foo
-
-XXX: confirm that the tags are present in the e-mail notifications
