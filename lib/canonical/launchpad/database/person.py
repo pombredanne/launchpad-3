@@ -1925,6 +1925,14 @@ class PersonSet:
         flush_database_caches()
 
 
+class PersonLanguage(SQLBase):
+    _table = 'PersonLanguage'
+
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    language = ForeignKey(foreignKey='Language', dbName='language',
+                          notNull=True)
+
+
 class SSHKey(SQLBase):
     implements(ISSHKey)
 
