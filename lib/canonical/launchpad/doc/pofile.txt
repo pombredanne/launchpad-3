@@ -1,5 +1,4 @@
-POFile
-======
+= POFile =
 
 Get evolution template for Ubuntu Hoary
 
@@ -123,8 +122,7 @@ WARNING:root:The plural form header has an unknown error. Using the default valu
 True
 
 
-isPORevisionDateOlder
----------------------
+== isPORevisionDateOlder ==
 
 This method helps to compare two PO files header and decide if the given one
 is older than the one we have in the IPOFile object. We are using this
@@ -160,8 +158,7 @@ Now, we check with a date that is in the past.
     >>> pofile.isPORevisionDateOlder(header)
     True
 
-canEditTranslations
--------------------
+== canEditTranslations ==
 
 This method determines if someone is allowed to edit translations.
 
@@ -280,8 +277,7 @@ And samething with the unprivileged account.
     >>> pofile_es.canEditTranslations(no_priv)
     True
 
-uncachedExport
---------------
+== uncachedExport ==
 
 This method serializes an IPOFile as a .po file.
 
@@ -326,8 +322,7 @@ And the encoding used is also using UTF-8 chars.
     >>> stream_list[30]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
-getPOTMsgSetUntranslated
-------------------------
+== getPOTMsgSetUntranslated ==
 
 The POTMsgSet that are untranslated are the ones that are not complete and
 that aren't fuzzy.
@@ -346,8 +341,8 @@ that as not bein complete too.
     ...             (pomsgset.iscomplete == False and
     ...              pomsgset.isfuzzy == False))
 
-createMessageSetFromText
-------------------------
+
+== createMessageSetFromText ==
 
 This method returns a new IPOMsgSet for the associated text.
 
@@ -386,9 +381,203 @@ Also, as we just created it, it shouldn't have any translation.
   >>> pomsgset.published_texts
   [None, None, None]
 
+== export and validExportCache ==
 
-Security tests
-==============
+The export method is used to get a .po file from our database rows. It's
+strongly related with validExportCache, which drives whether the export
+should be a full export from our database or just return an already
+cached value.
+
+  # Get hold of a PO file which has been exported before.
+  >>> from canonical.launchpad.database import POFile
+  >>> pofile = POFile.get(1)
+
+The way to know whether there is a previous export is to have a value in
+IPOFile.exportfile. That's a link to a librarian file containing a cached
+export.
+
+  >>> pofile.exportfile is None
+  False
+  >>> old_cached_file_id = pofile.exportfile.id
+
+However, it would be old, so it doesn't have a valid cache.
+
+  >>> pofile.validExportCache()
+  False
+
+Now ask it to export itself.
+
+  >>> export = pofile.export()
+  >>> export.split('\n')[0]
+  '# traducci\xc3\xb3n de es.po al Spanish'
+
+  # Now, because of a SQLObject quirk, we need to call .sync() on the PO file.
+  # This is because calling .export() has set pofile.exporttime to the magic
+  # constant UTC_NOW. This would normally be fine, as the attribute would not
+  # normally be accessed again in the same SQLObject session, and it would
+  # appear as a datetime value the next time around. However, in this case, we
+  # need to access it immediately, so we need to write it to the database and
+  # read it back again.
+  >>> pofile.sync()
+
+Because the PO file has been exported, it will have updated the cache.
+
+  >>> pofile.validExportCache()
+  True
+
+Which is different than previous one:
+
+  >>> old_cached_file_id != pofile.exportfile.id
+  True
+  >>> old_cached_file_id = pofile.exportfile.id
+
+  # In order to have different datetimes for the export time of the pofile,
+  # and for any new stuff we do, lets commit a transaction.
+  >>> transaction.commit()
+
+validExportCache method detects any translation change done in the IPOFile and
+invalidates the cache.
+
+  # We can see current value before we do a change, so we are completely sure
+  # that the exported file includes the modification.
+  >>> print export.decode('UTF-8')
+  #...
+  #: addressbook/addressbook-errors.xml.h:6
+  msgid "Failed to authenticate with LDAP server."
+  msgstr ""
+  ...
+
+  # Let's update a translation to the PO file.
+  >>> from canonical.launchpad.database import Person
+  >>> person = Person.get(1)
+  >>> msgid = u"Failed to authenticate with LDAP server."
+  >>> msgset = pofile.getPOMsgSet(msgid)
+  >>> print msgset.active_texts
+  [None]
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print msgset.active_texts
+  [u'Blah.']
+  >>> txt = msgset.active_texts[0]
+
+  # We need to sync the changed objects for the same reason as before.
+  >>> msgset.sync()
+
+  >>> pofile.validExportCache()
+  False
+
+Another export run generates a new cached file that contains that new
+translation.
+
+  >>> export = pofile.export()
+  >>> export is not None
+  True
+
+  # And we can see that it's applied in the exported file.
+  >>> print export.decode('UTF-8')
+  #...
+  #: addressbook/addressbook-errors.xml.h:6
+  msgid "Failed to authenticate with LDAP server."
+  msgstr "Blah."
+  ...
+  >>> old_cached_file_id != pofile.exportfile.id
+  True
+  >>> pofile.validExportCache()
+  True
+
+There is a corner case in the way we check that the cached export is valid.
+When the IPOFile has no submissions at all we don't have a way to know
+when was last time that a translation was updated, because there are no
+translations.
+
+This tests two specific things:
+
+ - That a PO file with no translations can be exported.
+ - The situation where there is a cached export for a file with no
+   translations, and there is no submission which we can use to check the
+   cache's validity.
+
+  >>> empty_pofile = pofile.potemplate.newPOFile('cy')
+  >>> empty_pofile.latestsubmission is None
+  True
+  >>> empty_pofile.validExportCache()
+  False
+
+  # There is something exported.
+  >>> len(empty_pofile.export()) > 0
+  True
+
+XXX DaniloSegan 20070115: we're currently unable to track cache status
+for empty PO files, since this is similar to case of a single deactivated
+translation.
+
+  >>> empty_pofile.validExportCache()
+  False
+
+Also, the export is robust enough to handle a situation where Librarian is not
+available.
+
+  # To demonstrate it, we are going to shutdown Librarian.
+  >>> from canonical.testing import LibrarianLayer
+  >>> LibrarianLayer.hide()
+
+At this point, librarian is not available, but the export is still working.
+
+  >>> pofile = POFile.get(1)
+  >>> pofile.validExportCache()
+  True
+  >>> old_cached_file_id = pofile.exportfile.id
+  >>> len(pofile.export()) > 0
+  ERROR:root:Error fetching a cached file from librarian
+  Traceback (most recent call last):
+  ...
+  LookupError: ...
+  WARNING:root:Error uploading a cached file into librarian
+  ...
+  UploadFailed: (111, 'Connection refused')
+  True
+
+Although the cache is still pointing to previous value because it cannot be
+updated.
+
+  >>> pofile.exportfile.id == old_cached_file_id
+  True
+
+Even when we there is no cached file, the export will work and will not be
+stored due the problem with Librarian.
+
+  >>> pofile.invalidateCache()
+  >>> len(pofile.export()) > 0
+  WARNING:root:Error uploading a cached file into librarian
+  ...
+  UploadFailed: (111, 'Connection refused')
+  True
+  >>> pofile.validExportCache()
+  False
+
+  # We restore now Librarian
+  >>> LibrarianLayer.reveal()
+
+When an IPOFile has the wrong encoding defined in its header, the system
+exports it as UTF-8
+
+  >>> pofile.header = 'Content-Type: text/plain; charset=broken\n'
+  >>> pofile.sync()
+  >>> export_content = pofile.export()
+  >>> unicode(export_content)
+  Traceback (most recent call last):
+  ...
+  UnicodeDecodeError: ...
+  >>> print export_content.decode('UTF-8')
+  #...
+  "Content-Type: text/plain; charset=UTF-8\n"
+  ...
+
+
+= POFile Security tests =
 
 Import the function that will help us to do this test.
 

@@ -57,7 +57,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
     get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.karma import KarmaTotalCache
+from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -158,9 +158,6 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin(
-        'KarmaPersonCategoryCacheView', joinColumn='person',
-        orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
@@ -618,6 +615,19 @@ class Person(SQLBase):
     def searchTasks(self, search_params):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    @property
+    def karma_category_caches(self):
+        """See IPerson."""
+        return KarmaCache.select(
+            AND(
+                KarmaCache.q.personID == self.id,
+                KarmaCache.q.categoryID != None,
+                KarmaCache.q.productID == None,
+                KarmaCache.q.projectID == None,
+                KarmaCache.q.distributionID == None,
+                KarmaCache.q.sourcepackagenameID == None),
+            orderBy=['category'])
 
     @property
     def karma(self):
@@ -1682,6 +1692,35 @@ class PersonSet:
             DELETE FROM TicketSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
+
+        # Update only the MentoringOffers that will not conflict
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET owner=%(to_id)d
+            WHERE owner=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE owner = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET team=%(to_id)d
+            WHERE team=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE team = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM MentoringOffer
+            WHERE owner=%(from_id)d OR team=%(from_id)d
+            ''' % vars())
+        skip.append(('mentoringoffer', 'owner'))
+        skip.append(('mentoringoffer', 'team'))
 
         # Update PackageBugContact entries
         cur.execute('''

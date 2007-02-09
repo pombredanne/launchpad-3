@@ -33,7 +33,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     TicketAction, TicketSort, TicketStatus,
-    TicketParticipation, TicketPriority, Item)
+    TicketParticipation, TicketPriority)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
@@ -43,6 +43,7 @@ from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -688,12 +689,12 @@ class TicketSearch:
 class TicketTargetSearch(TicketSearch):
     """Search tickets in an ITicketTarget context.
 
-    Used to implement ITicketTarget.search().
+    Used to implement ITicketTarget.searchTickets().
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 language=None, owner=None,  needs_attention_from=None,
-                 sort=None, product=None, distribution=None,
+                 language=None, sort=None, owner=None,
+                 needs_attention_from=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
@@ -754,7 +755,7 @@ class TicketPersonSearch(TicketSearch):
 
     def __init__(self, person, search_text=None,
                  status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                 participation=None, needs_attention=False, sort=None):
+                 sort=None, participation=None, needs_attention=False):
         if needs_attention:
             needs_attention_from = person
         else:
