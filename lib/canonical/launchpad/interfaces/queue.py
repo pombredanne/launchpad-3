@@ -73,7 +73,7 @@ class IDistroReleaseQueue(Interface):
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
-    signingkey = Attribute("Changesfile Signing Key.")
+    signing_key = Attribute("Changesfile Signing Key.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")

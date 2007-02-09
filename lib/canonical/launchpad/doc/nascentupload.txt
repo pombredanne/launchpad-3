@@ -721,7 +721,7 @@ sigining key reference as an IGPGKey:
   >>> verifyObject(IGPGKey, bar_ok.dsc_signing_key)
   True
 
-  >>> verifyObject(IGPGKey, bar_ok.signingkey)
+  >>> verifyObject(IGPGKey, bar_ok.signing_key)
   True
 
 The second key of name16 person is used to sign uploads (the first gpgkey
@@ -735,7 +735,7 @@ Both, DSC and changesfile were signed:
   >>> bar_ok.dsc_signing_key.fingerprint == uploader_key.fingerprint
   True
 
-  >>> bar_ok.signingkey.fingerprint == uploader_key.fingerprint
+  >>> bar_ok.signing_key.fingerprint == uploader_key.fingerprint
   True
 
 Let's modify the current ACL rules for ubuntu, moving the upload
@@ -765,10 +765,10 @@ for further checks:
 
   >>> verifyObject(IGPGKey, bar_failed.dsc_signing_key)
   True
-  >>> verifyObject(IGPGKey, bar_failed.signingkey)
+  >>> verifyObject(IGPGKey, bar_failed.signing_key)
   True
 
   >>> bar_failed.dsc_signing_key.fingerprint == uploader_key.fingerprint
   True
-  >>> bar_failed.signingkey.fingerprint == uploader_key.fingerprint
+  >>> bar_failed.signing_key.fingerprint == uploader_key.fingerprint
   True

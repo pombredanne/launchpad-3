@@ -252,7 +252,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
 == Upload Signing Key ==
 
-IDistroReleaseQueue.signingkey should store the IGPGKey reference to
+IDistroReleaseQueue.signing_key should store the IGPGKey reference to
 the key used to sign the changesfile when it applies (insecure policy
 uploads).
 
@@ -279,7 +279,7 @@ Let's process a new upload:
   >>> verifyObject(IDistroReleaseQueue, signed_queue)
   True
 
-  >>> verifyObject(IGPGKey, signed_queue.signingkey)
+  >>> verifyObject(IGPGKey, signed_queue.signing_key)
   True
 
 Let's check the IPerson entities related to this source upload:
@@ -292,7 +292,7 @@ Let's check the IPerson entities related to this source upload:
   >>> signed_src.maintainer.displayname
   u'Launchpad team'
 
-  >>> signed_queue.signingkey.owner.displayname
+  >>> signed_queue.signing_key.owner.displayname
   u'Foo Bar'
 
 Based on this information we can conclude that source 'bar' is

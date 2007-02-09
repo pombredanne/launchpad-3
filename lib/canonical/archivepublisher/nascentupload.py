@@ -322,7 +322,7 @@ class NascentUpload:
         self.warnings = ""
         self.librarian = getUtility(ILibraryFileAliasSet)
         self.signer = None
-        self.siginingkey = None
+        self.signing_key = None
         self.permitted_components = self.policy.getDefaultPermittedComponents()
         self._arch_verified = False
         self._native_checked = False
@@ -615,7 +615,7 @@ class NascentUpload:
         """Find the signer and signing key for the .changes file.
 
         While this returns nothing itself, it has the side effect of setting
-        self.signer and self.signingkey (and if availabile,
+        self.signer and self.signing_key (and if availabile,
         self.signer_address also)
 
         If on exit from this, self.signer is None, you cannot trust the rest
@@ -626,10 +626,10 @@ class NascentUpload:
         if self.policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned, storing None")
             self.signer = None
-            self.signingkey = None
+            self.signing_key = None
         else:
             self.logger.debug("Checking signature on changes file.")
-            self.signer, self.signingkey, unwanted_sig = self.verify_sig(
+            self.signer, self.signing_key, unwanted_sig = self.verify_sig(
                 self.changes_basename)
             self.signer_address = self.parse_address("%s <%s>" % (
                 self.signer.displayname, self.signer.preferredemail.email))
@@ -1770,7 +1770,7 @@ class NascentUpload:
         # Verify the changes information.
         self._find_signer()
         if self.signer is not None:
-            self.policy.considerSigner(self.signer, self.signingkey)
+            self.policy.considerSigner(self.signer, self.signing_key)
 
         self.verify_changes()
         self.verify_uploaded_files()
@@ -2082,7 +2082,7 @@ class NascentUpload:
             pocket=self.policy.pocket,
             changesfilename=self.changes_basename,
             changesfilecontent=self.changes["filecontents"],
-            signingkey=self.signingkey)
+            signing_key=self.signing_key)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:

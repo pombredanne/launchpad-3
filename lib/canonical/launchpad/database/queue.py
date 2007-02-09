@@ -72,8 +72,8 @@ class DistroReleaseQueue(SQLBase):
                              foreignKey="LibraryFileAlias",
                              notNull=True)
 
-    signingkey = ForeignKey(foreignKey='GPGKey', dbName='signingkey',
-                            notNull=False)
+    signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
+                             notNull=False)
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.

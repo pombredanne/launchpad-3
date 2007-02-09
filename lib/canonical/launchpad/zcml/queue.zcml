@@ -10,7 +10,7 @@
           interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
       <require
           permission="launchpad.View"
-          attributes="id status distrorelease pocket changesfile signingkey
+          attributes="id status distrorelease pocket changesfile signing_key
                       sources builds customfiles
                       datecreated sourcepackagerelease
                       containsSource containsBuild
