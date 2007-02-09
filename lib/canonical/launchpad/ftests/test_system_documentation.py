@@ -167,6 +167,11 @@ special = {
             '../doc/poparser.txt', optionflags=default_optionflags
             ),
 
+    'package-relationship.txt': DocFileSuite(
+            '../doc/package-relationship.txt',
+            optionflags=default_optionflags
+            ),
+
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
@@ -179,8 +184,8 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
             ),
-    'po_export_queue.txt': FunctionalDocFileSuite(
-            '../doc/po_export_queue.txt',
+    'poexport-queue.txt': FunctionalDocFileSuite(
+            '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'librarian.txt': FunctionalDocFileSuite(

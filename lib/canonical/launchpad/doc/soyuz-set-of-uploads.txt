@@ -155,7 +155,7 @@ given upload into the published state, so here's a very simplistic publisher
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
   >>> from canonical.lp.dbschema import PackagePublishingStatus as PPS
-  >>> from canonical.database.constants import nowUTC
+  >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     transaction.abort()
   ...     srcs_to_publish = SPPH.select("""
@@ -177,12 +177,12 @@ given upload into the published state, so here's a very simplistic publisher
   ...     for src in srcs_to_publish:
   ...         sec_src = src.secure_record
   ...         sec_src.status = PPS.PUBLISHED
-  ...         sec_src.datepublished = nowUTC
+  ...         sec_src.datepublished = UTC_NOW
   ...         published_one = True
   ...     for bin in bins_to_publish:
   ...         sec_bin = bin.secure_record
   ...         sec_bin.status = PPS.PUBLISHED
-  ...         sec_bin.datepublished = nowUTC
+  ...         sec_bin.datepublished = UTC_NOW
   ...         published_one = True
   ...     flush_database_updates()
   ...     transaction.commit()

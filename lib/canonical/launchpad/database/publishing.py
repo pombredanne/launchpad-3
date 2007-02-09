@@ -18,17 +18,21 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket)
+
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
     PoolFileOverwriteError)
-from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
+
 
 
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
@@ -175,7 +179,7 @@ class ArchiveSafePublisherBase:
             # already published (usually when we use -C
             # publish-distro.py option)
             self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
+            self.datepublished = UTC_NOW
 
 
 class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):

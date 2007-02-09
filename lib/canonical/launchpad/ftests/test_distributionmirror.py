@@ -139,34 +139,42 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         # previously enabled or disabled.
         self._create_probe_record(mirror)
         self.failUnless(mirror.enabled)
-        mirror.disableAndNotifyOwner()
+        mirror.disable(notify_owner=True)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
-        self.failUnless(len(stub.test_emails) == 2)
+        self.failUnlessEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
-        mirror.disableAndNotifyOwner()
+        mirror.disable(notify_owner=True)
         # Again, a notification was sent to the owner and other to the mirror
         # admins.
         transaction.commit()
-        self.failUnless(len(stub.test_emails) == 2)
+        self.failUnlessEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
         # For mirrors that have been probed more than once, we'll only notify
         # the owner if the mirror was previously enabled.
         self._create_probe_record(mirror)
         mirror.enabled = True
-        mirror.disableAndNotifyOwner()
+        mirror.disable(notify_owner=True)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
-        self.failUnless(len(stub.test_emails) == 2)
+        self.failUnlessEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
+        # We can always disable notifications to the owner by passing
+        # notify_owner=False to mirror.disable().
+        mirror.enabled = True
+        mirror.disable(notify_owner=False)
+        transaction.commit()
+        self.failUnlessEqual(len(stub.test_emails), 1)
+        stub.test_emails = []
+        
         mirror.enabled = False
-        mirror.disableAndNotifyOwner()
+        mirror.disable(notify_owner=True)
         # No notifications were sent this time
         transaction.commit()
-        self.failUnless(len(stub.test_emails) == 0)
+        self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
 
         LibrarianTestSetup().tearDown()

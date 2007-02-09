@@ -8,7 +8,6 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
-from canonical.launchpad.ftests import login
 
 
 class LaunchpadScriptFailure(Exception):
@@ -130,7 +129,7 @@ class LaunchpadScript:
 
             self.parser.add_option("-f", "--foo", dest="foo",
                 default="foobar-makes-the-world-go-round",
-                help="You're joking right")
+                help="You are joking, right?")
         """
 
     #
@@ -139,6 +138,9 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
+        # This import is actually quite expensive, and causes us to
+        # import circularly in pathological cases.
+        from canonical.launchpad.ftests import login
         login(user)
 
     #
@@ -183,10 +185,11 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    def run(self):
+    def run(self, use_web_security=False, implicit_begin=True):
         """Actually run the script, executing zcml and initZopeless."""
-        scripts.execute_zcml_for_scripts()
-        self.txn = initZopeless(dbuser=self.dbuser)
+        scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
+        self.txn = initZopeless(dbuser=self.dbuser,
+                                implicitBegin=implicit_begin)
         try:
             self.main()
         except LaunchpadScriptFailure, e:
@@ -197,14 +200,16 @@ class LaunchpadScript:
     # Make things happen
     #
 
-    def lock_and_run(self, blocking=False, skip_delete=False):
+    def lock_and_run(self, blocking=False, skip_delete=False,
+                     use_web_security=False, implicit_begin=True):
         """Call lock_or_die(), and then run() the script.
 
-        May die with sys.exit(1) if the locking call fails.
+        Will die with sys.exit(1) if the locking call fails.
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run()
+            self.run(use_web_security=use_web_security,
+                     implicit_begin=implicit_begin)
         finally:
             self.unlock(skip_delete=skip_delete)
 
