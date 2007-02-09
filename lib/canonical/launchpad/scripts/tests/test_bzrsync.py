@@ -293,13 +293,13 @@ class TestBzrSync(BzrSyncTestCase):
         sync = BzrSync(self.txn, self.db_branch)
         try:
             revision = sync.bzr_branch.repository.get_revision(first_revision)
-            diff_lines = sync.get_diff_lines(revision)
+            diff = sync.getDiff(revision)
 
             expected = ("=== added file 'hello.txt'\n"
                         "--- a/hello.txt\t1970-01-01 00:00:00 +0000\n"
                         "+++ b/hello.txt\t2001-09-09 01:46:40 +0000\n@@ -0,0 +1,1 @@\n"
                         "+Hello World\n\n")
-            self.assertTextEqual('\n'.join(diff_lines), expected)
+            self.assertTextEqual(diff, expected)
                              
             expected = (u"-"*60 + "\n"
                         "revno: 1\n"
@@ -310,11 +310,11 @@ class TestBzrSync(BzrSyncTestCase):
                         "  Log message\n"
                         "added:\n"
                         "  hello.txt\n")
-            self.assertTextEqual(sync.get_revision_message(revision), expected)
+            self.assertTextEqual(sync.getRevisionMessage(revision), expected)
 
 
             revision = sync.bzr_branch.repository.get_revision(second_revision)
-            diff_lines = sync.get_diff_lines(revision)
+            diff = sync.getDiff(revision)
 
             expected = ("=== modified file 'hello.txt'\n"
                         "--- a/hello.txt\t2001-09-09 01:46:40 +0000\n"
@@ -323,7 +323,7 @@ class TestBzrSync(BzrSyncTestCase):
                         " Hello World\n"
                         "+\n"
                         "+Foo Bar\n\n")
-            self.assertTextEqual('\n'.join(diff_lines), expected)
+            self.assertTextEqual(diff, expected)
                              
             expected = (u"-"*60 + "\n"
                         "revno: 2\n"
@@ -334,7 +334,7 @@ class TestBzrSync(BzrSyncTestCase):
                         "  Extended contents\n"
                         "modified:\n"
                         "  hello.txt\n")
-            self.assertTextEqual(sync.get_revision_message(revision), expected)
+            self.assertTextEqual(sync.getRevisionMessage(revision), expected)
 
         finally:
             sync.close()

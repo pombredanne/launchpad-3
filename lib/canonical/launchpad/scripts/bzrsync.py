@@ -28,6 +28,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet)
+from canonical.launchpad.mail import simple_sendmail_from_person
 
 UTC = pytz.timezone('UTC')
 
@@ -43,14 +44,19 @@ class BzrSync:
     If the contructor succeeds, a read-lock for the underlying bzrlib branch is
     held, and must be released by calling the `close` method.
     """
-
     def __init__(self, trans_manager, branch, branch_url=None, logger=None):
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
+        self.email_from = getUtility(ILaunchpadCelebrities).launchpad
+
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
+        
         self.db_branch = branch
+        self.db_revision_history = getUtility(
+            IRevisionSet).getRevisionHistoryForBranch(branch)
+        
         if branch_url is None:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
@@ -115,6 +121,9 @@ class BzrSync:
         # now synchronise the RevisionNumber objects
         if self.syncRevisionNumbers():
             did_something = True
+
+        # If we have got to here, email out the revision updates.
+        self.sendRevisionNotificationEmails()
 
         return did_something
 
@@ -275,7 +284,7 @@ class BzrSync:
 
         return did_something
 
-    def get_diff_lines(self, bzr_revision):
+    def getDiff(self, bzr_revision):
         repo = self.bzr_branch.repository
         if bzr_revision.parent_ids:
             ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
@@ -287,9 +296,9 @@ class BzrSync:
             
         diff_content = StringIO()
         show_diff_trees(tree_old, tree_new, diff_content)
-        return diff_content.getvalue().split("\n")
+        return diff_content.getvalue()
 
-    def get_revision_message(self, bzr_revision):
+    def getRevisionMessage(self, bzr_revision):
         outf = StringIO()
         lf = log_formatter('long', to_file=outf)
         rev_id = bzr_revision.revision_id
@@ -306,3 +315,97 @@ class BzrSync:
                  )
         return outf.getvalue()
 
+    def sendRevisionNotificationEmails(self):
+        initial = self.db_revision_history
+        updated = getUtility(
+            IRevisionSet).getRevisionHistoryForBranch(self.db_branch)
+        # Almost all the time the initial revision history
+        # will be a subset of the updated history.
+        if initial == updated:
+            # Nothing to do here.
+            return
+
+        # An individual may be subscribed to a branch
+        # more than once (like through a team).
+        # Only send the email once, and use the maximum
+        # line count.
+        email_details = {}
+        for subscription in self.db_branch.subscriptions:
+            if subscription.notification_level in (
+                    BranchSubscriptionNotificationLevel.DIFFSONLY,
+                    BranchSubscriptionNotificationLevel.FULL):
+                addresses = contactEmailAddresses(subscription.person)
+                for address in addresses:
+                    curr = email_details.get(
+                        address, BranchSubscriptionDiffSize.NODIFF)
+                    email_details[address] = max(
+                        curr, subscription.max_diff_lines)
+
+        if not email_details:
+            # No one is interested.
+            return
+
+        # XXX: need to make sure that emails don't
+        # get sent for the initial scan of a new branch.
+
+        size = len(initial)
+        if updated[:len(initial)] == initial:
+            updated = updated[len(initial):]
+        else:
+            # Branch has been overwritten.
+            updated = self.sendReductionEmail(email_details, updated)        
+
+        # From here the following holds true:
+        #   updated only holds the revision ids of the
+        #   new revisions
+        for rev_id in updated: 
+            revision = self.bzr_branch.repository.get_revision(rev_id)
+            diff = self.getDiff(revision)
+            message = self.getRevisionMessage(revision)
+            for address, max_diff in email_details.itervalues():
+                self.sendDiffEmail(address, max_diff, diff, message)
+                
+    def sendReductionEmail(self, email_details, updated):
+        # First thing to do is to work out the number
+        # of revisions removed.
+        initial = self.db_revision_history
+        match_position = min(len(updated), len(initial))
+        while match_position > 0 and (
+                initial[:match_position] != updated[:match_position]):
+            match_position -= 1
+        number_removed = len(initial) - match_position
+
+        contents = ("%d revisions were removed from the branch."
+                    % number_removed)
+        for address in email_details:
+            self.sendEmail(address, contents)
+
+        return updated[match_position:]
+
+    def sendDiffEmail(address, max_diff, diff, message):
+        diff_size = diff.count('\n') + 1
+
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                diff = ''
+            elif max_diff.value >  diff_size:
+                diff = ('The size of the diff (%d lines) is larger than your '
+                        'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+
+        contents = "%s\n%s" % (message, diff)
+        self.sendEmail(address, contents)
+
+    def sendEmail(address, contents):
+        branch = self.db_branch
+        subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+        headers = {}
+        headers["X-Launchpad-Branch"] = branch.unique_name
+
+        body = get_email_template('branch-modified.txt') % {
+            'contents': contents,
+            'branch_title': branch.title,
+            'branch_url': canonical_url(branch),
+            'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+       
+        simple_sendmail_from_person(self.email_from, address, subject, body)

@@ -1438,7 +1438,7 @@ def notify_branch_modified(branch, event):
         'contents': '\n'.join(info_lines),
         'branch_title': branch.title,
         'branch_url': canonical_url(branch),
-        'unsubscribe_url': canonical_url(branch) + '/+subscribe' }
+        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
 
     # Only send email to those subscribers that asked for it.
     addresses = set()
