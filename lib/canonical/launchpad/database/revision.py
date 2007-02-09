@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -115,3 +115,17 @@ class RevisionSet:
                            parent_id=parent_id)
         
         return revision
+
+    def getRevisionHistoryForBranch(self, branch):
+        """See IRevsionSet."""
+        cur = cursor()
+        cur.execute("""
+            SELECT rn.sequence, r.revision_id
+            FROM revision r
+            JOIN revisionnumber rn on r.id = rn.revision
+            WHERE rn.branch=%s
+            ORDER BY rn.sequence
+            """ % sqlvalues(branch))
+        history = [rev_id for seq, rev_id in cur.fetchall()]
+        return history
+        

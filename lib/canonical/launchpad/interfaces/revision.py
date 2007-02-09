@@ -67,3 +67,6 @@ class IRevisionSet(Interface):
     def new(revision_id, log_body, revision_date, revision_author, owner,
             parent_ids):
         """Create a new Revision with the given revision ID."""
+
+    def getRevisionHistoryForBranch(branch):
+        """Return the revision id list for a branch."""

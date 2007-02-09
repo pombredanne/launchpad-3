@@ -147,7 +147,7 @@ Note that while the RevisionNumber object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
 may be referenced by some other branch):
 
-  >>> from canonical.launchpad.interfaces import IRevisionSet
+  >>> from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
   >>> revision = getUtility(IRevisionSet).getByRevisionId(
   ...     'foo@localhost-20051031170357-1301ad6d387feb23')
   >>> print revision.revision_id
@@ -179,3 +179,16 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
+
+== IRevisionSet.getRevisionHistoryForBranch() ==
+
+  >>> branch = getUtility(IBranchSet).get(21)
+  >>> for rev_id in getUtility(IRevisionSet).getRevisionHistoryForBranch(branch):
+  ...     print rev_id
+  test@canonical.com-20051031165248-6f1bb97973c2b4f4
+  test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
+  foo@localhost-20051031165758-48acedf2b6a2e898
+  foo@localhost-20051031170008-098959758bf79803
+  foo@localhost-20051031170239-5fce7d6bd3f01efc
+  foo@localhost-20051031170357-1301ad6d387feb23
+  

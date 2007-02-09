@@ -42,7 +42,7 @@ class BranchDelta:
         delta = ObjectDelta(old_branch, new_branch)
         delta.recordNewValues(("summary", "whiteboard", "last_scanned_id"))
         delta.recordNewAndOld(("name", "lifecycle_status",
-                               "revision_count", "title", "url"))
+                               "title", "url"))
         # delta.record_list_added_and_removed()
         # XXX thumper 2006-12-21: add in bugs and specs
         if delta.changes:
