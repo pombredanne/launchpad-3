@@ -233,10 +233,6 @@ class IBranch(IHasOwner):
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
-    # event-related methods
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that receive notifications."""
-
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.

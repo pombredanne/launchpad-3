@@ -92,7 +92,7 @@ Let's change our subscription to getting emails for modifications, and diffs,
 and limit our diffs to 5000 lines.
 
   >>> level_control = user_browser.getControl(name='field.notification_level')
-  >>> level_control.value = ['Branch attribute and diff notifications']
+  >>> level_control.value = ['Branch attribute and revision notifications']
   >>> diff_control = user_browser.getControl(name='field.max_diff_lines')
   >>> diff_control.value = ['5000 lines']
   >>> user_browser.getControl('Change').click()

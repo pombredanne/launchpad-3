@@ -23,7 +23,6 @@ from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import RevisionNumber, Revision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
@@ -233,13 +232,6 @@ class Branch(SQLBase):
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
         
-    def notificationRecipientAddresses(self):
-        """See IBranch."""
-        addresses = set()
-        for person in self.subscribers:
-            addresses.update(contactEmailAddresses(person))
-        return sorted(addresses)
-
 
 class BranchSet:
     """The set of all branches."""

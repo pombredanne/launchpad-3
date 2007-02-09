@@ -2851,14 +2851,14 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
     DIFFSONLY = Item(2, """
-        Branch diff notifications only
+        Branch revision notifications only
 
         Only send notifications about new revisions added to this
         branch.
         """)
 
     FULL = Item(3, """
-        Branch attribute and diff notifications
+        Branch attribute and revision notifications
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.

@@ -28,7 +28,8 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
+from canonical.lp.dbschema import (
+    BranchSubscriptionNotificationLevel, TeamMembershipStatus, TicketAction)
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -1439,6 +1440,15 @@ def notify_branch_modified(branch, event):
         'branch_url': canonical_url(branch),
         'unsubscribe_url': canonical_url(branch) + '/+subscribe' }
 
-    for address in branch.notificationRecipientAddresses():
+    # Only send email to those subscribers that asked for it.
+    addresses = set()
+    for subscription in branch.subscriptions:
+        if subscription.notification_level in (
+                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                BranchSubscriptionNotificationLevel.FULL):
+            addresses.update(contactEmailAddresses(subscription.person))
+
+    # Sort for a reliable ordering
+    for address in sorted(addresses):
         simple_sendmail_from_person(event.user, address, subject, body)
 
