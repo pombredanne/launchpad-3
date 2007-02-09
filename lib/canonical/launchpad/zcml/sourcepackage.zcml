@@ -56,9 +56,8 @@
       facet="overview"
       permission="zope.Public">
       <browser:page
-        name="+portlet-hctstatus"
-        template="../templates/sourcepackage-portlet-hctstatus.pt"
-        lp:url="/distros/ubuntu/hoary/+sources/pmount/+portlet-hctstatus" />
+        name="+portlet-upstream"
+        template="../templates/sourcepackage-portlet-upstream.pt" />
       <browser:page
         name="+portlet-releases"
         template="../templates/sourcepackage-portlet-releases.pt"
@@ -90,10 +89,10 @@
             template="../templates/sourcepackage-changelog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+changelog" />
         <browser:page
-            name="+hctstatus"
+            name="+packaging"
             facet="overview"
-            template="../templates/sourcepackage-hctstatus.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+hctstatus" />
+            template="../templates/sourcepackage-packaging.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+packaging" />
         <browser:page
             name="+translations"
             facet="translations"
@@ -145,10 +144,10 @@
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
         <browser:page
-            name="+packaging"
+            name="+edit-packaging"
             facet="overview"
-            template="../templates/sourcepackage-packaging.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
+            template="../templates/sourcepackage-edit-packaging.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/apache2/+edit-packaging" />
     </browser:pages>
 
 </configure>

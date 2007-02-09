@@ -68,8 +68,8 @@
             template="../templates/productseries-index.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/" />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt" />
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />

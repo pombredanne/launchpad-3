@@ -63,17 +63,6 @@ class BazaarApplicationView:
     def stopped_count(self):
         return self.seriesset.importcount(ImportStatus.STOPPED.value)
 
-    def hct_count(self):
-        branches = self.seriesset.search(forimport=True,
-            importstatus=ImportStatus.SYNCING.value)
-        count = 0
-        for branch in branches:
-            for package in branch.sourcepackages:
-                if package.shouldimport:
-                    count += 1
-                    continue
-        return count
-
 
 class BazaarApplicationNavigation(Navigation):
 

@@ -1,21 +1,14 @@
-
 <tal:block condition="not: context/rcstype">
 <tal:block condition="not: context/user_branch">
-  <p class="error message">
+  <p>
     No revision control details recorded for <span
-    tal:replace="context/displayname">evolution MAIN</span>
+    tal:replace="context/displayname">evolution MAIN</span>.
   </p>
 
-  <p>If upstream is maintained in CVS or SVN, then you will need to
-  provide us with the location of the upstream branch so that it can be
-  imported into the Bazaar. Please do so
-  <a tal:attributes="href
-  string:/${context/product/name}/${context/name}/+source">
-    here
-  </a>. Once you have provided us with revision control details for this
-  upstream branch, we can import that branch into
-  <a href="/+code/">The Bazaar</a>, and HCT will be able to work with
-  packages based on it.</p>
+  <p>If upstream is maintained in CVS or SVN, you can
+  specify the location of the upstream branch to
+  <a tal:attributes="href string:${context/fmt:url}/+source">
+  import</a> it as a Bazaar branch.
 
 </tal:block>
 </tal:block>
