@@ -1519,10 +1519,29 @@ class NascentUpload:
         """Return the published sources (parents) for a given file."""
         sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
             uploaded_file.package)
-        # XXX cprov 20070208: only check uploads version consistency against
-        # RELEASE pocket. We are relaxing constraints here since there are
-        # many corner cases that can be only identified manual during the
-        # mandatory review in queue-time. See bug #83976
+        # Only lookup uploads ancestries in RELEASE pocket.
+        # Upload ancestries found here will guide the auto-override
+        # procedure and the version consistency check:
+        #
+        #  * uploaded_version > RELEASE_version
+        #
+        # which is the *only right* check we can do automatically.
+        # Post-release history and proposed content may diverge and can't
+        # be properly automatically overridden.
+        #
+        # We are relaxing version constraints when processing uploads since
+        # there are many corner cases when checking version consistency
+        # against post-release pockets, like:
+        #
+        #  * SECURITY/UPDATES can be lower than PROPOSED/BACKPORTS
+        #  * UPDATES can be lower than SECURITY
+        #  * ...
+        #
+        # And they really depends more on the package contents than the
+        # version number itself.
+        # Version inconsistencies will (should) be identified during the
+        # mandatory review in queue, anyway.
+        # See bug #83976
         pocket = PackagePublishingPocket.RELEASE
         exclude_pocket = None
 
