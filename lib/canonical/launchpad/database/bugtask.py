@@ -8,8 +8,6 @@ __all__ = [
     'get_bug_privacy_filter',
     'search_value_to_where_condition']
 
-import urllib
-import cgi
 import datetime
 
 from sqlobject import (
@@ -23,10 +21,13 @@ from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
@@ -119,12 +120,12 @@ class BugTask(SQLBase, BugTaskMixin):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = dbschema.EnumCol(
+    status = EnumCol(
         dbName='status', notNull=True,
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    importance = dbschema.EnumCol(
+    importance = EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
         default=dbschema.BugTaskImportance.UNDECIDED)

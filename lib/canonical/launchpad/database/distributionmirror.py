@@ -15,14 +15,17 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
+
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
-    EnumCol, PackagePublishingStatus, SourcePackageFileType,
+    PackagePublishingStatus, SourcePackageFileType,
     BinaryPackageFileType)
 
 from canonical.launchpad.interfaces import (
@@ -168,39 +171,39 @@ class DistributionMirror(SQLBase):
                 return True
         return False
 
-    def disableAndNotifyOwner(self):
+    def disable(self, notify_owner):
         """See IDistributionMirror"""
         assert self.last_probe_record is not None, (
             "This method can't be called on a mirror that has never been "
             "probed.")
-
-        was_enabled = self.enabled
+        if self.enabled or self.all_probe_records.count() == 1:
+            self._sendFailureNotification(notify_owner)
         self.enabled = False
-        if was_enabled or self.all_probe_records.count() == 1:
-            # Need to notify the owner.
-            template = get_email_template('notify-mirror-owner.txt')
-            fromaddress = format_address(
-                "Launchpad Mirror Prober", config.noreply_from_address)
 
-            replacements = {
-                'distro': self.distribution.title,
-                'mirror_name': self.name,
-                'mirror_url': canonical_url(self),
-                'logfile_url': self.last_probe_record.log_file.http_url}
-            message = template % replacements
-            subject = (
-                "Launchpad: Notification of failure from the mirror prober")
+    def _sendFailureNotification(self, notify_owner):
+        """Send a failure notification to the distribution's mirror admins and
+        to the mirror owner, in case notify_owner is True.
+        """
+        template = get_email_template('notify-mirror-owner.txt')
+        fromaddress = format_address(
+            "Launchpad Mirror Prober", config.noreply_from_address)
+
+        replacements = {
+            'distro': self.distribution.title,
+            'mirror_name': self.name,
+            'mirror_url': canonical_url(self),
+            'logfile_url': self.last_probe_record.log_file.http_url}
+        message = template % replacements
+        subject = "Launchpad: Verification of %s failed" % self.name
+
+        mirror_admin_address = contactEmailAddresses(
+            self.distribution.mirror_admin)
+        simple_sendmail(
+            fromaddress, mirror_admin_address, subject, message)
+
+        if notify_owner:
             owner_address = contactEmailAddresses(self.owner)
             simple_sendmail(fromaddress, owner_address, subject, message)
-
-            # XXX: How about always notifying mirror admins?
-            # -- Guilherme Salgado, 2006-10-26
-            # Send also a notification to the distribution's mirror admin.
-            subject = "Launchpad: Distribution mirror seems to be unreachable"
-            mirror_admin_address = contactEmailAddresses(
-                self.distribution.mirror_admin)
-            simple_sendmail(
-                fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""

@@ -15,31 +15,33 @@ from zope.component import getUtility
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import shortlist
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
 from canonical.lp.dbschema import (
-    EnumCol, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageUrgency, SourcePackageFormat,
     SourcePackageFileType, BuildStatus, TicketStatus,
     PackagePublishingStatus)
 
+from canonical.librarian.interfaces import ILibrarianClient
+
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-
+from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
 
-from canonical.launchpad.database.ticket import Ticket
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-
-from canonical.launchpad.database.files import SourcePackageReleaseFile
-from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -76,12 +78,10 @@ class SourcePackageRelease(SQLBase):
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
     # PPA (primary target) we don't need populate old records.
-    dsc_maintainer_rfc822 = StringCol(
-        dbName='dsc_maintainer_rfc822', notNull=True)
-    dsc_standards_version = StringCol(
-        dbName='dsc_standards_version', notNull=True)
-    dsc_format = StringCol(dbName='dsc_format', notNull=True)
-    dsc_binaries = StringCol(dbName='dsc_binaries', notNull=True)
+    dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
+    dsc_standards_version = StringCol(dbName='dsc_standards_version')
+    dsc_format = StringCol(dbName='dsc_format')
+    dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',

@@ -32,8 +32,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.tickettarget import (
-    TICKET_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.ticket import (
+    ITicketCollection, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -85,7 +85,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications):
+class IPerson(IHasSpecifications, ITicketCollection):
     """A Person."""
 
     id = Int(
@@ -559,7 +559,7 @@ class IPerson(IHasSpecifications):
         Set the status, dateexpires, reviewer and comment, where reviewer is
         the user responsible for this status change and comment is the comment
         left by the reviewer for the change.
-        
+
         This method will ensure that we only allow the status transitions
         specified in the TeamMembership spec. It's also responsible for
         filling/cleaning the TeamParticipation table when the transition
@@ -630,20 +630,12 @@ class IPerson(IHasSpecifications):
         """
 
     def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, participation=None,
-                      needs_attention=False, sort=None):
+                      language=None, sort=None, participation=None,
+                      needs_attention=False):
         """Search the person's tickets.
 
-        :search_text: A string that is matched against the ticket
-        title and description. If None, the search_text is not included as
-        a filter criteria.
-
-        :status: A sequence of TicketStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
-
-        :language: An ILanguage or a sequence of ILanguage objects to match
-        against the ticket's language. If None or an empty sequence,
-        the language is not included as a filter criteria.
+        See ITicketCollection for the description of the standard search
+        parameters.
 
         :participation: A list of TicketParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
@@ -655,20 +647,10 @@ class IPerson(IHasSpecifications):
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN
         state.
-
-        :sort:  An attribute of TicketSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
-
         """
 
     def archiveWithTag(tag):
         """Return the archive owned by this person with the given tag."""
-
-    def getTicketLanguages():
-        """Return a set of ILanguage used by the tickets in which this person "
-        is involved.
-        """
 
 
 class ITeam(IPerson):
