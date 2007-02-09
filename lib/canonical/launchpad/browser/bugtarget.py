@@ -395,6 +395,7 @@ class FileBugGuidedView(FileBugViewBase):
     # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
 
     _MATCHING_BUGS_LIMIT = 10
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
@@ -410,14 +411,14 @@ class FileBugGuidedView(FileBugViewBase):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        if IProduct.providedBy(context):
-            return ['title', 'comment']
-        else:
-            assert (
-                IDistribution.providedBy(context) or
-                IDistributionSourcePackage.providedBy(context))
+        field_names = ['title', 'comment', 'tags']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
 
-            return ['title', 'comment', 'packagename']
+        return field_names
 
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
