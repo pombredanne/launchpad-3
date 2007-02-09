@@ -26,15 +26,17 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
+    IPerson, IBugSet, NotFoundError
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
     )
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class TraversalError(NotFoundError):

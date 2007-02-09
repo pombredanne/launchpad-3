@@ -24,9 +24,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (quote_like, quote, SQLBase,
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter)
 

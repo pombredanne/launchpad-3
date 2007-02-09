@@ -22,9 +22,10 @@ from canonical.librarian.utils import copy_and_close
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
