@@ -237,6 +237,9 @@ class FileBugViewBase(LaunchpadFormView):
             private = False
 
         notifications = ["Thank you for your bug report."]
+        params = CreateBugParams(
+            title=title, comment=comment, owner=self.user,
+            security_related=security_related, private=private)
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -253,23 +256,14 @@ class FileBugViewBase(LaunchpadFormView):
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
                     % (packagename, context.displayname))
-                comment += ("\r\n\r\nNote: the original reporter indicated "
-                            "the bug was in package %r; however, that package "
-                            "was not published in %s."
-                            % (packagename, context.displayname))
-                params = CreateBugParams(
-                    title=title, comment=comment, owner=self.user,
-                    security_related=security_related, private=private)
+                params.comment += (
+                    "\r\n\r\nNote: the original reporter indicated "
+                    "the bug was in package %r; however, that package "
+                    "was not published in %s." % (
+                        packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params = CreateBugParams(
-                    title=title, comment=comment, owner=self.user,
-                    security_related=security_related, private=private,
-                    binarypackagename=binarypackagename)
-        else:
-            params = CreateBugParams(
-                title=title, comment=comment, owner=self.user,
-                security_related=security_related, private=private)
+                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
