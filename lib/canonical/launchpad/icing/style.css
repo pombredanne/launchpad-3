@@ -1404,3 +1404,22 @@ th.descending {
 }
 /* Used to indicate a value to be used to sort cells in a row */
 .sortkey, .revsortkey {display: none;}
+
+
+/* SteveA's fix-ups for the dynamic menu */
+#locationbar ul.menu li a {
+  background-image: none;
+  float: none;
+  background-color: #AFDB1F;
+}
+
+#locationbar ul.menu {
+  background-color: #AFDB1F;
+  position: absolute;
+  z-index: 2000;
+  margin-left: 16px;
+}
+
+#locationbar {
+  overflow: visible;
+}
