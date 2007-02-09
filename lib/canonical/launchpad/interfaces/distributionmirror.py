@@ -5,12 +5,14 @@ __metaclass__ = type
 __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IMirrorDistroReleaseSource', 'IMirrorProbeRecord',
            'IDistributionMirrorSet', 'IMirrorCDImageDistroRelease',
-           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
+           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList',
+           'main_ubuntu_mirrors_http_urls']
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
+from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.fields import UniqueField, ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
@@ -20,6 +22,10 @@ from canonical.launchpad import _
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
+
+main_ubuntu_mirrors_http_urls = {
+    MirrorContent.ARCHIVE: 'http://archive.ubuntu.com',
+    MirrorContent.RELEASE: 'http://releases.ubuntu.com'}
 
 
 class DistributionMirrorNameField(ContentNameField):
@@ -270,6 +276,14 @@ class IDistributionMirrorSet(Interface):
         If ignore_last_probe is True, then all official mirrors of the given
         content type will be probed even if they were probed in the last 
         PROBE_INTERVAL hours.
+        """
+
+    def getBestMirrorsForCountry(country, content_type):
+        """Return the best mirrors to be used by someone in the given country.
+
+        If there are any official mirrors of the given content type in the
+        given country, these are returned. Otherwise just the main mirror or
+        that content type is returned.
         """
 
     def getByName(name):
