@@ -75,7 +75,7 @@ class RevisionNumber(SQLBase):
 
     implements(IRevisionNumber)
 
-    _table = 'BranchRevision'
+    _table = 'RevisionNumber'
     
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)

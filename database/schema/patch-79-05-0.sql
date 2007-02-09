@@ -36,4 +36,20 @@ ALTER TABLE revisionnumber_id_seq
 ALTER TABLE branchrevision ALTER COLUMN sequence DROP NOT NULL;
 
 
+/* Create a VIEW and some rules as code has yet to be updated to use the
+   new table name */
+CREATE VIEW RevisionNumber AS SELECT * FROM BranchRevision;
+CREATE RULE insert_rule AS ON INSERT TO RevisionNumber DO INSTEAD
+    INSERT INTO BranchRevision VALUES (
+        NEW.id, NEW.sequence, NEW.branch, NEW.revision
+    );
+CREATE RULE update_rule AS ON UPDATE TO RevisionNumber DO INSTEAD
+    UPDATE BranchRevision
+    SET id=New.id, sequence=NEW.sequence,
+        branch=NEW.branch, revision=NEW.revision
+    WHERE id=OLD.id;
+CREATE RULE delete_rule AS ON DELETE TO RevisionNumber DO INSTEAD
+    DELETE FROM BranchRevision WHERE id=OLD.id;
+
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 05, 0);
