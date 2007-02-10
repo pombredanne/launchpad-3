@@ -8,28 +8,32 @@ SET client_min_messages=ERROR;
   -- Column which holds alternative message IDs for Firefox
 ALTER TABLE potmsgset
     ADD COLUMN alternative_msgid TEXT DEFAULT NULL;
-UPDATE potmsgset SET alternative_msgid=NULL;
 
 CREATE INDEX potmsgset_alternative_msgid_idx ON potmsgset USING btree (alternative_msgid);
 
-ALTER TABLE ONLY potmsgset
-    DROP CONSTRAINT potmsgset_potemplate_key;
-ALTER TABLE ONLY potmsgset
-    ADD CONSTRAINT potmsgset_potemplate_key UNIQUE (potemplate, primemsgid, alternative_msgid);
+ALTER TABLE POTMsgSet DROP CONSTRAINT potmsgset_potemplate_key;
+CREATE UNIQUE INDEX potmsgset__potemplate__primemsgid__key
+    ON POTMsgSet(potemplate, primemsgid)
+    WHERE alternative_msgid IS NULL;
+CREATE UNIQUE INDEX potmsgset__alternative_msgid__potemplate__key
+    ON POTMsgSet(alternative_msgid, potemplate)
+    WHERE alternative_msgid IS NOT NULL;
 
+
+-- File format (defaults to PO) for translation imports
 ALTER TABLE translationimportqueueentry
     ADD COLUMN format INTEGER DEFAULT 1 NOT NULL;
-
--- Set format for existing imports to PO
-UPDATE translationimportqueueentry SET format=1;
 
 ALTER TABLE potemplate
     ADD COLUMN source_file INTEGER;
 ALTER TABLE potemplate
     ADD COLUMN source_file_format INTEGER DEFAULT 1 NOT NULL;
 
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$1" FOREIGN KEY (source_file) REFERENCES libraryfilealias(id);
+ALTER TABLE POTemplate ADD CONSTRAINT potemplate__source_file__fk
+    FOREIGN KEY (source_file) REFERENCES LibraryFileAlias;
+CREATE INDEX potemplate__source_file__idx ON POTemplate(source_file)
+    WHERE source_file IS NOT NULL;
+
 
 -- Firefox special UUID
 ALTER TABLE language
