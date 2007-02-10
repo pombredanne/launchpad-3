@@ -130,7 +130,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
     messages = SQLMultipleJoin('TicketMessage', joinColumn='ticket',
-        prejoins=['message'], orderBy=['datecreated', 'TicketMessage.id'])
+        prejoins=['message'], orderBy=['TicketMessage.id'])
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
