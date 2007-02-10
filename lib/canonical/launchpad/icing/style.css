@@ -1405,17 +1405,44 @@ th.descending {
 /* SteveA's fix-ups for the dynamic menu */
 #locationbar ul.menu li a {
   background-image: none;
-  float: none;
   background-color: #AFDB1F;
+  float: none;
+  padding-left: 16px;
+  padding-right: 16px;
+  margin-right: -16px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  height: auto;
 }
-
+#locationbar ul.menu li {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
 #locationbar ul.menu {
   background-color: #AFDB1F;
   position: absolute;
   z-index: 2000;
-  margin-left: 16px;
+  margin-left: 0px;
+  border-right: 1px solid #90B51A;
+  border-bottom: 1px solid #90B51A;
+  border-top: 1px solid #DCF58B;
+  border-left: 1px solid #DCF58B;
+  padding-left: 0px;
+  padding-right: 16px;
 }
-
+#locationbar ul.menu li.selected a {
+  background-color: #C8EF48;
+}
+#locationbar {
+  overflow: visible;
+}
+#locationbar li a {
+  left: auto;
+  margin: 0px 0px 0px 0px;
+}
+#locationbar strong {
+  margin-right: -5px;
+}
 #locationbar {
   overflow: visible;
 }
