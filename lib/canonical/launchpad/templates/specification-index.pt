@@ -4,11 +4,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:cahs fill-slot="contentareaheadingsecondary"
-    >Feature specification</metal:cahs>
-    <metal:cahp fill-slot="contentareaheadingprimary">
-      <tal:iohp replace="context/title">Specification title</tal:iohp>
-    </metal:cahp>
 
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
@@ -23,6 +18,8 @@
 
 
 <div metal:fill-slot="main">
+
+      <h1 tal:content="context/title">Specification title</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -146,7 +143,7 @@
         <a
           tal:condition="context/specurl"
           tal:attributes="href context/specurl"
-        >Read the full specification &raquo;</a>
+        ><strong>Read the full specification &raquo;</strong></a>
         <a tal:condition="not:context/specurl" href="+edit"
         >Set the URL for this specification</a>
       </li>

@@ -1314,7 +1314,7 @@ ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.ticket>li, li.ticket              {list-style-image: url(/@@/ticket);}
 ul.translations, li.translations     {list-style-image: url(/@@/translations);}
-ul.external.link, li.external.link   {list-style-image: url(/@@/link);}
+ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 .bug-summary {
@@ -1330,7 +1330,8 @@ fieldset {
 /* === Tables === */
 
 table.latest th, table.latest td {padding-bottom: 2em;}
-table.summary {margin: 0 auto;}
+table.summary {float: right; margin: 0 0 1em 1em;}
+div.right table.summary {float: none; margin: 1em auto;}
 table.summary tr {border: dotted #ccc; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
