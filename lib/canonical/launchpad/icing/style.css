@@ -1403,13 +1403,15 @@ th.descending {
 
 
 /* SteveA's fix-ups for the dynamic menu */
+#locationbar ul.menuroot li a {
+  margin-right: -16px;
+}
 #locationbar ul.menu li a {
   background-image: none;
   background-color: #AFDB1F;
   float: none;
   padding-left: 16px;
   padding-right: 16px;
-  margin-right: -16px;
   padding-top: 3px;
   padding-bottom: 3px;
   height: auto;
