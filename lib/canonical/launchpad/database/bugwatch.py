@@ -200,25 +200,21 @@ class BugWatchSet(BugSetBase):
     def parseDebbugsURL(self, scheme, host, path, query):
         """Extract the Debbugs base URL and bug ID."""
         bug_page = 'cgi-bin/bugreport.cgi'
+        remote_bug = None
 
-        if host == "bugs.debian.org":
+        if path.endswith(bug_page):
+            remote_bug = query.get('bug')
+            base_path = path[:-len(bug_page)]
+        elif host == "bugs.debian.org":
             # Oy, what a hack. debian's tracker allows you to access
             # bugs by saying http://bugs.debian.org/400848, so support
             # that shorthand. The reason we need to do this special
             # check here is because otherwise /any/ URL that ends with
             # "/number" will appear to match a debbugs URL.
-            path = path.split("/")[-1]
-            try:
-                int(path)
-            except (ValueError, TypeError):
-                return None
-            remote_bug = path
-            base_path = ""
-        elif not path.endswith(bug_page):
-            return None
+            remote_bug = path.split("/")[-1]
+            base_path = ''
         else:
-            remote_bug = query.get('bug')
-            base_path = path[:-len(bug_page)]
+            return None
 
         if remote_bug is None or not remote_bug.isdigit():
             return None
