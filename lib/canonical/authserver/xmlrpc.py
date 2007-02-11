@@ -79,19 +79,19 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         return self.storage.getSSHKeys(loginID)
 
     def xmlrpc_getBranchesForUser(self, personID):
-        # XXX: docstring
+        """See IHostedBranchStorage."""
         if self.debug:
             print 'getBranchesForUser(%r)' % (personID,)
         return self.storage.getBranchesForUser(personID)
 
     def xmlrpc_fetchProductID(self, productName):
-        # XXX: docstring
+        """See IHostedBranchStorage."""
         if self.debug:
             print 'fetchProductID(%r)' % (productName,)
         return self.storage.fetchProductID(productName)
 
     def xmlrpc_createBranch(self, personID, productID, branchName):
-        # XXX: docstring
+        """See IHostedBranchStorage."""
         if self.debug:
             print 'createBranch(%r, %r, %r)' % (personID, productID, branchName)
         return self.storage.createBranch(personID, productID, branchName)
