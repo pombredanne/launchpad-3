@@ -33,7 +33,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     TicketAction, TicketSort, TicketStatus,
-    TicketParticipation, TicketPriority, Item)
+    TicketParticipation, TicketPriority)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
@@ -43,6 +43,7 @@ from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -129,7 +130,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
     messages = SQLMultipleJoin('TicketMessage', joinColumn='ticket',
-        prejoins=['message'], orderBy=['datecreated', 'TicketMessage.id'])
+        prejoins=['message'], orderBy=['TicketMessage.id'])
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 

@@ -66,12 +66,12 @@ class PackageUpload(SQLBase):
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
 
-    pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
+    pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
+    # XXX: this is NULLable. Fix sampledata?
     changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias",
-                             notNull=True)
+                             foreignKey="LibraryFileAlias")
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     
@@ -445,8 +445,7 @@ class PackageUploadCustom(SQLBase):
         )
 
     customformat = EnumCol(dbName='customformat', unique=False,
-                           default=None, notNull=True,
-                           schema=PackageUploadCustomFormat)
+                           notNull=True, schema=PackageUploadCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
