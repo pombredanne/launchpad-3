@@ -21,14 +21,18 @@ from canonical.launchpad.scripts import (
 from canonical.lp import initZopeless
 
 
-_default_lockfile = '/var/lock/process-upload.lock'
-
-
 def main():
     options = readOptions()
     log = logger(options, "process-upload")
 
-    locker = GlobalLock(_default_lockfile, logger=log)
+    # We are using specific lockfiles for each context (policy-name).
+    # Each branch can work almost independently of other, we just want
+    # to lock simultaneous runs using the same policy. It also avoids
+    # problems with lockfile permissions in production (since 'buildd'
+    # policy runs as 'lp_buildd' user and others run as 'lp_queue').
+    # See bug #52025 for further information.
+    lockfile_path = '/var/lock/process-upload-%s.lock' % options.context
+    locker = GlobalLock(lockfile_path, logger=log)
     try:
         locker.acquire()
     except LockAlreadyAcquired:
