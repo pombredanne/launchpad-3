@@ -7,9 +7,8 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
+    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
@@ -21,6 +20,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import IAuthorization
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 

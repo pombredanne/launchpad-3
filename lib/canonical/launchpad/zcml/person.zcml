@@ -35,6 +35,11 @@
       layer="canonical.launchpad.layers.AnswersLayer"
       name="+tickets"
       />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      layer="canonical.launchpad.layers.BugsLayer"
+      name="+assignedbugs"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"

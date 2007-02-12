@@ -38,9 +38,9 @@ from zope.app.publisher.browser.metaconfigure import (
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 
-from canonical.launchpad.interfaces import (
-    IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb)
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, IFacetMenu, IApplicationMenu,
+    IContextMenu, IBreadcrumb, IAuthorization)
 
 
 

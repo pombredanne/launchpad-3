@@ -8,7 +8,6 @@ __all__ = [
     'ITicketTarget',
     'IManageSupportContacts',
     'ISearchTicketsForm',
-    'TICKET_STATUS_DEFAULT_SEARCH',
     'get_supported_languages',
     ]
 
@@ -20,12 +19,9 @@ from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.ticket import (
+    ISearchableByTicketOwner, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import TicketSort, TicketStatus
-
-
-TICKET_STATUS_DEFAULT_SEARCH = (
-    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
-    TicketStatus.SOLVED)
 
 
 def get_supported_languages(ticket_target):
@@ -38,7 +34,7 @@ def get_supported_languages(ticket_target):
     return langs
 
 
-class ITicketTarget(Interface):
+class ITicketTarget(ISearchableByTicketOwner):
     """An object that can have a new ticket created for  it."""
 
     def newTicket(owner, title, description, language=None, datecreated=None):
@@ -64,35 +60,6 @@ class ITicketTarget(Interface):
         :ticket_id: A ticket id.
 
         If there is no such ticket number for this target, return None
-        """
-
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, owner=None, needs_attention_from=None,
-                      sort=None):
-        """Search the object's tickets.
-
-        :search_text: A string that is matched against the ticket
-        title and description. If None, the search_text is not included as
-        a filter criteria.
-
-        :status: One or a sequence of TicketStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
-
-        :language: An ILanguage or a sequence of ILanguage objects to match
-        against the ticket's language. If None or an empty sequence,
-        the language is not included as a filter criteria.
-
-        :owner: The IPerson that created the ticket.
-
-        :needs_attention_from: Selects tickets that nee attention from an
-        IPerson. These are the tickets in the NEEDSINFO or ANSWERED state
-        owned by the person. The tickets not owned by the person but on which
-        the person requested for more information or gave an answer and that
-        are back in the OPEN state are also included.
-
-        :sort:  An attribute of TicketSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
         """
 
     def findSimilarTickets(title):
@@ -131,9 +98,6 @@ class ITicketTarget(Interface):
         language is listed as one of his preferred languages.
         """
 
-    def getTicketLanguages():
-        """Return the set of ILanguage used by all of this target's tickets."""
-
     support_contacts = List(
         title=_("Support Contacts"),
         description=_(
@@ -161,7 +125,7 @@ class IManageSupportContacts(Interface):
         required=False)
     support_contact_teams = List(
         title=_("Team support contacts"),
-        value_type=Choice(vocabulary="PersonActiveMembership"),
+        value_type=Choice(vocabulary="PersonTeamParticipations"),
         required=False)
 
 

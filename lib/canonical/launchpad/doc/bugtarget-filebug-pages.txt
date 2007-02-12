@@ -228,6 +228,13 @@ Notifications were added to inform the user about what happened.
     The file "attachment1" was attached to the bug report.
     The file "attachment2" was attached to the bug report.
 
+The attachments are all added to the same comment.
+
+    >>> for comment in filebug_view.added_bug.messages[1:]:
+    ...     print "Comment by %s: %s attachment(s)" % (
+    ...         comment.owner.displayname, comment.bugattachments.count())
+    Comment by No Privileges Person: 2 attachment(s)
+
 == publishTraverse() ==
 
 As already seen above, it's the FileBugViewBase's publishTraverse that

@@ -14,11 +14,12 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import TicketStatus
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import ITicketReopening
-
-from canonical.lp.dbschema import EnumCol, TicketStatus
 
 
 class TicketReopening(SQLBase):
