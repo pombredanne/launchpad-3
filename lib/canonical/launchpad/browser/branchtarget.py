@@ -177,6 +177,7 @@ class PersonBranchesView(BranchTargetView):
 
     @cachedproperty
     def _team_branches_set(self):
+        """Return a set for efficient membership checks in branch_role."""
         teams = self.context.teams_participated_in
         branches = shortlist(
             getUtility(IBranchSet).getBranchesForOwners(teams),

@@ -198,7 +198,9 @@ to the end user, and we don't want necessarily to check how the text
 is displayed (ie. bold, italics, coloured et al).
 
 The extract_text method is often used in conjunction with the other
-find_xxx helper methods to identify the text to display.
+find_xxx helper methods to identify the text to display.  This is due
+to the function taking a BeautifulSoup instance as a parameter rather
+than a plain string.
 
   >>> print extract_text(find_portlet(content, 'Portlet 2'))
   Portlet 2 Contents of portlet 2
