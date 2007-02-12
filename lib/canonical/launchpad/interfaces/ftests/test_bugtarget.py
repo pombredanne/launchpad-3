@@ -57,7 +57,8 @@ def productseries_filebug(productseries, summary, status=None):
     """
     bug = bugtarget_filebug(productseries.product, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, productseries=productseries)
+        bug, getUtility(ILaunchBag).user, productseries=productseries,
+        status=status)
     return bug
 
 
