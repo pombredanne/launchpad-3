@@ -20,10 +20,19 @@ Sample Person.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskSearchParams, IBugTaskSet, IPersonSet)
     >>> login('test@canonical.com')
-    >>> params = BugTaskSearchParams(
-    ...     user=None, assignee=getUtility(IPersonSet).getByName('name12'))
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> params = BugTaskSearchParams(user=None, assignee=sample_person)
     >>> for task in getUtility(IBugTaskSet).search(params):
     ...     task.transitionToStatus(BugTaskStatus.INPROGRESS)
+
+And the same for some blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationDelivery
+    >>> from canonical.launchpad.database import Specification
+    >>> spec = Specification.selectOneBy(name='media-integrity-check')
+    >>> spec.assignee = sample_person
+    >>> spec.delivery = SpecificationDelivery.STARTED
+    >>> newstate = spec.updateLifecycleStatus(sample_person)
     >>> logout()
     >>> flush_database_updates()
 
@@ -35,10 +44,11 @@ Let's see what we got on his page now.
     ...     print tag.find('a').renderContents()
     5. Firefox install instructions should be complete
     2. Blackhole Trash folder
+    CD Media Integrity Check
 
 We even have a link for us to see all bugs that Sample Person is working on.
 
-    >>> browser.getLink('Show the complete list').click()
+    >>> browser.getLink('Show all bugs in progress').click()
     >>> browser.url
     'http://launchpad.dev/...In+Progress'
 
@@ -49,4 +59,14 @@ Which obviously contains only the above two bugs we changed statuses.
     ...     print link.renderContents()
     Firefox install instructions should be complete
     Blackhole Trash folder
+
+For the specs, though, we don't have a page where it's possible to list only
+the specs that have started but were not yet concluded, so for now we'll have
+to link to the page which shows the whole list of specs assigned to the
+person.
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> browser.getLink('Show all assigned specs').click()
+    >>> browser.url
+    'http://launchpad.dev/.../+specs?role=assignee'
 
