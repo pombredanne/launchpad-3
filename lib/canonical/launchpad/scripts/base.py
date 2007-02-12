@@ -15,6 +15,21 @@ from canonical.launchpad.ftests import login
 LOCK_PATH="/var/lock/"
 
 
+class _FakeZTM:
+    """A fake transaction manager."""
+    def __init__(*args, **kwargs):
+        pass
+
+    def set_isolation_level(self, *args):
+        pass
+
+    def commit(self):
+        pass
+
+    def abort(self):
+        pass
+
+
 class LaunchpadScriptFailure(Exception):
     exit_status = 1
     """Something bad happened and the script is going away.
@@ -96,7 +111,6 @@ class LaunchpadScript:
         # supplied options and args.
         self.parser = OptionParser(usage=self.usage, 
                                    description=self.description)
-        scripts.logger_options(self.parser, default=self.loglevel)
         self.build_standard_options()
         self.options, self.args = self.parser.parse_args()
 
@@ -125,12 +139,13 @@ class LaunchpadScript:
         self.lock = GlobalLock(self.fulllockpath, logger=self.logger)
 
     def build_standard_options(self):
-        """Construct standard options. Right now this means --lockfile.
+        """Construct standard options: logger_options and --lockfile.
 
         You should use the add_my_options() hook to customize options.
-        Override this only if you for some reason don't want the
-        --lockfile option present.
+        Override this only if you for some reason don't want
+        logger_options (-h, -v and -q) or --lockfile.
         """
+        scripts.logger_options(self.parser, default=self.loglevel)
         self.parser.add_option("-l", "--lockfile", dest="lockfilename",
             default=self.lockfilename,
             help="The file the script should use to lock the process.")
@@ -208,11 +223,17 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    def run(self, use_web_security=False, implicit_begin=True):
+    def run(self, use_web_security=False, implicit_begin=True, dry_run=False):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
-        self.txn = initZopeless(dbuser=self.dbuser,
-                                implicitBegin=implicit_begin)
+        if dry_run:
+            # XXX: this is something of a hack, but how do we avoid the
+            # callsites committing?
+            self.txn = _FakeZTM()
+            self.logger.info("Dry run: changes will not be committed.")
+        else:
+            self.txn = initZopeless(dbuser=self.dbuser,
+                                    implicitBegin=implicit_begin)
         try:
             self.main()
         except LaunchpadScriptFailure, e:

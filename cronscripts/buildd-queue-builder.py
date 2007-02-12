@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
 #
@@ -26,7 +26,7 @@ from canonical.launchpad.scripts.base import (LaunchpadScript,
 
 class QueueBuilder(LaunchpadScript):
     def add_my_options(self):
-        self.parser.add_option("-N", "--dry-run", action="store_true",
+        self.parser.add_option("-n", "--dry-run", action="store_true",
                           dest="dryrun", metavar="DRY_RUN", default=False,
                           help="Whether to treat this as a dry-run or not.")
 
@@ -52,9 +52,7 @@ class QueueBuilder(LaunchpadScript):
         self.rebuildQueue()
 
         if not self.options.dryrun:
-            self.logger.info("Buildd Queue Rebuilt. Commiting changes")
-        else:
-            self.logger.debug("Dry Run, changes will not be commited.")
+            self.logger.info("Buildd Queue Rebuilt. Committing changes")
 
         self.txn.commit()
 
@@ -93,6 +91,6 @@ if __name__ == '__main__':
     script = QueueBuilder('queue-builder', lockfilename='build-master',
                           dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
-    script.run()
+    script.run(dry_run=script.options.dryrun)
     script.unlock()
 
