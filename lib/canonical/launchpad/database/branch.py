@@ -313,6 +313,14 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getBranchesForOwners(self, people):
+        """Return the branches that are owned by the people specified."""
+        owner_ids = [person.id for person in people]
+        if not owner_ids:
+            return []
+        branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
+        return branches.prejoin(['product'])
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
