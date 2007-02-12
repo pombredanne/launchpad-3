@@ -159,9 +159,7 @@ class LaunchpadScript:
             self.logger.error('Lockfile %s in use' % self.lockfilename)
             sys.exit(1)
 
-    # XXX: I'm not sure this is actually necessary; if it is remove the
-    # underscore, if not, remove the method. -- kiko, 2007-01-31
-    def _lock_or_quit(self, blocking=False):
+    def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
         For certain scripts the fact that a lock may already be acquired
