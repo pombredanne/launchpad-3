@@ -12,12 +12,13 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import AND, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject.sqlbuilder import AND, STARTSWITH
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.archivepublisher.diskpool import poolify
 from canonical.lp.dbschema import (
@@ -30,6 +31,7 @@ from canonical.launchpad.interfaces import (
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
     IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
     main_ubuntu_mirrors_http_urls)
+from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
@@ -372,20 +374,34 @@ class DistributionMirrorSet:
         # XXX: For now we'll only return mirrors which have an http_base_url,
         # since that's all apt knows how to handle and apt is our main client.
         # -- Guilherme Salgado, 2007-02-09
-        query = AND(
-            DistributionMirror.q.countryID == country.id,
+        country_id = None
+        if country is not None:
+            country_id = country.id
+        base_query = AND(
             DistributionMirror.q.content == sqlvalues(content_type),
             DistributionMirror.q.enabled == True,
             DistributionMirror.q.http_base_url != None,
             DistributionMirror.q.official_candidate == True,
             DistributionMirror.q.official_approved == True)
-        mirrors = DistributionMirror.select(query, orderBy=['-speed'])
-        if not mirrors:
-            http_url = main_ubuntu_mirrors_http_urls[content_type]
-            mirrors = DistributionMirror.select(
-                "http_base_url ILIKE %s || '%%'" % quote_like(http_url))
-            assert mirrors.count() >= 1, (
-                "Main Ubuntu repository not found: %s" % http_url)
+        query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        mirrors = list(DistributionMirror.select(query, orderBy=['-speed']))
+
+        if not mirrors and country_id:
+            continent = country.continent
+            query = AND(
+                Country.q.continentID == continent.id,
+                DistributionMirror.q.countryID == Country.q.id,
+                base_query)
+            mirrors.extend(
+                DistributionMirror.select(query, orderBy=['-speed']))
+
+        http_url = main_ubuntu_mirrors_http_urls[content_type]
+        query = AND(base_query,
+                    STARTSWITH(DistributionMirror.q.http_base_url, http_url))
+        mirror = DistributionMirror.selectOne(query)
+        assert mirror is not None, 'Main mirror was not found'
+        if mirror not in mirrors:
+            mirrors.append(mirror)
         return mirrors
 
     def getMirrorsToProbe(self, content_type, ignore_last_probe=False):

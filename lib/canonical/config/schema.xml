@@ -565,6 +565,13 @@
                 reply.
             </description>
         </key>
+        <key name="localhost_only" datatype="boolean" default="false">
+            <description>
+                If true, the mirror prober will only try to connect to
+                localhost; all other hosts it'll return a success without
+                even trying to connect.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="expiredmembershipsflagger">

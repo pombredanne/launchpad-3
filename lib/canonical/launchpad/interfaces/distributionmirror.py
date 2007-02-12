@@ -23,6 +23,9 @@ from canonical.launchpad import _
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
 
+# XXX: Although one day this will probably have to become a per-distribution
+# setting, we don't need to worry about it now.
+# -- Guilherme Salgado, 2007-02-12
 main_ubuntu_mirrors_http_urls = {
     MirrorContent.ARCHIVE: 'http://archive.ubuntu.com',
     MirrorContent.RELEASE: 'http://releases.ubuntu.com'}
@@ -281,9 +284,9 @@ class IDistributionMirrorSet(Interface):
     def getBestMirrorsForCountry(country, content_type):
         """Return the best mirrors to be used by someone in the given country.
 
-        If there are any official mirrors of the given content type in the
-        given country, these are returned. Otherwise just the main mirror or
-        that content type is returned.
+        The list of mirrors is composed by the official mirrors located in
+        the given country (or in the country's continent if the country
+        doesn't have any) plus the main mirror of that content type.
         """
 
     def getByName(name):

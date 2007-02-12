@@ -8,12 +8,17 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+archivemirrors'
 
-  >>> 'Archive Mirrors' in browser.contents
-  True
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Afghanistan...
-  ...Archive-mirror...
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  Official Archive Mirrors
+  >>> print find_tag_by_id(browser.contents, 'mirrors_list').renderContents()
+  <BLANKLINE>
+  ...Antarctica...
+  ...Archive-mirror2...
+  ...France...
+  ...Archive-404-mirror...
+  ...United Kingdom...
+  ...Canonical-archive...
 
 
   b) the +cdmirrors page, which lists all official and enabled release
@@ -23,12 +28,17 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+cdmirrors'
 
-  >>> 'CD Mirrors' in browser.contents
-  True
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...British Indian Ocean Territory...
+  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  Official CD Mirrors
+  >>> print find_tag_by_id(browser.contents, 'mirrors_list').renderContents()
+  <BLANKLINE>
+  ...France...
   ...Unreachable-mirror...
+  ...Germany...
+  ...Releases-mirror2...
+  ...United Kingdom...
+  ...Canonical-releases...
+  <BLANKLINE>
 
   
   There's a third page, accessible only to distro owners, mirror admins of the
@@ -50,10 +60,10 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+disabledmirrors'
 
-  >>> 'Disabled Mirrors' in browser.contents
-  True
-  >>> print browser.contents
-  <!DOCTYPE...
+  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  Disabled Mirrors
+  >>> print find_tag_by_id(browser.contents, 'region-content').renderContents()
+  <BLANKLINE>
   ...We don't know about any Disabled Mirrors of this distribution...
 
   
@@ -79,10 +89,10 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+unofficialmirrors'
 
-  >>> 'Unofficial Mirrors' in browser.contents
-  True
-  >>> print browser.contents
-  <!DOCTYPE
-  ...British Indian Ocean Territory...
+  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  Unofficial Mirrors
+  >>> print find_tag_by_id(browser.contents, 'mirrors_list').renderContents()
+  <BLANKLINE>
+  ...France...
   ...Invalid-mirror...
 

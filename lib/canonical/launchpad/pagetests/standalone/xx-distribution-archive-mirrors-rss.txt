@@ -24,8 +24,8 @@ provide an RSS feed with information about all official archive mirrors.
           </description>
           <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
-            <mirror:continent>Asia</mirror:continent>
-            <mirror:country>Afghanistan</mirror:country>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
           </mirror:location>
           <guid>http://localhost:11375/valid-mirror</guid>
         </item>

@@ -379,6 +379,19 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.connect = connect
         return prober
 
+    def test_connect_depends_on_localhost_only_config(self):
+        orig_config = config.distributionmirrorprober.localhost_only
+        config.distributionmirrorprober.localhost_only = True
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.probe()
+        self.failIf(prober.connectCalled)
+
+        config.distributionmirrorprober.localhost_only = False
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.probe()
+        self.failUnless(prober.connectCalled)
+        config.distributionmirrorprober.localhost_only = orig_config
+
     def test_noconnection_is_made_when_infiniteloop_detected(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
