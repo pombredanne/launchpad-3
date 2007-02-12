@@ -421,7 +421,7 @@ class ProductSeries(SQLBase, BugTargetBase):
         #
         # * datelastsynced: time when importd last updated the internal branch
         #   to match the foreign VCS.
-        # * importd_branch.last_mirrored: time when branch-puller last updated
+        # * import_branch.last_mirrored: time when branch-puller last updated
         #   the published branch to match the internal branch.
         # * datepublishedsync: time when the /published/ branch was last
         #   updated from the foreign VCS, at the time when the /internal/
@@ -443,7 +443,7 @@ class ProductSeries(SQLBase, BugTargetBase):
             # datepublishedsync SHOULD be None, but we reset it just in case.
             self.datepublishedsync = None
         if (self.datelastsynced is not None
-                and self.importd_branch.last_mirrored is not None
+                and self.import_branch.last_mirrored is not None
                 and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
