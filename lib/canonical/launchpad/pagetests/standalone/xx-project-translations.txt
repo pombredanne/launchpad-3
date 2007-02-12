@@ -57,6 +57,52 @@ And it has translations.
   >>> print netapplet_template.url
   http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
 
+alsa-utils is a product that doesn't belong to GNOME project. It has
+translations and is using Rosetta officially, and it shouldn't appear
+in GNOME project translations page.
+
+  >>> browser.open('http://translations.launchpad.dev/gnome')
+  >>> browser.getLink('alsa-utils')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Let's confirm what we just stated.
+
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> print browser.url
+  http://launchpad.dev/gnome
+
+alsa-utils does not belong to GNOME project.
+
+  >>> browser.getLink('alsa-utils')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+It's using Rosetta officially.
+
+  >>> browser.open('http://launchpad.dev/alsa-utils')
+  >>> print browser.url
+  http://launchpad.dev/alsa-utils
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     print tag
+  ...     
+  <...
+  ...Status:...
+  ...Active...
+  ...Uses Translations...
+
+And it has translations.
+
+  >>> browser.open('http://translations.launchpad.dev/alsa-utils')
+  >>> print browser.url
+  http://translations.launchpad.dev/alsa-utils
+
+  >>> alsa_utils_template = browser.getLink('View Template & All Languages...')
+  >>> print alsa_utils_template.url
+  http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils
+
 The translations page has also a link to the product search page to see
 whether a product is registered in Launchpad.
 

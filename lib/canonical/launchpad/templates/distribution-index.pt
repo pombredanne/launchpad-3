@@ -22,10 +22,10 @@
             <img alt="Report a bug" src="/+icing/but_sml_reportabug.gif" />
           </a>
         </li>
-        <li>
+        <li tal:content="structure context/@@+ask-a-question-button">
           <a href="+addticket">
             <img
-              alt="Request support"
+              alt="Ask a question"
               src="/+icing/but_sml_requestsupport.gif"
             />
           </a>
@@ -38,7 +38,7 @@
       </ul>
 
   <form name="search" action="+search" method="get">
-  
+
     <input type="text"
       name="text"
       size="35"

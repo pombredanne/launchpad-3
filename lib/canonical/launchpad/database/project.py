@@ -107,10 +107,11 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     def translatables(self):
         """See IProject."""
         return Product.select('''
+            Product.project = %s AND
             Product.official_rosetta = TRUE AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id
-            ''',
+            ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
 
