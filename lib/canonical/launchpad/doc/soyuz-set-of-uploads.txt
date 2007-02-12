@@ -373,7 +373,7 @@ created with the binary package name.
 
 == Pocket Version Consistency ==
 
-Check behaviour of upload system for uploads to across pockets (see
+Check behaviour of upload system for uploads across pockets (see
 bug #34089, #58144 and #83976 for further info)
 
 Let's start a new package series by uploading foo_1.0-1 in
@@ -400,11 +400,11 @@ pockets.
   >>> transaction.commit()
 
 Since we are using 'sync' policy in the following tests the packages
-are auto-approved, however, in real environment the will come with
-'insecure' policy which will force than to wait approval in UNAPPROVED
-queue.
+are auto-approved, however, in the real environment the 'insecure'
+policy will be used which force packages to wait for approval in the
+UNAPPROVED queue.
 
-Upload a version of source package "foo" to breezy-backports:
+Upload a newer version of source package "foo" to breezy-backports:
 
   >>> expect_okays('foo_2.9-1', upload_policy='sync')
   >>> print open(uploader_log).read()
@@ -419,11 +419,11 @@ Upload a version of source package "foo" to breezy-backports:
   INFO    Distribution: breezy-backports
   ...
 
-Due the contraint relaxation requested by bug #83976, even having
+Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
-upload foo_2.9-2 to UPDATES and in real conditions, if it strongly
-affects the users' system it should be rejected by the package
-reviewer, otherwise people can leave with this inconsistency.
+upload foo_2.9-2 to UPDATES. If it strongly affects the users' system
+it should be rejected by the package reviewer, otherwise people can
+live with this inconsistency.
 
   >>> expect_okays('foo_2.9-2', upload_policy='sync')
 
