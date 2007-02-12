@@ -1,5 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+import os
 import sys
 import logging
 from optparse import OptionParser
@@ -9,6 +10,9 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.ftests import login
+
+
+LOCK_PATH="/var/lock/"
 
 
 class LaunchpadScriptFailure(Exception):
@@ -61,18 +65,29 @@ class LaunchpadScript:
     usage = None
     description = None
     loglevel = logging.INFO
-    def __init__(self, name, dbuser=None):
+    def __init__(self, name, dbuser=None, lockfilename=None):
         """Construct new LaunchpadScript.
 
-        Name is a short name for this script; it will be used in
-        the lock filename and to identify the logger object.
+        Name is a short name for this script; it will be used to
+        assemble a lock filename and to identify the logger object.
+
+        If lockfilename is supplied then it will be used to determine
+        the lock filename (in lieu of the name). It can still be
+        overridden by a commandline option as defined in
+        build_standard_options().
+
+        The string ".lock" will be appended to lock filenames if it is
+        not supplied. The lock file will be created inside LOCK_PATH.
 
         Use dbuser to specify the user to connect to the database; if
         not supplied a default will be used.
         """
         self.name = name
         self.dbuser = dbuser
-        self.lockfile = "/var/lock/launchpad-%s.lock" % name
+        if lockfilename is not None:
+            self.lockfilename = lockfilename
+        else:
+            self.lockfilename = "launchpad-%s.lock" % name
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -84,18 +99,30 @@ class LaunchpadScript:
         scripts.logger_options(self.parser, default=self.loglevel)
         self.build_standard_options()
         self.options, self.args = self.parser.parse_args()
+
         if getattr(self.options, "lockfilename"):
+            # Note this overrides the lockfilename above. The way this
+            # works is that the self.lockfile is presented to the
+            # end-user; if it's then changed via the -l flag we fish it
+            # out here as well.
+            #
             # I have no clue how to check if lockfilename is actually
             # present in self.options other than doing the getattr
-            # above; it's a weird optparse.Values instance that has no
-            # relevant methods.
-            self.lockfile = self.options.lockfilename
+            # above; it's a weird optparse.Values instance that appears
+            # to have no relevant methods.
+            selected_lockfilename = self.options.lockfilename
+        else:
+            selected_lockfilename = self.lockfilename
+
+        if not selected_lockfilename.endswith(".lock"):
+            selected_lockfilename = selected_lockfilename + ".lock"
+        self.fulllockpath = os.path.join(LOCK_PATH, selected_lockfilename)
 
         # Store logger and create lockfile. Note that this will create a
         # lockfile even if you don't actually use it; GlobalLock.__del__
         # is meant to clean it up though.
         self.logger = scripts.logger(self.options, name)
-        self.lock = GlobalLock(self.lockfile, logger=self.logger)
+        self.lock = GlobalLock(self.fulllockpath, logger=self.logger)
 
     def build_standard_options(self):
         """Construct standard options. Right now this means --lockfile.
@@ -105,7 +132,7 @@ class LaunchpadScript:
         --lockfile option present.
         """
         self.parser.add_option("-l", "--lockfile", dest="lockfilename",
-            default=self.lockfile,
+            default=self.lockfilename,
             help="The file the script should use to lock the process.")
         self.add_my_options()
 
@@ -156,7 +183,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.error('Lockfile %s in use' % self.lockfilename)
+            self.logger.error('Lockfile %s in use' % self.fulllockpath)
             sys.exit(1)
 
     def lock_or_quit(self, blocking=False):
@@ -169,7 +196,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.info('Lockfile %s in use' % self.lockfilename)
+            self.logger.info('Lockfile %s in use' % self.fulllockpath)
             sys.exit(0)
 
     def unlock(self, skip_delete=False):
