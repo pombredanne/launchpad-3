@@ -184,27 +184,27 @@
               </tbody>
             </table>
           </div>
-          <div tal:condition="not:context/isTeam" class="demo section">
+          <div tal:condition="not:context/isTeam" id="working-on"
+               tal:define="bugtasks view/getBugsInProgress">
             <h2>Working on&#8230;</h2>
             <ul class="bug">
-              <li>
-                <div><a href="/bugs/12">123. some bug</a></div>
-                <div>
-                  gnome-network-blaster (Ubuntu),
-                  reported by David Prieto
+              <li tal:repeat="bugtask bugtasks">
+                <div><a tal:attributes="href bugtask/fmt:url">
+                <span tal:replace="
+                      string: ${bugtask/bug/id}. ${bugtask/bug/title}" /></a>
                 </div>
-              </li>
-              <li>
-                <div><a href="/bugs/13">123. some other bug</a></div>
                 <div>
-                  gnome-network-blaster (Ubuntu),
-                  reported by David Prieto
+                <span tal:content="
+                  string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
                 </div>
               </li>
             </ul>
+            <div>
+              <a tal:attributes="href view/getURLToAssignedBugsInProgress">
+                Show the complete list
+              </a>
+            </div>
             <ul class="blueprint">
-              <li><a href="">some blueprint</a></li>
-              <li><a href="">some other blueprint</a></li>
             </ul>
           </div>
           <div tal:condition="context/isTeam" class="section">
