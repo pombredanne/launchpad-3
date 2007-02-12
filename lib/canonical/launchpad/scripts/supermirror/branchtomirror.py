@@ -106,6 +106,10 @@ class BranchToMirror:
         """Record an oops for the current exception.
 
         This must only be called while handling an exception.
+
+        :param message: custom explanatory error message. Do not use
+            str(exception) to fill in this parameter, it should only be set
+            when a human readable error has been explicitely generated.
         """
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
@@ -152,16 +156,8 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
-            if len(e.args) == 0:
-                self._record_oops(logger)
-                self._mirrorFailed(logger, e)
-            else:
-                if e.args[0].count('\n') >= 2:
-                    msg = 'Not a branch'
-                else:
-                    msg = 'Unknown branch format: %s' % e.args[0]
-                self._record_oops(logger, msg)
-                self._mirrorFailed(logger, msg)
+            self._record_oops(logger)
+            self._mirrorFailed(logger, e)
 
         except bzrlib.errors.ParamikoNotPresent, e:
             msg = ("The supermirror does not support mirroring branches "

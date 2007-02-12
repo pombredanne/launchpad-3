@@ -6,8 +6,9 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror import mirror, jobmanager
 from canonical.launchpad.scripts import logger_options, logger
+from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+
 import bzrlib.repository
 
 
