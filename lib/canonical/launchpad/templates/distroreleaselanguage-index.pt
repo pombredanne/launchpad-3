@@ -66,19 +66,18 @@
                   tal:content="structure entry/@@+barchart" />
           </td>
           <td>
-            <span tal:condition="entry/latestsubmission"
-                  tal:replace="entry/latestsubmission/datecreated/fmt:date" />
-            <tal:block condition="not: entry/latestsubmission">
+            <span tal:condition="entry/last_touched_pomsgset"
+                  tal:replace="entry/last_touched_pomsgset/date_reviewed/fmt:date" />
+            <tal:block condition="not: entry/last_touched_pomsgset">
                 &mdash;
             </tal:block>
           </td>
           <td>
-            <span tal:condition="entry/latestsubmission">
-              <a tal:attributes="href entry/latestsubmission/person/fmt:url"
-                 tal:replace="entry/latestsubmission/person/browsername/fmt:shorten/25"></a>
+            <span tal:condition="entry/last_touched_pomsgset">
+              <a tal:attributes="href entry/last_touched_pomsgset/reviewer/fmt:url"
+                 tal:replace="entry/last_touched_pomsgset/reviewer/browsername/fmt:shorten/25"></a>
             </span>
-
-            <tal:block condition="not: entry/latestsubmission">
+            <tal:block condition="not: entry/last_touched_pomsgset">
                 &mdash;
             </tal:block>
           </td>

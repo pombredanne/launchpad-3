@@ -1323,7 +1323,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 potemplate, language, description, topcomment, header,
                 fuzzyheader, lasttranslator, currentcount, updatescount,
                 rosettacount, lastparsed, owner, variant, path, exportfile,
-                exporttime, datecreated, latestsubmission,
+                exporttime, datecreated, last_touched_pomsgset,
                 from_sourcepackagename)
             SELECT
                 pt2.id AS potemplate,
@@ -1343,7 +1343,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf1.exportfile AS exportfile,
                 pf1.exporttime AS exporttime,
                 pf1.datecreated AS datecreated,
-                pf1.latestsubmission AS latestsubmission,
+                pf1.last_touched_pomsgset AS last_touched_pomsgset,
                 pf1.from_sourcepackagename AS from_sourcepackagename
             FROM
                 POTemplate AS pt1

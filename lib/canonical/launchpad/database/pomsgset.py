@@ -218,11 +218,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.active = True
             submission.syncUpdate()
-            self.pofile.latestsubmission = submission
-        elif (current_active is not None and
-              self.pofile.latestsubmission == current_active):
-            self.pofile.recalculateLatestSubmission()
-            self.pofile.syncUpdate()
+
+        self.pofile.last_touched_pomsgset = self
+        self.pofile.syncUpdate()
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""

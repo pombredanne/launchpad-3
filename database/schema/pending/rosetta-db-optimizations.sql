@@ -72,7 +72,20 @@ FROM
             (pomsgset.pofile = pofile.id)
         LEFT JOIN posubmission ON pomsgset.id = posubmission.pomsgset
         LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation
-WHERE posubmission.active = TRUE;
+WHERE posubmission.active;
+
+ALTER TABLE POFile ADD COLUMN latest_touched_pomsgset INTEGER REFERENCES POMsgSet(id);
+UPDATE POFile SET latest_touched_pomsgset=pms.id
+FROM POMsgSet pms
+WHERE pms.id = (
+    SELECT id
+    FROM POMsgSet
+    WHERE POMsgSet.pofile = POFile.id
+    ORDER BY date_reviewed
+    DESC
+    LIMIT 1);
+
+ALTER TABLE POFile DROP COLUMN latestsubmission;
 
 DROP TABLE POSelection;
 

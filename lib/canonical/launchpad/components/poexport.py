@@ -464,18 +464,19 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
-            if (row.pofile is not None and
-                row.pofile.latestsubmission is not None):
+            if (row.pofile is not None):
+                row.pofile.last_touched_pomsgset is not None and
+                row.pofile.last_touched_pomsgset.reviewer is not None):
                 # Update the last translator field.
 
-                submission = row.pofile.latestsubmission
-                header['Last-Translator'] = (
-                    last_translator_text(submission.person))
+                header['Last-Translator'] = last_translator_text(
+                    row.pofile.last_touched_pomsgset.reviewer)
 
                 # Update the revision date field.
 
                 header['PO-Revision-Date'] = (
-                    submission.datecreated.strftime('%F %R%z'))
+                    row.pofile.last_touched_pomsgset.date_reviewed.strftime(
+                        '%F %R%z'))
 
             if row.potemplate.hasPluralMessage():
                 if row.pofile.language.pluralforms is not None:
