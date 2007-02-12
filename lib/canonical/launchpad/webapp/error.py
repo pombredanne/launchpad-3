@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class SystemErrorView:
@@ -136,3 +136,16 @@ class NotFoundView(SystemErrorView):
 
     def __call__(self):
         return self.index()
+
+
+class RequestExpiredView(SystemErrorView):
+
+    response_code = 503
+
+    def __init__(self, context, request):
+        SystemErrorView.__init__(self, context, request)
+        # Set Retry-After header to 15 minutes. Hard coded because this
+        # is really just a guess and I don't think any clients actually
+        # pay attention to it - it is just a hint.
+        request.response.setHeader('Retry-After', 900)
+

@@ -17,12 +17,6 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
-    <!-- KarmaPersonCategoryCacheView -->
-    <content class="canonical.launchpad.database.KarmaPersonCategoryCacheView">
-        <allow interface="
-            canonical.launchpad.interfaces.IKarmaPersonCategoryCacheView" />
-    </content>
-
     <!-- KarmaTotalCache -->
     <content class="canonical.launchpad.database.KarmaTotalCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaTotalCache" />
@@ -65,6 +59,17 @@
         template="../templates/karmaaction-edit.pt"
         lp:url="karmaaction/$action/+index">
     </browser:editform>
+
+    <!-- KarmaCacheManager -->
+    <content class="canonical.launchpad.database.KarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.KarmaCacheManager"
+        provides="canonical.launchpad.interfaces.IKarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </securedutility>
 
     <!-- KarmaActionSet -->
     <content class="canonical.launchpad.database.KarmaActionSet">

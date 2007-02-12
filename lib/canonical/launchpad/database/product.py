@@ -18,12 +18,14 @@ from sqlobject import (
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus)
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -44,8 +46,7 @@ from canonical.launchpad.database.ticket import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH,
-    get_supported_languages)
+    ITicketTarget, NotFoundError, get_supported_languages)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
@@ -565,7 +566,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False):
+                      reviewed=False, gotchi=None, emblem=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -574,7 +575,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed)
+            programminglang=programminglang, reviewed=reviewed, gotchi=gotchi,
+            emblem=emblem)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
@@ -584,7 +586,6 @@ class ProductSet:
         product.development_focus = trunk
 
         return product
-
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

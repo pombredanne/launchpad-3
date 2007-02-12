@@ -23,9 +23,10 @@ from canonical.librarian.utils import copy_and_close
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -73,12 +74,12 @@ class DistroReleaseQueue(SQLBase):
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
 
-    pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
+    pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
+    # XXX: this is NULLable. Fix sampledata?
     changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias",
-                             notNull=True)
+                             foreignKey="LibraryFileAlias")
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
@@ -446,8 +447,7 @@ class DistroReleaseQueueCustom(SQLBase):
         )
 
     customformat = EnumCol(dbName='customformat', unique=False,
-                           default=None, notNull=True,
-                           schema=DistroReleaseQueueCustomFormat)
+                           notNull=True, schema=DistroReleaseQueueCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
@@ -543,7 +543,11 @@ class DistroReleaseQueueCustom(SQLBase):
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
 
-        if sourcepackagerelease.component.name != 'main':
+        valid_pockets = (PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.SECURITY, PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED)
+        if (self.distroreleasequeue.pocket not in valid_pockets or
+            sourcepackagerelease.component.name != 'main'):
             # XXX: CarlosPerelloMarin 20060216 This should be implemented
             # using a more general rule to accept different policies depending
             # on the distribution. See bug #31665 for more details.
@@ -559,7 +563,7 @@ class DistroReleaseQueueCustom(SQLBase):
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.url)
+                    self.libraryfilealias.http_url)
 
 
 class DistroReleaseQueueSet:

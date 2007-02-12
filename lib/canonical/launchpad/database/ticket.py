@@ -29,19 +29,22 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    TicketAction, TicketSort, TicketStatus,
+    TicketParticipation, TicketPriority)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import (
-    EnumCol, TicketAction, TicketSort, TicketStatus,
-    TicketParticipation, TicketPriority, Item)
 
 
 class notify_ticket_modified:
@@ -127,7 +130,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
     messages = SQLMultipleJoin('TicketMessage', joinColumn='ticket',
-        prejoins=['message'], orderBy=['datecreated', 'TicketMessage.id'])
+        prejoins=['message'], orderBy=['TicketMessage.id'])
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
@@ -485,11 +488,17 @@ class TicketSet:
                 TicketStatus.OPEN, TicketStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
-    def searchTickets(self, search_text=None,
+    def searchTickets(self, search_text=None, language=None,
                       status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketSet"""
         return TicketSearch(
-            search_text=search_text, status=status, sort=sort).getResults()
+            search_text=search_text, status=status, language=language,
+            sort=sort).getResults()
+
+    def getTicketLanguages(self):
+        """See ITicketSet"""
+        return set(Language.select('Language.id = Ticket.language',
+            clauseTables=['Ticket'], distinct=True))
 
     @staticmethod
     def new(title=None, description=None, owner=None,
@@ -503,7 +512,8 @@ class TicketSet:
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
-            sourcepackagename=sourcepackagename, datecreated=datecreated)
+            sourcepackagename=sourcepackagename, datecreated=datecreated,
+            datelastquery=datecreated)
 
         # Subscribe the submitter
         ticket.subscribe(owner)
@@ -570,6 +580,22 @@ class TicketSearch:
 
         return constraints
 
+    def getTableJoins(self):
+        """Return the tables that should be joined for the constraints."""
+        if self.needs_attention_from:
+            return self.getMessageJoins(self.needs_attention_from)
+        else:
+            return []
+
+    def getMessageJoins(self, person):
+        """Create the joins needed to select constraints on the messages by a
+        particular person."""
+        return [
+            ('LEFT OUTER JOIN TicketMessage '
+             'ON TicketMessage.ticket = Ticket.id'),
+            ('LEFT OUTER JOIN Message ON TicketMessage.message = Message.id '
+             'AND Message.owner = %s' % sqlvalues(person))]
+
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
 
@@ -584,19 +610,17 @@ class TicketSearch:
                 list(self.status)))
 
         if self.needs_attention_from:
-            constraints.append('''Ticket.id IN (
-                SELECT DISTINCT t.id FROM Ticket t
-                    JOIN TicketMessage tm ON (Ticket.id = tm.ticket)
-                    JOIN Message m ON (tm.message = m.id)
-                    WHERE (t.owner = %(person)s AND
-                           t.status IN %(owner_status)s)
-                        OR (t.owner != %(person)s AND
-                            t.status = %(open_status)s AND
-                            m.owner = %(person)s)
-            )''' % sqlvalues(
-                person=self.needs_attention_from,
-                owner_status=[TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
-                open_status=TicketStatus.OPEN))
+            constraints.append('''(
+                (Ticket.owner = %(person)s
+                    AND Ticket.status IN %(owner_status)s)
+                OR (Ticket.owner != %(person)s AND
+                    Ticket.status = %(open_status)s AND
+                    Message.owner = %(person)s)
+                )''' % sqlvalues(
+                    person=self.needs_attention_from,
+                    owner_status=[
+                        TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
+                    open_status=TicketStatus.OPEN))
 
         if self.language:
             constraints.append(
@@ -643,25 +667,34 @@ class TicketSearch:
                         "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
+        elif sort is TicketSort.RECENT_OWNER_ACTIVITY:
+            return ['-Ticket.datelastquery']
         else:
             raise AssertionError, "Unknown TicketSort value: %s" % sort
 
     def getResults(self):
         """Return the tickets that match this query."""
-        return Ticket.select(' AND '.join(self.getConstraints()),
-                             prejoins=self.getPrejoins(),
-                             orderBy=self.getOrderByClause())
+        query = ''
+        constraints = self.getConstraints()
+        if constraints:
+            query += (
+                'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
+                    '\n'.join(self.getTableJoins()),
+                    ' AND '.join(constraints)))
+        return Ticket.select(
+            query, prejoins=self.getPrejoins(),
+            orderBy=self.getOrderByClause())
 
 
 class TicketTargetSearch(TicketSearch):
     """Search tickets in an ITicketTarget context.
 
-    Used to implement ITicketTarget.search().
+    Used to implement ITicketTarget.searchTickets().
     """
 
     def __init__(self, search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                 language=None, owner=None,  needs_attention_from=None,
-                 sort=None, product=None, distribution=None,
+                 language=None, sort=None, owner=None,
+                 needs_attention_from=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
@@ -722,7 +755,7 @@ class TicketPersonSearch(TicketSearch):
 
     def __init__(self, person, search_text=None,
                  status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                 participation=None, needs_attention=False, sort=None):
+                 sort=None, participation=None, needs_attention=False):
         if needs_attention:
             needs_attention_from = person
         else:
@@ -742,31 +775,42 @@ class TicketPersonSearch(TicketSearch):
         else:
             self.participation = participation
 
+    def getTableJoins(self):
+        """See TicketSearch."""
+        joins = TicketSearch.getTableJoins(self)
+
+        if TicketParticipation.SUBSCRIBER in self.participation:
+            joins.append(
+                'LEFT OUTER JOIN TicketSubscription '
+                'ON TicketSubscription.ticket = Ticket.id'
+                ' AND TicketSubscription.person = %s' % sqlvalues(
+                    self.person))
+
+        if TicketParticipation.COMMENTER in self.participation:
+            message_joins = self.getMessageJoins(self.person)
+            if not set(joins).intersection(set(message_joins)):
+                joins.extend(message_joins)
+
+        return joins
+
     queryByParticipationType = {
-        TicketParticipation.ANSWERER:
-            "SELECT id FROM Ticket WHERE answerer = %(personId)s",
-        TicketParticipation.SUBSCRIBER:
-            "SELECT ticket FROM TicketSubscription "
-            "WHERE person = %(personId)s",
-        TicketParticipation.OWNER:
-            "SELECT id FROM Ticket WHERE owner = %(personId)s",
-        TicketParticipation.COMMENTER:
-            "SELECT ticket FROM TicketMessage "
-            "JOIN Message ON (message = Message.id) "
-            "WHERE owner = %(personId)s",
-        TicketParticipation.ASSIGNEE:
-            "SELECT id FROM Ticket WHERE assignee = %(personId)s"}
+        TicketParticipation.ANSWERER: "Ticket.answerer = %s",
+        TicketParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
+        TicketParticipation.OWNER: "Ticket.owner = %s",
+        TicketParticipation.COMMENTER: "Message.owner = %s",
+        TicketParticipation.ASSIGNEE: "Ticket.assignee = %s"}
 
     def getConstraints(self):
         """See TicketSearch."""
+        constraints = TicketSearch.getConstraints(self)
+
         participations_filter = []
         for participation_type in self.participation:
             participations_filter.append(
-                self.queryByParticipationType[participation_type] % {
-                    'personId': self.person.id})
+                self.queryByParticipationType[participation_type] % sqlvalues(
+                    self.person))
 
-        constraints = ['Ticket.id IN (%s)' %
-                       '\nUNION '.join(participations_filter)]
+        if participations_filter:
+            constraints.append('(' + ' OR '.join(participations_filter) + ')')
 
-        constraints.extend(TicketSearch.getConstraints(self))
         return constraints

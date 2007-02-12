@@ -15,9 +15,9 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.launchpad.helpers import check_permission
+from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 QUEUE_SIZE = 20
 

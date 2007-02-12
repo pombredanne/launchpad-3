@@ -6,10 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'InvalidTicketStateError',
+    'ISearchableByTicketOwner',
     'ITicket',
     'ITicketAddMessageForm',
     'ITicketChangeStatusForm',
+    'ITicketCollection',
     'ITicketSet',
+    'TICKET_STATUS_DEFAULT_SEARCH'
     ]
 
 from zope.interface import Interface, Attribute
@@ -19,10 +22,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
-from canonical.launchpad.interfaces.tickettarget import (
-        TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import TicketStatus, TicketPriority
-
 
 
 class InvalidTicketStateError(Exception):
@@ -375,8 +375,62 @@ class ITicket(IHasOwner):
         """
 
 
-class ITicketSet(Interface):
-    """A container for tickets."""
+TICKET_STATUS_DEFAULT_SEARCH = (
+    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
+    TicketStatus.SOLVED)
+
+
+class ITicketCollection(Interface):
+    """An object that can be used to search through a colletion of tickets."""
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      language=None, sort=None):
+        """Return the tickets from the collection matching search criteria.
+
+        :search_text: A string that is matched against the ticket
+        title and description. If None, the search_text is not included as
+        a filter criteria.
+
+        :status: A sequence of TicketStatus Items. If None or an empty
+        sequence, the status is not included as a filter criteria.
+
+        :language: An ILanguage or a sequence of ILanguage objects to match
+        against the ticket's language. If None or an empty sequence,
+        the language is not included as a filter criteria.
+
+        :sort:  An attribute of TicketSort. If None, a default value is used.
+        When there is a search_text value, the default is to sort by RELEVANCY,
+        otherwise results are sorted NEWEST_FIRST.
+        """
+
+    def getTicketLanguages():
+        """Return the set of ILanguage used by all the tickets in the
+        collection."""
+
+
+class ISearchableByTicketOwner(ITicketCollection):
+    """Collection that support searching by ticket owner."""
+
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+                      language=None, sort=None,
+                      owner=None, needs_attention_from=None):
+        """Return the tickets from the collection matching search criteria.
+
+        See ITicketCollection for the description of the standard search
+        parameters.
+
+        :owner: The IPerson that created the ticket.
+
+        :needs_attention_from: Selects tickets that nee attention from an
+        IPerson. These are the tickets in the NEEDSINFO or ANSWERED state
+        owned by the person. The tickets not owned by the person but on which
+        the person requested for more information or gave an answer and that
+        are back in the OPEN state are also included.
+        """
+
+
+class ITicketSet(ITicketCollection):
+    """A utility that contain all the tickets published in Launchpad."""
 
     title = Attribute('Title')
 
@@ -392,22 +446,6 @@ class ITicketSet(Interface):
         This should return all the tickets in the Open or Needs information
         state, without an assignee, that didn't receive any new comments in
         the last <days_before_expiration> days.
-        """
-
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      sort=None):
-        """Search tickets in any context.
-
-        :search_text: A string that is matched against the ticket
-        title and description. If None, the search_text is not included as
-        a filter criteria.
-
-        :status: A sequence of TicketStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
-
-        :sort:  An attribute of TicketSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
         """
 
 

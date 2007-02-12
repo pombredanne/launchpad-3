@@ -588,26 +588,27 @@ class NascentUpload:
         Returns the key owner (person object), the key (gpgkey object) and
         the pyme signature as a three-tuple
         """
+        self.logger.debug("Verifying signature on %s" % filename)
+
         try:
-            self.logger.debug("Verifying signature on %s" % filename)
-            sig = getUtility(IGPGHandler).getVerifiedSignature(
+            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 file(os.path.join(self.fsroot, filename), "rb").read())
-
-            key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
-
-            if key is None:
-                raise UploadError("Signing key not found within launchpad.")
-
-            if key.active == False:
-                raise UploadError(
-                    "File %s is signed with a deactivated key %s"
-                    % (filename, key.keyid))
-
-            return key.owner, key, sig
-
         except GPGVerificationError, e:
-            raise UploadError("GPG verification of %s failed: %s" % (filename,
-                                                                    str(e)))
+            raise UploadError(
+                "GPG verification of %s failed: %s" % (filename, str(e)))
+
+        key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
+
+        if key is None:
+            raise UploadError("Signing key not found within launchpad.")
+
+        if key.active == False:
+            raise UploadError(
+                "File %s is signed with a deactivated key %s"
+                % (filename, key.keyid))
+
+        return key.owner, key, sig
+
 
     def _find_signer(self):
         """Find the signer and signing key for the .changes file.
@@ -2153,17 +2154,32 @@ class NascentUpload:
 
             self.insert_into_queue()
 
+            # Unknown uploads
             if self.is_new():
                 return True, [new_msg % interpolations]
-            else:
-                if self.policy.autoApprove(self):
-                    return True, [accept_msg % interpolations,
-                                  announce_msg % interpolations]
-                else:
-                    interpolations["SUMMARY"] += ("\nThis upload awaits "
-                                                  "approval by a distro "
-                                                  "manager\n")
-                    return True, [accept_msg % interpolations]
+
+            # Known uploads
+
+            # UNAPPROVED uploads coming from 'insecure' policy only sends
+            # acceptance message.
+            if not self.policy.autoApprove(self):
+                interpolations["SUMMARY"] += (
+                    "\nThis upload awaits approval by a distro manager\n")
+                return True, [accept_msg % interpolations]
+
+            # Auto-APPROVED uploads to BACKPORTS skips announcement.
+            # usually processed with 'sync' policy
+            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
+                self.logger.debug(
+                    "Skipping announcement, it is a BACKPORT.")
+                return True, [accept_msg % interpolations]
+
+            # Fallback, all the rest comming from 'insecure', 'secure',
+            # and 'sync' policies should send acceptance & announcement
+            # messages.
+            return True, [
+                accept_msg % interpolations,
+                announce_msg % interpolations]
 
         except Exception, e:
             # Any exception which occurs while processing an accept will

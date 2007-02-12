@@ -24,7 +24,7 @@ We are at "Distribution Overview" page, let's check the stored values:
   'http://localhost/ubuntu'
   >>> admin_browser.getLink("Change Upload Manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value
-  'carlos@canonical.com'
+  'carlos'
 
 Even if the link "View Uploads" is presented also for anonymous
 requests in Distrorelease page, authentication is required to access

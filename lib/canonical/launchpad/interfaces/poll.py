@@ -288,7 +288,7 @@ class IPollOption(Interface):
         readonly=True)
 
     name = PollOptionNameField(
-        title=_('Option name.'), required=True, readonly=False)
+        title=_('Name'), required=True, readonly=False)
 
     title = TextLine(
         title=_('Title'),

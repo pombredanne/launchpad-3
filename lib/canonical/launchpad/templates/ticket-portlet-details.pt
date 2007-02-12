@@ -34,7 +34,7 @@
     </tal:block>
 
     <b>Created:</b>
-    <span tal:replace="context/datecreated/fmt:date" /><br />
+    <span tal:replace="context/datecreated/fmt:datetime" /><br />
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">
@@ -47,27 +47,24 @@
     </tal:block>
     <br />
 
-    <b>Answered by:</b><br />
     <tal:block condition="context/answerer">
+      <b>Solved by:</b><br />
       <img src="/@@/user" />
       <a tal:attributes="href context/answerer/fmt:url"
-         tal:content="context/answerer/browsername">Foo Bar</a>
+        tal:content="context/answerer/browsername">Foo Bar</a>
+      <br />
     </tal:block>
-    <tal:block condition="not: context/answerer">
-      <i>Not yet answered</i>
-    </tal:block>
-    <br />
 
     <b>Last query:</b>
     <span tal:replace="context/datelastquery/fmt:date" /><br />
 
     <tal:block condition="context/datelastresponse">
-      <b>Responded:</b>
+      <b>Last reply:</b>
       <span tal:replace="context/datelastresponse/fmt:date" /><br />
     </tal:block>
 
     <tal:block condition="context/dateanswered">
-      <b>Answered:</b>
+      <b>Solved:</b>
       <span tal:replace="context/dateanswered/fmt:date" /><br />
     </tal:block>
 

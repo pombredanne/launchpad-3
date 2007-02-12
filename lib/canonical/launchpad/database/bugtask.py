@@ -5,10 +5,9 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'get_bug_privacy_filter']
+    'get_bug_privacy_filter',
+    'search_value_to_where_condition']
 
-import urllib
-import cgi
 import datetime
 
 from sqlobject import (
@@ -22,10 +21,13 @@ from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
@@ -118,12 +120,12 @@ class BugTask(SQLBase, BugTaskMixin):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = dbschema.EnumCol(
+    status = EnumCol(
         dbName='status', notNull=True,
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    importance = dbschema.EnumCol(
+    importance = EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
         default=dbschema.BugTaskImportance.UNDECIDED)
@@ -320,13 +322,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX: we should use a specific SQLObject API here to avoid the
         # privacy violation.
         #   -- kiko, 2006-03-21
-        if self._SO_val_productID is not None:
+        if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self._SO_val_productseriesID is not None:
+        elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self._SO_val_distroreleaseID is not None:
+        elif self.distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
-        elif self._SO_val_distributionID is not None:
+        elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:

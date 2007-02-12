@@ -19,18 +19,18 @@ import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    IShipItApplication)
+from canonical.launchpad.interfaces import IShipItApplication
+
 from canonical.launchpad.webapp.notifications import (
-        NotificationRequest, NotificationResponse, NotificationList
-        )
+    NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.opstats import OpStats
 
 
 class StepsToGo:
@@ -165,16 +165,24 @@ class LaunchpadRequestPublicationFactory:
         vhrps = []
         # Use a short form of VirtualHostRequestPublication, for clarity.
         VHRP = self.VirtualHostRequestPublication
-        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
-        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest,
+            MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest,
+            BlueprintPublication))
         vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
-        vhrps.append(VHRP('translations', TranslationsBrowserRequest, TranslationsPublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest,
+            TranslationsPublication))
         vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
-        vhrps.append(VHRP('answers', AnswersBrowserRequest, AnswersPublication))
-        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest, MainLaunchpadPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest,
+            AnswersPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
+            XMLRPCLaunchpadPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -245,12 +253,12 @@ class LaunchpadRequestPublicationFactory:
         vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(vhrp.vhostconfig.rooturl)
+        rooturlobj = URI(vhrp.vhostconfig.rooturl)
 
         requestfactory = ApplicationServerSettingRequestFactory(
             vhrp.requestfactory,
-            rooturlobj.hostname,
-            rooturlobj.addressingscheme,
+            rooturlobj.host,
+            rooturlobj.scheme,
             rooturlobj.port)
         return requestfactory, vhrp.publicationfactory
 
@@ -444,6 +452,18 @@ debughttp = wsgi.ServerType(
 
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
+
+class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 # ---- blueprint
 

@@ -18,11 +18,9 @@ import warnings
 from StringIO import StringIO
 from difflib import unified_diff
 import sha
+from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
-from zope.security.management import checkPermission as zcheckPermission
-from zope.app.security.permission import (
-    checkPermission as check_permission_is_registered)
 
 import canonical
 from canonical.lp.dbschema import (
@@ -290,7 +288,10 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-def shortlist(sequence, longest_expected=15):
+class ShortListTimeoutError(Exception):
+    """This error is raised when the shortlist hardlimit is reached"""
+    
+def shortlist(sequence, longest_expected=15, hardlimit=None):
     """Return a listified version of sequence.
 
     If <sequence> has more than <longest_expected> items, a warning is issued.
@@ -303,14 +304,27 @@ def shortlist(sequence, longest_expected=15):
         ...
     UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
 
+    >>> shortlist([1, 2, 3, 4], hardlimit=2)
+    Traceback (most recent call last):
+        ...
+    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
+
+    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    Traceback (most recent call last):
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
 
     """
     L = list(sequence)
-    if len(L) > longest_expected:
+    size = len(L)
+    if hardlimit and size > hardlimit:
+        msg = 'Hard limit of %d exceeded.  There were %d items.'
+        raise ShortListTimeoutError(msg % (hardlimit, size))
+    if size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"
             " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, len(L)),
+              (longest_expected, size),
               stacklevel=2)
     return L
 
@@ -384,19 +398,6 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
-
-
-def check_permission(permission_name, context):
-    """Like zope.security.management.checkPermission, but also ensures that
-    permission_name is real permission.
-
-    Raises ValueError if the permission doesn't exist.
-    """
-    # This will raise ValueError if the permission doesn't exist.
-    check_permission_is_registered(context, permission_name)
-
-    # Now call Zope's checkPermission.
-    return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):
