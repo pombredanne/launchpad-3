@@ -60,6 +60,13 @@ sent:
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
 
+The notification also includes a 'X-Launchpad-Question' header that
+contains information about the ticket.
+
+    >>> print add_notification['X-Launchpad-Question']
+    distribution=ubuntu; sourcepackage=None; status=Open;
+    assignee=None; priority=Normal; language=en
+
 Register the Ubuntu Team as Ubuntu's support contact, so that they get
 notified about the changes as well:
 
@@ -105,6 +112,8 @@ Foo Bar, and one to Ubuntu Team:
 
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print edit_notification['Subject']
+    [Question #...]: Installer doesn't work on a Mac
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
@@ -208,7 +217,7 @@ workflow action done.
     ['support@ubuntu.com', 'test@canonical.com']
     >>> support_notification = notifications[0]
     >>> support_notification['Subject']
-    "[Question #...]: Re: Installer doesn't work on a Mac"
+    "Re: [Question #...]: Installer doesn't work on a Mac"
 
 For workflow notifications, the content of the notification is slightly
 different based on whether you are the request owner or somebody else.
@@ -268,6 +277,14 @@ a notification.
     A PowerMac 7200.
     <BLANKLINE>
 
+The notification for new messages on the ticket contain a 'References'
+header to the previous message for threading purpose.
+
+    >>> print notifications[0]['References']
+    <...>
+    >>> notifications[0]['References'] == ubuntu_ticket.messages[-2].rfc822msgid
+    True
+
 We already saw the notifications sent for the requestInfo() and
 giveInfo() transitions, let's see the other ones.
 
@@ -321,16 +338,29 @@ Notification received by the owner:
 === Notifications for reopen() ===
 
 (This example will also show that comments are wrapped for 72 columns
-display)
+display.)
 
     >>> login('test@canonical.com')
-    >>> message = ubuntu_ticket.reopen(
-    ...     "I really need some help. I tried googling a bit but didn't find "
-    ...     "anything useful.\n\nPlease provide some help to a newbie.")
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> email_msg = getUtility(IMessageSet).fromText(
+    ...     subject=(
+    ...         "Re: [Question %d]: Installer doesn't work on "
+    ...         "a Mac" % ubuntu_ticket.id),
+    ...     content=(
+    ...         "I really need some help. I tried googling a bit but didn't "
+    ...         "find anything useful.\n\nPlease provide some help to a "
+    ...         "newbie."),
+    ...     owner=sample_person)
+    >>> message = ubuntu_ticket.reopen(email_msg)
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
+
+Notice also how the 'Re' handling is handled nicely:
+
+    >>> print notifications[0]['Subject']
+    Re: [Question #...]: Installer doesn't work on a Mac
 
 Default notification when the owner reopens the request:
 
@@ -675,7 +705,7 @@ sent to the support list about that request:
      'test@canonical.com']
 
     >>> notifications[0]['Subject']
-    "[Support #...]: (French) Impossible d'installer Ubuntu"
+    "[Question #...]: (French) Impossible d'installer Ubuntu"
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE

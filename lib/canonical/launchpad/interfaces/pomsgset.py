@@ -114,12 +114,14 @@ class IPOMsgSet(Interface):
         one was submitted."""
 
     def getCurrentSubmissions(pluralform):
-        """Return an iterator over each of the submissions out there that
-        are currently published or active in any PO file for the same
-        language and prime msgid.
+        """Return a list of submissions currently published or active.
+
+        It will come from any PO file for the same language and prime msgid
+        in our whole database.
 
         So, for example, this will include submissions that are current
-        upstream, or in other distributions."""
+        upstream, or in other distributions.
+        """
 
     def updateTranslationSet(person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):

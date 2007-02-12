@@ -441,10 +441,10 @@ we will need it later for other tests.
    ...
    ...     orig_templates = sorted(
    ...         orig_distrorelease.currentpotemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...     dest_templates = sorted(
    ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
    ...     output_text = u''
    ...     for i in range(len(orig_templates)):
@@ -988,10 +988,20 @@ IDistroRelease provides the 'getLastUpload' method which returns a
 list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
-  >>> last_uploads = breezy_autotest.getLastUploads()
+  >>> warty = ubuntu['warty']
+  >>> last_uploads = warty.getLastUploads()
 
 Each element is a IDistroReleaseSourcePackageRelease instance:
 
   >>> for upload in last_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
+
+Also, empty results (caused obviously by lack of sample data or very
+earlier development state of a distrorelease) are possible:
+
+  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> last_uploads = breezy_autotest.getLastUploads()
+
+  >>> len(last_uploads) == 0
+  True

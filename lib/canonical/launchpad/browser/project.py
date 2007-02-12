@@ -104,7 +104,8 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf',
+             'changetranslators']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -118,6 +119,10 @@ class ProjectOverviewMenu(ApplicationMenu):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for all products'
         return Link('+driver', text, summary, icon='edit')
+
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def rdf(self):
         text = structured(

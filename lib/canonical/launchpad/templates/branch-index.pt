@@ -109,7 +109,7 @@
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/browsername">Team</a>
           can upload to this branch.
-          <a href="http://code.launchpad.dev/~landscape-developers/+join">Join
+          <a tal:attributes="href string:${context/owner/fmt:url}/+join">Join
             the team</a>.
         </p>
       </tal:cannot-upload>
@@ -121,7 +121,7 @@
         <div id="upload-directions">
           You can <b>upload</b> to this branch at:
           <span class="lesser" tal:content="view/upload_url">
-            sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed
+            sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
           </span>
         </div>
         <tal:comment condition="nothing">
@@ -129,7 +129,7 @@
         </tal:comment>
         <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
           To authenticate with the Launchpad branch upload service, you need
-          to <a href="http://code.launchpad.dev/~name12/+editsshkeys">
+          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
             register a SSH key </a>.
         </p>
       </tal:can-upload>

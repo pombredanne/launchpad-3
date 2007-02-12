@@ -39,9 +39,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
+from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 

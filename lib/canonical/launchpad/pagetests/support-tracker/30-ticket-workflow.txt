@@ -138,13 +138,13 @@ Clicking that button will confirm that the answer solved the problem.
     >>> owner_browser.getControl('This Solved my Problem').click()
 
 This changes the status of the question to 'Solved' and mark
-'No Privileges Person' as the answerer.
+'No Privileges Person' as the solver.
 
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print soup.first(
-    ...     'b', text='Answered by:').findNext('a').renderContents()
+    ...     'b', text='Solved by:').findNext('a').renderContents()
     No Privileges Person
 
 Since no message can be provided when that button is clicked. A default
@@ -210,9 +210,8 @@ This also removes the highlighting from the previous answer and sets
 the answerer back to None.
 
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print soup.first(
-    ...     'b', text='Answered by:').findNext('i').renderContents()
-    Not yet answered
+    >>> soup.first('b', text='Solved by:') is None
+    True
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-4]
     >>> bestAnswer.first('strong') is None
     True
@@ -247,7 +246,7 @@ This appends the message to the quesiton and sets its status to
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print soup.first(
-    ...     'b', text='Answered by:').findNext('a').renderContents()
+    ...     'b', text='Solved by:').findNext('a').renderContents()
     Sample Person
 
 It also records the owner as the answerer and marks his answer with the

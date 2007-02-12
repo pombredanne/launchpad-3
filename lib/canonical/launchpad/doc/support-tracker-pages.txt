@@ -752,9 +752,9 @@ no results are found based on the selected search filter:
     ...     status=[TicketStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
     >>> print translate(search_view_harness.view.pageheading)
-    Open questions about "Firefox" for Ubuntu
+    Open questions matching "Firefox" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no open questions about "Firefox" for Ubuntu.
+    There are no open questions matching "Firefox" for Ubuntu.
 
 It works also with user submitted values:
 
@@ -772,7 +772,7 @@ It works also with user submitted values:
     ...     'field.search_text': 'evolution',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
-    Questions about "evolution" for Ubuntu
+    Questions matching "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
-    There are no questions about "evolution" for Ubuntu with the
+    There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
