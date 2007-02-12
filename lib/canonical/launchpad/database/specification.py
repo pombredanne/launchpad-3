@@ -17,9 +17,20 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     )
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    SpecificationDelivery, SpecificationSort,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority, SpecificationStatus,
+    )
+
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, shortlist)
 
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
@@ -40,17 +51,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
-
 from canonical.launchpad.components.specification import SpecificationDelta
-
-from canonical.lp.dbschema import (
-    EnumCol, SpecificationDelivery,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationStatus,
-    )
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -682,6 +683,7 @@ class SpecificationSet:
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
+            # XXX: this is untested and was broken. -- kiko 2007-02-07
             query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
                 sqlvalues(SpecificationStatus.OBSOLETE,
                           SpecificationStatus.SUPERSEDED)

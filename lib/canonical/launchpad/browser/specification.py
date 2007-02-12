@@ -41,8 +41,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
-
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationStatus
 

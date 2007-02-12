@@ -2,18 +2,13 @@
 
   <h2>Conflicts</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="relationships view/conflicts">
 
-    <ul>
-      <li tal:repeat="binconflicts view/conflicts">
-        <a tal:content="binconflicts/name"
-           tal:attributes="href string:../../binconflicts/name}"/> 
-          <tal:dummy condition="binconflicts/signal">
-            (<span tal:replace="binconflicts/signal" /> 
-              <span tal:replace="binconflicts/version" />)
-          </tal:dummy> 
-      </li>
-    </ul>
+     <tal:has_dep condition="relationships/has_items">
+        <tal:block replace="structure relationships/@@+render-list"/>
+     </tal:has_dep>
+
   </div>
 
 </div>

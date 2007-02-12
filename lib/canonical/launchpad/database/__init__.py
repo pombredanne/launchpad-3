@@ -62,7 +62,6 @@ from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.distroarchreleasebinarypackage import *
 from canonical.launchpad.database.distroarchreleasebinarypackagerelease import *
 from canonical.launchpad.database.person import *
-from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
