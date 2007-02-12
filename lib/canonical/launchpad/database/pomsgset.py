@@ -201,7 +201,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
             selection = self.getSelection(plural_index)
-            if selection is not None and selection.isNewerThan(timestamp):
+            active = self.getActiveSubmission(plural_index)
+            if (active is not None and active.date_reviewed > timestamp):
                 return True
         return False
 

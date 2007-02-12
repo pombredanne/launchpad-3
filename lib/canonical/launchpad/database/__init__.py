@@ -35,7 +35,6 @@ from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.pomsgidsighting import *
 from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *

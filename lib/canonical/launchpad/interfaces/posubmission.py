@@ -1,6 +1,7 @@
 # Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Object, Datetime, Bool
 
 __metaclass__ = type
 __all__ = [
@@ -30,10 +31,21 @@ class IPOSubmission(Interface):
     person = Attribute("The owner of this submission, if we have one.")
     validationstatus = Attribute(
         "The status of the validation of the translation.")
-    active_selections = Attribute(
-        "The IPOSelection that has this submission as active.")
-    published_selections = Attribute(
-        "The IPOSelection that has this submission as published.")
+
+    active = Bool(
+        title=("Whether this submission is active."),
+        required=True)
+    published = Bool(
+        title=("Whether this submission is published."),
+        required=True)
+    reviewer = Object(
+        title=u'The person who did the review and accepted current active'
+              u'translation.',
+        required=False, schema=IPerson)
+    date_reviewed = Datetime(
+        title=u'The date when this message was reviewed for last time.',
+        required=False)
+
 
     def destroySelf():
         """Remove this object.
