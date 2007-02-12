@@ -219,15 +219,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             submission.active = True
             submission.syncUpdate()
             self.pofile.latestsubmission = submission
-        else:
-            # make a note that the translation is not complete
-            self.iscomplete = False
-            self.syncUpdate()
-
-            if (current_active is not None and
-                self.pofile.latestsubmission == current_active):
-                self.pofile.recalculateLatestSubmission()
-                self.pofile.syncUpdate()
+        elif (current_active is not None and
+              self.pofile.latestsubmission == current_active):
+            self.pofile.recalculateLatestSubmission()
+            self.pofile.syncUpdate()
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
@@ -242,10 +237,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.published = True
             submission.syncUpdate()
-        else:
-            # make a note that the translation is not complete
-            self.publishedcomplete = False
-            self.syncUpdate()
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
@@ -612,30 +603,26 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # calculate the number of published plural forms
-        published_count = POSelection.select("""
-            POSelection.pomsgset = %s AND
-            POSelection.publishedsubmission IS NOT NULL AND
+        published_count = POSubmission.select("""
+            POSubmission.pomsgset = %s AND
+            POSubmission.published AND
             POSelection.pluralform < %s
-            """ % sqlvalues(self.id, pluralforms)).count()
-        if published_count == pluralforms:
-            self.publishedcomplete = True
-        else:
-            self.publishedcomplete = False
+            """ % sqlvalues(self, pluralforms)).count()
+
+        self.publishedcomplete = (published_count == pluralforms)
 
         if published_count == 0:
             # If we don't have translations, this entry cannot be fuzzy.
             self.publishedfuzzy = False
 
         # calculate the number of active plural forms
-        active_count = POSelection.select("""
-            POSelection.pomsgset = %s AND
-            POSelection.activesubmission IS NOT NULL AND
+        active_count = POSubmission.select("""
+            POSubmission.pomsgset = %s AND
+            POSubmission.active AND
             POSelection.pluralform < %s
-            """ % sqlvalues(self.id, pluralforms)).count()
-        if active_count == pluralforms:
-            self.iscomplete = True
-        else:
-            self.iscomplete = False
+            """ % sqlvalues(self, pluralforms)).count()
+
+        self.iscomplete = (active_count == pluralforms)
 
         if active_count == 0:
             # If we don't have translations, this entry cannot be fuzzy.
@@ -650,21 +637,18 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             POMsgSet.publishedfuzzy = FALSE AND
             POMsgSet.iscomplete = TRUE AND
             POMsgSet.publishedcomplete = TRUE AND
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.pluralform < %s AND
-            ActiveSubmission.id = POSelection.activesubmission AND
-            PublishedSubmission.id = POSelection.publishedsubmission AND
-            ActiveSubmission.datecreated > PublishedSubmission.datecreated
+            active_submission.pomsgset = POMsgSet.id AND
+            active_submission.pluralform < %s AND
+            active_submission.active AND
+            published_submission.pomsgset = POMsgSet.id AND
+            published_submission.pluralform < %s AND
+            published_submission.published AND
+            active_submission.datecreated > published_submission.datecreated
             """ % sqlvalues(self.id, pluralforms),
-            clauseTables=['POSelection',
-                          'POSubmission AS ActiveSubmission',
-                          'POSubmission AS PublishedSubmission']).count()
-        if updated:
-            # We found rows that change from what we got from upstream.
-            self.isupdated = True
-        else:
-            # We have the same information as upstream gave us.
-            self.isupdated = False
+            clauseTables=['POSubmission AS active_submission',
+                          'POSubmission AS published_submission']).count()
+
+        self.isupdated = (updated is not None)
 
         flush_database_updates()
 
