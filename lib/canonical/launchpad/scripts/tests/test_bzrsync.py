@@ -119,17 +119,6 @@ class BzrSyncTestCase(unittest.TestCase):
                          "Wrong RevisionAuthor count (should be %d, not %d)"
                          % revisionauthor_pair)
 
-
-class TestBzrSync(BzrSyncTestCase):
-
-    def syncAndCount(self, new_revisions=0, new_numbers=0,
-                     new_parents=0, new_authors=0):
-        counts = self.getCounts()
-        BzrSync(self.txn, self.db_branch).syncHistoryAndClose()
-        self.assertCounts(
-            counts, new_revisions=new_revisions, new_numbers=new_numbers,
-            new_parents=new_parents, new_authors=new_authors)
-
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
                        timestamp=None, timezone=None):
@@ -152,6 +141,30 @@ class TestBzrSync(BzrSyncTestCase):
         self.bzr_tree = self.bzr_branch.bzrdir.open_workingtree()
         branch = self.bzr_tree.branch
         uncommit(branch, tree=self.bzr_tree)
+
+
+class TestBzrSync(BzrSyncTestCase):
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.bzrsync = None
+
+    def tearDown(self):
+        if self.bzrsync is not None and self.bzrsync.db_branch is not None:
+            self.bzrsync.close()
+        BzrSyncTestCase.tearDown(self)
+
+    def makeBzrSync(self):
+        self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        return self.bzrsync
+
+    def syncAndCount(self, new_revisions=0, new_numbers=0,
+                     new_parents=0, new_authors=0):
+        counts = self.getCounts()
+        BzrSync(self.txn, self.db_branch).syncHistoryAndClose()
+        self.assertCounts(
+            counts, new_revisions=new_revisions, new_numbers=new_numbers,
+            new_parents=new_parents, new_authors=new_authors)
 
     def test_empty_branch(self):
         # Importing an empty branch does nothing.
@@ -258,19 +271,13 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_2.revision_date, dt)
 
     def test_get_revisions_empty(self):
-        bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
-        try:
-            self.assertEqual([], list(bzrsync.getRevisions()))
-        finally:
-            bzrsync.close()
+        bzrsync = self.makeBzrSync()
+        self.assertEqual([], list(bzrsync.getRevisions()))
 
     def test_get_revisions_linear(self):
         self.commitRevision(rev_id=u'rev-1')
-        bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
-        try:
-            self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
-        finally:
-            bzrsync.close()
+        bzrsync = self.makeBzrSync()
+        self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
 
 class TestBzrSyncModified(BzrSyncTestCase):
