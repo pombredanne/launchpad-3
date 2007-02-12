@@ -116,11 +116,8 @@ class BugTargetBase:
         return self.searchTasks(all_tasks_query)
 
     def _getBugTaskContextClause(self):
-        """XXX"""
-        if IProduct.providedBy(self):
-            return 'BugTask.product = %s' % sqlvalues(self)
-        else:
-            raise AssertionError("Unknown IBugTarget: %r" % self)
+        """Return a SQL clause for selecting this target's bugtasks."""
+        raise NotImplementedError(self._getBugTaskContextClause)
 
     def getBugCounts(self, user, statuses=None):
         """See IBugTarget."""
@@ -129,8 +126,8 @@ class BugTargetBase:
 
         from_tables = ['BugTask', 'Bug']
         count_column = """
-            SUM (CASE WHEN BugTask.status = %s
-                        THEN 1 ELSE 0 END) AS %s"""
+            COUNT (CASE WHEN BugTask.status = %s
+                        THEN BugTask.id ELSE NULL END) AS %s"""
         select_columns = [
             count_column % tuple(sqlvalues(status) + (status.name.lower(), ))
             for status in statuses]

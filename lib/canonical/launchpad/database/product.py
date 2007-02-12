@@ -240,6 +240,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product = %s' % sqlvalues(self)
+
     def getSupportedLanguages(self):
         """See ITicketTarget."""
         return get_supported_languages(self)

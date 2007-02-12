@@ -216,6 +216,10 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
 
 class ProjectSet:
     implements(IProjectSet)

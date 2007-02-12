@@ -335,6 +335,10 @@ class ProductSeries(SQLBase, BugTargetBase):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.productseries = %s' % sqlvalues(self)
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
