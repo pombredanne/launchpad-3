@@ -1310,10 +1310,6 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul {
-  margin-left: 24px;
-  padding-left: 0;
-} /* XXX 20070212 mpt: Should be made location-bar-specific */
 ul.buttons {
   margin: 2em 0 4em 0;
   padding: 0;
@@ -1332,6 +1328,10 @@ li {
 */
 
 /* Various custom list formats: */
+#mainarea ol, #mainarea ul, #singlecolumn ul, #singlecolumn ol {
+  margin-left: 24px;
+  padding-left: 0;
+}
 ul.add, li.add                       {list-style-image: url(/@@/add);}
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
@@ -1449,6 +1449,7 @@ th.descending {
 
 
 /* SteveA's fix-ups for the dynamic menu */
+#locationbar ul {margin: 0; padding: 0;}
 #locationbar ul.menuroot li a {
   margin-right: -16px;
 }
