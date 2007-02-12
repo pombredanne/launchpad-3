@@ -154,9 +154,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
     obsolete = BoolCol(dbName='obsolete', notNull=True)
+    reviewer = ForeignKey(foreignKey='Person', notNull=False, default=None)
+    date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
+        default=None)
 
-    selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
-        orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
     @property
@@ -166,9 +167,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
         results = list(POSubmission.select(
-            "POSubmission.id = POSelection.publishedsubmission AND "
-            "POSelection.pomsgset = %s" % sqlvalues(self.id),
-            clauseTables=['POSelection'],
+            "POSubmission.published AND "
+            "POSubmission.pomsgset = %s" % sqlvalues(self),
             orderBy='pluralform'))
         translations = []
         for form in range(pluralforms):
@@ -185,9 +185,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
         results = list(POSubmission.select(
-            """POSubmission.id = POSelection.activesubmission AND
-               POSelection.pomsgset = %d""" % self.id,
-            clauseTables=['POSelection'],
+            """POSubmission.active AND
+               POSubmission.pomsgset = %s""" % sqlvalues(self),
             orderBy='pluralform'))
         translations = []
         for form in range(pluralforms):
@@ -206,29 +205,63 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 return True
         return False
 
-    def getSelection(self, pluralform):
+    def setActiveSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
-        return POSelection.selectOne(
-            "pomsgset = %s AND pluralform = %s" % sqlvalues(
-                self.id, pluralform))
+        if submission is not None and submission.active:
+            return
+
+        current_active = self.getActiveSubmission(pluralform)
+        if current_active is not None:
+            current_active.active = False
+            current_active.syncUpdate()
+
+        if submission is not None:
+            submission.active = True
+            submission.syncUpdate()
+            self.pofile.latestsubmission = submission
+        else:
+            # make a note that the translation is not complete
+            self.iscomplete = False
+            self.syncUpdate()
+
+            if (current_active is not None and
+                self.pofile.latestsubmission == current_active):
+                self.pofile.recalculateLatestSubmission()
+                self.pofile.syncUpdate()
+
+    def setPublishedSubmission(self, pluralform, submission):
+        """See IPOMsgSet."""
+        if submission is not None and submission.published:
+            return
+
+        current_published = self.getPublishedSubmission(pluralform)
+        if current_published is not None:
+            current_published.published = False
+            current_published.syncUpdate()
+
+        if submission is not None:
+            submission.published = True
+            submission.syncUpdate()
+        else:
+            # make a note that the translation is not complete
+            self.publishedcomplete = False
+            self.syncUpdate()
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
-        return POSubmission.selectOne(
-            """POSelection.pomsgset = %d AND
-               POSelection.pluralform = %d AND
-               POSelection.activesubmission = POSubmission.id
-               """ % (self.id, pluralform),
-               clauseTables=['POSelection'])
+        return POSubmission.selectOne("""
+            POSubmission.pomsgset = %s AND
+            POSubmission.pluralform = %s AND
+            POSubmission.active
+            """ % sqlvalues(self, pluralform))
 
     def getPublishedSubmission(self, pluralform):
         """See IPOMsgSet."""
-        return POSubmission.selectOne(
-            """POSelection.pomsgset = %s AND
-               POSelection.pluralform = %s AND
-               POSelection.publishedsubmission = POSubmission.id
-               """ % sqlvalues(self.id, pluralform),
-               clauseTables=['POSelection'])
+        return POSubmission.selectOne("""
+            POSubmission.pomsgset = %s AND
+            POSubmission.pluralform = %s AND
+            POSubmission.published
+            """ % sqlvalues(self, pluralform))
 
     def updateTranslationSet(self, person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):
@@ -307,6 +340,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     selection.sync()
 
         # now loop through the translations and submit them one by one
+        has_changed = False
         for index in fixed_new_translations.keys():
             newtran = fixed_new_translations[index]
             # replace any '' with None until we figure out
@@ -318,7 +352,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            self._makeSubmission(
+
+            old_active_submission = self.getActiveSubmission(index)
+
+            new_submission = self._makeSubmission(
                 person=person,
                 text=newtran,
                 pluralform=index,
@@ -327,8 +364,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 force_edition_rights=is_editor,
                 force_suggestion=force_suggestion)
 
-            # Flush the database cache
-            flush_database_updates()
+            if new_submission != old_active_submission:
+                has_changed = True
+
+        if has_changed:
+            self.reviewer = person
+            self.date_reviewed = UTC_NOW
+            self.syncUpdate()
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
@@ -420,51 +462,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # should be None by this stage
         assert text != u'', 'Empty string received, should be None'
 
-        # Now get hold of any existing translation selection
-        selection = self.getSelection(pluralform)
+        active_submission = self.getActiveSubmission(pluralform)
+        published_submission = self.getPublishedSubmission(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
         # or active selection for that translation. But a null published
         # translation does not remove the active submission.
-        if text is None and selection is not None:
+        if text is None:
             # Remove the existing active/published selection
-            # XXX sabdfl now we have no record of WHO made the translation
-            # null, if it was not null previously. This needs to be
-            # addressed in ResettingTranslations. 27/05/05
             if published:
-                selection.publishedsubmission = None
+                self.setPublishedSubmission(pluralform, None)
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK and
                   not force_suggestion):
-                # activesubmission is updated only if the translation is
-                # valid and it's an editor.
+                self.setActiveSubmission(pluralform, None)
 
-                # XXX 20070115 DaniloSegan:  selection.activesubmission
-                # is not really the  latestsubmission, but for now use
-                # this hack to get POFile.validExportCache() to work as we
-                # want. We at least know that the activesubmission will be
-                # pointing to the POMsgSet that was last updated, and that's
-                # enough for POFile.validExportCache to make the right
-                # decision (though not correct in terms of what the data
-                # model would mandate).  See also bug #78501.
-                self.pofile.latestsubmission = selection.activesubmission
-
-                selection.activesubmission = None
-                selection.reviewer = person
-                selection.date_reviewed = UTC_NOW
-                selection.sync()
-
-        # If nothing was submitted, return None
-        if text is None:
-            # make a note that the translation is not complete
-            if published:
-                self.publishedcomplete = False
-            else:
-                if is_editor:
-                    self.iscomplete = False
-            # we return because there is nothing further to do. Perhaps when
-            # ResettingTranslations is implemented we will continue to
-            # record the submission of the NULL translation.
+            # we return because there is nothing further to do.
             return None
 
         # Find or create a POTranslation for the specified text
@@ -472,12 +485,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             translation = POTranslation.byTranslation(text)
         except SQLObjectNotFound:
             translation = POTranslation(translation=text)
-
-        # create the selection if there wasn't one
-        if selection is None:
-            selection = POSelection(
-                pomsgset=self,
-                pluralform=pluralform)
 
         # find or create the relevant submission. We always create a
         # translation submission, unless this translation is already active
@@ -493,30 +500,29 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         # test if we are working with the published pofile, and if this
         # translation is already published
-        if published and selection.publishedsubmission is not None:
-            if selection.publishedsubmission.potranslation == translation:
+        if published and published_submission is not None:
+            if published_submission.potranslation == translation:
                 # Sets the validation status to the current status.
                 # We do it always so the changes in our validation code will
                 # apply automatically.
-                selection.publishedsubmission.validationstatus = \
-                    validation_status
+                published_submission.validationstatus = validation_status
 
                 # return the existing submission that made this translation
                 # the published one in the db
-                return selection.publishedsubmission
+                return published_submission
+
         # if we are working with the active submission, see if the selection
         # of this translation is already active
-        if not published and selection.activesubmission:
-            if selection.activesubmission.potranslation == translation:
+        if not published and active_submission is not None:
+            if active_submission.potranslation == translation:
                 # Sets the validation status to the current status.
                 # If our validation code has been improved since the last
                 # import we might detect new errors in previously validated
                 # strings, so we always do this, regardless of the status in
                 # the database.
-                selection.activesubmission.validationstatus = \
-                    validation_status
+                active_submission.validationstatus = validation_status
                 # and return the active submission
-                return selection.activesubmission
+                return active_submission
 
         # let's make a record of whether this translation was published
         # complete, was actively complete, and was an updated one
@@ -557,13 +563,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # next, we need to update the existing active and possibly also
         # published selections
         if published:
-            selection.publishedsubmission = submission
+            self.setPublishedSubmission(pluralform, submission)
 
         if is_editor and validation_status == TranslationValidationStatus.OK:
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
-            if (submission is not None and not published and
-                (selection.activesubmission is None or
+            if (not published and
+                (active_submission is None or
                  selection.activesubmission.id != submission.id)):
                 # The active submission changed and is not published, that
                 # means that the submission came from Rosetta UI instead of
@@ -591,13 +597,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             if not force_suggestion:
                 # Now that we assigned all karma, is time to update the active
                 # submission, the person that reviewed it and when it was done.
-                selection.activesubmission = submission
-                selection.reviewer = person
-                selection.date_reviewed = UTC_NOW
-                selection.sync()
-
-                # And this is the latest submission that this IPOFile got.
-                self.pofile.latestsubmission = submission
+                self.setActiveSubmission(pluralform, submission)
 
         # return the submission we have just made
         return submission

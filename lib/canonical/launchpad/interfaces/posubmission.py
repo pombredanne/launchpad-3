@@ -38,14 +38,6 @@ class IPOSubmission(Interface):
     published = Bool(
         title=("Whether this submission is published."),
         required=True)
-    reviewer = Object(
-        title=u'The person who did the review and accepted current active'
-              u'translation.',
-        required=False, schema=IPerson)
-    date_reviewed = Datetime(
-        title=u'The date when this message was reviewed for last time.',
-        required=False)
-
 
     def destroySelf():
         """Remove this object.

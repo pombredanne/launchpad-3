@@ -6,20 +6,21 @@ update posubmission set active = true from poselection where posubmission.id = p
 ALTER TABLE POSubmission ADD COLUMN published BOOLEAN DEFAULT FALSE NOT NULL;
 update posubmission set published = true from poselection where posubmission.id = poselection.publishedsubmission;
 
-
-ALTER TABLE POSubmission ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE;
-ALTER TABLE POSubmission ADD COLUMN reviewer INTEGER REFERENCES Person(id);
-ALTER TABLE POSubmission ADD CONSTRAINT review_fields_valid CHECK (reviewer IS NULL = date_reviewed IS NULL);
-UPDATE POSubmission SET date_reviewed = ps.date_reviewed, reviewer = ps.reviewer FROM POSelection ps WHERE ps.activesubmission = POSubmission.id;
-
-CREATE INDEX posubmission__reviewer__idx ON POSubmission(reviewer);
-
 CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__active__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(active, FALSE));
 CREATE UNIQUE INDEX posubmission__pomsgset__pluralform_published__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(published, FALSE));
 
 -- Do we still need this other INDEX ?
 CREATE INDEX posubmission__pomsgset__pluralform__active__idx ON POSubmission(pomsgset, pluralform, active);
 CREATE INDEX posubmission__pomsgset__pluralform__published__idx ON POSubmission(pomsgset, pluralform, published);
+
+ALTER TABLE POMsgSet ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE POMsgSet ADD COLUMN reviewer INTEGER REFERENCES Person(id);
+ALTER TABLE POMsgSet ADD CONSTRAINT review_fields_valid CHECK (reviewer IS NULL = date_reviewed IS NULL);
+UPDATE POMsgSet SET date_reviewed = POSelection.date_reviewed, reviewer = POSelection.reviewer
+FROM POSelection
+WHERE POMsgSet.id = POSelection.pomsgset AND POSelection.id = (SELECT id FROM POSelection WHERE POSelection.pomsgset = POMsgset.id ORDER BY date_reviewed DESC LIMIT 1);
+
+CREATE INDEX pomsgset__reviewer__idx ON POMsgSet(reviewer);
 
 DROP VIEW POExport;
 

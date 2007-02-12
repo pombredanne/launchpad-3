@@ -53,9 +53,6 @@ class POSubmission(SQLBase):
         schema=TranslationValidationStatus)
     active = BoolCol(notNull=True, default=DEFAULT)
     published = BoolCol(notNull=True, default=DEFAULT)
-    reviewer = ForeignKey(foreignKey='Person', notNull=False, default=None)
-    date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
-        default=None)
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is
