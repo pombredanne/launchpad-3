@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
@@ -19,13 +19,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import (
+from canonical.launchpad.database.question import (
     SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -45,7 +46,6 @@ from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)

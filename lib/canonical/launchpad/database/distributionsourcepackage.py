@@ -1,4 +1,4 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -18,9 +18,10 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
     DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -29,13 +30,12 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.question import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageTicketTargetMixin)
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.helpers import shortlist
 
 

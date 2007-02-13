@@ -72,7 +72,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketPersonSearch
+from canonical.launchpad.database.question import TicketPersonSearch
 
 from canonical.launchpad.searchbuilder import any
 

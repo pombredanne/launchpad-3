@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -29,7 +29,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship, relationship_builder)
-from canonical.launchpad.browser.tickettarget import (
+from canonical.launchpad.browser.questiontarget import (
     TicketTargetFacetMixin, TicketTargetSupportMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 

@@ -12,7 +12,7 @@ from zope.schema import Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.buglink import IBugLink
-from canonical.launchpad.interfaces.ticket import ITicket
+from canonical.launchpad.interfaces.question import ITicket
 
 class ITicketBug(IBugLink):
     """A link between a Bug and a ticket."""

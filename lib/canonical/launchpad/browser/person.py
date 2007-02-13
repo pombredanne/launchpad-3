@@ -101,7 +101,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.tickettarget import SearchTicketsView
+from canonical.launchpad.browser.questiontarget import SearchTicketsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 

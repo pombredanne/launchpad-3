@@ -21,7 +21,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
+from canonical.launchpad.interfaces.questionmessage import ITicketMessage
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 

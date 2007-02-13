@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Ticket views."""
+"""Question views."""
 
 __metaclass__ = type
 
@@ -36,7 +36,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.tickettarget import SearchTicketsView
+from canonical.launchpad.browser.questiontarget import SearchTicketsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages

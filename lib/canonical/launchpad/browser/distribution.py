@@ -39,7 +39,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.tickettarget import (
+from canonical.launchpad.browser.questiontarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,

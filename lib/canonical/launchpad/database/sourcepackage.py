@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -26,18 +26,18 @@ from canonical.launchpad.interfaces import (
     TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.question import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (

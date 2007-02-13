@@ -19,7 +19,7 @@ from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.ticket import (
+from canonical.launchpad.interfaces.question import (
     ISearchableByTicketOwner, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import TicketSort, TicketStatus
 

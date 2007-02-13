@@ -53,7 +53,7 @@
   <adapter
     for="canonical.launchpad.interfaces.ITicket"
     provides="canonical.launchpad.interfaces.ITicketTarget"
-    factory="canonical.launchpad.components.ticket.ticket_to_tickettarget" />
+    factory="canonical.launchpad.components.question.question_to_questiontarget" />
 
   <browser:menus
       module="canonical.launchpad.browser"
@@ -123,7 +123,7 @@
     name="+makebug"
     schema="canonical.launchpad.interfaces.IBug"
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.ticket.TicketMakeBugView"
+    class="canonical.launchpad.browser.TicketMakeBugView"
     label="Create a bug based on support request"
     fields="title description"
     arguments="title description"

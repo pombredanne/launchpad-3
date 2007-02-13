@@ -13,7 +13,7 @@ from zope.schema import Choice, Datetime, Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.ticket import ITicket
+from canonical.launchpad.interfaces.question import ITicket
 
 class ITicketReopening(Interface):
     """A record of the re-opening of a ticket.

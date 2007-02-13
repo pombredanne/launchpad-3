@@ -56,7 +56,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
-from canonical.launchpad.browser.tickettarget import (
+from canonical.launchpad.browser.questiontarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (

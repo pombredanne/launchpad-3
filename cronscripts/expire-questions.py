@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """ Expire all tickets in the OPEN and NEEDSINFO states that didn't receive
 any activitiy in the last X days.
@@ -15,7 +15,7 @@ import _pythonpath
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.ticketexpiration import TicketJanitor
+from canonical.launchpad.scripts.questionexpiration import TicketJanitor
 
 
 class ExpireTickets(LaunchpadScript):

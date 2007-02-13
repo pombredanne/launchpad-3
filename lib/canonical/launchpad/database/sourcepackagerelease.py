@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.question import Ticket
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (

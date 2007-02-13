@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.tickettarget import (
+from canonical.launchpad.browser.questiontarget import (
         TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,

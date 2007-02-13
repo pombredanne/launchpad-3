@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Database classes including and related to Product."""
 
@@ -26,6 +26,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 
+from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -38,11 +39,10 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.question import (
+    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,

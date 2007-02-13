@@ -38,9 +38,9 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.database.ticketbug import TicketBug
-from canonical.launchpad.database.ticketmessage import TicketMessage
-from canonical.launchpad.database.ticketsubscription import TicketSubscription
+from canonical.launchpad.database.questionbug import TicketBug
+from canonical.launchpad.database.questionmessage import TicketMessage
+from canonical.launchpad.database.questionsubscription import TicketSubscription
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.enum import Item
