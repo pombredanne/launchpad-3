@@ -58,6 +58,7 @@ class AbstractUploadPolicy:
     """
 
     policies = {}
+    options = None
 
     def __init__(self):
         """Prepare a policy..."""
