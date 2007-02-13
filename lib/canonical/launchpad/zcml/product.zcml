@@ -100,7 +100,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"
