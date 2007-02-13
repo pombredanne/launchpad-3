@@ -174,6 +174,13 @@ class BzrSync:
         for (index, revision_id) in enumerate(self.bzr_history):
             # sequence numbers start from 1
             yield index + 1, revision_id
+        history = set(self.bzr_history)
+        ancestry = self.bzr_branch.repository.get_ancestry(
+            self.bzr_branch.last_revision())
+        for revno in ancestry:
+            if revno is not None and revno not in history:
+                yield None, revno
+
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.

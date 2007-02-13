@@ -279,6 +279,20 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
+    def test_get_revisions_branched(self):
+        rev0 = self.bzr_tree.commit(u'common parent')
+        new_bzrdir = self.bzr_tree.bzrdir.sprout('new-branch-2')
+        new_tree = new_bzrdir.create_workingtree()
+        rev1 = self.bzr_tree.commit(u'commit one')
+        rev2 = new_tree.commit(u'commit two')
+        self.bzr_tree.merge_from_branch(new_tree.branch)
+        rev3 = self.bzr_tree.commit(u'merge')
+        bzrsync = self.makeBzrSync()
+        self.assertEqual(set([(1, rev0), (2, rev1), (3, rev3), (None, rev2)]),
+                         set(bzrsync.getRevisions()))
+        self.syncAndCount(new_revisions=4, new_numbers=4, new_parents=4,
+                          new_authors=1)
+
 
 class TestBzrSyncModified(BzrSyncTestCase):
 
