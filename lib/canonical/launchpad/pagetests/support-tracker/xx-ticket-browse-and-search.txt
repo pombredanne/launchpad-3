@@ -526,7 +526,7 @@ questions filed against any of the project's products is displayed.
     Questions for the Mozilla Project
 
 The results are displayed in a format similar to the Person reports:
-there is an 'In' column displaying where the questions was filed.
+there is an 'In' column displaying where the questions were filed.
 
     >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
     >>> for ticket in tickets.tbody.fetch('tr'):
