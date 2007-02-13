@@ -14,6 +14,13 @@
       classes="TeamNavigation PersonNavigation"
       />
 
+  <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPerson"
+      factory="canonical.launchpad.browser.PersonSOP"
+      permission="zope.Public"
+      />
+
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
@@ -34,6 +41,11 @@
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.AnswersLayer"
       name="+tickets"
+      />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      layer="canonical.launchpad.layers.BugsLayer"
+      name="+assignedbugs"
       />
 
   <browser:menus

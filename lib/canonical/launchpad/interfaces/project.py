@@ -13,10 +13,10 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref)
+    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
+    valid_webref)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -28,7 +28,7 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -87,16 +87,16 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
@@ -180,6 +180,12 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
+        """
+
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
         """
 
 

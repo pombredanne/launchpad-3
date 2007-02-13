@@ -529,6 +529,7 @@ And run the cronscript.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
@@ -613,6 +614,7 @@ Do the final import.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    The automatic approval system approved some entries.
     <BLANKLINE>
     >>> transaction.commit()
@@ -626,6 +628,7 @@ We need to run again the script to get those approved entries imported.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    INFO    creating lockfile
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>

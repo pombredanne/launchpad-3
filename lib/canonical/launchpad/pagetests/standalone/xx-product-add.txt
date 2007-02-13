@@ -40,7 +40,7 @@ And just 'http://' for the url
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/products/+new'
->>> 'Not a valid URL' in user_browser.contents
+>>> 'http URIs must have a host name' in user_browser.contents
 True
 
 

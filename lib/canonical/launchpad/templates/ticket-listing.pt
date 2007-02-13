@@ -7,7 +7,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-supportcontacts|nothing" />
-  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-details|nothing" />
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-supportcontacts" />
 </metal:leftportlets>
@@ -77,7 +77,6 @@
   </p>
 
   <tal:block condition="tickets/batch">
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links-upper" />
     <table class="listing" id="ticket-listing">
       <thead>
         <tr>
@@ -131,7 +130,10 @@
         </tr>
       </tbody>
     </table>
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
+    <div
+      class="results"
+      tal:content="structure tickets/@@+navigation-links-lower"
+    />
   </tal:block>
 </div>
 

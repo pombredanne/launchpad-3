@@ -10,11 +10,16 @@ import pytz
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
+
+from canonical.lp.dbschema import TeamMembershipStatus
+
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
@@ -23,8 +28,6 @@ from canonical.launchpad.interfaces import (
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
-from canonical.lp.dbschema import EnumCol, TeamMembershipStatus
 
 
 class TeamMembership(SQLBase):
@@ -152,6 +155,11 @@ class TeamMembership(SQLBase):
         self.status = status
         self.reviewer = reviewer
         self.reviewercomment = reviewercomment
+
+        if (old_status not in [admin, approved]
+            and status in [admin, approved]):
+            # Inactive member has become active; update datejoined
+            self.datejoined = datetime.now(pytz.timezone('UTC'))
 
         self.syncUpdate()
 
