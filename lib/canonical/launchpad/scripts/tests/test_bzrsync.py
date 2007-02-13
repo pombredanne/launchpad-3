@@ -16,13 +16,17 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lp import initZopeless
+from canonical.lp.dbschema import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.database import (
     Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
+from canonical.launchpad.mail import stub
+from canonical.launchpad.interfaces import IBranchSet, IPersonSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
 
 
 class BzrSyncTestCase(unittest.TestCase):
@@ -37,13 +41,18 @@ class BzrSyncTestCase(unittest.TestCase):
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
         self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.branchscanner.dbuser)
+            dbuser=config.launchpad.dbuser)
         self.zopeless_helper.setUp()
         self.txn = self.zopeless_helper.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
+        self.txn.abort()
+        self.txn.uninstall()
+        self.txn = initZopeless(dbuser=config.branchscanner.dbuser)
+        LaunchpadZopelessTestSetup.txn = self.txn
         self.setUpAuthor()
-
+        stub.test_emails = []
+        
     def tearDown(self):
         self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
@@ -73,6 +82,11 @@ class BzrSyncTestCase(unittest.TestCase):
             url=self.bzr_branch_url,
             title="Test branch",
             summary="Branch for testing")
+        test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        self.db_branch.subscribe(
+            test_user,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.FIVEKLINES)
         self.txn.commit()
 
     def setUpAuthor(self):
@@ -161,32 +175,56 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing an empty branch does nothing.
         self.syncAndCount()
         self.assertEqual(self.db_branch.revision_count, 0)
-
+        self.assertEqual(len(stub.test_emails), 0)
+            
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
+        self.assertEqual(len(stub.test_emails), 1)
+        self.failUnless('First scan of the branch detected 1 revision'
+                        ' in the revision history of the=\n branch.' in
+                        stub.test_emails[0][2], stub.test_emails[0][2])
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEqual(len(stub.test_emails), 1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
+        self.assertEqual(len(stub.test_emails), 2)
+        self.failUnless('1 revision was removed from the branch.'
+                        in stub.test_emails[1][2])
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.
         self.commitRevision('first')
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
+        self.assertEqual(len(stub.test_emails), 1)
         self.uncommitRevision()
         self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
+        self.assertEqual(len(stub.test_emails), 3)
+        self.failUnless('1 revision was removed from the branch.'
+                        in stub.test_emails[1][2])
+        body = stub.test_emails[2][2]
+        body_bits = [
+            'revno: 1',
+            'committer: Revision Author <author@example.com>',
+            'branch nick: bzr_branch',
+            'message:\n  second',
+            'added:\n  file',
+            "=3D=3D=3D added file 'file'",
+            ]
+        for bit in body_bits:
+            self.failUnless(bit in body, '%s missing from %s' % (bit, body))
 
     def test_import_revision_with_url(self):
         # Importing a revision passing the url parameter works.
