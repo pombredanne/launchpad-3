@@ -54,5 +54,6 @@ in production environment):
   >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntu/breezy-autotest/+last-uploads")
   >>> find_tag_by_id(anon_browser.contents, "last-uploads")
-  <ul id="last-uploads">
+  <ul id="last-uploads" class="binary package">
   </ul>
+
