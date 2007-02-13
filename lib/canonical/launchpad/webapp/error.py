@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class SystemErrorView:

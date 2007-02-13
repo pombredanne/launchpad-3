@@ -7,10 +7,11 @@ __metaclass__ = type
 __all__ = [
     'ManageSupportContactView',
     'SearchTicketsView',
+    'TicketCollectionLatestTicketsView',
+    'TicketCollectionMyTicketsView',
+    'TicketCollectionNeedAttentionView',
+    'TicketCollectionSupportMenu',
     'TicketTargetFacetMixin',
-    'TicketTargetLatestTicketsView',
-    'TicketTargetSearchMyTicketsView',
-    'TicketTargetSearchNeedAttentionView',
     'TicketTargetTraversalMixin',
     'TicketTargetSupportMenu',
     'UserSupportLanguagesMixin',
@@ -28,8 +29,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageSupportContacts, ISearchTicketsForm,
-    ITicketTarget, NotFoundError)
+    IDistribution, ILanguageSet, IManageSupportContacts, ISearchableByTicketOwner,
+    ISearchTicketsForm, ITicketTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -58,7 +59,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class TicketTargetLatestTicketsView:
+class TicketCollectionLatestTicketsView:
     """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
@@ -268,7 +269,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
 
-class TicketTargetSearchMyTicketsView(SearchTicketsView):
+class TicketCollectionMyTicketsView(SearchTicketsView):
     """SearchTicketsView specialization for the 'My Tickets' report.
 
     It displays and searches the support requests made by the logged
@@ -305,7 +306,7 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
                 'status': set(TicketStatus.items)}
 
 
-class TicketTargetSearchNeedAttentionView(SearchTicketsView):
+class TicketCollectionNeedAttentionView(SearchTicketsView):
     """SearchTicketsView specialization for the 'Need Attention' report.
 
     It displays and searches the support requests needing attention from the
@@ -355,9 +356,8 @@ class ManageSupportContactView(GeneralFormView):
     def initial_values(self):
         user = self.user
         support_contacts = self.context.direct_support_contacts
-        user_teams = [
-            membership.team for membership in user.myactivememberships]
-        support_contact_teams = set(support_contacts).intersection(user_teams)
+        support_contact_teams = set(
+            support_contacts).intersection(self.user.teams_participated_in)
         return {
             'want_to_be_support_contact': user in support_contacts,
             'support_contact_teams': list(support_contact_teams)
@@ -386,9 +386,7 @@ class ManageSupportContactView(GeneralFormView):
                     _('You have been removed as a support contact for '
                       '$context.', mapping=replacements))
 
-        user_teams = [
-            membership.team for membership in self.user.myactivememberships]
-        for team in user_teams:
+        for team in self.user.teams_participated_in:
             replacements['teamname'] = team.displayname
             if team in support_contact_teams:
                 if self.context.addSupportContact(team):
@@ -428,13 +426,12 @@ class TicketTargetTraversalMixin:
     redirection('+ticket', '+tickets')
 
 
-class TicketTargetSupportMenu(ApplicationMenu):
-    """Base menu definition for TicketTargets."""
+class TicketCollectionSupportMenu(ApplicationMenu):
+    """Base menu definition for TicketCollection searchable by owner."""
 
-    usedfor = ITicketTarget
+    usedfor = ISearchableByTicketOwner
     facet = 'support'
-    links = ['open', 'answered', 'myrequests', 'need_attention', 'new',
-             'support_contact']
+    links = ['open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         return "+tickets?" + urlencode(
@@ -460,6 +457,14 @@ class TicketTargetSupportMenu(ApplicationMenu):
     def need_attention(self):
         text = 'Need Attention'
         return Link('+need-attention', text, icon='ticket')
+
+
+class TicketTargetSupportMenu(TicketCollectionSupportMenu):
+    """Base menu definition for TicketTargets."""
+
+    usedfor = ITicketTarget
+    facet = 'support'
+    links = TicketCollectionSupportMenu.links + ['new', 'support_contact']
 
     def new(self):
         text = 'Request Support'

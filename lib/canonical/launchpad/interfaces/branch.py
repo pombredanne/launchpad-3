@@ -313,6 +313,9 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    def getBranchesForOwners(people):
+        """Return the branches that are owned by the people specified."""
+
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""

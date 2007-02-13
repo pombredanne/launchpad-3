@@ -3,11 +3,9 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
-import os.path
 import re
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -17,15 +15,14 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
-    ILaunchpadCelebrities, NotFoundError)
+    NotFoundError)
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
-    EnumCol, BranchRelationships, BranchLifecycleStatus)
+    BranchRelationships, BranchLifecycleStatus)
 
 
 class Branch(SQLBase):
@@ -98,6 +95,8 @@ class Branch(SQLBase):
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
     def related_bugs(self):
@@ -313,6 +312,14 @@ class BranchSet:
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
+
+    def getBranchesForOwners(self, people):
+        """Return the branches that are owned by the people specified."""
+        owner_ids = [person.id for person in people]
+        if not owner_ids:
+            return []
+        branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
+        return branches.prejoin(['product'])
 
 
 class BranchRelationship(SQLBase):

@@ -535,7 +535,7 @@ k            </description>
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>

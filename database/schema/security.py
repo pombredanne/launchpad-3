@@ -197,8 +197,8 @@ def main(options):
             
     # Change ownership of all objects to OWNER
     for obj in schema.values():
-        if obj.type == "function":
-            pass # Can't change ownership of functions
+        if obj.type in ("function", "sequence"):
+            pass # Can't change ownership of functions or sequences
         else:
             cur.execute("ALTER TABLE %s OWNER TO %s" % (
                 obj.fullname, quote_identifier(options.owner)
