@@ -13,7 +13,7 @@ have the launchpad.Driver permission.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IDistributionSet, ILaunchBag, IPersonSet)
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> login("no-priv@canonical.com")
 

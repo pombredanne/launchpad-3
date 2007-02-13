@@ -515,6 +515,8 @@ def get_tsearch2_sql_path(con):
         path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('8.1.'):
         path = os.path.join(PGSQL_BASE, '8.1', 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('8.2.'):
+        path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('7.4.'):
         path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
         if not os.path.exists(path):

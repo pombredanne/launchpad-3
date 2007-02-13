@@ -285,9 +285,7 @@ distribution release:
    >>> for translatable in translatables:
    ...    print translatable.name
    evolution
-   evolution
    mozilla
-   pmount
    pmount
 
 Packages can be linked to upstream productseries in specific
@@ -425,10 +423,14 @@ The main one is to clone what we have in its parent distribution:
 
    >>> humpy.copyMissingTranslationsFromParent()
 
-   >>> len(hoary.potemplates)
-   5
-   >>> len(humpy.potemplates)
-   5
+Note that only current PO templates are copied from the distribution parent:
+
+   >>> len(hoary.potemplates) > len(hoary.currentpotemplates)
+   True
+   >>> len(humpy.potemplates) == len(humpy.currentpotemplates)
+   True
+   >>> len(humpy.potemplates) == len(hoary.currentpotemplates)
+   True
 
 Check one by one and compare the exported text. We define a function because
 we will need it later for other tests.
@@ -438,11 +440,11 @@ we will need it later for other tests.
    ...     from difflib import unified_diff
    ...
    ...     orig_templates = sorted(
-   ...         orig_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         orig_distrorelease.currentpotemplates,
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...     dest_templates = sorted(
    ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
    ...     output_text = u''
    ...     for i in range(len(orig_templates)):
@@ -986,10 +988,20 @@ IDistroRelease provides the 'getLastUpload' method which returns a
 list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
-  >>> last_uploads = breezy_autotest.getLastUploads()
+  >>> warty = ubuntu['warty']
+  >>> last_uploads = warty.getLastUploads()
 
 Each element is a IDistroReleaseSourcePackageRelease instance:
 
   >>> for upload in last_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
+
+Also, empty results (caused obviously by lack of sample data or very
+earlier development state of a distrorelease) are possible:
+
+  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> last_uploads = breezy_autotest.getLastUploads()
+
+  >>> len(last_uploads) == 0
+  True
