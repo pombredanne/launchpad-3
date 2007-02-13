@@ -550,7 +550,7 @@ That listing is searchable:
     ...     print ticket.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
-The same standard reports than on regular TicketTarget are avaiable:
+The same standard reports than on regular TicketTarget are available:
 
     >>> browser.getLink('Open').click()
     >>> print browser.title
