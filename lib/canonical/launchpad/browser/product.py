@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'ProductNavigation',
     'ProductSetNavigation',
+    'ProductShortLink',
+    'ProductSOP',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -51,6 +53,8 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
@@ -113,6 +117,22 @@ class ProductSetNavigation(Navigation):
         if product is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(product))
+
+
+class ProductSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # product series, most recent first
+        return list(self.context.serieslist[:num])
+
+    def listAltChildren(self, num):
+        return None
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -817,3 +837,8 @@ class ProductReassignmentView(ObjectReassignmentView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+
+class ProductShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname

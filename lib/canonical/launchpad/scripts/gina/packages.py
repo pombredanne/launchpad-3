@@ -22,7 +22,7 @@ from canonical import encoding
 from canonical.archivepublisher.diskpool import poolify
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (GPGKeyAlgorithm,
     PackagePublishingPriority, SourcePackageUrgency)
 
@@ -299,7 +299,7 @@ class AbstractPackageData:
         #   -- kiko, 2005-10-18
         # if not self.do_katie(kdb, keyrings):
         #    return False
-        self.date_uploaded = nowUTC
+        self.date_uploaded = UTC_NOW
         self.is_processed = True
         return True
 

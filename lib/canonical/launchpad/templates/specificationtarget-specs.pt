@@ -1,27 +1,21 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:portlets fill-slot="portlets">
 
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
+    </metal:portlets>
 
 <div metal:fill-slot="main"
     tal:define="specs view/specs;
                 has_any_specs view/has_any_specifications">
 
-      <h1>Feature specifications</h1>
+      <h1 tal:condition="context/karma|nothing"
+      >Blueprints involving <tal:person replace="context/title" /></h1>
+      <h1 tal:condition="not:context/karma|nothing"
+      >Blueprints for <tal:software replace="context/title" /></h1>
 
   <tal:no_specs condition="not: has_any_specs">
 
@@ -64,8 +58,6 @@
 
     <form name="spec_search" method="GET">
 
-      Show specifications containing:
-
       <input type="text" name="searchtext"
              tal:attributes="value view/searchtext" />
       <input tal:condition="view/searchrequested"
@@ -74,7 +66,7 @@
         />
       <input tal:condition="not: view/searchrequested"
         type="submit"
-        value="Search Specifications"
+        value="Search"
         />
     </form>
 
@@ -106,13 +98,13 @@
                    title="Informational specification"
                    tal:condition="spec/informational" />
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/status/sortkey" />
             <span tal:content="spec/status/title"
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/delivery/sortkey" />
             <span
               tal:attributes="class string:specdelivery${spec/delivery/name}"
@@ -150,3 +142,4 @@
 </div>
 </body>
 </html>
+<!-- 1-0 in-progress Person needs latest-touched list (bug 82090) -->

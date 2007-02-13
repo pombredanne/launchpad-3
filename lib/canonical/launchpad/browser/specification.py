@@ -41,8 +41,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
-
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -83,7 +82,7 @@ class SpecificationNavigation(Navigation):
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['alltarget', 'allgoal', 'edit', 'people', 'status', 'priority',
+    links = ['edit', 'people', 'status', 'priority',
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
@@ -95,20 +94,6 @@ class SpecificationContextMenu(ContextMenu):
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
-
-    def alltarget(self):
-        text = 'Other %s features' % self.context.target.displayname
-        return Link(canonical_url(self.context.target), text, icon='list')
-
-    def allgoal(self):
-        enabled = self.context.goal is not None
-        text = ''
-        link = Link('dummy', 'dummy', enabled=enabled)
-        if enabled:
-            text = 'Other %s features' % self.context.goal.displayname
-            link = Link(canonical_url(self.context.goal), text,
-                icon='list', enabled=enabled)
-        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

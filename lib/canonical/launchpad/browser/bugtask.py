@@ -52,16 +52,15 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    BugTaskSearchParams, IBugAttachmentSet, IBugExternalRefSet, IBugSet,
+    IBugTask, IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
+    IDistributionSourcePackage, IBug, IDistroBugTask, IDistroRelease,
+    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    IProductSeriesBugTask, IBugNominationSet, IProductSeries)
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
+    IProductSeries)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -72,6 +71,7 @@ from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
@@ -408,7 +408,7 @@ class BugTaskView(LaunchpadView):
         self.request.response.addNotification(
             self._getUnsubscribeNotification(self.user, unsubed_dupes))
 
-        if not helpers.check_permission("launchpad.View", self.context.bug):
+        if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.
             self.request.response.redirect(
@@ -443,7 +443,7 @@ class BugTaskView(LaunchpadView):
             # Consider that the current user may have been "locked out"
             # of a bug if they unsubscribed themselves from a private
             # bug!
-            if helpers.check_permission("launchpad.View", current_bug):
+            if check_permission("launchpad.View", current_bug):
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
                 return (
@@ -719,7 +719,7 @@ class BugTaskEditView(GeneralFormView):
                 (product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
-                helpers.check_permission("launchpad.Edit", product_or_distro)))
+                check_permission("launchpad.Edit", product_or_distro)))
 
     def userCanEditImportance(self):
         """Can the user edit the Importance field?
@@ -733,7 +733,7 @@ class BugTaskEditView(GeneralFormView):
                 (product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
-                helpers.check_permission("launchpad.Edit", product_or_distro)))
+                check_permission("launchpad.Edit", product_or_distro)))
 
     def _getProductOrDistro(self):
         """Return the product or distribution relevant to the context."""
@@ -759,23 +759,6 @@ class BugTaskEditView(GeneralFormView):
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        comment_on_change = self.request.form.get(
-            "%s.comment_on_change" % self.prefix)
-        if comment_on_change:
-            # There was a comment on this change, so make sure that a
-            # change was actually made.
-            changed = False
-            for field_name in data:
-                current_value = getattr(bugtask, field_name)
-                if current_value != data[field_name]:
-                    changed = True
-                    break
-
-            if not changed:
-                # Pass the change comment error message as a list because
-                # WidgetsError expects a list.
-                raise WidgetsError([
-                    "You provided a change comment without changing anything."])
         if bugtask.distrorelease is not None:
             distro = bugtask.distrorelease.distribution
         else:
@@ -1583,6 +1566,17 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IDistributionSourcePackage(self.context, None)
 
+    def getBugsFixedElsewhereInfo(self):
+        """Return a dict with count and URL of bugs fixed elsewhere."""
+        fixed_elsewhere = self.context.searchTasks(
+            BugTaskSearchParams(self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            only_resolved_upstream=True, omit_dupes=True))
+        search_url = (
+            "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
+                canonical_url(self.context))
+        return dict(count=fixed_elsewhere.count(), url=search_url)
+
 
 class BugTargetView(LaunchpadView):
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""
@@ -1703,7 +1697,7 @@ class BugTaskTableRowView(LaunchpadView):
         """Return the proper link to the bugtask whether it's editable."""
         user = getUtility(ILaunchBag).user
         bugtask = self.context
-        if helpers.check_permission('launchpad.Edit', user):
+        if check_permission('launchpad.Edit', user):
             return canonical_url(bugtask) + "/+editstatus"
         else:
             return canonical_url(bugtask) + "/+viewstatus"

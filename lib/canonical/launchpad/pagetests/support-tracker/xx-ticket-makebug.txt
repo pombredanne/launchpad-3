@@ -61,7 +61,7 @@ and description and redirects the user to the bug page.
   W3C SVG demo doesn't work in Firefox
   >>> for tag in soup('p'):
   ...     print tag.string
-  Browsing to the W3C SVG demo results in a blank page.
+  Browsing to the W3C SVG demo results in a blank page...
 
 The bug page will display a link to the originating ticket in the 'Related
 tickets' portlet:

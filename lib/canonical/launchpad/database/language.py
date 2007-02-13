@@ -5,10 +5,13 @@ __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, IntCol, BoolCol
-from sqlobject import SQLRelatedJoin, SQLObjectNotFound
+from sqlobject import (StringCol, IntCol, BoolCol,
+    SQLRelatedJoin, SQLObjectNotFound)
+
 from canonical.database.sqlbase import SQLBase
-from canonical.lp.dbschema import EnumCol, TextDirection
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import TextDirection
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)

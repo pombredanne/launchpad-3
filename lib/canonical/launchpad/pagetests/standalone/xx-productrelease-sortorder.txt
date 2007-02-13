@@ -21,14 +21,7 @@ Start by going to the firefox page.
 
    >>> user_browser.open('http://launchpad.dev/firefox')
 
-Check the portlet order:
-
-   >>> print_portlet_area_series(user_browser.contents)
-   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
-   <small>(development focus)</small>
-   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
-
-And now the content order.  Again, development focus at the top:
+Check the series order. Development focus is at the top:
 
    >>> print_content_area_series(user_browser.contents)
    <a href="http://launchpad.dev/firefox/trunk">trunk</a>
@@ -45,15 +38,7 @@ And go back to the main product page
 
    >>> user_browser.getLink('Mozilla Firefox').click()
 
-And check the ordering of the series.
-
-   >>> print_portlet_area_series(user_browser.contents)
-   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
-   <small>(development focus)</small>
-   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
-   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
-
-And now the content order.  Again, development focus at the top:
+And check the ordering of the series. Again, development focus at the top:
 
    >>> print_content_area_series(user_browser.contents)
    <a href="http://launchpad.dev/firefox/trunk">trunk</a>
@@ -71,13 +56,6 @@ the name of the Change control as there are now more than one.
    >>> user_browser.getControl(name='UPDATE_SUBMIT').click()
 
 And now check the ordering of the series:
-
-   >>> print_portlet_area_series(user_browser.contents)
-   <a href="http://launchpad.dev/firefox/1.5">1.5</a>
-   <small>(development focus)</small>
-   <a href="http://launchpad.dev/firefox/1.0">1.0</a>
-   <a href="http://launchpad.dev/firefox/trunk">trunk</a>
-
 
    >>> print_content_area_series(user_browser.contents)
    <a href="http://launchpad.dev/firefox/1.5">1.5</a>
