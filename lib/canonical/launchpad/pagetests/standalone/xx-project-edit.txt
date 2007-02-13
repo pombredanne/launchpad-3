@@ -1,13 +1,16 @@
-Test that the project edit page loads.
+= Editing a Project =
+
+The owner of a project can edit its details.
 
   >>> user_browser.open('http://launchpad.dev/gnome')
   >>> user_browser.getLink('Edit Project Details').click()
-  >>> print user_browser.contents
-  <...
-            <h1>Change project details</h1>
-  ...
+  >>> user_browser.title
+  'The GNOME Project project details'
 
-Test that the project edit page works when we POST changes.
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup.first('h1').renderContents()
+  Change project details
 
   >>> user_browser.getControl(name='field.name').value = 'new-name'
   >>> user_browser.getControl('Display Name').value = 'New Name'
@@ -28,7 +31,7 @@ Regular users can't access the +review page.
   ...
   LinkNotFoundError
 
-Test that we can access the +review page as a LP admin.
+But administrators can access the page:
 
   >>> admin_browser.open('http://launchpad.dev/new-name')
   >>> admin_browser.getLink('Administer').click()
@@ -36,10 +39,12 @@ Test that we can access the +review page as a LP admin.
   >>> admin_browser.url
   'http://launchpad.dev/new-name/+review'
 
-  >>> print admin_browser.contents
-  <...
-        <h1>Review upstream project details</h1>
-  ...
+  >>> admin_browser.title
+  'New Title project details'
+
+  >>> soup = BeautifulSoup(admin_browser.contents)
+  >>> print soup.first('h1').renderContents()
+  Review upstream project details
 
 Mark the project as reviewed.
 

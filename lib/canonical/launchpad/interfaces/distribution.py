@@ -16,8 +16,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -29,8 +29,8 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, IKarmaContext):
+class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                    ISpecificationTarget, IHasSecurityContact, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -103,15 +103,6 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "distribution"),
-        required=False, vocabulary='ValidPersonOrTeam')
-    driver = Choice(
-        title=_("Driver"),
-        description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted for any release in this "
-            "distribution. Note that you can also specify a driver "
-            "on each release who's permissions will be limited to that "
-            "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "

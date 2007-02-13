@@ -17,7 +17,6 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
-    'ProductAppointDriverView',
     'ProductAddSeriesView',
     'ProductRdfView',
     'ProductSetView',
@@ -49,7 +48,6 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.productseries import get_series_branch_error
@@ -496,12 +494,6 @@ class ProductEditView(SQLObjectEditView):
         else:
             productset = getUtility(IProductSet)
             self.request.response.redirect(canonical_url(productset))
-
-
-class ProductAppointDriverView(AppointDriverView):
-    """View class that lets you appoint the Product's driver."""
-
-    schema = IProduct
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):

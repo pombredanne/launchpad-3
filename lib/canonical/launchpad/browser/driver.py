@@ -5,16 +5,15 @@
 __metaclass__ = type
 __all__ = ["AppointDriverView"]
 
+from canonical.launchpad.interfaces import IHasAppointedDriver
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadEditFormView, action)
 
+
 class AppointDriverView(LaunchpadEditFormView):
-    """Base class for appointing a driver to an object.
+    """Browser view for appointing a driver to an object."""
 
-    Overwrite schema with context's schema.
-    """
-
-    schema = None
+    schema = IHasAppointedDriver
     field_names = ['driver']
 
     @action('Change', name='change')

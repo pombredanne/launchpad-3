@@ -15,8 +15,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
-    valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IKarmaContext, PillarNameField, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -28,7 +28,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -74,18 +75,6 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
     datecreated = TextLine(
         title=_('Date Created'),
         description=_("""The date this project was created in Launchpad."""))
-
-    driver = Choice(
-        title=_("Driver"),
-        description=_(
-            "This is a project-wide appointment, think carefully here! "
-            "This person or team will be able to set feature goals and "
-            "approve bug targeting and backporting for ANY series in "
-            "ANY product in this project. You can also appoint drivers "
-            "at the level of a specific product or series. So you may "
-            "just want to leave this space blank, and instead let the "
-            "individual products and series have drivers."),
-        required=False, vocabulary='ValidPersonOrTeam')
 
     homepageurl = URIField(
         title=_('Homepage URL'),

@@ -9,7 +9,6 @@ __all__ = [
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
-    'DistroReleaseAppointDriverView',
     'DistroReleaseAddView',
     ]
 
@@ -30,7 +29,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -288,12 +286,6 @@ class DistroReleaseEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
-
-
-class DistroReleaseAppointDriverView(AppointDriverView):
-    """View class that lets you appoint the DistroRelease's driver."""
-
-    schema = IDistroRelease
 
 
 class DistroReleaseAddView(AddView):

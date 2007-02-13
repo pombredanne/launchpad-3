@@ -34,7 +34,7 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver'
     ]
 
 
@@ -278,6 +278,13 @@ class IHasDrivers(Interface):
     distribution releases and product series.
     """
     drivers = Attribute("A list of drivers")
+
+
+class IHasAppointedDriver(Interface):
+    """An object that has an appointed driver."""
+
+    driver = Choice(
+        title=_("Driver"), required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IHasAssignee(Interface):

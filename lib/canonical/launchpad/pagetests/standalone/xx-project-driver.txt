@@ -1,3 +1,5 @@
+= Appointing a Project Driver =
+
 Appoint Sample Person as the driver of the GNOME Project.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -12,7 +14,8 @@ Appoint Sample Person as the driver of the GNOME Project.
   >>> browser.getControl('Driver').value = 'name12'
   >>> browser.getControl('Change').click()
 
-Redirect to the project's overview page.
+After changing the driver, the user is redirected to the overview page where a 
+message inform him of the driver change.
 
   >>> browser.url
   'http://launchpad.dev/gnome'

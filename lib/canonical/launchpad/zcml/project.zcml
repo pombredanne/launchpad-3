@@ -147,15 +147,6 @@
         lp:url="/projects/$Project.name/+changetranslators" />
 
     <browser:page
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectAppointDriverView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver" />
-
-    <browser:page
         name="+newproduct"
         for="canonical.launchpad.interfaces.IProject"
         facet="overview"

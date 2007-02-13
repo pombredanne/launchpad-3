@@ -9,7 +9,6 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
-           'ProductSeriesAppointDriverView',
            'ProductSeriesSourceView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
@@ -35,7 +34,6 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -405,13 +403,6 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-
-class ProductSeriesAppointDriverView(AppointDriverView):
-    """View class that lets you appoint a driver for a ProductSeries object."""
-
-    schema = IProductSeries
-
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):

@@ -12,7 +12,6 @@ __all__ = [
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
-    'ProjectAppointDriverView',
     'ProjectSetNavigation',
     'ProjectSetView',
     'ProjectRdfView',
@@ -33,7 +32,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.ticket import TicketAddView
-from canonical.launchpad.browser.driver import AppointDriverView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -215,12 +213,6 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project details"
     field_names = ['name', 'owner', 'active', 'reviewed']
-
-
-class ProjectAppointDriverView(AppointDriverView):
-    """View class that lets you appoint the Project's driver."""
-
-    schema = IProject
 
 
 class ProjectAddProductView(LaunchpadFormView):

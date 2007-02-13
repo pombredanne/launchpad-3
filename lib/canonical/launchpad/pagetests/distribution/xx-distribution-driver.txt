@@ -1,3 +1,5 @@
+= Appointing a Distribution Driver =
+
 Appoint Sample Person as the driver of the Ubuntu distribution.
 
   >>> browser.addHeader(
@@ -13,7 +15,8 @@ Appoint Sample Person as the driver of the Ubuntu distribution.
   >>> browser.getControl('Driver').value = 'name12'
   >>> browser.getControl('Change').click()
 
-Redirect to the distribution's overview page.
+After changing the driver, the user is redirected to the overview page where a
+message inform him of the driver change.
 
   >>> browser.url
   'http://launchpad.dev/ubuntu'
@@ -28,4 +31,3 @@ Sample Person is listed as the driver of the distribution.
   ...     browser.contents, 'Ubuntu distribution details')
   >>> project_portlet.find(text='Driver:').findNext('a').string
   u'Sample Person'
-

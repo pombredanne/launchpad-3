@@ -1,3 +1,5 @@
+= Appointing a DistroRelease Driver =
+
 Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
 
   >>> browser.addHeader(
@@ -13,7 +15,8 @@ Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
   >>> browser.getControl('Driver').value = 'name12'
   >>> browser.getControl('Change').click()
 
-Redirect to the distro release overview page.
+After changing the driver, the user is redirected to the overview page where a 
+message inform him of the driver change.
 
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary'
@@ -27,4 +30,3 @@ Sample Person is listed as the driver of Hoary.
   >>> project_portlet = find_portlet(browser.contents, 'Hoary release details')
   >>> project_portlet.find(text='Drivers:').findNext('a').string
   u'Sample Person'
-

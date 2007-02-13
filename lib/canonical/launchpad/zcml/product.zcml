@@ -267,14 +267,6 @@
         template="../templates/product-bugcontact.pt"
         lp:url="/$Product.name/+bugcontact" />
 
-    <browser:page
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductAppointDriverView"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver" />
-
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProduct"

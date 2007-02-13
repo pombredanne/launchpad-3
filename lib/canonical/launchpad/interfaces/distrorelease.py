@@ -14,14 +14,15 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationGoal)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationGoal)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
@@ -61,13 +62,6 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
-    driver = Choice(
-        title=_("Driver"),
-        description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted to this release of the "
-            "distribution."),
-        required=False, vocabulary='ValidPersonOrTeam')
     changeslist = TextLine(
         title=_("Changeslist"), required=True,
         description=_("The changes list address for the distrorelease."),

@@ -1,3 +1,5 @@
+= Appointing a Product Series Driver =
+
 Appoint Sample Person as the driver of Firefox 1.0 series.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -12,7 +14,8 @@ Appoint Sample Person as the driver of Firefox 1.0 series.
   >>> browser.getControl('Driver').value = 'name12'
   >>> browser.getControl('Change').click()
 
-Redirect to the series' overview page.
+After changing the driver, the user is redirected to the overview page where a
+message inform him of the driver change.
 
   >>> browser.url
   'http://launchpad.dev/firefox/1.0'
@@ -27,4 +30,3 @@ Sample Person is listed as the driver of Firefox 1.0.
   ...     browser.contents, 'Mozilla Firefox Series: 1.0')
   >>> project_portlet.find(text='Drivers:').findNext('a').string
   u'Sample Person'
-
