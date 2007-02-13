@@ -199,7 +199,7 @@ class PersonSetNavigation(Navigation):
             raise NotFoundError(name)
         # Redirect to /~name
         return self.redirectSubTree(canonical_url(person))
-            
+
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
@@ -298,10 +298,8 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def support(self):
-        text = 'Support'
-        summary = (
-            'Support requests that %s is involved with' %
-            self.context.browsername)
+        text = 'Answers'
+        summary = 'Questions that involves %s' % self.context.browsername
         return Link('+tickets', text, summary)
 
     def translations(self):
@@ -2507,13 +2505,13 @@ class PersonSearchTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests involving $name',
+        return _('Questions involving $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests involving $name found with the '
+        return _('No questions  involving $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2530,13 +2528,13 @@ class SearchAnsweredTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests answered by $name',
+        return _('Questions answered by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests answered by $name found with the '
+        return _('No questions answered by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2553,13 +2551,13 @@ class SearchAssignedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests assigned to $name',
+        return _('Questions assigned to $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests assigned to $name found with the '
+        return _('No questions assigned to $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2576,13 +2574,13 @@ class SearchCommentedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests commented on by $name ',
+        return _('Questions commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests commented on by $name found with the '
+        return _('No questions commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2599,13 +2597,13 @@ class SearchCreatedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests created by $name',
+        return _('Questions asked by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests created by $name found with the '
+        return _('No questions asked by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2622,13 +2620,13 @@ class SearchNeedAttentionTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests needing $name attention',
+        return _('Questions needing $name attention',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests need $name attention.',
+        return _('No questions need $name attention.',
                  mapping=dict(name=self.context.displayname))
 
 
@@ -2644,13 +2642,13 @@ class SearchSubscribedTicketsView(SearchTicketsView):
     @property
     def pageheading(self):
         """See SearchTicketsView."""
-        return _('Support requests $name is subscribed to',
+        return _('Questions $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
-        return _('No support requests subscribed to by $name found with the '
+        return _('No questions subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
@@ -2663,30 +2661,30 @@ class PersonSupportMenu(ApplicationMenu):
              'subscribed']
 
     def answered(self):
-        summary = 'Support requests answered by %s' % self.context.displayname
+        summary = 'Questions answered by %s' % self.context.displayname
         return Link('+answeredtickets', 'Answered', summary, icon='ticket')
 
     def assigned(self):
-        summary = 'Support requests assigned to %s' % self.context.displayname
+        summary = 'Questions assigned to %s' % self.context.displayname
         return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
 
     def created(self):
-        summary = 'Support requests created by %s' % self.context.displayname
-        return Link('+createdtickets', 'Created', summary, icon='ticket')
+        summary = 'Questions asked by %s' % self.context.displayname
+        return Link('+createdtickets', 'Asked', summary, icon='ticket')
 
     def commented(self):
-        summary = 'Support requests commented on by %s' % (
+        summary = 'Questions commented on by %s' % (
             self.context.displayname)
         return Link('+commentedtickets', 'Commented', summary, icon='ticket')
 
     def need_attention(self):
-        summary = 'Support requests needing %s attention' % (
+        summary = 'Questions needing %s attention' % (
             self.context.displayname)
         return Link('+needattentiontickets', 'Need Attention', summary,
                     icon='ticket')
 
     def subscribed(self):
         text = 'Subscribed'
-        summary = 'Support requests subscribed to by %s' % (
+        summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
         return Link('+subscribedtickets', text, summary, icon='ticket')

@@ -19,18 +19,18 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 metal:fill-slot="heading"
-        i18n:translate="">Reject support request</h1>
+        i18n:translate="">Reject question</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      If this support request is a hoax, spam, a test, or sample data, it should
+      If this quesiton is an hoax, spam, a test, or sample data, it should
       be rejected.
     </p>
   </div>
 </div>
 
-<p metal:fill-slot="help">Rejecting a support request will change its status
+<p metal:fill-slot="help">Rejecting a question will change its status
   to <emph>Invalid</emph>. By default, it won't appear in listings anymore.
-  Give an appropriate reason why you are rejecting the request.
+  Give an appropriate reason why you are rejecting the question.
 </p>
 </body>
 </html>

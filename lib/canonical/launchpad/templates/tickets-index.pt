@@ -96,7 +96,7 @@
                         </ul>
                         <div id="latest-requests-made" class="left">
 
-      <h2 i18n:translate="">Latest requests made</h2>
+      <h2 i18n:translate="">Latest questions asked</h2>
       <table>
         <tal:ticket
           repeat="ticket view/latest_requests_made"
@@ -107,7 +107,7 @@
                         </div>
                         <div id="latest-requests-resolved" class="right">
 
-      <h2 i18n:translate="">Latest requests resolved</h2>
+      <h2 i18n:translate="">Latest questions solved</h2>
       <table>
         <tal:ticket
           repeat="ticket view/latest_requests_resolved"
@@ -136,14 +136,14 @@
 
   <metal:help fill-slot="help">
     <p>This page gives you a quick overview of the recent
-    activity in the Launchpad support tracker.
+    activity in the Launchpad Answer Tracker.
     </p>
-    <p>To post a new support request, navigate to the product or distribution
-      you are having a problem with and use the <emph>Request Support</emph>
+    <p>To post a new question, navigate to the product or distribution
+      you are having a problem with and use the <emph>Ask Question</emph>
       menu item.
     </p>
-    <p><a href="https://help.launchpad.net/SupportTrackerDocumentation">Extensive
-        documention</a> for the support tracker application is available in the
+    <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
+        documention</a> for the Answer Tracker application is available in the
       Help wiki.</p>
   </metal:help>
 
