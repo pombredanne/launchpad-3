@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
+    "BugTargetBugsView",
     "BugTargetBugTagsView",
     "FileBugViewBase",
     "FileBugAdvancedView",
@@ -31,6 +32,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
@@ -42,6 +44,7 @@ from canonical.launchpad.webapp import (
     urlappend)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.lp.dbschema import BugTaskStatus
 
 
 class FileBugData:
@@ -621,6 +624,69 @@ class BugTargetBugListingView:
                     count=release.open_bugtasks.count()))
 
         return release_buglistings
+
+
+class BugCountDataItem:
+
+    def __init__(self, label, count, color):
+        self.label = label
+        self.count = count
+        if color.startswith('#'):
+            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
+        else:
+            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
+
+class BugTargetBugsView(BugTaskSearchListingView):
+
+    status_color = {
+        BugTaskStatus.UNCONFIRMED: '#993300',
+        BugTaskStatus.NEEDSINFO: 'red',
+        BugTaskStatus.CONFIRMED: 'red',
+        BugTaskStatus.INPROGRESS: 'black',
+        BugTaskStatus.FIXRELEASED: 'black',
+        BugTaskStatus.FIXCOMMITTED: 'black',
+        BugTaskStatus.REJECTED: 'gray',
+        BugTaskStatus.UNKNOWN: 'black',
+    }
+
+    def initialize(self):
+        BugTaskSearchListingView.initialize(self)
+        bug_statuses = [
+            BugTaskStatus.UNCONFIRMED,
+            BugTaskStatus.NEEDSINFO,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.FIXCOMMITTED,
+            ]
+        bug_counts = sorted(
+            self.context.getBugCounts(self.user, bug_statuses).items())
+        self.bug_count_items = [
+            BugCountDataItem(status.title, count, self.status_color[status])
+            for status, count in bug_counts]
+
+    def getChartJavascript(self):
+        js_template = """
+            function drawGraph() {
+                var options = {
+                  "drawBackground": false,
+                  "colorScheme": [%(color_list)s],
+                  "xTicks": [%(label_list)s]};
+                var data = [%(data_list)s];
+                var plotter = PlotKit.EasyPlot(
+                    "pie", options, $("bugs-chart"), [data]);
+            }
+            MochiKit.DOM.addLoadEvent(drawGraph);
+            """
+        color_list = ', '.join(
+            data_item.color for data_item in self.bug_count_items)
+        label_list = ', '.join([
+            '{v:%i, label:"%s"}' % (index, data_item.label)
+            for index, data_item in enumerate(self.bug_count_items)])
+        data_list = ', '.join([
+            '[%i, %i]' % (index, data_item.count)
+            for index, data_item in enumerate(self.bug_count_items)])
+        return js_template % dict(
+            color_list=color_list, label_list=label_list, data_list=data_list)
 
 
 class BugTargetBugTagsView(LaunchpadView):

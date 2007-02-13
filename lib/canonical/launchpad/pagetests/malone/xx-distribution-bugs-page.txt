@@ -1,5 +1,7 @@
 == The Distribution Bugs Page ==
 
+== Bugs Fixed Elsewhere ==
+
 The Bugs frontpage for a distribution includes the number of bugs that are
 fixed in some other context.
 
@@ -21,3 +23,21 @@ The link takes you to the list of the bugs fixed elsewhere.
     <...
     <p>There are currently no open bugs.</p>
     ...
+
+== Open Bugs Statistics ==
+
+There's also some statistics about the open bugs for the distribution.
+This is displayed as a chart, which is generated using Javascript, but
+for those browsers not supporting Javascript, the statistics are displayed
+as normal text:
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')
+    >>> for li_tag in stats_div.noscript.ul('li'):
+    ...     print li_tag.renderContents()
+    3 Unconfirmed bugs
+    0 Needs Info bugs
+    1 Confirmed bugs
+    0 In Progress bugs
+    0 Fix Committed bugs
+
