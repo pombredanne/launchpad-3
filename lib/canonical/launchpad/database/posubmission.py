@@ -12,7 +12,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
@@ -51,8 +51,8 @@ class POSubmission(SQLBase):
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
     validationstatus = EnumCol(dbName='validationstatus', notNull=True,
         schema=TranslationValidationStatus)
-    active = BoolCol(notNull=True, default=DEFAULT)
-    published = BoolCol(notNull=True, default=DEFAULT)
+    active = BoolCol(notNull=True, default=False)
+    published = BoolCol(notNull=True, default=False)
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is
