@@ -13,9 +13,9 @@ Files:
  4999f1c0e4e7e4364fa781c202a8ad22 665 foo_2.9-2.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFEGUgdK8hAFiBoeJURAkzgAKDMVdFeszeRkaGomtl10uLr0hqNrACfUDNh
-gzZO9gz3WZCr8UjJ3A8VJD8=
-=1vVs
+iD8DBQFFt8Iijn63CGxkqMURAv7OAJ9Rk+bxzmH+yvq90FLB8rYp1V+pVACgm0RI
+KIBUKJqtEnTyl0M64ljUFBM=
+=Pyfw
 -----END PGP SIGNATURE-----

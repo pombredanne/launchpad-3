@@ -125,20 +125,20 @@ class IHostedBranchStorage(Interface):
     """
 
     def getBranchesForUser(personID):
-        """Lists all branches owned by a particular user, grouped by product.
-        
+        """Return all branches owned by a particular user, grouped by product.
+
         :returns: a list like::
             [(product id, product name, [(branch id, branch name), ...]), ...]
         """
 
     def fetchProductID(productName):
-        """Lookup the database ID for a product name.
+        """Return the database ID for a product name.
         
         :returns: a product ID.
         """
 
     def createBranch(personID, productID, branchName):
-        """Registers a new hosted branch in Launchpad.
+        """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user pushes a
         new branch to it.  See also

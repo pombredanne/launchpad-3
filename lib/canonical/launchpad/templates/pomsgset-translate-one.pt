@@ -1,7 +1,7 @@
 <tal:language-code
   define="language_code context/pofile/language/code">
 <tr class="translation">
-  <td>
+  <td class="icon left right">
     <a tal:attributes="href view/zoom_url"><img tal:attributes="
           alt view/zoom_alt;
           title view/zoom_alt;
@@ -17,7 +17,7 @@
         />
     </div>
   </td>
-  <th style="border-style: dotted; border-width: 1px 0 0;">
+  <th>
     <label class="language-code" tal:condition="not:view/is_plural">
       English:
     </label>
@@ -73,7 +73,7 @@
   tal:condition="view/msgid_has_tab"
   class="discreet secondary translation">
   <td colspan="3" />
-  <th>
+  <th class="icon left right">
     <img alt="Note:" src="/@@/info" title="This is a note to translators" />
   </th>
   <td>
@@ -87,7 +87,7 @@
   class="discreet secondary translation"
 >
   <td colspan="3" />
-  <th>
+  <th class="icon left right">
     <img alt="Note:" src="/@@/info" title="This is a note to translators" />
   </th>
   <td>
@@ -104,7 +104,7 @@
   class="discreet secondary translation"
 >
   <td colspan="3" />
-  <th>
+  <th class="icon left right">
     <img alt="Note:" src="/@@/info" title="This is a note to translators" />
   </th>
   <td>
@@ -121,7 +121,7 @@
   class="discreet secondary translation"
 >
   <td colspan="3" />
-  <th>
+  <th class="icon left right">
     <img alt="Developer note:" src="/@@/info"
          title="This is a note to translators by the software developer" />
   </th>
@@ -154,7 +154,7 @@
       </th>
       <tal:with-content
            condition="translation_dictionary/active_translation">
-        <td>
+        <td class="icon left right">
           <tal:logged-in condition="request/lp:person">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
@@ -193,6 +193,7 @@
             current translation
           </div>
           <label
+            style="white-space: normal"
             tal:content="structure translation_dictionary/active_translation"
             tal:condition="view/user_is_official_translator"
             tal:attributes="
@@ -206,7 +207,7 @@
       </tal:with-content>
       <tal:without-content
         condition="not: translation_dictionary/active_translation">
-        <td>
+        <td class="icon left right">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
               type="radio"
@@ -285,7 +286,7 @@
             for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select;
             " >New translation:</label>
       </th>
-      <td>
+      <td class="icon left right">
         <tal:user-is-official-translator condition="view/user_is_official_translator">
           <input
             type="radio"
@@ -373,8 +374,8 @@
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview
-              " />
+              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
+            />
           <tal:block condition="not:view/is_plural">
             Someone should review this translation
           </tal:block>

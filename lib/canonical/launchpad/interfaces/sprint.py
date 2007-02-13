@@ -14,14 +14,13 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bytes, Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import (
+    ContentNameField, SmallImageUpload, LargeImageUpload)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
-from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi)
 
 
 class SprintNameField(ContentNameField):
@@ -69,19 +68,17 @@ class ISprint(IHasOwner, IHasSpecifications):
             "The content of this meeting's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = Bytes(
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this meeting."),
-        constraint=valid_emblem)
-    gotchi = Bytes(
-        title=_("Gotchi"), required=False,
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this meeting."))
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "this meeting's home page. It should be no bigger than 50k "
-            "in size. "),
-        constraint=valid_gotchi)
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this meeting's home page. It should be no bigger than 100k "
+            "in size. "))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
@@ -150,7 +147,6 @@ class ISprintSet(Interface):
         """Get a specific Sprint."""
 
     def new(owner, name, title, time_starts, time_ends, summary=None,
-        description=None):
+            description=None, gotchi=None, emblem=None):
         """Create a new sprint."""
-
 

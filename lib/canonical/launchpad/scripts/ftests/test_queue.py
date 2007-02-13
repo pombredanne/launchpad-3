@@ -11,6 +11,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroReleaseQueueSet)
 from canonical.launchpad.mail import stub
@@ -26,6 +27,14 @@ from canonical.testing import LaunchpadZopelessLayer
 
 class TestQueueBase(TestCase):
     """Base methods for queue tool test classes."""
+
+    def setUp(self):
+        # Switch database user and set isolation level to READ COMMIITTED
+        # to avoid SERIALIZATION exceptions with the Librarian.
+        LaunchpadZopelessLayer.alterConnection(
+                dbuser=self.dbuser,
+                isolation=READ_COMMITTED_ISOLATION
+                )
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -57,6 +66,7 @@ class TestQueueTool(TestQueueBase):
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
         fillLibrarianFile(1)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk."""
@@ -364,6 +374,7 @@ class TestQueueToolInJail(TestQueueBase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk.
