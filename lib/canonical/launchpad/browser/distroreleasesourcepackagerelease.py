@@ -19,10 +19,11 @@ from canonical.launchpad.webapp import (
 
 
 class DistroReleaseSourcePackageReleaseFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A DistroReleaseSourcePackageRelease is not a structural
+    # object. It should inherit all navigation from its distro release.
 
     usedfor = IDistroReleaseSourcePackageRelease
     enable_only = ['overview', ]
-
 
 
 class DistroReleaseSourcePackageReleaseOverviewMenu(ApplicationMenu):

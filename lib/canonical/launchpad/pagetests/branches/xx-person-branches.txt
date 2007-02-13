@@ -49,11 +49,13 @@ This informative message should also appear in the detailed branch listing.
 Branches that are owned by a team that the user is a member of, they are
 shown as 'Team Branch'.
 
-  >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-  >>> table = find_tag_by_id(browser.contents, 'branchtable')
-  >>> for row in table.tbody.fetch('tr'):
-  ...     print extract_text(row)
-  main   ~vcs-imports/evolution/main   60 New   evolution   40 Team Branch
+## Disabled due to Bug #84855 -- StuartBishop 20070213
+##
+##   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
+##   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+##   >>> for row in table.tbody.fetch('tr'):
+##   ...     print extract_text(row)
+##   main   ~vcs-imports/evolution/main   60 New   evolution   40 Team Branch
   
   
 == Authored Branches ==
@@ -109,8 +111,8 @@ are visible to the user.
   ...   table = find_tag_by_id(contents, 'branchtable')
   ...   for row in table.tbody.fetch('tr'):
   ...     cells = row.fetch('td')
-  ...     name = cells[0].renderContents()
-  ...     status = cells[-3].fetch('span')[-1].renderContents()
+  ...     name = cells[0].a.renderContents()
+  ...     status = cells[2].fetch('span')[-1].renderContents()
   ...     print name, status
 
 

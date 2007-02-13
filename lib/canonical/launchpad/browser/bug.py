@@ -252,6 +252,7 @@ class BugView:
     """
 
     def __init__(self, context, request):
+        self.current_bugtask = context
         self.context = IBug(context)
         self.request = request
         self.user = getUtility(ILaunchBag).user
@@ -781,11 +782,11 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         # Store the current bug in an attribute of the view, so that
         # ZPT rendering code can access it.
         self.bug = getUtility(ILaunchBag).bug
+        self.current_bugtask = getUtility(ILaunchBag).bugtask
 
     def changed(self):
         """Redirect to the bug page."""
-        bugtask = getUtility(ILaunchBag).bugtask
-        self.request.response.redirect(canonical_url(bugtask))
+        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class DeprecatedAssignedBugsView:

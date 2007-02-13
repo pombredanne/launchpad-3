@@ -11,9 +11,10 @@
           name="main_template"
           template="../launchpad/templates/main-template.pt"
           />
+      <!--  XXX mpt 20061004: main_template_2col is deprecated. -->
       <browser:page
           name="main_template_2col"
-          template="../launchpad/templates/main-template-2col.pt"
+          template="../launchpad/templates/main-template.pt"
           />
   </browser:pages>
 

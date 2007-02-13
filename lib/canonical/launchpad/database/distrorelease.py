@@ -69,7 +69,8 @@ from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.queue import (
+    DistroReleaseQueue, PackageUploadQueue)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
@@ -921,6 +922,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
                                   changesfile=changes_file)
+
+    def getPackageUploadQueue(self, state):
+        """See IDistroRelease."""
+        return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):

@@ -108,7 +108,6 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
-            
     @property
     def mentoring_offers(self):
         """See IProject"""
@@ -129,6 +128,17 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
             clauseTables=['Product', 'BugTask'],
             distinct=True)
         return via_specs.union(via_bugs)
+
+    def translatables(self):
+        """See IProject."""
+        return Product.select('''
+            Product.project = %s AND
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''' % sqlvalues(self),
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
 
     @property
     def has_any_specifications(self):

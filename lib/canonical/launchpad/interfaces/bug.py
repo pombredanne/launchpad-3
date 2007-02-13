@@ -11,6 +11,7 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
@@ -394,6 +395,13 @@ class IBugAddForm(IBug):
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
         required=True)
+
+
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Product"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
 
 
 class IBugSet(Interface):

@@ -6,6 +6,7 @@ __all__ = [
     'PersonNavigation',
     'TeamNavigation',
     'PersonSetNavigation',
+    'PersonSOP',
     'PeopleContextMenu',
     'PersonFacets',
     'PersonBranchesMenu',
@@ -97,6 +98,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, BugTaskSearchParams)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -202,6 +204,27 @@ class PersonSetNavigation(RedirectionNavigation):
             return RedirectionNavigation.traverse(self, '~' + me.name)
         finally:
             self.redirection_status = 301
+
+
+class PersonSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class PeopleContextMenu(ContextMenu):
@@ -1223,6 +1246,20 @@ class PersonLanguagesView(LaunchpadView):
 
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
+
+    @cachedproperty
+    def recently_approved_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.APPROVED,
+            orderBy='-TeamMembership.datejoined')
+        return members[:5]
+
+    @cachedproperty
+    def recently_proposed_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.PROPOSED,
+            orderBy='-TeamMembership.datejoined')
+        return members[:5]
 
     @cachedproperty
     def openpolls(self):

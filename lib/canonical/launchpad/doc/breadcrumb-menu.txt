@@ -36,7 +36,7 @@ the sitemap.  As there is just a single <li> element, it gets the CSS class
 "last".  The URL of "/" is hardcoded for the first breadcrumb.
 
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
+    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
 
 
 With a single breadcrumb, we get the "Launchpad" breadcrumb and the
@@ -44,7 +44,7 @@ popup site map.  As it is the only breadcrumb, it gets the CSS class "last".
 
     >>> request.addCrumb('http://localhost', 'Launchpad')
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
+    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
@@ -53,8 +53,8 @@ of "last".
 
     >>> request.addCrumb('http://localhost/people', 'People')
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
-    <li class="item"><a href="http://localhost/people">People</a></li>
+    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
+    <li class="item"><a href="http://localhost/people"><em>People</em></a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
@@ -63,7 +63,7 @@ class of "last".
 
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><img src="/@@/launchpad" alt="" /> Launchpad</a></li>
-    <li class="item"><a href="http://localhost/people">People</a></li>
-    <li class="item"><a href="http://localhost/people/someone">Someone</a></li>
+    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
+    <li class="item"><a href="http://localhost/people"><em>People</em></a></li>
+    <li class="item"><a href="http://localhost/people/someone"><em>Someone</em></a></li>
 
