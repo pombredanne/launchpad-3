@@ -1,48 +1,101 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one" />
-
-<metal:rightportlets fill-slot="portlets_two" />
-
-  <div metal:fill-slot="main">
-    <h1 i18n:translate="">Support Tracker</h1>
-
-    <p i18n:translate="">Launchpad includes a full technical support request
-      tracker. Your users can file support requests and your community can
-      help to resolve those requests.
-    </p>
-
-    <p id="requests-count"
-        i18n:translate="">The support tracker contains
-      <tal:count i18n:name="count" tal:content="view/requests_count">
-        318
-      </tal:count> requests.
-    </p>
-
-    <div id="search-tickets">
-      <h2 i18n:translate="">Search All Tickets</h2>
-
-      <form method="get" action="+tickets">
-        <input class="textType" id="field.search_text"
-               name="field.search_text" size="20" type="text" value=""  />
-
-        <input type="submit" id="field.actions.search"
-                name="field.actions.search" value="Search" class="button" />
+      i18n:domain="rosetta"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <div
+        id="applications"
+        tal:content="structure context/@@+applicationbuttons/answers"
+      />
+      <div id="mainarea" class="tab-translations">
+        <h1>Answers</h1>
+        <div class="t">
+          <div class="u">
+            <div class="v">
+              <div class="w">
+                <div class="x">
+                  <div class="y">
+                    <div class="z">
+                      <div id="container">
+                        <form class="central" action="+tickets" method="get">
+                          <table style="margin-left: 0;">
+                            <tbody>
+                              <tr>
+                                <td style="text-align: right;">
+                                  <input
+                                    id="text"
+                                    type="text"
+                                    name="field.search_text"
+                                    size="50"
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    name="field.actions.search"
+                                    type="submit"
+                                    value="Search Questions"
+                                  />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="text-align: right;">
+                                  <label>
+                                    <input
+                                      name="scope"
+                                      type="radio"
+                                      value="all"
+                                      checked="checked"
+                                    />
+                                    All projects
+                                  </label>
+                                  <label>
+                                    <input
+                                      name="scope"
+                                      type="radio"
+                                      value="project"
+                                      onclick="document.getElementById('project').focus();"
+                                    />
+                                    One project:
+                                    <input
+                                      id="project"
+                                      name="project"
+                                      type="text"
+                                    />
+                                  </label>
 
         <input type="hidden" name="field.sort" value="by relevancy" />
         <input type="hidden" name="field.status" value="Open" />
         <input type="hidden" name="field.status" value="Needs information" />
         <input type="hidden" name="field.status" value="Answered" />
         <input type="hidden" name="field.status" value="Solved" />
-      </form>
-    </div>
 
-    <div id="latest-requests-made">
+                                </td>
+                                <td>(<a href="choose">Choose&hellip;</a>)</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <div>
+                        </form>
+                        <p id="application-summary">
+                          Launchpad&rsquo;s Answers system lets people
+                          ask questions about products or distributions,
+                          and lets anyone help answer those questions.
+                        </p>
+                        <ul class="buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but_lrg_takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <div id="latest-requests-made" class="left">
+
       <h2 i18n:translate="">Latest requests made</h2>
       <table>
         <tal:ticket
@@ -50,9 +103,10 @@
           content="structure ticket/@@+listing-detailed"
         />
       </table>
-    </div>
 
-    <div id="latest-requests-resolved">
+                        </div>
+                        <div id="latest-requests-resolved" class="right">
+
       <h2 i18n:translate="">Latest requests resolved</h2>
       <table>
         <tal:ticket
@@ -60,8 +114,25 @@
           content="structure ticket/@@+listing-detailed"
         />
       </table>
-    </div>
-  </div>
+
+                        </div>
+                        <p id="application-footer" i18n:translate="">
+                          <tal:count
+                            i18n:name="count"
+                            tal:content="view/requests_count"
+                          >318</tal:count>
+                          questions asked
+                        </p>
+                      </div><!--container-->
+                    </div><!--z-->
+                  </div><!--y-->
+                </div><!--x-->
+              </div><!--w-->
+            </div><!--v-->
+          </div><!--u-->
+        </div><!--t-->
+      </div><!--mainarea-->
+    </div><!--main-->
 
   <metal:help fill-slot="help">
     <p>This page gives you a quick overview of the recent
@@ -75,5 +146,8 @@
         documention</a> for the support tracker application is available in the
       Help wiki.</p>
   </metal:help>
+
   </body>
 </html>
+</tal:layout>
+<!-- 1-0 inprogress needs search of all answers -->
