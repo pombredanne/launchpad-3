@@ -39,3 +39,20 @@ Each entry contains:
   ... ago
   </li>
   </ul>
+
+The link presented points to the SourcePackageRelease inside the
+DistroRelease in question (a IDRSPR), we can check for consistency
+clicking on it:
+
+  >>> anon_browser.getLink("mozilla-firefox 0.9").click()
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9'
+
+Empty results are also presented properly (even if they are quite rare
+in production environment):
+
+  >>> anon_browser.open(
+  ...     "http://launchpad.dev/ubuntu/breezy-autotest/+last-uploads")
+  >>> find_tag_by_id(anon_browser.contents, "last-uploads")
+  <ul id="last-uploads">
+  </ul>

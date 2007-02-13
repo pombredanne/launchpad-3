@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.launchpad.database import (
     Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import ZopelessLayer
@@ -267,6 +267,50 @@ class TestBzrSyncModified(BzrSyncTestCase):
     def tearDown(self):
         self.bzrsync.close()
         BzrSyncTestCase.tearDown(self)
+
+    def test_timestampToDatetime_with_negative_fractional(self):
+        # timestampToDatetime should convert a negative, fractional timestamp
+        # into a valid, sane datetime object.
+        UTC = pytz.timezone('UTC')
+        timestamp = -0.5
+        date = self.bzrsync._timestampToDatetime(timestamp)
+        self.assertEqual(
+            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
+
+    def test_timestampToDatetime(self):
+        # timestampTODatetime should convert a regular timestamp into a valid,
+        # sane datetime object.
+        UTC = pytz.timezone('UTC')
+        timestamp = time.time()
+        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+        self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
+
+    def test_ancient_revision(self):
+        # Test that we can sync revisions with negative, fractional timestamps.
+
+        # Make a negative, fractional timestamp and equivalent datetime
+        UTC = pytz.timezone('UTC')
+        old_timestamp = -0.5
+        old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
+
+        class FakeRevision:
+            """A revision with a negative, fractional timestamp.
+            """
+            revision_id = 'rev42'
+            parent_ids = ['rev1', 'rev2']
+            committer = self.AUTHOR
+            message = self.LOG
+            timestamp = old_timestamp
+            timezone = 0
+
+        # sync the revision
+        self.bzrsync.syncRevision(FakeRevision)
+
+        # Find the revision we just synced and check that it has the correct
+        # date.
+        revision = getUtility(IRevisionSet).getByRevisionId(
+            FakeRevision.revision_id)
+        self.assertEqual(old_date, revision.revision_date)
 
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
