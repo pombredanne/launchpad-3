@@ -24,10 +24,10 @@ from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
-from canonical.launchpad.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
+    IBreadcrumb, ILaunchBag, IOpenLaunchBag, NotFoundError)
 
 
 class DecoratorAdvisor:

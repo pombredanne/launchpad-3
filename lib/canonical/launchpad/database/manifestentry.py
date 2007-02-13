@@ -8,10 +8,11 @@ from zope.interface import implements
 from sqlobject import StringCol, ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IManifestEntry
+from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import ManifestEntryType, ManifestEntryHint
+
+from canonical.launchpad.interfaces import IManifestEntry
 
 
 class ManifestEntry(SQLBase):
