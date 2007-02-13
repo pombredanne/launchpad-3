@@ -827,12 +827,12 @@ class ViewPackageUploadQueue(EditPackageUploadQueue):
 
 class EditDistroReleaseQueue(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
 class ViewDistroReleaseQueue(ViewPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
