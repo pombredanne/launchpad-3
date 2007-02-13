@@ -1,6 +1,6 @@
 = Project and the Support Tracker =
 
-Altough ticket cannot be filed direcly against projects, IProject in
+Although ticket cannot be filed directly against projects, IProject in
 Launchpad also provides the ITicketCollection and
 ISearchableByTicketOwner interfaces.
 
