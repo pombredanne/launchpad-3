@@ -53,15 +53,17 @@ Having set up that infrastructure we need to prepare a breezy distrorelease
 for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
-  >>> ut = Distribution.byName('ubuntutest')
-  >>> ubuntu = Distribution.byName('ubuntu')
-  >>> bat = ubuntu['breezy-autotest']
   >>> from canonical.launchpad.database import DistroReleaseSet
+  >>> ubuntu = Distribution.byName('ubuntu')
+  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> ubuntutest = Distribution.byName('ubuntutest')
   >>> drs = DistroReleaseSet()
-  >>> breezy = drs.new(ut, 'breezy', 'Breezy Badger', 'The Breezy Badger',
-  ...                  'Black and White', 'Someone', '5.10', bat, bat.owner)
-  >>> breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
-  ...                              True, breezy.owner)
+  >>> breezy = drs.new(
+  ...     ubuntutest, 'breezy', 'Breezy Badger', 'The Breezy Badger',
+  ...     'Black and White', 'Someone', '5.10', breezy_autotest,
+  ...     breezy_autotest.owner)
+  >>> breezy_i386 = breezy.newArch(
+  ...     'i386', breezy_autotest['i386'].processorfamily, True, breezy.owner)
   >>> breezy.nominatedarchindep = breezy_i386
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
@@ -376,10 +378,11 @@ created with the binary package name.
 Check behaviour of upload system for uploads across pockets (see
 bug #34089, #58144 and #83976 for further info)
 
-Let's start a new package series by uploading foo_1.0-1 in
+Let's start a new package series by uploading foo_1.0-1  source in
 ubututest/breezy-RELEASE:
 
   >>> expect_okays('foo_1.0-1', upload_policy='sync', is_new=True)
+
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
@@ -387,6 +390,19 @@ ubututest/breezy-RELEASE:
   INFO    NEW: foo_1.0-1.dsc
   INFO     OK: foo_1.0.orig.tar.gz
   INFO     OK: foo_1.0-1.diff.gz
+  ...
+  INFO    Distribution: breezy
+  ...
+
+And its binary:
+
+  >>> expect_okays('foo_1.0-1_binary', upload_policy='anything', is_new=True)
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO    NEW: foo_1.0-1_i386.deb
   ...
   INFO    Distribution: breezy
   ...
@@ -407,6 +423,7 @@ UNAPPROVED queue.
 Upload a newer version of source package "foo" to breezy-backports:
 
   >>> expect_okays('foo_2.9-1', upload_policy='sync')
+
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
@@ -418,6 +435,40 @@ Upload a newer version of source package "foo" to breezy-backports:
   ...
   INFO    Distribution: breezy-backports
   ...
+
+
+In order to verify if the binary ancestry lookup algorithm works we
+will need to build a new DistroArchRelease for powerpc in
+ubuntutest/breezy.
+
+  >>> from canonical.launchpad.database import (
+  ...     ProcessorFamily, Processor)
+  >>> powerpc_pf = ProcessorFamily.selectOneBy(name='powerpc')
+  >>> powerpc_proc = Processor(family=powerpc_pf, name='powerpc',
+  ...                          title='PowerPC G3/G4', description='G3/G4')
+  >>> powerpc_dar = breezy.newArch('powerpc', powerpc_pf, True, breezy.owner)
+  >>> flush_database_updates()
+  >>> transaction.commit()
+
+
+After having the respective DistroArchRelease in place we will submit a
+binary upload for the last source in BACKPORTS. The ancestry should be
+found in i386/RELEASE, because it's the only one available.
+
+  >>> expect_okays('foo_2.9-1_binary', upload_policy='anything')
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
+  DEBUG   foo: (binary) exists in i386/RELEASE
+  ...
+  INFO     OK: foo_2.9-1_powerpc.deb
+  ...
+  INFO    Distribution: breezy-backports
+  ...
+
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
@@ -466,6 +517,33 @@ in PROPOSED:
   ...
   INFO    Distribution: breezy-security
   ...
+
+However, the source upload of a smaller version than the one already
+published inside the target pocket should be rejected:
+
+  >>> expect_okays('foo_1.0-3', upload_policy='sync')
+  Traceback (most recent call last):
+  ...
+  AssertionError: Rejected should be empty: ['foo_1.0-3', 'foo_1.0-3.distro']
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO    Rejected:
+  INFO    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
+  ...
+  INFO    Distribution: breezy-updates
+  ...
+
+Note that the ancestry pointed in the rejection message (2.9-2) is what
+we expect.
+
+Remove rejected upload:
+
+  >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_1.0-3'))
+  >>> os.remove(os.path.join(rejected_dir, 'foo_1.0-3.distro'))
+
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:

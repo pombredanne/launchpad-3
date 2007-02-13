@@ -244,9 +244,9 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: Checking for ed/0.2-20
+  DEBUG: Checking for ed/0.2-20 source ancestry
   DEBUG: ed: (source) NEW
-  DEBUG: Checking for ed/0.2-20/i386
+  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
   DEBUG: ed: (binary) NEW
   DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.

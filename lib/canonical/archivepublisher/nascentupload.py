@@ -1515,8 +1515,8 @@ class NascentUpload:
     def getSourceAncestry(self, uploaded_file):
         """Return the last published source (ancestry) for a given file.
 
-        Return the most recent ISPPH instance matching the given package
-        name or None.
+        Return the most recent ISPPH instance matching the uploaded file
+        package name or None.
         """
         # Only lookup uploads ancestries in target pocket and fallback
         # to RELEASE pocket
@@ -1545,7 +1545,7 @@ class NascentUpload:
         lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = self.distrorelease.getPublishedReleases(
-                self.spn, include_pending=True, pocket=pocket)
+                uploaded_file.package, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
         return None
@@ -1553,8 +1553,12 @@ class NascentUpload:
     def getBinaryAncestry(self, uploaded_file):
         """Return the last published binary (ancestry) for given file.
 
-        Return the most recent IBPPH instance matching the given package
-        name or None.
+        Return the most recent IBPPH instance matching the uploaded file
+        package name or None.
+
+        This method may raise NotFoundError if it is dealing with an
+        uploaded file targeted to an architecture not present in the
+        distrorelease in context. So callsites needs to be aware.
         """
         if uploaded_file.architecture == "all":
             arch_indep = self.distrorelease.nominatedarchindep
@@ -1562,20 +1566,16 @@ class NascentUpload:
         else:
             archtag = uploaded_file.architecture
 
-        # XXX cprov 20070212: such check should be performed ealier
-        # when parsing the changesfile.
-        try:
-            dar = self.distrorelease[archtag]
-        except NotFoundError:
-            self.reject("%s: Unable to find arch: %s"
-                        % (uploaded_file.package, archtag))
-            return None
+        # XXX cprov 20070213: it raises NotFoundError for unknown
+        # architectures. For now, it is treated in find_and_apply_overrides().
+        # But it should be refactored ASAP.
+        dar = self.distrorelease[archtag]
 
-        # See the comment bellow, in _getSourceAncestry
+        # See the comment below, in getSourceAncestry
         lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
-                uploaded_file.bpn, include_pending=True, pocket=pocket)
+                uploaded_file.package, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
             # Try the other architectures...
@@ -1662,7 +1662,7 @@ class NascentUpload:
 
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 self.logger.debug(
-                    "Checking for %s/%s"
+                    "Checking for %s/%s source ancestry"
                     %(uploaded_file.package, uploaded_file.version))
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
@@ -1681,10 +1681,16 @@ class NascentUpload:
 
             elif not uploaded_file.is_source:
                 self.logger.debug(
-                    "Checking for %s/%s/%s"
+                    "Checking for %s/%s/%s binary ancestry"
                     %(uploaded_file.package, uploaded_file.version,
                       uploaded_file.architecture))
-                ancestry = self.getBinaryAncestry(uploaded_file)
+                try:
+                    ancestry = self.getBinaryAncestry(uploaded_file)
+                except NotFoundError:
+                    self.reject("%s: Unable to find arch: %s"
+                                % (uploaded_file.package,
+                                   uploaded_file.architecture))
+                    ancestry = None
                 if ancestry is not None:
                     self.checkBinaryVersion(uploaded_file, ancestry)
                     # XXX cprov 20070212: see above.
