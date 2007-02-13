@@ -627,10 +627,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             active_submission.pluralform < %s AND
             active_submission.active AND
             published_submission.pomsgset = POMsgSet.id AND
-            published_submission.pluralform < %s AND
+            published_submission.pluralform = active_submission.pluralform AND
             published_submission.published AND
             active_submission.datecreated > published_submission.datecreated
-            """ % sqlvalues(self.id, pluralforms),
+            """ % sqlvalues(self, pluralforms),
             clauseTables=['POSubmission AS active_submission',
                           'POSubmission AS published_submission']).count()
 

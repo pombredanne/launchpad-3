@@ -1,10 +1,10 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE POSubmission ADD COLUMN active BOOLEAN DEFAULT FALSE NOT NULL;
-update posubmission set active = true from poselection where posubmission.id = poselection.activesubmission;
+UPDATE POSubmission SET active=TRUE FROM POSelection WHERE POSubmission.id = POSelection.activesubmission;
 
 ALTER TABLE POSubmission ADD COLUMN published BOOLEAN DEFAULT FALSE NOT NULL;
-update posubmission set published = true from poselection where posubmission.id = poselection.publishedsubmission;
+UPDATE POSubmission SET published=TRUE FROM POSelection WHERE POSubmission.id = POSelection.publishedsubmission;
 
 CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__active__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(active, FALSE));
 CREATE UNIQUE INDEX posubmission__pomsgset__pluralform_published__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(published, FALSE));
