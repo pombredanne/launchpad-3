@@ -1,7 +1,5 @@
 <div class="portlet">
-
-  <h2>Upcoming sprints</h2>
-
+  <h2>Upcoming meetings</h2>
   <div class="portletBody portletContent">
 
     <ul class="sprint">
@@ -13,7 +11,7 @@
               tal:content="sprint/time_starts/fmt:date">2005-10-12</span>
       </li>
     </ul>
-
+    <div><a href="/sprints">Show all</a></div>
   </div>
 
 </div>

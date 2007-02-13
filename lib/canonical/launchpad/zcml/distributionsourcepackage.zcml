@@ -51,6 +51,13 @@
     classes="DistributionSourcePackageNavigation"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.browser.DistributionSourcePackageSOP"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets

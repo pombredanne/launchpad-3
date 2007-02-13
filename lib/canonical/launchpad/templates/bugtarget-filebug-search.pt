@@ -14,22 +14,25 @@
   <h1>Report a new bug</h1>
 </metal:heading>
 
-<div metal:fill-slot="main"
-     tal:define="product_or_distro view/getProductOrDistroFromContext">
+<div metal:fill-slot="main">
 
-  <tal:uses_malone tal:condition="product_or_distro/official_malone">
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
     <div metal:use-macro="context/@@launchpad_form/form">
       <p metal:fill-slot="extra_info">
         Please describe the bug in a few words, for example, "weather
         applet crashes on logout":
       </p>
 
-      <table class="form"
-             metal:fill-slot="widgets"
-             tal:define="widget nocall:view/widgets/title">
-        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      <table class="form" metal:fill-slot="widgets">
+        <tal:product_widget
+            tal:define="widget nocall:view/widgets/product|nothing"
+            tal:condition="widget">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:product_widget>
+        <tal:title_widget tal:define="widget nocall:view/widgets/title">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:title_widget>
       </table>
-
 
       <div class="actions" metal:fill-slot="buttons">
         <input tal:replace="structure view/actions/field.actions.search/render" />
@@ -46,13 +49,15 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: product_or_distro/official_malone">
+  <tal:not_uses_malone
+      tal:condition="not: view/contextUsesMalone"
+      tal:define="main_context view/getMainContext">
     <p class="error message">
-      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      <span tal:replace="main_context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
     <p>
-      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
+      To report a bug about <span tal:replace="main_context/displayname">Alsa Utils</span>,
       please use its official bug tracker.
     </p>
   </tal:not_uses_malone>

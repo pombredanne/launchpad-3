@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'PackageUploadQueue',
     'PackageUpload',
     'PackageUploadBuild',
     'PackageUploadSource',
@@ -31,7 +32,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
-    QueueInconsistentStateError, QueueSourceAcceptError,
+    QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
     QueueBuildAcceptError, IPackageUploadSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
@@ -51,6 +52,14 @@ def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
     if logger is not None:
         logger.debug(msg)
+
+class PackageUploadQueue:
+
+    implements(IPackageUploadQueue)
+
+    def __init__(self, distrorelease, status):
+        self.distrorelease = distrorelease
+        self.status = status
 
 
 class PackageUpload(SQLBase):

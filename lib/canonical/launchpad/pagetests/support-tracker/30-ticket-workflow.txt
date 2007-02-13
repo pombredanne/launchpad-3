@@ -33,11 +33,12 @@ existing ticket #2 on the Firefox product which was filed by
 
 To participate in a support request, the user must be logged in.
 
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
-    >>> content = find_main_content(anon_browser.contents)
-    >>> print content.fetch('div')[-1].renderContents()
+    >>> anon_browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> print anon_browser.contents
+    <!DOCTYPE...
+    ...
     To post a message you must <a href="+login">log in</a>.
+    ...
 
 == Requesting for More Information ==
 

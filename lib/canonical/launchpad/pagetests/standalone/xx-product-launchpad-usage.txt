@@ -27,14 +27,13 @@ doesn't use any bug tracker at all.
   >>> registrant_browser.getControl('Change').click()
 
 On the product page, we can see that the product doesn't use any bug
-tracker, not even Malone.
+tracker, not even Launchpad.
 
   >>> print registrant_browser.contents
   <...
-     <b>Bug Tracker:</b><br />
-     <i>None specified</i>
-  ...
-  ...<i>Doesn&rsquo;t use Malone</i>...
+  ...Doesn&rsquo;t use Bugs...
+  ...<th>Bug tracker:</th>...
+  ...None specified...
 
 Now let's go back and choose to use a specific bug tracker.
 
@@ -48,10 +47,10 @@ Now let's go back and choose to use a specific bug tracker.
   >>> registrant_browser.getControl('Change').click()
   >>> print registrant_browser.contents
   <...
-     <b>Bug Tracker:</b><br />
-     <a href=".../gnome-bugzilla">GnomeGBug GTracker</a>
+  ...Doesn&rsquo;t use Bugs...
+  ...<th>Bug tracker:</th>
+  ...<a href=".../gnome-bugzilla">GnomeGBug GTracker</a>
   ...
-  ...<i>Doesn&rsquo;t use Malone</i>...
 
 Let's reset it to the way it was before.
 
@@ -61,5 +60,5 @@ Let's reset it to the way it was before.
   >>> registrant_browser.getControl(
   ...     'Bugs are tracked in Malone').selected = True
   >>> registrant_browser.getControl('Change').click()
-  >>> 'Doesn&rsquo;t use Malone' in registrant_browser.contents
+  >>> 'Doesn&rsquo;t use Bugs' in registrant_browser.contents
   False
