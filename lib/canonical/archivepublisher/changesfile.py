@@ -304,6 +304,30 @@ class ChangesFile(SignableTagFile):
         return urgency_map[self._dict['urgency'].lower()]
 
     @property
+    def version(self):
+        return self._dict['version']
+
+    @property
+    def changes_text(self):
+        return self._dict['changes']
+
+    @property
+    def date(self):
+        return self._dict['date']
+
+    @property
+    def source(self):
+        return self._dict['source']
+
+    @property
+    def architecture_line(self):
+        return self._dict['architecture']
+
+    @property
+    def filecontents(self):
+        return self._dict['filecontents']
+
+    @property
     def chopversion(self):
         return re_no_epoch.sub('', self._dict["version"])
 

@@ -355,15 +355,6 @@ class NascentUpload:
         return len(self.changes.files) == 1 and self.changes.files[0].custom
 
     @property
-    def arcs(self):
-        """Return the architecture tag set.
-
-        For example, if the changes file had "source i386" then we return
-        a list: ['source', 'i386']
-        """
-        return set(self.changes['architecture'].strip().split())
-
-    @property
     def is_new(self):
         """Return true if any portion of the upload is NEW."""
         for uploaded_file in self.changes.files:
@@ -608,7 +599,7 @@ class NascentUpload:
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
-                    proposed_version = self.changes['version']
+                    proposed_version = self.changes.version
                     archive_version = override.sourcepackagerelease.version
                     self._checkVersion(proposed_version, archive_version,
                                        filename=uploaded_file.filename)
@@ -682,7 +673,7 @@ class NascentUpload:
             "SENDER": self.sender,
             "CHANGES": self.changes.filename,
             "SUMMARY": self.rejection_message,
-            "CHANGESFILE": guess_encoding(self.changes['filecontents'])
+            "CHANGESFILE": guess_encoding(self.changes.filecontents)
             }
         recipients = self.build_recipients()
         interpolations['RECIPIENT'] = ", ".join(recipients)
@@ -708,8 +699,8 @@ class NascentUpload:
         """Build self.recipients up to include every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
-        maintainer = self.changes_maintainer['person']
-        changer = self.changed_by['person']
+        maintainer = self.changes.maintainer['person']
+        changer = self.changes.changed_by['person']
 
         if self.changes.signer:
             recipients.append(self.changes.signer_address['person'])
@@ -774,8 +765,8 @@ class NascentUpload:
         # ' -- <CHANGED-BY>  <DATE>'
         changes_author = (
             '\n -- %s   %s' %
-            (self.changes['changed-by'], self.changes['date']))
-        changes_content = self.changes['changes'] + changes_author
+            (self.changes.changed_by['rfc822'], self.changes.date))
+        changes_content = self.changes.changes_text + changes_author
 
         spns = getUtility(ISourcePackageNameSet)
         arg_sourcepackagename = spns.getOrCreateByName(self.changes.dsc.source)
@@ -790,11 +781,11 @@ class NascentUpload:
             self.changes.dsc_contents.get('architecture', ''))
         arg_component = getUtility(IComponentSet)[component_name]
         arg_section = getUtility(ISectionSet)[section_name]
-        arg_creator = self.changed_by['person'].id
+        arg_creator = self.changes.changed_by['person']
         arg_urgency = self.changes.urgency
         arg_changelog = guess_encoding(changes_content)
 
-        arg_dsc = guess_encoding(self.changes.dsc_contents['filecontents'])
+        arg_dsc = guess_encoding(self.changes.dsc_contents._dict['filecontents'])
         arg_dscsigningkey = self.changes.dsc.signingkey
         arg_manifest = None
         # extra fields required to generate archive indexes in future.
@@ -906,12 +897,12 @@ class NascentUpload:
             if archtag == 'all':
                 archtag = self.changes.filename_archtag
             build = self.find_build(archtag)
-            component = getUtility(IComponentSet)[uploaded_file.component].id
-            section = getUtility(ISectionSet)[uploaded_file.section].id
+            component = getUtility(IComponentSet)[uploaded_file.component]
+            section = getUtility(ISectionSet)[uploaded_file.section]
             # Also remember the control data for the uploaded file
             control = uploaded_file.control
             binary = build.createBinaryPackageRelease(
-                binarypackagename=uploaded_file.bpn.id,
+                binarypackagename=uploaded_file.bpn,
                 version=uploaded_file.control['Version'],
                 summary=guess_encoding(summary),
                 description=guess_encoding(description),
@@ -1009,15 +1000,15 @@ class NascentUpload:
             interpolations = {
                 "MAINTAINERFROM": self.sender,
                 "SENDER": self.sender,
-                "CHANGES": self.changes_basename,
+                "CHANGES": self.changes.filename,
                 "SUMMARY": self.build_summary(),
-                "CHANGESFILE": guess_encoding(self.changes['filecontents']),
+                "CHANGESFILE": guess_encoding(self.changes.filecontents),
                 "DISTRO": self.policy.distro.title,
-                "DISTRORELEASE": self.policy.distroreleasename,
+                "DISTRORELEASE": self.policy.distrorelease.name,
                 "ANNOUNCE": self.policy.announcelist,
-                "SOURCE": self.changes['source'],
-                "VERSION": self.changes['version'],
-                "ARCH": self.changes['architecture'],
+                "SOURCE": self.changes.source,
+                "VERSION": self.changes.version,
+                "ARCH": self.changes.architecture_line,
                 }
             if self.changes.signer:
                 interpolations['MAINTAINERFROM'] = self.changes.changed_by['rfc2047']
