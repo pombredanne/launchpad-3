@@ -62,7 +62,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
+        name="+bugs-index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+translations" />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -80,10 +84,26 @@
         classes="ProductNavigation"
         />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IProduct"
+      factory="canonical.launchpad.browser.ProductSOP"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProduct"
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+bugs-index"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        facet="bugs"
+        template="../templates/bugtarget-bugs.pt"
         />
 
     <browser:pages
@@ -120,6 +140,11 @@
             facet="overview"
             template="../templates/product-portlet-details.pt"
             lp:url="/$Product.name/+portlet-details" />
+        <browser:page
+            name="+portlet-lifecycle"
+            facet="overview"
+            template="../templates/product-portlet-lifecycle.pt"
+            lp:url="/$Product.name/+portlet-lifecycle" />
         <browser:page
             name="+portlet-series"
             facet="overview"
@@ -434,6 +459,14 @@
         class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+shortlink"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductShortLink"
+        attribute="__call__"
         />
 
 </configure>

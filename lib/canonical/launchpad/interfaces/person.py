@@ -566,6 +566,12 @@ class IPerson(IHasSpecifications, ITicketCollection):
         requires it.
         """
 
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
+        """
+
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.

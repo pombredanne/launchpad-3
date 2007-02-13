@@ -61,6 +61,8 @@ class POTemplateNavigation(Navigation):
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POTemplate is not a structural object. It should
+    # inherit all navigation from its product or distro release.
 
     usedfor = IPOTemplate
 

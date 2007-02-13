@@ -1,10 +1,5 @@
 <div class="portlet" tal:condition="view/getLatestTickets">
-
-  <h2>
-    Latest <span tal:replace="context/displayname">Ubuntu</span>
-    support requests
-  </h2>
-
+  <h2>Latest support requests</h2>
   <div class="portletBody portletContent">
 
     <ul>

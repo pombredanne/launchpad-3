@@ -20,22 +20,25 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # entire codebase and fix where the import should come from.
 #   -- kiko, 2007-02-08
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag)
+    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
+    IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
+    IBeforeTraverseEvent, BeforeTraverseEvent,
+    )
 
 __all__ = [
     'NotFoundError', 'ILaunchpadRoot', 'ILaunchBag', 'IOpenLaunchBag',
     'NameNotAvailable', 'UnexpectedFormData',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
-    'IWriteZODBAnnotation', 
-    'IZODBAnnotation',
+    'IWriteZODBAnnotation', 'IZODBAnnotation',
     'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
-    'IHasProductAndAssignee',
-    'IAging', 'IHasDateCreated', 'IHasBug',
-    'ICrowd', 'ILaunchpadCelebrities',
-    'IAuthApplication',
+    'IHasProductAndAssignee', 'IAging', 'IHasDateCreated', 'IHasBug',
+    'ICrowd', 'ILaunchpadCelebrities', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-    'IHasSecurityContact'
+    'IAfterTraverseEvent', 'AfterTraverseEvent',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IStructuralObjectPresentation',
     ]
 
 
@@ -297,4 +300,25 @@ class IHasDateCreated(Interface):
 
     datecreated = Attribute("The date on which I was created.")
 
+
+class IStructuralObjectPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI."""
+
+    def getIntroHeading():
+        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
+
+    def getMainHeading():
+        """can be None"""
+
+    def listChildren(num):
+        """List up to num children.  Return empty string for none of these"""
+
+    def countChildren():
+        """Return the total number of children."""
+
+    def listAltChildren(num):
+        """List up to num alternative children.  Return None if alt children are not supported"""
+
+    def countAltChildren():
+        """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
 

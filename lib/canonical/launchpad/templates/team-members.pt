@@ -19,6 +19,15 @@
     &#8220;<span tal:replace="context/browsername" />&#8221;
   </h1>
 
+      <p tal:condition="view/allMembersCount">
+        There are <span tal:replace="context/active_member_count">15</span>
+        direct members of the 
+        "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+        and <span tal:replace="context/all_member_count">23</span> people are
+        members in total, directly and indirectly through other team
+        memberships.
+      </p>
+
   <p tal:condition="not: view/allMembersCount">
     This team currently has no members.
   </p>

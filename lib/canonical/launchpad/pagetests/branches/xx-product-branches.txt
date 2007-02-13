@@ -42,8 +42,8 @@ are visible to the user.
   ...   table = find_tag_by_id(contents, 'branchtable')
   ...   for row in table.tbody.fetch('tr'):
   ...     cells = row.fetch('td')
-  ...     name = cells[0].renderContents()
-  ...     status = cells[-1].fetch('span')[-1].renderContents()
+  ...     name = cells[0].a.renderContents()
+  ...     status = cells[2].fetch('span')[-1].renderContents()
   ...     print name, status
 
 Branches shown for products are filterable in the same way that 

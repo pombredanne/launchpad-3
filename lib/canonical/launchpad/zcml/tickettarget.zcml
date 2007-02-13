@@ -61,6 +61,12 @@
     class="canonical.launchpad.browser.TicketAddView"
     permission="launchpad.AnyPerson" />
 
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
   <browser:menus
     module="canonical.launchpad.browser"
     classes="TicketCollectionSupportMenu TicketTargetSupportMenu"

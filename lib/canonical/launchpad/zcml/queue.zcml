@@ -5,6 +5,11 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+    <content class="canonical.launchpad.database.PackageUploadQueue">
+      <implements
+          interface="canonical.launchpad.interfaces.IPackageUploadQueue" />
+    </content>
+
     <content class="canonical.launchpad.database.PackageUpload">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUpload" />
