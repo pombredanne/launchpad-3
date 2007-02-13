@@ -19,10 +19,10 @@ from canonical.launchpad.interfaces import (
     IMentoringOffer,
     ILaunchBag,
     )
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class MentoringOfferView(GeneralFormView):
