@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = ["AppointDriverView"]
 
+from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.interfaces import IHasAppointedDriver
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadEditFormView, action)
@@ -13,8 +16,20 @@ from canonical.launchpad.webapp import (
 class AppointDriverView(LaunchpadEditFormView):
     """Browser view for appointing a driver to an object."""
 
-    schema = IHasAppointedDriver
     field_names = ['driver']
+
+    @property
+    def schema(self):
+        """Return the schema that is the most specific extension of
+        IHasAppointedDriver
+        """
+        assert IHasAppointedDriver.providedBy(self.context), (
+            "context should provide IHasAppointedDriver.")
+        for interface in providedBy(self.context):
+            if interface.isOrExtends(IHasAppointedDriver):
+                # XXX matsubara 20070213: removeSecurityProxy() is a
+                # workaround for bug https://launchpad.net/bugs/84940
+                return removeSecurityProxy(interface)
 
     @action('Change', name='change')
     def change_action(self, action, data):

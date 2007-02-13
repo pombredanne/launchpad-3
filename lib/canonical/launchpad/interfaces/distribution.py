@@ -104,6 +104,15 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "The person or team who will receive all bugmail for this "
             "distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any release in this "
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
+        required=False, vocabulary='ValidPersonOrTeam')
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")

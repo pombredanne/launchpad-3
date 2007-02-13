@@ -101,6 +101,14 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         readonly=True)
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_('Product owner, either a valid Person or Team'))
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this series. If you don't "
+            "nominate someone here, then the owner of this series will "
+            "automatically have those permissions."),
+        required=False, vocabulary='ValidPersonOrTeam')
     title = Attribute('Title')
     displayname = Attribute(
         'Display name, in this case we have removed the underlying '

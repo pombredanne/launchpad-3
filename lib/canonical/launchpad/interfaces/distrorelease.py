@@ -62,6 +62,13 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this release of the "
+            "distribution."),
+        required=False, vocabulary='ValidPersonOrTeam')
     changeslist = TextLine(
         title=_("Changeslist"), required=True,
         description=_("The changes list address for the distrorelease."),

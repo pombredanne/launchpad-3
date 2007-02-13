@@ -22,13 +22,6 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
-
-    <p metal:fill-slot="extra_info">
-      A "driver" is responsible for approving the
-      list of features and bugs that are supposed to be implemented or fixed
-      in any given major release.
-    </p>
-
   </div>
 
 </div>
