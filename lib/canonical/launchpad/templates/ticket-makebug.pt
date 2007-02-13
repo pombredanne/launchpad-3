@@ -35,14 +35,13 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>If you the problem described in this support request is really caused by
+  <p>If the problem described in this question is really caused by
     a bug in this product or distributino, you can create a new bug for it.
     You should make sure that the bug hasn't already be reported by searching
     for something similar first.
   </p>
   <p>Once the bug is created, a link will be recorded between that new bug and
-    this support request. You will able to navigate easily from one to the
-    other.
+    this question. You will able to navigate easily from one to the other.
   </p>
 </metal:help>
 </body>
