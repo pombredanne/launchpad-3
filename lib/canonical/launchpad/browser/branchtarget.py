@@ -13,16 +13,34 @@ import operator
 
 from zope.component import getUtility
 
+from canonical.lp import decorates
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IBranchLifecycleFilter, IBranchSet, IBugBranchSet, IPerson, IProduct)
+    IBranch, IBranchLifecycleFilter, IBranchSet, IBugBranchSet,
+    IPerson, IProduct)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
+
+class BranchListingItem:
+    """A decorated branch.
+
+    Some attributes that we want to display are too convoluted or expensive
+    to get on the fly for each branch in the listing.  These items are
+    prefetched by the view and decorate the branch.
+    """
+    decorates(IBranch, 'branch')
+
+    def __init__(self, branch, last_commit, bugbranches, role=None):
+        self.branch = branch
+        self.last_commit = last_commit
+        self.bugbranches = bugbranches
+        self.role = role
+        
 
 class BranchTargetView(LaunchpadFormView):
     schema = IBranchLifecycleFilter
@@ -56,13 +74,14 @@ class BranchTargetView(LaunchpadFormView):
         return sorted(items, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
-    def branch_bugs(self):
+    def branch_bug_links(self):
+        """Get all bugs associated the with visible branches."""
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self.visible_branches)
         result = {}
         for bugbranch in bugbranches:
             result.setdefault(
-                bugbranch.branch.id, []).append(bugbranch.bug)
+                bugbranch.branch.id, []).append(bugbranch)
         return result
 
     @cachedproperty
@@ -89,6 +108,13 @@ class BranchTargetView(LaunchpadFormView):
             branches = [branch for branch in self.context.branches
                         if branch.lifecycle_status == show_status]
         return sorted(branches, key=operator.attrgetter('sort_key'))
+
+    def getListingItems(self):
+        """Return a list of decorated branches for easy TAL access."""
+        return [BranchListingItem(branch,
+                                  self.last_commit[branch],
+                                  self.branch_bug_links.get(branch.id, None))
+                for branch in self.visible_branches]
 
     def context_relationship(self):
         """The relationship text used for display.
@@ -218,3 +244,10 @@ class PersonBranchesView(BranchTargetView):
             self.context.name, branch.unique_name))
         return {'title': 'Subscriber', 'sortkey': 30}
         
+    def getListingItems(self):
+        """Return a list of decorated branches for easy TAL access."""
+        return [BranchListingItem(branch,
+                                  self.last_commit[branch],
+                                  self.branch_bug_links.get(branch.id, None),
+                                  self.branch_role(branch))
+                for branch in self.visible_branches]

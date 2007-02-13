@@ -45,7 +45,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema
+from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
@@ -1166,20 +1166,40 @@ def upstream_status_vocabulary_factory(context):
     return SimpleVocabulary(terms)
 
 
+class BugTaskListingItem:
+    """A decorated bug task.
+
+    Some attributes that we want to display are too convoluted or expensive
+    to get on the fly for each bug task in the listing.  These items are
+    prefetched by the view and decorate the bug task.
+    """
+    decorates(IBugTask, 'bugtask')
+
+    def __init__(self, bugtask, bugbranches):
+        self.bugtask = bugtask
+        self.bugbranches = bugbranches
+        
+
 class BugListingBatchNavigator(TableBatchNavigator):
-    def __init__(self, *args, **kwargs):
-        TableBatchNavigator.__init__(self, *args, **kwargs)
+    """A specialised batch navigator to load smartly extra bug information."""
+    
+    def __init__(self, tasks, request, columns_to_show, size):
+        TableBatchNavigator.__init__(
+            self, tasks, request, columns_to_show=columns_to_show, size=size)
         # Now load the bug-branch links for this batch
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
             self.currentBatch())
-        # map from the bug id to the branches
-        bug_id_mapping = {}
+        # Create a map from the bug id to the branches.
+        self.bug_id_mapping = {}
         for bugbranch in bugbranches:
-            bug_id_mapping.setdefault(
-                bugbranch.bug.id, []).append(bugbranch.branch)
-        self.bug_branches = {}
-        for task in self.currentBatch():
-            self.bug_branches[task] = bug_id_mapping.get(task.bug.id, None)
+            self.bug_id_mapping.setdefault(
+                bugbranch.bug.id, []).append(bugbranch)
+
+    def getBugListingItems(self):
+        """Return a decorated list of visible bug tasks."""
+        return [BugTaskListingItem(bugtask,
+                                   self.bug_id_mapping.get(bugtask.bug.id, None))
+                for bugtask in self.batch]
 
 
 class BugTaskSearchListingView(LaunchpadView):

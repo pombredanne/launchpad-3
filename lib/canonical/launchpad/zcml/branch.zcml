@@ -96,6 +96,12 @@
       template="../templates/branch-filtering-macros.pt" />
 
   <browser:page
+      for="*"
+      name="branch-badges"
+      permission="zope.Public"
+      template="../templates/branch-badge-macros.pt" />
+
+  <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"

@@ -41,6 +41,16 @@ This informative message should also appear in the detailed branch listing.
   <!DOCTYPE...
   ...There are no branches related to David Allouche...
 
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site should be the 
+normal branch listing view for that person.
+
+  >>> browser.open('http://code.launchpad.dev/~ddaa')
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...There are no branches related to David Allouche...
+
 == Authored Branches ==
 
 There should be a link in the branch context menu for person which points to
@@ -198,18 +208,19 @@ We are wanting to have badges for associated bugs and blueprints.
   >>> def names_and_bugs(contents):
   ...     table = find_tag_by_id(contents, 'branchtable')
   ...     for row in table.tbody.fetch('tr'):
-  ...         anchors = row.fetch('a')
+  ...         first_cell = row.fetch('td')[0]
+  ...         anchors = first_cell.fetch('a')
   ...         print anchors[0].get('href')
   ...         for anchor in anchors[1:]:
-  ...            print "Bug:", anchor.get('href')
+  ...            print "  Bug:", anchor.get('href')
 
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> names_and_bugs(browser.contents)
   http://code.launchpad.dev/~name12/+branch/+junk/junk.dev
   http://code.launchpad.dev/~name12/+branch/+junk/junk.contrib
   http://code.launchpad.dev/~name12/+branch/firefox/main
-  Bug: http://launchpad.dev/bugs/4
-  Bug: http://launchpad.dev/bugs/5
+    Bug: http://launchpad.dev/bugs/4
+    Bug: http://launchpad.dev/bugs/5
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon

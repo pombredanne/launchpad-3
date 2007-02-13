@@ -17,7 +17,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="bugtask context/batch">
+      <tr tal:repeat="bugtask context/getBugListingItems">
         <td class="icon right" tal:content="structure bugtask/fmt:icon" />
         <td
           class="amount"
@@ -33,9 +33,10 @@
           </a>
 
           <!-- BugBranch badges -->
-          <tal:bugbranch repeat="branch python:context.bug_branches[bugtask]">
-            <a tal:attributes="href branch/fmt:url;
-                               title branch/displayname">
+          <tal:bugbranch repeat="bugbranch bugtask/bugbranches">
+            <a tal:define="branch bugbranch/branch"
+               tal:attributes="href branch/fmt:url;
+                               title string:${branch/displayname} (${bugbranch/status/title})">
               <img src="/@@/branch" />
             </a>
           </tal:bugbranch>
