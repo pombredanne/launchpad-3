@@ -73,15 +73,6 @@ class BazaarApplication:
     def __init__(self):
         self.title = 'The Open Source Bazaar'
 
-    @property
-    def all(self):
-        branches = getUtility(IBranchSet).all
-        return branches
-
-    def getMatchingBranches(self):
-        """See IBazaarApplication."""
-        return self.branches
-
 
 class RosettaApplication:
     implements(IRosettaApplication)

@@ -1,4 +1,8 @@
-<ul id="last-uploads">
+<div class="portlet">
+  <h2>Latest uploads</h2>
+  <div class="portletBody">
+    <ul id="last-uploads" class="binary package">
+
   <li tal:repeat="source context/getLastUploads">
     <a tal:attributes="href source/fmt:url">
        <tal:displayname replace="source/displayname">
@@ -16,3 +20,6 @@
     </tal:dateuploaded> ago
   </li>
 </ul>
+
+  </div>
+</div>

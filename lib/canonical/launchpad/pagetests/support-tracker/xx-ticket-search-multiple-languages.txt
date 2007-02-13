@@ -101,16 +101,17 @@ will appear:
 
 = Multiple Request Languages in Latest Support Requests =
 
-The portlet that lists the latest support requests on the product or
-distribution displays all the requests, whatever the user preferred
-languages. (Since this portlet is there to give an idea of activity,
-it also advertise multi-language activity. Besides this avoids
+There is a portlet listing the latest support requests on the product or
+distribution (though currently this is not used on the product or
+distribution pages). It displays all the requests, whatever the user
+preferred languages. (Since this portlet is there to give an idea of
+activity, it also advertises multi-language activity. This also avoids
 misleading the user by showing no requests when there could be in other
 languages.)
 
-    >>> browser.open('http://launchpad.dev/products/firefox')
+    >>> browser.open('http://launchpad.dev/firefox/+portlet-latesttickets')
     >>> portlet = find_portlet(
-    ...    browser.contents, 'Latest Mozilla Firefox support requests')
+    ...    browser.contents, 'Latest support requests')
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
@@ -124,8 +125,7 @@ a person:
 
     >>> browser.open('http://launchpad.dev/people/carlos')
     >>> portlet = find_portlet(
-    ...    browser.contents,
-    ...    'Latest Carlos Perell\xc3\xb3 Mar\xc3\xadn support requests')
+    ...    browser.contents, 'Latest support requests')
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'

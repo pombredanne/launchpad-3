@@ -6,19 +6,22 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 import re
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW, DEFAULT
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
+from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.sqlbase import (
+    cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.interfaces import (IBranch, IBranchSet,
-    NotFoundError)
+from canonical.launchpad.interfaces import (
+        IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError,
+        )
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -38,7 +41,7 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber', 
+    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber',
                             default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -96,6 +99,10 @@ class Branch(SQLBase):
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
     def related_bugs(self):
@@ -259,6 +266,17 @@ class BranchSet:
         branches = Branch.select()
         return branches.prejoin(['author', 'product'])
 
+    def count(self):
+        """See IBranchSet."""
+        return Branch.select().count()
+
+    def countBranchesWithAssociatedBugs(self):
+        """See IBranchSet."""
+        return Branch.select(
+            'Branch.id = BugBranch.branch',
+            clauseTables=['BugBranch'],
+            distinct=True).count()
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
@@ -268,14 +286,17 @@ class BranchSet:
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
         if not home_page:
             home_page = None
+        if date_created is None:
+            date_created = UTC_NOW
         return Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard)
+            home_page=home_page, whiteboard=whiteboard,
+            date_created=date_created)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
@@ -309,7 +330,7 @@ class BranchSet:
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person', 'Product']            
+            tables=['Person', 'Product']
         branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
@@ -329,6 +350,60 @@ class BranchSet:
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
+
+    def getRecentlyChangedBranches(self, branch_count):
+        """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner <> %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyImportedBranches(self, branch_count):
+        """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyRegisteredBranches(self, branch_count):
+        """See IBranchSet."""
+
+        branches = Branch.select(orderBy=['-date_created'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getLastCommitForBranches(self, branches):
+        """Return a map of branch id to last commit time."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            # Return a sensible default if given no branches
+            return {}
+        cur = cursor()
+        cur.execute("""
+            SELECT branch.id, revision.revision_date
+            FROM branch
+            LEFT OUTER JOIN revision
+            ON branch.last_scanned_id = revision.revision_id
+            WHERE branch.id IN %s
+            """ % sqlvalues(branch_ids))
+        commits = dict(cur.fetchall())
+        return dict([(branch, commits.get(branch.id, None))
+                     for branch in branches])
+
+    def getBranchesForOwners(self, people):
+        """Return the branches that are owned by the people specified."""
+        owner_ids = [person.id for person in people]
+        if not owner_ids:
+            return []
+        branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
+        return branches.prejoin(['product'])
 
 
 class BranchRelationship(SQLBase):

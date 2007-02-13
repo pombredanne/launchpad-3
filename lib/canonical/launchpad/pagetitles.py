@@ -193,6 +193,8 @@ def bugs_assigned(context, view):
 
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
+bugtarget_bugs = ContextTitle('Bugs in %s')
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
@@ -455,9 +457,11 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
+launchpad_onezerostatus = 'One-Zero Page Template Status'
+
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search Launchpad Projects'
+launchpad_search = 'Search projects in Launchpad'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -707,11 +711,17 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
+project_filebug_search = bugtarget_filebug_simple
+
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
 project_specs = ContextTitle('Specifications for %s')
+
+project_translations = ContextTitle('Translatable products for %s')
+
+project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Projects registered in Launchpad'
 
