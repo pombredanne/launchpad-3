@@ -32,7 +32,7 @@ from zope.publisher.browser import FileUpload
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    browserLanguages, check_permission, is_tar_filename, request_languages)
+    browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
@@ -47,6 +47,8 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 

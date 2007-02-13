@@ -13,8 +13,11 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import BugBranchStatus
+
 from canonical.launchpad.interfaces import IBugBranch
-from canonical.lp.dbschema import EnumCol, BugBranchStatus
 
 
 class BugBranch(SQLBase):

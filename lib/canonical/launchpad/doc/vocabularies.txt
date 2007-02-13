@@ -202,6 +202,27 @@ All the teams the person is an active member of.
     ...
     LookupError:...
 
+== PersonTeamParticipations ==
+
+This vocabulary contains all the teams a person participates in. Either
+through direct or indirect participations.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> [membership.team.name
+    ...  for membership in sample_person.myactivememberships]
+    [u'landscape-developers', u'name20']
+    >>> [team.name for team in sample_person.teams_participated_in]
+    [u'landscape-developers', u'name18', u'name20']
+
+    >>> sample_person_teams_vocabulary = vocabulary_registry.get(
+    ...     sample_person, 'PersonTeamParticipations')
+
+    >>> for term in sample_person_teams_vocabulary:
+    ...     print "%s: %s (%s)" % (term.token, term.title, term.value.name)
+    landscape-developers: Landscape Developers (landscape-developers)
+    name18: Ubuntu Gnome Team (name18)
+    name20: Warty  Security Team (name20)
+
 Milestone
 ---------
 All the milestone in a context.
