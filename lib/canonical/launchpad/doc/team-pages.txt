@@ -17,14 +17,37 @@ as well as the up to five latest members who proposed themselves.
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
-    ...     print (member.name, membership.status.title,
-    ...            membership.datejoined.strftime('%Y-%m-%d'))
-    (u'name20', 'Approved', '2005-03-03')
-    (u'spiv', 'Approved', '2005-03-03')
-    (u'limi', 'Approved', '2005-03-03')
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    ...            
+    name20: Approved
+    spiv: Approved
+    limi: Approved
 
     >>> for member in team_home.recently_proposed_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
-    ...     print (member.name, membership.status.title,
-    ...            membership.datejoined.strftime('%Y-%m-%d'))
-    (u'justdave', 'Proposed', '2005-03-03')
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    justdave: Proposed
+
+If new members are added/proposed, they'll show up at the top of the lists.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.join(ubuntu_team)
+    True
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
+
+    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> for member in team_home.recently_approved_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    salgado: Approved
+    name20: Approved
+    spiv: Approved
+    limi: Approved
+
+    >>> for member in team_home.recently_proposed_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    name12: Proposed
+    justdave: Proposed
