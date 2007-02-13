@@ -115,10 +115,12 @@ class BranchTargetView(LaunchpadFormView):
 
     def getListingItems(self):
         """Return a list of decorated branches for easy TAL access."""
-        return [BranchListingItem(branch,
-                                  self.last_commit[branch],
-                                  self.branch_bug_links.get(branch.id, None))
-                for branch in self.visible_branches]
+        return [
+            BranchListingItem(
+                branch,
+                self.last_commit[branch],
+                self.branch_bug_links.get(branch.id))
+            for branch in self.visible_branches]
 
     def context_relationship(self):
         """The relationship text used for display.
