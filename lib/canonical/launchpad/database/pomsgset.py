@@ -114,10 +114,6 @@ class DummyPOMsgSet(POMsgSetMixIn):
         """See IPOMsgSet."""
         return [None] * self.pluralforms
 
-    def getSelection(self, pluralform):
-        """See IPOMsgSet."""
-        return None
-
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
         return None
@@ -154,7 +150,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
     obsolete = BoolCol(dbName='obsolete', notNull=True)
-    reviewer = ForeignKey(foreignKey='Person', notNull=False, default=None)
+    reviewer = ForeignKey(
+        foreignKey='Person', dbName='reviewer', notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
 
@@ -199,7 +196,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     def isNewerThan(self, timestamp):
         """See IPOMsgSet."""
         for plural_index in range(self.pluralforms):
-            selection = self.getSelection(plural_index)
             active = self.getActiveSubmission(plural_index)
             if (active is not None and active.date_reviewed > timestamp):
                 return True
@@ -308,28 +304,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
+        has_changed = False
         new_translation_count = len(fixed_new_translations)
         if new_translation_count < self.pluralforms and not force_suggestion:
             # it's definitely not complete if it has too few translations
             complete = False
-            # And we should reset the selection for the non updated plural
-            # forms.
+            # And we should reset the active or published submissions for the
+            # non updated plural forms.
             for pluralform in range(self.pluralforms)[new_translation_count:]:
-                selection = self.getSelection(pluralform)
-                if selection is None:
-                    continue
-
                 if published:
-                    selection.publishedsubmission = None
-                else:
-                    # We keep track of who decided to remove this translation.
-                    selection.activesubmission = None
-                    selection.reviewer = person
-                    selection.date_reviewed = UTC_NOW
-                    selection.sync()
+                    self.setPublishedSubmission(pluralform, None)
+                elif self.getActiveSubmission(pluralform) is not None:
+                    # Note that this submission did a change.
+                    self.setActiveSubmission(pluralform, None)
+                    has_changed = True
 
         # now loop through the translations and submit them one by one
-        has_changed = False
         for index in fixed_new_translations.keys():
             newtran = fixed_new_translations[index]
             # replace any '' with None until we figure out
@@ -455,10 +445,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         published_submission = self.getPublishedSubmission(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
-        # or active selection for that translation. But a null published
+        # or active submissions for that translation. But a null published
         # translation does not remove the active submission.
         if text is None:
-            # Remove the existing active/published selection
+            # Remove the existing active/published submissions
             if published:
                 self.setPublishedSubmission(pluralform, None)
             elif (is_editor and
@@ -500,8 +490,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 # the published one in the db
                 return published_submission
 
-        # if we are working with the active submission, see if the selection
-        # of this translation is already active
         if not published and active_submission is not None:
             if active_submission.potranslation == translation:
                 # Sets the validation status to the current status.
@@ -550,7 +538,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 sourcepackagename=potemplate.sourcepackagename)
 
         # next, we need to update the existing active and possibly also
-        # published selections
+        # published submissions.
         if published:
             self.setPublishedSubmission(pluralform, submission)
 
@@ -559,7 +547,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # it's an editor.
             if (not published and
                 (active_submission is None or
-                 selection.activesubmission.id != submission.id)):
+                 active_submission.id != submission.id)):
                 # The active submission changed and is not published, that
                 # means that the submission came from Rosetta UI instead of
                 # upstream imports and we should give Karma.
@@ -652,16 +640,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        selection = self.getSelection(pluralform)
-        active = None
         query = '''pomsgset = %s AND
-                   pluralform = %s''' % sqlvalues(self.id, pluralform)
-        if selection is not None and selection.activesubmission is not None:
-            active = selection.activesubmission
-        if active is not None:
+                   pluralform = %s''' % sqlvalues(self, pluralform)
+        active_submission = self.getActiveSubmission(pluralform)
+        if active_submission is not None:
             # Don't show suggestions older than the current one.
             query += ''' AND datecreated > %s
-                    ''' % sqlvalues(active.datecreated)
+                    ''' % sqlvalues(active_submission.datecreated)
         return POSubmission.select(query, orderBy=['-datecreated'])
 
     def getCurrentSubmissions(self, pluralform):
