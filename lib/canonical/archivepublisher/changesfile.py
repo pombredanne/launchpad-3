@@ -9,13 +9,18 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.encoding import guess as guess_encoding
+
+from canonical.database.constants import UTC_NOW
+
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PersonCreationRationale)
 
 from canonical.librarian.utils import copy_and_close
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet)
+    NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
+    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet)
 
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
@@ -312,6 +317,16 @@ class ChangesFile(SignableTagFile):
         return self._dict['changes']
 
     @property
+    def simulated_changelog(self):
+        # rebuild the changes author line as specified in bug # 30621,
+        # new line containing:
+        # ' -- <CHANGED-BY>  <DATE>'
+        changes_author = (
+            '\n -- %s   %s' %
+            (self.changed_by['rfc822'], self.date))
+        return self.changes_text + changes_author
+
+    @property
     def date(self):
         return self._dict['date']
 
@@ -567,6 +582,39 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
 
         self.logger.debug("Done")
 
+    def create_source_package_release(self, changes):
+        spns = getUtility(ISourcePackageNameSet)
+        arg_component = getUtility(IComponentSet)[self.component]
+        arg_section = getUtility(ISectionSet)[self.section]
+
+        # Reencode everything we are supplying, because old packages
+        # contain latin-1 text and that sucks.
+        encoded = {}
+        for k, v in self._dict.items():
+            encoded[k] = guess_encoding(v)
+
+        release = self.policy.distrorelease.createUploadedSourcePackageRelease(
+            sourcepackagename=spns.getOrCreateByName(self.source),
+            version=changes.version,
+            maintainer=self.maintainer['person'],
+            dateuploaded=UTC_NOW,
+            builddepends=encoded.get('build-depends', ''),
+            builddependsindep=encoded.get('build-depends-indep', ''),
+            architecturehintlist=encoded.get('architecture', ''),
+            creator=changes.changed_by['person'],
+            urgency=changes.urgency,
+            dsc=encoded['filecontents'],
+            dscsigningkey=self.signingkey,
+            manifest=None,
+            dsc_maintainer_rfc822=encoded['maintainer'],
+            dsc_format=encoded['format'],
+            dsc_binaries=encoded['binary'],
+            dsc_standards_version=encoded.get('standards-version', None),
+            component=arg_component,
+            changelog=guess_encoding(changes.simulated_changelog),
+            section=arg_section,
+            )
+
     #
     #
     #
@@ -574,4 +622,6 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
     @property
     def source(self):
         return self._dict['source']
+
+
 
