@@ -108,11 +108,33 @@
     </p>
 
           </div>
-          <div tal:condition="context/isTeam" class="demo section">
+          <div tal:condition="context/isTeam">
             <h2>Recently approved</h2>
+              <ul tal:condition="view/recently_approved_members">
+                <li class="person"
+                    tal:repeat="person view/recently_approved_members">
+                  <a tal:attributes="href person/fmt:url"
+                     tal:content="person/unique_displayname"
+                  >Foo Bar (name16)</a>
+                </li>
+                <p tal:condition="not: view/recently_approved_members">
+                  This team has no approved members.
+                </p>
+              </ul>
           </div>
-          <div tal:condition="context/isTeam" class="demo section">
+          <div tal:condition="context/isTeam">
             <h2>Recently applied</h2>
+              <ul tal:condition="view/recently_proposed_members">
+                <li class="person"
+                    tal:repeat="person view/recently_proposed_members">
+                  <a tal:attributes="href person/fmt:url"
+                     tal:content="person/unique_displayname"
+                  >Foo Bar (name16)</a>
+                </li>
+                <p tal:condition="not: view/recently_proposed_members">
+                  This team has no applicants.
+                </p>
+              </ul>
           </div>
         </div>
         <div class="right">
