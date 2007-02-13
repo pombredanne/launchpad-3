@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """ITicketTarget browser views."""
 
@@ -102,7 +102,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     # Set to true to display a column showing the ticket's target.
     @property
-    def displayTargetColumn(self):
+    def display_target_column(self):
         return IProject.providedBy(self.context)
 
     # Will contain the parameters used by searchResults
@@ -267,7 +267,8 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return BatchNavigator(
             self.context.searchTickets(**self.search_params), self.request)
 
-    def displaySourcePackageColumn(self):
+    @property
+    def display_sourcepackage_column(self):
         """We display the source package column only on distribution."""
         return IDistribution.providedBy(self.context)
 

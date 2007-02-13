@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Ticket views."""
 
@@ -714,7 +714,7 @@ class TicketMessageDisplayView(LaunchpadView):
 class SearchAllTicketsView(SearchTicketsView):
     """View that searches among all tickets posted on Launchpad."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     @property
     def pageheading(self):
