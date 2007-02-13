@@ -195,11 +195,11 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def isNewerThan(self, timestamp):
         """See IPOMsgSet."""
-        for plural_index in range(self.pluralforms):
-            active = self.getActiveSubmission(plural_index)
-            if (active is not None and active.date_reviewed > timestamp):
-                return True
-        return False
+        if (self.date_reviewed is not None and
+            self.date_reviewed > timestamp):
+            return True
+        else:
+            return False
 
     def setActiveSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
