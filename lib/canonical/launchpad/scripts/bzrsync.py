@@ -364,9 +364,6 @@ class BzrSync:
                 self.sendEmail(address, contents)
             return
 
-        # XXX: need to make sure that emails don't
-        # get sent for the initial scan of a new branch.
-
         size = len(initial)
         if updated[:len(initial)] == initial:
             updated = updated[len(initial):]
