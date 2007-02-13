@@ -107,40 +107,6 @@ class AbstractUploadPolicy:
         # We do nothing here but our subclasses may override us.
 
     def checkUpload(self, upload):
-        """Mandatory policy checks on NascentUploads."""
-        if not self.distrorelease.canUploadToPocket(self.pocket):
-            upload.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.pocket.name, self.distrorelease.releasestatus.name))
-
-        # all policies permit upload of a single custom
-        if upload.single_custom:
-            # refuses any further checks
-            return
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
-        considered_archs = [arch_name for arch_name in upload.archs
-                            if not arch_name.endswith("_translations")]
-        if upload.binaryful:
-            max = 1
-            if upload.sourceful:
-                # When sourceful, the tools add 'source' to the architecture
-                # list in the upload. Thusly a sourceful upload with one build
-                # has two architectures listed.
-                max = 2
-            if 'all' in considered_archs:
-                # Sometimes we get 'i386 all' which would count as two archs
-                # so if 'all' is present, we bump the permitted number up
-                # by one.
-                max += 1
-            if len(considered_archs) > max:
-                upload.reject("Policy permits only one build per upload.")
-
-        # execute policy specific checks
         self.policySpecificChecks(upload)
 
     def policySpecificChecks(self, upload):

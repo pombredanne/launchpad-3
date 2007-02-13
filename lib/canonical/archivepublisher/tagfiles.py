@@ -119,7 +119,8 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
                     raise TagFileParseError("%s: invalid .dsc file at line %d" % (filename, index))
                 line = indexed_lines[index]
                 if not line.startswith("-----BEGIN PGP SIGNATURE"):
-                    raise TagFileParseError("%s: invalid .dsc file at line %d -- expected PGP signature; got '%s'" % (filename, index,line))
+                    raise TagFileParseError("%s: invalid .dsc file at line %d -- "
+                        "expected PGP signature; got '%s'" % (filename, index,line))
                 inside_signature = 0
                 break
             else:
@@ -152,7 +153,9 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
         mlf = re_multi_line_field.match(line)
         if mlf:
             if first == -1:
-                raise TagFileParseError("%s: could not parse .changes file line %d: '%s'\n [Multi-line field continuing on from nothing?]" % (filename, index,line))
+                raise TagFileParseError("%s: could not parse .changes file "
+                "line %d: '%s'\n [Multi-line field continuing on from nothing?]"
+                % (filename, index,line))
             if first == 1 and changes[field] != "":
                 changes[field] += '\n'
             first = 0
@@ -170,3 +173,4 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
         raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes
+
