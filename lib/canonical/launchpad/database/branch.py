@@ -19,7 +19,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     NotFoundError)
-from canonical.launchpad.database.revision import RevisionNumber
+from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)

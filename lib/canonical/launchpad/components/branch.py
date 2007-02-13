@@ -18,8 +18,7 @@ class BranchDelta:
     implements(IBranchDelta)
     def __init__(self, branch, user,
                  name=None, title=None, summary=None, url=None,
-                 whiteboard=None, lifecycle_status=None,
-                 revision_count=None, last_scanned_id=None):
+                 whiteboard=None, lifecycle_status=None):
         self.branch = branch
         self.user = user
 
@@ -29,8 +28,6 @@ class BranchDelta:
         self.url = url
         self.whiteboard = whiteboard
         self.lifecycle_status = lifecycle_status
-        self.revision_count = revision_count
-        self.last_scanned_id = last_scanned_id
 
     @staticmethod
     def construct(old_branch, new_branch, user):
@@ -40,7 +37,7 @@ class BranchDelta:
         determine what has changed during an SQLObjectModifiedEvent.
         """
         delta = ObjectDelta(old_branch, new_branch)
-        delta.recordNewValues(("summary", "whiteboard", "last_scanned_id"))
+        delta.recordNewValues(("summary", "whiteboard"))
         delta.recordNewAndOld(("name", "lifecycle_status",
                                "title", "url"))
         # delta.record_list_added_and_removed()

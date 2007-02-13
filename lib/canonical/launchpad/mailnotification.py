@@ -1391,7 +1391,7 @@ def notify_branch_modified(branch, event):
     info_lines = []
 
     # Fields for which we have old and new values.
-    for field_name in ('name', 'revision_count', 'title', 'url'):
+    for field_name in ('name', 'title', 'url'):
         delta = getattr(branch_delta, field_name)
         if delta is not None:
             title = IBranch[field_name].title
@@ -1417,17 +1417,6 @@ def notify_branch_modified(branch, event):
             if info_lines:
                 info_lines.append('')
             info_lines.append('%s changed to:\n\n%s' % (title, delta))
-
-    # If the tip revision has changed, then show the log for the tip
-    # if the revision is found.
-    if branch_delta.last_scanned_id is not None:
-        tip_revision = branch.getTipRevision()
-        if tip_revision is not None:
-            # show the log entry
-            log_entry = tip_revision.log_body
-            if info_lines:
-                info_lines.append('')
-            info_lines.append('Log entry of last revision:\n\n%s' % log_entry)
 
     if not info_lines:
         # The specification was modified, but we don't yet support
