@@ -1065,7 +1065,7 @@ class TicketNotification:
         """Warning about the fact that the ticket is written in an
         unsupported language."""
         return get_email_template(
-                'ticket-unsupported-language-warning.txt') % {
+                'question-unsupported-language-warning.txt') % {
                 'ticket_language': self.ticket.language.englishname,
                 'target_name': self.ticket.target.displayname}
 
@@ -1076,7 +1076,7 @@ class TicketAddedNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         ticket = self.ticket
-        body = get_email_template('ticket_added.txt') % {
+        body = get_email_template('question-added-notification.txt') % {
             'target_name': ticket.target.displayname,
             'ticket_id': ticket.id,
             'ticket_url': canonical_url(ticket),
@@ -1090,7 +1090,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
     """Base implementation of a notification when a ticket is modified."""
 
     # Email template used to render the body.
-    body_template = "ticket_modified.txt"
+    body_template = "question-modified-notification.txt"
 
     def initialize(self):
         """Save the old ticket for comparison. It also set the new_message
@@ -1254,14 +1254,14 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
             'You are still having a problem:',
         })
 
-    body_template = 'ticket-modified-owner-notification.txt'
+    body_template = 'question-modified-owner-notification.txt'
 
     body_template_by_action = {
-        TicketAction.ANSWER: "ticket-answered-owner-notification.txt",
-        TicketAction.EXPIRE: "ticket-expired-owner-notification.txt",
-        TicketAction.REJECT: "ticket-rejected-owner-notification.txt",
+        TicketAction.ANSWER: "question-answered-owner-notification.txt",
+        TicketAction.EXPIRE: "question-expired-owner-notification.txt",
+        TicketAction.REJECT: "question-rejected-owner-notification.txt",
         TicketAction.REQUESTINFO: (
-            "ticket-info-requested-owner-notification.txt"),
+            "question-info-requested-owner-notification.txt"),
     }
 
     def initialize(self):
@@ -1305,7 +1305,7 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
     def getBody(self):
         """See TicketNotification."""
         ticket = self.ticket
-        return get_email_template('ticket-unsupported-languages-added.txt') % {
+        return get_email_template('question-unsupported-languages-added.txt') % {
             'target_name': ticket.target.displayname,
             'ticket_id': ticket.id,
             'ticket_url': canonical_url(ticket),
