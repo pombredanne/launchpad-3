@@ -22,9 +22,10 @@ from canonical.librarian.utils import copy_and_close
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -64,12 +65,12 @@ class DistroReleaseQueue(SQLBase):
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
 
-    pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
+    pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
+    # XXX: this is NULLable. Fix sampledata?
     changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias",
-                             notNull=True)
+                             foreignKey="LibraryFileAlias")
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
@@ -437,8 +438,7 @@ class DistroReleaseQueueCustom(SQLBase):
         )
 
     customformat = EnumCol(dbName='customformat', unique=False,
-                           default=None, notNull=True,
-                           schema=DistroReleaseQueueCustomFormat)
+                           notNull=True, schema=DistroReleaseQueueCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
