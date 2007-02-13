@@ -636,6 +636,7 @@ class BugCountDataItem:
         else:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
+
 class BugTargetBugsView(BugTaskSearchListingView):
 
     status_color = {
@@ -658,6 +659,8 @@ class BugTargetBugsView(BugTaskSearchListingView):
             BugTaskStatus.INPROGRESS,
             BugTaskStatus.FIXCOMMITTED,
             ]
+        if IDistroRelease.providedBy(self.context):
+            bug_statuses.append(BugTaskStatus.FIXRELEASED)
         bug_counts = sorted(
             self.context.getBugCounts(self.user, bug_statuses).items())
         self.bug_count_items = [
