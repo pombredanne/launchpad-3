@@ -21,9 +21,6 @@ import sha
 from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
-from zope.security.management import checkPermission as zcheckPermission
-from zope.app.security.permission import (
-    checkPermission as check_permission_is_registered)
 
 import canonical
 from canonical.lp.dbschema import (
@@ -401,19 +398,6 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
-
-
-def check_permission(permission_name, context):
-    """Like zope.security.management.checkPermission, but also ensures that
-    permission_name is real permission.
-
-    Raises ValueError if the permission doesn't exist.
-    """
-    # This will raise ValueError if the permission doesn't exist.
-    check_permission_is_registered(context, permission_name)
-
-    # Now call Zope's checkPermission.
-    return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):

@@ -157,7 +157,6 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
         text = 'View Uploads'
         return Link('+queue', text, icon='info')

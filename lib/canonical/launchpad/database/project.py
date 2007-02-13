@@ -12,16 +12,19 @@ from zope.interface import implements
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
         SQLMultipleJoin, SQLRelatedJoin)
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
+    TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
+
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.karma import KarmaContextMixin
