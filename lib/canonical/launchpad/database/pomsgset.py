@@ -346,10 +346,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             if new_submission != old_active_submission:
                 has_changed = True
 
-        if has_changed:
+        if has_changed and is_editor:
             self.reviewer = person
             self.date_reviewed = UTC_NOW
-            self.syncUpdate()
+            self.sync()
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
@@ -617,24 +617,24 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
-        updated = POMsgSet.select("""
+        updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
             POMsgSet.publishedfuzzy = FALSE AND
             POMsgSet.iscomplete = TRUE AND
             POMsgSet.publishedcomplete = TRUE AND
-            active_submission.pomsgset = POMsgSet.id AND
-            active_submission.pluralform < %s AND
-            active_submission.active AND
             published_submission.pomsgset = POMsgSet.id AND
-            published_submission.pluralform = active_submission.pluralform AND
+            published_submission.pluralform < %s AND
             published_submission.published AND
-            active_submission.datecreated > published_submission.datecreated
+            active_submission.pomsgset = POMsgSet.id AND
+            active_submission.pluralform = published_submission.pluralform AND
+            active_submission.active AND
+            POMsgSet.date_reviewed > published_submission.datecreated
             """ % sqlvalues(self, pluralforms),
             clauseTables=['POSubmission AS active_submission',
                           'POSubmission AS published_submission']).count()
 
-        self.isupdated = (updated is not None)
+        self.isupdated = (updated_pomsgset > 0)
 
         flush_database_updates()
 

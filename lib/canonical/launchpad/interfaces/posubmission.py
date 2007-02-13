@@ -39,9 +39,3 @@ class IPOSubmission(Interface):
     published = Bool(
         title=_("Whether this submission is published."),
         required=True)
-
-    def destroySelf():
-        """Remove this object.
-
-        It should not be referenced by any other object.
-        """
