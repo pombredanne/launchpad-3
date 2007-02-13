@@ -707,11 +707,17 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
+project_filebug_search = bugtarget_filebug_simple
+
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
 project_specs = ContextTitle('Specifications for %s')
+
+project_translations = ContextTitle('Translatable products for %s')
+
+project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Projects registered in Launchpad'
 

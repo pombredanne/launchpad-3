@@ -27,7 +27,7 @@
 
 </table>
 
-<div style="font-size: 80%; text-align: right; margin-bottom: 1em;"
+<div style="text-align: right; margin-bottom: 1em;"
      tal:define="current_bugtask view/currentBugTask">
 
   Also affects:
