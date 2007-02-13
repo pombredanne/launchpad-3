@@ -264,7 +264,7 @@
           </span>
         </td>
       </tr>
-    </tal:active_submission>
+    </tal:active-submission>
     <tal:suggestion_block
          define="suggestion_block translation_dictionary/suggestion_block">
       <tal:suggestions repeat="suggestions suggestion_block">

@@ -70,9 +70,10 @@ FROM
         LEFT JOIN pomsgset ON
             (potmsgset.id = pomsgset.potmsgset) AND
             (pomsgset.pofile = pofile.id)
-        LEFT JOIN posubmission ON pomsgset.id = posubmission.pomsgset
-        LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation
-WHERE posubmission.active;
+        LEFT JOIN posubmission ON
+            pomsgset.id = posubmission.pomsgset AND
+            posubmission.active
+        LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation;
 
 ALTER TABLE POFile ADD COLUMN last_touched_pomsgset INTEGER REFERENCES POMsgSet(id);
 UPDATE POFile SET last_touched_pomsgset=pms.id
@@ -80,7 +81,7 @@ FROM POMsgSet pms
 WHERE pms.id = (
     SELECT id
     FROM POMsgSet
-    WHERE POMsgSet.pofile = POFile.id
+    WHERE POMsgSet.pofile = POFile.id AND POMsgSet.date_reviewed IS NOT NULL
     ORDER BY date_reviewed
     DESC
     LIMIT 1);
