@@ -718,19 +718,19 @@ ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE bug DISABLE TRIGGER ALL;
 
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (1, '2004-01-01 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (1, '2004-01-01 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
 
-The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''1.0'':23 ''one'':32 ''svg'':5B,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1B,6,30,45 ''manipul'':55 ''support'':4B,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false, false, '2006-05-19 06:37:40.344941');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-07-14 08:47:36.124403');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, '''1.0'':23 ''one'':32 ''svg'':5B,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1B,6,30,45 ''manipul'':55 ''support'':4B,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false, false, '2006-05-19 06:37:40.344941');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-07-14 08:47:36.124403');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
-Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-07-14 08:48:52.922462');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-07-14 08:49:17.124885');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-07-14 08:49:40.553212');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-07-14 08:48:52.922462');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-07-14 08:49:17.124885');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-07-14 08:49:40.553212');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -749,11 +749,11 @@ Actual Results:
 Crash!
 
 Expected Results:  
-Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-07-14 08:45:10.600579');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-07-14 08:54:19.453881');
+Not crashed.', 12, 5, '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-07-14 08:45:10.600579');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-07-14 08:54:19.453881');
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -1774,22 +1774,22 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (25, '2001-02-23 16:43:25.744534', 12, 9, NULL, 1, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (26, '2001-02-22 19:42:21.890299', 16, 1, NULL, 1, 17);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (27, '2001-03-06 10:11:02.729077', 16, 9, 14, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (28, '2001-01-02 00:00:00', 1, 22, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (29, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (30, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (28, '2001-11-02 00:00:00', 1, 22, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (29, '2001-04-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (30, '2001-08-02 00:00:00', 1, 22, NULL, 1, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (31, '2001-01-02 00:00:00', 1, 22, 13, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (32, '2001-01-02 00:00:00', 1, 22, 11, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (33, '2001-01-02 00:00:00', 1, 22, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (32, '2001-06-02 00:00:00', 1, 22, 11, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (33, '2001-09-02 00:00:00', 1, 22, 15, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (34, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (35, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (36, '2001-01-02 00:00:00', 1, 23, 15, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (37, '2001-01-02 00:00:00', 1, 23, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (38, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (39, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (40, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-01-02 00:00:00', 1, 22, 12, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (35, '2001-10-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (36, '2001-04-02 00:00:00', 1, 23, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (37, '2001-05-02 00:00:00', 1, 23, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (38, '2001-07-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (39, '2001-06-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (40, '2001-08-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-09-02 00:00:00', 1, 22, 12, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-03-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-04-02 00:00:00', 1, 22, 4, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (44, '2001-12-13 21:19:05.833412', 16, 10, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2001-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
@@ -1855,28 +1855,64 @@ ALTER TABLE karmaaction ENABLE TRIGGER ALL;
 
 ALTER TABLE karmacache DISABLE TRIGGER ALL;
 
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (783, 16, 2, 14, NULL, 1, 19);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (784, 16, 2, 8, NULL, 1, 17);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (785, 12, 2, 8, NULL, 1, 22);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (786, 1, 6, 15, 5, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (787, 16, 2, 17, 8, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (788, 1, 6, 61, 4, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (789, 16, 2, 17, NULL, 1, 1);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (790, 12, 6, 40, 6, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (791, 16, 2, 9, 14, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (792, 16, 2, 17, 13, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (793, 12, 2, 1, NULL, 1, 14);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (794, 1, 6, 49, NULL, 1, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (795, 12, 2, 17, 12, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (796, 1, 6, 17, 15, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (797, 12, 6, 40, 9, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (798, 1, 6, 15, 13, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (799, 12, 2, 26, NULL, 1, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (800, 1, 6, 15, 12, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (801, 1, 6, 15, 11, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (802, 16, 2, 14, 5, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (803, 12, 2, 105, 4, NULL, NULL);
-INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (804, 16, 2, 17, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1423, 12, 6, 22, 6, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1424, 12, 2, 15, 12, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1425, 13, 3, 9, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1426, 12, 6, 22, 9, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1427, 12, 2, 13, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1428, 12, 2, 66, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1429, 1, 6, 22, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1430, 16, 2, 15, 8, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1431, 1, 6, 27, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1432, 16, 2, 2, 14, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1433, 16, 2, 15, 13, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1434, 1, 6, 37, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1435, 1, 6, 18, 15, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1437, 16, 2, 26, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1438, 1, 6, 17, 12, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1439, 1, 6, 9, 11, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1440, 16, 3, 164, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1441, 16, 2, 11, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1442, 16, 2, 8, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1443, 1, 6, 130, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1444, 12, 2, 94, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1445, 12, 6, 44, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1446, 13, 3, 9, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1447, 16, 2, 77, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1448, 16, 3, 164, NULL, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1449, 12, NULL, 22, 9, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1450, 12, NULL, 15, 12, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1451, 16, NULL, 8, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1452, 16, NULL, 175, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1453, 1, NULL, 27, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1454, 1, NULL, 22, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1455, 16, NULL, 15, 8, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1456, 1, NULL, 9, 11, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1457, 12, NULL, 66, 4, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1458, 16, NULL, 15, 13, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1459, 1, NULL, 18, 15, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1460, 12, NULL, 22, 6, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1461, 16, NULL, 2, 14, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1462, 1, NULL, 17, 12, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1463, 13, NULL, 9, 5, NULL, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1464, 12, NULL, 13, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1465, 16, NULL, 26, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1466, 1, NULL, 37, NULL, 1, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1467, 16, NULL, 23, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1468, 12, NULL, 66, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1469, 16, NULL, 190, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1470, 12, NULL, 44, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1471, 1, NULL, 27, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1472, 13, NULL, 9, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1473, 1, NULL, 31, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1474, 1, 6, 31, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1475, 1, 6, 27, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1476, 16, 3, 164, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1477, 16, 2, 26, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1478, 12, 6, 44, NULL, NULL, NULL, 5);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1479, 16, 2, 23, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1480, 12, 2, 66, NULL, NULL, NULL, 4);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename, project) VALUES (1481, 13, 3, 9, NULL, NULL, NULL, 5);
 
 
 ALTER TABLE karmacache ENABLE TRIGGER ALL;
@@ -1898,9 +1934,10 @@ ALTER TABLE karmacategory ENABLE TRIGGER ALL;
 
 ALTER TABLE karmatotalcache DISABLE TRIGGER ALL;
 
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (57, 1, 187);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (58, 12, 237);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (78, 12, 138);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (79, 13, 9);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (80, 16, 241);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (81, 1, 130);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;

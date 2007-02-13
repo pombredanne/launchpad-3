@@ -12,7 +12,7 @@ __all__ = [
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 from zope.component import getUtility
@@ -159,13 +159,10 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
-            revision_date = datetime.fromtimestamp(
-                bzr_revision.timestamp, tz=UTC)
-
             db_revision = getUtility(IRevisionSet).new(
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
-                revision_date=revision_date,
+                revision_date=self._timestampToDatetime(bzr_revision.timestamp),
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
                 parent_ids=bzr_revision.parent_ids)
@@ -177,6 +174,24 @@ class BzrSync:
         for (index, revision_id) in enumerate(self.bzr_history):
             # sequence numbers start from 1
             yield index + 1, revision_id
+
+    def _timestampToDatetime(self, timestamp):
+        """Convert the given timestamp to a datetime object.
+
+        This works around a bug in Python that causes datetime.fromtimestamp
+        to raise an exception if it is given a negative, fractional timestamp.
+
+        :param timestamp: A timestamp from a bzrlib.revision.Revision
+        :type timestamp: float
+
+        :return: A datetime corresponding to the given timestamp.
+        """
+        # Work around Python bug #1646728.
+        # See https://launchpad.net/bugs/81544.
+        int_timestamp = int(timestamp)
+        revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
+        revision_date += timedelta(seconds=timestamp - int_timestamp)
+        return revision_date
 
     def syncRevisionNumbers(self):
         """Synchronise the revision numbers for the branch."""

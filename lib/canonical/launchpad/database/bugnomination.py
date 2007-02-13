@@ -24,9 +24,12 @@ from sqlobject import ForeignKey, SQLObjectNotFound
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp import dbschema
+
 from canonical.launchpad.interfaces import (
     IBugNomination, IBugTaskSet, IBugNominationSet, NotFoundError)
-from canonical.lp import dbschema
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -44,7 +47,7 @@ class BugNomination(SQLBase):
         dbName='productseries', foreignKey='ProductSeries',
         notNull=False, default=None)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    status = dbschema.EnumCol(
+    status = EnumCol(
         dbName='status', notNull=True, schema=dbschema.BugNominationStatus,
         default=dbschema.BugNominationStatus.PROPOSED)
 

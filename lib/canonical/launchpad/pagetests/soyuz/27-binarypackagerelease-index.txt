@@ -40,8 +40,8 @@ is rendered as text:
 
   >>> depends_section = find_tag_by_id(browser.contents, 'depends')
   >>> parse_relationship_section(str(depends_section))
-  TEXT: "gcc-3.4(&gt;=3.4.1-4sarge1)"
-  TEXT: "gcc-3.4(&lt;&lt;3.4.2)"
+  TEXT: "gcc-3.4 (&gt;= 3.4.1-4sarge1)"
+  TEXT: "gcc-3.4 (&lt;&lt; 3.4.2)"
   TEXT: "gcc-3.4-base"
-  TEXT: "libc6(&gt;=2.3.2.ds1-4)"
-  TEXT: "libstdc++6-dev(&gt;=3.4.1-4sarge1)"
+  TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
+  TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
