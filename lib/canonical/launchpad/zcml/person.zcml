@@ -639,7 +639,7 @@
       class="canonical.launchpad.browser.PersonLatestTicketsView"
       name="+portlet-latesttickets"
       permission="zope.Public"
-      template="../templates/tickettarget-portlet-latesttickets.pt"
+      template="../templates/questiontarget-portlet-latestquestions.pt"
       />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"

@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """ITicketTarget browser views."""
 
@@ -97,7 +97,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
-    template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+    template = ViewPageTemplateFile('../templates/question-listing.pt')
 
     # Set to true to display a column showing the ticket's target
     displayTargetColumn = False

@@ -117,7 +117,7 @@
           template="../templates/bug-portlet-specs.pt" />
       <browser:page
           name="+portlet-tickets"
-          template="../templates/bug-portlet-tickets.pt" />
+          template="../templates/bug-portlet-questions.pt" />
       <browser:page
           name="+portlet-reference"
           template="../templates/bug-portlet-reference.pt" />

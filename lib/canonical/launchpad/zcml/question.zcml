@@ -76,19 +76,19 @@
     permission="zope.Public">
     <browser:page
       name="+history"
-      template="../templates/ticket-history.pt" />
+      template="../templates/question-history.pt" />
     <browser:page
       name="+listing-detailed"
-      template="../templates/ticket-listing-detailed.pt" />
+      template="../templates/question-listing-detailed.pt" />
     <browser:page
       name="+portlet-details"
-      template="../templates/ticket-portlet-details.pt" />
+      template="../templates/question-portlet-details.pt" />
     <browser:page
       name="+portlet-reopenings"
-      template="../templates/ticket-portlet-reopenings.pt" />
+      template="../templates/question-portlet-reopenings.pt" />
     <browser:page
       name="+portlet-subscribers"
-      template="../templates/ticket-portlet-subscribers.pt" />
+      template="../templates/question-portlet-subscribers.pt" />
   </browser:pages>
 
   <browser:page
@@ -96,25 +96,25 @@
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketWorkflowView"
     permission="zope.Public"
-    template="../templates/ticket-index.pt" />
+    template="../templates/question-index.pt" />
 
   <browser:page
     name="+confirm"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketConfirmAnswerView"
     permission="launchpad.Owner"
-    template="../templates/ticket-confirm-answer.pt" />
+    template="../templates/question-confirm-answer.pt" />
 
   <browser:page
     name="+reject"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketRejectView"
     permission="launchpad.Moderate"
-    template="../templates/ticket-reject.pt" />
+    template="../templates/question-reject.pt" />
 
   <browser:page
     name="+subscribe"
-    template="../templates/ticket-subscription.pt"
+    template="../templates/question-subscription.pt"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketSubscriptionView"
     permission="launchpad.AnyPerson" />
@@ -128,42 +128,42 @@
     fields="title description"
     arguments="title description"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-makebug.pt" />
+    template="../templates/question-makebug.pt" />
 
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-edit.pt" />
+    template="../templates/question-edit.pt" />
 
   <browser:page
     name="+change-status"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketChangeStatusView"
     permission="launchpad.Admin"
-    template="../templates/ticket-change-status.pt" />
+    template="../templates/question-change-status.pt" />
 
   <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.BugLinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-linkbug.pt" />
+    template="../templates/question-linkbug.pt" />
 
   <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-unlinkbugs.pt" />
+    template="../templates/question-unlinkbugs.pt" />
 
   <browser:page
     name="+display"
     for="canonical.launchpad.interfaces.ITicketMessage"
     class="canonical.launchpad.browser.TicketMessageDisplayView"
     permission="zope.Public"
-    template="../templates/ticketmessage-display.pt"
+    template="../templates/questionmessage-display.pt"
     />
 
   <!-- TicketSet -->
@@ -197,7 +197,7 @@
     for="canonical.launchpad.interfaces.ITicketSet"
     class="canonical.launchpad.browser.TicketSetView"
     permission="zope.Public"
-    template="../templates/tickets-index.pt"
+    template="../templates/questions-index.pt"
     />
 
   <browser:page

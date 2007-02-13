@@ -169,7 +169,7 @@ class TicketSupportLanguageMixin:
     """
 
     supported_languages_macros = ViewPageTemplateFile(
-        '../templates/ticket-supported-languages-macros.pt')
+        '../templates/question-supported-languages-macros.pt')
 
     @property
     def chosen_language(self):
@@ -244,9 +244,9 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
 
-    search_template = ViewPageTemplateFile('../templates/ticket-add-search.pt')
+    search_template = ViewPageTemplateFile('../templates/question-add-search.pt')
 
-    add_template = ViewPageTemplateFile('../templates/ticket-add.pt')
+    add_template = ViewPageTemplateFile('../templates/question-add.pt')
 
     template = search_template
 

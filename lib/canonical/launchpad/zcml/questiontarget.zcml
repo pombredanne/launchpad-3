@@ -27,7 +27,7 @@
     class="canonical.launchpad.browser.TicketCollectionLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
-    template="../templates/tickettarget-portlet-latesttickets.pt"
+    template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
     for="canonical.launchpad.interfaces.ISearchableByTicketOwner"
@@ -47,13 +47,13 @@
     name="+support-contact"
     permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.ManageSupportContactView"
-    template="../templates/tickettarget-manage-supportcontacts.pt" />
+    template="../templates/questiontarget-manage-answercontacts.pt" />
 
   <browser:page
       for="canonical.launchpad.interfaces.ITicketTarget"
       name="+portlet-supportcontacts"
       permission="zope.Public"
-      template="../templates/tickettarget-portlet-supportcontacts.pt" />
+      template="../templates/questiontarget-portlet-answercontacts.pt" />
 
   <browser:page
     name="+addticket"
