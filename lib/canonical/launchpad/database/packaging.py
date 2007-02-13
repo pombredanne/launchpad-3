@@ -8,8 +8,11 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import PackagingType
+
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
-from canonical.lp.dbschema import EnumCol, PackagingType
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
