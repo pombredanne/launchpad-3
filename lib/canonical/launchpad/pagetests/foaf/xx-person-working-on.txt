@@ -70,3 +70,20 @@ person.
     >>> browser.url
     'http://launchpad.dev/.../+specs?role=assignee'
 
+If one of the bugs that Sample Person is working on gets marked as a dupe of
+another one, it'll be removed from the list of bugs he's working on.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bugset = getUtility(IBugSet)
+    >>> login('test@canonical.com')
+    >>> bugset.get(5).duplicateof = bugset.get(4)
+    >>> logout()
+    >>> flush_database_updates()
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> for tag in div.findAll('li'):
+    ...     print tag.find('a').renderContents()
+    2. Blackhole Trash folder
+    CD Media Integrity Check
+
