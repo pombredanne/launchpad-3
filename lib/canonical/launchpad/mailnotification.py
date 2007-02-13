@@ -950,9 +950,9 @@ class TicketNotification:
     def getSubject(self):
         """Return the subject of the notification.
 
-        Default to [Support #dd]: Title
+        Default to [Question #dd]: Title
         """
-        return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+        return '[Question #%s]: %s' % (self.ticket.id, self.ticket.title)
 
     def getBody(self):
         """Return the content of the notification message.
@@ -1145,7 +1145,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
         """When a comment is added, its title is used as the subject,
         otherwise the ticket title is used.
         """
-        prefix = '[Support #%s]: ' % self.ticket.id
+        prefix = '[Question #%s]: ' % self.ticket.id
         if self.new_message:
             subject = self.new_message.subject
             if prefix in self.new_message.subject:
@@ -1209,21 +1209,21 @@ class TicketModifiedDefaultNotification(TicketNotification):
         TicketAction.REQUESTINFO:
             '%(person)s requested for more information:',
         TicketAction.CONFIRM:
-            '%(person)s confirmed that the request is solved:',
+            '%(person)s confirmed that the question is solved:',
         TicketAction.COMMENT:
             '%(person)s posted a new comment:',
         TicketAction.GIVEINFO:
-            '%(person)s gave more information on the request:',
+            '%(person)s gave more information on the question:',
         TicketAction.REOPEN:
             '%(person)s is still having a problem:',
         TicketAction.ANSWER:
             '%(person)s proposed the following answer:',
         TicketAction.EXPIRE:
-            '%(person)s expired the request:',
+            '%(person)s expired the question:',
         TicketAction.REJECT:
-            '%(person)s rejected the request:',
+            '%(person)s rejected the question:',
         TicketAction.SETSTATUS:
-            '%(person)s changed the request status:',
+            '%(person)s changed the question status:',
     }
 
     def getNewMessageText(self):
@@ -1247,9 +1247,9 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
         TicketModifiedDefaultNotification.action_header_template)
     action_header_template.update({
         TicketAction.CONFIRM:
-            'You confirmed that the request is solved:',
+            'You confirmed that the question is solved:',
         TicketAction.GIVEINFO:
-            'You gave more information on the request:',
+            'You gave more information on the question:',
         TicketAction.REOPEN:
             'You are still having a problem:',
         })
@@ -1291,7 +1291,7 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
 
     def getSubject(self):
         """See TicketNotification."""
-        return '[Support #%s]: (%s) %s' % (
+        return '[Question #%s]: (%s) %s' % (
             self.ticket.id, self.ticket.language.englishname,
             self.ticket.title)
 

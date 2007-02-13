@@ -207,7 +207,7 @@ class ProjectSupportMenu(TicketCollectionSupportMenu):
     links = TicketCollectionSupportMenu.links + ['new']
 
     def new(self):
-        text = 'Request Support'
+        text = 'Ask Question'
         return Link('+addticket', text, icon='add')
 
 
@@ -409,14 +409,14 @@ class ProjectAddTicketView(TicketAddView):
                 __name__='product', vocabulary='ProjectProducts',
                 title=_('Product'),
                 description=_(
-                    'Choose the product for which you need support.'),
+                    'Choose the product for which you have a question.'),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with a product from ${project}',
+        return _('Ask a question about a product from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
