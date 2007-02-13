@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test harness for Ticket Tracker related unit tests.
+"""Test harness for Answer Tracker related unit tests.
 
 """
 
@@ -19,9 +19,9 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(DocFileSuite('ticketcontextmenu.txt',
+    suite.addTest(DocFileSuite('questioncontextmenu.txt',
                   optionflags=default_optionflags))
-    suite.addTest(FunctionalDocFileSuite('ticket-subscribe_me.txt',
+    suite.addTest(FunctionalDocFileSuite('question-subscribe_me.txt',
                   optionflags=default_optionflags, package=__name__,
                   setUp=setUp, tearDown=tearDown,
                   layer=LaunchpadFunctionalLayer))

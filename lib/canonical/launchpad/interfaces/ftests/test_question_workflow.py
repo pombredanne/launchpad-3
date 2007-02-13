@@ -1,9 +1,9 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test the ticket workflow methods.
+"""Test the question workflow methods.
 
-Comprehensive tests for the ticket workflow methods. A narrative kind of
-documentation is done in the ../../doc/support-tracker-workflow.txt Doctest,
+Comprehensive tests for the question workflow methods. A narrative kind of
+documentation is done in the ../../doc/answer-tracker-workflow.txt Doctest,
 but testing all the possible transitions makes the documentation more heavy
 than necessary. This is tested here.
 """
@@ -729,7 +729,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
 
 def test_suite():
     import canonical.launchpad.interfaces.ftests as ftests
-    return unittest.findTestCases(ftests.test_ticket_workflow)
+    return unittest.findTestCases(ftests.test_question_workflow)
 
 
 if __name__ == '__main__':

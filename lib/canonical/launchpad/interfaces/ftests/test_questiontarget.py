@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test harness for running the tickettarget.txt interface test
+"""Test harness for running the questiontarget.txt interface test
 
 This module will run the interface test against the Product, Distribution,
 DistributionSourcePackage and SourcePackage implementations of that interface.
@@ -53,13 +53,13 @@ def test_suite():
                ]
 
     for name, setUpMethod in targets:
-        test = FunctionalDocFileSuite('tickettarget.txt',
+        test = FunctionalDocFileSuite('questiontarget.txt',
                     setUp=setUpMethod, tearDown=tearDown,
                     optionflags=default_optionflags, package=__name__,
                     layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
-    test = FunctionalDocFileSuite('tickettarget-sourcepackage.txt',
+    test = FunctionalDocFileSuite('questiontarget-sourcepackage.txt',
                 setUp=setUp, tearDown=tearDown,
                 optionflags=default_optionflags, package=__name__,
                 layer=LaunchpadFunctionalLayer)
