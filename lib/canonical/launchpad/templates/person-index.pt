@@ -251,6 +251,48 @@
         </ul>
       </tal:block>
 
+            <h2>Your involvement</h2>
+
+            <p tal:condition="not: request/lp:person">
+              You must <a href="+login">log in</a>
+              to join or leave this team.
+            </p>
+            <tal:block condition="request/lp:person">
+              <tal:block condition="view/userIsOwner">
+                <p tal:condition="view/userIsActiveMember">
+                  You are the owner of this team.
+                </p>
+                <p tal:condition="not: view/userIsActiveMember">
+                  You are the owner of this team,
+                  but not currently an active member.
+                </p>
+              </tal:block>
+              <tal:block condition="not: view/userIsOwner">
+                <p tal:condition="view/userIsActiveMember">
+                  You are a member of this team.
+                </p>
+                <p tal:condition="not: view/userIsActiveMember">
+                  <tal:foo tal:condition="not: view/userIsParticipant">
+                    You are not a member of this team.
+                  </tal:foo>
+                  <tal:foo tal:condition="view/userIsParticipant">
+                    You are an indirect member of this team:
+                    <br />
+                    <a tal:attributes="href view/user/fmt:url"
+                       tal:content="view/user/displayname">
+                      Guilherme Salgado
+                    </a>
+                    <tal:path repeat="team view/findUserPathToTeam">
+                      &rarr;
+                      <a tal:attributes="href team/fmt:url"
+                         tal:content="team/displayname">
+                        Launchpad Developers
+                      </a>
+                    </tal:path>
+                  </tal:foo>
+                </p>
+              </tal:block>
+            </tal:block>
           </div>
         </div>
 
