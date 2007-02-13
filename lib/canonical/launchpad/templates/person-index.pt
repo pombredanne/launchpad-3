@@ -231,25 +231,24 @@
           </div>
           <div tal:condition="context/isTeam" class="section">
             <h2>Subteam of</h2>
-              <p tal:condition="not:context/getSuperTeams">
 
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
-        itself is not a member of any other team.
-      </p>
+            <p tal:condition="not:context/getSuperTeams">
+              &#8220;<span tal:replace="context/browsername"/>&#8221;
+              itself is not a member of any other team.
+            </p>
 
-              <tal:block condition="context/getSuperTeams">
-
-        <p>
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          is a member of these teams:
-        </p>
-        <ul>
-          <li tal:repeat="team context/getSuperTeams">
-            <a tal:attributes="href team/fmt:url"
-               tal:content="team/browsername">name</a>
-          </li>
-        </ul>
-      </tal:block>
+            <tal:block condition="context/getSuperTeams">
+              <p>
+                &#8220;<span tal:replace="context/browsername"/>&#8221;
+                is a member of these teams:
+              </p>
+              <ul>
+                <li tal:repeat="team context/getSuperTeams">
+                  <a tal:attributes="href team/fmt:url"
+                     tal:content="team/browsername">name</a>
+                </li>
+              </ul>
+            </tal:block>
 
             <h2>Your involvement</h2>
 
@@ -293,6 +292,7 @@
                 </p>
               </tal:block>
             </tal:block>
+
           </div>
         </div>
 
@@ -338,4 +338,4 @@
 </div> 
 </body>
 </html>
-<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222), and recent members/applicants (bug 81226). -->
+<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222). -->
