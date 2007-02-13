@@ -17,7 +17,6 @@ from canonical.encoding import guess as guess_encoding
 from canonical.lp.dbschema import (
     BinaryPackageFormat, BuildStatus, PackagePublishingPocket)
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
@@ -35,9 +34,17 @@ class FatalUploadError(Exception):
     """XXX"""
 
 
-class FileNotFound(UploadError):
-    """Raised when an upload error is due to a missing file."""
-
+# XXX: documentation on general design
+#   - want to log all possible errors to the end-user
+#   - changes file holds all uploaded files in a tree
+#   - changes.files and changes.dsc
+#   - DSC represents a source upload, and creates sources
+#   - but DSC holds DSCUploadedFiles, weirdly
+#   - binary represents a binary upload, and creates binaries
+#   - source files only exist for verify() purposes
+#   - NascentUpload is a motor that creates the changes file, does
+#     verifications, gets overrides, triggers creation or rejection and
+#     prepares the email message
 
 class NascentUpload:
     """XXX
