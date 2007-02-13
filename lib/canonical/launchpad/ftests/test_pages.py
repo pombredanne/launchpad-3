@@ -1,3 +1,4 @@
+
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Run all of the pagetests, in priority order.
 
@@ -10,7 +11,7 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup, NavigableString
+from BeautifulSoup import BeautifulSoup, Comment, NavigableString
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
@@ -91,12 +92,57 @@ def extract_text(soup):
     return result
 
 
+def extract_text(soup):
+    """Return the text stripped of all tags.
+
+    >>> soup = BeautifulSoup(
+    ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
+    >>> extract_text(soup)
+    u'Titlefoo bar'
+    """
+    # XXX Tim Penhey 22-01-2007
+    # At the moment this does not nicely give whitespace between
+    # tags that would have visual separation when rendered.
+    # eg. <p>foo</p><p>bar</p>
+    result = u''
+    for node in soup:
+        if isinstance(node, Comment):
+            pass
+        elif isinstance(node, NavigableString):
+            result = result + unicode(node)
+        else:
+            result = result + extract_text(node)
+    return result
+
+
+# XXX cprov 20070207: This function seems to be more specific to a particular
+# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+def parse_relationship_section(content):
+    """Parser package relationship section.
+
+    See package-relationship-pages.txt and related.
+    """
+    soup = BeautifulSoup(content)
+    section = soup.find('ul')
+    whitespace_re = re.compile('\s+')
+    for li in section.findAll('li'):
+        if li.a:
+            link = li.a
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
+            print 'LINK: "%s" -> %s' % (content, url)
+        else:
+            content = whitespace_re.sub(' ', li.string.strip())
+            print 'TEXT: "%s"' % content
+
+
 def setUpGlobs(test):
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['extract_text'] = extract_text
+    test.globs['parse_relationship_section'] = parse_relationship_section
 
 
 class PageStoryTestCase(unittest.TestCase):

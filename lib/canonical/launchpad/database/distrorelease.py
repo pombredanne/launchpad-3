@@ -24,9 +24,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (quote_like, quote, SQLBase,
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter)
 
@@ -68,7 +69,8 @@ from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.queue import (
+    DistroReleaseQueue, PackageUploadQueue)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
@@ -888,7 +890,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
         AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
         AND distroreleasequeue.status=%s
-        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+        AND distroreleasequeue.distrorelease=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],
@@ -919,6 +922,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
                                   changesfile=changes_file)
+
+    def getPackageUploadQueue(self, state):
+        """See IDistroRelease."""
+        return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
