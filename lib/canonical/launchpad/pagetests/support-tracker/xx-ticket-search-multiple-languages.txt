@@ -101,31 +101,15 @@ will appear:
 
 = Multiple Request Languages in Latest Questions =
 
-The portlet that lists the latest questions on the product or
-distribution displays all the questions, whatever the user preferred
-languages. (Since this portlet is there to give an idea of activity,
-it also advertise multi-language activity. Besides this avoids
-misleading the user by showing no questions when there could be in other
-languages.)
+The portlet that lists the latest questions involving a person displays
+all the questions, whatever the user preferred languages. (Since this
+portlet is there to give an idea of activity, it also advertise
+multi-language activity. Besides this avoids misleading the user by
+showing no questions when there could be in other languages.)
 
-    >>> browser.open('http://launchpad.dev/products/firefox')
+    >>> browser.open('http://launchpad.dev/~carlos')
     >>> portlet = find_portlet(
-    ...    browser.contents, 'Latest Mozilla Firefox questions')
-    >>> for link in portlet.fetch('a'):
-    ...    link.renderContents()
-    'Problemas de Impress\xc3\xa3o no Firefox'
-    "Newly installed plug-in doesn't seem to be used"
-    'Firefox loses focus and gets stuck'
-    'Problem showing the SVG demo on W3C site'
-    'Firefox cannot render Bank Site'
-
-The same is true for the portlet listing the latest questions involving
-a person:
-
-    >>> browser.open('http://launchpad.dev/people/carlos')
-    >>> portlet = find_portlet(
-    ...    browser.contents,
-    ...    'Latest Carlos Perell\xc3\xb3 Mar\xc3\xadn questions')
+    ...    browser.contents, 'Latest questions')
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'

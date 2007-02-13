@@ -226,6 +226,9 @@ class IBranch(IHasOwner):
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
     def has_subscription(person):
         """Is this person subscribed to the branch?"""
 
@@ -284,6 +287,12 @@ class IBranchSet(Interface):
 
     all = Attribute("All branches in the system.")
 
+    def count():
+        """Return the number of branches in the database."""
+
+    def countBranchesWithAssociatedBugs():
+        """Return the number of branches that have bugs associated."""
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 
@@ -292,7 +301,7 @@ class IBranchSet(Interface):
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None):
+            summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
     def getByUniqueName(self, unique_name, default=None):
@@ -312,6 +321,29 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getRecentlyChangedBranches(branch_count):
+        """Return a list of branches that have been recently updated.
+
+        The list will contain at most branch_count items, and excludes
+        branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyImportedBranches(branch_count):
+        """Return a list of branches that have been recently imported.
+
+        The list will contain at most branch_count items, and only
+        has branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyRegisteredBranches(branch_count):
+        """Return a list of branches that have been recently registered.
+
+        The list will contain at most branch_count items.
+        """
+
+    def getLastCommitForBranches(branches):
+        """Return a map of branch to last commit time."""
 
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""

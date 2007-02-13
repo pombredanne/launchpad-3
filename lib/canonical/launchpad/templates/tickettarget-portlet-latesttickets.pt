@@ -1,7 +1,5 @@
 <div class="portlet" tal:condition="view/getLatestTickets">
-
-  <h2>Latest <span tal:replace="context/displayname">Ubuntu</span> questions</h2>
-
+  <h2>Latest questions</h2>
   <div class="portletBody portletContent">
 
     <ul>

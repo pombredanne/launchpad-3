@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AskAQuestionButtonView',
     'ManageSupportContactView',
     'SearchTicketsView',
     'TicketCollectionLatestTicketsView',
@@ -37,6 +38,20 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
+
+
+class AskAQuestionButtonView:
+    """View that renders a clickable button to ask a question on its context."""
+
+    def __call__(self):
+        return """
+              <a href="%s/+addticket">
+                <img
+                  alt="Ask a question"
+                  src="/+icing/but_sml_requestsupport.gif"
+                />
+              </a>
+        """ % canonical_url(ITicketTarget(self.context), rootsite='answers')
 
 
 class UserSupportLanguagesMixin:

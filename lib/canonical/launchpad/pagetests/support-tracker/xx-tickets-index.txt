@@ -11,8 +11,8 @@ It also displays an indication of recent activity by
 displaying the number of questions tracked by the system.
 
     >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'requests-count').renderContents()
-    The Answer Tracker contains 13 questions.
+    ...     anon_browser.contents, 'application-footer').renderContents()
+    13 questions asked
 
 It also shows the 10 latest questions made:
 
