@@ -34,6 +34,18 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    factory="canonical.launchpad.browser.DistroReleaseSOP"
+    permission="zope.Public"
+    />
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    provides="canonical.launchpad.interfaces.ITicketTarget"
+    factory="canonical.launchpad.components.ticket.distrorelease_to_tickettarget"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroReleaseNavigation"
@@ -63,7 +75,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     layer="canonical.launchpad.layers.BugsLayer"
-    name="+bugs" />
+    name="+bugs-index" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -76,6 +88,15 @@
       lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -128,6 +149,11 @@
       name="+portlet-details"
       facet="overview"
       template="../templates/distrorelease-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-lifecycle"
+      facet="overview"
+      template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
       name="+portlet-translations"
@@ -250,4 +276,12 @@
     name="+mdz-specs.csv"
     attribute="mdzCsv"
     />
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
+
 </configure>

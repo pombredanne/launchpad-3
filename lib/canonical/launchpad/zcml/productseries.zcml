@@ -39,6 +39,13 @@
         classes="ProductSeriesNavigation"
         />
 
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.browser.ProductSeriesSOP"
+        permission="zope.Public"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
         path_expression="name"
@@ -252,5 +259,13 @@
         lp:url="/bazaar/series/"
         />
   </browser:pages>
+
+<browser:page
+  for="canonical.launchpad.interfaces.IProductSeries"
+  name="+shortlink"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.ProductSeriesShortLink"
+  attribute="__call__"
+  />
 
 </configure>

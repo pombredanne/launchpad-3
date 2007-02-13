@@ -528,7 +528,7 @@ k            </description>
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
@@ -770,6 +770,10 @@ k            </description>
              default="noreply@launchpad.net"/>
     </sectiontype>
 
+    <sectiontype name="mirror_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="upload_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="import_puller_errorreports" extends="script_errorreports" />
+
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
@@ -788,6 +792,12 @@ k            </description>
                 URL prepended to branch ids to obtain internal branch URLs.
             </description>
         </key>
+        <section name="*" type="mirror_puller_errorreports"
+            attribute="mirror_errorreports" required="no" />
+        <section name="*" type="upload_puller_errorreports"
+            attribute="upload_errorreports" required="no" />
+        <section name="*" type="import_puller_errorreports"
+            attribute="import_errorreports" required="no" />
     </sectiontype>
 
     <sectiontype name="branchscanner">

@@ -13,16 +13,17 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 from canonical.launchpad.interfaces import (
     IBinaryPackageRelease, IBinaryPackageReleaseSet)
 
+from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp import dbschema
 
 from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
-from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
 
 
 class BinaryPackageRelease(SQLBase):

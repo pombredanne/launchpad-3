@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
@@ -37,6 +38,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -98,6 +100,21 @@ class DistributionSetNavigation(RedirectionNavigation):
         if self.context.getByName(name) is None:
             raise NotFoundError(name)
         return RedirectionNavigation.traverse(self, name)
+
+
+class DistributionSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return self.context.releases[:num]
+
+    def listAltChildren(self, num):
+        return None
 
 
 class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
