@@ -58,20 +58,20 @@
   <tal:no-results condition="not: tickets/batch">
     <p i18n:translate=""
        tal:content="view/empty_listing_message">
-      No support requests.
+      No questions.
     </p>
   </tal:no-results>
 
   <p class="informational message"
      tal:condition="not: view/all_languages_shown" i18n:translate="">
-    Only support requests in
+    Only questions in
       <tal:languages i18n:name="languages">
         <tal:language_loop repeat="lang view/displayed_languages">
           <span tal:replace="lang/englishname"
             /><tal:comma condition="not: repeat/lang/end">,</tal:comma>
         </tal:language_loop>
       </tal:languages>
-    are displayed. To see support requests in other languages, either
+    are displayed. To see questions in other languages, either
     <a href="/+editmylanguages">change your preferred</a> languages
     or select the &ldquo;All Languages&rdquo; option.
   </p>
@@ -138,13 +138,13 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>This listing displays the support requests matching the selected
+  <p>This listing displays the questions matching the selected
     criteria in this context (distribution, product, person, sourcepackage).
   </p>
   <p>The search criteria for the current listing can be modified directly at
     the top of the page.
   </p>
-  <p>If you hover the mouse over a support request, the beginning of its
+  <p>If you hover the mouse over a question, the beginning of its
     description will pop-up after a few seconds.
   </p>
 </metal:help>
