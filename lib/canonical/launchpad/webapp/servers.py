@@ -19,14 +19,13 @@ import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    IShipItApplication)
+from canonical.launchpad.interfaces import IShipItApplication
+
 from canonical.launchpad.webapp.notifications import (
-        NotificationRequest, NotificationResponse, NotificationList
-        )
+    NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts

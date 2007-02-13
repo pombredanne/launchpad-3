@@ -30,7 +30,7 @@
     Karma is updated daily.
   </p>
 
-  <table class="listing sortable" id="karma"
+  <table class="listing sortable" id="karmapoints"
     tal:condition="context/karma_category_caches">
     <thead>
       <tr>
@@ -56,7 +56,7 @@
   
     <h2>Latest actions</h2>
 
-    <table class="listing sortable" id="karma">
+    <table class="listing sortable" id="karmaactions">
       <thead>
         <tr>
           <th>Action</th>

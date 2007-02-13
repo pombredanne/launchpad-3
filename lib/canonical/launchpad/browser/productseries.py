@@ -15,6 +15,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
+           'ProductSeriesShortLink',
            'get_series_branch_error']
 
 import cgi
@@ -31,7 +32,7 @@ from zope.publisher.browser import FileUpload
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    browserLanguages, check_permission, is_tar_filename, request_languages)
+    browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
@@ -39,13 +40,15 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
     LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -687,3 +690,8 @@ class ProductSeriesSourceSetView:
             html += ' selected'
         html += '>Stopped</option>\n'
 
+
+class ProductSeriesShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname

@@ -27,6 +27,7 @@ is actually a translation or two:
     evolution-2.2
     pmount
     pkgconf-mozilla
+    man
 
 Now lets include the dummies:
 

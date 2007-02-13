@@ -20,22 +20,34 @@
 
       <tal:notloggedin condition="not:request/lp:person">
         <div>You are browsing</div>
+        <h1>
+          <tal:productseries
+            condition="exists:context/potemplate/productseries/displayname"
+            tal:replace="context/potemplate/productseries/displayname"
+          />
+          <tal:sourcepackage
+            condition="exists:context/potemplate/sourcepackagename"
+            replace="context/potemplate/sourcepackagename"
+          />
+          in
+          <tal:language replace="context/language/englishname" />
+        </h1>
       </tal:notloggedin>
       <tal:loggedin condition="request/lp:person">
         <div>You are translating</div>
+        <h1>
+          <tal:productseries
+            condition="exists:context/potemplate/productseries/displayname"
+            tal:replace="context/potemplate/productseries/displayname"
+          />
+          <tal:sourcepackage
+            condition="exists:context/potemplate/sourcepackagename"
+            replace="context/potemplate/sourcepackagename"
+          />
+          in
+          <tal:language replace="context/language/englishname" />
+        </h1>
       </tal:loggedin>
-      <h1>
-        <tal:productseries
-          condition="exists:context/potemplate/productseries/displayname"
-          tal:replace="context/potemplate/productseries/displayname"
-        />
-        <tal:sourcepackage
-          condition="exists:context/potemplate/sourcepackagename"
-          replace="context/potemplate/sourcepackagename"
-        />
-        into
-        <tal:language replace="context/language/englishname" />
-      </h1>
       <div class="discreet">
         Template: <tal:template replace="context/title" />
       </div>
