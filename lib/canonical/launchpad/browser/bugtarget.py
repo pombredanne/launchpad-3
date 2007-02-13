@@ -627,6 +627,7 @@ class BugTargetBugListingView:
 
 
 class BugCountDataItem:
+    """Data about bug count for a status."""
 
     def __init__(self, label, count, color):
         self.label = label
@@ -638,7 +639,12 @@ class BugCountDataItem:
 
 
 class BugTargetBugsView(BugTaskSearchListingView):
+    """View for the Bugs front page."""
 
+    # XXX: These colors should be changed. It's the same colors that are used
+    #      to color statuses in buglistings using CSS, but there should be one
+    #      unique color for each status in the pie chart
+    #      -- Bjorn Tillenius, 2007-02-13
     status_color = {
         BugTaskStatus.UNCONFIRMED: '#993300',
         BugTaskStatus.NEEDSINFO: 'red',
@@ -652,7 +658,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        bug_statuses = [
+        bug_statuses_to_show = [
             BugTaskStatus.UNCONFIRMED,
             BugTaskStatus.NEEDSINFO,
             BugTaskStatus.CONFIRMED,
@@ -660,14 +666,18 @@ class BugTargetBugsView(BugTaskSearchListingView):
             BugTaskStatus.FIXCOMMITTED,
             ]
         if IDistroRelease.providedBy(self.context):
-            bug_statuses.append(BugTaskStatus.FIXRELEASED)
+            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
         bug_counts = sorted(
-            self.context.getBugCounts(self.user, bug_statuses).items())
+            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]
 
     def getChartJavascript(self):
+        """Return a snippet of Javascript that draws a pie chart."""
+        # XXX: This snippet doesn't work in IE, since (I think) there
+        #      has to be a delay between creating the canvas element and
+        #      using it to draw the chart. -- Bjorn Tillenius, 2007-02-13
         js_template = """
             function drawGraph() {
                 var options = {

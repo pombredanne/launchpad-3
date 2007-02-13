@@ -2,8 +2,8 @@
 
 == Bugs Fixed Elsewhere ==
 
-The Bugs frontpage for a distribution includes the number of bugs that are
-fixed in some other context.
+The Bugs frontpage includes the number of bugs that are fixed in some
+other context.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
     >>> anon_browser.title
@@ -26,10 +26,10 @@ The link takes you to the list of the bugs fixed elsewhere.
 
 == Open Bugs Statistics ==
 
-There's also some statistics about the open bugs for the distribution.
-This is displayed as a chart, which is generated using Javascript, but
-for those browsers not supporting Javascript, the statistics are displayed
-as normal text:
+There's also some statistics about the open and fixedbugs. This is
+displayed as a chart, which is generated using Javascript, but for those
+browsers not supporting Javascript, the statistics are displayed as
+normal text:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
     >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')

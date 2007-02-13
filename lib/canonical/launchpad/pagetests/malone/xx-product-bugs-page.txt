@@ -2,8 +2,8 @@
 
 == Bugs Fixed Elsewhere ==
 
-The Bugs frontpage for a distribution includes the number of bugs that are
-fixed in some other context.
+The Bugs frontpage includes the number of bugs that are fixed in some
+other context.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> anon_browser.title
