@@ -298,12 +298,6 @@ these URLs in Apache.
     template="../templates/launchpad-structuralfooter.pt"
   />
 </browser:pages>
-<browser:page
-  for="canonical.launchpad.interfaces.ILaunchpadApplication"
-  name="+applications"
-  permission="zope.Public"
-  template="../templates/app-buttons.pt"
-  />
 
 <browser:page
   for="*"
