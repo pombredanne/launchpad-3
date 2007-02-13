@@ -1213,9 +1213,7 @@ body {
 #portlets .portlet {
   width: 200px;
 }
-#singlecolumn {
-  margin: 20px 0px 20px 38px;
-}
+#singlecolumn {margin: 20px 20px 20px 38px;} /* test: front page, Oops page */
 
 /* ====== Content area styles ====== */
 
@@ -1328,7 +1326,7 @@ li {
 */
 
 /* Various custom list formats: */
-#mainarea ol, #mainarea ul, #singlecolumn ul, #singlecolumn ol {
+#maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
   margin-left: 24px;
   padding-left: 0;
 }
