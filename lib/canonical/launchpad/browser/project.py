@@ -12,6 +12,16 @@ __all__ = [
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectSetNavigation',
+    'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectSupportMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
+    'ProjectEditView',
+    'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
     ]
@@ -30,6 +40,7 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.ticket import TicketAddView
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketCollectionSupportMenu)
@@ -72,6 +83,22 @@ class ProjectSetNavigation(RedirectionNavigation):
         return RedirectionNavigation.traverse(self, name)
 
 
+class ProjectSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Products, alphabetically
+        return list(self.context.products[:num])
+
+    def listAltChildren(self, num):
+        return None
+
+
 class ProjectSetContextMenu(ContextMenu):
 
     usedfor = IProjectSet
@@ -92,7 +119,8 @@ class ProjectFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications', 'support']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'support', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -106,8 +134,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf',
-             'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -131,10 +158,6 @@ class ProjectOverviewMenu(ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
-
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -186,6 +209,17 @@ class ProjectSupportMenu(TicketCollectionSupportMenu):
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+
+class ProjectTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectEditView(LaunchpadEditFormView):

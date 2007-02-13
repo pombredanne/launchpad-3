@@ -8,10 +8,12 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
 from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
+
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+
 from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IBugAttachment, NotFoundError)
-from canonical.database.sqlbase import SQLBase
 
 
 class BugAttachment(SQLBase):

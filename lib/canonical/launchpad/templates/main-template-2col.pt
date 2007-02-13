@@ -32,9 +32,7 @@
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
     </div>
-    <div class="userLog">
-      <tal:login tal:content="structure context/@@login_status" />
-    </div>
+    <div id="logincontrol" tal:content="structure context/@@login_status" />
     <div class="columns">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
         <div id="portal-columns">
@@ -43,7 +41,7 @@
               <metal:block define-slot="pageheading">
               </metal:block>
             </div>
-            <div id="region-content">
+            <div id="maincontent">
               <tal:block
                 define="notifications request/notifications"
                 condition="notifications"
@@ -112,7 +110,7 @@
           </div>
         </div>
         <div class="visualClear">&nbsp;</div>
-      </div><!-- class="body" -->
+      </div>
     <div class="footer">
       <a href="/bugs">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;

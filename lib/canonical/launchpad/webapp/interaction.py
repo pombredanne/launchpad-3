@@ -11,7 +11,7 @@ from zope.security.interfaces import IParticipation
 from zope.security.management import (
     endInteraction, newInteraction, queryInteraction)
 
-from canonical.launchpad.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 
 def get_current_principal():

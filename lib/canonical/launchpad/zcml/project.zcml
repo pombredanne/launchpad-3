@@ -21,12 +21,19 @@
         classes="ProjectNavigation"
         />
 
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProject"
+        factory="canonical.launchpad.browser.ProjectSOP"
+        permission="zope.Public"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSpecificationsMenu ProjectSupportMenu
-                 ProjectSetContextMenu"
-        />
+                 ProjectSpecificationsMenu ProjectSetContextMenu
+                 ProjectSupportMenu ProjectTranslationsMenu"
+	 />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index"
@@ -40,6 +47,11 @@
         for="canonical.launchpad.interfaces.IProject"
         name="+tickets"
         layer="canonical.launchpad.layers.AnswersLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:pages
@@ -62,18 +74,29 @@
             lp:url="/projects/$Project.name/+bounties/" />
         <browser:page
             name="+listing-detailed"
-            template="../templates/project-listing-detailed.pt"
-            />
+            template="../templates/project-listing-detailed.pt" />
+        <browser:page
+            name="+translations"
+            facet="translations"
+            template="../templates/project-translations.pt"
+            lp:url="/$Project.name/+translations" />
 
        <!-- Projects portlets -->
        <browser:page
             name="+portlet-bounties"
             facet="bounties"
-            template="../templates/object-portlet-bounties.pt" />
+            template="../templates/object-portlet-bounties.pt" 
+            />
        <browser:page
             name="+portlet-details"
             facet="overview"
-            template="../templates/project-portlet-details.pt" />
+            template="../templates/project-portlet-details.pt"
+            />
+       <browser:page
+            name="+portlet-lifecycle"
+            facet="overview"
+            template="../templates/project-portlet-lifecycle.pt"
+            />
     </browser:pages>
 
     <browser:page
@@ -152,13 +175,13 @@
     <browser:editform
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProject"
-        facet="overview"
+        facet="translations"
         schema="canonical.launchpad.interfaces.IProject"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select a new translation group"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+changetranslators" />
+        template="../templates/project-translators.pt"
+        lp:url="/$Project.name/+changetranslators" />
 
     <browser:editform
         name="+driver"
@@ -224,6 +247,21 @@
             permission="zope.Public"
             />
     </facet>
+
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectFileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectFileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
 
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">

@@ -13,12 +13,15 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.launchpad import _
+
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import IMessage, ITicketMessage
 
 from canonical.lp import decorates
-from canonical.lp.dbschema import EnumCol, TicketAction, TicketStatus
+from canonical.lp.dbschema import TicketAction, TicketStatus
 
 
 class TicketMessage(SQLBase):

@@ -18,12 +18,14 @@ from sqlobject import (
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus)
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -44,8 +46,7 @@ from canonical.launchpad.database.ticket import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH,
-    get_supported_languages)
+    ITicketTarget, NotFoundError, get_supported_languages)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
@@ -559,6 +560,11 @@ class ProductSet:
             return default
         return product
 
+    def getProductsWithBranches(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        return Product.select('Product.id = Branch.product',
+                              clauseTables=['Branch'],
+                              distinct=True)
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
