@@ -74,8 +74,8 @@ FROM
         LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation
 WHERE posubmission.active;
 
-ALTER TABLE POFile ADD COLUMN latest_touched_pomsgset INTEGER REFERENCES POMsgSet(id);
-UPDATE POFile SET latest_touched_pomsgset=pms.id
+ALTER TABLE POFile ADD COLUMN last_touched_pomsgset INTEGER REFERENCES POMsgSet(id);
+UPDATE POFile SET last_touched_pomsgset=pms.id
 FROM POMsgSet pms
 WHERE pms.id = (
     SELECT id

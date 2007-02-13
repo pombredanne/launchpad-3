@@ -10,16 +10,16 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
-from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
-from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
+from canonical.lp.dbschema import (RosettaTranslationOrigin,
+    TranslationValidationStatus)
 
 
 class POMsgSetMixIn:
@@ -604,7 +604,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         published_count = POSubmission.select("""
             POSubmission.pomsgset = %s AND
             POSubmission.published AND
-            POSelection.pluralform < %s
+            POSubmission.pluralform < %s
             """ % sqlvalues(self, pluralforms)).count()
 
         self.publishedcomplete = (published_count == pluralforms)
@@ -617,7 +617,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         active_count = POSubmission.select("""
             POSubmission.pomsgset = %s AND
             POSubmission.active AND
-            POSelection.pluralform < %s
+            POSubmission.pluralform < %s
             """ % sqlvalues(self, pluralforms)).count()
 
         self.iscomplete = (active_count == pluralforms)

@@ -2,6 +2,7 @@
 
 from zope.interface import Interface, Attribute
 from zope.schema import Object, Datetime, Bool
+from canonical.launchpad import _
 
 __metaclass__ = type
 __all__ = [
@@ -33,10 +34,10 @@ class IPOSubmission(Interface):
         "The status of the validation of the translation.")
 
     active = Bool(
-        title=("Whether this submission is active."),
+        title=_("Whether this submission is active."),
         required=True)
     published = Bool(
-        title=("Whether this submission is published."),
+        title=_("Whether this submission is published."),
         required=True)
 
     def destroySelf():

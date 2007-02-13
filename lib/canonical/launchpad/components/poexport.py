@@ -464,7 +464,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
-            if (row.pofile is not None):
+            if (row.pofile is not None and
                 row.pofile.last_touched_pomsgset is not None and
                 row.pofile.last_touched_pomsgset.reviewer is not None):
                 # Update the last translator field.

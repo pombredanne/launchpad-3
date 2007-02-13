@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool
+from zope.schema import Bool, Object, Datetime
+from canonical.launchpad.interfaces.person import IPerson
 
 __metaclass__ = type
 

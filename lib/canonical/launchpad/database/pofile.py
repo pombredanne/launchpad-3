@@ -212,7 +212,8 @@ class POFile(SQLBase, RosettaStats):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     last_touched_pomsgset = ForeignKey(
-        foreignKey='POMsgSet', notNull=False, default=None)
+        foreignKey='POMsgSet', dbName='last_touched_pomsgset',
+        notNull=False, default=None)
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
