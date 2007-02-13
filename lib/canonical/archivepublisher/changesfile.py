@@ -11,8 +11,6 @@ from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
 
-from canonical.database.constants import UTC_NOW
-
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PersonCreationRationale)
 
@@ -597,7 +595,6 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             sourcepackagename=spns.getOrCreateByName(self.source),
             version=changes.version,
             maintainer=self.maintainer['person'],
-            dateuploaded=UTC_NOW,
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
@@ -613,6 +610,7 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             component=arg_component,
             changelog=guess_encoding(changes.simulated_changelog),
             section=arg_section,
+            # dateuploaded by default is UTC:now in the database
             )
 
     #
