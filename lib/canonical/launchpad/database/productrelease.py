@@ -10,11 +10,12 @@ from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet)
 
-from canonical.lp.dbschema import EnumCol, UpstreamFileType
+from canonical.lp.dbschema import UpstreamFileType
 
 class ProductRelease(SQLBase):
     """A release of a product."""

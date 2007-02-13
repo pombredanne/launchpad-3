@@ -89,16 +89,12 @@ is updated by the foaf-update-karma-cache.py cronscript.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    Updating the karma cache of Launchpad users.
     INFO    creating lockfile
-    INFO    Calculating everyones karma
-    INFO    Got 29 (person, category) scores
-    INFO    Scaling bugs by a factor of 2.6667
-    INFO    Reducing bugs scaling to 2 to avoid spikes
-    INFO    Scaling translations by a factor of 1.0000
-    INFO    Scaling specs by a factor of 1.0000
-    INFO    Rebuilding KarmaTotalCache
-    INFO    Finished updating the karma cache of Launchpad users.
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
     <BLANKLINE>
     >>> print out
     <BLANKLINE>

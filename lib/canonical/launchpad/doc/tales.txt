@@ -96,7 +96,7 @@ information to distinguish a page template CONTEXTS dict from any other dict.
 
 Test the 'fmt:url' namespace for canonical urls.
 
-    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import implements
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)

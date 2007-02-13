@@ -7,30 +7,39 @@
 
 <facet facet="support">
 
+  <!-- Because of Zope issue #754, defaultView still needs to
+       be added for specific content object that also provides
+       ITicketCollection. -->
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ITicketCollection"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+tickets"
+    />
+
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.ITicketCollection"
     class="canonical.launchpad.browser.SearchTicketsView"
     name="+tickets"
-    permission="zope.Public" />
-
+    permission="zope.Public"
+    />
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetSearchMyTicketsView"
-    name="+mytickets"
-    permission="launchpad.AnyPerson" />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetSearchNeedAttentionView"
-    name="+need-attention"
-    permission="launchpad.AnyPerson" />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
-    class="canonical.launchpad.browser.TicketTargetLatestTicketsView"
+    for="canonical.launchpad.interfaces.ITicketCollection"
+    class="canonical.launchpad.browser.TicketCollectionLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
     template="../templates/tickettarget-portlet-latesttickets.pt"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.ISearchableByTicketOwner"
+    class="canonical.launchpad.browser.TicketCollectionMyTicketsView"
+    name="+mytickets"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.ISearchableByTicketOwner"
+    class="canonical.launchpad.browser.TicketCollectionNeedAttentionView"
+    name="+need-attention"
+    permission="launchpad.AnyPerson"
     />
 
   <browser:page
@@ -60,7 +69,8 @@
     />
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="TicketTargetSupportMenu" />
+    classes="TicketCollectionSupportMenu TicketTargetSupportMenu"
+    />
 
 </facet>
 

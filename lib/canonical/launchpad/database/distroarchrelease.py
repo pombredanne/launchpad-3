@@ -14,11 +14,12 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet, IPublishing)
+    IBuildSet, IPublishing)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -31,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
