@@ -23,6 +23,17 @@ available on products, distributions and sourcepackages.
     >>> verifyObject(ITicketTarget, firefox_package)
     True
 
+Altough distribution release do not implement the ITicketTarget
+interface, it is possible to adapt one to it. (The adapter is actually
+the distrorelease's distribution.)
+
+    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ITicketTarget.providedBy(ubuntu_warty)
+    False
+    >>> tickettarget = ITicketTarget(ubuntu_warty)
+    >>> verifyObject(ITicketTarget, tickettarget)
+    True
+
 You create a new ticket by calling the newTicket() method of an
 ITicketTarget attribute.
 
@@ -69,8 +80,8 @@ And the creation time is recorded in the datecreated attribute:
     >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
     True
 
-The target onto which the ticket was created is available throught the
-attribute:
+The target onto which the ticket was created is available through the
+'target' attribute:
 
     >>> firefox_ticket.target == firefox
     True

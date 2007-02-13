@@ -15,8 +15,9 @@ import _pythonpath
 import sys, logging
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
 from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.config import config
@@ -47,17 +48,22 @@ def main():
             dest="skip_blobs",
             help="Skip removing expired TemporaryBlobStorage rows"
             )
+    parser.add_option(
+            '', "--skip-files", action="store_true", default=False,
+            dest="skip_files",
+            help="Skip removing files on disk with no database references"
+            )
 
     (options, args) = parser.parse_args()
 
     log = logger(options)
     librariangc.log = log
 
-    lockfile = LockFile(_default_lock_file, logger=log)
+    lockfile = GlobalLock(_default_lock_file, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
+    except LockAlreadyAcquired:
+        log.error('Lockfile %s in use', _default_lock_file)
         sys.exit(1)
 
     if options.loglevel <= logging.DEBUG:
@@ -66,6 +72,11 @@ def main():
     try:
         con = connect(config.librarian.gc.dbuser)
         con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+
+        # Refuse to run if we have significant clock skew between the
+        # librarian and the database.
+        librariangc.confirm_no_clock_skew(con)
+
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly
         if not options.skip_content:
@@ -78,6 +89,8 @@ def main():
             librariangc.delete_unreferenced_aliases(con)
         if not options.skip_content:
             librariangc.delete_unreferenced_content(con) # second sweep
+        if not options.skip_files:
+            librariangc.delete_unwanted_files(con)
     finally:
         lockfile.release()
 

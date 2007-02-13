@@ -13,13 +13,17 @@ __all__ = [
     'ProjectEditView',
     'ProjectSetNavigation',
     'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
     ]
-
-from urllib import quote as urlquote
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
@@ -30,13 +34,10 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
+    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     ILaunchpadRoot, NotFoundError)
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.ticket import TicketAddView
@@ -44,6 +45,7 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -88,16 +90,10 @@ class ProjectSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # XXX mpt 20061004: Products, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
+        return list(self.context.products[:num])
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class ProjectSetContextMenu(ContextMenu):
@@ -120,7 +116,7 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -134,7 +130,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -149,15 +145,15 @@ class ProjectOverviewMenu(ApplicationMenu):
         summary = 'Someone with permission to set goals for all products'
         return Link('+driver', text, summary, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
-
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -199,14 +195,28 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
+class ProjectTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
+    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget('emblem', ImageChangeWidget)
+
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -311,10 +321,12 @@ class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
     field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl']
+                   'description', 'homepageurl', 'gotchi', 'emblem']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
+    custom_widget('gotchi', ImageAddWidget)
+    custom_widget('emblem', ImageAddWidget)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
@@ -326,7 +338,9 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user)
+            owner=self.user,
+            gotchi=data['gotchi'],
+            emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
     @property

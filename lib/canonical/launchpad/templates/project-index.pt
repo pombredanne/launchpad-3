@@ -21,7 +21,7 @@
     be several paragraphs long, and give you a very clear insight into the
     work of the Project, and the people behind it. It should describe the
     project history, and organisation.
-    
+
     The Project Description should also mention the major product or
     products from that project. For example, the Apache Project description
     would highlight its work on the Apache Server, and mention other
@@ -45,7 +45,7 @@
         <li>
           <a href="+addticket">
             <img
-              alt="Request support"
+              alt="Ask a question"
               src="/+icing/but_sml_requestsupport.gif"
             />
           </a>
@@ -69,7 +69,7 @@
           >
             <h3>
               <a
-                tal:attributes="href product/fmt:url" 
+                tal:attributes="href product/fmt:url"
                 tal:content="product/title"
               >Product title</a>
             </h3>
@@ -100,14 +100,7 @@
             <li><a href="+newproduct">Register another product</a></li>
           </ul>
         </div>
-        <div class="demo portlet">
-          <h2>Top contributors</h2>
-          <ul class="person">
-            <li>Dennis Kaarsemaker (3459 points)</li>
-            <li>Mateusz Drozdzyriski (2094 points)</li>
-            <li>Spoilerhead (364 points)</li>
-          </ul>
-        </div>
+        <div tal:replace="structure context/@@+portlet-top-contributors" />
       </div>
       <div class="right">
         <div tal:replace="structure context/@@+portlet-details" />

@@ -3,12 +3,12 @@
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
 
+    <!--
     <mail:queuedDelivery
         permission="zope.SendMail" mailer="smtp"
-        queuePath="/srv/launchpad.net/mail_queue"
+        queuePath="/srv/launchpad.net/mail_queue/production1"
         />
-
-    <!--
-    <mail:directDelivery permission="zope.SendMail" mailer="smtp" />
     -->
+
+    <mail:directDelivery permission="zope.SendMail" mailer="smtp" />
 </configure>

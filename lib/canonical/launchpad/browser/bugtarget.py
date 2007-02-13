@@ -10,7 +10,9 @@ __all__ = [
     "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FileBugInPackageView"
+    "FileBugInPackageView",
+    "ProjectFileBugGuidedView",
+    "ProjectFileBugAdvancedView",
     ]
 
 import cgi
@@ -32,9 +34,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
-    IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
-    ITemporaryStorageManager)
+    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
+    IProjectBugAddForm, ITemporaryStorageManager)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
@@ -46,6 +48,7 @@ class FileBugData:
     """Extra data to be added to the bug."""
 
     def __init__(self):
+        self.initial_summary = None
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -53,12 +56,14 @@ class FileBugData:
     def setFromRawMessage(self, raw_mime_msg):
         """Set the extra file bug data from a MIME multipart message.
 
+            * The Subject header is the initial bug summary.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
         """
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
+            self.initial_summary = mime_msg.get('Subject')
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -99,11 +104,20 @@ class FileBugViewBase(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
-    extra_bug_data = None
+    extra_data_token = None
+    can_decide_security_contact = True
+
+    def __init__(self, context, request):
+        LaunchpadFormView.__init__(self, context, request)
+        self.extra_data = FileBugData()
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
-        if self.extra_bug_data is not None:
+        if self.extra_data_token is not None:
+            # self.extra_data has been initialized in publishTraverse().
+            if self.extra_data.initial_summary:
+                self.widgets['title'].setRenderedValue(
+                    self.extra_data.initial_summary)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
@@ -118,20 +132,6 @@ class FileBugViewBase(LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-
-    def getProductOrDistroFromContext(self):
-        """Return the IProduct or IDistribution for this context."""
-        context = self.context
-
-        if IDistribution.providedBy(context) or IProduct.providedBy(context):
-            return context
-        else:
-            assert IDistributionSourcePackage.providedBy(context), (
-                "Expected a bug filing context that provides one of "
-                "IDistribution, IProduct, or IDistributionSourcePackage. "
-                "Got: %r" % context)
-
-            return context.distribution
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -184,7 +184,19 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        return self.getProductOrDistroFromContext().official_malone
+        if IProject.providedBy(self.context):
+            products_using_malone = [
+                product for product in self.context.products
+                if product.official_malone]
+            return len(products_using_malone) > 0
+        else:
+            return self.getMainContext().official_malone
+
+    def getMainContext(self):
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -199,10 +211,6 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def submit_bug_action(self, action, data):
         """Add a bug to this IBugTarget."""
-        extra_data = FileBugData()
-        if self.extra_bug_data is not None:
-            extra_data.setFromRawMessage(self.extra_bug_data.blob)
-
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
@@ -216,6 +224,8 @@ class FileBugViewBase(LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
+        elif IProject.providedBy(context):
+            context = data['product']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -264,6 +274,7 @@ class FileBugViewBase(LaunchpadFormView):
                 title=title, comment=comment, owner=self.user,
                 security_related=security_related, private=private)
 
+        extra_data = self.extra_data
         if extra_data.extra_description:
             params.comment = "%s\n\n%s" % (
                 params.comment, extra_data.extra_description)
@@ -279,14 +290,20 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        for attachment in extra_data.attachments:
-            bug.addAttachment(
-                self.user, attachment['content'], attachment['description'],
-                None, attachment['filename'],
-                content_type=attachment['content_type'])
-            notifications.append(
-                'The file "%s" was attached to the bug report.' % cgi.escape(
-                    attachment['filename']))
+        if extra_data.attachments:
+            # Attach all the comments to a single empty comment.
+            attachment_comment = bug.newMessage(
+                owner=self.user, subject=bug.followup_subject(), content=None)
+            for attachment in extra_data.attachments:
+                bug.addAttachment(
+                    owner=self.user, file_=attachment['content'],
+                    description=attachment['description'],
+                    comment=attachment_comment,
+                    filename=attachment['filename'],
+                    content_type=attachment['content_type'])
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' % 
+                        cgi.escape(attachment['filename']))
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
@@ -312,18 +329,23 @@ class FileBugViewBase(LaunchpadFormView):
         to the advanced bug filing form via the returned URL.
         """
         url = urlappend(canonical_url(self.context), '+filebug-advanced')
-        if self.extra_bug_data is not None:
-            url = urlappend(url, self.extra_bug_data.uuid)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
         return url
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
-        if self.extra_bug_data is not None:
-            # The URL contains more path components than expected.
+        if self.extra_data_token is not None:
+            # publishTraverse() has already been called once before,
+            # which means that he URL contains more path components than
+            # expected.
             raise NotFound(self, name, request=request)
 
-        self.extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if self.extra_bug_data is None:
+        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
+        if extra_bug_data is not None:
+            self.extra_data_token = name
+            self.extra_data.setFromRawMessage(extra_bug_data.blob)
+        else:
             # The URL might be mistyped, or the blob has expired.
             # XXX: We should handle this case better, since a user might
             #      come to this page when finishing his account
@@ -414,7 +436,13 @@ class FileBugGuidedView(FileBugViewBase):
         title = self.getSearchText()
         if not title:
             return []
-        search_context = self.getProductOrDistroFromContext()
+        search_context = self.getMainContext()
+        if IProject.providedBy(search_context):
+            assert self.widgets['product'].hasValidInput(), (
+                "This method should be called only when we know which"
+                " product the user selected.")
+            search_context = self.widgets['product'].getInputValue()
+
         if IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         else:
@@ -491,6 +519,38 @@ class FileBugGuidedView(FileBugViewBase):
 
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
+
+
+class ProjectFileBugGuidedView(FileBugGuidedView):
+    """Guided filebug pages for IProject."""
+
+    # Make inheriting the base class' actions work.
+    actions = FileBugGuidedView.actions
+    schema = IProjectBugAddForm
+    can_decide_security_contact = False
+
+    field_names = ['product', 'title', 'comment']
+
+    @cachedproperty
+    def most_common_bugs(self):
+        """Return a list of the most duplicated bugs."""
+        assert self.widgets['product'].hasValidInput(), (
+            "This method should be called only when we know which"
+            " product the user selected.")
+        selected_product = self.widgets['product'].getInputValue()
+        return selected_product.getMostCommonBugs(
+            self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+
+class ProjectFileBugAdvancedView(FileBugAdvancedView):
+    """Advanced filebug page for IProject."""
+
+    # Make inheriting the base class' actions work.
+    actions = FileBugAdvancedView.actions
+    schema = IProjectBugAddForm
+    can_decide_security_contact = False
+
+    field_names = ['product', 'title', 'comment', 'security_related']
 
 
 class FileBugInPackageView(FileBugViewBase):

@@ -59,7 +59,7 @@ are adjusted after the request has been served:
 
 == Number of HTTP requests and success codes ==
 
-    >>> output = http("GET / HTTP/1.1\nHost: code.launchpad.dev\n")
+    >>> output = http("GET / HTTP/1.1\nHost: bugs.launchpad.dev\n")
     >>> output.getStatus()
     200
     >>> report()

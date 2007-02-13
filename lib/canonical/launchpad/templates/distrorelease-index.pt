@@ -22,7 +22,7 @@
             <img alt="Help translate" src="/+icing/but_sml_helptranslate.gif" />
           </a>
         </li>
-        <li>
+        <li tal:content="structure context/@@+ask-a-question-button">
           <a href="+addticket">
             <img
               alt="Ask a question"
@@ -40,7 +40,7 @@
         <input size="35" type="text" name="text"/>
         <input type="submit" value="Find a Package"/>
       </form>
-      
+
       </tal:packages>
 
     <tal:block tal:condition="not: context/binarycount">

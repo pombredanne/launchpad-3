@@ -27,7 +27,7 @@
          tal:content="context/sourcepackage/name"/>:
     </p>
 
-    <ul class="packages">
+    <ul class="binary package">
       <li tal:repeat="drbp context/sample_binary_packages">
         <a tal:attributes="href drbp/fmt:url">
            <span tal:replace="drbp/name">apache-utils</span>:

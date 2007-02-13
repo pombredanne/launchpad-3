@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AskAQuestionButtonView',
     'ManageSupportContactView',
     'SearchTicketsView',
     'TicketTargetFacetMixin',
@@ -36,6 +37,20 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
+
+
+class AskAQuestionButtonView:
+    """View that renders a clickable button to ask a question on its context."""
+
+    def __call__(self):
+        return """
+              <a href="%s/+addticket">
+                <img
+                  alt="Ask a question"
+                  src="/+icing/but_sml_requestsupport.gif"
+                />
+              </a>
+        """ % canonical_url(ITicketTarget(self.context), rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
@@ -133,14 +148,14 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if status_set_title:
             replacements['status'] = status_set_title
             if self.search_text:
-                return _('${status} support requests about "${search_text}" '
+                return _('${status} support requests matching "${search_text}" '
                          'for ${context}', mapping=replacements)
             else:
                 return _('${status} support requests for ${context}',
                          mapping=replacements)
         else:
             if self.search_text:
-                return _('Support requests about "${search_text}" for '
+                return _('Support requests matching "${search_text}" for '
                          '${context}', mapping=replacements)
             else:
                 return _('Support requests for ${context}',
@@ -158,7 +173,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if status_set_title:
             replacements['status'] = status_set_title.lower()
             if self.search_text:
-                return _('There are no ${status} support requests about '
+                return _('There are no ${status} support requests matching '
                          '"${search_text}" for ${context}.',
                          mapping=replacements)
             else:
@@ -166,7 +181,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
                          '${context}.', mapping=replacements)
         else:
             if self.search_text:
-                return _('There are no support requests about '
+                return _('There are no support requests matching '
                          '"${search_text}" for ${context} with the requested '
                          'statuses.', mapping=replacements)
             else:
@@ -279,7 +294,7 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests you made about "${search_text}" for '
+            return _('Support requests you made matching "${search_text}" for '
                      '${context}', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
@@ -291,7 +306,7 @@ class TicketTargetSearchMyTicketsView(SearchTicketsView):
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _("You didn't make any support requests about "
+            return _("You didn't make any support requests matching "
                      '"${search_text}" for ${context}.', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
@@ -316,7 +331,7 @@ class TicketTargetSearchNeedAttentionView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests about "${search_text}" needing your '
+            return _('Support requests matching "${search_text}" needing your '
                      'attention for ${context}', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
@@ -328,7 +343,7 @@ class TicketTargetSearchNeedAttentionView(SearchTicketsView):
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('No support requests about "${search_text}" need your '
+            return _('No support requests matching "${search_text}" need your '
                      'attention for ${context}.', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
@@ -436,17 +451,17 @@ class TicketTargetSupportMenu(ApplicationMenu):
     links = ['open', 'answered', 'myrequests', 'need_attention', 'new',
              'support_contact']
 
-    def makeSearchLink(self, statuses):
+    def makeSearchLink(self, statuses, sort='by relevancy'):
         return "+tickets?" + urlencode(
             {'field.status': statuses,
-             'field.sort': 'by relevancy',
+             'field.sort': sort,
              'field.search_text': '',
              'field.actions.search': 'Search',
              'field.status': statuses}, doseq=True)
 
     def open(self):
-        text = 'Open'
-        return Link(self.makeSearchLink('Open'), text, icon='ticket')
+        url = self.makeSearchLink('Open', sort='recently updated first')
+        return Link(url, 'Open', icon='ticket')
 
     def answered(self):
         text = 'Answered'

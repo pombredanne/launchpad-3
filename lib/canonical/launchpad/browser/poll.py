@@ -21,8 +21,8 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, GeneralFormView, Link, Navigation,
-    stepthrough)
+    canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
+    Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll,
     validate_date_interval)
@@ -39,10 +39,12 @@ class PollContextMenu(ContextMenu):
         text = 'Show Option Details'
         return Link('+options', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def addnew(self):
         text = 'Add New Option'
         return Link('+newoption', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit this Poll'
         return Link('+edit', text, icon='edit')
@@ -67,6 +69,18 @@ class BasePollView:
         self.token = None
         self.gotTokenAndVotes = False
         self.feedback = ""
+
+    def setUpTokenAndVotes(self):
+        """Set up the token and votes to be displayed."""
+        if not self.userVoted():
+            return
+
+        # For secret polls we can only display the votes after the token
+        # is submitted.
+        if self.request.method == 'POST' and self.isSecret():
+            self.setUpTokenAndVotesForSecretPolls()
+        elif not self.isSecret():
+            self.setUpTokenAndVotesForNonSecretPolls()
 
     def setUpTokenAndVotesForNonSecretPolls(self):
         """Get the votes of the logged in user in this poll.
@@ -106,7 +120,11 @@ class BasePollView:
         in user has voted on this poll.
         """
         assert self.isSecret() and self.userVoted()
-        self.token = self.request.form.get('token')
+        token = self.request.form.get('token')
+        # Only overwrite self.token if the request contains a 'token'
+        # variable.
+        if token is not None:
+            self.token = token
         votes = getUtility(IVoteSet).getByToken(self.token)
         if not votes:
             self.feedback = ("There's no vote associated with the token %s"
@@ -163,18 +181,6 @@ class PollView(BasePollView):
             elif self.isCondorcet():
                 request.response.redirect("%s/+vote-condorcet" % context_url)
 
-    def setUpTokenAndVotes(self):
-        """Set up the token and votes to be displayed."""
-        if not self.userVoted():
-            return
-
-        # For secret polls we can only display the votes after the token
-        # is submitted.
-        if self.request.method == 'POST' and self.isSecret():
-            self.setUpTokenAndVotesForSecretPolls()
-        elif not self.isSecret():
-            self.setUpTokenAndVotesForNonSecretPolls()
-
     def getVotesByOption(self, option):
         """Return the number of votes the given option received."""
         return getUtility(IVoteSet).getVotesByOption(option)
@@ -222,16 +228,24 @@ class PollVoteView(BasePollView):
             return
 
         if not self.context.isOpen():
-            self.feedback = "This poll is not open. You can't vote anymore."
+            self.feedback = "This poll is not open."
+            return
 
         if self.isSimple():
             self.processSimpleVotingForm()
         else:
             self.processCondorcetVotingForm()
 
+        # User may have voted, so we need to setup the vote to display again.
+        self.setUpTokenAndVotes()
+
     def processSimpleVotingForm(self):
         """Process the simple-voting form to change a user's vote or register
-        a new one."""
+        a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         context = self.context
         newoption_id = self.request.form.get('newoption')
         if newoption_id == 'donotchange':
@@ -266,7 +280,11 @@ class PollVoteView(BasePollView):
 
     def processCondorcetVotingForm(self):
         """Process the condorcet-voting form to change a user's vote or 
-        register a new one."""
+        register a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         form = self.request.form
         activeoptions = shortlist(self.context.getActiveOptions())
         newvotes = {}
