@@ -555,7 +555,25 @@ class LaunchpadRootIndexView(LaunchpadView):
             expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
             document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
                                expire.toGMTString())
+            alert('You will not be redirected to the beta site for 2 hours');
+            return false;
         }''' % self._getCookieParams()
+
+    def getEnableRedirectScript(self):
+        """Returns a Javascript function that enables beta redireciton."""
+        return '''
+        function enable_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 1000)
+            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
+                               expire.toGMTString())
+            alert('Redirection to the beta site has been enabled');
+            return false;
+        }''' % self._getCookieParams()
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
     
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""

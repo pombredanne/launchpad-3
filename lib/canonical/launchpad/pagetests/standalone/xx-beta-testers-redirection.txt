@@ -108,22 +108,52 @@ redirection for 2 hours:
     <div class="informational message">
     <script type="text/javascript">
       function inhibit_beta_redirect() {
-         var expire = new Date()
-         expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
-         document.cookie = ('inhibit_beta_redirect=1; Path=/; Domain=.launchpad.dev; Expires=' +
-                            expire.toGMTString())
+          var expire = new Date()
+          expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
+          document.cookie = ('inhibit_beta_redirect=1; Path=/; Domain=.launchpad.dev; Expires=' +
+                             expire.toGMTString())
+          alert('You will not be redirected to the beta site for 2 hours');
+          return false;
       }</script>
     <p>As a member of the Launchpad Beta Testers team, you will be
-    redirected to the beta site when viewing Launchpad pages other than
-    the front page.</p>
-    <p>To disable this redirection for 2 hours, click <a
-    href="javascript:inhibit_beta_redirect()">here</a>.</p>
+    redirected to the beta site when viewing Launchpad pages other
+    than the front page.</p>
+    <p><button onclick="inhibit_beta_redirect()">Disable redirection
+    for 2 hours</button></p>
     </div>
 
 This is so that the user can make use of some client side JS on that
-page that sets a cookie to inhibit the redirection:
+page that sets a cookie to inhibit the redirection.  When the
+redirection is inhibited, the info message changes to one that lets
+them inhibit the redirection (a lower cookie expiry is used, since the
+default is to redirect if no cookie exists):
 
     >>> beta_browser.addHeader('Cookie', 'inhibit_beta_redirect="1"')
+    >>> check(beta_browser.open, 'http://launchpad.dev/')
+    >>> print beta_browser.url
+    http://launchpad.dev/
+    >>> print find_tags_by_class(beta_browser.contents,
+    ...                          'informational message')[0]
+    <div class="informational message">
+    <script type="text/javascript">
+      function enable_beta_redirect() {
+          var expire = new Date()
+          expire.setTime(expire.getTime() + 1000)
+          document.cookie = ('inhibit_beta_redirect=0; Path=/; Domain=.launchpad.dev; Expires=' +
+                             expire.toGMTString())
+          alert('Redirection to the beta site has been enabled');
+          return false;
+      }</script>
+    <p>As a member of the Launchpad Beta Testers team, you would
+    normally be redirected to the beta site when viewing Launchpad
+    pages.  However, you currently have this disabled.</p>
+    <p><button onclick="enable_beta_redirect()">Enable beta site
+    redirection</button></p>
+    </div>
+
+
+Now when they go to a page on the site, it loads as normal:
+
     >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
     >>> print beta_browser.url
     http://launchpad.dev/ubuntu
