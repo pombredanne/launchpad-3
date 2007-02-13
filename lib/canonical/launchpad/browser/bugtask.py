@@ -759,23 +759,6 @@ class BugTaskEditView(GeneralFormView):
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        comment_on_change = self.request.form.get(
-            "%s.comment_on_change" % self.prefix)
-        if comment_on_change:
-            # There was a comment on this change, so make sure that a
-            # change was actually made.
-            changed = False
-            for field_name in data:
-                current_value = getattr(bugtask, field_name)
-                if current_value != data[field_name]:
-                    changed = True
-                    break
-
-            if not changed:
-                # Pass the change comment error message as a list because
-                # WidgetsError expects a list.
-                raise WidgetsError([
-                    "You provided a change comment without changing anything."])
         if bugtask.distrorelease is not None:
             distro = bugtask.distrorelease.distribution
         else:
@@ -1582,6 +1565,17 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
+
+    def getBugsFixedElsewhereInfo(self):
+        """Return a dict with count and URL of bugs fixed elsewhere."""
+        fixed_elsewhere = self.context.searchTasks(
+            BugTaskSearchParams(self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            only_resolved_upstream=True, omit_dupes=True))
+        search_url = (
+            "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
+                canonical_url(self.context))
+        return dict(count=fixed_elsewhere.count(), url=search_url)
 
 
 class BugTargetView(LaunchpadView):

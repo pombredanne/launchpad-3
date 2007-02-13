@@ -88,7 +88,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
+                              unique=False,
                               notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
@@ -98,25 +98,22 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True)
+                                         unique=False, notNull=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
+                              notNull=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
+                                  notNull=True)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
+                                  notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
+                               notNull=True, schema=PackagePublishingStatus)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
@@ -132,8 +129,8 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
+                              unique=False, notNull=True,
+                              immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
@@ -142,28 +139,27 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True, immutable=True)
+                                         unique=False, notNull=True,
+                                         immutable=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
+                              notNull=True, immutable=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+                                  notNull=True, immutable=True)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+                                  notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
+                               notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                default=None, notNull=True, immutable=True)
+                                notNull=True, immutable=True)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
 
 class ArchiveSafePublisherBase:
