@@ -48,26 +48,26 @@
       </tr>
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
-            <td>CVS root:</td>
+            <th>CVS root:</th>
             <td tal:content="context/cvsroot">cvs root</td>
           </tr>
           <tr>
-            <td>CVS Module:</td>
+            <th>CVS module:</th>
             <td tal:content="context/cvsmodule">cvs module</td>
           </tr>
           <tr>
-            <td>CVS Branch:</td>
+            <th>CVS branch:</th>
             <td tal:content="context/cvsbranch">cvs branch</td>
           </tr>
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
-            <td>Subversion Repository:</td>
+            <th>Subversion repository:</th>
             <td tal:content="context/svnrepository">svn repo</td>
           </tr>
         </tal:block>
         <tr>
-          <td><b>Bazaar Status:</b></td>
+          <th>Bazaar status:</th>
           <td tal:content="context/importstatus/title">Publishing</td>
         </tr>
         <tal:block condition="context/import_branch"

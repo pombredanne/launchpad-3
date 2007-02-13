@@ -1,7 +1,7 @@
 <div class="portlet">
   <h2>Subscribers</h2>
   <div class="portletBody portletContent">
-    <ul class="people">
+    <ul class="person">
       <li tal:repeat="person context/subscribers">
         <a href="#"
            tal:content="person/browsername"
