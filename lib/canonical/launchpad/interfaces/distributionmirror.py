@@ -35,10 +35,6 @@ class DistributionMirrorNameField(ContentNameField):
 class DistroMirrorURIField(URIField):
     """Base class for the DistributionMirror unique URI fields."""
 
-    # The name of the attribute in which the URI is stored. Must be overriden
-    # in subclasses.
-    uri_attrname = None
-
     def getMirrorByURI(self, uri):
         """Return the mirror with the given URI."""
         raise NotImplementedError()
@@ -53,34 +49,31 @@ class DistroMirrorURIField(URIField):
         uri = URI(value)
 
         if (IDistributionMirror.providedBy(self.context)
-            and getattr(self.context, self.uri_attrname) == str(uri)):
+            and URI(self.get(self.context)) == uri):
             return # url was not changed
 
         mirror = self.getMirrorByURI(str(uri))
         if mirror is not None:
             message = _(
-                "The distribution mirror <a href=\"%s\">%s</a> is already "
-                "registered with this URL.")
+                'The distribution mirror <a href="%s">%s</a> is already '
+                'registered with this URL.')
             raise LaunchpadValidationError(
                 message, canonical_url(mirror), mirror.title)
 
 
 class DistroMirrorHTTPURIField(DistroMirrorURIField):
-    uri_attrname = 'http_base_url'
 
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByHttpUrl(url)
 
 
 class DistroMirrorFTPURIField(DistroMirrorURIField):
-    uri_attrname = 'ftp_base_url'
 
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByFtpUrl(url)
 
 
 class DistroMirrorRsyncURIField(DistroMirrorURIField):
-    uri_attrname = 'rsync_base_url'
 
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
@@ -105,20 +98,20 @@ class IDistributionMirror(Interface):
     http_base_url = DistroMirrorHTTPURIField(
         title=_('HTTP URL'), required=False, readonly=False,
         allowed_schemes=['http'], allow_userinfo=False,
-        allow_query=False, allow_fragment=False, trailing_slash=False,
+        allow_query=False, allow_fragment=False, trailing_slash=True,
         description=_('e.g.: http://archive.ubuntu.com/ubuntu/'))
     ftp_base_url = DistroMirrorFTPURIField(
         title=_('FTP URL'), required=False, readonly=False,
         allowed_schemes=['ftp'], allow_userinfo=False,
-        allow_query=False, allow_fragment=False, trailing_slash=False,
+        allow_query=False, allow_fragment=False, trailing_slash=True,
         description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/'))
     rsync_base_url = DistroMirrorRsyncURIField(
         title=_('Rsync URL'), required=False, readonly=False,
         allowed_schemes=['rsync'], allow_userinfo=False,
-        allow_query=False, allow_fragment=False, trailing_slash=False,
+        allow_query=False, allow_fragment=False, trailing_slash=True,
         description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/'))
     enabled = Bool(
-        title=_('Probe this mirror for its content periodically'),
+        title=_('This mirror was probed successfully.'),
         required=False, readonly=False, default=False)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,

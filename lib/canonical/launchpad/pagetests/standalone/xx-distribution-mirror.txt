@@ -16,9 +16,10 @@
   True
 
   If we try to register the mirror using the same HTTP URL of a existing one,
-  we should also get a nice error message
+  we should also get a nice error message. (Even if we forget to add the
+  trailing slash in the new URL by mistake)
 
-  >>> http_url = 'http://localhost:11375/invalid-mirror' 
+  >>> http_url = 'http://localhost:11375/invalid-mirror'
   >>> browser.getControl('HTTP URL').value = http_url
   >>> browser.getControl('Continue').click()
 
@@ -65,12 +66,29 @@
   ...     print message.renderContents()
   The distribution mirror ... is already registered with this URL.
 
+  Note also that neither query strings nor fragments are allowed in the URLs.
+
+  >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz#someid'
+  >>> browser.getControl('Continue').click()
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for message in soup.findAll(attrs={'class': 'message'}):
+  ...     print message.renderContents()
+  URIs with fragment identifiers are not allowed.
+
+  >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz?q=string'
+  >>> browser.getControl('Continue').click()
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for message in soup.findAll(attrs={'class': 'message'}):
+  ...     print message.renderContents()
+  URIs with query strings are not allowed.
+
   Now we provide everything that is needed...
 
+  >>> http_url = 'http://my.mirror.com/pub'
   >>> browser.getControl('Link Speed').value = ['1 Mbps']
   >>> browser.getControl('Location (Country)').value =  ['9']
   >>> browser.getControl('Content').value = ['Archive']
-  >>> browser.getControl('HTTP URL').value = 'http://my.mirror.com/pub'
+  >>> browser.getControl('HTTP URL').value = http_url
   >>> browser.getControl('FTP URL').value = ''
   >>> browser.getControl('Rsync URL').value = ''
   >>> browser.getControl('Continue').click()
@@ -79,6 +97,12 @@
 
   >>> browser.url
   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
+
+  Note that even though the http_url we used didn't contain a trailing slash,
+  the value stored in our database will contain it.
+
+  >>> http_url + "/" == browser.getControl('HTTP URL').value
+  True
 
   It's possible to change the auto-generated mirror name, if we want, but
   the name is unique, and so we can't use a name that is already in use by
