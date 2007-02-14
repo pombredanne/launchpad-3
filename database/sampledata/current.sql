@@ -8773,6 +8773,8 @@ INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (78, 1, 2, '2006-10-16 18:31:52.594357');
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (79, 1, 3, '2006-10-16 18:31:52.594837');
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (80, 1, 4, '2006-10-16 18:31:52.595418');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (81, 1, 7, '2007-02-09 10:31:52.595418');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (82, 3, 7, '2007-02-09 10:31:52.595418');
 
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;

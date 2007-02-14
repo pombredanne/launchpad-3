@@ -233,6 +233,6 @@ We can also find all the products that have branches.
  ...     print product.displayname
  Evolution
  GNOME Terminal
+ iso-codes
  Mozilla Firefox
  Mozilla Thunderbird
- iso-codes
