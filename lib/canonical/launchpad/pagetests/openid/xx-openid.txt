@@ -1,9 +1,9 @@
-OpenId
+OpenID
 ======
 
-Launchpad is an OpenId server. If the URL is accessed by a web browser,
+Launchpad is an OpenID server. If the URL is accessed by a web browser,
 an informative message is displayed. We replicate the one from the
-specification exactly, even though other OpenId servers take more
+specification exactly, even though other OpenID servers take more
 liberties.
 
 >>> anon_browser.open('http://openid.launchpad.dev')
@@ -17,4 +17,24 @@ Content-Type: text/html;charset=utf-8
 ...
 This is an OpenID server endpoint. For more information, see http://openid.net/
 <BLANKLINE>
+
+
+A Launchpad user's home page contains the required <link rel="openid.server" />
+tag to allow OpenID consumers to determine the URL of the OpenID server to
+be contacted.
+
+XXX: This may be disabled before production rollout, until we are ready
+to announce the OpenID service. Until then, consumers will need to use a
+hardcoded URL or we set up some hidden URLs to be used
+    -- StuartBishop 20070214
+
+>>> anon_browser.open('http://launchpad.dev/~sabdfl')
+>>> print '\n' + anon_browser.contents
+<BLANKLINE>
+...
+<head>
+...
+<link rel="openid.server" href="http://openid.launchpad.dev/" />
+</head>
+...
 
