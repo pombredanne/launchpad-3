@@ -41,7 +41,7 @@ record in PocketChroot:
   >>> p_chroot = hoary_i386.addOrUpdateChroot(
   ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot1)
   >>> print p_chroot.id
-  2
+  1
   >>> print p_chroot.distroarchrelease.architecturetag
   i386
   >>> print p_chroot.chroot.id,
@@ -55,7 +55,7 @@ the chroot:
   >>> p_chroot = hoary_i386.addOrUpdateChroot(
   ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot2)
   >>> print p_chroot.id
-  2
+  1
   >>> print p_chroot.distroarchrelease.architecturetag
   i386
   >>> print p_chroot.chroot.id,
@@ -89,7 +89,7 @@ PocketChroot record:
   >>> p_chroot = hoary_i386.addOrUpdateChroot(
   ...      pocket=PackagePublishingPocket.RELEASE, chroot=chroot1)
   >>> print p_chroot.id
-  3
+  2
   >>> print p_chroot.distroarchrelease.architecturetag
   i386
   >>> print p_chroot.chroot.id,

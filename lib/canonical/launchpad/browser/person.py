@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2007 Canonical Ltd
 
 __metaclass__ = type
 
@@ -2500,7 +2500,7 @@ class PersonSearchTicketsView(SearchTicketsView):
     involved.
     """
 
-    displayTargetColumn = True
+    display_target_column = True
 
     @property
     def pageheading(self):
@@ -2519,7 +2519,7 @@ class PersonSearchTicketsView(SearchTicketsView):
 class SearchAnsweredTicketsView(SearchTicketsView):
     """View used to search and display tickets answered by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
@@ -2542,7 +2542,7 @@ class SearchAnsweredTicketsView(SearchTicketsView):
 class SearchAssignedTicketsView(SearchTicketsView):
     """View used to search and display tickets assigned to an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
@@ -2565,7 +2565,7 @@ class SearchAssignedTicketsView(SearchTicketsView):
 class SearchCommentedTicketsView(SearchTicketsView):
     """View used to search and display tickets commented on by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
@@ -2588,7 +2588,7 @@ class SearchCommentedTicketsView(SearchTicketsView):
 class SearchCreatedTicketsView(SearchTicketsView):
     """View used to search and display tickets created by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
@@ -2611,7 +2611,7 @@ class SearchCreatedTicketsView(SearchTicketsView):
 class SearchNeedAttentionTicketsView(SearchTicketsView):
     """View used to search and display tickets needing an IPerson attention."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
@@ -2633,7 +2633,7 @@ class SearchNeedAttentionTicketsView(SearchTicketsView):
 class SearchSubscribedTicketsView(SearchTicketsView):
     """View used to search and display tickets subscribed to by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""

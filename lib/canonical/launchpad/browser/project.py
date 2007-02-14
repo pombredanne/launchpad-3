@@ -11,12 +11,14 @@ __all__ = [
     'ProjectLatestTicketsView',
     'ProjectNavigation',
     'ProjectEditView',
+    'ProjectReviewView',
     'ProjectSetNavigation',
     'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
+    'ProjectSupportMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
     'ProjectEditView',
@@ -41,6 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.ticket import TicketAddView
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketCollectionSupportMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -108,12 +112,13 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(StandardLaunchpadFacets):
+class ProjectFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'support', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -127,7 +132,8 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf']
+    links = [
+        'edit', 'driver', 'reassign', 'administer', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -151,6 +157,11 @@ class ProjectOverviewMenu(ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -192,6 +203,18 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
+class ProjectSupportMenu(TicketCollectionSupportMenu):
+    """Menu for the support facet of projects."""
+
+    usedfor = IProject
+    facet = 'support'
+    links = TicketCollectionSupportMenu.links + ['new']
+
+    def new(self):
+        text = 'Ask Question'
+        return Link('+addticket', text, icon='add')
+
+
 class ProjectTranslationsMenu(ApplicationMenu):
 
     usedfor = IProject
@@ -206,6 +229,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
+    label = "Change project details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -227,6 +251,13 @@ class ProjectEditView(LaunchpadEditFormView):
             # If the project is inactive, we can't traverse to it
             # anymore.
             return canonical_url(getUtility(IProjectSet))
+
+
+
+class ProjectReviewView(ProjectEditView):
+
+    label = "Review upstream project details"
+    field_names = ['name', 'owner', 'active', 'reviewed']
 
 
 class ProjectAddProductView(LaunchpadFormView):
