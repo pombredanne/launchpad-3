@@ -220,6 +220,16 @@ of changes to the bug status:
     Installer doesn't work on a Mac
     http://.../ubuntu/+ticket/...
 
+Only a change in status triggers a notification.
+
+    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
+    >>> bugtask.transitionToAssignee(sample_person)
+    >>> notify(SQLObjectModifiedEvent(
+    ...     bugtask, original_bugtask, ['assignee', 'dateassigned']))
+
+    >>> len(pop_notifications())
+    0
+
 === Bug Unlinked Notification ===
 
 A notification is also sent when a bug is unlinked from the ticket:
