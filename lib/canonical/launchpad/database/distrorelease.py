@@ -707,11 +707,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             arch_ids, status, name, pocket)
 
     def createUploadedSourcePackageRelease(
-        self, sourcepackagename, version, maintainer, dateuploaded,
-        builddepends, builddependsindep, architecturehintlist, component,
-        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        self, sourcepackagename, version, maintainer, builddepends,
+        builddependsindep, architecturehintlist, component, creator,
+        urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=DEFAULT):
         """See IDistroRelease."""
         return SourcePackageRelease(
             uploaddistrorelease=self, sourcepackagename=sourcepackagename,

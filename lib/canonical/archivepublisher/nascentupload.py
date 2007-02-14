@@ -285,17 +285,9 @@ class NascentUpload:
         # actually comes from overrides for packages that are not NEW.
         self.find_and_apply_overrides()
 
-        # If there are no possible components, then this uploader simply does
-        # not have any rights on this distribution so stop now before we
-        # go processing crap.
-        permitted_components = self.policy.getDefaultPermittedComponents()
-        if not permitted_components:
-            self.reject("Unable to find a component acl OK for the uploader")
-            return
-
-        # check rights for OLD packages, the NEW ones goes straight to queue
         signer_components = self.process_signer_acl()
         if not self.is_new:
+            # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
         if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
@@ -682,8 +674,6 @@ class NascentUpload:
         recipients = self.build_recipients()
         interpolations['RECIPIENT'] = ", ".join(recipients)
         interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-        interpolations = self.policy.filterInterpolations(self,
-                                                          interpolations)
         outgoing_msg = template % interpolations
 
         return [outgoing_msg]
@@ -726,7 +716,6 @@ class NascentUpload:
                 "Changes file is unsigned, adding changer as recipient")
             recipients.append(changer)
 
-        recipients = self.policy.filterRecipients(self, recipients)
         real_recipients = []
         for person in recipients:
             # We should only actually send mail to people that are
@@ -752,25 +741,12 @@ class NascentUpload:
                 summary.append("NEW: %s" % uploaded_file.filename)
             else:
                 summary.append(" OK: %s" % uploaded_file.filename)
-                if uploaded_file.type == 'dsc':
+                if isinstance(uploaded_file, DSCFile):
                     summary.append("     -> Component: %s Section: %s" % (
                         uploaded_file.component,
                         uploaded_file.section))
 
         return "\n".join(summary)
-
-    def insert_source_into_db(self):
-        """Insert the source into the database and inform the policy."""
-        release = self.changes.dsc.create_source_package_release(self.changes)
-        for uploaded_file in self.changes.dsc.files:
-            library_file = self.librarian.create(
-                uploaded_file.filename,
-                uploaded_file.size,
-                open(uploaded_file.full_filename, "rb"),
-                uploaded_file.content_type)
-            release.addFile(library_file)
-        # XXX: stop shoving stuff into the policy
-        self.policy.sourcepackagerelease = release
 
     def find_build(self, archtag):
         """Find and return a build for the given archtag, cached on policy.
@@ -875,7 +851,8 @@ class NascentUpload:
     def insert_into_queue(self):
         """Insert this nascent upload into the database."""
         if self.sourceful:
-            self.insert_source_into_db()
+            self.changes.dsc.create_source_package_release(self.changes)
+
         if self.binaryful and not self.single_custom:
             # XXX: 
             self.insert_binary_into_db()
@@ -955,9 +932,6 @@ class NascentUpload:
 
             interpolations['RECIPIENT'] = ", ".join(recipients)
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-
-            interpolations = self.policy.filterInterpolations(
-                self, interpolations)
 
             self.insert_into_queue()
 

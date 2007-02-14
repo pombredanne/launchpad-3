@@ -1,3 +1,9 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
+"""
+Classes representing Changes and DSC files, which encapsulate collections of
+files uploaded.
+"""
 
 import re
 import os
@@ -18,7 +24,8 @@ from canonical.librarian.utils import copy_and_close
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet)
+    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet,
+    ILibraryFileAliasSet)
 
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
@@ -31,29 +38,7 @@ from canonical.archivepublisher.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError)
 
 
-changes_mandatory_fields = set([
-    "source", "binary", "architecture", "version", "distribution",
-    "maintainer", "files", "changes"
-    ])
-
-dsc_mandatory_fields = set([
-    "source", "version", "binary", "maintainer", "architecture",
-    "files"
-    ])
-
-# Map urgencies to their dbschema values.
-# Debian policy only permits low,medium,high,emergency
-# Britney also uses critical which it maps to emergency
-urgency_map = {
-    "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.MEDIUM,
-    "high": SourcePackageUrgency.HIGH,
-    "critical": SourcePackageUrgency.EMERGENCY,
-    "emergency": SourcePackageUrgency.EMERGENCY
-    }
-
 re_no_revision = re.compile(r"-[^-]+$")
-re_strip_revision = re.compile(r"-([^-]+)$")
 re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
@@ -151,6 +136,21 @@ class SignableTagFile:
 
 class ChangesFile(SignableTagFile):
     """XXX"""
+    mandatory_fields = set([
+        "source", "binary", "architecture", "version", "distribution",
+        "maintainer", "files", "changes"])
+
+    # Map urgencies to their dbschema values.
+    # Debian policy only permits low,medium,high,emergency
+    # Britney also uses critical which it maps to emergency
+    urgency_map = {
+        "low": SourcePackageUrgency.LOW,
+        "medium": SourcePackageUrgency.MEDIUM,
+        "high": SourcePackageUrgency.HIGH,
+        "critical": SourcePackageUrgency.EMERGENCY,
+        "emergency": SourcePackageUrgency.EMERGENCY
+        }
+
     dsc = None
     maintainer = None
     changed_by = None
@@ -181,7 +181,7 @@ class ChangesFile(SignableTagFile):
             raise UploadError("Unable to parse the changes %s: %s" % (
                 filename, e))
 
-        for field in changes_mandatory_fields:
+        for field in self.mandatory_fields:
             if field not in self._dict:
                 raise UploadError(
                     "Unable to find mandatory field '%s' in the changes "
@@ -279,15 +279,14 @@ class ChangesFile(SignableTagFile):
             yield UploadError("No files found in the changes")
 
         raw_urgency = self._dict['urgency'].lower()
-        if not urgency_map.has_key(raw_urgency):
+        if not self.urgency_map.has_key(raw_urgency):
             yield UploadWarning("Unable to grok urgency %s, overriding with 'low'"
                                 % ( raw_urgency))
             self._dict['urgency'] = "low"
 
         if not self.policy.unsigned_changes_ok:
             assert self.signer is not None
-            # XXX: will this raise exceptions?
-            self.policy.considerSigner(self.signer, self.signingkey)
+
     #
     #
     #
@@ -310,7 +309,7 @@ class ChangesFile(SignableTagFile):
     @property
     def urgency(self):
         """Return the appropriate SourcePackageUrgency item."""
-        return urgency_map[self._dict['urgency'].lower()]
+        return self.urgency_map[self._dict['urgency'].lower()]
 
     @property
     def version(self):
@@ -358,6 +357,10 @@ class ChangesFile(SignableTagFile):
 
 class DSCFile(NascentUploadedFile, SignableTagFile):
     """XXX"""
+
+    mandatory_fields = set([
+        "source", "version", "binary", "maintainer", "architecture", "files"])
+
     fingerprint = None
     signingkey = None
 
@@ -388,7 +391,7 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             raise UploadError("Unable to parse the dsc %s: %s" % (filename, e))
 
         self.logger.debug("Performing DSC verification.")
-        for mandatory_field in dsc_mandatory_fields:
+        for mandatory_field in self.mandatory_fields:
             if mandatory_field not in self._dict:
                 self.reject("Unable to find mandatory field %s in %s" % (
                     mandatory_field, filename))
@@ -613,6 +616,7 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             sourcepackagename=spns.getOrCreateByName(self.source),
             version=changes.version,
             maintainer=self.maintainer['person'],
+
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
@@ -630,6 +634,18 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             section=arg_section,
             # dateuploaded by default is UTC:now in the database
             )
+
+        librarian = getUtility(ILibraryFileAliasSet)
+        for uploaded_file in self.files:
+            library_file = librarian.create(
+                uploaded_file.filename,
+                uploaded_file.size,
+                open(uploaded_file.full_filename, "rb"),
+                uploaded_file.content_type)
+            release.addFile(library_file)
+        # XXX: stop shoving stuff into the policy
+        self.policy.sourcepackagerelease = release
+
 
 
 

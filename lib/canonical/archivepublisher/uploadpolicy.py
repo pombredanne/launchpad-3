@@ -103,10 +103,6 @@ class AbstractUploadPolicy:
             announce_list = self.distrorelease.changeslist
         return announce_list
 
-    def considerSigner(self, signer, signingkey):
-        """Consider the signer."""
-        # We do nothing here but our subclasses may override us.
-
     def checkUpload(self, upload):
         self.policySpecificChecks(upload)
 
@@ -114,33 +110,6 @@ class AbstractUploadPolicy:
         """Implement any policy-specific checks in child."""
         raise NotImplemented(
             "Policy specific checks must be implemented in child policies.")
-
-    def filterRecipients(self, upload, recipients):
-        """Filter any recipients we feel we need to.
-
-        Individual policies may override this if they see fit.
-
-        The default is to return all the recipients unchanged.
-        """
-        return recipients
-
-    def filterInterpolations(self, upload, interpolations):
-        """Filter any interpolations we feel necessary.
-
-        Individual policies may override this if they see fit.
-
-        The default is to return all the interpolations unchanged.
-        """
-        return interpolations
-
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits.
-
-        By default all components registered since the upload will pass
-        through the 'override engine' later.
-        """
-        return set(
-            component.name for component in getUtility(IComponentSet))
 
     def autoApprove(self, upload):
         """Return whether or not the policy approves of the upload.
