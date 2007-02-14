@@ -157,20 +157,14 @@
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectEditView"
+        class="canonical.launchpad.browser.ProjectReviewView"
         facet="overview"
-        label="Review upstream project details"
-        fields="name displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject owner active
-                reviewed"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+review">
-    </browser:editform>
+        template="../templates/project-edit.pt"
+        lp:url="/projects/$Project.name/+review" />
 
     <browser:editform
         name="+changetranslators"
@@ -182,18 +176,6 @@
         label="Select a new translation group"
         template="../templates/project-translators.pt"
         lp:url="/$Project.name/+changetranslators" />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="driver"
-        class="canonical.launchpad.browser.ProjectEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
 
     <browser:page
         name="+newproduct"
