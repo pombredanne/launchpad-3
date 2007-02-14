@@ -277,6 +277,9 @@ class CustomDropdownWidget(DropdownWidget):
 #
 
 class POMsgSetFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
+    # inherit all navigation from its product or distro release.
+
     usedfor = IPOMsgSet
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']
@@ -695,8 +698,13 @@ class BaseTranslationView(LaunchpadView):
                 msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton = (
                     '%s%d_radiobutton' % (
                         msgset_ID_LANGCODE_translation_, pluralform))
-                selected_translation_key = form[
-                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton]
+                selected_translation_key = form.get(
+                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton)
+                if selected_translation_key is None:
+                    # The radiobutton was missing from the form; either
+                    # it wasn't rendered to the end-user or no buttons
+                    # were selected.
+                    continue
 
                 # We are going to check whether the radio button is for
                 # current translation, suggestion or the new translation

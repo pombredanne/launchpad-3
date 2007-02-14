@@ -58,9 +58,6 @@
             template="../templates/malone-about.pt"
             lp:url="bugs/+about" />
         <browser:page
-            name="+portlet-about"
-            template="../templates/malone-portlet-about.pt" />
-        <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt" />
         <browser:page

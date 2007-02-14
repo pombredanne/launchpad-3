@@ -175,14 +175,15 @@
         <td>
           <img alt="" src="/@@/launchpad" />
         </td>
-        <td rowspan="3">
-          The Launchpad icon,
-          used for pages that don't belong to a pillar with its own icon.
-        </td>
+        <td>The Launchpad icon, used for bookmarks. 16 &times; 16 pixels.</td>
       </tr>
       <tr>
         <td>launchpad-large</td>
         <td><img alt="" src="/@@/launchpad-large" /></td>
+        <td rowspan="2">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
       </tr>
       <tr>
         <td>launchpad-heading</td>
@@ -213,6 +214,16 @@
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
+      </tr>
+      <tr>
+        <td>maybe</td>
+        <td><img alt="" src="/@@/maybe" /></td>
+        <td>A blue freehand question mark (used, for example, when something is proposed).</td>
+      </tr>
+      <tr>
+        <td>no</td>
+        <td><img alt="" src="/@@/no" /></td>
+        <td>A dark-ish red freehand cross (used, for example, when something is declined).</td>
       </tr>
       <tr>
         <td>person-mini</td>
@@ -383,6 +394,11 @@
       <tr>
         <td>warning-large</td>
         <td><img alt="" src="/@@/warning-large" /></td>
+      </tr>
+      <tr>
+        <td>yes</td>
+        <td><img alt="" src="/@@/yes" /></td>
+        <td>A green check mark (used, for example, when something is approved).</td>
       </tr>
       <tr>
         <td>zoom-in</td>
@@ -604,13 +620,13 @@
       <tr>
         <td>build-depwait</td>
         <td><img src="/@@/build-depwait" /></td>
-        <td>This is a build which depends on other packages that have
+        <td>A build depending on other packages that have
         themselves not yet been built.</td>
       </tr>
       <tr>
         <td>build-failure</td>
         <td><img src="/@@/build-failure" /></td>
-        <td>A build which failed.</td>
+        <td>A build that failed.</td>
       </tr>
       <tr>
         <td>build-needed</td>

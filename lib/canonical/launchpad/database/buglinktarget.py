@@ -8,7 +8,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""

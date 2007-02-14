@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseNavigation',
+    'DistroReleaseSOP',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -72,6 +74,29 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return self.context.getBinaryPackage(name)
 
 
+class DistroReleaseSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.fullreleasename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        # XXX mpt 20061004: list releases, most recent first
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
@@ -82,7 +107,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+    links = ['edit', 'reassign', 'driver', 'support', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
@@ -114,7 +139,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     # has a search form.
 
     def support(self):
-        text = 'Request Support'
+        text = 'Ask Question'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 
@@ -132,7 +157,6 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
         text = 'View Uploads'
         return Link('+queue', text, icon='info')

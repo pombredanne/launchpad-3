@@ -5,20 +5,9 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Specification listing</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+    <h1>Blueprints targeted at <tal:context replace="context/title" /></h1>
 
   <form name="spec_search" method="GET">
 

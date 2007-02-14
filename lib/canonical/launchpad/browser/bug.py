@@ -31,19 +31,22 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
-    IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
+    IBugWatchSet, ICveSet, IDistributionSourcePackage,
+    ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
+    valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -236,6 +239,7 @@ class BugView:
     """
 
     def __init__(self, context, request):
+        self.current_bugtask = context
         self.context = IBug(context)
         self.request = request
         self.user = getUtility(ILaunchBag).user
@@ -765,11 +769,11 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         # Store the current bug in an attribute of the view, so that
         # ZPT rendering code can access it.
         self.bug = getUtility(ILaunchBag).bug
+        self.current_bugtask = getUtility(ILaunchBag).bugtask
 
     def changed(self):
         """Redirect to the bug page."""
-        bugtask = getUtility(ILaunchBag).bugtask
-        self.request.response.redirect(canonical_url(bugtask))
+        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class DeprecatedAssignedBugsView:

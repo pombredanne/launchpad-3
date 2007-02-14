@@ -8,14 +8,15 @@ from canonical.launchpad.scripts.supermirror.jobmanager import (
 from canonical.authserver.client.branchstatus import BranchStatusClient
 
 
-def mirror(logger, managerClass=JobManager):
+def mirror(logger, managerClass):
     """Mirror all current branches that need to be mirrored."""
     mymanager = managerClass()
     client = BranchStatusClient()
 
     try:
         mymanager.lock()
-    except LockError:
+    except LockError, exception:
+        logger.info('Could not acquire lock: %s', exception)
         return 0
 
     try:

@@ -18,14 +18,14 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to request</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe from request</h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to question</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from question</h1>
 
 
   <p>
-    Subscribing to a request makes it show up on
+    Subscribing to a question makes it show up on
     <a tal:attributes="href string:/~${request/lp:person/name}/+tickets"
-    >your Support page</a>.
+    >your Answers page</a>.
   </p>
 
   <form action="."
@@ -50,13 +50,13 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>You can subscribe yourself to this request. When subscribed, you'll
-    receive by email all future messages added to the request.
+  <p>You can subscribe yourself to this question. When subscribed, you'll
+    receive by email all future messages added to the question.
   </p>
-  <p>You can use the <emph>Subscribed</emph> report in the <emph>Support</emph>
-    facet of your profile to see all the requests to which you are subscribed.
+  <p>You can use the <emph>Subscribed</emph> report in the <emph>Answers</emph>
+    facet of your profile to see all the questions to which you are subscribed.
   </p>
-  <p>If you are already subscribed to the request, you can unsubscribe
+  <p>If you are already subscribed to the question, you can unsubscribe
     yourself from this page.
   </p>
 </metal:help>
