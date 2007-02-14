@@ -94,7 +94,7 @@
         <tr tal:repeat="ticket tickets/batch"
             tal:attributes="title ticket/description/fmt:shorten/300">
           <td class="icon right">
-            <img alt="Open" title="Open" src="/@@/ticket"
+            <img alt="Open" title="Open" src="/@@/question"
                  tal:attributes="alt ticket/status/title;
                                  title ticket/status/title;" />
           </td>

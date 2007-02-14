@@ -1,7 +1,7 @@
 <tr class="noted"
     tal:attributes="title context/description/fmt:shorten/300">
   <td class="icon left" rowspan="2">
-    <img alt="" src="/@@/ticket" />
+    <img alt="" src="/@@/question" />
   </td>
   <td>
     <a

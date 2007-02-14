@@ -48,7 +48,7 @@ class AskAQuestionButtonView:
               <a href="%s/+addticket">
                 <img
                   alt="Ask a question"
-                  src="/+icing/but_sml_requestsupport.gif"
+                  src="/+icing/but_sml_askaquestion.gif"
                 />
               </a>
         """ % canonical_url(ITicketTarget(self.context), rootsite='answers')

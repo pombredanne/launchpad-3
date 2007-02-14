@@ -20,7 +20,7 @@
     <resource name="nyet-mini" file="../images/nyet-mini.png" />
     <resource name="nyet-large" file="../images/nyet-large.png" />
     <resource name="nyet-heading" file="../images/nyet-heading.png" />
-    <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />   
+    <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />
 
     <!-- App-specific Images -->
     <resource name="malone" file="../images/malone.png" />
@@ -105,6 +105,7 @@
     <resource name="project-heading" file="../images/project-heading.png" />
     <resource name="project-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
+    <resource name="question" file="../images/question.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
@@ -120,7 +121,6 @@
     <resource name="team-mini" file="../images/team-mini.png" />
     <resource name="team-heading" file="../images/team-heading.png" />
     <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="ticket" file="../images/ticket.png" />
     <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
@@ -148,7 +148,7 @@
         file="../images/kubuntu-footer-bg.png" />
     <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
-    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
+    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" />
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
     <resource name="kubuntu-tab_on_ns1.gif" file="../images/kubuntu-tab_on_ns1.gif" />
     <resource name="kubuntu-favicon.png" file="../images/kubuntu-favicon.png" />

@@ -67,7 +67,7 @@ html {
 }
 body {margin: 0; padding: 0;}
 
-:link                         {color: #039;    text-decoration: none;} 
+:link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 :visited                      {color: #324c7f; text-decoration: none;}
@@ -184,7 +184,7 @@ h1 em, h2 em, h3 em, h4 em, h5 em {
 }
 h1 span, h2 span, h3 span, h4 span, h5 span {
   color: #656565;
-} 
+}
 strong em {
   font-style: normal;
   color: #353535;
@@ -1273,10 +1273,10 @@ img.mugshot {
   margin-left: 20px;
 }
 img.mugshot:after {
-  content: "."; 
-  display: block; 
-  height: 0; 
-  clear: both; 
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
   visibility: hidden;
 }
 img.mugshot {display: inline-table;}
@@ -1357,7 +1357,7 @@ dl.products>dt:before                {content: url(/@@/product);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
-ul.ticket>li, li.ticket              {list-style-image: url(/@@/ticket);}
+ul.ticket>li, li.ticket              {list-style-image: url(/@@/question);}
 ul.translations, li.translations     {list-style-image: url(/@@/translations);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
