@@ -96,6 +96,12 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
             print 'createBranch(%r, %r, %r)' % (personID, productID, branchName)
         return self.storage.createBranch(personID, productID, branchName)
 
+    def xmlrpc_requestMirror(self, branchID):
+        """See IHostedBranchStorage."""
+        if self.debug:
+            print 'requestMirror(%r)' % (branchID,)
+        return self.storage.requestMirror(branchID)
+
 
 class BranchDetailsResource(xmlrpc.XMLRPC):
 

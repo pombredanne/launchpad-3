@@ -1,52 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 import os
-import shutil
 import unittest
 
 from twisted.internet import defer
-from twisted.vfs.ivfs import VFSError, PermissionError, NotFoundError
+from twisted.vfs.ivfs import PermissionError, NotFoundError
 
-from canonical.tests.test_twisted import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
     SFTPServerProductDirPlaceholder)
+from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
-class AvatarTestBase(TwistedTestCase):
-    """Base class for tests that need an SFTPOnlyAvatar with some basic sample
-    data."""
-    def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
-        # A basic user dict, 'bob' is a member of no teams (aside from the user
-        # themself).
-        self.aliceUserDict = {
-            'id': 1,
-            'name': 'alice',
-            'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
-        }
-
-        # An slightly more complex user dict for a user, 'alice', that is also a
-        # member of a team.
-        self.bobUserDict = {
-            'id': 2,
-            'name': 'bob',
-            'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
-                      {'id': 3, 'name': 'test-team', 'initialBranches': []}],
-        }
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-        
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
-
-
-class TestTopLevelDir(AvatarTestBase):
+class TestTopLevelDir(AvatarTestCase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
@@ -84,7 +51,7 @@ class TestTopLevelDir(AvatarTestBase):
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
 
 
-class UserDirsTestCase(AvatarTestBase):
+class UserDirsTestCase(AvatarTestCase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
 
@@ -150,7 +117,7 @@ class UserDirsTestCase(AvatarTestBase):
             set(['.', '..', 'thing']))
 
 
-class ProductDirsTestCase(AvatarTestBase):
+class ProductDirsTestCase(AvatarTestCase):
     def testCreateBranch(self):
         # Define a mock launchpad RPC object.
         class Launchpad:
@@ -214,7 +181,7 @@ class ProductDirsTestCase(AvatarTestBase):
         return self.assertFailure(deferred, PermissionError)
 
 
-class ProductPlaceholderTestCase(AvatarTestBase):
+class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
         class Launchpad:
