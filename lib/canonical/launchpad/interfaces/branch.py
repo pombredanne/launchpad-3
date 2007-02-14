@@ -25,6 +25,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.validation import valid_branch_url
 
 class BranchURIField(URIField):
 
@@ -75,7 +76,7 @@ class IBranch(IHasOwner):
         "displayed on the branch page."))
     url = BranchURIField(
         title=_('Branch URL'), required=True,
-        allowed_schemes=['http', 'https', 'ftp', 'sftp'],
+        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
         allow_userinfo=False,
         allow_query=False,
         allow_fragment=False,
@@ -311,6 +312,9 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getBranchesForOwners(people):
+        """Return the branches that are owned by the people specified."""
 
 
 class IBranchLifecycleFilter(Interface):

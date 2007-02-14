@@ -17,12 +17,6 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
-    <!-- KarmaPersonCategoryCacheView -->
-    <content class="canonical.launchpad.database.KarmaPersonCategoryCacheView">
-        <allow interface="
-            canonical.launchpad.interfaces.IKarmaPersonCategoryCacheView" />
-    </content>
-
     <!-- KarmaTotalCache -->
     <content class="canonical.launchpad.database.KarmaTotalCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaTotalCache" />

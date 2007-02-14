@@ -6,6 +6,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import AND
 
 
 class Library:
@@ -14,30 +15,46 @@ class Library:
 
     def lookupBySHA1(self, digest):
         return [fc.id for fc in 
-                LibraryFileContent.selectBy(sha1=digest)]
+                LibraryFileContent.selectBy(sha1=digest, deleted=False)]
 
     def getAlias(self, aliasid):
         """Returns a LibraryFileAlias, or raises LookupError."""
-        try:
-            return LibraryFileAlias.get(aliasid)
-        except SQLObjectNotFound:
-            raise LookupError(aliasid)
+        alias = LibraryFileAlias.selectOne(AND(
+            LibraryFileAlias.q.id==aliasid,
+            LibraryFileContent.q.deleted==False,
+            LibraryFileAlias.q.contentID==LibraryFileContent.q.id
+            ))
+        if alias is None:
+            raise LookupError
+        return alias
 
     def getAliases(self, fileid):
-        results = LibraryFileAlias.selectBy(contentID=fileid)
+        results = LibraryFileAlias.select(AND(
+                LibraryFileAlias.q.content==LibraryFileContent.q.id,
+                LibraryFileContent.q.id==fileid,
+                LibraryFileContent.q.deleted==False
+                ))
         return [(a.id, a.filename, a.mimetype) for a in results]
 
     def getByAlias(self, aliasid):
-        return LibraryFileAlias.get(aliasid)
+        """XXX: Still needed? Seems to be getAlias except it might raise
+        an SQLObjectNotFound instead of a LookupError -- StuartBishop 20061222
+        """
+        try:
+            return self.getAlias(aliasid)
+        except LookupError:
+            raise SQLObjectNotFound(
+                    "The object LibraryFileAlias by the ID %d does not exist"
+                    % aliasid
+                    )
 
     def hasContent(self, contentID):
         # XXX: write test.
-        try:
-            LibraryFileContent.get(contentID)
-        except SQLObjectNotFound:
-            return False
-        else:
-            return True
+        content = LibraryFileContent.selectOne(
+                LibraryFileContent.q.id==contentID,
+                LibraryFileContent.q.deleted==False
+                )
+        return content is not None
 
     # the following methods are used for adding to the library
 
