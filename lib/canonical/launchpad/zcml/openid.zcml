@@ -11,6 +11,7 @@
         permission="zope.Public"
         name="+openid"
         template="../templates/openid-index.pt"
+        class="canonical.launchpad.browser.openidserver.OpenIdView"
         />
 
 </configure>
