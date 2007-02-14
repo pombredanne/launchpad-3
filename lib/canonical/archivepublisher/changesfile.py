@@ -16,8 +16,8 @@ from canonical.archivepublisher.tagfiles import (
 from canonical.archivepublisher.dscfile import (
     DSCFile, SignableTagFile, re_issource)
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadedFile, BinaryNascentUploadedFile,
-    SourceNascentUploadFile, re_isadeb, re_no_epoch)
+    UploadError, UploadWarning, CustomUploadFile, BinaryUploadFile,
+    SourceUploadFile, re_isadeb, re_no_epoch)
 
 
 re_no_revision = re.compile(r"-[^-]+$")
@@ -117,7 +117,7 @@ class ChangesFile(SignableTagFile):
                     # This needs to be the first check, because
                     # otherwise the tarballs in custom uploads match
                     # with source_match.
-                    file_instance = CustomUploadedFile(
+                    file_instance = CustomUploadFile(
                         filename, digest, size, component_and_section,
                         priority, self.fsroot, self.policy, self.logger)
                 elif source_match:
@@ -133,14 +133,14 @@ class ChangesFile(SignableTagFile):
                         # Store the DSC because it is very convenient
                         self.dsc = file_instance
                     else:
-                        file_instance = SourceNascentUploadFile(
+                        file_instance = SourceUploadFile(
                             filename, digest, size,
                             component_and_section, priority, package,
                             version, type, self, self.fsroot,
                             self.policy, self.logger)
                 elif binary_match:
                     type = source_match.group(4)
-                    file_instance = BinaryNascentUploadedFile(
+                    file_instance = BinaryUploadFile(
                         filename, digest, size, component_and_section,
                         priority, type, self, self.fsroot, self.policy,
                         self.logger)

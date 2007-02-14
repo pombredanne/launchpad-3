@@ -33,8 +33,8 @@ from canonical.launchpad.interfaces import (
 
 from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadedFile,
-    SourceNascentUploadFile, BinaryNascentUploadedFile)
+    UploadError, UploadWarning, CustomUploadFile,
+    SourceUploadFile, BinaryUploadFile)
 from canonical.archivepublisher.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
 
@@ -196,7 +196,7 @@ class NascentUpload:
         # custom files are uploaded at once? What should happen? I don't
         # think that is handled correctly..
         return (len(self.changes.files) == 1 and 
-                isinstance(self.changes.files[0], CustomUploadedFile))
+                isinstance(self.changes.files[0], CustomUploadFile))
 
     @property
     def is_new(self):
@@ -257,13 +257,13 @@ class NascentUpload:
         files_archdep = False
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, CustomUploadedFile):
+            if isinstance(uploaded_file, CustomUploadFile):
                 files_binaryful = files_binaryful or True
-            elif isinstance(uploaded_file, BinaryNascentUploadedFile):
+            elif isinstance(uploaded_file, BinaryUploadFile):
                 files_binaryful = files_binaryful or True
                 files_archindep = files_archindep or uploaded_file.is_archindep()
                 files_archdep = files_archdep or not uploaded_file.is_archindep()
-            elif isinstance(uploaded_file, (SourceNascentUploadFile, DSCFile)):
+            elif isinstance(uploaded_file, (SourceUploadFile, DSCFile)):
                 files_sourceful = True
             else:
                 # This is already caught in ChangesFile.__init__
@@ -307,7 +307,7 @@ class NascentUpload:
             elif uploaded_file.filename.endswith(".orig.tar.gz"):
                 orig += 1
             elif (uploaded_file.filename.endswith(".tar.gz")
-                  and not isinstance(uploaded_file, CustomUploadedFile)):
+                  and not isinstance(uploaded_file, CustomUploadFile)):
                 tar += 1
 
         # Okay, let's check the sanity of the upload.
@@ -446,7 +446,7 @@ class NascentUpload:
             return
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, SourceNascentUploadFile):
+            if isinstance(uploaded_file, SourceUploadFile):
                 # We don't do overrides on diff/tar
                 continue
             if (uploaded_file.component not in signer_components and
@@ -603,7 +603,7 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, (CustomUploadedFile, SourceNascentUploadFile)):
+            if isinstance(uploaded_file, (CustomUploadFile, SourceUploadFile)):
                 # Source files are irrelevant, being represented by the
                 # DSC, and custom files don't have overrides.
                 continue
@@ -637,7 +637,7 @@ class NascentUpload:
                 if self.policy.pocket != PackagePublishingPocket.BACKPORTS:
                     self._checkSourceBackports(uploaded_file)
 
-            elif isinstance(uploaded_file, BinaryNascentUploadedFile):
+            elif isinstance(uploaded_file, BinaryUploadFile):
                 # XXX: this is actually is_binary!
                 self.logger.debug("getPublishedReleases()")
 
@@ -868,7 +868,7 @@ class NascentUpload:
             queue_root.addBuild(self.policy.build)
         # Finally, add any custom files.
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, CustomUploadedFile):
+            if isinstance(uploaded_file, CustomUploadFile):
                 queue_root.addCustom(
                     self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,
@@ -937,7 +937,7 @@ class NascentUpload:
     def insert_binary_into_db(self):
         """Insert this nascent upload's builds into the database."""
         for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, BinaryNascentUploadedFile):
+            if not isinstance(uploaded_file, BinaryUploadFile):
                 continue
             desclines = uploaded_file.control['Description'].split("\n")
             summary = desclines[0]

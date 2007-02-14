@@ -194,7 +194,34 @@ class NascentUploadedFile:
         self.sha_digest = sha_cksum.hexdigest()
 
 
-class PackageNascentUploadFile(NascentUploadedFile):
+class CustomUploadFile(NascentUploadedFile):
+    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+    # Essentially if you change anything to do with custom formats, grep for
+    # the marker in the codebase and make sure the same changes are made
+    # everywhere which needs them.
+    custom_sections = {
+        'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
+        'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
+        'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
+        'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+        }
+
+    # These uploads are really always new, no matter what.
+    new = True
+    def __init__(self, *args, **kwargs):
+        NascentUploadedFile.__init__(self, *args, **kwargs)
+
+    @property
+    def custom_type(self):
+        """The custom upload type for this file. (None if not custom)."""
+        return self.custom_sections[self.section]
+
+    def verify(self):
+        if self.section not in self.custom_sections:
+            yield UploadError("Unsupported custom section name %r" % self.section)
+
+
+class PackageUploadFile(NascentUploadedFile):
     """XXX"""
 
     def __init__(self, filename, digest, size, component_and_section,
@@ -243,7 +270,7 @@ class PackageNascentUploadFile(NascentUploadedFile):
         raise NotImplementedError
 
 
-class SourceNascentUploadFile(PackageNascentUploadFile):
+class SourceUploadFile(PackageUploadFile):
     """XXX"""
     # XXX: we can probably get rid of this class altogether
     def verify(self):
@@ -267,7 +294,7 @@ class SourceNascentUploadFile(PackageNascentUploadFile):
                 % (self.filename, changes_version))
 
 
-class BinaryNascentUploadedFile(PackageNascentUploadFile):
+class BinaryUploadFile(PackageUploadFile):
     """XXX"""
     def __init__(self, XXX, changes):
         self.changes = changes
@@ -601,30 +628,4 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
 
         # That's all folks.
 
-
-class CustomUploadedFile(NascentUploadedFile):
-    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
-    # Essentially if you change anything to do with custom formats, grep for
-    # the marker in the codebase and make sure the same changes are made
-    # everywhere which needs them.
-    custom_sections = {
-        'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-        'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-        'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-        'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
-        }
-
-    # These uploads are really always new, no matter what.
-    new = True
-    def __init__(self, *args, **kwargs):
-        NascentUploadedFile.__init__(self, *args, **kwargs)
-
-    @property
-    def custom_type(self):
-        """The custom upload type for this file. (None if not custom)."""
-        return self.custom_sections[self.section]
-
-    def verify(self):
-        if self.section not in self.custom_sections:
-            yield UploadError("Unsupported custom section name %r" % self.section)
 
