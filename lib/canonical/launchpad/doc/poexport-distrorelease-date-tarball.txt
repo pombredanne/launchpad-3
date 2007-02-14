@@ -79,14 +79,6 @@ Create a Welsh PO file, with an active translation submission created on
     >>> submission_cy = pomsgset.getActiveSubmission(0)
     >>> submission_cy.datecreated = d2000_01_03
 
-    >>> transaction.commit()
-
-Flush caches.
-
-    >>> from canonical.database.sqlbase import (
-    ...     flush_database_updates, flush_database_caches)
-    >>> flush_database_caches()
-
 Now we try to export the PO files we've just created.
 
 Set up the exporter.

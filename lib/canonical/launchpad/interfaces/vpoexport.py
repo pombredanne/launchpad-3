@@ -89,7 +89,8 @@ class IVPOExport(Interface):
     msgidpluralform = Attribute("See IPOMsgIDSighting.pluralform")
 
     translationpluralform = Attribute("See IPOSubmission.pluralform")
-    activesubmission = Attribute("See IPOSubmission.active")
+    activesubmission = Attribute(
+        "See IPOSubmission.id and IPOSubmission.active")
 
     msgid = Attribute("See IPOMsgID.pomsgid")
 
