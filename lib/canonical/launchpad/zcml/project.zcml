@@ -9,6 +9,7 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+        <allow interface="canonical.launchpad.interfaces.ITicketCollection" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -31,15 +32,21 @@
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
                  ProjectSpecificationsMenu ProjectSetContextMenu
-                 ProjectTranslationsMenu" />
-
+                 ProjectSupportMenu ProjectTranslationsMenu"
+	 />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        name="+index" />
+        name="+index"
+        />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+tickets"
+        layer="canonical.launchpad.layers.AnswersLayer"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -150,20 +157,14 @@
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectEditView"
+        class="canonical.launchpad.browser.ProjectReviewView"
         facet="overview"
-        label="Review upstream project details"
-        fields="name displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject owner active
-                reviewed"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+review">
-    </browser:editform>
+        template="../templates/project-edit.pt"
+        lp:url="/projects/$Project.name/+review" />
 
     <browser:editform
         name="+changetranslators"
@@ -175,18 +176,6 @@
         label="Select a new translation group"
         template="../templates/project-translators.pt"
         lp:url="/$Project.name/+changetranslators" />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="driver"
-        class="canonical.launchpad.browser.ProjectEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
 
     <browser:page
         name="+newproduct"
