@@ -32,7 +32,7 @@
             permission="launchpad.Admin"
             set_attributes="name active reviewed autoupdate"
         />
-        <!-- ITicketTarget -->
+        <!-- IQuestionTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
             support_contacts direct_support_contacts getSupportedLanguages
 	    getTicketLanguages"

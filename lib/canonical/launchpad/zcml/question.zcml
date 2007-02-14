@@ -9,7 +9,7 @@
 
   <!-- Ticket -->
   <content class="canonical.launchpad.database.Ticket">
-    <!-- ITicket -->
+    <!-- IQuestion -->
     <allow
         attributes="id title description status priority owner assignee
                     answerer answer datecreated datedue datelastquery
@@ -43,16 +43,16 @@
   </content>
 
   <content class="canonical.launchpad.database.TicketBug">
-    <allow interface="canonical.launchpad.interfaces.ITicketBug"/>
+    <allow interface="canonical.launchpad.interfaces.IQuestionBug"/>
   </content>
 
   <content class="canonical.launchpad.database.TicketMessage">
-    <allow interface="canonical.launchpad.interfaces.ITicketMessage"/>
+    <allow interface="canonical.launchpad.interfaces.IQuestionMessage"/>
   </content>
 
   <adapter
-    for="canonical.launchpad.interfaces.ITicket"
-    provides="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IQuestion"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.question.question_to_questiontarget" />
 
   <browser:menus
@@ -61,18 +61,18 @@
       />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     name="+index" />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     path_expression="string:+ticket/${id}"
     attribute_to_parent="target"
     rootsite="answers"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     permission="zope.Public">
     <browser:page
       name="+history"
@@ -93,21 +93,21 @@
 
   <browser:page
     name="+index"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketWorkflowView"
     permission="zope.Public"
     template="../templates/question-index.pt" />
 
   <browser:page
     name="+confirm"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketConfirmAnswerView"
     permission="launchpad.Owner"
     template="../templates/question-confirm-answer.pt" />
 
   <browser:page
     name="+reject"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketRejectView"
     permission="launchpad.Moderate"
     template="../templates/question-reject.pt" />
@@ -115,14 +115,14 @@
   <browser:page
     name="+subscribe"
     template="../templates/question-subscription.pt"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketSubscriptionView"
     permission="launchpad.AnyPerson" />
 
   <browser:generalform
     name="+makebug"
     schema="canonical.launchpad.interfaces.IBug"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketMakeBugView"
     label="Create a bug based on support request"
     fields="title description"
@@ -132,35 +132,35 @@
 
   <browser:page
     name="+edit"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketEditView"
     permission="launchpad.AnyPerson"
     template="../templates/question-edit.pt" />
 
   <browser:page
     name="+change-status"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.TicketChangeStatusView"
     permission="launchpad.Admin"
     template="../templates/question-change-status.pt" />
 
   <browser:page
     name="+linkbug"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.BugLinkView"
     permission="launchpad.AnyPerson"
     template="../templates/question-linkbug.pt" />
 
   <browser:page
     name="+unlinkbug"
-    for="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
     template="../templates/question-unlinkbugs.pt" />
 
   <browser:page
     name="+display"
-    for="canonical.launchpad.interfaces.ITicketMessage"
+    for="canonical.launchpad.interfaces.IQuestionMessage"
     class="canonical.launchpad.browser.TicketMessageDisplayView"
     permission="zope.Public"
     template="../templates/questionmessage-display.pt"
@@ -168,13 +168,13 @@
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">
-    <allow interface="canonical.launchpad.interfaces.ITicketSet" />
+    <allow interface="canonical.launchpad.interfaces.IQuestionSet" />
   </content>
 
   <securedutility
     class="canonical.launchpad.database.TicketSet"
-    provides="canonical.launchpad.interfaces.ITicketSet" >
-    <allow interface="canonical.launchpad.interfaces.ITicketSet" />
+    provides="canonical.launchpad.interfaces.IQuestionSet" >
+    <allow interface="canonical.launchpad.interfaces.IQuestionSet" />
   </securedutility>
 
   <browser:navigation
@@ -183,25 +183,25 @@
       />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ITicketSet"
+    for="canonical.launchpad.interfaces.IQuestionSet"
     path_expression="string:tickets"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ITicketSet"
+    for="canonical.launchpad.interfaces.IQuestionSet"
     name="+index" />
 
   <browser:page
     name="+index"
-    for="canonical.launchpad.interfaces.ITicketSet"
+    for="canonical.launchpad.interfaces.IQuestionSet"
     class="canonical.launchpad.browser.TicketSetView"
     permission="zope.Public"
     template="../templates/questions-index.pt"
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketSet"
+    for="canonical.launchpad.interfaces.IQuestionSet"
     class="canonical.launchpad.browser.SearchAllTicketsView"
     name="+tickets"
     permission="zope.Public"

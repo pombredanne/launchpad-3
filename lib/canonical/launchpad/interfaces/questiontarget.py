@@ -1,13 +1,13 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-"""Interfaces for things which have Tickets."""
+"""Interfaces for things which have Questions."""
 
 __metaclass__ = type
 
 __all__ = [
-    'ITicketTarget',
-    'IManageSupportContacts',
-    'ISearchTicketsForm',
+    'IQuestionTarget',
+    'IManageAnswerContactsForm',
+    'ISearchQuestionsForm',
     'get_supported_languages',
     ]
 
@@ -20,117 +20,117 @@ from zope.schema import Bool, Choice, List, Set, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.question import (
-    ISearchableByTicketOwner, TICKET_STATUS_DEFAULT_SEARCH)
+    ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import QuestionSort, QuestionStatus
 
 
-def get_supported_languages(ticket_target):
-    """Common implementation for ITicketTarget.getSupportedLanguages()."""
-    assert ITicketTarget.providedBy(ticket_target)
+def get_supported_languages(question_target):
+    """Common implementation for IQuestionTarget.getSupportedLanguages()."""
+    assert IQuestionTarget.providedBy(question_target)
     langs = set()
-    for contact in ticket_target.support_contacts:
+    for contact in question_target.support_contacts:
         langs |= contact.getSupportedLanguages()
     langs.add(getUtility(ILanguageSet)['en'])
     return langs
 
 
-class ITicketTarget(ISearchableByTicketOwner):
-    """An object that can have a new ticket created for  it."""
+class IQuestionTarget(ISearchableByQuestionOwner):
+    """An object that can have a new question asked about it."""
 
     def newTicket(owner, title, description, language=None, datecreated=None):
-        """Create a new support request, or trouble ticket.
+        """Create a new question.
 
-         A new ticket is created with status OPEN.
+         A new question is created with status OPEN.
 
-        The owner and all of the target support contacts will be subscribed
-        to the ticket.
+        The owner and all of the target answer contacts will be subscribed
+        to the question.
 
         :owner: An IPerson.
         :title: A string.
         :description: A string.
-        :language: An ILanguage. If that parameter is omitted, the support
-                request is assumed to be created in English.
+        :language: An ILanguage. If that parameter is omitted, the question
+                 is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
         """
 
     def getTicket(ticket_id):
-        """Return the ticket number, if it is applicable to this target.
+        """Return the question by its id, if it is applicable to this target.
 
-        :ticket_id: A ticket id.
+        :ticket_id: A question id.
 
-        If there is no such ticket number for this target, return None
+        If there is no such question number for this target, return None
         """
 
     def findSimilarTickets(title):
-        """Return tickets similar to title.
+        """Return questions similar to title.
 
-        Return a list of ticket similar to the title provided. These tickets
-        should be found using a fuzzy search. The list should be ordered
-        from the most similar ticket to the least similar ticket.
+        Return a list of question similar to the title provided. These
+        questions should be found using a fuzzy search. The list should be
+        ordered from the most similar question to the least similar question.
 
         :title: A phrase
         """
 
     def addSupportContact(person):
-        """Adds a new support contact.
+        """Add a new answer contact.
 
         :person: An IPerson.
 
-        Returns True if the person was added, False if he already was a
-        support contact.
+        Returns True if the person was added, False if the person already was
+        an answer contact.
         """
 
     def removeSupportContact(person):
-        """Removes a support contact.
+        """Remove an answer contact.
 
         :person: An IPerson.
 
-        Returns True if the person was removed, False if he isn't a
-        support contact.
+        Returns True if the person was removed, False if the person wasn't an
+        answer contact.
         """
 
     def getSupportedLanguages():
         """Return the set of languages spoken by at least one of this object's
-        support contacts.
+        answer contacts.
 
-        A support contact is considered to speak a given language if that
+        An answer contact is considered to speak a given language if that
         language is listed as one of his preferred languages.
         """
 
     support_contacts = List(
-        title=_("Support Contacts"),
+        title=_("Answer Contacts"),
         description=_(
             "Persons that are willing to provide support for this target. "
-            "They receive email notifications about each new request as "
-            "well as for changes to any requests related to this target."),
+            "They receive email notifications about each new question as "
+            "well as for changes to any questions related to this target."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
     direct_support_contacts = List(
-        title=_("Direct Support Contacts"),
+        title=_("Direct Answer Contacts"),
         description=_(
-            "IPersons that registered as support contacts explicitely on "
-            "this target. (support_contacts may include support contacts "
+            "IPersons that registered as answer contacts explicitely on "
+            "this target. (support_contacts may include answer contacts "
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 
-# These schemas are only used by browser/tickettarget.py and should really
+# These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.
-class IManageSupportContacts(Interface):
-    """Schema for managing support contacts."""
+class IManageAnswerContactsForm(Interface):
+    """Schema for managing answer contacts."""
 
     want_to_be_support_contact = Bool(
-        title=_("Subscribe me automatically to new suppport request"),
+        title=_("Subscribe me automatically to new question"),
         required=False)
     support_contact_teams = List(
-        title=_("Team support contacts"),
+        title=_("Team answer contacts"),
         value_type=Choice(vocabulary="PersonTeamParticipations"),
         required=False)
 
 
-class ISearchTicketsForm(Interface):
-    """Schema for the search ticket form."""
+class ISearchQuestionsForm(Interface):
+    """Schema for the search question form."""
 
     search_text = TextLine(title=_('Search text'), required=False)
 
@@ -140,4 +140,4 @@ class ISearchTicketsForm(Interface):
 
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary='QuestionStatus'),
-                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
+                 default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))

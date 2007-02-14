@@ -22,8 +22,7 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+    ISourcePackage, IHasBuildRecords, IQuestionTarget, get_supported_languages)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import SupportContact
@@ -46,18 +45,18 @@ from canonical.launchpad.database.build import Build
 
 
 class SourcePackageTicketTargetMixin:
-    """Implementation of ITicketTarget for SourcePackage."""
+    """Implementation of IQuestionTarget for SourcePackage."""
 
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
             language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
     def getTicket(self, ticket_id):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         # first see if there is a ticket with that number
         try:
             ticket = Ticket.get(ticket_id)
@@ -71,20 +70,20 @@ class SourcePackageTicketTargetMixin:
         return ticket
 
     def searchTickets(self, **search_criteria):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return SimilarTicketsSearch(
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
     def addSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contact_entry = SupportContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
@@ -99,7 +98,7 @@ class SourcePackageTicketTargetMixin:
         return True
 
     def removeSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contact_entry = SupportContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
@@ -112,7 +111,7 @@ class SourcePackageTicketTargetMixin:
 
     @property
     def support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contacts = set()
         support_contacts.update(self.direct_support_contacts)
         support_contacts.update(self.distribution.support_contacts)
@@ -120,7 +119,7 @@ class SourcePackageTicketTargetMixin:
 
     @property
     def direct_support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contacts = SupportContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -129,11 +128,11 @@ class SourcePackageTicketTargetMixin:
             key=attrgetter('displayname'))
 
     def getSupportedLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return get_supported_languages(self)
 
     def getTicketLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename = %s'
@@ -151,7 +150,7 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
     objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords, ITicketTarget)
+    implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
 
     def __init__(self, sourcepackagename, distrorelease):
         self.sourcepackagename = sourcepackagename

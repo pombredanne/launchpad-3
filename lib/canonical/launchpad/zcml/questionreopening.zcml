@@ -8,7 +8,7 @@
   <!-- TicketReopening -->
   <content class="canonical.launchpad.database.TicketReopening">
     <allow
-      interface="canonical.launchpad.interfaces.ITicketReopening" />
+      interface="canonical.launchpad.interfaces.IQuestionReopening" />
   </content>
 
 </configure>

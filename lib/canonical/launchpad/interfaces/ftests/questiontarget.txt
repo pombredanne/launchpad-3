@@ -1,22 +1,22 @@
-= ITicketTarget Interface =
+= IQuestionTarget Interface =
 
 Launchpad includes a support request tracker. Tickets are associated to
-objects implementing ITicketTarget. This file documents that interface
+objects implementing IQuestionTarget. This file documents that interface
 and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
 variable which is defined outside of this file, usually by a
 LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
 associated with it at the start of the test.)
 
-    # Some parts of the ITicketTarget interface are only accessible
+    # Some parts of the IQuestionTarget interface are only accessible
     # to a registered user.
     >>> login('no-priv@canonical.com')
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITicketTarget
+    >>> from canonical.launchpad.interfaces import IQuestionTarget
 
-    >>> verifyObject(ITicketTarget, target)
+    >>> verifyObject(IQuestionTarget, target)
     True
 
 == newTicket() ==
@@ -358,9 +358,9 @@ target is available through the support_contacts attribute.
 There is also a direct_support_contacts which includes only the
 support contacts registered explicitely on the ticket target. (In
 general, it will be equal to support_contacts attribute, but some
-ITicketTarget implementations may inherit support contacts
+IQuestionTarget implementations may inherit support contacts
 from other context. In these cases, that attribute would only contain
-the support contacts defined in the current ITicketTarget context.)
+the support contacts defined in the current IQuestionTarget context.)
 
     >>> list(target.direct_support_contacts)
     []
@@ -411,7 +411,7 @@ Only registered users can remove a support contact:
 
 == Supported Languages ==
 
-The supported languages for a given ITicketTarget are given by
+The supported languages for a given IQuestionTarget are given by
 getSupportedLanguages(). The supported languages of a ticket target
 include English plus all languages spoken by at least one of its support
 contacts (with the exception of all English variations).

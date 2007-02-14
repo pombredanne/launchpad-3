@@ -1,59 +1,59 @@
 = Support Tracker System =
 
 Launchpad includes a tech support ticket tracker. Tickets are created
-and accessed using the ITicketTarget interface. This interface is
+and accessed using the IQuestionTarget interface. This interface is
 available on products, distributions and sourcepackages.
 
     >>> login('test@canonical.com')
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IPersonSet, ITicketTarget)
+    ...     IDistributionSet, IProductSet, IPersonSet, IQuestionTarget)
 
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> verifyObject(ITicketTarget, firefox)
+    >>> verifyObject(IQuestionTarget, firefox)
     True
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> verifyObject(ITicketTarget, ubuntu)
+    >>> verifyObject(IQuestionTarget, ubuntu)
     True
 
     >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
     ...     'mozilla-firefox')
-    >>> verifyObject(ITicketTarget, firefox_package)
+    >>> verifyObject(IQuestionTarget, firefox_package)
     True
 
-Altough distribution release do not implement the ITicketTarget
+Altough distribution release do not implement the IQuestionTarget
 interface, it is possible to adapt one to it. (The adapter is actually
 the distrorelease's distribution.)
 
     >>> ubuntu_warty = ubuntu.getRelease('warty')
-    >>> ITicketTarget.providedBy(ubuntu_warty)
+    >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
-    >>> tickettarget = ITicketTarget(ubuntu_warty)
-    >>> verifyObject(ITicketTarget, tickettarget)
+    >>> tickettarget = IQuestionTarget(ubuntu_warty)
+    >>> verifyObject(IQuestionTarget, tickettarget)
     True
 
 You create a new ticket by calling the newTicket() method of an
-ITicketTarget attribute.
+IQuestionTarget attribute.
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> firefox_ticket = firefox.newTicket(
     ...     sample_person, "Firefox ticket", "Unable to use Firefox")
 
-(The complete ITicketTarget interface is documented in
+(The complete IQuestionTarget interface is documented in
 ../interfaces/ftests/tickettarget.txt.)
 
-== ITicket ==
+== IQuestion ==
 
-Tickets are manipulated through the ITicket interface:
+Tickets are manipulated through the IQuestion interface:
 
-    >>> from canonical.launchpad.interfaces import ITicket
+    >>> from canonical.launchpad.interfaces import IQuestion
     >>> from zope.security.proxy import removeSecurityProxy
 
     # The complete interface is not necessarily available to the
     # logged in user.
-    >>> verifyObject(ITicket, removeSecurityProxy(firefox_ticket))
+    >>> verifyObject(IQuestion, removeSecurityProxy(firefox_ticket))
     True
 
 The person who submitted the ticket is available in the owner field.
@@ -86,10 +86,10 @@ The target onto which the ticket was created is available through the
     >>> firefox_ticket.target == firefox
     True
 
-It is also possible to adapt a ticket to its ITicketTarget.
+It is also possible to adapt a ticket to its IQuestionTarget.
 
-    >>> target = ITicketTarget(firefox_ticket)
-    >>> verifyObject(ITicketTarget, target)
+    >>> target = IQuestionTarget(firefox_ticket)
+    >>> verifyObject(IQuestionTarget, target)
     True
 
 == Subscriptions and Notifications ==

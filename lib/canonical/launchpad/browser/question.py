@@ -41,8 +41,9 @@ from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    CreateBugParams, ILanguageSet, ITicket, ITicketAddMessageForm,
-    ITicketChangeStatusForm, ITicketSet, ITicketTarget, UnexpectedFormData)
+    CreateBugParams, ILanguageSet, IQuestion, IQuestionAddMessageForm,
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
@@ -51,9 +52,10 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 
+
 class TicketSetNavigation(Navigation):
 
-    usedfor = ITicketSet
+    usedfor = IQuestionSet
 
 
 class TicketSetView:
@@ -144,7 +146,7 @@ class TicketLanguageVocabularyFactory:
         for lang in request_languages(self.request):
             if not is_english_variant(lang):
                 languages.add(lang)
-        if (context is not None and ITicket.providedBy(context) and
+        if (context is not None and IQuestion.providedBy(context) and
             context.language.code != 'en'):
             languages.add(context.language)
         languages = list(languages)
@@ -163,8 +165,8 @@ class TicketSupportLanguageMixin:
     It provides a method to check if the selected language is supported
     and another to create the form field to select the ticket language.
 
-    This mixin adapts its context to ITicketTarget, so it will work if
-    the context either provides ITicketTarget directly or if an adapter
+    This mixin adapts its context to IQuestionTarget, so it will work if
+    the context either provides IQuestionTarget directly or if an adapter
     exists.
     """
 
@@ -187,8 +189,8 @@ class TicketSupportLanguageMixin:
 
     @property
     def ticket_target(self):
-        """Return the ITicketTarget related to the context."""
-        return ITicketTarget(self.context)
+        """Return the IQuestionTarget related to the context."""
+        return IQuestionTarget(self.context)
 
     @cachedproperty
     def supported_languages(self):
@@ -235,7 +237,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
     """
     label = _('Ask a question')
 
-    schema = ITicket
+    schema = IQuestion
 
     field_names = ['title', 'description']
 
@@ -341,7 +343,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
 
 class TicketChangeStatusView(LaunchpadFormView):
     """View for changing a ticket status."""
-    schema = ITicketChangeStatusForm
+    schema = IQuestionChangeStatusForm
 
     def validate(self, data):
         if data.get('status') == self.context.status:
@@ -365,7 +367,7 @@ class TicketChangeStatusView(LaunchpadFormView):
 
 class TicketEditView(TicketSupportLanguageMixin, LaunchpadEditFormView):
 
-    schema = ITicket
+    schema = IQuestion
     label = 'Edit question'
     field_names = ["title", "description", "sourcepackagename",
                    "priority", "assignee", "whiteboard"]
@@ -456,7 +458,7 @@ class TicketMakeBugView(GeneralFormView):
 
 class TicketRejectView(LaunchpadFormView):
     """View for rejecting a ticket."""
-    schema = ITicketChangeStatusForm
+    schema = IQuestionChangeStatusForm
     field_names = ['message']
 
     def validate(self, data):
@@ -477,7 +479,7 @@ class TicketWorkflowView(LaunchpadFormView):
     """View managing the ticket workflow action, i.e. action changing
     its status.
     """
-    schema = ITicketAddMessageForm
+    schema = IQuestionAddMessageForm
 
     # Do not autofocus the message widget.
     initial_focus_widget = None
@@ -738,7 +740,7 @@ class SearchAllTicketsView(SearchTicketsView):
 
 class TicketContextMenu(ContextMenu):
 
-    usedfor = ITicket
+    usedfor = IQuestion
     links = [
         'edit',
         'reject',
@@ -797,7 +799,7 @@ class TicketContextMenu(ContextMenu):
 
 class TicketSetContextMenu(ContextMenu):
 
-    usedfor = ITicketSet
+    usedfor = IQuestionSet
     links = ['findproduct', 'finddistro']
 
     def findproduct(self):

@@ -70,7 +70,7 @@ contains information about the ticket.
 Register the Ubuntu Team as Ubuntu's support contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu.addSupportContact(ubuntu_team)
     True

@@ -16,8 +16,8 @@ from zope.interface import implements
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
+    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
+    DeleteBugContactError)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
@@ -48,7 +48,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, ITicketTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution

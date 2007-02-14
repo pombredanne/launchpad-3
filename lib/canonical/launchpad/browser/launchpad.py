@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     IStructuralObjectPresentation, ITranslationImportQueue,
     ITranslationGroupSet, NotFoundError)
@@ -418,7 +418,7 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': ITicketSet,
+        'support': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,

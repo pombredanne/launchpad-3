@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet,
+    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
     ISpecificationSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
@@ -282,7 +282,7 @@ class SupportTrackerHandler:
             return False
 
         ticket_id = int(match.group('id'))
-        ticket = getUtility(ITicketSet).get(ticket_id)
+        ticket = getUtility(IQuestionSet).get(ticket_id)
         if ticket is None:
             # No such ticket, don't process the email.
             return False

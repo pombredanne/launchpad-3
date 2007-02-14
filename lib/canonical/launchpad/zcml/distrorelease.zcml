@@ -42,7 +42,7 @@
     />
   <adapter
     for="canonical.launchpad.interfaces.IDistroRelease"
-    provides="canonical.launchpad.interfaces.ITicketTarget"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.question.distrorelease_to_questiontarget"
     />
 

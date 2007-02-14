@@ -18,7 +18,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMessage, ITicketMessage
+from canonical.launchpad.interfaces import IMessage, IQuestionMessage
 
 from canonical.lp import decorates
 from canonical.lp.dbschema import QuestionAction, QuestionStatus
@@ -27,7 +27,7 @@ from canonical.lp.dbschema import QuestionAction, QuestionStatus
 class TicketMessage(SQLBase):
     """A table linking tickets and messages."""
 
-    implements(ITicketMessage)
+    implements(IQuestionMessage)
 
     decorates(IMessage, context='message')
 

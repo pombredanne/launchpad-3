@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -8,15 +8,15 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import ITicketSubscription
+from canonical.launchpad.interfaces import IQuestionSubscription
 
 from canonical.database.sqlbase import SQLBase
 
 
 class TicketSubscription(SQLBase):
-    """A subscription for person to a support ticket."""
+    """A subscription for person to a question."""
 
-    implements(ITicketSubscription)
+    implements(IQuestionSubscription)
 
     _table='TicketSubscription'
 

@@ -357,14 +357,14 @@ config.tickettracker.email_domain to the SupportTrackerHandler.
     ...
     ... This is a new comment.
     ... """ % {'to_addr': to_addr}
-    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> from canonical.launchpad.mail.stub import test_emails
     >>> test_emails.append(('test@canonical.com', [to_addr], raw_msg))
 
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> handleMail()
 
-    >>> ticket_one = getUtility(ITicketSet).get(1)
+    >>> ticket_one = getUtility(IQuestionSet).get(1)
     >>> '<comment1@localhost>' in [
     ...     comment.rfc822msgid for comment in ticket_one.messages]
     True

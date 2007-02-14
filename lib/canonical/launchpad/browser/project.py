@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -405,7 +405,7 @@ class ProjectAddTicketView(TicketAddView):
 
     @property
     def ticket_target(self):
-        """The ITicketTarget to use is the selected product."""
+        """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()
         else:

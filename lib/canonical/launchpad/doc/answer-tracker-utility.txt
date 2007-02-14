@@ -1,12 +1,12 @@
-= Support Tracker Utility: ITicketSet =
+= Support Tracker Utility: IQuestionSet =
 
-There is an ITicketSet utility that can be use to retrieve and search
+There is an IQuestionSet utility that can be use to retrieve and search
 for ticket whatever the target they were created in.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITicketSet
-    >>> ticket_set = getUtility(ITicketSet)
-    >>> verifyObject(ITicketSet, ticket_set)
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> ticket_set = getUtility(IQuestionSet)
+    >>> verifyObject(IQuestionSet, ticket_set)
     True
 
 == get() ==
@@ -31,7 +31,7 @@ If no default value is given, None is returned:
 
 == searchTickets() ==
 
-ITicketSet also defines a searchTickets() method that can be used to
+IQuestionSet also defines a searchTickets() method that can be used to
 search for tickets defined in any products or distributions (in fact,
 in any context that allows tickets to be defined). Two search criteria
 are defined search_text and status.

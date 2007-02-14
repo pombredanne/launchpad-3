@@ -33,7 +33,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.question import (
-    ITicketCollection, TICKET_STATUS_DEFAULT_SEARCH)
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -85,7 +85,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, ITicketCollection):
+class IPerson(IHasSpecifications, IQuestionCollection):
     """A Person."""
 
     id = Int(
@@ -632,12 +632,12 @@ class IPerson(IHasSpecifications, ITicketCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                       language=None, sort=None, participation=None,
                       needs_attention=False):
         """Search the person's tickets.
 
-        See ITicketCollection for the description of the standard search
+        See IQuestionCollection for the description of the standard search
         parameters.
 
         :participation: A list of QuestionParticipation that defines the set

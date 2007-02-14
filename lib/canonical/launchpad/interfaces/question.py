@@ -1,18 +1,18 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-"""Interfaces for a Support Request ("Ticket")."""
+"""Interfaces for a Question."""
 
 __metaclass__ = type
 
 __all__ = [
-    'InvalidTicketStateError',
-    'ISearchableByTicketOwner',
-    'ITicket',
-    'ITicketAddMessageForm',
-    'ITicketChangeStatusForm',
-    'ITicketCollection',
-    'ITicketSet',
-    'TICKET_STATUS_DEFAULT_SEARCH'
+    'InvalidQuestionStateError',
+    'ISearchableByQuestionOwner',
+    'IQuestion',
+    'IQuestionAddMessageForm',
+    'IQuestionChangeStatusForm',
+    'IQuestionCollection',
+    'IQuestionSet',
+    'QUESTION_STATUS_DEFAULT_SEARCH'
     ]
 
 from zope.interface import Interface, Attribute
@@ -21,24 +21,24 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.questionmessage import ITicketMessage
+from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
 
-class InvalidTicketStateError(Exception):
-    """Error raised when the ticket is in an invalid state.
+class InvalidQuestionStateError(Exception):
+    """Error raised when the question is in an invalid state.
 
     Error raised when a workflow action cannot be executed because the
-    ticket is in an invalid state.
+    question is in an invalid state.
     """
 
 
-class ITicket(IHasOwner):
-    """A single support request, or trouble ticket."""
+class IQuestion(IHasOwner):
+    """A single question, often a support request."""
 
-    id = Int(title=_('Ticket Number'), required=True, readonly=True,
-        description=_("The ticket or tracking number for this support "
-        "request."))
+    id = Int(
+        title=_('Question Number'), required=True, readonly=True,
+        description=_("The tracking number for this question."))
     title = TextLine(
         title=_('Summary'), required=True, description=_(
         "A one-line summary of the issue or problem."))
@@ -58,81 +58,95 @@ class ITicket(IHasOwner):
     language = Choice(
         title=_('Language'), vocabulary='LanguageVocabulary',
         description=_('The language in which this question is written.'))
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = Choice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    assignee = Choice(title=_('Assignee'), required=False,
+    assignee = Choice(
+        title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
         vocabulary='ValidPersonOrTeam')
-    answerer = Choice(title=_('Answered By'), required=False,
+    answerer = Choice(
+        title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
         vocabulary='ValidPersonOrTeam')
-    answer = Object(title=_('Answer'), required=False,
-        description=_("The TicketMessage that contains the answer confirmed "
-            "by the owner as providing a solution to his problem."),
-            schema=ITicketMessage)
+    answer = Object(
+        title=_('Answer'), required=False,
+        description=_("The IQuestionMessage that contains the answer "
+            "confirmed by the owner as providing a solution to his problem."),
+            schema=IQuestionMessage)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     datedue = Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_(
             "The date by which we should have resolved this question."))
-    datelastquery = Datetime(title=_("Date Last Queried"), required=True,
+    datelastquery = Datetime(
+        title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
         "customer (owner)."))
-    datelastresponse = Datetime(title=_("Date last Responded"),
+    datelastresponse = Datetime(
+        title=_("Date last Responded"),
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
         "datelastresponse tells us in whose court the ball is."))
     dateanswered = Datetime(title=_("Date Answered"), required=False,
         description=_(
-            "The date on which the ticket owner confirmed that the ticket is "
-            "Solved."))
-    product = Choice(title=_('Upstream Product'), required=False,
-        vocabulary='Product', description=_('Select the upstream product '
-        'with which you need support.'))
-    distribution = Choice(title=_('Distribution'), required=False,
+            "The date on which the question owner confirmed that the "
+            "question is Solved."))
+    product = Choice(
+        title=_('Upstream Product'), required=False,
+        vocabulary='Product',
+        description=_('Select the upstream product with which you need '
+            'support.'))
+    distribution = Choice(
+        title=_('Distribution'), required=False,
         vocabulary='Distribution', description=_('Select '
         'the distribution for which you need support.'))
-    sourcepackagename = Choice(title=_('Source Package'), required=False,
+    sourcepackagename = Choice(
+        title=_('Source Package'), required=False,
         vocabulary='SourcePackageName', description=_('The source package '
         'in the distribution which contains the software with which you '
         'are experiencing difficulties.'))
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
+    whiteboard = Text(
+        title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
-    target = Attribute('The ITicketTarget that is associated to this ticket.')
+    target = Attribute(
+        'The IQuestionTarget that is associated to this question.')
 
     # joins
-    subscriptions = Attribute('The set of subscriptions to this ticket.')
-    reopenings = Attribute("Records of times when this was reopened.")
+    subscriptions = Attribute(
+        'The set of subscriptions to this quesiton.')
+    reopenings = Attribute(
+        "Records of times when this question was reopened.")
     messages = List(
         title=_("Messages"),
         description=_(
-            "The list of messages that were exchanged as part of this support"
-            " request, sorted from first to last."),
-        value_type=Object(schema=ITicketMessage),
+            "The list of messages that were exchanged as part of this "
+            "question , sorted from first to last."),
+        value_type=Object(schema=IQuestionMessage),
         required=True, default=[], readonly=True)
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
-        """Change the status of this ticket.
+        """Change the status of this question.
 
-        Set the ticket's status to new_status and add an ITicketMessage
+        Set the question's status to new_status and add an IQuestionMessage
         with action SETSTATUS.
 
-        Only the ticket target owner or admin can change the status using
+        Only the question target owner or admin can change the status using
         this method.
 
-        An InvalidTicketStateError is raised when this method is called
-        with new_status equals to the current ticket status.
+        An InvalidQuestiontateError is raised when this method is called
+        with new_status equals to the current question status.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: The IPerson making the change.
         :new_status: The new QuestionStatus
@@ -142,27 +156,27 @@ class ITicket(IHasOwner):
         """
 
     can_request_info = Attribute(
-        'Whether the ticket is in a state where a user can request more '
-        'information from the ticket owner.')
+        'Whether the question is in a state where a user can request more '
+        'information from the question owner.')
 
     def requestInfo(user, question, datecreated=None):
-        """Request more information from the ticket owner.
+        """Request more information from the question owner.
 
-        Add an ITicketMessage with action REQUESTINFO containing the question.
-        The ticket's status is changed to NEEDSINFO, and the
+        Add an IQuestionMessage with action REQUESTINFO containing the
+        question. The question's status is changed to NEEDSINFO, and the
         datelastresponse attribute is updated to the message creation date.
 
-        The user requesting more information cannot be the ticket's owner.
-        This workflow method should only be called when the ticket status is
-        OPEN or NEEDSINFO. An InvalidTicketStateError is raised otherwise.
+        The user requesting more information cannot be the question's owner.
+        This workflow method should only be called when the question status is
+        OPEN or NEEDSINFO. An InvalidQuestionStateError is raised otherwise.
 
-        It can also be called when the ticket is in the ANSWERED state, but
+        It can also be called when the question is in the ANSWERED state, but
         in that case, the status will stay unchanged.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: IPerson requesting for the information.
         :question: A string or IMessage containing the question.
@@ -170,55 +184,56 @@ class ITicket(IHasOwner):
         """
 
     can_give_info = Attribute(
-        'Whether the ticket is in a state where the ticket owner can '
-        'give more information on the ticket owner.')
+        'Whether the question is in a state where the question owner can '
+        'give more information on the question.')
 
     def giveInfo(reply, datecreated=None):
         """Reply to the information request.
 
-        Add an ITicketMessage with action GIVEINFO. The ticket status is
+        Add an IQuestionMessage with action GIVEINFO. The question status is
         changed to OPEN, the datelastquery attribute is updated to the
         message creation time.
 
-        This method should only be called on behalf of the ticket owner when
-        the ticket is in the OPEN or NEEDSINFO state. An
-        InvalidTicketStateError is raised otherwise.
+        This method should only be called on behalf of the question owner when
+        the question is in the OPEN or NEEDSINFO state. An
+        InvalidQuestionStateError is raised otherwise.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :reply: A string or IMessage containing the new information.
         :datecreated: Date for the message. Defaults to the current time.
         """
 
     can_give_answer = Attribute(
-        'Whether the ticket is in a state a user can provide an answer on '
-        'the ticket.')
+        'Whether the question is in a state a user can provide an answer on '
+        'the question.')
 
     def giveAnswer(user, answer, datecreated=None):
-        """Give an answer to this ticket.
+        """Give an answer to this question.
 
-        If the user is not the ticket's owner, add an ITicketMessage with
-        action ANSWER containing an answer for the support request. This
-        changes the ticket's status to ANSWERED and updates the
-        datelastresponse attribute to the message's creation date.
+        If the user is not the question's owner, add an IQuestionMessage with
+        action ANSWER containing an answer for the question. This changes the
+        question's status to ANSWERED and updates the datelastresponse
+        attribute to the message's creation date.
 
-        When the ticket owner answers the ticket, add an ITicketMessage with
-        action CONFIRM. The ticket status is changed to SOLVED, the answerer
-        attribute is updated to contain the ticket owner, the answer attribute
-        will be updated to point at the new message, the datelastresponse and
-        dateanswered attributes are updated to the message creation date.
+        When the question owner answers the question, add an IQuestionMessage
+        with action CONFIRM. The question status is changed to SOLVED, the
+        answerer attribute is updated to contain the question owner, the
+        answer attribute will be updated to point at the new message, the
+        datelastresponse and dateanswered attributes are updated to the
+        message creation date.
 
-        This workflow method should only be called when the ticket status is
-        one of OPEN, ANSWERED or NEEDSINFO. An InvalidTicketStateError is
+        This workflow method should only be called when the question status is
+        one of OPEN, ANSWERED or NEEDSINFO. An InvalidQuestionStateError is
         raised otherwise.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: IPerson giving the answer.
         :answer: A string or IMessage containing the answer.
@@ -226,57 +241,57 @@ class ITicket(IHasOwner):
         """
 
     can_confirm_answer = Attribute(
-        'Whether the ticket is in a state where the ticket owner to confirm '
-        'that an answer solved his problem.')
+        'Whether the question is in a state where the question owner to '
+        'confirm that an answer solved his problem.')
 
     def confirmAnswer(comment, answer=None, datecreated=None):
-        """Confirm that a solution to the support request was found.
+        """Confirm that a solution to the question was found.
 
-        Add an ITicketMessage with action CONFIRM. The ticket status is
+        Add an IQuestionMessage with action CONFIRM. The question status is
         changed to SOLVED. If the answer parameter is not None, it is recorded
         in the answer attribute and the answerer attribute is set to that
         message's owner. The datelastresponse and dateanswered attributes are
         updated to the message creation date.
 
-        This workflow method should only be called on behalf of the ticket
-        owner, when the ticket status is ANSWERED, or when the status is
+        This workflow method should only be called on behalf of the question
+        owner, when the question status is ANSWERED, or when the status is
         OPEN or NEEDSINFO but an answer was already provided. An
-        InvalidTicketStateError is raised otherwise.
+        InvalidQuestionStateError is raised otherwise.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
        :comment: A string or IMessage containing a comment.
-        :answer: The ITicketMessage that contain the answer to the support
-                 request. It must be one of the ITicketMessage of this ticket.
+        :answer: The IQuestionMessage that contain the answer to the question.
+                 It must be one of the IQuestionMessage of this question.
         :datecreated: Date for the message. Defaults to the current time.
         """
 
     def canReject(user):
-        """Test if a user can reject the ticket.
+        """Test if a user can reject the question.
 
-        Return true only if user is a support contact for the ticket target,
-        the ticket target owner or part of the administration team.
+        Return true only if user is an answer contact for the question target,
+        the question target owner or part of the administration team.
         """
 
     def reject(user, comment, datecreated=None):
-        """Mark this ticket as INVALID.
+        """Mark this question as INVALID.
 
-        Add an ITicketMessage with action REJECT. The ticket status is changed
-        to INVALID. The created message is set as the ticket answer and its
-        owner as the ticket answerer. The datelastresponse and dateanswered
-        are updated to the message creation.
+        Add an IQuestionMessage with action REJECT. The question status is
+        changed to INVALID. The created message is set as the question answer
+        and its owner as the question answerer. The datelastresponse and
+        dateanswered are updated to the message creation.
 
-        Only support contacts for the ticket target, the target owner or a
-        member of the admin team can reject a request. All tickets can be
+        Only answer contacts for the question target, the target owner or a
+        member of the admin team can reject a request. All questions can be
         rejected.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: The user rejecting the request.
         :comment: A string or IMessage containing an explanation of the
@@ -285,23 +300,23 @@ class ITicket(IHasOwner):
         """
 
     def expireTicket(user, comment, datecreated=None):
-        """Mark a ticket as EXPIRED.
+        """Mark a question as EXPIRED.
 
-        Add an ITicketMessage with action EXPIRE. This changes the ticket
+        Add an IQuestionMessage with action EXPIRE. This changes the question
         status to EXPIRED and update the datelastresponse attribute to the new
         message creation date.
 
-        This workflow method should only be called when the ticket status is
-        one of OPEN or NEEDSINFO. An InvalidTicketStateError is raised
+        This workflow method should only be called when the question status is
+        one of OPEN or NEEDSINFO. An InvalidQuestionStateError is raised
         otherwise.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
-        (Not this method is named expireTicket and not expire because of
+        (Note this method is named expireQuestion and not expire because of
         conflicts with SQLObject.)
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: IPerson expiring the request.
         :comment: A string or IMessage containing an explanation for the
@@ -310,25 +325,25 @@ class ITicket(IHasOwner):
         """
 
     can_reopen = Attribute(
-        'Whether the ticket state is a state where the ticket owner could '
+        'Whether the question state is a state where the question owner could '
         'reopen it.')
 
     def reopen(comment, datecreated=None):
-        """Reopen a ticket that was ANSWERED, EXPIRED or SOLVED.
+        """Reopen a question that was ANSWERED, EXPIRED or SOLVED.
 
-        Add an ITicketMessage with action REOPEN. This changes the ticket
+        Add an IQuestionMessage with action REOPEN. This changes the question
         status to OPEN and update the datelastquery attribute to the new
-        message creation date. When the ticket was in the SOLVED state, this
+        message creation date. When the question was in the SOLVED state, this
         method should reset the dateanswered, answerer and answer attributes.
 
-        This workflow method should only be called on behalf of the ticket
-        owner, when the ticket status is in one of ANSWERED, EXPIRED or
-        SOLVED. An InvalidTicketStateError is raised otherwise.
+        This workflow method should only be called on behalf of the question
+        owner, when the question status is in one of ANSWERED, EXPIRED or
+        SOLVED. An InvalidQuestionStateError is raised otherwise.
 
-        Return the created ITicketMessage.
+        Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :comment: A string or IMessage containing more information about the
                   request.
@@ -336,13 +351,13 @@ class ITicket(IHasOwner):
         """
 
     def addComment(user, comment, datecreated=None):
-        """Add a comment on the ticket.
+        """Add a comment on the question.
 
-        Create an ITicketMessage with action COMMENT. It leaves the ticket
+        Create an IQuestionMessage with action COMMENT. It leaves the question
         status unchanged.
 
         This method should fire an ISQLObjectCreatedEvent for the created
-        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
 
         :user: The IPerson making the comment.
         :comment: A string or IMessage containing the comment.
@@ -351,43 +366,44 @@ class ITicket(IHasOwner):
 
     # subscription-related methods
     def subscribe(person):
-        """Subscribe this person to the ticket."""
+        """Subscribe this person to the question."""
 
     def isSubscribed(person):
         """Return a boolean indicating whether the person is subscribed."""
 
     def unsubscribe(person):
-        """Remove the person's subscription to this ticket."""
+        """Remove the person's subscription to this question."""
 
     def getSubscribers():
         """Return a list of Person that should be notified of changes to this
-        ticket. That is the union of getDirectSubscribers() and
+        question. That is the union of getDirectSubscribers() and
         getIndirectSubscribers().
         """
 
     def getDirectSubscribers():
-        """Return the set of persons who are subscribed to this ticket."""
+        """Return the set of persons who are subscribed to this question."""
 
     def getIndirectSubscribers():
         """Return the set of persons who are implicitely subscribed to this
-        ticket. That will be include the support contacts for the ticket's
-        target as well as the ticket's assignee.
+        question. That will be include the answer contacts for the question's
+        target as well as the question's assignee.
         """
 
 
-TICKET_STATUS_DEFAULT_SEARCH = (
+QUESTION_STATUS_DEFAULT_SEARCH = (
     QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
     QuestionStatus.SOLVED)
 
 
-class ITicketCollection(Interface):
-    """An object that can be used to search through a colletion of tickets."""
+class IQuestionCollection(Interface):
+    """An object that can be used to search through a collection of questions.
+    """
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                       language=None, sort=None):
-        """Return the tickets from the collection matching search criteria.
+        """Return the questions from the collection matching search criteria.
 
-        :search_text: A string that is matched against the ticket
+        :search_text: A string that is matched against the question
         title and description. If None, the search_text is not included as
         a filter criteria.
 
@@ -395,65 +411,65 @@ class ITicketCollection(Interface):
         sequence, the status is not included as a filter criteria.
 
         :language: An ILanguage or a sequence of ILanguage objects to match
-        against the ticket's language. If None or an empty sequence,
+        against the question's language. If None or an empty sequence,
         the language is not included as a filter criteria.
 
         :sort:  An attribute of QuestionSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
+        When there is a search_text value, the default is to sort by
+        RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
 
     def getTicketLanguages():
-        """Return the set of ILanguage used by all the tickets in the
+        """Return the set of ILanguage used by all the questions in the
         collection."""
 
 
-class ISearchableByTicketOwner(ITicketCollection):
-    """Collection that support searching by ticket owner."""
+class ISearchableByQuestionOwner(IQuestionCollection):
+    """Collection that support searching by question owner."""
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                       language=None, sort=None,
                       owner=None, needs_attention_from=None):
-        """Return the tickets from the collection matching search criteria.
+        """Return the questions from the collection matching search criteria.
 
-        See ITicketCollection for the description of the standard search
+        See IQuestionCollection for the description of the standard search
         parameters.
 
-        :owner: The IPerson that created the ticket.
+        :owner: The IPerson that created the question.
 
-        :needs_attention_from: Selects tickets that nee attention from an
-        IPerson. These are the tickets in the NEEDSINFO or ANSWERED state
-        owned by the person. The tickets not owned by the person but on which
-        the person requested for more information or gave an answer and that
-        are back in the OPEN state are also included.
+        :needs_attention_from: Selects questions that nee attention from an
+        IPerson. These are the questions in the NEEDSINFO or ANSWERED state
+        owned by the person. The questions not owned by the person but on
+        which the person requested for more information or gave an answer
+        and that are back in the OPEN state are also included.
         """
 
 
-class ITicketSet(ITicketCollection):
-    """A utility that contain all the tickets published in Launchpad."""
+class IQuestionSet(IQuestionCollection):
+    """A utility that contain all the questions published in Launchpad."""
 
     title = Attribute('Title')
 
     def get(ticket_id, default=None):
-        """Return the ticket with the given id.
+        """Return the question with the given id.
 
-        Return :default: if no such ticket exists.
+        Return :default: if no such question exists.
         """
 
     def findExpiredTickets(days_before_expiration):
-        """Return the tickets that are expired.
+        """Return the questions that are expired.
 
-        This should return all the tickets in the Open or Needs information
+        This should return all the questions in the Open or Needs information
         state, without an assignee, that didn't receive any new comments in
         the last <days_before_expiration> days.
         """
 
 
-# These schemas are only used by browser/ticket.py and should really live
+# These schemas are only used by browser/question.py and should really live
 # there. See Bug #66950.
 
-class ITicketAddMessageForm(Interface):
-    """Form schema for adding a message to a ticket.
+class IQuestionAddMessageForm(Interface):
+    """Form schema for adding a message to a question.
 
     This will usually includes a status change as well.
     """
@@ -465,8 +481,8 @@ class ITicketAddMessageForm(Interface):
         required=False, default=False)
 
 
-class ITicketChangeStatusForm(Interface):
-    """Form schema for changing the status of a ticket."""
+class IQuestionChangeStatusForm(Interface):
+    """Form schema for changing the status of a question."""
 
     status = Choice(
         title=_('Status'), description=_('Select the new question status.'),

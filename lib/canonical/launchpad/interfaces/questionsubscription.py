@@ -1,19 +1,19 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Ticket subscription interfaces."""
+"""Question subscription interface."""
 
 __metaclass__ = type
 
 __all__ = [
-    'ITicketSubscription',
+    'IQuestionSubscription',
     ]
 
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
-class ITicketSubscription(Interface):
-    """A subscription for a person to a ticket."""
+class IQuestionSubscription(Interface):
+    """A subscription for a person to a question."""
 
     person = Attribute("The subscriber.")
-    ticket = Attribute("The ticket.")
+    ticket = Attribute("The question.")
 

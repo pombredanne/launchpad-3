@@ -41,11 +41,11 @@ somebody are subject to expiration.
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchBag, IPersonSet, ITicketSet)
+    ...     ILaunchBag, IPersonSet, IQuestionSet)
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 
-    >>> ticketset = getUtility(ITicketSet)
+    >>> ticketset = getUtility(IQuestionSet)
 
     # An old ticket in NEEDSINFO the state.
     >>> old_needs_info_ticket = ticketset.get(7)

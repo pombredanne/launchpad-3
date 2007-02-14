@@ -8,10 +8,10 @@
   <!-- TicketSubscription -->
   <content class="canonical.launchpad.database.TicketSubscription">
     <allow
-      interface="canonical.launchpad.interfaces.ITicketSubscription" />
+      interface="canonical.launchpad.interfaces.IQuestionSubscription" />
     <require
       permission="zope.Public"
-      set_schema="canonical.launchpad.interfaces.ITicketSubscription"
+      set_schema="canonical.launchpad.interfaces.IQuestionSubscription"
       />
   </content>
 

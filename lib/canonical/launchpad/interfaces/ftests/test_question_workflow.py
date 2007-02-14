@@ -24,8 +24,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchBag, InvalidTicketStateError, IPersonSet,
-    ITicket, ITicketMessage)
+    IDistributionSet, ILaunchBag, InvalidQuestionStateError, IPersonSet,
+    IQuestion, IQuestionMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.lp.dbschema import QuestionAction, QuestionStatus
@@ -86,9 +86,9 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             # Event listeners is already registered.
             return
         self.modified_event_listener = TestEventListener(
-            ITicket, ISQLObjectModifiedEvent, self.collectEvent)
+            IQuestion, ISQLObjectModifiedEvent, self.collectEvent)
         self.created_event_listener = TestEventListener(
-            ITicketMessage, ISQLObjectCreatedEvent, self.collectEvent)
+            IQuestionMessage, ISQLObjectCreatedEvent, self.collectEvent)
 
     def collectEvent(self, object, event):
         """Collect events"""
@@ -191,7 +191,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
                 if status != self.ticket.status:
                     self.setTicketStatus(self.ticket, status)
                 transition_method(*args, **kwargs)
-            except InvalidTicketStateError:
+            except InvalidQuestionStateError:
                 exceptionRaised = True
             self.failUnless(exceptionRaised,
                             "%s() when status = %s should raise an error" % (
@@ -201,7 +201,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
                                expected_action, expected_status):
         """Helper method to check the message created by a transition.
 
-        It make sure that the message provides ITicketMessage and that it
+        It make sure that the message provides IQuestionMessage and that it
         was appended to the ticket messages attribute. It also checks that
         the subject was computed correctly and that the new_status, action
         and owner attributes were set correctly.
@@ -209,7 +209,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         It also verifies that the ticket status, datelastquery (or
         datelastresponse) were updated to reflect the time of the message.
         """
-        self.failUnless(verifyObject(ITicketMessage, message))
+        self.failUnless(verifyObject(IQuestionMessage, message))
 
         self.assertEquals("Re: Help!", message.subject)
         self.assertEquals(expected_owner, message.owner)
@@ -277,10 +277,10 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def testDisallowNoOpSetStatus(self):
         """Test that calling setStatus to change to the same status
-        raises an InvalidTicketStateError.
+        raises an InvalidQuestionStateError.
         """
         login('foo.bar@canonical.com')
-        self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
+        self.assertRaises(InvalidQuestionStateError, self.ticket.setStatus,
                 self.admin, QuestionStatus.OPEN, 'Status Change')
 
 
@@ -294,7 +294,7 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def test_requestInfo(self):
         """Test that requestInfo() can be called in the OPEN, NEEDSINFO,
-        and ANSWERED state and that it returns a valid ITicketMessage.
+        and ANSWERED state and that it returns a valid IQuestionMessage.
         """
         # Do no check the edited_fields attribute since it varies depending
         # on the departure state.
@@ -363,7 +363,7 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def test_giveInfo(self):
         """Test that giveInfo() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Do not check the edited_fields attributes since it
         # changes based on departure state.
@@ -408,7 +408,7 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_giveAnswer(self):
         """Test that giveAnswer can be called when the ticket status is
         one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
-        valid ITicketMessage.
+        valid IQuestionMessage.
         """
         # Do not check the edited_fields attributes since it
         # changes based on departure state.
@@ -504,7 +504,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
 
         Test that confirmAnswer() can be called when the ticket status
         is one of OPEN, NEEDSINFO, ANSWERED and that it has at least one
-        ANSWER message and check that it returns a valid ITicketMessage.
+        ANSWER message and check that it returns a valid IQuestionMessage.
         """
         answer_message = self.ticket.giveAnswer(
             self.answerer, "Get a grip!", datecreated=self.nowPlus(1))
@@ -576,7 +576,7 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_reopen(self):
         """Test that reopen() can be called when the ticket is in the
         ANSWERED and EXPIRED state and that it returns a valid
-        ITicketMessage.
+        IQuestionMessage.
         """
         self._testValidTransition(
             [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED],
@@ -589,7 +589,7 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def test_reopenFromSOLVED(self):
         """Test that reopen() can be called when the ticket is in the
-        SOLVED state and that it returns an appropriate ITicketMessage.
+        SOLVED state and that it returns an appropriate IQuestionMessage.
         This transition should also clear the dateanswered, answered and
         answerer attributes.
         """
@@ -640,7 +640,7 @@ class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def test_expireTicket(self):
         """Test that expireTicket() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO],
@@ -679,7 +679,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
 
     def test_reject(self):
         """Test that expireTicket() can be called when the ticket status is
-        OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
+        OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Reject user must be a support contact, (or admin, or product owner).
         login(self.answerer.preferredemail.email)

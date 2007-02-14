@@ -19,13 +19,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import QuestionStatus
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.interfaces import ITicketReopening
+from canonical.launchpad.interfaces import IQuestionReopening
 
 
 class TicketReopening(SQLBase):
-    """A table recording each time a ticket is re-opened."""
+    """A table recording each time a question is re-opened."""
 
-    implements(ITicketReopening)
+    implements(IQuestionReopening)
 
     _table = 'TicketReopening'
 

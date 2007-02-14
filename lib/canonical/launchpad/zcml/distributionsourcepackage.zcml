@@ -22,7 +22,7 @@
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug " />
 
-    <!-- ITicketTarget -->
+    <!-- IQuestionTarget -->
     <allow attributes="getTicket searchTickets findSimilarTickets
         support_contacts direct_support_contacts getSupportedLanguages
 	getTicketLanguages"

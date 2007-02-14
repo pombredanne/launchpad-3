@@ -90,12 +90,12 @@ the creation date of the request (which defaults to now).
     ...     sample_person, 'What is your Mac model?',
     ...     datecreated=now_plus_one_hour)
 
-It returns the ITicketMessage that was added to the ticket messages
+It returns the IQuestionMessage that was added to the ticket messages
 history:
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITicketMessage
-    >>> verifyObject(ITicketMessage, request_message)
+    >>> from canonical.launchpad.interfaces import IQuestionMessage
+    >>> verifyObject(IQuestionMessage, request_message)
     True
     >>> request_message == ticket.messages[-1]
     True
@@ -130,7 +130,7 @@ attribute is updated to the message timestamp.
     True
 
 The ticket owner can reply to this information by using the giveInfo()
-method which adds an ITicketMessage with action GIVEINFO.
+method which adds an IQuestionMessage with action GIVEINFO.
 
     >>> login('no-priv@canonical.com')
     >>> now_plus_two_hours = now + timedelta(hours=2)
@@ -437,7 +437,7 @@ the status change.
     ...      stub, QuestionStatus.INVALID, 'Changed status to INVALID',
     ...     datecreated=now_plus_one_hour)
 
-The method returns the ITicketMessage recording the change:
+The method returns the IQuestionMessage recording the change:
 
     >>> print status_change_message.action.name
     SETSTATUS
@@ -520,16 +520,16 @@ the message they create and a SQLObjectModifiedEvent for the ticket.
     # Register an event listener that will print event it receives.
     >>> from canonical.launchpad.event.interfaces import (
     ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import ITicket
+    >>> from canonical.launchpad.interfaces import IQuestion
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
     ...         event.__class__.__name__.split('.')[-1],
     ...         object.__class__.__name__.split('.')[-1])
     >>> ticketmessage_event_listener = TestEventListener(
-    ...     ITicketMessage, ISQLObjectCreatedEvent, print_event)
+    ...     IQuestionMessage, ISQLObjectCreatedEvent, print_event)
     >>> ticket_event_listener = TestEventListener(
-    ...     ITicket, ISQLObjectModifiedEvent, print_event)
+    ...     IQuestion, ISQLObjectModifiedEvent, print_event)
 
 Changing the status triggers the event:
 
@@ -563,9 +563,9 @@ is reopened, a TicketReopening is created.
 
     # Let's register an event listener to notify us whenever a
     # TicketReopening is created.
-    >>> from canonical.launchpad.interfaces import ITicketReopening
+    >>> from canonical.launchpad.interfaces import IQuestionReopening
     >>> reopening_event_listener = TestEventListener(
-    ...     ITicketReopening, ISQLObjectCreatedEvent, print_event)
+    ...     IQuestionReopening, ISQLObjectCreatedEvent, print_event)
 
 The most common use case is when a user confirms a solution, and then
 comes back to say that it doesn't work in fact.
@@ -591,7 +591,7 @@ The reopening record is available through the reopenings attribute.
     >>> list(ticket.reopenings)
     [<TicketReopening...>]
     >>> reopening = ticket.reopenings[0]
-    >>> verifyObject(ITicketReopening, reopening)
+    >>> verifyObject(IQuestionReopening, reopening)
     True
 
 The reopening contain the date of the reopening in the datecreated

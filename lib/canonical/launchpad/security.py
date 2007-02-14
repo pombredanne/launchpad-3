@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Security policies for using content objects.
 
 """
@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
@@ -867,7 +867,7 @@ class AdminBuildRecord(AdminByBuilddAdmin):
 
 class AdminTicket(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow only admins and owners of the ticket pillar target."""
@@ -878,7 +878,7 @@ class AdminTicket(AdminByAdminsTeam):
 
 class ModerateTicket(AdminTicket):
     permission = 'launchpad.Moderate'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow user who can administer the ticket and support contacts."""
@@ -892,7 +892,7 @@ class ModerateTicket(AdminTicket):
 
 class TicketOwner(AuthorizationBase):
     permission = 'launchpad.Owner'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow the ticket's owner."""

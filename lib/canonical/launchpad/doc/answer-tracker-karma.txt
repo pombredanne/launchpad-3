@@ -8,7 +8,7 @@ These karma points are assigned to a user when he performs one of the
 actions we consider to be a reasonable contribution.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITicket, IProductSet)
+    ...     IPersonSet, IProductSet)
     >>> from canonical.launchpad.database.karma import KarmaCategory
     >>> support_category = KarmaCategory.byName('support')
     >>> support_karma_actions = support_category.karmaactions

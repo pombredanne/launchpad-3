@@ -46,13 +46,13 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, get_supported_languages)
+    IQuestionTarget, NotFoundError, get_supported_languages)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, ITicketTarget)
+    implements(IProduct, ICalendarOwner, IQuestionTarget)
 
     _table = 'Product'
 
@@ -242,18 +242,18 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         return BugSet().createBug(bug_params)
 
     def getSupportedLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketSet.new(title=title, description=description,
             owner=owner, product=self, datecreated=datecreated,
             language=language)
 
     def getTicket(self, ticket_id):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         # first see if there is a ticket with that number
         try:
             ticket = Ticket.get(ticket_id)
@@ -265,16 +265,16 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         return ticket
 
     def searchTickets(self, **search_criteria):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketTargetSearch(
             product=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return SimilarTicketsSearch(title, product=self).getResults()
 
     def addSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         if person in self.support_contacts:
             return False
         SupportContact(
@@ -283,7 +283,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         return True
 
     def removeSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
@@ -293,7 +293,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     @property
     def support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contacts = SupportContact.selectBy(product=self)
         return sorted(
             [support_contact.person for support_contact in support_contacts],
@@ -301,11 +301,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     @property
     def direct_support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return self.support_contacts
 
     def getTicketLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND product = %s' % sqlvalues(self),
             clauseTables=['Ticket'], distinct=True))

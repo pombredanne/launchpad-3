@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, ITicketSet
+from canonical.launchpad.interfaces import ILaunchpadCelebrities, IQuestionSet
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -57,7 +57,7 @@ class TicketJanitor:
         self._login()
         try:
             count = 0
-            expired_tickets = getUtility(ITicketSet).findExpiredTickets(
+            expired_tickets = getUtility(IQuestionSet).findExpiredTickets(
                 self.days_before_expiration)
             self.log.info(
                 'Found %d tickets to expire.' % expired_tickets.count())

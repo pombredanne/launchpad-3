@@ -286,8 +286,8 @@ involved.
 This includes tickets which the person owns. But also, tickets that the
 user subscribed to.
 
-    >>> from canonical.launchpad.interfaces import ITicketSet
-    >>> pt_BR_ticket = getUtility(ITicketSet).get(13)
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> pt_BR_ticket = getUtility(IQuestionSet).get(13)
     >>> login('foo.bar@canonical.com')
     >>> pt_BR_ticket.subscribe(foo_bar)
     <TicketSubscription...>
@@ -297,7 +297,7 @@ user subscribed to.
 
 And also tickets for which he's the answerer.
 
-    >>> es_ticket = getUtility(ITicketSet).get(12)
+    >>> es_ticket = getUtility(IQuestionSet).get(12)
     >>> es_ticket.reject(foo_bar, 'Reject ticket.')
     <TicketMessage...>
 
@@ -315,7 +315,7 @@ As well, as ticket which are assigned to the user.
 
 And tickets on which the user commented:
 
-    >>> en_ticket = getUtility(ITicketSet).get(1)
+    >>> en_ticket = getUtility(IQuestionSet).get(1)
     >>> login('carlos@canonical.com')
     >>> en_ticket.addComment(carlos, 'A simple comment.')
     <TicketMessage...>

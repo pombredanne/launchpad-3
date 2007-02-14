@@ -1,6 +1,6 @@
-= ITicketTarget for SourcePackage =
+= IQuestionTarget for SourcePackage =
 
-The implementation of ITicketTarget by SourcePackage and
+The implementation of IQuestionTarget by SourcePackage and
 DistributionSourcePackage contain some small differences with
 the other ones. (See tickettarget.txt for the generic interface
 description.)

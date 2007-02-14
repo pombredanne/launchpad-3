@@ -3,46 +3,46 @@
     i18n_domain="launchpad">
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.TicketAddedNotification" />
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.TicketUnsupportedLanguageNotification" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.TicketModifiedDefaultNotification" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.TicketModifiedOwnerNotification" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_created" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_modified" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicketMessage
+   for="canonical.launchpad.interfaces.IQuestionMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_comment_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicketBug
+   for="canonical.launchpad.interfaces.IQuestionBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_bug_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ITicket
+   for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.database.create_ticketreopening" />
 

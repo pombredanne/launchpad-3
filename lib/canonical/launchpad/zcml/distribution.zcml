@@ -18,7 +18,7 @@
                             security_contact upload_admin upload_sender
                             mirror_admin homepage_content emblem gotchi"
             />
-        <!-- ITicketTarget -->
+        <!-- IQuestionTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
             support_contacts direct_support_contacts getSupportedLanguages
 	    getTicketLanguages"

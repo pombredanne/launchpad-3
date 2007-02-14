@@ -1,6 +1,6 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-"""ITicketTarget browser views."""
+"""IQuestionTarget browser views."""
 
 __metaclass__ = type
 
@@ -30,8 +30,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageSupportContacts, ISearchableByTicketOwner,
-    ISearchTicketsForm, ITicketTarget, NotFoundError)
+    IDistribution, ILanguageSet, IManageAnswerContactsForm, 
+    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionTarget, 
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -51,7 +52,7 @@ class AskAQuestionButtonView:
                   src="/+icing/but_sml_askaquestion.gif"
                 />
               </a>
-        """ % canonical_url(ITicketTarget(self.context), rootsite='answers')
+        """ % canonical_url(IQuestionTarget(self.context), rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
@@ -91,7 +92,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
     This view provides a search form to filter the displayed tickets.
     """
 
-    schema = ISearchTicketsForm
+    schema = ISearchQuestionsForm
 
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
@@ -258,7 +259,7 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
             self.search_params['language'] = self.user_support_languages
 
         # The search parameters used is defined by the union of the fields
-        # present in ISearchTicketsForm (search_text, status, sort) and the
+        # present in ISearchQuestionsForm (search_text, status, sort) and the
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
         return BatchNavigator(
@@ -360,7 +361,7 @@ class TicketCollectionNeedAttentionView(SearchTicketsView):
 class ManageSupportContactView(GeneralFormView):
     """View class for managing support contacts."""
 
-    schema = IManageSupportContacts
+    schema = IManageAnswerContactsForm
     label = "Manage answer contacts"
 
     @property
@@ -427,7 +428,7 @@ class TicketTargetFacetMixin:
 
 
 class TicketTargetTraversalMixin:
-    """Navigation mixin for ITicketTarget."""
+    """Navigation mixin for IQuestionTarget."""
 
     @stepthrough('+ticket')
     def traverse_ticket(self, name):
@@ -444,7 +445,7 @@ class TicketTargetTraversalMixin:
 class TicketCollectionSupportMenu(ApplicationMenu):
     """Base menu definition for TicketCollection searchable by owner."""
 
-    usedfor = ISearchableByTicketOwner
+    usedfor = ISearchableByQuestionOwner
     facet = 'support'
     links = ['open', 'answered', 'myrequests', 'need_attention']
 
@@ -477,7 +478,7 @@ class TicketCollectionSupportMenu(ApplicationMenu):
 class TicketTargetSupportMenu(TicketCollectionSupportMenu):
     """Base menu definition for TicketTargets."""
 
-    usedfor = ITicketTarget
+    usedfor = IQuestionTarget
     facet = 'support'
     links = TicketCollectionSupportMenu.links + ['new', 'support_contact']
 

@@ -16,14 +16,14 @@ from zope.component import getUtility
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
-    ICveSet, ISpecificationSet, ITicketSet)
+    ICveSet, ISpecificationSet, IQuestionSet)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 def ticketSetUp(test):
     setUp(test)
-    test.globs['target'] = getUtility(ITicketSet).get(1)
+    test.globs['target'] = getUtility(IQuestionSet).get(1)
 
 
 def cveSetUp(test):

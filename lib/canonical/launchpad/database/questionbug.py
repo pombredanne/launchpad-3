@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""SQLBase implementation of ITicketBug."""
+"""SQLBase implementation of IQuestionBug."""
 
 __metaclass__ = type
 
@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import ITicketBug
+from canonical.launchpad.interfaces import IQuestionBug
 
 from canonical.database.sqlbase import SQLBase
 
@@ -18,7 +18,7 @@ from canonical.database.sqlbase import SQLBase
 class TicketBug(SQLBase):
     """A link between a ticket and a bug."""
 
-    implements(ITicketBug)
+    implements(IQuestionBug)
 
     _table='TicketBug'
 

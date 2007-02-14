@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['SupportContact']
@@ -9,13 +9,13 @@ from zope.interface import implements
 from sqlobject import ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import ISupportContact
+from canonical.launchpad.interfaces import IAnswerContact
 
 
 class SupportContact(SQLBase):
-    """An entry for a support contact for a ITicketTarget."""
+    """An entry for an answer contact for an IQuestionTarget."""
 
-    implements(ISupportContact)
+    implements(IAnswerContact)
 
     _defaultOrder = ['id']
 

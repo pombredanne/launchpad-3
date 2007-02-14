@@ -9,61 +9,61 @@
 
   <!-- Because of Zope issue #754, defaultView still needs to
        be added for specific content object that also provides
-       ITicketCollection. -->
+       IQuestionCollection. -->
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ITicketCollection"
+    for="canonical.launchpad.interfaces.IQuestionCollection"
     layer="canonical.launchpad.layers.AnswersLayer"
     name="+tickets"
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketCollection"
+    for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.SearchTicketsView"
     name="+tickets"
     permission="zope.Public"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketCollection"
+    for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.TicketCollectionLatestTicketsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.ISearchableByTicketOwner"
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
     class="canonical.launchpad.browser.TicketCollectionMyTicketsView"
     name="+mytickets"
     permission="launchpad.AnyPerson"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.ISearchableByTicketOwner"
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
     class="canonical.launchpad.browser.TicketCollectionNeedAttentionView"
     name="+need-attention"
     permission="launchpad.AnyPerson"
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IQuestionTarget"
     name="+support-contact"
     permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.ManageSupportContactView"
     template="../templates/questiontarget-manage-answercontacts.pt" />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITicketTarget"
+      for="canonical.launchpad.interfaces.IQuestionTarget"
       name="+portlet-supportcontacts"
       permission="zope.Public"
       template="../templates/questiontarget-portlet-answercontacts.pt" />
 
   <browser:page
     name="+addticket"
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IQuestionTarget"
     class="canonical.launchpad.browser.TicketAddView"
     permission="launchpad.AnyPerson" />
 
   <browser:page
     name="+ask-a-question-button"
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IQuestionTarget"
     class="canonical.launchpad.browser.AskAQuestionButtonView"
     permission="zope.Public"
     />

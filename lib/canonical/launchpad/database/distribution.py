@@ -59,8 +59,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
+    get_supported_languages)
 
 from sourcerer.deb.version import Version
 
@@ -69,7 +69,7 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords, ITicketTarget)
+    implements(IDistribution, IHasBuildRecords, IQuestionTarget)
 
     _defaultOrder = 'name'
 
@@ -449,18 +449,18 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return Specification.selectOneBy(distribution=self, name=name)
 
     def getSupportedLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return get_supported_languages(self)
 
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketSet.new(
             title=title, description=description, owner=owner,
             distribution=self, datecreated=datecreated, language=language)
 
     def getTicket(self, ticket_id):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         # First see if there is a ticket with that number.
         try:
             ticket = Ticket.get(ticket_id)
@@ -472,16 +472,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return ticket
 
     def searchTickets(self, **search_criteria):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return TicketTargetSearch(
             distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return SimilarTicketsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         if person in self.support_contacts:
             return False
         SupportContact(
@@ -490,7 +490,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return True
 
     def removeSupportContact(self, person):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOne(
@@ -501,7 +501,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     @property
     def support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         support_contacts = SupportContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
@@ -511,11 +511,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     @property
     def direct_support_contacts(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return self.support_contacts
 
     def getTicketLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename IS NULL' % sqlvalues(self),

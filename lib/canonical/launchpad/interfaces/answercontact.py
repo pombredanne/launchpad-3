@@ -1,11 +1,11 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Support contact interfaces."""
+"""Answer contact interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
-    'ISupportContact',
+    'IAnswerContact',
     ]
 
 
@@ -15,28 +15,31 @@ from zope.schema import Choice
 from canonical.launchpad import _
 
 
-class ISupportContact(Interface):
-    """A support contact."""
+class IAnswerContact(Interface):
+    """An answer contact.
 
-    person = Choice(title=_('Support Contact'), required=False,
+    That's a person willing to receive notifications about all questions
+    in a particular context.
+    """
+
+    person = Choice(title=_('Answer Contact'), required=False,
         description=_(
-            "The person getting automatically subscribed to new support"
-            " request."),
+            "The person receiving notifications about all questions."),
         vocabulary='ValidPersonOrTeam')
     product = Choice(title=_('Product'), required=False,
         description=_(
-            "The person want to get automatically subscribed to this"
-            " product's support request."),
+            "The person want to receive notifications about this product's "
+            "questions."),
         vocabulary='Product')
 
     distribution = Choice(title=_('Distribution'), required=False,
         description=_(
-            "The person want to get automatically subscribed to this"
-            " distribution's support request."),
+            "The person want to receive notifications about this "
+            "distribution's questions."),
         vocabulary='Distribution')
 
     sourcepackagename = Choice(title=_('Source Package'), required=False,
         description=_(
-            "The person want to get automatically subscribed to this"
-            " source package's support request."),
+            "The person want to receive notifications about this "
+            "sourcepackage's questions."),
         vocabulary='SourcePackageName')
