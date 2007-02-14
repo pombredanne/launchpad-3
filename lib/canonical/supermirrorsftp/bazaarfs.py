@@ -209,13 +209,18 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         
 
 class WriteLoggingDirectory(osfs.OSDirectory):
+    """VFS directory that keeps track of whether it has been written to.
+
+    Useful within, say, an SFTP server to see if a particular directory has
+    been written to as part of a connection.
+    """
+
     def __init__(self, listener, path, name=None, parent=None):
         osfs.OSDirectory.__init__(self, path, name, parent)
         self.listener = listener
 
     def childDirFactory(self):
-        """Return a child directory which uses the same listener.
-        """
+        """Return a child directory which uses the same listener."""
         def childWithListener(path, name, parent):
             return WriteLoggingDirectory(self.listener, path, name, parent)
         return childWithListener
@@ -268,6 +273,14 @@ class SFTPServerBranch(WriteLoggingDirectory):
 
     def touch(self):
         if self.listener is None:
+            # Find the root object and create a listener. If the listener is
+            # not already set, then we must be at the top-level directory in
+            # the branch. One parent up is the product, the next is the
+            # username and the third is the root of the SFTP server.
+
+            # XXX - this is an awkward way of finding the root. Replace with
+            # something that is clearer and requires fewer comments.
+            # -- jml, 2007-02-14
             self.listener = self.parent.parent.parent.listenerFactory(
                 self.branchID)
         self.listener()
