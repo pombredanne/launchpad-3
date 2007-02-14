@@ -35,6 +35,6 @@ message inform him of the driver change.
 
 Sample Person is listed as the driver of the project.
 
-  >>> project_portlet = find_portlet(browser.contents, 'The GNOME Project')
-  >>> project_portlet.find(text='Driver:').findNext('a').string
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     tag.find(text='Driver:').findNext('a').string
   u'Sample Person'

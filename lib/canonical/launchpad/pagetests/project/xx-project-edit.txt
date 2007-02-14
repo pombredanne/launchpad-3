@@ -54,12 +54,12 @@ Mark the project as reviewed.
   >>> admin_browser.url
   'http://launchpad.dev/new-name'
 
-The project portlet shows the status as reviewed.
+The project summary shows the status as reviewed.
 
-  >>> project_portlet = find_portlet(
-  ...     admin_browser.contents, 'New Title')
-  >>> for status in project_portlet.find(
-  ...     text='Project Status:').findAllNext('span'):
-  ...     print status
-  <span>Reviewed<br /></span>
-  <span>Active<br /></span>
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'summary'):
+  ...     tag.find(text='Project status:').findParent('tr')
+  <...
+  <th>Project status:</th>
+  <td>Reviewed</td>
+  <td>Active</td>
+  ...
