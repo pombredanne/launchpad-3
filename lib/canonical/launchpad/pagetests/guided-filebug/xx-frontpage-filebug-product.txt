@@ -26,7 +26,7 @@ If we enter an non-existant product, we get an error message.
     There is 1 error.
     There is no product named 'non-existant' registered in Launchpad
 
-Selecting a valid package will take us to the next filebug step.
+Selecting a valid product will take us to the next filebug step.
 
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'firefox'

@@ -18,7 +18,7 @@ for either a product or a package in a distribution.
     True
 
 After we selected a target and entered a summary, a list of possible
-ducplicates are presented.
+duplicates are presented.
 
     >>> user_browser.getControl('Distribution').selected = True
     >>> user_browser.getControl(
