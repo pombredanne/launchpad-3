@@ -218,9 +218,12 @@ don't issue many queries to the database.
 >>> firefox_product = getUtility(IProductSet).getByName('firefox')
 >>> view = getView(firefox_product, '+branches', TestRequest())
 >>> view.initialize()
->>> for branch in view.visible_branches:
-...   print branch.unique_name, [bug.id for bug in
-...                              view.branch_bugs.get(branch.id, [])]
+>>> for branch in view.getListingItems():
+...     bugs = []
+...     if branch.bugbranches:
+...         bugs = [bugbranch.bug.id for bugbranch in branch.bugbranches]
+...     print branch.unique_name, bugs
+...                              
 ~sabdfl/firefox/release--0.9.1 []
 ~sabdfl/firefox/release-0.8 []
 ~sabdfl/firefox/release-0.9 []
