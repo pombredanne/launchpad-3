@@ -367,7 +367,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             timezone = 0
         # synchronise the fake revision:
         counts = self.getCounts()
-        self.bzrsync.transact(self.bzrsync.syncRevision, FakeRevision)
+        self.bzrsync.syncRevision(FakeRevision)
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
             new_parents=2, new_authors=0)
