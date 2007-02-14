@@ -49,7 +49,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import TicketAction, TicketStatus, TicketSort
+from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 
 class TicketSetNavigation(Navigation):
 
@@ -68,15 +68,15 @@ class TicketSetView:
     def latest_requests_made(self):
         """Return the 10 latest requests made."""
         return self.context.searchTickets(
-            status=TicketStatus.OPEN, sort=TicketSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
 
     @property
     def latest_requests_resolved(self):
         """Return the 10 latest requests solved."""
         # XXX flacoste 2006/11/28 We should probably define a new
-        # TicketSort value allowing us to sort on dateanswered descending.
+        # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchTickets(
-            status=TicketStatus.SOLVED, sort=TicketSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
 
 
 class TicketSubscriptionView(LaunchpadView):
@@ -521,7 +521,7 @@ class TicketWorkflowView(LaunchpadFormView):
         """
         return (self.user is not None and
                 self.context.status in [
-                    TicketStatus.SOLVED, TicketStatus.INVALID])
+                    QuestionStatus.SOLVED, QuestionStatus.INVALID])
 
     @action(_('Add Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
@@ -684,7 +684,7 @@ class TicketMessageDisplayView(LaunchpadView):
         """Return True when this message is marked as solving the ticket."""
         return (self.context == self.ticket.answer and
                 self.context.action in [
-                    TicketAction.ANSWER, TicketAction.CONFIRM])
+                    QuestionAction.ANSWER, QuestionAction.CONFIRM])
 
     def renderAnswerIdFormElement(self):
         """Return the hidden form element to refer to that message."""
@@ -703,7 +703,7 @@ class TicketMessageDisplayView(LaunchpadView):
         return (self.display_confirm_button and
                 self.user == self.ticket.owner and
                 self.ticket.can_confirm_answer and
-                self.context.action == TicketAction.ANSWER)
+                self.context.action == QuestionAction.ANSWER)
 
     def renderWithoutConfirmButton(self):
         """Display the message without any confirm button."""

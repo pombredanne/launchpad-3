@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -32,8 +32,8 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    TicketAction, TicketSort, TicketStatus,
-    TicketParticipation, TicketPriority)
+    QuestionAction, QuestionSort, QuestionStatus,
+    QuestionParticipation, QuestionPriority)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
@@ -95,9 +95,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     language = ForeignKey(
         dbName='language', notNull=True, foreignKey='Language')
     status = EnumCol(
-        schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
+        schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=TicketPriority, notNull=True, default=TicketPriority.NORMAL)
+        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
@@ -179,7 +179,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.SETSTATUS, new_status=new_status,
+            action=QuestionAction.SETSTATUS, new_status=new_status,
             update_ticket_dates=False)
 
     @notify_ticket_modified()
@@ -187,14 +187,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.COMMENT, new_status=self.status,
+            action=QuestionAction.COMMENT, new_status=self.status,
             update_ticket_dates=False)
 
     @property
     def can_request_info(self):
         """See ITicket."""
         return self.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
 
     @notify_ticket_modified()
     def requestInfo(self, user, question, datecreated=None):
@@ -203,18 +203,18 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         if not self.can_request_info:
             raise InvalidTicketStateError(
             "Ticket status != OPEN, NEEDSINFO, or ANSWERED")
-        if self.status == TicketStatus.ANSWERED:
+        if self.status == QuestionStatus.ANSWERED:
             new_status = self.status
         else:
-            new_status = TicketStatus.NEEDSINFO
+            new_status = QuestionStatus.NEEDSINFO
         return self._newMessage(
             user, question, datecreated=datecreated,
-            action=TicketAction.REQUESTINFO, new_status=new_status)
+            action=QuestionAction.REQUESTINFO, new_status=new_status)
 
     @property
     def can_give_info(self):
         """See ITicket."""
-        return self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
+        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]
 
     @notify_ticket_modified()
     def giveInfo(self, reply, datecreated=None):
@@ -224,13 +224,13 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             self.owner, reply, datecreated=datecreated,
-            action=TicketAction.GIVEINFO, new_status=TicketStatus.OPEN)
+            action=QuestionAction.GIVEINFO, new_status=QuestionStatus.OPEN)
 
     @property
     def can_give_answer(self):
         """See ITicket."""
         return self.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
 
     @notify_ticket_modified()
     def giveAnswer(self, user, answer, datecreated=None):
@@ -239,11 +239,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             raise InvalidTicketStateError(
             "Ticket status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
-            new_status = TicketStatus.SOLVED
-            action = TicketAction.CONFIRM
+            new_status = QuestionStatus.SOLVED
+            action = QuestionAction.CONFIRM
         else:
-            new_status = TicketStatus.ANSWERED
-            action = TicketAction.ANSWER
+            new_status = QuestionStatus.ANSWERED
+            action = QuestionAction.ANSWER
 
         msg = self._newMessage(
             user, answer, datecreated=datecreated, action=action,
@@ -263,11 +263,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     def can_confirm_answer(self):
         """See ITicket."""
         if self.status not in [
-            TicketStatus.OPEN, TicketStatus.ANSWERED, TicketStatus.NEEDSINFO]:
+            QuestionStatus.OPEN, QuestionStatus.ANSWERED, QuestionStatus.NEEDSINFO]:
             return False
 
         for message in self.messages:
-            if message.action == TicketAction.ANSWER:
+            if message.action == QuestionAction.ANSWER:
                 return True
         return False
 
@@ -284,8 +284,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
-            action=TicketAction.CONFIRM,
-            new_status=TicketStatus.SOLVED)
+            action=QuestionAction.CONFIRM,
+            new_status=QuestionStatus.SOLVED)
         if answer:
             self.dateanswered = msg.datecreated
             self.answerer = answer.owner
@@ -317,11 +317,11 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         assert self.canReject(user), (
             'User "%s" cannot reject the ticket.' % user.displayname)
-        if self.status == TicketStatus.INVALID:
+        if self.status == QuestionStatus.INVALID:
             raise InvalidTicketStateError("Ticket is already rejected.")
         msg = self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.REJECT, new_status=TicketStatus.INVALID)
+            action=QuestionAction.REJECT, new_status=QuestionStatus.INVALID)
         self.answerer = user
         self.dateanswered = msg.datecreated
         self.answer = msg
@@ -330,18 +330,18 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @notify_ticket_modified()
     def expireTicket(self, user, comment, datecreated=None):
         """See ITicket."""
-        if self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
+        if self.status not in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
             raise InvalidTicketStateError(
                 "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=TicketAction.EXPIRE, new_status=TicketStatus.EXPIRED)
+            action=QuestionAction.EXPIRE, new_status=QuestionStatus.EXPIRED)
 
     @property
     def can_reopen(self):
         """See ITicket."""
         return self.status in [
-            TicketStatus.ANSWERED, TicketStatus.EXPIRED, TicketStatus.SOLVED]
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
 
     @notify_ticket_modified()
     def reopen(self, comment, datecreated=None):
@@ -351,7 +351,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 "Ticket status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
-            action=TicketAction.REOPEN, new_status=TicketStatus.OPEN)
+            action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
         self.answer = None
         self.answerer = None
         self.dateanswered = None
@@ -408,8 +408,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
                   must be the same than the :owner: parameter.
-        :action: A TicketAction.
-        :new_status: A TicketStatus.
+        :action: A QuestionAction.
+        :new_status: A QuestionStatus.
         :subject: The Message subject, default to followup_subject. Ignored
                   when content is an IMessage.
         :datecreated: A datetime object which will be used as the Message
@@ -485,7 +485,7 @@ class TicketSet:
                     datelastquery  < (current_timestamp - interval '%s days')
                     AND assignee IS NULL
             """ % sqlvalues(
-                TicketStatus.OPEN, TicketStatus.NEEDSINFO,
+                QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
     def searchTickets(self, search_text=None, language=None,
@@ -619,8 +619,8 @@ class TicketSearch:
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
                     owner_status=[
-                        TicketStatus.NEEDSINFO, TicketStatus.ANSWERED],
-                    open_status=TicketStatus.OPEN))
+                        QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED],
+                    open_status=QuestionStatus.OPEN))
 
         if self.language:
             constraints.append(
@@ -649,16 +649,16 @@ class TicketSearch:
         sort = self.sort
         if sort is None:
             if self.search_text:
-                sort = TicketSort.RELEVANCY
+                sort = QuestionSort.RELEVANCY
             else:
-                sort = TicketSort.NEWEST_FIRST
-        if sort is TicketSort.NEWEST_FIRST:
+                sort = QuestionSort.NEWEST_FIRST
+        if sort is QuestionSort.NEWEST_FIRST:
             return "-Ticket.datecreated"
-        elif sort is TicketSort.OLDEST_FIRST:
+        elif sort is QuestionSort.OLDEST_FIRST:
             return "Ticket.datecreated"
-        elif sort is TicketSort.STATUS:
+        elif sort is QuestionSort.STATUS:
             return ["Ticket.status", "-Ticket.datecreated"]
-        elif sort is TicketSort.RELEVANCY:
+        elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
                 # SQLConstant is a workaround for bug 53455
                 return [SQLConstant(
@@ -667,10 +667,10 @@ class TicketSearch:
                         "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
-        elif sort is TicketSort.RECENT_OWNER_ACTIVITY:
+        elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
             return ['-Ticket.datelastquery']
         else:
-            raise AssertionError, "Unknown TicketSort value: %s" % sort
+            raise AssertionError, "Unknown QuestionSort value: %s" % sort
 
     def getResults(self):
         """Return the tickets that match this query."""
@@ -769,7 +769,7 @@ class TicketPersonSearch(TicketSearch):
         self.person = person
 
         if not participation:
-            self.participation = TicketParticipation.items
+            self.participation = QuestionParticipation.items
         elif zope_isinstance(participation, Item):
             self.participation = [participation]
         else:
@@ -779,14 +779,14 @@ class TicketPersonSearch(TicketSearch):
         """See TicketSearch."""
         joins = TicketSearch.getTableJoins(self)
 
-        if TicketParticipation.SUBSCRIBER in self.participation:
+        if QuestionParticipation.SUBSCRIBER in self.participation:
             joins.append(
                 'LEFT OUTER JOIN TicketSubscription '
                 'ON TicketSubscription.ticket = Ticket.id'
                 ' AND TicketSubscription.person = %s' % sqlvalues(
                     self.person))
 
-        if TicketParticipation.COMMENTER in self.participation:
+        if QuestionParticipation.COMMENTER in self.participation:
             message_joins = self.getMessageJoins(self.person)
             if not set(joins).intersection(set(message_joins)):
                 joins.extend(message_joins)
@@ -794,11 +794,11 @@ class TicketPersonSearch(TicketSearch):
         return joins
 
     queryByParticipationType = {
-        TicketParticipation.ANSWERER: "Ticket.answerer = %s",
-        TicketParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
-        TicketParticipation.OWNER: "Ticket.owner = %s",
-        TicketParticipation.COMMENTER: "Message.owner = %s",
-        TicketParticipation.ASSIGNEE: "Ticket.assignee = %s"}
+        QuestionParticipation.ANSWERER: "Ticket.answerer = %s",
+        QuestionParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
+        QuestionParticipation.OWNER: "Ticket.owner = %s",
+        QuestionParticipation.COMMENTER: "Message.owner = %s",
+        QuestionParticipation.ASSIGNEE: "Ticket.assignee = %s"}
 
     def getConstraints(self):
         """See TicketSearch."""

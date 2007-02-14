@@ -570,10 +570,10 @@ Notification received by the owner:
 
 === Notifications for setStatus() ===
 
-    >>> from canonical.lp.dbschema import TicketStatus
+    >>> from canonical.lp.dbschema import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_ticket.setStatus(
-    ...     foo_bar, TicketStatus.SOLVED, "The rejection was a mistake.")
+    ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]

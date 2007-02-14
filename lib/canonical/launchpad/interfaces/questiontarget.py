@@ -1,4 +1,4 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces for things which have Tickets."""
 
@@ -21,7 +21,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.question import (
     ISearchableByTicketOwner, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import TicketSort, TicketStatus
+from canonical.lp.dbschema import QuestionSort, QuestionStatus
 
 
 def get_supported_languages(ticket_target):
@@ -135,9 +135,9 @@ class ISearchTicketsForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     sort = Choice(title=_('Sort order'), required=True,
-                  vocabulary='TicketSort',
-                  default=TicketSort.RELEVANCY)
+                  vocabulary='QuestionSort',
+                  default=QuestionSort.RELEVANCY)
 
     status = Set(title=_('Status'), required=False,
-                 value_type=Choice(vocabulary='TicketStatus'),
+                 value_type=Choice(vocabulary='QuestionStatus'),
                  default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))

@@ -2,10 +2,10 @@
 
 The state of a support ticket is tracked through its status attribute.
 Six statuses are used to model a ticket lifecycle. These are defined
-in the TicketStatus enumeration.
+in the QuestionStatus enumeration.
 
-    >>> from canonical.lp.dbschema import TicketStatus
-    >>> print "\n".join([status.name for status in TicketStatus.items])
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> print "\n".join([status.name for status in QuestionStatus.items])
     OPEN
     NEEDSINFO
     ANSWERED
@@ -14,10 +14,10 @@ in the TicketStatus enumeration.
     INVALID
 
 Status change occurs in consequence of a user action. The possible
-actions are defined in the TicketAction enumeration.
+actions are defined in the QuestionAction enumeration.
 
-    >>> from canonical.lp.dbschema import TicketAction
-    >>> print "\n".join([status.name for status in TicketAction.items])
+    >>> from canonical.lp.dbschema import QuestionAction
+    >>> print "\n".join([status.name for status in QuestionAction.items])
     REQUESTINFO
     GIVEINFO
     COMMENT
@@ -421,7 +421,7 @@ It is not possible to change the status attribute directly:
 
     >>> login('foo.bar@canonical.com')
     >>> ticket = ubuntu.newTicket(**new_ticket_args)
-    >>> ticket.status = TicketStatus.INVALID
+    >>> ticket.status = QuestionStatus.INVALID
     Traceback (most recent call last):
       ...
     ForbiddenAttribute...
@@ -434,7 +434,7 @@ the status change.
     >>> old_datelastquery = ticket.datelastquery
     >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
-    ...      stub, TicketStatus.INVALID, 'Changed status to INVALID',
+    ...      stub, QuestionStatus.INVALID, 'Changed status to INVALID',
     ...     datecreated=now_plus_one_hour)
 
 The method returns the ITicketMessage recording the change:
@@ -457,7 +457,7 @@ datelastquery attributes:
 If an answer was present on the ticket, the status change also clears
 the answer and dateanswered attributes.
 
-    >>> msg = ticket.setStatus(stub, TicketStatus.OPEN, 'Status change.')
+    >>> msg = ticket.setStatus(stub, QuestionStatus.OPEN, 'Status change.')
     >>> answer_message = ticket.giveAnswer(sample_person, 'Install BootX.')
 
     >>> login('no-priv@canonical.com')
@@ -469,7 +469,7 @@ the answer and dateanswered attributes.
 
     >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
-    ...     stub, TicketStatus.OPEN, 'Reopen the request',
+    ...     stub, QuestionStatus.OPEN, 'Reopen the request',
     ...     datecreated=now_plus_one_hour)
 
     >>> ticket.dateanswered is None
@@ -481,7 +481,7 @@ But when the status is changed by a user who doesn't have the
 launchpad.Admin permission, an Unauthorized error is thrown:
 
     >>> login('test@canonical.com')
-    >>> ticket.setStatus(sample_person, TicketStatus.EXPIRED, 'Expire.')
+    >>> ticket.setStatus(sample_person, QuestionStatus.EXPIRED, 'Expire.')
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -534,7 +534,7 @@ the message they create and a SQLObjectModifiedEvent for the ticket.
 Changing the status triggers the event:
 
     >>> login(stub.preferredemail.email)
-    >>> msg = ticket.setStatus(stub, TicketStatus.EXPIRED, 'Status change.')
+    >>> msg = ticket.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
     Received SQLObjectCreatedEvent on TicketMessage
     Received SQLObjectModifiedEvent on Ticket
 
@@ -624,7 +624,7 @@ back to OPEN after having been rejected.
 
     >>> login(stub.preferredemail.email)
     >>> status_change_message = ticket.setStatus(
-    ...     stub, TicketStatus.OPEN, 'Disregard previous rejection. '
+    ...     stub, QuestionStatus.OPEN, 'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
     ...     datecreated=now_plus_two_hours)
     Received SQLObjectCreatedEvent on TicketReopening
@@ -667,7 +667,7 @@ The IMessage owner must be the same than the person passed to the workflow
 method.
 
     >>> login(stub.preferredemail.email)
-    >>> ticket.setStatus(stub, TicketStatus.OPEN, reject_message)
+    >>> ticket.setStatus(stub, QuestionStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
     AssertionError...

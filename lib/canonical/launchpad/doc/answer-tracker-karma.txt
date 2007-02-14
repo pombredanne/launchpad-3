@@ -130,9 +130,9 @@ also receives karma.
 We do not grant karma for status change made outside of workflow:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.lp.dbschema import TicketStatus
+    >>> from canonical.lp.dbschema import QuestionStatus
     >>> msg = firefox_ticket.setStatus(
-    ...     foo_bar, TicketStatus.OPEN, 'That rejection was an error.',
+    ...     foo_bar, QuestionStatus.OPEN, 'That rejection was an error.',
     ...     datecreated=now.next())
 
 - Solving own problem

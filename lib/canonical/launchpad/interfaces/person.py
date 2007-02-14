@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Person interfaces."""
 
@@ -640,7 +640,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
         See ITicketCollection for the description of the standard search
         parameters.
 
-        :participation: A list of TicketParticipation that defines the set
+        :participation: A list of QuestionParticipation that defines the set
         of relationship to tickets that will be searched. If None or an empty
         sequence, all relationships are considered.
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -16,7 +16,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import TicketStatus
+from canonical.lp.dbschema import QuestionStatus
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import ITicketReopening
@@ -36,7 +36,7 @@ class TicketReopening(SQLBase):
     answerer = ForeignKey(dbName='answerer', foreignKey='Person',
         notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    priorstate = EnumCol(schema=TicketStatus, notNull=True)
+    priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
 # XXX flacoste 2006/10/25 The TicketReopening is probably not that useful
 # anymore since the ticket history is nesarly completely tracked in the
@@ -47,7 +47,7 @@ def create_ticketreopening(ticket, event):
     """Event susbcriber that creates a TicketReopening whenever a ticket
     with an answer changes back to the OPEN state.
     """
-    if ticket.status != TicketStatus.OPEN:
+    if ticket.status != QuestionStatus.OPEN:
         return
 
     # Only create a TicketReopening if the ticket had previsouly an answer.

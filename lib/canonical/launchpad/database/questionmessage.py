@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -21,7 +21,7 @@ from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import IMessage, ITicketMessage
 
 from canonical.lp import decorates
-from canonical.lp.dbschema import TicketAction, TicketStatus
+from canonical.lp.dbschema import QuestionAction, QuestionStatus
 
 
 class TicketMessage(SQLBase):
@@ -37,7 +37,7 @@ class TicketMessage(SQLBase):
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
 
     action = EnumCol(
-        schema=TicketAction, notNull=True, default=TicketAction.COMMENT)
+        schema=QuestionAction, notNull=True, default=QuestionAction.COMMENT)
 
     new_status = EnumCol(
-        schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
+        schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)

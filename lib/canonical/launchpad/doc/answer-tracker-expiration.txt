@@ -19,9 +19,9 @@ somebody are subject to expiration.
     # Sanity check in case somebody modifies the ticket sampledata and
     # forget to update this script.
     >>> from canonical.launchpad.database import Ticket
-    >>> from canonical.lp.dbschema import TicketStatus
+    >>> from canonical.lp.dbschema import QuestionStatus
     >>> Ticket.select('status IN (%i,%i)' % (
-    ...     TicketStatus.OPEN.value, TicketStatus.NEEDSINFO.value)).count()
+    ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
     8
 
     # By default, all open and needs info ticket should expire. Make

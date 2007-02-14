@@ -700,9 +700,9 @@ can tweak the search and filter the results:
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
-    >>> from canonical.lp.dbschema import TicketStatus
+    >>> from canonical.lp.dbschema import QuestionStatus
     >>> MyCustomSearchTicketsView.default_filter = {
-    ...     'status': [TicketStatus.SOLVED, TicketStatus.INVALID]}
+    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid tickets are listed by
@@ -749,7 +749,7 @@ no results are found based on the selected search filter:
     There are no questions for Ubuntu with the requested statuses.
 
     >>> MyCustomSearchTicketsView.default_filter = dict(
-    ...     status=[TicketStatus.OPEN], search_text='Firefox')
+    ...     status=[QuestionStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
     >>> print translate(search_view_harness.view.pageheading)
     Open questions matching "Firefox" for Ubuntu

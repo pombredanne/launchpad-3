@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -32,7 +32,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
 
-from canonical.lp.dbschema import TicketStatus
+from canonical.lp.dbschema import QuestionStatus
 
 
 def get_main_body(signed_msg):
@@ -310,10 +310,10 @@ class SupportTrackerHandler:
         otherwise it's a comment.
         """
         if ticket.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
             ticket.giveInfo(message)
         elif ticket.status in [
-            TicketStatus.ANSWERED, TicketStatus.EXPIRED]:
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED]:
             ticket.reopen(message)
         else:
             ticket.addComment(message.owner, message)
@@ -330,7 +330,8 @@ class SupportTrackerHandler:
         In the other status, the message is a comment without status change.
         """
         if ticket.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]:
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+	    QuestionStatus.ANSWERED]:
             ticket.giveAnswer(message.owner, message)
         else:
             # In the other states, only a comment can be added.

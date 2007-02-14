@@ -36,7 +36,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import TicketStatus
+from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
@@ -124,10 +124,10 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         mapping = {}
         # All set of only one statuses maps to the status title.
-        for status in TicketStatus.items:
+        for status in QuestionStatus.items:
             mapping[frozenset([status])] = status.title
 
-        mapping[frozenset([TicketStatus.ANSWERED, TicketStatus.SOLVED])] = _(
+        mapping[frozenset([QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _(
             'Answered')
 
         return mapping
@@ -318,7 +318,7 @@ class TicketCollectionMyTicketsView(SearchTicketsView):
     def getDefaultFilter(self):
         """See SearchTicketsView."""
         return {'owner': self.user,
-                'status': set(TicketStatus.items)}
+                'status': set(QuestionStatus.items)}
 
 
 class TicketCollectionNeedAttentionView(SearchTicketsView):

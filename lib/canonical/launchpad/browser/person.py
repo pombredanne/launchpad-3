@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2007 Canonical Ltd
 
 __metaclass__ = type
 
@@ -79,7 +79,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
+    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
 from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
@@ -2489,7 +2489,7 @@ class PersonLatestTicketsView(LaunchpadView):
     def getLatestTickets(self, quantity=5):
         """Return <quantity> latest tickets created for this target. """
         return self.context.searchTickets(
-            participation=TicketParticipation.OWNER)[:quantity]
+            participation=QuestionParticipation.OWNER)[:quantity]
 
 
 class PersonSearchTicketsView(SearchTicketsView):
@@ -2520,7 +2520,7 @@ class SearchAnsweredTicketsView(SearchTicketsView):
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.ANSWERER)
+        return dict(participation=QuestionParticipation.ANSWERER)
 
     @property
     def pageheading(self):
@@ -2543,7 +2543,7 @@ class SearchAssignedTicketsView(SearchTicketsView):
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.ASSIGNEE)
+        return dict(participation=QuestionParticipation.ASSIGNEE)
 
     @property
     def pageheading(self):
@@ -2566,7 +2566,7 @@ class SearchCommentedTicketsView(SearchTicketsView):
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.COMMENTER)
+        return dict(participation=QuestionParticipation.COMMENTER)
 
     @property
     def pageheading(self):
@@ -2589,7 +2589,7 @@ class SearchCreatedTicketsView(SearchTicketsView):
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.OWNER)
+        return dict(participation=QuestionParticipation.OWNER)
 
     @property
     def pageheading(self):
@@ -2634,7 +2634,7 @@ class SearchSubscribedTicketsView(SearchTicketsView):
 
     def getDefaultFilter(self):
         """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.SUBSCRIBER)
+        return dict(participation=QuestionParticipation.SUBSCRIBER)
 
     @property
     def pageheading(self):

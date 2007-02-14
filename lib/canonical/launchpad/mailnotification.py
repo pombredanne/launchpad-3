@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Event handlers that send email notifications."""
 
@@ -26,7 +26,7 @@ from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
+from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -1206,23 +1206,23 @@ class TicketModifiedDefaultNotification(TicketNotification):
 
     # Header template used when a new message is added to the ticket.
     action_header_template = {
-        TicketAction.REQUESTINFO:
+        QuestionAction.REQUESTINFO:
             '%(person)s requested for more information:',
-        TicketAction.CONFIRM:
+        QuestionAction.CONFIRM:
             '%(person)s confirmed that the question is solved:',
-        TicketAction.COMMENT:
+        QuestionAction.COMMENT:
             '%(person)s posted a new comment:',
-        TicketAction.GIVEINFO:
+        QuestionAction.GIVEINFO:
             '%(person)s gave more information on the question:',
-        TicketAction.REOPEN:
+        QuestionAction.REOPEN:
             '%(person)s is still having a problem:',
-        TicketAction.ANSWER:
+        QuestionAction.ANSWER:
             '%(person)s proposed the following answer:',
-        TicketAction.EXPIRE:
+        QuestionAction.EXPIRE:
             '%(person)s expired the question:',
-        TicketAction.REJECT:
+        QuestionAction.REJECT:
             '%(person)s rejected the question:',
-        TicketAction.SETSTATUS:
+        QuestionAction.SETSTATUS:
             '%(person)s changed the question status:',
     }
 
@@ -1246,21 +1246,21 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
     action_header_template = dict(
         TicketModifiedDefaultNotification.action_header_template)
     action_header_template.update({
-        TicketAction.CONFIRM:
+        QuestionAction.CONFIRM:
             'You confirmed that the question is solved:',
-        TicketAction.GIVEINFO:
+        QuestionAction.GIVEINFO:
             'You gave more information on the question:',
-        TicketAction.REOPEN:
+        QuestionAction.REOPEN:
             'You are still having a problem:',
         })
 
     body_template = 'question-modified-owner-notification.txt'
 
     body_template_by_action = {
-        TicketAction.ANSWER: "question-answered-owner-notification.txt",
-        TicketAction.EXPIRE: "question-expired-owner-notification.txt",
-        TicketAction.REJECT: "question-rejected-owner-notification.txt",
-        TicketAction.REQUESTINFO: (
+        QuestionAction.ANSWER: "question-answered-owner-notification.txt",
+        QuestionAction.EXPIRE: "question-expired-owner-notification.txt",
+        QuestionAction.REJECT: "question-rejected-owner-notification.txt",
+        QuestionAction.REQUESTINFO: (
             "question-info-requested-owner-notification.txt"),
     }
 

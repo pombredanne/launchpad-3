@@ -1,4 +1,4 @@
- # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+ # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Ticket message interface."""
 
@@ -13,7 +13,7 @@ from zope.schema import Choice, Field
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
 
-from canonical.lp.dbschema import TicketAction, TicketStatus
+from canonical.lp.dbschema import QuestionAction, QuestionStatus
 
 
 class ITicketMessage(IMessage):
@@ -27,11 +27,11 @@ class ITicketMessage(IMessage):
         description=_("An ITicket object."), required=True, readonly=True)
 
     action = Choice(title=_("Action operated on the ticket by this message."),
-        required=True, readonly=True, default=TicketAction.COMMENT,
-        vocabulary="TicketAction")
+        required=True, readonly=True, default=QuestionAction.COMMENT,
+        vocabulary="QuestionAction")
 
     new_status = Choice(title=_("Ticket status after message"),
         description=_("The status of the ticket after the transition related "
         "the action operated by this message."), required=True,
-        readonly=True, default=TicketStatus.OPEN, vocabulary='TicketStatus')
+        readonly=True, default=QuestionStatus.OPEN, vocabulary='QuestionStatus')
 

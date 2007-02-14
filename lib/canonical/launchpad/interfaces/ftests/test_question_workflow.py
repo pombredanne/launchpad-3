@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Test the question workflow methods.
 
@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ITicket, ITicketMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
-from canonical.lp.dbschema import TicketAction, TicketStatus
+from canonical.lp.dbschema import QuestionAction, QuestionStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
@@ -105,7 +105,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         is True when the ticket status is one listed in statuses_expected_true
         and False otherwise.
         """
-        for status in TicketStatus.items:
+        for status in QuestionStatus.items:
             if status != self.ticket.status:
                 self.setTicketStatus(self.ticket, status)
             expected = status.name in statuses_expected_true
@@ -183,7 +183,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         args and kwargs contains the parameters that should be passed to the
         transition method.
         """
-        for status in TicketStatus.items:
+        for status in QuestionStatus.items:
             if status.name in valid_statuses:
                 continue
             exceptionRaised = False
@@ -281,7 +281,7 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
         """
         login('foo.bar@canonical.com')
         self.assertRaises(InvalidTicketStateError, self.ticket.setStatus,
-                self.admin, TicketStatus.OPEN, 'Status Change')
+                self.admin, QuestionStatus.OPEN, 'Status Change')
 
 
 class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -299,10 +299,10 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
         # Do no check the edited_fields attribute since it varies depending
         # on the departure state.
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO],
             expected_owner=self.answerer,
-            expected_action=TicketAction.REQUESTINFO,
-            expected_status=TicketStatus.NEEDSINFO,
+            expected_action=QuestionAction.REQUESTINFO,
+            expected_status=QuestionStatus.NEEDSINFO,
             transition_method=self.ticket.requestInfo,
             transition_method_args=(
                 self.answerer, "What's your problem?"),
@@ -310,7 +310,7 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
 
         # Even if the ticket is answered, a user can request more
         # information, but that leave the ticket in the ANSWERED state.
-        self.setTicketStatus(self.ticket, TicketStatus.ANSWERED)
+        self.setTicketStatus(self.ticket, QuestionStatus.ANSWERED)
         self.collected_events = []
         message = self.ticket.requestInfo(
             self.answerer,
@@ -318,10 +318,10 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             datecreated=self.nowPlus(3))
         self.checkTransitionMessage(
             message, expected_owner=self.answerer,
-            expected_action=TicketAction.REQUESTINFO,
-            expected_status=TicketStatus.ANSWERED)
+            expected_action=QuestionAction.REQUESTINFO,
+            expected_status=QuestionStatus.ANSWERED)
         self.checkTransitionEvents(
-            message, ['messages', 'datelastresponse'], TicketStatus.OPEN.title)
+            message, ['messages', 'datelastresponse'], QuestionStatus.OPEN.title)
 
     def test_requestInfoFromOwnerIsInvalid(self):
         """Test that the ticket owner cannot use requestInfo."""
@@ -368,10 +368,10 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
         # Do not check the edited_fields attributes since it
         # changes based on departure state.
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO],
             expected_owner=self.owner,
-            expected_action=TicketAction.GIVEINFO,
-            expected_status=TicketStatus.OPEN,
+            expected_action=QuestionAction.GIVEINFO,
+            expected_status=QuestionStatus.OPEN,
             transition_method=self.ticket.giveInfo,
             transition_method_args=("That's that.",),
             edited_fields=None)
@@ -413,11 +413,11 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
         # Do not check the edited_fields attributes since it
         # changes based on departure state.
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
             expected_owner=self.answerer,
-            expected_action=TicketAction.ANSWER,
-            expected_status=TicketStatus.ANSWERED,
+            expected_action=QuestionAction.ANSWER,
+            expected_status=QuestionStatus.ANSWERED,
             transition_method=self.ticket.giveAnswer,
             transition_method_args=(
                 self.answerer, "It looks like a real problem.",),
@@ -434,11 +434,11 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             self.assertEquals(message.datecreated, self.ticket.dateanswered)
 
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
             expected_owner=self.owner,
-            expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.SOLVED,
+            expected_action=QuestionAction.CONFIRM,
+            expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.ticket.giveAnswer,
             transition_method_args=(
@@ -516,11 +516,11 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             self.assertEquals(message.datecreated, self.ticket.dateanswered)
 
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
-             TicketStatus.ANSWERED],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
             expected_owner=self.owner,
-            expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.SOLVED,
+            expected_action=QuestionAction.CONFIRM,
+            expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.ticket.confirmAnswer,
             transition_method_args=("That was very useful.",),
@@ -579,10 +579,10 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
         ITicketMessage.
         """
         self._testValidTransition(
-            [TicketStatus.ANSWERED, TicketStatus.EXPIRED],
+            [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED],
             expected_owner=self.owner,
-            expected_action=TicketAction.REOPEN,
-            expected_status=TicketStatus.OPEN,
+            expected_action=QuestionAction.REOPEN,
+            expected_status=QuestionStatus.OPEN,
             transition_method=self.ticket.reopen,
             transition_method_args=('I still have this problem.',),
             edited_fields=['status', 'messages', 'datelastquery'])
@@ -598,7 +598,7 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
         self.ticket.giveAnswer(
             self.owner, 'I solved my own problem.',
             datecreated=self.nowPlus(0))
-        self.assertEquals(self.ticket.status, TicketStatus.SOLVED)
+        self.assertEquals(self.ticket.status, QuestionStatus.SOLVED)
 
         # Clear previous events.
         self.collected_events = []
@@ -607,12 +607,12 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
             "My solution doesn't work.", datecreated=self.nowPlus(1))
         self.checkTransitionMessage(
             message, expected_owner=self.owner,
-            expected_action=TicketAction.REOPEN,
-            expected_status=TicketStatus.OPEN)
+            expected_action=QuestionAction.REOPEN,
+            expected_status=QuestionStatus.OPEN)
         self.checkTransitionEvents(
             message, ['status', 'messages', 'answerer', 'answer',
                       'dateanswered', 'datelastquery'],
-            TicketStatus.OPEN.title)
+            QuestionStatus.OPEN.title)
 
     def test_reopenPermission(self):
         """Test that only the owner can access reopen()."""
@@ -643,10 +643,10 @@ class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
         OPEN or NEEDSINFO and that it returns a valid ITicketMessage.
         """
         self._testValidTransition(
-            [TicketStatus.OPEN, TicketStatus.NEEDSINFO],
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO],
             expected_owner=self.answerer,
-            expected_action=TicketAction.EXPIRE,
-            expected_status=TicketStatus.EXPIRED,
+            expected_action=QuestionAction.EXPIRE,
+            expected_status=QuestionStatus.EXPIRED,
             transition_method=self.ticket.expireTicket,
             transition_method_args=(
                 self.answerer, 'This ticket is expired.'),
@@ -668,7 +668,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         """Test that expireTicket cannot be called when the ticket status is
         not one of OPEN or NEEDSINFO.
         """
-        valid_statuses = [status.name for status in TicketStatus.items
+        valid_statuses = [status.name for status in QuestionStatus.items
                           if status.name != 'INVALID']
         # Reject user must be a support contact, (or admin, or product owner).
         self.ubuntu.addSupportContact(self.answerer)
@@ -684,7 +684,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         # Reject user must be a support contact, (or admin, or product owner).
         login(self.answerer.preferredemail.email)
         self.ubuntu.addSupportContact(self.answerer)
-        valid_statuses = [status for status in TicketStatus.items
+        valid_statuses = [status for status in QuestionStatus.items
                           if status.name != 'INVALID']
 
         def checkRejectMessageIsAnAnswer(message):
@@ -697,8 +697,8 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         self._testValidTransition(
             valid_statuses,
             expected_owner=self.answerer,
-            expected_action=TicketAction.REJECT,
-            expected_status=TicketStatus.INVALID,
+            expected_action=QuestionAction.REJECT,
+            expected_status=QuestionStatus.INVALID,
             extra_message_check=checkRejectMessageIsAnAnswer,
             transition_method=self.ticket.reject,
             transition_method_args=(

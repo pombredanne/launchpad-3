@@ -28,18 +28,18 @@ the query using the regular full text algorithm.
 
 When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
-one of the constant defined in the TicketSort enumeration.
+one of the constant defined in the QuestionSort enumeration.
 
-    >>> from canonical.lp.dbschema import TicketSort
+    >>> from canonical.lp.dbschema import QuestionSort
     >>> for ticket in foo_bar.searchTickets(
-    ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
+    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print ticket.id, ticket.title, ticket.status.title
     4 Firefox loses focus and gets stuck              Open
     6 Newly installed plug-in doesn't seem to be used Answered
     9 mailto: problem in webpage                      Solved
 
 When no text search is done, the default sort order is
-TicketSort.NEWEST_FIRST.
+QuestionSort.NEWEST_FIRST.
 
     >>> for ticket in foo_bar.searchTickets():
     ...     print ticket.id, ticket.title, ticket.status.title
@@ -57,15 +57,15 @@ The last searches showed that by default, not all statuses are searched
 for by default (they excluded expired and invalid tickets). The status
 parameter can be used to control the list of statuses to select:
 
-    >>> from canonical.lp.dbschema import TicketStatus
-    >>> for ticket in foo_bar.searchTickets(status=TicketStatus.INVALID):
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> for ticket in foo_bar.searchTickets(status=QuestionStatus.INVALID):
     ...     print ticket.title, ticket.status.title
     Firefox is slow and consumes too much RAM   Invalid
 
 The status parameter can also take a list of statuses.
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         status=[TicketStatus.SOLVED, TicketStatus.INVALID]):
+    ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
     ...     print ticket.title, ticket.status.title
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
@@ -74,14 +74,14 @@ The status parameter can also take a list of statuses.
 
 By default, any types of relationship to a ticket is considered by
 searchTickets. This can customized through the participation parameter.
-It takes one or a list of constants from the TicketParticipation enumeration.
+It takes one or a list of constants from the QuestionParticipation enumeration.
 
 To select only tickets on which the person commented, the
-TicketParticipation.COMMENTER is used:
+QuestionParticipation.COMMENTER is used:
 
-    >>> from canonical.lp.dbschema import TicketParticipation
+    >>> from canonical.lp.dbschema import QuestionParticipation
     >>> for ticket in foo_bar.searchTickets(
-    ...         participation=TicketParticipation.COMMENTER, status=None):
+    ...         participation=QuestionParticipation.COMMENTER, status=None):
     ...     print ticket.title
     Continue playing after shutdown
     Play DVDs in Totem
@@ -89,38 +89,38 @@ TicketParticipation.COMMENTER is used:
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
-TicketParticipation.SUBSCRIBER will only select the tickets to which
+QuestionParticipation.SUBSCRIBER will only select the tickets to which
 the person is subscribed to:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         participation=TicketParticipation.SUBSCRIBER, status=None):
+    ...         participation=QuestionParticipation.SUBSCRIBER, status=None):
     ...     print ticket.title
     Slow system
     Firefox is slow and consumes too much RAM
 
-TicketParticipation.OWNER selects the tickets that the person created:
+QuestionParticipation.OWNER selects the tickets that the person created:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         participation=TicketParticipation.OWNER, status=None):
+    ...         participation=QuestionParticipation.OWNER, status=None):
     ...     print ticket.title
     Slow system
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
-TicketParticipation.ANSWERER selects the tickets for which the person
+QuestionParticipation.ANSWERER selects the tickets for which the person
 was marked as the answerer:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         participation=TicketParticipation.ANSWERER, status=None):
+    ...         participation=QuestionParticipation.ANSWERER, status=None):
     ...     print ticket.title
     mailto: problem in webpage
     Firefox is slow and consumes too much RAM
 
-TicketParticipation.ASSIGNEE selects that tickets which are assigned to
+QuestionParticipation.ASSIGNEE selects that tickets which are assigned to
 the person:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         participation=TicketParticipation.ASSIGNEE, status=None):
+    ...         participation=QuestionParticipation.ASSIGNEE, status=None):
     ...     print ticket.title
 
 If a list of these constants is used, all of these participation types
@@ -128,7 +128,7 @@ will be selected:
 
     >>> for ticket in foo_bar.searchTickets(
     ...         participation=[
-    ...             TicketParticipation.OWNER, TicketParticipation.ANSWERER],
+    ...             QuestionParticipation.OWNER, QuestionParticipation.ANSWERER],
     ...         status=None):
     ...     print ticket.title
     mailto: problem in webpage
@@ -180,8 +180,8 @@ The returned sets of tickets is the intersection of the sets delimited
 by each criteria:
 
     >>> for ticket in foo_bar.searchTickets(
-    ...         search_text='firefox OR Java', status=TicketStatus.ANSWERED,
-    ...         participation=TicketParticipation.COMMENTER):
+    ...         search_text='firefox OR Java', status=QuestionStatus.ANSWERED,
+    ...         participation=QuestionParticipation.COMMENTER):
     ...     print ticket.title, ticket.status.title
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered

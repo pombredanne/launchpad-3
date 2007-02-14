@@ -1,11 +1,11 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
 from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
-from canonical.lp.dbschema import BugTaskStatus, TicketAction
+from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
 
 def bug_created(bug, event):
@@ -163,23 +163,23 @@ def ticket_modified(ticket, event):
         _assignKarmaUsingTicketContext(user, ticket, 'tickettitlechanged')
 
 
-TicketAction2KarmaAction = {
-    TicketAction.REQUESTINFO: 'ticketrequestedinfo',
-    TicketAction.GIVEINFO: 'ticketgaveinfo',
-    TicketAction.SETSTATUS: None,
-    TicketAction.COMMENT: 'ticketcommentadded',
-    TicketAction.ANSWER: 'ticketgaveanswer',
-    TicketAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
-    TicketAction.EXPIRE: None,
-    TicketAction.REJECT: 'ticketrejected',
-    TicketAction.REOPEN: 'ticketreopened',
+QuestionAction2KarmaAction = {
+    QuestionAction.REQUESTINFO: 'ticketrequestedinfo',
+    QuestionAction.GIVEINFO: 'ticketgaveinfo',
+    QuestionAction.SETSTATUS: None,
+    QuestionAction.COMMENT: 'ticketcommentadded',
+    QuestionAction.ANSWER: 'ticketgaveanswer',
+    QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
+    QuestionAction.EXPIRE: None,
+    QuestionAction.REJECT: 'ticketrejected',
+    QuestionAction.REOPEN: 'ticketreopened',
 }
 
 
 def ticket_comment_added(ticketmessage, event):
     """Assign karma to the user which added <ticketmessage>."""
     ticket = ticketmessage.ticket
-    karma_action = TicketAction2KarmaAction.get(ticketmessage.action)
+    karma_action = QuestionAction2KarmaAction.get(ticketmessage.action)
     if karma_action:
         _assignKarmaUsingTicketContext(
             ticketmessage.owner, ticket, karma_action)

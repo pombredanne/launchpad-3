@@ -56,15 +56,15 @@ By default, expired and invalid support requests are not searched for.
 The status parameter can be used to select the tickets in the status
 you are interested in.
 
-    >>> from canonical.lp.dbschema import TicketStatus
-    >>> for ticket in ticket_set.searchTickets(status=TicketStatus.INVALID):
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> for ticket in ticket_set.searchTickets(status=QuestionStatus.INVALID):
     ...     print ticket.title, ticket.status.title, ticket.target.displayname
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
 
 The status parameter can also take a list of statuses.
 
     >>> for ticket in ticket_set.searchTickets(
-    ...         status=[TicketStatus.SOLVED, TicketStatus.INVALID]):
+    ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
     ...     print ticket.title, ticket.status.title, ticket.target.displayname
     mailto: problem in webpage                Solved mozilla-firefox in ubuntu
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
@@ -87,7 +87,7 @@ by each criteria:
 
     >>> for ticket in ticket_set.searchTickets(
     ...         search_text='firefox',
-    ...         status=[TicketStatus.OPEN, TicketStatus.INVALID]):
+    ...         status=[QuestionStatus.OPEN, QuestionStatus.INVALID]):
     ...     print repr(ticket.title), ticket.status.title, (
     ...           ticket.target.displayname)
     u'Problemas de Impress\xe3o no Firefox'     Open    Mozilla Firefox
@@ -100,11 +100,11 @@ by each criteria:
 
 When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
-one of the constant defined in the TicketSort enumeration.
+one of the constant defined in the QuestionSort enumeration.
 
-    >>> from canonical.lp.dbschema import TicketSort
+    >>> from canonical.lp.dbschema import QuestionSort
     >>> for ticket in ticket_set.searchTickets(
-    ...         search_text='firefox', sort=TicketSort.OLDEST_FIRST):
+    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print ticket.id, repr(ticket.title), ticket.target.displayname
     1 u'Firefox cannot render Bank Site'           Mozilla Firefox
     2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
@@ -114,9 +114,9 @@ one of the constant defined in the TicketSort enumeration.
     13 u'Problemas de Impress\xe3o no Firefox'     Mozilla Firefox
 
 When no text search is done, the default sort order is
-TicketSort.NEWEST_FIRST.
+QuestionSort.NEWEST_FIRST.
 
-    >>> for ticket in ticket_set.searchTickets(status=TicketStatus.OPEN)[:5]:
+    >>> for ticket in ticket_set.searchTickets(status=QuestionStatus.OPEN)[:5]:
     ...     print ticket.id, repr(ticket.title), ticket.target.displayname
     13 u'Problemas de Impress\xe3o no Firefox'   Mozilla Firefox
     12 u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)' Ubuntu

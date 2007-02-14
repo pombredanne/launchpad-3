@@ -23,7 +23,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus,
+    SourcePackageFileType, BuildStatus, QuestionStatus,
     PackagePublishingStatus)
 
 from canonical.librarian.interfaces import ILibrarianClient
@@ -196,7 +196,7 @@ class SourcePackageRelease(SQLBase):
             status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.OPEN,
+            """ % sqlvalues(QuestionStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()

@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Ticket expiration logic."""
 
@@ -14,7 +14,6 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities, ITicketSet
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-from canonical.lp.dbschema import TicketStatus
 
 
 class TicketJanitor:

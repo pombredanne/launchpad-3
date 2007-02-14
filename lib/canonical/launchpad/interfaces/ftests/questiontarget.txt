@@ -175,8 +175,8 @@ word appears in the title.)
 
 The searchTickets() method can also filter tickets by status:
 
-    >>> from canonical.lp.dbschema import TicketStatus
-    >>> for t in target.searchTickets(status=TicketStatus.OPEN):
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> for t in target.searchTickets(status=QuestionStatus.OPEN):
     ...     print t.title
     Another ticket
     Ticket title2
@@ -188,7 +188,7 @@ The searchTickets() method can also filter tickets by status:
 In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
 
-    >>> for t in target.searchTickets(status=TicketStatus.INVALID):
+    >>> for t in target.searchTickets(status=QuestionStatus.INVALID):
     ...     print t.title
     Ticket title4
 
@@ -197,7 +197,7 @@ search_text and status parameters at the same time. This will search
 OPEN and INVALID tickets with the word 'index'
 
     >>> for t in target.searchTickets(search_text='request index',
-    ...         status=(TicketStatus.OPEN, TicketStatus.INVALID)):
+    ...         status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
     ...     print t.title
     Ticket title4
     Ticket title2
@@ -207,15 +207,15 @@ OPEN and INVALID tickets with the word 'index'
 === sort ===
 
 You can control the sort order by passing one of the constants defined
-in TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort
+in QuestionSort. (We already saw the NEWEST_FIRST and RELEVANCY sort
 order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
-    >>> from canonical.lp.dbschema import TicketSort
+    >>> from canonical.lp.dbschema import QuestionSort
 
     >>> for t in target.searchTickets(search_text='new',
-    ...                               sort=TicketSort.OLDEST_FIRST):
+    ...                               sort=QuestionSort.OLDEST_FIRST):
     ...     print t.title
     New ticket
     Another ticket
@@ -226,7 +226,7 @@ secondary key.
 
     >>> for t in target.searchTickets(search_text='request index',
     ...                               status=None,
-    ...                               sort=TicketSort.STATUS):
+    ...                               sort=QuestionSort.STATUS):
     ...     print t.status.title, t.title
     Open Ticket title2
     Open Ticket title1
@@ -240,7 +240,7 @@ statuses, by default INVALID and EXPIRED tickets are excluded.)
 If there is no search_text and the requested sort order is RELEVANCY,
 the tickets will be sorted NEWEST_FIRST.
 
-    >>> for t in target.searchTickets(sort=TicketSort.RELEVANCY):
+    >>> for t in target.searchTickets(sort=QuestionSort.RELEVANCY):
     ...     print t.title
     Another ticket
     Ticket title3
@@ -257,7 +257,7 @@ The RECENT_OWNER_ACTIVITY sort order sorts first tickets which recently
 received a new message by their owner. (It effectively sorts
 descending on the datelastquery attribute.)
 
-    >>> for t in target.searchTickets(sort=TicketSort.RECENT_OWNER_ACTIVITY):
+    >>> for t in target.searchTickets(sort=QuestionSort.RECENT_OWNER_ACTIVITY):
     ...     print t.title
     Ticket title0
     Another ticket

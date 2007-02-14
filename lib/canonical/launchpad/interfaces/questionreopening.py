@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interface for a TicketReopening."""
 
@@ -45,4 +45,4 @@ class ITicketReopening(Interface):
 
     priorstate = Choice(
         title=_("The previous state of the ticket, before it was re-opened."),
-        vocabulary='TicketStatus', required=True, readonly=True)
+        vocabulary='QuestionStatus', required=True, readonly=True)

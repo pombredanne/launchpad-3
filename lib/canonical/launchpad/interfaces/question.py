@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces for a Support Request ("Ticket")."""
 
@@ -22,7 +22,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.questionmessage import ITicketMessage
-from canonical.lp.dbschema import TicketStatus, TicketPriority
+from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
 
 class InvalidTicketStateError(Exception):
@@ -48,11 +48,11 @@ class ITicket(IHasOwner):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='TicketStatus',
-        default=TicketStatus.OPEN, readonly=True)
+        title=_('Status'), vocabulary='QuestionStatus',
+        default=QuestionStatus.OPEN, readonly=True)
     priority = Choice(
-        title=_('Priority'), vocabulary='TicketPriority',
-        default=TicketPriority.NORMAL)
+        title=_('Priority'), vocabulary='QuestionPriority',
+        default=QuestionPriority.NORMAL)
     # XXX flacoste 2006/10/28 It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
@@ -135,7 +135,7 @@ class ITicket(IHasOwner):
         ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
         :user: The IPerson making the change.
-        :new_status: The new TicketStatus
+        :new_status: The new QuestionStatus
         :comment: A string or IMessage containing an explanation for the
                   change.
         :datecreated: Date for the message. Defaults to the current time.
@@ -376,8 +376,8 @@ class ITicket(IHasOwner):
 
 
 TICKET_STATUS_DEFAULT_SEARCH = (
-    TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED,
-    TicketStatus.SOLVED)
+    QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
+    QuestionStatus.SOLVED)
 
 
 class ITicketCollection(Interface):
@@ -391,14 +391,14 @@ class ITicketCollection(Interface):
         title and description. If None, the search_text is not included as
         a filter criteria.
 
-        :status: A sequence of TicketStatus Items. If None or an empty
+        :status: A sequence of QuestionStatus Items. If None or an empty
         sequence, the status is not included as a filter criteria.
 
         :language: An ILanguage or a sequence of ILanguage objects to match
         against the ticket's language. If None or an empty sequence,
         the language is not included as a filter criteria.
 
-        :sort:  An attribute of TicketSort. If None, a default value is used.
+        :sort:  An attribute of QuestionSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by RELEVANCY,
         otherwise results are sorted NEWEST_FIRST.
         """
@@ -470,7 +470,7 @@ class ITicketChangeStatusForm(Interface):
 
     status = Choice(
         title=_('Status'), description=_('Select the new question status.'),
-        vocabulary='TicketStatus', required=True)
+        vocabulary='QuestionStatus', required=True)
 
     message = Text(
         title=_('Message'),
