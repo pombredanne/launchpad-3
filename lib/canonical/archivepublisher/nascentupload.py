@@ -17,7 +17,6 @@ from canonical.encoding import guess as guess_encoding
 from canonical.lp.dbschema import (
     BinaryPackageFormat, BuildStatus, PackagePublishingPocket)
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
@@ -35,9 +34,17 @@ class FatalUploadError(Exception):
     """XXX"""
 
 
-class FileNotFound(UploadError):
-    """Raised when an upload error is due to a missing file."""
-
+# XXX: documentation on general design
+#   - want to log all possible errors to the end-user
+#   - changes file holds all uploaded files in a tree
+#   - changes.files and changes.dsc
+#   - DSC represents a source upload, and creates sources
+#   - but DSC holds DSCUploadedFiles, weirdly
+#   - binary represents a binary upload, and creates binaries
+#   - source files only exist for verify() purposes
+#   - NascentUpload is a motor that creates the changes file, does
+#     verifications, gets overrides, triggers creation or rejection and
+#     prepares the email message
 
 class NascentUpload:
     """XXX
@@ -757,85 +764,15 @@ class NascentUpload:
 
     def insert_source_into_db(self):
         """Insert the source into the database and inform the policy."""
-        assert self.changes.dsc
-        component_name = self.changes.dsc.component
-        section_name = self.changes.dsc.section
-        # rebuild the changes author line as specified in bug # 30621,
-        # new line containing:
-        # ' -- <CHANGED-BY>  <DATE>'
-        changes_author = (
-            '\n -- %s   %s' %
-            (self.changes.changed_by['rfc822'], self.changes.date))
-        changes_content = self.changes.changes_text + changes_author
-
-        spns = getUtility(ISourcePackageNameSet)
-        arg_sourcepackagename = spns.getOrCreateByName(self.changes.dsc.source)
-        arg_version = self.changes.version
-        arg_maintainer = self.changes.dsc.maintainer['person']
-        arg_dateuploaded = UTC_NOW
-        arg_builddepends = guess_encoding(
-            self.changes.dsc_contents.get('build-depends', ''))
-        arg_builddependsindep = guess_encoding(
-            self.changes.dsc_contents.get('build-depends-indep', ''))
-        arg_architecturehintlist = guess_encoding(
-            self.changes.dsc_contents.get('architecture', ''))
-        arg_component = getUtility(IComponentSet)[component_name]
-        arg_section = getUtility(ISectionSet)[section_name]
-        arg_creator = self.changes.changed_by['person']
-        arg_urgency = self.changes.urgency
-        arg_changelog = guess_encoding(changes_content)
-
-        arg_dsc = guess_encoding(self.changes.dsc_contents._dict['filecontents'])
-        arg_dscsigningkey = self.changes.dsc.signingkey
-        arg_manifest = None
-        # extra fields required to generate archive indexes in future.
-        # XXX
-        arg_dsc_maintainer_rfc822 = guess_encoding(
-            self.changes.dsc_contents['maintainer'])
-        arg_dsc_format = guess_encoding(
-            self.changes.dsc_contents['format'])
-        arg_dsc_binaries = guess_encoding(
-            self.changes.dsc_contents['binary'])
-        # Standards version do not apply for installer uploads
-        # see bug #75874 for further information.
-        if self.changes.dsc_contents.has_key('standards-version'):
-            arg_dsc_standards_version = guess_encoding(
-                self.changes.dsc_contents['standards-version'])
-        else:
-            arg_dsc_standards_version = None
-        # XXX
-
-        self.policy.sourcepackagerelease = (
-            self.policy.distrorelease.createUploadedSourcePackageRelease(
-            sourcepackagename=arg_sourcepackagename,
-            version=arg_version,
-            maintainer=arg_maintainer,
-            dateuploaded=arg_dateuploaded,
-            builddepends=arg_builddepends,
-            builddependsindep=arg_builddependsindep,
-            architecturehintlist=arg_architecturehintlist,
-            component=arg_component,
-            creator=arg_creator,
-            urgency=arg_urgency,
-            changelog=arg_changelog,
-            dsc=arg_dsc,
-            dscsigningkey=arg_dscsigningkey,
-            section=arg_section,
-            manifest=arg_manifest,
-            dsc_maintainer_rfc822=arg_dsc_maintainer_rfc822,
-            dsc_standards_version=arg_dsc_standards_version,
-            dsc_format=arg_dsc_format,
-            dsc_binaries=arg_dsc_binaries,
-            ))
-
+        release = self.changes.dsc.create_source_package_release(self.changes)
         for uploaded_file in self.changes.dsc.files:
             library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
-
-            self.policy.sourcepackagerelease.addFile(library_file)
+            release.addFile(library_file)
+        self.policy.sourcepackagerelease = release
 
     def find_build(self, archtag):
         """Find and return a build for the given archtag, cached on policy.
