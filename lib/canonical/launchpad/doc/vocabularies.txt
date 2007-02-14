@@ -1052,7 +1052,10 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1060,7 +1063,10 @@ Inactive products and projects are not available
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu Test (Distribution) - class Distribution
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = True
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_product.active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1069,6 +1075,14 @@ Inactive products and projects are not available
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu (Product) - class Product
     Ubuntu Test (Distribution) - class Distribution
+    >>> ubuntu_product in vocab
+    True
+
+Projects are not contained in this vocabulary:
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    False
 
 DistributionOrProductOrProjectVocabulary
 ----------------------------------------
@@ -1086,9 +1100,23 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
-    >>> getUtility(IProjectSet).getByName('ubuntu-project').active = False
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
+    >>> syncUpdate(ubuntu_product)
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    True
+    >>> ubuntu_project.active = False
+    >>> syncUpdate(ubuntu_project)
+    >>> ubuntu_project in vocab
+    False
+
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
