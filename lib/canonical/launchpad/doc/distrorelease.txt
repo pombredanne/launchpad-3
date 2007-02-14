@@ -158,6 +158,7 @@ other things) the uploader for validating incoming uploads.
    web
    editors
    admin
+   devel
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
@@ -179,6 +180,7 @@ other things) the uploader for validating incoming uploads.
    web
    editors
    admin
+   devel
    python
 
 
