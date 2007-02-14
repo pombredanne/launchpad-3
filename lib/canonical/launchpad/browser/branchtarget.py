@@ -23,7 +23,17 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBranchLifecycleFilter, IBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
+
+
+class BranchListingBatchNavigator(TableBatchNavigator):
+    """Batch up the branch listings."""
+
+    def __init__(self, branches, request, extra_columns):
+        TableBatchNavigator.__init__(
+            self, branches, request, columns_to_show=extra_columns)
+        
 
 
 class BranchTargetView(LaunchpadFormView):
