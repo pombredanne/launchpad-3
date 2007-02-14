@@ -6,8 +6,9 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror import mirror
 from canonical.launchpad.scripts import logger_options, logger
+from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+
 import bzrlib.repository
 
 
@@ -21,19 +22,30 @@ if __name__ == '__main__':
     parser = OptionParser()
     logger_options(parser)
     (options, arguments) = parser.parse_args()
+    which = arguments.pop(0)
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
 
+    if which == 'upload':
+        errorreports = config.supermirror.upload_errorreports
+        manager_class = jobmanager.UploadJobManager
+    elif which == 'import':
+        errorreports = config.supermirror.import_errorreports
+        manager_class = jobmanager.ImportJobManager
+    elif which == 'mirror':
+        errorreports = config.supermirror.mirror_errorreports
+        manager_class = jobmanager.MirrorJobManager
+    else:
+        parser.error(
+            "Expected 'upload', 'import' or 'mirror', but got: %r" % which)
+
     # Customize the oops reporting config.
-    oops_prefix = config.supermirror.errorreports.oops_prefix
-    config.launchpad.errorreports.oops_prefix = oops_prefix
-    errordir = config.supermirror.errorreports.errordir
-    config.launchpad.errorreports.errordir = errordir
-    copy_to_zlog = config.supermirror.errorreports.copy_to_zlog
-    config.launchpad.errorreports.copy_to_zlog = copy_to_zlog
+    config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
+    config.launchpad.errorreports.errordir = errorreports.errordir
+    config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
 
     log = logger(options, 'branch-puller')
 
     shut_up_deprecation_warning()
-    mirror(log)
+    mirror(log, manager_class)
 
