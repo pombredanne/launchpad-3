@@ -215,9 +215,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             submission.active = True
             submission.syncUpdate()
 
-        self.pofile.last_touched_pomsgset = self
-        self.pofile.syncUpdate()
-
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
         if submission is not None and submission.published:
@@ -347,6 +344,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 has_changed = True
 
         if has_changed and is_editor:
+            self.pofile.last_touched_pomsgset = self
+            self.pofile.syncUpdate()
             self.reviewer = person
             self.date_reviewed = UTC_NOW
             self.sync()
