@@ -235,12 +235,7 @@ class BranchSet:
 
     def __iter__(self):
         """See IBranchSet."""
-        return iter(Branch.select())
-
-    @property
-    def all(self):
-        branches = Branch.select()
-        return branches.prejoin(['author', 'product'])
+        return iter(Branch.select(prejoins=['owner', 'product']))
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""

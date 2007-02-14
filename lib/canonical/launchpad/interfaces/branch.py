@@ -282,8 +282,6 @@ class IBranchSet(Interface):
     def __iter__():
         """Return an iterator that will go through all branches."""
 
-    all = Attribute("All branches in the system.")
-
     def get(branch_id, default=None):
         """Return the branch with the given id.
 

@@ -38,12 +38,6 @@ class BazaarApplicationView:
         self.request = request
         self.seriesset = getUtility(IProductSeriesSet)
 
-    def branches(self):
-        """List of all branches in the system."""
-        branches = self.context.all
-        items = shortlist(branches, 8000, hardlimit=10000)
-        return sorted(items, key=operator.attrgetter('sort_key'))
-
     def import_count(self):
         return self.seriesset.importcount()
 
