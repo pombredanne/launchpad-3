@@ -42,7 +42,7 @@ from canonical.launchpad.database.ticket import TicketTargetSearch
 class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ISearchableByTicketOwner)
+    implements(IProject, ICalendarOwner, ISearchableByTicketOwner)
 
     _table = "Project"
 
