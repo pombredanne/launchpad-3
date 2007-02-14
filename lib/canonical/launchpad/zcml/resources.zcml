@@ -11,7 +11,6 @@
 
     <!-- Javascript -->
     <resource name="launchpad.js" file="../templates/launchpad.js" />
-    <resource name="SignalWrapper.js" file="../templates/SignalWrapper.js" />
     <resource name="lpmenu.js" file="../templates/lpmenu.js" />
     <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
 
