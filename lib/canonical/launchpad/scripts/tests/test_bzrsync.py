@@ -271,10 +271,13 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_2.revision_date, dt)
 
     def test_get_revisions_empty(self):
+        # An empty branch should have no revisions.
         bzrsync = self.makeBzrSync()
         self.assertEqual([], list(bzrsync.getRevisions()))
 
     def test_get_revisions_linear(self):
+        # If the branch has a linear ancestry, getRevisions() should yield each
+        # revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id=u'rev-1')
         bzrsync = self.makeBzrSync()
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))

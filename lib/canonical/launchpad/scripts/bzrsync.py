@@ -169,18 +169,20 @@ class BzrSync:
             self.didSomething()
 
     def getRevisions(self):
-        """Generate a sequence of (sequence, revisionID) pairs to be inserted
-        into the branchrevision (nee revisionnumber) table."""
+        """Generate revision IDs that make up the branch's ancestry.
+
+        Generate a sequence of (sequence, revisionID) pairs to be inserted into
+        the branchrevision (nee revisionnumber) table.
+        """
         for (index, revision_id) in enumerate(self.bzr_history):
             # sequence numbers start from 1
             yield index + 1, revision_id
         history = set(self.bzr_history)
         ancestry = self.bzr_branch.repository.get_ancestry(
             self.bzr_branch.last_revision())
-        for revno in ancestry:
-            if revno is not None and revno not in history:
-                yield None, revno
-
+        for revision_id in ancestry:
+            if revision_id is not None and revision_id not in history:
+                yield None, revision_id
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
