@@ -63,10 +63,12 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
         tar = tarfile.open(tarfile_path)
         try:
             for tarinfo in tar:
+                name = os.path.normpath(tarinfo.name)
                 # ignore files or directories outside target_dir
-                if not tarinfo.name.startswith(target_dir):
+                if not name.startswith(target_dir):
                     continue
-                # ignore directories inside target_dir
+                # ignore directories inside target_dir; use tarinfo.name
+                # here because normpath drops the trailing slash
                 if tarinfo.isdir() and tarinfo.name != (target_dir):
                     continue
                 # Workaround a problem of the tarfile lib when dealing
@@ -76,14 +78,13 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
                 # If the destination is a hard link it ends up corrupting
                 # contents. We've faced this in /dsync-ed/ production
                 # archive. cprov 20060817
-                destination = os.path.join(target, tarinfo.name)
+                newpath = os.path.join(target, name)
                 # try to remove disk copy of incoming files,
                 # (ignore <target_dir>, we only care about files).
-                if tarinfo.isfile() and os.path.exists(destination):
-                    os.remove(destination)
+                if tarinfo.isfile() and os.path.exists(newpath):
+                    os.remove(newpath)
 
                 tar.extract(tarinfo, target)
-                newpath = os.path.join(target, tarinfo.name)
                 mode = stat.S_IMODE(os.stat(newpath).st_mode)
                 os.chmod(newpath, mode | stat.S_IWGRP)
             extracted = True

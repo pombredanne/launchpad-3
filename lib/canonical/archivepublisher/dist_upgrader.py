@@ -78,9 +78,10 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
         tar = tarfile.open(tarfile_path)
         try:
             for tarinfo in tar:
-                if tarinfo.name != os.path.join('current'):
+                name = os.path.normpath(tarinfo.name)
+                if name != os.path.join('current'):
                     tar.extract(tarinfo, target)
-                    newpath = os.path.join(target, tarinfo.name)
+                    newpath = os.path.join(target, name)
                     mode = stat.S_IMODE(os.stat(newpath).st_mode)
                     os.chmod(newpath, mode | stat.S_IWGRP)
                     extracted = True
