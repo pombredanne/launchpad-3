@@ -186,3 +186,77 @@ If no product name is given at all, a widget error is raised.
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: Please enter a product name
+
+== setRenderedValue() ==
+
+In order to initialize the widget with a value, setRenderedValue() is
+used. Passing a product to it will select the 'product' radio button, as
+well as displaying the product name in the product widget.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> widget = FileBugTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], empty_request)
+    >>> widget.setRenderedValue(getUtility(IProductSet).getByName('firefox'))
+    >>> print widget()
+    <table>
+    ...
+      <input class="radioType"
+             id="field.bugtarget.option.package" name="field.bugtarget"
+             type="radio" value="package" />
+    ...
+      <input class="radioType" checked="checked"
+             id="field.bugtarget.option.product"
+             name="field.bugtarget" type="radio" value="product" />
+    ...
+      <input type="text" name="field.bugtarget.product"
+             onkeypress="selectWidget('field.bugtarget.option.product', event)"
+             value="firefox" id="field.bugtarget.product"
+    ...
+
+Passing a distribution will select the 'package' radio button and select
+the distribution in the drop-down list.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> widget = FileBugTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], empty_request)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> widget.setRenderedValue(debian)
+    >>> print widget()
+    <table>
+    ...
+      <input class="radioType" checked="checked"
+             id="field.bugtarget.option.package" name="field.bugtarget"
+             type="radio" value="package" />
+    ...
+      <option selected="selected" value="debian">Debian GNU/Linux</option>
+    ...
+      <input class="radioType"
+             id="field.bugtarget.option.product"
+             name="field.bugtarget" type="radio" value="product" />
+    ...
+
+Passing in a distribuiton source packagage will select the 'package'
+radio button, select the distribution in the drop-down list, and set the
+package widget to the package name.
+
+    >>> widget = FileBugTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], empty_request)
+    >>> debian_evolution = debian.getSourcePackage('evolution')
+    >>> widget.setRenderedValue(debian_evolution)
+    >>> print widget()
+    <table>
+    ...
+      <input class="radioType" checked="checked"
+             id="field.bugtarget.option.package" name="field.bugtarget"
+             type="radio" value="package" />
+    ...
+      <option selected="selected" value="debian">Debian GNU/Linux</option>
+    ...
+      <input type="text" name="field.bugtarget.package"
+             onkeypress="selectWidget('field.bugtarget.option.package', event)"
+             value="evolution" id="field.bugtarget.package" size="20" />
+    ...
+      <input class="radioType"
+             id="field.bugtarget.option.product"
+             name="field.bugtarget" type="radio" value="product" />
+    ...
