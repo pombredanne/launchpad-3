@@ -5,13 +5,13 @@ and to help with this, the FileBugTargetWidget is used.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IGeneralBugAddForm, IMaloneApplication)
+    ...     IFrontPageBugAddForm, IMaloneApplication)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.bug import FileBugTargetWidget
 
     >>> empty_request = LaunchpadTestRequest()
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], empty_request)
+    ...     IFrontPageBugAddForm['bugtarget'], empty_request)
 
 The widget complies to both IInputWidget and IBrowserWidget.
 
@@ -61,7 +61,7 @@ by getInputValue().
     >>> form = {'field.bugtarget': 'package',
     ...         'field.bugtarget.distribution': 'ubuntu'}
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_distribution = widget.getInputValue()
@@ -75,7 +75,7 @@ raised.
 
     >>> form['field.bugtarget.distribution'] = 'invalid'
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_distribution = widget.getInputValue()
@@ -88,7 +88,7 @@ If no distribution name is given at all, a MissingInput error is raised.
 
     >>> del form['field.bugtarget.distribution']
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_distribution = widget.getInputValue()
@@ -106,7 +106,7 @@ source package is returned.
     ...         'field.bugtarget.distribution': 'ubuntu',
     ...         'field.bugtarget.package': 'evolution'}
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_package = widget.getInputValue()
@@ -121,7 +121,7 @@ If a non-existant package is selected, a widget error is raised.
 
     >>> form['field.bugtarget.package'] = 'non-existant'
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_package = widget.getInputValue()
@@ -135,7 +135,7 @@ isn't published is selected.
 
     >>> form['field.bugtarget.package'] = 'thunderbird'
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_package = widget.getInputValue()
@@ -153,7 +153,7 @@ If a product is selected, the product with the given name is returned.
     >>> form = {'field.bugtarget': 'product',
     ...         'field.bugtarget.product': 'firefox'}
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_product = widget.getInputValue()
@@ -166,7 +166,7 @@ If a non-existant product name is entered, a widget error is raised.
 
     >>> form['field.bugtarget.product'] = u'non-existant'
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_product = widget.getInputValue()
@@ -179,7 +179,7 @@ If no product name is given at all, a widget error is raised.
 
     >>> del form['field.bugtarget.product']
     >>> widget = FileBugTargetWidget(
-    ...     IGeneralBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_distribution = widget.getInputValue()
