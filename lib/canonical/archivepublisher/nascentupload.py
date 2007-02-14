@@ -2174,6 +2174,14 @@ class NascentUpload:
                     "Skipping announcement, it is a BACKPORT.")
                 return True, [accept_msg % interpolations]
 
+            # Auto-APPROVED binary uploads to SECURITY skips announcement.
+            # usually processed with 'security' policy
+            if (self.policy.pocket == PackagePublishingPocket.SECURITY
+                and self.binaryful):
+                self.logger.debug(
+                    "Skipping announcement, it is a binary upload to SECURITY.")
+                return True, [accept_msg % interpolations]
+
             # Fallback, all the rest comming from 'insecure', 'secure',
             # and 'sync' policies should send acceptance & announcement
             # messages.
