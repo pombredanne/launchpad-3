@@ -18,6 +18,7 @@ __all__ = [
     'ProjectOverviewMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
+    'ProjectSupportMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
     'ProjectEditView',
@@ -42,6 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.ticket import TicketAddView
+from canonical.launchpad.browser.tickettarget import (
+    TicketTargetFacetMixin, TicketCollectionSupportMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -112,12 +115,13 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(StandardLaunchpadFacets):
+class ProjectFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'support', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -200,6 +204,18 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+
+class ProjectSupportMenu(TicketCollectionSupportMenu):
+    """Menu for the support facet of projects."""
+
+    usedfor = IProject
+    facet = 'support'
+    links = TicketCollectionSupportMenu.links + ['new']
+
+    def new(self):
+        text = 'Ask Question'
+        return Link('+addticket', text, icon='add')
 
 
 class ProjectTranslationsMenu(ApplicationMenu):
