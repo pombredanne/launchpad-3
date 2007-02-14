@@ -175,6 +175,7 @@ class LaunchpadRequestPublicationFactory:
         vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
         vhrps.append(VHRP('answers', AnswersBrowserRequest,
             AnswersPublication))
+        vhrps.append(VHRP('openid', OpenIdBrowserRequest, OpenIdPublication))
         vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
             ShipItPublication))
         vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
@@ -453,18 +454,6 @@ debughttp = wsgi.ServerType(
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
 
-class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
-    """The publication used for XML-RPC requests."""
-    def handleException(self, object, request, exc_info, retry_allowed=True):
-        LaunchpadBrowserPublication.handleException(
-                self, object, request, exc_info, retry_allowed
-                )
-        OpStats.stats['xml-rpc faults'] += 1
-
-    def endRequest(self, request, object):
-        OpStats.stats['xml-rpc requests'] += 1
-        return LaunchpadBrowserPublication.endRequest(self, request, object)
-
 # ---- blueprint
 
 class BlueprintBrowserRequest(LaunchpadBrowserRequest):
@@ -523,8 +512,28 @@ class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- xmlrpc
 
+class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
+
+
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                              ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
 
+# ---- openid
+
+class OpenIdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenId requests."""
+
+class OpenIdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIdLayer)
 

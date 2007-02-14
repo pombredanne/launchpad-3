@@ -143,6 +143,23 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         />
 
+    <!-- virtual host: openid -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+openid"
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        />
+    <!-- No need for resources on this domain
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        />
+    -->
+
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
          be registering views on the launchpad main side front page object
          thing on ILaunchpadApplication. -->

@@ -70,6 +70,7 @@
     <include file="logintoken.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
+    <include file="openid.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />

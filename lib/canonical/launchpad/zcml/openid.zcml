@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="*"
+        permission="zope.Public"
+        name="+openid"
+        template="../templates/openid-index.pt"
+        />
+
+</configure>

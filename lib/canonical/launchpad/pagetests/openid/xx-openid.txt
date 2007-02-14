@@ -1,0 +1,20 @@
+OpenId
+======
+
+Launchpad is an OpenId server. If the URL is accessed by a web browser,
+an informative message is displayed. We replicate the one from the
+specification exactly, even though other OpenId servers take more
+liberties.
+
+>>> anon_browser.open('http://openid.launchpad.dev')
+>>> print anon_browser.headers
+Status: 200 Ok
+...
+Content-Type: text/html;charset=utf-8
+...
+
+>>> print anon_browser.contents
+...
+This is an OpenID server endpoint. For more information, see http://openid.net/
+<BLANKLINE>
+
