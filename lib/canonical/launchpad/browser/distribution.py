@@ -148,7 +148,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals for all releases'
         return Link('+driver', text, summary, icon='edit')
 
