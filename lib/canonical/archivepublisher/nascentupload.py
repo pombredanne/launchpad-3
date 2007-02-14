@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, ByHandUploadedFile,
+    UploadError, UploadWarning, CustomUploadedFile,
     SourceNascentUploadFile, BinaryNascentUploadedFile)
 from canonical.archivepublisher.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
@@ -148,7 +148,7 @@ class NascentUpload:
         files_archdep = False
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, ByHandUploadedFile):
+            if isinstance(uploaded_file, CustomUploadedFile):
                 files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BinaryNascentUploadedFile):
                 files_binaryful = files_binaryful or True
@@ -198,7 +198,7 @@ class NascentUpload:
             elif uploaded_file.filename.endswith(".orig.tar.gz"):
                 orig += 1
             elif (uploaded_file.filename.endswith(".tar.gz")
-                  and not uploaded_file.custom):
+                  and not isinstance(uploaded_file, CustomUploadedFile)):
                 tar += 1
 
         # Okay, let's check the sanity of the upload.
@@ -359,7 +359,11 @@ class NascentUpload:
         Return True if the current upload is a single custom file.
         It is necessary to identify dist-upgrade section uploads.
         """
-        return len(self.changes.files) == 1 and self.changes.files[0].custom
+        # XXX: I'm not sure why single_custom is important. What if two
+        # custom files are uploaded at once? What should happen? I don't
+        # think that is handled correctly..
+        return (len(self.changes.files) == 1 and 
+                isinstance(self.changes.files[0], CustomUploadedFile))
 
     @property
     def is_new(self):
@@ -580,16 +584,9 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.changes.files:
-            if uploaded_file.custom or uploaded_file.section == "byhand":
-                # handled specially in insert_into_queue -- it goes
-                # into a custom queue, no overrides applied.
-
-                # XXX cprov 20060308: since the ftpmaster can't yet verify
-                # the content of custom uploads via the queue tool, moving
-                # them to NEW only makes it more confused. bug # 34070
-                # Single_Custom uploads should be NEW.
-                #if self.single_custom:
-                #    uploaded_file.new = True
+            if isinstance(uploaded_file, (CustomUploadedFile, SourceNascentUploadFile)):
+                # Source files are irrelevant, being represented by the
+                # DSC, and custom files don't have overrides.
                 continue
 
             if isinstance(uploaded_file, DSCFile):
@@ -879,12 +876,14 @@ class NascentUpload:
         if self.sourceful:
             self.insert_source_into_db()
         if self.binaryful and not self.single_custom:
+            # XXX: 
             self.insert_binary_into_db()
 
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
-        queue_root = self.policy.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes.filename, self.changes["filecontents"])
+        distrorelease = self.policy.distrorelease
+        queue_root = distrorelease.createQueueEntry(self.policy.pocket,
+            self.changes.filename, self.changes.filecontents)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
@@ -895,11 +894,12 @@ class NascentUpload:
             # release because it is always set to 'autobuild' by the builder.
             # We instead have to take it from the policy which gets instructed
             # by the buildd master during the upload.
+            # XXX: stop using the policy to shove things around
             queue_root.pocket = self.policy.build.pocket
             queue_root.addBuild(self.policy.build)
         # Finally, add any custom files.
         for uploaded_file in self.changes.files:
-            if uploaded_file.custom:
+            if isinstance(uploaded_file, CustomUploadedFile):
                 queue_root.addCustom(
                     self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,

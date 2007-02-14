@@ -24,17 +24,6 @@ from canonical.archivepublisher.utils import (
     prefix_multi_line_string)
 
 
-# This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
-# Essentially if you change anything to do with custom formats, grep for
-# the marker in the codebase and make sure the same changes are made
-# everywhere which needs them.
-custom_sections = {
-    'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-    'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
-    }
-
 # Capitalised because we extract direct from the deb/udeb where the
 # other mandatory fields lists are lowercased by parse_tagfile
 deb_mandatory_fields = set([
@@ -44,12 +33,12 @@ deb_mandatory_fields = set([
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_valid_version = re.compile(r"^([0-9]+:)?[0-9A-Za-z\.\-\+~:]+$")
 re_valid_pkg_name = re.compile(r"^[\dA-Za-z][\dA-Za-z\+\-\.]+$")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
+
 
 # Map priorities to their dbschema valuesa
 # We treat a priority of '-' as EXTRA since some packages in some distros
@@ -73,13 +62,6 @@ filename_ending_content_type_map = {
     ".diff.gz": "application/gzipped-patch",
     ".tar.gz": "application/gzipped-tar"
     }
-
-def split_section(section):
-    """Split the component out of the section."""
-    if "/" not in section:
-        return "main", section
-    return section.split("/", 1)
-
 
 class UploadError(Exception):
     """All upload errors are returned in this form."""
@@ -115,30 +97,21 @@ class NascentUploadedFile:
 
     The filename, along with information about it, is kept here.
     """
-
+    new = False
     type = None
-
-    #
-    # XXX
-    #   - policy
-    #   - logger
-    #   - fsroot
-    # XXX
-    #
-
+    sha_digest = None
     def __init__(self, filename, digest, size, component_and_section,
                  priority, fsroot, policy, logger):
         self.filename = filename
         self.digest = digest
-        self.size = int(size)
-        self.component, self.section = split_section(component_and_section)
         self.priority = priority
-        self.new = False
-        self._values_checked = False
         self.policy = policy
         self.fsroot = fsroot
         self.logger = logger
 
+        self.size = int(size)
+        self.component, self.section = self.split_component_and_section(
+            component_and_section)
         self.full_filename = os.path.join(fsroot, filename)
 
     #
@@ -153,25 +126,20 @@ class NascentUploadedFile:
                 return content_type
         return "application/octet-stream"
 
-    @property
-    def custom_type(self):
-        """The custom upload type for this file. (None if not custom)."""
-        if self.custom:
-            return custom_sections[self.section]
-        return None
-
     #
     #
     #
-
-    @property
-    def custom(self):
-        return self.priority == "-" and self.section in custom_sections
 
     @property
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
         return os.path.exists(self.full_filename)
+
+    def split_component_and_section(self, component_and_section):
+        """Split the component out of the section."""
+        if "/" not in component_and_section:
+            return "main", component_and_section
+        return component_and_section.split("/", 1)
 
     #
     # Verification
@@ -195,8 +163,8 @@ class NascentUploadedFile:
         """
         if not self.exists_on_disk:
             raise UploadError(
-                "File %s as mentioned in the changes file was not found." % (
-                self.filename))
+                "File %s mentioned in the changes file was not found."
+                % self.filename)
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
@@ -220,9 +188,10 @@ class NascentUploadedFile:
                 "File %s mentioned in the changes has a size mismatch. "
                 "%s != %s" % (self.filename, size, self.size))
 
-        # Record the sha1 digest and note that we have checked things.
+        # The sha_digest is used later when verifying packages mentioned
+        # in the DSC file; it's used to compare versus files in the
+        # Librarian.
         self.sha_digest = sha_cksum.hexdigest()
-
 
 
 class PackageNascentUploadFile(NascentUploadedFile):
@@ -468,7 +437,7 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
                 self.filename))
 
         # Check the section & priority match those in the .changes Files entry
-        control_component, control_section = split_section(
+        control_component, control_section = self.split_component_and_section(
             control.Find("Section"))
         if ((control_component, control_section) !=
             (self.component, self.section)):
@@ -635,8 +604,32 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
         # That's all folks.
 
 
-class ByHandUploadedFile(NascentUploadedFile):
-    pass
+class CustomUploadedFile(NascentUploadedFile):
+    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+    # Essentially if you change anything to do with custom formats, grep for
+    # the marker in the codebase and make sure the same changes are made
+    # everywhere which needs them.
+    custom_sections = {
+        'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
+        'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
+        'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
+        'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+        }
+
+    # These uploads are really always new, no matter what.
+    new = True
+    def __init__(self, *args, **kwargs):
+        NascentUploadedFile.__init__(self, *args, **kwargs)
+
+    @property
+    def custom_type(self):
+        """The custom upload type for this file. (None if not custom)."""
+        return self.custom_sections[self.section]
+
+    def verify(self):
+        if self.section not in self.custom_sections:
+            yield UploadError("Unsupported custom section name %r" % self.section)
+
 
 class DSCUploadedFile(NascentUploadedFile):
     # XXX XXX

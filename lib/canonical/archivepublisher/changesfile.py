@@ -23,9 +23,9 @@ from canonical.launchpad.interfaces import (
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, ByHandUploadedFile, DSCUploadedFile,
+    UploadError, UploadWarning, CustomUploadedFile, DSCUploadedFile,
     BinaryNascentUploadedFile, SourceNascentUploadFile,
-    NascentUploadedFile, re_issource, re_isadeb, re_no_epoch,
+    NascentUploadedFile, re_isadeb, re_no_epoch,
     re_valid_pkg_name, re_valid_version)
 from canonical.archivepublisher.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError)
@@ -55,6 +55,7 @@ urgency_map = {
 re_no_revision = re.compile(r"-[^-]+$")
 re_strip_revision = re.compile(r"-([^-]+)$")
 re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
+re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
 
 class SignableTagFile:
@@ -222,7 +223,14 @@ class ChangesFile(SignableTagFile):
             source_match = re_issource.match(filename)
             binary_match = re_isadeb.match(filename)
             try:
-                if source_match:
+                if priority == '-':
+                    # This needs to be the first check, because
+                    # otherwise the tarballs in custom uploads match
+                    # with source_match.
+                    file_instance = CustomUploadedFile(
+                        filename, digest, size, component_and_section,
+                        priority, self.fsroot, self.policy, self.logger)
+                elif source_match:
                     package = source_match.group(1)
                     version = source_match.group(2)
                     type = source_match.group(3)
@@ -246,11 +254,9 @@ class ChangesFile(SignableTagFile):
                         filename, digest, size, component_and_section,
                         priority, type, self, self.fsroot, self.policy,
                         self.logger)
-                elif component_and_section == 'byhand':
-                    file_instance = ByHandUploadedFile(
-                        filename, digest, size, component_and_section,
-                        priority, self.fsroot, self.policy, self.logger)
                 else:
+                    # XXX: byhand will fall into this category now. is
+                    # that right?
                     yield UploadError("Unable to identify file %s (%s) "
                                       "in changes." % (filename, component_and_section))
                     continue
@@ -400,6 +406,18 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             self.logger.debug("DSC file can be unsigned.")
         else:
             self.process_signature()
+
+    #
+    #
+    #
+
+    @property
+    def source(self):
+        return self._dict['source']
+
+    #
+    #
+    #
 
     def verify(self):
         """Verify the uploaded .dsc file.
@@ -612,14 +630,6 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             section=arg_section,
             # dateuploaded by default is UTC:now in the database
             )
-
-    #
-    #
-    #
-
-    @property
-    def source(self):
-        return self._dict['source']
 
 
 
