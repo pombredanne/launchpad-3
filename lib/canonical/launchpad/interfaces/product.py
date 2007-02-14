@@ -17,8 +17,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, IKarmaContext, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.fields import LargeImageUpload, SmallImageUpload
@@ -31,8 +31,8 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, IKarmaContext):
+class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+               ISpecificationTarget, IHasSecurityContact, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -81,6 +81,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "appoint a team for each specific series, rather than having "
             "one product team that does it all."),
         required=False, vocabulary='ValidPersonOrTeam')
+
     drivers = Attribute(
         "Presents the drivers of this product as a list. A list is "
         "required because there might be a product driver and a project "
@@ -347,6 +348,9 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
+    def getProductsWithBranches():
+        """Return an iterator over all products that have branches."""
+        
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,

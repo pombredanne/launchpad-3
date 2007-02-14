@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -794,10 +794,9 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
-
-class EditDistroReleaseQueue(AdminByAdminsTeam):
+class EditPackageUploadQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
         """Check user presence in admins or distrorelease upload admin team."""
@@ -806,22 +805,33 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
 
         return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
-class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+
+class ViewPackageUploadQueue(EditPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
         """Allow only members of the admin team to view unapproved entries.
 
         Any logged in user can view entries in other state.
         """
-        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+        if EditPackageUploadQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
         if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
             return False
 
         return True
+
+
+class EditDistroReleaseQueue(EditPackageUploadQueue):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseQueue
+
+
+class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+    permission = 'launchpad.View'
+    usedfor = IDistroReleaseQueue
 
 
 class AdminByBuilddAdmin(AuthorizationBase):

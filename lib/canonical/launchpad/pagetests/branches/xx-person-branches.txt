@@ -2,6 +2,9 @@
 
 There are several views of the branches related to a person.
 
+Branch lists for people also include branches that are owned by
+teams that the person is participating in.
+
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
@@ -29,18 +32,30 @@ branches in each lifecycle.
 If a person does not have any related branches, we should print an informative
 message.
 
-  >>> browser.open('http://launchpad.dev/~ddaa/+branches')
+  >>> browser.open('http://launchpad.dev/~kinnison/+branches')
   >>> print browser.contents
   <!DOCTYPE...
-  ...There are no branches related to David Allouche...
+  ...There are no branches related to Daniel Silverstone...
 
 This informative message should also appear in the detailed branch listing.
 
-  >>> browser.open('http://launchpad.dev/~ddaa/+branchlisting')
+  >>> browser.open('http://launchpad.dev/~kinnison/+branchlisting')
   >>> print browser.contents
   <!DOCTYPE...
-  ...There are no branches related to David Allouche...
+  ...There are no branches related to Daniel Silverstone...
 
+== Team Branches ==
+
+Branches that are owned by a team that the user is a member of, they are
+shown as 'Team Branch'.
+
+   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main   60 New   evolution   40 Team Branch
+  
+  
 == Authored Branches ==
 
 There should be a link in the branch context menu for person which points to
@@ -94,8 +109,8 @@ are visible to the user.
   ...   table = find_tag_by_id(contents, 'branchtable')
   ...   for row in table.tbody.fetch('tr'):
   ...     cells = row.fetch('td')
-  ...     name = cells[0].renderContents()
-  ...     status = cells[-3].fetch('span')[-1].renderContents()
+  ...     name = cells[0].a.renderContents()
+  ...     status = cells[2].fetch('span')[-1].renderContents()
   ...     print name, status
 
 

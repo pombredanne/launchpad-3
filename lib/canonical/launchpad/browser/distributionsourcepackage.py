@@ -3,8 +3,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageSOP',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageOverviewMenu',
+    'DistributionSourcePackageBugContactsView'
     ]
 
 from zope.component import getUtility
@@ -13,11 +17,28 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.tickettarget import (
         TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
+
+
+class DistributionSourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distribution.title + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.name
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: package releases, most recent first
+        return self.context.releases
+
+    def listAltChildren(self, num):
+        return None
 
 
 class DistributionSourcePackageFacets(TicketTargetFacetMixin,

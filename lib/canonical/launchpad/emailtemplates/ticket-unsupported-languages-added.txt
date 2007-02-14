@@ -1,4 +1,4 @@
-A support request was filed in a language (%(ticket_language)s) spoken by
-none of the registered %(target_name)s support contacts.
+A question was asked in a language (%(ticket_language)s) spoken by
+none of the registered %(target_name)s answer contacts.
 
 %(ticket_url)s

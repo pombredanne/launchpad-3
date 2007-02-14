@@ -1,0 +1,5 @@
+<div id="structuralobjectheading">
+  <img alt="" src="/@@/nyet-heading" /> <!-- XXX hackergotchi -->
+  <div class="intro" tal:content="view/getIntroHeading">Ubuntu 6.10</div>
+  <div class="main" tal:content="view/getMainHeading">Edgy Eft</div>
+</div>

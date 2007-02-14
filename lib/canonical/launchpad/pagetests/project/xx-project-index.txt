@@ -1,0 +1,29 @@
+Test that the project page for the mozilla project loads, accessing it through
+a facet that's not available for projects.
+
+  >>> browser.open('http://answers.launchpad.dev/mozilla')
+  >>> browser.title
+  'The Mozilla Project in Launchpad'
+
+  >>> browser.getLink('Mozilla Firefox').url
+  'http://answers.launchpad.dev/firefox'
+
+  >>> browser.open('http://answers.launchpad.dev/mozilla')
+  >>> browser.getLink('Mozilla Thunderbird').url
+  'http://answers.launchpad.dev/thunderbird'
+
+  >>> admin_browser.open('http://answers.launchpad.dev/mozilla')
+  >>> admin_browser.getLink('Register another product').url
+  'http://answers.launchpad.dev/mozilla/+newproduct'
+
+Test that a product page for the firefox product in the mozilla project loads.
+
+  >>> browser.open('http://launchpad.dev/mozilla/firefox')
+  >>> browser.title
+  'Mozilla Firefox in Launchpad'
+  >>> print find_main_content(browser.contents)
+  <...
+  ...The Mozilla Firefox web browser...
+  ...
+  ...Latest bugs...
+  ...

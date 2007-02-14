@@ -15,8 +15,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
-    valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IKarmaContext, PillarNameField, valid_webref)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
 
@@ -28,7 +28,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -180,6 +181,12 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
+        """
+
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
         """
 
 
