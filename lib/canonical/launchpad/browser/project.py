@@ -11,6 +11,7 @@ __all__ = [
     'ProjectLatestTicketsView',
     'ProjectNavigation',
     'ProjectEditView',
+    'ProjectReviewView',
     'ProjectSetNavigation',
     'ProjectSOP',
     'ProjectFacets',
@@ -130,7 +131,8 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf']
+    links = [
+        'edit', 'driver', 'reassign', 'administer', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -154,6 +156,11 @@ class ProjectOverviewMenu(ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -209,6 +216,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
+    label = "Change project details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -230,6 +238,13 @@ class ProjectEditView(LaunchpadEditFormView):
             # If the project is inactive, we can't traverse to it
             # anymore.
             return canonical_url(getUtility(IProjectSet))
+
+
+
+class ProjectReviewView(ProjectEditView):
+
+    label = "Review upstream project details"
+    field_names = ['name', 'owner', 'active', 'reviewed']
 
 
 class ProjectAddProductView(LaunchpadFormView):
@@ -393,14 +408,14 @@ class ProjectAddTicketView(TicketAddView):
                 __name__='product', vocabulary='ProjectProducts',
                 title=_('Product'),
                 description=_(
-                    'Choose the product for which you need support.'),
+                    'Choose the product for which you have a question.'),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with a product from ${project}',
+        return _('Ask a question about a product from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property

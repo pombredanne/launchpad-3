@@ -99,12 +99,12 @@ class TicketSubscriptionView(LaunchpadView):
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
                 response.addNotification(
-                    _("You have subscribed to this request."))
+                    _("You have subscribed to this question."))
                 modified_fields.add('subscribers')
             elif newsub == 'Unsubscribe':
                 self.context.unsubscribe(self.user)
                 response.addNotification(
-                    _("You have unsubscribed from this request."))
+                    _("You have unsubscribed from this question."))
                 modified_fields.add('subscribers')
             response.redirect(canonical_url(self.context))
         notify(SQLObjectModifiedEvent(
@@ -209,7 +209,7 @@ class TicketSupportLanguageMixin:
                     source=TicketLanguageVocabularyFactory(self.request),
                     title=_('Language'),
                     description=_(
-                        'The language in which this request is written.')),
+                        'The language in which this question is written.')),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
@@ -233,7 +233,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
     The user enters first his ticket summary and then he is shown a list
     of similar results before adding the ticket.
     """
-    label = _('Make a support request')
+    label = _('Ask a question')
 
     schema = ITicket
 
@@ -288,7 +288,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with ${context}',
+        return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
 
     @action(_('Continue'))
@@ -359,14 +359,14 @@ class TicketChangeStatusView(LaunchpadFormView):
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
-            _('Request status updated.'))
+            _('Question status updated.'))
         self.request.response.redirect(canonical_url(self.context))
 
 
 class TicketEditView(TicketSupportLanguageMixin, LaunchpadEditFormView):
 
     schema = ITicket
-    label = 'Edit request'
+    label = 'Edit question'
     field_names = ["title", "description", "sourcepackagename",
                    "priority", "assignee", "whiteboard"]
 
@@ -411,7 +411,7 @@ class TicketMakeBugView(GeneralFormView):
         if ticket.bugs:
             # we can't make a bug when we have linked bugs
             self.request.response.addErrorNotification(
-                _('You cannot create a bug report from a support request'
+                _('You cannot create a bug report from a question'
                   'that already has bugs linked to it.'))
             self.request.response.redirect(canonical_url(ticket))
             return
@@ -468,7 +468,7 @@ class TicketRejectView(LaunchpadFormView):
     def reject_action(self, action, data):
         self.context.reject(self.user, data['message'])
         self.request.response.addNotification(
-            _('You have rejected this request.'))
+            _('You have rejected this question.'))
         self.request.response.redirect(canonical_url(self.context))
         return ''
 
@@ -581,7 +581,7 @@ class TicketWorkflowView(LaunchpadFormView):
         """Give additional informatin on the request."""
         self.context.giveInfo(data['message'])
         self._addNotificationAndHandlePossibleSubscription(
-            _('Thanks for adding more information to your request.'), data)
+            _('Thanks for adding more information to your question.'), data)
 
     def validateConfirmAnswer(self, data):
         """Make sure that a valid message id was provided as the confirmed
@@ -611,7 +611,7 @@ class TicketWorkflowView(LaunchpadFormView):
         # The confirmation message is not given by the user when the
         # 'This Solved my Problem' button on the main ticket view.
         if not data['message']:
-            data['message'] = 'User confirmed that the request is solved.'
+            data['message'] = 'User confirmed that the question is solved.'
         self.context.confirmAnswer(data['message'], answer=data['answer'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your feedback.'), data)
@@ -628,7 +628,7 @@ class TicketWorkflowView(LaunchpadFormView):
         information about it."""
         self.context.reopen(data['message'])
         self._addNotificationAndHandlePossibleSubscription(
-            _('Your request was reopened.'), data)
+            _('Your question was reopened.'), data)
 
     def _addNotificationAndHandlePossibleSubscription(self, message, data):
         """Post-processing work common to all workflow actions.
@@ -641,7 +641,7 @@ class TicketWorkflowView(LaunchpadFormView):
         if data.get('subscribe_me'):
             self.context.subscribe(self.user)
             self.request.response.addNotification(
-                    _("You have subscribed to this request."))
+                    _("You have subscribed to this question."))
 
         self.next_url = canonical_url(self.context)
 
@@ -656,7 +656,7 @@ class TicketConfirmAnswerView(TicketWorkflowView):
         # This page is only accessible when a confirmation is possible.
         if not self.context.can_confirm_answer:
             self.request.response.addErrorNotification(_(
-                "The support request is not in a state where you can confirm "
+                "The question is not in a state where you can confirm "
                 "an answer."))
             self.request.response.redirect(canonical_url(self.context))
             return
@@ -720,21 +720,20 @@ class SearchAllTicketsView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests matching "${search_text}"',
+            return _('Questions matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
         else:
-            return _('Search all support requests')
+            return _('Search all questions')
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _("There are no support requests matching "
+            return _("There are no questions matching "
                      '"${search_text}" with the requested statuses.',
                      mapping=dict(search_text=self.search_text))
         else:
-            return _('There are no support requests with the requested '
-                     'statuses.')
+            return _('There are no questions with the requested statuses.')
 
 
 class TicketContextMenu(ContextMenu):
@@ -755,7 +754,7 @@ class TicketContextMenu(ContextMenu):
         self.has_bugs = bool(self.context.bugs)
 
     def edit(self):
-        text = 'Edit Request'
+        text = 'Edit Question'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -764,7 +763,7 @@ class TicketContextMenu(ContextMenu):
 
     def reject(self):
         enabled = self.user is not None and self.context.canReject(self.user)
-        text = 'Reject Request'
+        text = 'Reject Question'
         return Link('+reject', text, icon='edit', enabled=enabled)
 
     def history(self):
@@ -791,7 +790,7 @@ class TicketContextMenu(ContextMenu):
 
     def makebug(self):
         text = 'Create Bug Report'
-        summary = 'Create a bug report from this support request.'
+        summary = 'Create a bug report from this question.'
         return Link('+makebug', text, summary, icon='add',
                     enabled=not self.has_bugs)
 
