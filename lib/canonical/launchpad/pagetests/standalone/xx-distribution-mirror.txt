@@ -101,6 +101,7 @@
   Note that even though the http_url we used didn't contain a trailing slash,
   the value stored in our database will contain it.
 
+  >>> browser.getLink('Edit Details').click()
   >>> http_url + "/" == browser.getControl('HTTP URL').value
   True
 
@@ -108,7 +109,6 @@
   the name is unique, and so we can't use a name that is already in use by
   another mirror.
 
-  >>> browser.getLink('Edit Details').click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
   >>> browser.getControl(name='field.name').value = 'archive-mirror'
