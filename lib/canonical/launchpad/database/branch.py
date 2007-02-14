@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
-import os.path
 import re
 
 from zope.interface import implements
@@ -18,15 +17,15 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
     cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.interfaces import (IBranch, IBranchSet,
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces import (
+        IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError,
+        )
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
-    EnumCol, BranchRelationships, BranchLifecycleStatus)
+    BranchRelationships, BranchLifecycleStatus)
 
 
 class Branch(SQLBase):
@@ -41,7 +40,7 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber', 
+    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber',
                             default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -102,6 +101,7 @@ class Branch(SQLBase):
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
     def related_bugs(self):
@@ -311,7 +311,7 @@ class BranchSet:
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person', 'Product']            
+            tables=['Person', 'Product']
         branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
@@ -334,24 +334,24 @@ class BranchSet:
 
     def getRecentlyChangedBranches(self, branch_count):
         """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = '''
             Branch.last_scanned IS NOT NULL
-            AND Branch.owner = Person.id
-            AND Person.name <> 'vcs-imports'
-            '''
-        branches = Branch.select(query, clauseTables=['Person'],
-            orderBy=['-last_scanned'], limit=branch_count)
+            AND Branch.owner <> %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count):
         """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = '''
             Branch.last_scanned IS NOT NULL
-            AND Branch.owner = Person.id
-            AND Person.name = 'vcs-imports'
-            '''
-        branches = Branch.select(query, clauseTables=['Person'],
-            orderBy=['-last_scanned'], limit=branch_count)
+            AND Branch.owner = %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyRegisteredBranches(self, branch_count):
@@ -376,7 +376,15 @@ class BranchSet:
             """ % sqlvalues(branch_ids))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))
-                     for branch in branches]) 
+                     for branch in branches])
+
+    def getBranchesForOwners(self, people):
+        """Return the branches that are owned by the people specified."""
+        owner_ids = [person.id for person in people]
+        if not owner_ids:
+            return []
+        branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
+        return branches.prejoin(['product'])
 
 
 class BranchRelationship(SQLBase):
@@ -386,13 +394,9 @@ class BranchRelationship(SQLBase):
     """
 
     _table = 'BranchRelationship'
-    _columns = [
-        ForeignKey(name='subject', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        IntCol(name='label', dbName='label', notNull=True),
-        ForeignKey(name='object', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        ]
+    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
+    label = IntCol(dbName='label', notNull=True),
+    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
 
     def _get_src(self):
         return self.subject

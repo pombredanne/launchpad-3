@@ -17,11 +17,11 @@
 </metal:rightportlets>
 
 <div class="documentDescription" metal:fill-slot="extra_info">
-  This will <em>remove</em> the link between this support request
+  This will <em>remove</em> the link between this question
   and the selected bug reports.
 </div>
 
-<p metal:fill-slot="help">If a bug linked to this support request isn't really
+<p metal:fill-slot="help">If a bug linked to this question isn't really
   related, you can remove the link between them on this page.
 </p>
 </body>

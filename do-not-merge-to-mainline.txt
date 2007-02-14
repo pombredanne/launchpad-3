@@ -1,6 +1,0 @@
-This is a file that is checked by the Makefile's check_merge target.
-If this file is present, then the check_merge target will fail, and
-no merge will occur.
-
-This file may be removed, and the check_merge target cleaned up,
-when Launchpad 1.0 is fully released.

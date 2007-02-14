@@ -13,6 +13,12 @@ __all__ = [
     'ProjectEditView',
     'ProjectSetNavigation',
     'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -84,16 +90,10 @@ class ProjectSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # XXX mpt 20061004: Products, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
+        return list(self.context.products[:num])
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class ProjectSetContextMenu(ContextMenu):
@@ -116,7 +116,7 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -130,8 +130,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf',
-             'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -155,10 +154,6 @@ class ProjectOverviewMenu(ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
-
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -198,6 +193,17 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+
+class ProjectTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectEditView(LaunchpadEditFormView):
@@ -387,14 +393,14 @@ class ProjectAddTicketView(TicketAddView):
                 __name__='product', vocabulary='ProjectProducts',
                 title=_('Product'),
                 description=_(
-                    'Choose the product for which you need support.'),
+                    'Choose the product for which you have a question.'),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with a product from ${project}',
+        return _('Ask a question about a product from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property

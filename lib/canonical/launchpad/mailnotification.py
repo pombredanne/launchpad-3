@@ -851,7 +851,7 @@ def notify_bug_attachment_added(bugattachment, event):
 
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
-    
+
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
@@ -878,7 +878,7 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
         else:
             templatename = 'new-member-notification.txt'
-        
+
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
@@ -950,9 +950,9 @@ class TicketNotification:
     def getSubject(self):
         """Return the subject of the notification.
 
-        Default to [Support #dd]: Title
+        Default to [Question #dd]: Title
         """
-        return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+        return '[Question #%s]: %s' % (self.ticket.id, self.ticket.title)
 
     def getBody(self):
         """Return the content of the notification message.
@@ -960,6 +960,34 @@ class TicketNotification:
         This method must be implemented by a subclass.
         """
         raise NotImplementedError
+
+    def getHeaders(self):
+        """Return additional headers to add to the email.
+
+        Default implementation adds a X-Launchpad-Question header.
+        """
+        ticket = self.ticket
+        headers = dict()
+        if self.ticket.distribution:
+            if ticket.sourcepackagename:
+                sourcepackage = ticket.sourcepackagename.name
+            else:
+                sourcepackage = 'None'
+            target = 'distribution=%s; sourcepackage=%s;' % (
+                ticket.distribution.name, sourcepackage)
+        else:
+            target = 'product=%s;' % ticket.product.name
+        if ticket.assignee:
+            assignee = ticket.assignee.name
+        else:
+            assignee = 'None'
+
+        headers['X-Launchpad-Question'] = (
+            '%s status=%s; assignee=%s; priority=%s; language=%s' % (
+                target, ticket.status.title, assignee,
+                ticket.priority.title, ticket.language.code))
+
+        return headers
 
     def getRecipients(self):
         """Return the recipient of the notification.
@@ -1018,11 +1046,12 @@ class TicketNotification:
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
+        headers = self.getHeaders()
         for notified_person in self.getRecipients():
             for address in contactEmailAddresses(notified_person):
                 if address not in sent_addrs:
                     simple_sendmail(
-                        from_address, address, subject, body)
+                        from_address, address, subject, body, headers)
                     sent_addrs.add(address)
 
     @property
@@ -1116,11 +1145,32 @@ class TicketModifiedDefaultNotification(TicketNotification):
         """When a comment is added, its title is used as the subject,
         otherwise the ticket title is used.
         """
+        prefix = '[Question #%s]: ' % self.ticket.id
         if self.new_message:
-            return '[Support #%s]: %s' % (
-                self.ticket.id, self.new_message.subject)
+            subject = self.new_message.subject
+            if prefix in self.new_message.subject:
+                return subject
+            elif subject[0:4] in ['Re: ', 'RE: ', 're']:
+                # Place prefix after possible reply prefix.
+                return subject[0:4] + prefix + subject[4:]
+            else:
+                return prefix + subject
         else:
-            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+            return prefix + self.ticket.title
+
+    def getHeaders(self):
+        """Add a References header."""
+        headers = TicketNotification.getHeaders(self)
+        if self.new_message:
+            # XXX flacoste 2007/02/02 The first message cannot contain
+            # a References because we don't create a Message instance
+            # for the ticket description, so we don't have a Message-ID.
+            # Bug #83846
+            index = list(self.ticket.messages).index(self.new_message)
+            if index > 0:
+                headers['References'] = (
+                    self.ticket.messages[index-1].rfc822msgid)
+        return headers
 
     def shouldNotify(self):
         """Only send a notification when a message was added or some
@@ -1159,21 +1209,21 @@ class TicketModifiedDefaultNotification(TicketNotification):
         TicketAction.REQUESTINFO:
             '%(person)s requested for more information:',
         TicketAction.CONFIRM:
-            '%(person)s confirmed that the request is solved:',
+            '%(person)s confirmed that the question is solved:',
         TicketAction.COMMENT:
             '%(person)s posted a new comment:',
         TicketAction.GIVEINFO:
-            '%(person)s gave more information on the request:',
+            '%(person)s gave more information on the question:',
         TicketAction.REOPEN:
             '%(person)s is still having a problem:',
         TicketAction.ANSWER:
             '%(person)s proposed the following answer:',
         TicketAction.EXPIRE:
-            '%(person)s expired the request:',
+            '%(person)s expired the question:',
         TicketAction.REJECT:
-            '%(person)s rejected the request:',
+            '%(person)s rejected the question:',
         TicketAction.SETSTATUS:
-            '%(person)s changed the request status:',
+            '%(person)s changed the question status:',
     }
 
     def getNewMessageText(self):
@@ -1197,9 +1247,9 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
         TicketModifiedDefaultNotification.action_header_template)
     action_header_template.update({
         TicketAction.CONFIRM:
-            'You confirmed that the request is solved:',
+            'You confirmed that the question is solved:',
         TicketAction.GIVEINFO:
-            'You gave more information on the request:',
+            'You gave more information on the question:',
         TicketAction.REOPEN:
             'You are still having a problem:',
         })
@@ -1241,7 +1291,7 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
 
     def getSubject(self):
         """See TicketNotification."""
-        return '[Support #%s]: (%s) %s' % (
+        return '[Question #%s]: (%s) %s' % (
             self.ticket.id, self.ticket.language.englishname,
             self.ticket.title)
 

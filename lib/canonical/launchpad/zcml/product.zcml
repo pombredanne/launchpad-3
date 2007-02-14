@@ -63,6 +63,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+translations" />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -455,6 +459,14 @@
         class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+shortlink"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductShortLink"
+        attribute="__call__"
         />
 
 </configure>

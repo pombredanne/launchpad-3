@@ -176,15 +176,19 @@ class IDistributionMirror(Interface):
         we don't have control over.
         """
 
-    def disableAndNotifyOwner():
-        """Mark this mirror as disabled and notify the owner by email.
-        
+    def disable(notify_owner):
+        """Mark this mirror as disabled and notify the distributions's mirror
+        admins by email.
+
+        if notify_owner is True, an identical notification is sent to the
+        mirror owner.
+
         This method can't be called before a probe record has been created
         because we'll link to the latest probe record in the email we send to
         notify the owner.
 
-        The owner will be notified only if this mirror was previously enabled
-        or if it was probed only once.
+        The notification(s) are actually sent only if this mirror was
+        previously enabled or if it was probed only once.
         """
 
     def newProbeRecord(log_file):

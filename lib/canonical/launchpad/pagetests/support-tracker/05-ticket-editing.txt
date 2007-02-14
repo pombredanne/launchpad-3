@@ -1,20 +1,20 @@
-= Editing Tickets =
+= Editing Questions =
 
-To edit the title and description of ticket, one uses the 'Edit Request'
+To edit the title and description of question, one uses the 'Edit Question'
 menu item. You need to be logged in to perform that action:
 
   >>> anon_browser.open('http://launchpad.dev/firefox/+ticket/2')
-  >>> anon_browser.getLink('Edit Request').click()
+  >>> anon_browser.getLink('Edit Question').click()
   Traceback (most recent call last):
     ...
   Unauthorized...
 
   >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
-  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getLink('Edit Question').click()
   >>> user_browser.url
   '.../firefox/+ticket/2/+edit'
 
-When we post the form, we should be redirected back to the ticket page.
+When we post the form, we should be redirected back to the question page.
 
   >>> description = (
   ...   "Hi! I'm trying to learn about SVG but I can't get it to work at "
@@ -38,25 +38,25 @@ And viewing that page should show the updated information.
   Problem showing the SVG demo on W3C web site
 
 You can even modify the title and description of 'Answered' and
-'Invalid' tickets:
+'Invalid' questions:
 
   >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/3')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
   u'Invalid'
-  >>> user_browser.getLink('Edit Request')
+  >>> user_browser.getLink('Edit Question')
   <Link...>
 
 
 == Source Package ==
 
-Distribution tickets can have a source package associated with them. Any
-logged in user can change the ticket source package on the 'Edit Request'
-page.
+Distribution questions can have a source package associated with them.
+Any logged in user can change the question source package on the
+'Edit Question' page.
 
   >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/5')
-  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getLink('Edit Question').click()
   >>> user_browser.getControl('Source Package').value = 'linux-source-2.6.15'
   >>> user_browser.getControl('Continue').click()
 
@@ -64,10 +64,10 @@ page.
   >>> print soup.first('b', text='For:').next.strip()
   ubuntu linux-source-2.6.15
 
-Of course, that item doesn't appear on the product tickets:
+Of course, that item doesn't appear for product questions:
 
   >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
-  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getLink('Edit Question').click()
   >>> user_browser.getControl('Source Package')
   Traceback (most recent call last):
     ...
@@ -76,13 +76,13 @@ Of course, that item doesn't appear on the product tickets:
 == Changing Other Metadata ==
 
 A user with 'launchpad.Admin' privilege (usually the product or
-distribution owner) can also change the ticket Assignee, Priority and
-edit the Status Whiteboard using the 'Edit Request' page.
+distribution owner) can also change the question Assignee, Priority and
+edit the Status Whiteboard using the 'Edit Question' page.
 
   >>> browser.addHeader(
   ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://localhost/ubuntu/+ticket/5')
-  >>> browser.getLink('Edit Request').click()
+  >>> browser.getLink('Edit Question').click()
 
   >>> browser.getControl('Priority').value = ['Wishlist']
   >>> browser.getControl('Assignee').value = 'name16'
@@ -97,7 +97,7 @@ edit the Status Whiteboard using the 'Edit Request' page.
   >>> print soup.first('b', text='Priority:').next.strip()
   Wishlist
 
-Since the assignee is notified of changes to the ticket, his name also
+Since the assignee is notified of changes to the question, his name also
 appears under the 'Also notified' list in the 'Subscribers' portlet:
 
     >>> portlet = soup.first('div', id='ticket-subscribers')
@@ -114,7 +114,7 @@ appears under the 'Also notified' list in the 'Subscribers' portlet:
 These fields cannot be modified by a non-privileged user:
 
   >>> user_browser.open('http://localhost/ubuntu/+ticket/5')
-  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getLink('Edit Question').click()
   >>> user_browser.getControl('Priority')
   Traceback (most recent call last):
     ...

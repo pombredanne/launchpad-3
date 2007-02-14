@@ -20,7 +20,7 @@
     <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
-      tal:condition="python: dbname!='launchpad_prod'"
+      tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <link rel="shortcut icon" href="/@@/launchpad" />
@@ -51,6 +51,7 @@
       <ul class="home">
         <li><a tal:attributes="href frontpage" title="Home">Home</a></li>
       </ul>
+      <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
     </div>
 
     <div id="locationbar">
@@ -180,10 +181,10 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
-                      <div id="structural-children"
+                      <div
                         tal:define="structuralobject CONTEXTS/lp:structuralobject" 
                         tal:condition="structuralobject"
-                        tal:content="structure structuralobject/@@+structural-footer"
+                        tal:replace="structure structuralobject/@@+structural-footer"
                       />
                     </div>
                     <div id="portlets">

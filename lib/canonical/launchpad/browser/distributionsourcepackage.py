@@ -35,16 +35,10 @@ class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # XXX mpt 20061004: package releases, most recent first
-        return []
-
-    def countChildren(self):
-        return 0
+        return self.context.releases
 
     def listAltChildren(self, num):
         return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class DistributionSourcePackageFacets(TicketTargetFacetMixin,

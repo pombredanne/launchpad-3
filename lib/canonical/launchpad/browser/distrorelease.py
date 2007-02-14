@@ -107,7 +107,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+    links = ['edit', 'reassign', 'driver', 'support', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
@@ -139,7 +139,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     # has a search form.
 
     def support(self):
-        text = 'Request Support'
+        text = 'Ask Question'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 
@@ -157,7 +157,6 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
         text = 'View Uploads'
         return Link('+queue', text, icon='info')
