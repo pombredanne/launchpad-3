@@ -10,6 +10,7 @@ __all__ = [
     'BazaarProductView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
@@ -17,11 +18,13 @@ from zope.component import getUtility
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, ILaunchpadCelebrities,
+    IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission,
     Link, Navigation, stepto)
+from canonical.launchpad.webapp.batching import BatchNavigator
 import canonical.launchpad.layers
 
 
@@ -113,30 +116,53 @@ class BazaarApplicationNavigation(Navigation):
         return getUtility(IProductSeriesSet)
 
 
+class BazaarListItem:
+
+    def __init__(self, product, branch_count, dev_branch, imported,
+                 last_commit, elapsed_time):
+        self.product = product
+        self.branch_count = branch_count
+        self.dev_branch = dev_branch
+        self.imported = imported
+        self.last_commit = last_commit
+        self.elapsed_time = elapsed_time
+
+
+class BazaarProductBatch(BatchNavigator):
+
+    def __init__(self, products, request):
+        BatchNavigator.__init__(self, products, request)
+        # Now fetch the details for the current batch.
+        batch = self.currentBatch()
+        branchset = getUtility(IBranchSet)
+        self.branch_summaries = branchset.getBranchSummaryForProducts(batch)
+        branches = branchset.getProductDevelopmentBranches(batch)
+        self.dev_branches = dict(
+            [(branch.product, branch) for branch in branches])
+
+    def _createItem(self, product):
+        """Returns the BazaarListItem for the product."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        summary = self.branch_summaries[product]
+        branch = self.dev_branches.get(product)
+        imported = branch and branch.owner == vcs_imports
+        now = datetime.now()
+        last_commit = summary['last_commit']
+        elapsed = last_commit and (now - last_commit)
+        return BazaarListItem(
+            product, summary['branch_count'],
+            branch, imported, last_commit, elapsed)
+        
+    def getViewableItems(self):
+        return [self._createItem(product)
+            for product in self.batch]
+    
+
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
     @cachedproperty
-    def products(self):
-        return sorted(
+    def listing(self):
+        return BazaarProductBatch(
             getUtility(IProductSet).getProductsWithBranches(),
-            key=lambda product: product.displayname.lower())
-
-    @cachedproperty
-    def summaries(self):
-        # unwrapping the security proxies, so can add to the dict
-        result = {}
-        branchset = getUtility(IBranchSet)
-        summaries = branchset.getBranchSummaryByProduct()
-        for key, value in summaries.iteritems():
-            result[key] = dict(value)
-
-        for branch in branchset.getDevelopmentFocusBranches():
-            result[branch.product.id]['dev_branch'] = branch
-        
-        for product in self.products:
-            branch_url = canonical_url(product, rootsite='code')
-            result[product.id]['branch_url'] = branch_url
-
-        return result
-        
+            self.request)

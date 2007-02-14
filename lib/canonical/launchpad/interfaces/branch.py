@@ -323,15 +323,15 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
-    def getDevelopmentFocusBranches():
+    def getProductDevelopmentBranches(products):
         """Return branches that are associated with the products dev series.
 
         The branches will be either the import branches if imported, or
         the user branches if native.
         """
 
-    def getBranchSummaryByProduct():
-        """Return a list of simple summary objects."""
+    def getBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products."""
 
     def getRecentlyChangedBranches(branch_count):
         """Return a list of branches that have been recently updated.

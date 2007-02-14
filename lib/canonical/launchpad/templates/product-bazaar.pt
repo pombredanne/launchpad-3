@@ -8,40 +8,49 @@
       <h1>Products with Code</h1>
     </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="batch_navigator view/listing">
 
-  <table class="listing sortable" id="products">
+  <tal:navigation replace="structure batch_navigator/@@+navigation-links-upper" />
+
+  <table class="listing" id="products">
     <thead>
       <tr>
-        <th class="initial-sort">Product</th>
+        <th>Product</th>
         <th>Branches</th>
         <th>Development Branch</th>
         <th>Last commit</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="product view/products">
-        <tal:summary define="summary python:view.summaries[product.id]">
-        <td><a tal:attributes="href summary/branch_url"
-               tal:content="product/displayname">
+      <tr tal:repeat="item batch_navigator/getViewableItems">
+        <td><a tal:attributes="href item/product/fmt:url"
+               tal:content="item/product/displayname">
           A Product
         </a></td>
-        <td><span tal:replace="summary/branch_count">1</span></td>
+        <td><span tal:replace="item/branch_count">1</span></td>
         <td>
-          <tal:has_dev_branch condition="summary/dev_branch|nothing">
-          <a tal:attributes="href summary/dev_branch/fmt:url;
-                             title summary/dev_branch/displayname"
-             tal:content="summary/dev_branch/name">
+          <tal:has_dev_branch condition="item/dev_branch|nothing">
+          <a tal:attributes="href item/dev_branch/fmt:url;
+                             title item/dev_branch/displayname"
+             tal:content="item/dev_branch/name">
           name</a>
-          <span tal:condition="python: summary['dev_branch'].owner.name == 'vcs-imports'">
-            (imported)</span>
+          <span tal:condition="item/imported">(imported)</span>
           </tal:has_dev_branch>
         </td>
-        <td><span tal:replace="summary/last_commit">sometime</span></td>
-        </tal:summary>
+        <td>
+          <tal:has_commit condition="item/last_commit">
+            <span tal:attributes="title item/last_commit/fmt:datetime"
+                  tal:content="item/elapsed_time/fmt:approximateduration">
+              sometime
+              </span> ago
+          </tal:has_commit>
+        </td>
       </tr>
     </tbody>
   </table>
+
+  <tal:navigation replace="structure batch_navigator/@@+navigation-links-lower" />
 
 </div>
 

@@ -556,13 +556,24 @@ Lets make gnome terminal have a user branch as the dev focus.
   >>> gterm_product.development_focus.user_branch = gterm_main
   >>> syncUpdate(gterm_product.development_focus)
   
-  >>> branches = branchset.getDevelopmentFocusBranches()
+  >>> products = productset.getProductsWithBranches()
+  >>> branches = branchset.getProductDevelopmentBranches(products)
   >>> import operator
   >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
   ...     print branch.unique_name
   ~name12/gnome-terminal/main
   ~vcs-imports/evolution/main
 
+== Getting the branch count and last commit for products ==
+
+  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> for product in products:
+  ...     print product.name, summary[product]['branch_count'], summary[product]['last_commit']
+  firefox        5 None
+  thunderbird    1 None
+  evolution      2 None
+  gnome-terminal 8 None
+  iso-codes      1 None
 
 == Getting branches by owner ==
 
