@@ -117,6 +117,7 @@ class BazaarApplicationNavigation(Navigation):
 
 
 class BazaarListItem:
+    """A simple type that contains the display fields for the listing."""
 
     def __init__(self, product, branch_count, dev_branch, imported,
                  last_commit, elapsed_time):
@@ -129,6 +130,7 @@ class BazaarListItem:
 
 
 class BazaarProductBatch(BatchNavigator):
+    """Batch the listing as there are *many* products with branches."""
 
     def __init__(self, products, request):
         BatchNavigator.__init__(self, products, request)
