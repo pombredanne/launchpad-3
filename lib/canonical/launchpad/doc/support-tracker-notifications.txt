@@ -150,6 +150,8 @@ After receiving that notification, Foo Bar unassigned himself:
 
 == Bug Linking and Unlinking Notifications ==
 
+=== Bug link Notification ===
+
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
 
@@ -179,6 +181,8 @@ bug that has been linked to the request:
         Linked to bug: #...
         http://.../bugs/...
     <BLANKLINE>
+
+=== Linked Bug Status Changed Notification ===
 
 While a bug is linked to a ticket, its subscribers will be notified
 of changes to the bug status:
@@ -215,6 +219,8 @@ of changes to the bug status:
     which is linked to this bug.
     Installer doesn't work on a Mac
     http://.../ubuntu/+ticket/...
+
+=== Bug Unlinked Notification ===
 
 A notification is also sent when a bug is unlinked from the ticket:
 
