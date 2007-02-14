@@ -19,15 +19,18 @@ class JobManager:
     def __init__(self):
         self.branches_to_mirror = []
         self.actualLock = None
-    
+
     def add (self, branch_to_mirror):
         """Add a branch to mirror to the JobManager."""
         self.branches_to_mirror.append(branch_to_mirror)
 
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
+        logger.info('%d branches to mirror', len(self.branches_to_mirror))
         while self.branches_to_mirror:
             self.branches_to_mirror.pop(0).mirror(logger)
+        logger.info('Mirroring complete')
+
 
     def addBranches(self, branch_status_client):
         """Queue branches from the list provided by the branch status client

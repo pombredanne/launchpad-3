@@ -788,6 +788,8 @@ k            </description>
                 URL prepended to branch ids to obtain internal branch URLs.
             </description>
         </key>
+        <section name="*" type="script_errorreports" attribute="errorreports"
+            required="no" />
     </sectiontype>
 
     <sectiontype name="branchscanner">

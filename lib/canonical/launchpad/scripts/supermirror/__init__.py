@@ -15,7 +15,8 @@ def mirror(logger, managerClass=JobManager):
 
     try:
         mymanager.lock()
-    except LockError:
+    except LockError, exception:
+        logger.info('Could not acquire lock: %s', exception)
         return 0
 
     try:
