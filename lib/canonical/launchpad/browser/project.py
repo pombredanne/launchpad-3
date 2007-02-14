@@ -355,6 +355,7 @@ class ProjectAddView(LaunchpadFormView):
             description=data['description'],
             owner=self.user,
             gotchi=data['gotchi'],
+            gotchi_heading=None,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 

@@ -453,6 +453,7 @@ class DistributionAddView(LaunchpadFormView):
             members=data['members'],
             owner=self.user,
             gotchi=data['gotchi'],
+            gotchi_heading=None,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

@@ -60,6 +60,8 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -263,7 +265,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, emblem):
+            description, owner, gotchi, gotchi_heading, emblem):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -275,6 +277,7 @@ class ProjectSet:
             owner=owner,
             datecreated=UTC_NOW,
             gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=emblem)
 
     def count_all(self):
