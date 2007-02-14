@@ -769,6 +769,7 @@ class NascentUpload:
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
             release.addFile(library_file)
+        # XXX: stop shoving stuff into the policy
         self.policy.sourcepackagerelease = release
 
     def find_build(self, archtag):
@@ -800,7 +801,6 @@ class NascentUpload:
                 build = spr.createBuild(
                     dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
-            self.policy.build = build
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
 
@@ -811,8 +811,9 @@ class NascentUpload:
                 build.pocket != self.policy.pocket):
                 raise FatalUploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
-            self.policy.build = build
-            self.logger.debug("Build %s found" % self.policy.build.id)
+            self.logger.debug("Build %s found" % build.id)
+        # XXX: stop shoving stuff into the policy
+        self.policy.build = build
 
         return self.policy.build
 

@@ -245,8 +245,7 @@ class PackageNascentUploadFile(NascentUploadedFile):
 
 class SourceNascentUploadFile(PackageNascentUploadFile):
     """XXX"""
-
-
+    # XXX: we can probably get rid of this class altogether
     def verify(self):
         """Verify the uploaded source file.
 
@@ -255,18 +254,17 @@ class SourceNascentUploadFile(PackageNascentUploadFile):
         """
         self.logger.debug("Verifying source file %s" % self.filename)
 
+        if 'source' not in self.changes.architectures:
+            yield UploadError("%s: changes file doesn't list 'source' in "
+                "Architecture field." % (self.filename))
+
         if self.type == "orig.tar.gz":
             changes_version = self.changes.chopversion2
         else:
             changes_version = self.changes.chopversion
         if changes_version != self.version:
-            self.reject("%s: should be %s according to changes file." % (
-                self.filename, changes_version))
-
-        if 'source' not in self.changes.architectures:
-            self.reject("%s: changes file doesn't list 'source' in "
-                        "Architecture field." % (self.filename))
-        return []
+            yield UploadError("%s: should be %s according to changes file."
+                % (self.filename, changes_version))
 
 
 class BinaryNascentUploadedFile(PackageNascentUploadFile):
@@ -632,7 +630,5 @@ class CustomUploadedFile(NascentUploadedFile):
 
 
 class DSCUploadedFile(NascentUploadedFile):
-    # XXX XXX
-    pass
-
+    """XXX"""
 
