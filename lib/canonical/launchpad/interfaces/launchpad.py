@@ -37,7 +37,7 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver'
+    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
     'IStructuralObjectPresentation',
     ]
 
