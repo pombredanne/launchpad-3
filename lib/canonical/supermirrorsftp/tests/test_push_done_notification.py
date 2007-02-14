@@ -100,21 +100,22 @@ class WriteLoggingNode(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.listener,
+        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
                                                         self.tempDir)
 
     def tearDown(self):
         shutil.rmtree(self.tempDir)
 
-    def listener(self):
+    def flagAsDirty(self):
         self.dirty = True
 
     def test_listener(self):
         # Children of a WriteLoggingDirectory should maintain a reference
         # to the top-level WriteLoggingDirectory.
-        self.assertEqual(self.listener, self.directory.listener)
-        self.assertEqual(self.listener,
-                         self.directory.createDirectory('foo').listener)
+        # XXX - whitebox test (jml, 2007-02-15)
+        self.assertEqual(self.flagAsDirty, self.directory._flagAsDirty)
+        self.assertEqual(self.flagAsDirty,
+                         self.directory.createDirectory('foo')._flagAsDirty)
 
     def test_childDirFactory(self):
         # childDirFactory should return the same class (child nodes also need

@@ -246,9 +246,9 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         self._launchpad = self.client.avatar._launchpad
 
     def makeListener(self, branchID):
-        def listener():
+        def flag_as_dirty():
             self.branchDirtied(branchID)
-        return listener
+        return flag_as_dirty
     
     def branchDirtied(self, branchID):
         self._dirtyBranches.add(branchID)

@@ -215,14 +215,25 @@ class WriteLoggingDirectory(osfs.OSDirectory):
     been written to as part of a connection.
     """
 
-    def __init__(self, listener, path, name=None, parent=None):
+    def __init__(self, flagAsDirty, path, name=None, parent=None):
+        """
+        Create a new WriteLoggingDirectory.
+
+        :type flagAsDirty: callable
+        :param flagAsDirty: Called when the directory is written to.
+
+        For other parameters, see osfs.OSDirectory.
+        """
         osfs.OSDirectory.__init__(self, path, name, parent)
-        self.listener = listener
+        self._flagAsDirty = flagAsDirty
 
     def childDirFactory(self):
-        """Return a child directory which uses the same listener."""
+        """Return a child directory which uses the same listener.
+
+        The listener is the '_flagAsDirty' callable, set by the constructor.
+        """
         def childWithListener(path, name, parent):
-            return WriteLoggingDirectory(self.listener, path, name, parent)
+            return WriteLoggingDirectory(self._flagAsDirty, path, name, parent)
         return childWithListener
 
     def createDirectory(self, name):
@@ -242,7 +253,7 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         osfs.OSDirectory.rename(self, newName)
 
     def touch(self):
-        self.listener()
+        self._flagAsDirty()
 
 
 class SFTPServerBranch(WriteLoggingDirectory):
@@ -261,8 +272,8 @@ class SFTPServerBranch(WriteLoggingDirectory):
         h = "%08x" % int(branchID)
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
-        self.listener = None
-        WriteLoggingDirectory.__init__(self, self.listener,
+        self._flagAsDirty = None
+        WriteLoggingDirectory.__init__(self, self._flagAsDirty,
             os.path.join(avatar.homeDirsRoot, path), branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
@@ -272,7 +283,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
             "removing branch directory %r is not allowed." % self.name)
 
     def touch(self):
-        if self.listener is None:
+        if self._flagAsDirty is None:
             # Find the root object and create a listener. If the listener is
             # not already set, then we must be at the top-level directory in
             # the branch. One parent up is the product, the next is the
@@ -281,6 +292,6 @@ class SFTPServerBranch(WriteLoggingDirectory):
             # XXX - this is an awkward way of finding the root. Replace with
             # something that is clearer and requires fewer comments.
             # -- jml, 2007-02-14
-            self.listener = self.parent.parent.parent.listenerFactory(
+            self._flagAsDirty = self.parent.parent.parent.listenerFactory(
                 self.branchID)
-        self.listener()
+        self._flagAsDirty()
