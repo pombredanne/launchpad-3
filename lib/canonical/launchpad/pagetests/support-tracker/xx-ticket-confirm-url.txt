@@ -1,6 +1,6 @@
 = Confirming an Answer using the Link in the Notification Email =
 
-When an answer is posted on a ticket, its owner will usually receive a
+When an answer is posted on a question, its owner will usually receive a
 notification by email. That email includes a link that can be used by
 the owner to confirm that the answer solved his problem.
 
@@ -17,8 +17,8 @@ the owner to confirm that the answer solved his problem.
     >>> support_browser.addHeader(
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
-When the URL is used when the ticket isn't in the right state, the user
-will be redirected to the ticket page and a notification will be
+When the URL is used when the question isn't in the right state, the user
+will be redirected to the question page and a notification will be
 displayed:
 
     >>> owner_browser.open(
@@ -30,10 +30,10 @@ displayed:
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print soup.first('div', 'error message').renderContents()
-    The support request is not in a state where you can confirm an
+    The question is not in a state where you can confirm an
     answer.
 
-Posting an answer on the ticket will send an email notification
+Posting an answer on the question will send an email notification
 containing a link to confirm that answer.
 
     # First subscribe the owner, so that he receives the notification.
@@ -60,8 +60,8 @@ containing a link to confirm that answer.
 
 If a cropped URL or forged URL is used, an UnexpectedFormData error will
 be displayed. In the following example, the answer_id parameter refers
-to an answer not part of that support request, it mimics a badly
-handcrafted URL:
+to an answer not part of that question, it mimics a badly handcrafted
+URL:
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2/+confirm?'
@@ -76,7 +76,7 @@ handcrafted URL:
       ...
     UnexpectedFormData...
 
-The page is only accessible to the ticket owner:
+The page is only accessible to the question owner:
 
     >>> support_browser.open(confirm_url)
     Traceback (most recent call last):
@@ -100,8 +100,7 @@ button. He can enter an optional message along his confirmation.
     ...     "Thanks! This indeed solved the problem.")
     >>> owner_browser.getControl('This Solved my Problem').click()
 
-This adds his comment to the request and mark the support request
-'Solved.'
+This adds his comment to the question and mark it as 'Solved.'
 
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print soup.find('b', text='Status:').next.strip()

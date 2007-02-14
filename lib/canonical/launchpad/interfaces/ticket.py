@@ -57,16 +57,16 @@ class ITicket(IHasOwner):
     # vocabulary that excludes the English variants.
     language = Choice(
         title=_('Language'), vocabulary='LanguageVocabulary',
-        description=_('The language in which this request is written.'))
+        description=_('The language in which this question is written.'))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
-        "support request."),
+        "question."),
         vocabulary='ValidPersonOrTeam')
     answerer = Choice(title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
-        "resolve the support request."),
+        "resolve the question."),
         vocabulary='ValidPersonOrTeam')
     answer = Object(title=_('Answer'), required=False,
         description=_("The TicketMessage that contains the answer confirmed "
@@ -76,8 +76,8 @@ class ITicket(IHasOwner):
         title=_('Date Created'), required=True, readonly=True)
     datedue = Datetime(
         title=_('Date Due'), required=False, default=None,
-        description=_("The date by which we should have resolved this support "
-        "request."))
+        description=_(
+            "The date by which we should have resolved this question."))
     datelastquery = Datetime(title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
         "customer (owner)."))
@@ -101,7 +101,7 @@ class ITicket(IHasOwner):
         'in the distribution which contains the software with which you '
         'are experiencing difficulties.'))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_('Up-to-date notes on the status of the request.'))
+        description=_('Up-to-date notes on the status of the question.'))
     # other attributes
     target = Attribute('The ITicketTarget that is associated to this ticket.')
 
@@ -461,7 +461,7 @@ class ITicketAddMessageForm(Interface):
     message = Text(title=_('Message'), required=False)
 
     subscribe_me = Bool(
-        title=_('E-mail me future discussion about this request'),
+        title=_('E-mail me future discussion about this question'),
         required=False, default=False)
 
 
@@ -469,7 +469,7 @@ class ITicketChangeStatusForm(Interface):
     """Form schema for changing the status of a ticket."""
 
     status = Choice(
-        title=_('Status'), description=_('Select the new ticket status.'),
+        title=_('Status'), description=_('Select the new question status.'),
         vocabulary='TicketStatus', required=True)
 
     message = Text(

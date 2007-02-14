@@ -82,7 +82,7 @@
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(admin_browser.contents)
-  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  >>> soup.fetchText('Registered:')[0].findNext('a').string
   u'No Privileges Person'
 
   >>> login('no-priv@canonical.com')
@@ -124,5 +124,5 @@
   >>> browser.getControl('Change Owner').click()
 
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  >>> soup.fetchText('Registered:')[0].findNext('a').string
   u'Sample Person'
