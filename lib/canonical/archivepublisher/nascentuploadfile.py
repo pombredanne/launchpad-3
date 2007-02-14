@@ -628,7 +628,3 @@ class CustomUploadedFile(NascentUploadedFile):
         if self.section not in self.custom_sections:
             yield UploadError("Unsupported custom section name %r" % self.section)
 
-
-class DSCUploadedFile(NascentUploadedFile):
-    """XXX"""
-
