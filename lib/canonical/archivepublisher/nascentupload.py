@@ -1,8 +1,17 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
 """The processing of nascent uploads.
 
-See the docstring on NascentUpload for more information.
+# XXX: documentation on general design
+#   - want to log all possible errors to the end-user
+#   - changes file holds all uploaded files in a tree
+#   - changes.files and changes.dsc
+#   - DSC represents a source upload, and creates sources
+#   - but DSC holds DSCUploadedFiles, weirdly
+#   - binary represents a binary upload, and creates binaries
+#   - source files only exist for verify() purposes
+#   - NascentUpload is a motor that creates the changes file, does
+#     verifications, gets overrides, triggers creation or rejection and
+#     prepares the email message
 """
 
 __metaclass__ = type
@@ -31,23 +40,24 @@ from canonical.archivepublisher.template_messages import (
 
 
 class FatalUploadError(Exception):
-    """XXX"""
+    """A fatal error occurred processing the upload; processing aborted."""
 
-
-# XXX: documentation on general design
-#   - want to log all possible errors to the end-user
-#   - changes file holds all uploaded files in a tree
-#   - changes.files and changes.dsc
-#   - DSC represents a source upload, and creates sources
-#   - but DSC holds DSCUploadedFiles, weirdly
-#   - binary represents a binary upload, and creates binaries
-#   - source files only exist for verify() purposes
-#   - NascentUpload is a motor that creates the changes file, does
-#     verifications, gets overrides, triggers creation or rejection and
-#     prepares the email message
 
 class NascentUpload:
-    """XXX
+    """Represents an upload being born. NascentUpload's responsibilities
+    are:
+
+        1. Instantiating the ChangesFile and supplying to it the relevant
+           context.
+        2. Checking consistency of the upload in overall terms: given all
+           present binaries, sources and other bits and pieces, does this
+           upload "make sense"?
+        2. Collecting errors and warnings that occurred while processing
+           the upload.
+        3. Checking signer ACL and keyring constraints.
+        4. Creating state in the database once we've decided the upload
+           is good, and throwing it away otherwise.
+        5. Sending email to concerned individuals.
 
     The collaborative international dictionary of English defines nascent as:
 
@@ -72,6 +82,7 @@ class NascentUpload:
     # Defined in check_sourceful_consistency()
     native = False
     hasorig = False
+
     def __init__(self, policy, fsroot, changes_filename, logger):
         """XXX
 
@@ -102,6 +113,16 @@ class NascentUpload:
 
         self.run_and_collect_errors(self.changes.process_files)
 
+    def process(self):
+        """Process this upload, checking it against policy, loading it into
+        the database if it seems okay.
+
+        No exceptions should be raised. In a few very unlikely events, an
+        UploadError will be raised and sent up to the caller. If this happens
+        the caller should call the reject method and process a rejection.
+        """
+        self.logger.debug("Beginning processing.")
+
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
             self.run_and_check_error(uploaded_file.checkSizeAndCheckSum)
@@ -111,6 +132,94 @@ class NascentUpload:
             self._check_sourceful_consistency()
         if self.binaryful:
             self._check_binaryful_consistency()
+
+        self.run_and_collect_errors(self.changes.verify)
+
+        self.logger.debug("Verifying files in upload.")
+        for uploaded_file in self.changes.files:
+            self.run_and_collect_errors(uploaded_file.verify)
+
+        if self.single_custom:
+            self.logger.debug("Single Custom Upload detected.")
+            return
+
+        # Policy checks
+        if self.sourceful and not self.policy.can_upload_source:
+            self.reject(
+                "Upload is sourceful, but policy refuses sourceful uploads.")
+
+        if self.binaryful and not self.policy.can_upload_binaries:
+            self.reject(
+                "Upload is binaryful, but policy refuses binaryful uploads.")
+
+        if (self.sourceful and self.binaryful and
+            not self.policy.can_upload_mixed):
+            self.reject(
+                "Upload is source/binary but policy refuses mixed uploads.")
+
+        if self.sourceful and not self.changes.dsc:
+            self.reject("Unable to find the dsc file in the sourceful upload?")
+
+        # Apply the overrides from the database. This needs to be done
+        # before doing component verifications because the component
+        # actually comes from overrides for packages that are not NEW.
+        self.find_and_apply_overrides()
+
+        signer_components = self.process_signer_acl()
+        if not self.is_new:
+            # check rights for OLD packages, the NEW ones goes straight to queue
+            self.verify_acl(signer_components)
+
+        if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
+            self.reject(
+                "Not permitted to upload to the %s pocket in a "
+                "release in the '%s' state." % (
+                self.policy.pocket.name,
+                self.policy.distrorelease.releasestatus.name))
+
+        # That's all folks.
+        self.logger.debug("Finished checking upload.")
+
+
+    #
+    # Minor helpers
+    #
+
+    @property
+    def single_custom(self):
+        """Identify single custom uploads.
+
+        Return True if the current upload is a single custom file.
+        It is necessary to identify dist-upgrade section uploads.
+        """
+        # XXX: I'm not sure why single_custom is important. What if two
+        # custom files are uploaded at once? What should happen? I don't
+        # think that is handled correctly..
+        return (len(self.changes.files) == 1 and 
+                isinstance(self.changes.files[0], CustomUploadedFile))
+
+    @property
+    def is_new(self):
+        """Return true if any portion of the upload is NEW."""
+        for uploaded_file in self.changes.files:
+            if uploaded_file.new:
+                return True
+        return False
+
+    @property
+    def sender(self):
+        return "%s <%s>" % (
+            config.uploader.default_sender_name,
+            config.uploader.default_sender_address)
+
+    @property
+    def default_recipient(self):
+        return "%s <%s>" % (config.uploader.default_recipient_name,
+                         config.uploader.default_recipient_address)
+
+    #
+    # Overall consistency checks
+    #
 
     def _check_overall_consistency(self):
         """
@@ -243,65 +352,8 @@ class NascentUpload:
         if len(considered_archs) > max:
             self.reject("Policy permits only one build per upload.")
 
-    def process(self):
-        """Process this upload, checking it against policy, loading it into
-        the database if it seems okay.
-
-        No exceptions should be raised. In a few very unlikely events, an
-        UploadError will be raised and sent up to the caller. If this happens
-        the caller should call the reject method and process a rejection.
-        """
-        self.logger.debug("Beginning processing.")
-
-        self.run_and_collect_errors(self.changes.verify)
-
-        self.logger.debug("Verifying files in upload.")
-        for uploaded_file in self.changes.files:
-            self.run_and_collect_errors(uploaded_file.verify)
-
-        if self.single_custom:
-            self.logger.debug("Single Custom Upload detected.")
-            return
-
-        # Policy checks
-        if self.sourceful and not self.policy.can_upload_source:
-            self.reject(
-                "Upload is sourceful, but policy refuses sourceful uploads.")
-
-        if self.binaryful and not self.policy.can_upload_binaries:
-            self.reject(
-                "Upload is binaryful, but policy refuses binaryful uploads.")
-
-        if (self.sourceful and self.binaryful and
-            not self.policy.can_upload_mixed):
-            self.reject(
-                "Upload is source/binary but policy refuses mixed uploads.")
-
-        if self.sourceful and not self.changes.dsc:
-            self.reject("Unable to find the dsc file in the sourceful upload?")
-
-        # Apply the overrides from the database. This needs to be done
-        # before doing component verifications because the component
-        # actually comes from overrides for packages that are not NEW.
-        self.find_and_apply_overrides()
-
-        signer_components = self.process_signer_acl()
-        if not self.is_new:
-            # check rights for OLD packages, the NEW ones goes straight to queue
-            self.verify_acl(signer_components)
-
-        if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
-            self.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.policy.pocket.name,
-                self.policy.distrorelease.releasestatus.name))
-
-        # That's all folks.
-        self.logger.debug("Finished checking upload.")
-
     #
-    # Helpers for rejections
+    # Helpers for warnings and rejections
     #
 
     def run_and_check_error(self, callable):
@@ -339,31 +391,6 @@ class NascentUpload:
     def is_rejected(self):
         """Returns whether or not this upload was rejected."""
         return len(self.rejection_message) > 0
-
-    #
-    # Other helpers
-    #
-
-    @property
-    def single_custom(self):
-        """Identify single custom uploads.
-
-        Return True if the current upload is a single custom file.
-        It is necessary to identify dist-upgrade section uploads.
-        """
-        # XXX: I'm not sure why single_custom is important. What if two
-        # custom files are uploaded at once? What should happen? I don't
-        # think that is handled correctly..
-        return (len(self.changes.files) == 1 and 
-                isinstance(self.changes.files[0], CustomUploadedFile))
-
-    @property
-    def is_new(self):
-        """Return true if any portion of the upload is NEW."""
-        for uploaded_file in self.changes.files:
-            if uploaded_file.new:
-                return True
-        return False
 
     #
     # Signature and ACL stuff
@@ -429,7 +456,7 @@ class NascentUpload:
                     uploaded_file.component, uploaded_file.filename))
 
     #
-    # Version and overrides
+    # Handling checking of versions and overrides
     #
 
     def _checkVersion(self, proposed_version, archive_version,
@@ -658,8 +685,79 @@ class NascentUpload:
                 pass
 
     #
-    # Once verified, here we go
+    # Actually processing accepted or rejected uploads -- and mailing people
     #
+
+    def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
+                  announce_msg=announce_template):
+        """Accept the upload into the queue.
+
+        This *MAY* in extreme cases cause a database error and thus
+        actually end up with a rejection being issued. This could
+        occur, for example, if we have failed to validate the input
+        sufficiently and something trips a database validation
+        constraint.
+        """
+        if self.is_rejected:
+            self.reject("Alas, someone called do_accept when we're rejected")
+            return False, self.do_reject()
+        try:
+            interpolations = {
+                "MAINTAINERFROM": self.sender,
+                "SENDER": self.sender,
+                "CHANGES": self.changes.filename,
+                "SUMMARY": self.build_summary(),
+                "CHANGESFILE": guess_encoding(self.changes.filecontents),
+                "DISTRO": self.policy.distro.title,
+                "DISTRORELEASE": self.policy.distrorelease.name,
+                "ANNOUNCE": self.policy.announcelist,
+                "SOURCE": self.changes.source,
+                "VERSION": self.changes.version,
+                "ARCH": self.changes.architecture_line,
+                }
+            if self.changes.signer:
+                interpolations['MAINTAINERFROM'] = self.changes.changed_by['rfc2047']
+
+            recipients = self.build_recipients()
+
+            interpolations['RECIPIENT'] = ", ".join(recipients)
+            interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
+
+            self.create_objects_in_database()
+
+            # Unknown uploads
+            if self.is_new:
+                return True, [new_msg % interpolations]
+
+            # Known uploads
+
+            # UNAPPROVED uploads coming from 'insecure' policy only sends
+            # acceptance message.
+            if not self.policy.autoApprove(self):
+                interpolations["SUMMARY"] += (
+                    "\nThis upload awaits approval by a distro manager\n")
+                return True, [accept_msg % interpolations]
+
+            # Auto-APPROVED uploads to BACKPORTS skips announcement.
+            # usually processed with 'sync' policy
+            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
+                self.logger.debug(
+                    "Skipping announcement, it is a BACKPORT.")
+                return True, [accept_msg % interpolations]
+
+            # Fallback, all the rest comming from 'insecure', 'secure',
+            # and 'sync' policies should send acceptance & announcement
+            # messages.
+            return True, [
+                accept_msg % interpolations,
+                announce_msg % interpolations]
+
+        except Exception, e:
+            # Any exception which occurs while processing an accept will
+            # cause a rejection to occur. The exception is logged in the
+            # reject message rather than being swallowed up.
+            self.reject("Exception while accepting: %s" % e)
+            return False, self.do_reject()
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
@@ -677,17 +775,6 @@ class NascentUpload:
         outgoing_msg = template % interpolations
 
         return [outgoing_msg]
-
-    @property
-    def sender(self):
-        return "%s <%s>" % (
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
-
-    @property
-    def default_recipient(self):
-        return "%s <%s>" % (config.uploader.default_recipient_name,
-                         config.uploader.default_recipient_address)
 
     def build_recipients(self):
         """Build self.recipients up to include every address we trust."""
@@ -716,22 +803,22 @@ class NascentUpload:
                 "Changes file is unsigned, adding changer as recipient")
             recipients.append(changer)
 
-        real_recipients = []
+        valid_recipients = []
         for person in recipients:
             # We should only actually send mail to people that are
             # registered Launchpad user with preferred email;
             # this is a sanity check to avoid spamming the innocent.
             # Not that we do that sort of thing.
-            if person is None:
+            if person is None or person.preferredemail is None:
                 self.logger.debug("Could not find a person for <%r> or that "
                                   "person has no preferred email address set "
                                   "in launchpad" % recipients)
-            elif person.preferredemail is not None:
-                recipient = format_address(person.displayname,
-                                           person.preferredemail.email)
-                self.logger.debug("Adding recipient: '%s'" % recipient)
-                real_recipients.append(recipient)
-        return real_recipients
+                continue
+            recipient = format_address(person.displayname,
+                                       person.preferredemail.email)
+            self.logger.debug("Adding recipient: '%s'" % recipient)
+            valid_recipients.append(recipient)
+        return valid_recipients
 
     def build_summary(self):
         """List the files and build a summary as needed."""
@@ -747,6 +834,60 @@ class NascentUpload:
                         uploaded_file.section))
 
         return "\n".join(summary)
+
+    #
+    # Inserting stuff in the database
+    #
+
+    def create_objects_in_database(self):
+        """Insert this nascent upload into the database."""
+        if self.sourceful:
+            self.changes.dsc.create_source_package_release(self.changes)
+
+        if self.binaryful and not self.single_custom:
+            # XXX: 
+            self.insert_binary_into_db()
+
+        # create a DRQ entry in new state
+        self.logger.debug("Creating a New queue entry")
+        distrorelease = self.policy.distrorelease
+        queue_root = distrorelease.createQueueEntry(self.policy.pocket,
+            self.changes.filename, self.changes.filecontents)
+
+        # Next, if we're sourceful, add a source to the queue
+        if self.sourceful:
+            queue_root.addSource(self.policy.sourcepackagerelease)
+        # If we're binaryful, add the build
+        if self.binaryful and not self.single_custom:
+            # We cannot rely on the distrorelease coming in for a binary
+            # release because it is always set to 'autobuild' by the builder.
+            # We instead have to take it from the policy which gets instructed
+            # by the buildd master during the upload.
+            # XXX: stop using the policy to shove things around
+            queue_root.pocket = self.policy.build.pocket
+            queue_root.addBuild(self.policy.build)
+        # Finally, add any custom files.
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, CustomUploadedFile):
+                queue_root.addCustom(
+                    self.librarian.create(
+                    uploaded_file.filename, uploaded_file.size,
+                    open(uploaded_file.full_filename, "rb"),
+                    uploaded_file.content_type),
+                    uploaded_file.custom_type)
+
+        # Stuff the queue item away in case we want it later
+        self.queue_root = queue_root
+
+        # if it is known (already overridden properly), move it
+        # to ACCEPTED state automatically
+        if not self.is_new:
+            if self.policy.autoApprove(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.setAccepted()
+            else:
+                self.logger.debug("Setting it to UNAPPROVED")
+                queue_root.setUnapproved()
 
     def find_build(self, archtag):
         """Find and return a build for the given archtag, cached on policy.
@@ -847,125 +988,4 @@ class NascentUpload:
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
             binary.addFile(library_file)
-
-    def insert_into_queue(self):
-        """Insert this nascent upload into the database."""
-        if self.sourceful:
-            self.changes.dsc.create_source_package_release(self.changes)
-
-        if self.binaryful and not self.single_custom:
-            # XXX: 
-            self.insert_binary_into_db()
-
-        # create a DRQ entry in new state
-        self.logger.debug("Creating a New queue entry")
-        distrorelease = self.policy.distrorelease
-        queue_root = distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes.filename, self.changes.filecontents)
-
-        # Next, if we're sourceful, add a source to the queue
-        if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
-        # If we're binaryful, add the build
-        if self.binaryful and not self.single_custom:
-            # We cannot rely on the distrorelease coming in for a binary
-            # release because it is always set to 'autobuild' by the builder.
-            # We instead have to take it from the policy which gets instructed
-            # by the buildd master during the upload.
-            # XXX: stop using the policy to shove things around
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
-        # Finally, add any custom files.
-        for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, CustomUploadedFile):
-                queue_root.addCustom(
-                    self.librarian.create(
-                    uploaded_file.filename, uploaded_file.size,
-                    open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
-
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
-
-        # if it is known (already overridden properly), move it
-        # to ACCEPTED state automatically
-        if not self.is_new:
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
-
-    def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
-                  announce_msg=announce_template):
-        """Accept the upload into the queue.
-
-        This *MAY* in extreme cases cause a database error and thus
-        actually end up with a rejection being issued. This could
-        occur, for example, if we have failed to validate the input
-        sufficiently and something trips a database validation
-        constraint.
-        """
-        if self.is_rejected:
-            self.reject("Alas, someone called do_accept when we're rejected")
-            return False, self.do_reject()
-        try:
-            interpolations = {
-                "MAINTAINERFROM": self.sender,
-                "SENDER": self.sender,
-                "CHANGES": self.changes.filename,
-                "SUMMARY": self.build_summary(),
-                "CHANGESFILE": guess_encoding(self.changes.filecontents),
-                "DISTRO": self.policy.distro.title,
-                "DISTRORELEASE": self.policy.distrorelease.name,
-                "ANNOUNCE": self.policy.announcelist,
-                "SOURCE": self.changes.source,
-                "VERSION": self.changes.version,
-                "ARCH": self.changes.architecture_line,
-                }
-            if self.changes.signer:
-                interpolations['MAINTAINERFROM'] = self.changes.changed_by['rfc2047']
-
-            recipients = self.build_recipients()
-
-            interpolations['RECIPIENT'] = ", ".join(recipients)
-            interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-
-            self.insert_into_queue()
-
-            # Unknown uploads
-            if self.is_new:
-                return True, [new_msg % interpolations]
-
-            # Known uploads
-
-            # UNAPPROVED uploads coming from 'insecure' policy only sends
-            # acceptance message.
-            if not self.policy.autoApprove(self):
-                interpolations["SUMMARY"] += (
-                    "\nThis upload awaits approval by a distro manager\n")
-                return True, [accept_msg % interpolations]
-
-            # Auto-APPROVED uploads to BACKPORTS skips announcement.
-            # usually processed with 'sync' policy
-            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
-                self.logger.debug(
-                    "Skipping announcement, it is a BACKPORT.")
-                return True, [accept_msg % interpolations]
-
-            # Fallback, all the rest comming from 'insecure', 'secure',
-            # and 'sync' policies should send acceptance & announcement
-            # messages.
-            return True, [
-                accept_msg % interpolations,
-                announce_msg % interpolations]
-
-        except Exception, e:
-            # Any exception which occurs while processing an accept will
-            # cause a rejection to occur. The exception is logged in the
-            # reject message rather than being swallowed up.
-            self.reject("Exception while accepting: %s" % e)
-            return False, self.do_reject()
 

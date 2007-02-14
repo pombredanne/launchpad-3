@@ -51,7 +51,7 @@ from email import message_from_string
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 from canonical.archivepublisher.nascentupload import (
-    NascentUpload, UploadError)
+    NascentUpload, FatalUploadError)
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 
@@ -233,7 +233,7 @@ class UploadProcessor:
             self.log.info("Processing upload %s" % upload.changes_filename)
 
             result = UploadStatusEnum.ACCEPTED
-            
+
             try:
                 upload.process()
             except UploadPolicyError, e:
@@ -241,7 +241,7 @@ class UploadProcessor:
                               "%s " % e)
                 self.log.debug("UploadPolicyError escaped upload.process",
                                exc_info=True)
-            except UploadError, e:
+            except FatalUploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
@@ -257,7 +257,7 @@ class UploadProcessor:
                 # with no email.
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
-                                
+
             if upload.rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
@@ -271,7 +271,7 @@ class UploadProcessor:
                                   "Aborting partial accept.")
                     self.ztm.abort()
                 self.sendMails(mails)
-                
+
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
