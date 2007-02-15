@@ -183,16 +183,49 @@ class BugContextMenu(ContextMenu):
 class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
 
+    custom_widget('searchtext', TextWidget, displayWidth=50)
     schema = IFrontPageBugTaskSearch
     field_names = ['searchtext', 'target']
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    @property
+    def target_css_class(self):
+        if self.target_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def target_error(self):
+        return self.getWidgetError('target')
+
     def initialize(self):
         LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
-        if not bug_id:
-            return
+        if bug_id:
+            self._redirectToBug(bug_id)
+        elif self.request.form.get('scope') == 'project':
+            self._validateTargetWidget()
+
+    def _validateTargetWidget(self):
+        try:
+            search_target = self.widgets['target'].getInputValue()
+        except InputErrors:
+            entered_name = self.request.form[self.widgets['target'].name]
+            self.setFieldError(
+                'target',
+                "There's no project named '%s' registered in Launchpad." %
+                    cgi.escape(entered_name))
+        else:
+            if search_target is None:
+                self.setFieldError(
+                    'target', "Please specify a project to search in.")
+
+
+    def _redirectToBug(self, bug_id):
+        """Redirect to the specified bug id."""
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]

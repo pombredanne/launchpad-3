@@ -31,6 +31,7 @@
                               <tr>
                                 <td style="text-align: right;">
                                   <input
+                                    tal:replace="structure view/widgets/searchtext"
                                     id="text"
                                     type="text"
                                     name="field.searchtext"
@@ -46,7 +47,9 @@
                                 </td>
                               </tr>
                               <tr>
-                                <td style="text-align: right;">
+                                <td tal:attributes="class view/target_css_class|nothing"
+                                    style="text-align: right;">
+                                 <div>
                                   <label>
                                     <input
                                       name="scope"
@@ -61,21 +64,34 @@
                                       name="scope"
                                       type="radio"
                                       value="project"
-                                      onclick="document.getElementById('project').focus();"
+                                      onclick="document.getElementById('field.target').focus();"
                                     />
                                     One project:
                                     <input
-                                      id="project"
-                                      name="field.target"
+                                      tal:define="widget_name view/widgets/target/name"
+                                      tal:attributes="
+                                        value view/request/form/?widget_name|nothing;
+                                        id widget_name;
+                                        name widget_name;"
                                       type="text"
                                     />
                                   </label>
+                                 </div>
+                                 <div class="message"
+                                      tal:condition="view/target_error"
+                                      tal:content="structure view/target_error">
+                                    Error message
+                                  </div>
                                 </td>
                                 <td>(<a tal:attributes="href view/widgets/target/popupHref">Choose&hellip;</a>)</td>
                               </tr>
                             </tbody>
                           </table>
                           <div>
+                          <script type="text/javascript"
+                                  tal:define="script view/focusedElementScript"
+                                  tal:condition="script"
+                                  tal:content="structure script" />
                         </form>
                         <p id="application-summary">
                           Launchpad&rsquo;s bug tracker allows collaboration

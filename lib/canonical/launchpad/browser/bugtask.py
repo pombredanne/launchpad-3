@@ -1747,17 +1747,28 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
+        if self.request.form.get('scope') == 'project':
+            self._redirectToSearchContext()
+
+    def _redirectToSearchContext(self):
         try:
             search_target = self.target_widget.getInputValue()
-        except InputErrors
+        except InputErrors:
+            query_string = self.request['QUERY_STRING']
+            bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
+            self.request.response.redirect(bugs_url)
             # XXX: Should redirect to the front page again, and handle
             # the error there.
-            pass
         else:
-            query_string = self.request['QUERY_STRING']
-            search_url = "%s/+bugs?%s" % (
-                canonical_url(search_target), query_string)
-            self.request.response.redirect(search_url)
+            if search_target is None:
+                query_string = self.request['QUERY_STRING']
+                bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
+                self.request.response.redirect(bugs_url)
+            else:
+                query_string = self.request['QUERY_STRING']
+                search_url = "%s/+bugs?%s" % (
+                    canonical_url(search_target), query_string)
+                self.request.response.redirect(search_url)
 
     def getSearchPageHeading(self):
         return "Search all bug reports"
