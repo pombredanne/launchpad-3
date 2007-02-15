@@ -4,7 +4,8 @@
 
 __metaclass__ = type
 
-__all__ = ["IBugBranch"]
+__all__ = ["IBugBranch",
+           "IBugBranchSet"]
 
 from zope.interface import Interface
 from zope.schema import Int, Text, TextLine, Choice
@@ -32,3 +33,14 @@ class IBugBranch(IHasDateCreated, IHasBug):
         description=_(
             'Additional information about the status of the bugfix '
             'in this branch.'))
+
+class IBugBranchSet(Interface):
+
+    def getBugBranchesForBranches(branches):
+        """Return a sequence of IBugBranch instances associated with
+        the given branches."""
+
+    def getBugBranchesForBugTasks(tasks):
+        """Return a sequence of IBugBranch instances associated with
+        the bugs for the given tasks."""
+        

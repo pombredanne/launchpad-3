@@ -14,6 +14,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
@@ -52,7 +53,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus, PackagePublishingStatus)
 
@@ -82,6 +83,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
@@ -837,7 +840,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
+            members, owner, gotchi, gotchi_heading, emblem):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -849,5 +852,6 @@ class DistributionSet:
             mirror_admin=owner,
             owner=owner,
             gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=emblem)
 

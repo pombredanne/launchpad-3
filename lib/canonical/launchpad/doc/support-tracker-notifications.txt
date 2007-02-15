@@ -51,14 +51,21 @@ sent:
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
-    "[Support #...]: Can't install Ubuntu"
+    "[Question #...]: Can't install Ubuntu"
     >>> notification_body = add_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    New support request #... on Ubuntu:
+    New question #... on Ubuntu:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
+
+The notification also includes a 'X-Launchpad-Question' header that
+contains information about the ticket.
+
+    >>> print add_notification['X-Launchpad-Question']
+    distribution=ubuntu; sourcepackage=None; status=Open;
+    assignee=None; priority=Normal; language=en
 
 Register the Ubuntu Team as Ubuntu's support contact, so that they get
 notified about the changes as well:
@@ -105,8 +112,10 @@ Foo Bar, and one to Ubuntu Team:
 
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print edit_notification['Subject']
+    [Question #...]: Installer doesn't work on a Mac
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     Summary changed to:
@@ -141,6 +150,8 @@ After receiving that notification, Foo Bar unassigned himself:
 
 == Bug Linking and Unlinking Notifications ==
 
+=== Bug link Notification ===
+
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
 
@@ -164,14 +175,64 @@ bug that has been linked to the request:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
-        Linked to bug: #11
-        http://.../bugs/11
+        Linked to bug: #...
+        http://.../bugs/...
     <BLANKLINE>
 
-And if we remove the link again, we get:
+=== Linked Bug Status Changed Notification ===
+
+While a bug is linked to a ticket, its subscribers will be notified
+of changes to the bug status:
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> bugtask = bug.bugtasks[0]
+    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
+    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> bugtask.statusexplanation = 'This bug really happened to me.'
+    >>> notify(SQLObjectModifiedEvent(
+    ...     bugtask, original_bugtask, ['status', 'statusexplanation']))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+    >>> [notification['To'] for notification in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notifications[0]['Subject']
+    [Support #...]: Status of bug #... changed to 'Confirmed' in Ubuntu
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Bug #... status changed in Ubuntu:
+    <BLANKLINE>
+        Unconfirmed => Confirmed
+    <BLANKLINE>
+    Status change explanation given by No Privileges Person:
+    <BLANKLINE>
+    This bug really happened to me.
+    <BLANKLINE>
+    http://.../ubuntu/+bug/...
+    <BLANKLINE>
+    --
+    You received this email because you are a subscriber of ticket #...
+    which is linked to this bug.
+    Installer doesn't work on a Mac
+    http://.../ubuntu/+ticket/...
+
+Only a change in status triggers a notification.
+
+    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
+    >>> bugtask.transitionToAssignee(sample_person)
+    >>> notify(SQLObjectModifiedEvent(
+    ...     bugtask, original_bugtask, ['assignee', 'dateassigned']))
+
+    >>> len(pop_notifications())
+    0
+
+=== Bug Unlinked Notification ===
+
+A notification is also sent when a bug is unlinked from the ticket:
 
     >>> unmodified_ticket = Snapshot(ubuntu_ticket,
     ...     providing=providedBy(ubuntu_ticket))
@@ -187,7 +248,7 @@ And if we remove the link again, we get:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Removed link to bug: #11
@@ -208,7 +269,7 @@ workflow action done.
     ['support@ubuntu.com', 'test@canonical.com']
     >>> support_notification = notifications[0]
     >>> support_notification['Subject']
-    "[Support #...]: Re: Installer doesn't work on a Mac"
+    "Re: [Question #...]: Installer doesn't work on a Mac"
 
 For workflow notifications, the content of the notification is slightly
 different based on whether you are the request owner or somebody else.
@@ -218,7 +279,7 @@ subscribers except the request owner will look like this:
 
     >>> notification_body = support_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Needs information
@@ -232,7 +293,7 @@ an extra footer.
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Needs information
@@ -259,20 +320,28 @@ a notification.
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Needs information => Open
     <BLANKLINE>
-    Sample Person gave more information on the request:
+    Sample Person gave more information on the question:
     A PowerMac 7200.
     <BLANKLINE>
+
+The notification for new messages on the ticket contain a 'References'
+header to the previous message for threading purpose.
+
+    >>> print notifications[0]['References']
+    <...>
+    >>> notifications[0]['References'] == ubuntu_ticket.messages[-2].rfc822msgid
+    True
 
 We already saw the notifications sent for the requestInfo() and
 giveInfo() transitions, let's see the other ones.
 
-    (Subscribe the owner back, to compare the different notifications
-    sent)
+    # Subscribe the owner back, to compare the different notifications
+    # sent.
     >>> ubuntu_ticket.subscribe(sample_person)
     <TicketSubscription ...>
 
@@ -290,12 +359,12 @@ Default notification when the request is expired:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Expired
     <BLANKLINE>
-    No Privileges Person expired the request:
+    No Privileges Person expired the question:
     Expired because of no recent activity.
     <BLANKLINE>
 
@@ -303,16 +372,16 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Expired
     <BLANKLINE>
-    No Privileges Person expired the request:
+    No Privileges Person expired the question:
     Expired because of no recent activity.
     <BLANKLINE>
     _______________________________________________________________________
-    If you're still having this problem, you can reopen your request either
+    If you're still having this problem, you can reopen your question either
     by replying to this email or by going to the following page and
     entering more information about your problem:
     http://.../ubuntu/+ticket/...
@@ -321,22 +390,35 @@ Notification received by the owner:
 === Notifications for reopen() ===
 
 (This example will also show that comments are wrapped for 72 columns
-display)
+display.)
 
     >>> login('test@canonical.com')
-    >>> message = ubuntu_ticket.reopen(
-    ...     "I really need some help. I tried googling a bit but didn't find "
-    ...     "anything useful.\n\nPlease provide some help to a newbie.")
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> email_msg = getUtility(IMessageSet).fromText(
+    ...     subject=(
+    ...         "Re: [Question %d]: Installer doesn't work on "
+    ...         "a Mac" % ubuntu_ticket.id),
+    ...     content=(
+    ...         "I really need some help. I tried googling a bit but didn't "
+    ...         "find anything useful.\n\nPlease provide some help to a "
+    ...         "newbie."),
+    ...     owner=sample_person)
+    >>> message = ubuntu_ticket.reopen(email_msg)
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
 
+Notice also how the 'Re' handling is handled nicely:
+
+    >>> print notifications[0]['Subject']
+    Re: [Question #...]: Installer doesn't work on a Mac
+
 Default notification when the owner reopens the request:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Expired => Open
@@ -352,7 +434,7 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Expired => Open
@@ -383,7 +465,7 @@ Default notification when an answer is proposed:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Answered
@@ -401,7 +483,7 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Open => Answered
@@ -415,11 +497,11 @@ Notification received by the owner:
     all the details.
     <BLANKLINE>
     _______________________________________________________________________
-    If this answers your request, please go to the following page to let us
+    If this answers your question, please go to the following page to let us
     know that it is solved:
     http://.../ubuntu/+ticket/.../+confirm?answer_id=...
     <BLANKLINE>
-    If you still need support, you can reply to this email or go to the
+    If you still need help, you can reply to this email or go to the
     following page to enter your feedback:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
@@ -439,12 +521,12 @@ Default notification when the owner confirms an answer:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Answered => Solved
     <BLANKLINE>
-    Sample Person confirmed that the request is solved:
+    Sample Person confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
 
@@ -452,12 +534,12 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Answered => Solved
     <BLANKLINE>
-    You confirmed that the request is solved:
+    You confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
 
@@ -476,7 +558,7 @@ Default notification when a comment is posted:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
@@ -488,7 +570,7 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
@@ -511,12 +593,12 @@ Default notification when the request is rejected:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Solved => Invalid
     <BLANKLINE>
-    Foo Bar rejected the request:
+    Foo Bar rejected the question:
     Yeah! It will be awfully slow.
     <BLANKLINE>
 
@@ -524,12 +606,12 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Solved => Invalid
     <BLANKLINE>
-    Foo Bar rejected the request:
+    Foo Bar rejected the question:
     Yeah! It will be awfully slow.
     <BLANKLINE>
     _______________________________________________________________________
@@ -553,12 +635,12 @@ Default notification when somebody changes the status:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #... on Ubuntu changed:
+    Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Invalid => Solved
     <BLANKLINE>
-    Foo Bar changed the request status:
+    Foo Bar changed the question status:
     The rejection was a mistake.
     <BLANKLINE>
 
@@ -566,12 +648,12 @@ Notification received by the owner:
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
         Status: Invalid => Solved
     <BLANKLINE>
-    Foo Bar changed the request status:
+    Foo Bar changed the question status:
     The rejection was a mistake.
     <BLANKLINE>
 
@@ -642,7 +724,7 @@ receive notifications related to it.
 
     >>> from email.Header import decode_header, make_header
     >>> unicode(make_header(decode_header(notifications[0]['Subject'])))
-    u'[Support #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
+    u'[Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
 
 Similarly, when a ticket in a non-English language is modified or its
 status changed, only the subscribers speaking that language will receive
@@ -675,12 +757,12 @@ sent to the support list about that request:
      'test@canonical.com']
 
     >>> notifications[0]['Subject']
-    "[Support #...]: (French) Impossible d'installer Ubuntu"
+    "[Question #...]: (French) Impossible d'installer Ubuntu"
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    A support request was filed in a language (French) spoken by
-    none of the registered Ubuntu support contacts.
+    A question was asked in a language (French) spoken by
+    none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     http://.../ubuntu/+ticket/...
 
@@ -688,7 +770,7 @@ The notification received by the ticket owner contain a warning that
 the request is in a language spoken by none of the support contacts:
 
     >>> notifications[-1]['Subject']
-    "[Support #...]: Impossible d'installer Ubuntu"
+    "[Question #...]: Impossible d'installer Ubuntu"
 
     # Define a function that will replace non-ascii character with
     # its unicoded encoded value.
@@ -701,14 +783,14 @@ the request is in a language spoken by none of the support contacts:
 
     >>> notification_body = escape_utf8_payload(notifications[-1])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    New support request #... on Ubuntu:
+    New question #... on Ubuntu:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     Le CD ne semble pas fonctionn\xe9.
     <BLANKLINE>
     _______________________________________________________________________
-    WARNING: This support request is filed in a language (French)
-    spoken by none of the registered Ubuntu support contacts.
+    WARNING: This question is asked in a language (French)
+    spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
 
 No notification will be sent to the support contacts when this ticket is
@@ -727,15 +809,15 @@ warning appended to it.
 
     >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Your support request #... on Ubuntu changed:
+    Your question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
     Summary changed to:
     CD d'Ubuntu ne d\xe9marre pas
     <BLANKLINE>
     _______________________________________________________________________
-    WARNING: This support request is filed in a language (French)
-    spoken by none of the registered Ubuntu support contacts.
+    WARNING: This question is asked in a language (French)
+    spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
 
 === Localized Support Requests and Teams ===

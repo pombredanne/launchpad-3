@@ -10,7 +10,6 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
-           'ProductSeriesAppointDriverView',
            'ProductSeriesSourceView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
@@ -19,23 +18,21 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
-import re
 
 from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    browserLanguages, check_permission, is_tar_filename, request_languages)
+    browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, validate_url, IProductSeries,
+    ISourcePackageNameSet, IProductSeries,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -47,6 +44,8 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -119,7 +118,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
@@ -431,14 +430,6 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-
-class ProductSeriesAppointDriverView(SQLObjectEditView):
-    """View class that lets you appoint a driver for a ProductSeries object."""
-
-    def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):

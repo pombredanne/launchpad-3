@@ -586,7 +586,6 @@ Construct a new upload for universe/misc and a lot of errors ;)
   usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
   Unable to find source package usplash/0.1-22 in hoary
   usplash: Unable to find arch: powerpc
-  usplash: Unable to find arch: powerpc
   Signer has no upload rights at all to this distribution.
   Alas, someone called do_accept when we're rejected
   <BLANKLINE>

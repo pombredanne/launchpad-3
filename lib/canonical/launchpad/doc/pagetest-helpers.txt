@@ -8,7 +8,7 @@ page tests in the starting namespace.
 
   >>> from canonical.launchpad.ftests.test_pages import (
   ...     find_tag_by_id, find_tags_by_class, find_portlet,
-  ...     find_main_content, extract_text)
+  ...     find_main_content, extract_text, parse_relationship_section)
 
 Each of these functions returns a BeautifulSoup "Tag" instance (or a
 list of such instances in the case of find_tags_by_class).  Printing
@@ -190,6 +190,7 @@ be used to do this:
   Main content area
   ...
 
+
 == extract_text ==
 
 Sometimes we are just interested in a portion of text that is displayed
@@ -197,8 +198,46 @@ to the end user, and we don't want necessarily to check how the text
 is displayed (ie. bold, italics, coloured et al).
 
 The extract_text method is often used in conjunction with the other
-find_xxx helper methods to identify the text to display.
+find_xxx helper methods to identify the text to display.  This is due
+to the function taking a BeautifulSoup instance as a parameter rather
+than a plain string.
 
   >>> print extract_text(find_portlet(content, 'Portlet 2'))
   Portlet 2 Contents of portlet 2
 
+
+== parse_relationship_section ==
+
+Since the code to render Package Relationship is consolidated in one
+place, a method to parse this section and check built-in features was
+also created.
+
+This method is able to parse a rendered relationship_section and print
+a list of isolated attributes for each mentioned item.
+
+  >>> content = '''
+  ... <html>
+  ...   <ul>
+  ...     <li>
+  ...        <a href="somewhere">
+  ...          linked_item
+  ...        </a>
+  ...     </li>
+  ...     <li>
+  ...          not_linked_item
+  ...     </li>
+  ...     <li>
+  ...        <a href="somewhereelse">
+  ...          linked with spaces
+  ...        </a>
+  ...     </li>
+  ...     <li>
+  ...          text with spaces
+  ...     </li>
+  ... '''
+
+  >>> parse_relationship_section(content)
+  LINK: "linked_item" -> somewhere
+  TEXT: "not_linked_item"
+  LINK: "linked with spaces" -> somewhereelse
+  TEXT: "text with spaces"

@@ -108,11 +108,33 @@
     </p>
 
           </div>
-          <div tal:condition="context/isTeam" class="demo section">
+          <div tal:condition="context/isTeam">
             <h2>Recently approved</h2>
+              <ul tal:condition="view/recently_approved_members">
+                <li class="person"
+                    tal:repeat="person view/recently_approved_members">
+                  <a tal:attributes="href person/fmt:url"
+                     tal:content="person/unique_displayname"
+                  >Foo Bar (name16)</a>
+                </li>
+                <p tal:condition="not: view/recently_approved_members">
+                  This team has no approved members.
+                </p>
+              </ul>
           </div>
-          <div tal:condition="context/isTeam" class="demo section">
+          <div tal:condition="context/isTeam">
             <h2>Recently applied</h2>
+              <ul tal:condition="view/recently_proposed_members">
+                <li class="person"
+                    tal:repeat="person view/recently_proposed_members">
+                  <a tal:attributes="href person/fmt:url"
+                     tal:content="person/unique_displayname"
+                  >Foo Bar (name16)</a>
+                </li>
+                <p tal:condition="not: view/recently_proposed_members">
+                  This team has no applicants.
+                </p>
+              </ul>
           </div>
         </div>
         <div class="right">
@@ -184,7 +206,8 @@
               </tbody>
             </table>
           </div>
-          <div tal:condition="not:context/isTeam" id="working-on"
+          <div tal:condition="not:context/isTeam"
+               id="working-on" class="section"
                tal:define="bugtasks view/getBugsInProgress;
                            specs context/assigned_specs_in_progress">
             <h2>Working on&#8230;</h2>
@@ -193,10 +216,7 @@
                 <div><a tal:attributes="href bugtask/fmt:url">
                 <span tal:replace="
                       string: ${bugtask/bug/id}. ${bugtask/bug/title}" /></a>
-                </div>
-                <div>
-                <span tal:content="
-                  string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
+                <span tal:content="string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
                 </div>
               </li>
             </ul>
@@ -227,25 +247,67 @@
           </div>
           <div tal:condition="context/isTeam" class="section">
             <h2>Subteam of</h2>
-              <p tal:condition="not:context/getSuperTeams">
 
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
-        itself is not a member of any other team.
-      </p>
+            <p tal:condition="not:context/getSuperTeams">
+              &#8220;<span tal:replace="context/browsername"/>&#8221;
+              itself is not a member of any other team.
+            </p>
 
-              <tal:block condition="context/getSuperTeams">
+            <tal:block condition="context/getSuperTeams">
+              <p>
+                &#8220;<span tal:replace="context/browsername"/>&#8221;
+                is a member of these teams:
+              </p>
+              <ul>
+                <li tal:repeat="team context/getSuperTeams">
+                  <a tal:attributes="href team/fmt:url"
+                     tal:content="team/browsername">name</a>
+                </li>
+              </ul>
+            </tal:block>
 
-        <p>
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          is a member of these teams:
-        </p>
-        <ul>
-          <li tal:repeat="team context/getSuperTeams">
-            <a tal:attributes="href team/fmt:url"
-               tal:content="team/browsername">name</a>
-          </li>
-        </ul>
-      </tal:block>
+            <h2>Your involvement</h2>
+
+            <p tal:condition="not: request/lp:person">
+              You must <a href="+login">log in</a>
+              to join or leave this team.
+            </p>
+            <tal:block condition="request/lp:person">
+              <tal:block condition="view/userIsOwner">
+                <p tal:condition="view/userIsActiveMember">
+                  You are the owner of this team.
+                </p>
+                <p tal:condition="not: view/userIsActiveMember">
+                  You are the owner of this team,
+                  but not currently an active member.
+                </p>
+              </tal:block>
+              <tal:block condition="not: view/userIsOwner">
+                <p tal:condition="view/userIsActiveMember">
+                  You are a member of this team.
+                </p>
+                <p tal:condition="not: view/userIsActiveMember">
+                  <tal:foo tal:condition="not: view/userIsParticipant">
+                    You are not a member of this team.
+                  </tal:foo>
+                  <tal:foo tal:condition="view/userIsParticipant">
+                    You are an indirect member of this team:
+                    <br />
+                    <a tal:attributes="href view/user/fmt:url"
+                       tal:content="view/user/displayname">
+                      Guilherme Salgado
+                    </a>
+                    <tal:path repeat="team view/findUserPathToTeam">
+                      &rarr;
+                      <a tal:attributes="href team/fmt:url"
+                         tal:content="team/displayname">
+                        Launchpad Developers
+                      </a>
+                    </tal:path>
+                  </tal:foo>
+                </p>
+              </tal:block>
+            </tal:block>
 
           </div>
         </div>
@@ -292,4 +354,4 @@
 </div> 
 </body>
 </html>
-<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222), and recent members/applicants (bug 81226). -->
+<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222). -->
