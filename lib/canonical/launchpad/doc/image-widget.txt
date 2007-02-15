@@ -46,7 +46,7 @@ other radio button allows the user to upload a new image.
     >>> from BeautifulSoup import BeautifulSoup
     >>> html = widget()
     >>> print BeautifulSoup(html).find('img').get('src')
-    /@@/nyet-mugshot
+    /@@/person-mugshot
 
     >>> def print_radio_items(html):
     ...     soup = BeautifulSoup(html)

@@ -60,6 +60,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "so you cannot undo changes."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/distribution',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this distribution."))
@@ -67,12 +68,14 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/distribution-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to this distribution. It should "
             "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/distribution-heading',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this distribution's home page. It should be no bigger than 100k "

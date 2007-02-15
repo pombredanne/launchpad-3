@@ -120,6 +120,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
             "displayed for all the world to see."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/person',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
@@ -127,6 +128,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/person-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
@@ -134,6 +136,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
             "image of your mug. Make the most of it."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
+        default_image_resource='/@@/person-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "

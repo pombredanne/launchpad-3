@@ -428,17 +428,17 @@ class BaseImageUpload(Bytes):
     - max_dimensions: the maximun dimension of the image; a tuple of the
       form (width, height).
     - max_size: the maximun size of the image, in bytes.
-    - default_image_resource: the zope3 resource of the image that should be
-      used when the user hasn't yet provided one; should be a string of the
-      form /@@/<resource-name>
     """
 
     implements(IBaseImageUpload)
 
     max_dimensions = ()
     max_size = 0
-    default_image_resource = '/@@/nyet-mugshot'
 
+    def __init__(self, default_image_resource='/@@/nyet', **kw):
+        self.default_image_resource = default_image_resource
+        Bytes.__init__(self, **kw)
+ 
     def getCurrentImage(self):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")
