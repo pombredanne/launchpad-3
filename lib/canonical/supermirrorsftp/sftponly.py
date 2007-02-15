@@ -249,7 +249,7 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         def flag_as_dirty():
             self.branchDirtied(branchID)
         return flag_as_dirty
-    
+
     def branchDirtied(self, branchID):
         self._dirtyBranches.add(branchID)
 
