@@ -19,14 +19,14 @@ provide an RSS feed with information about all official release mirrors.
         ...
         <item>
           <title>Releases-mirror</title>
-          <link>http://localhost:11375/valid-mirror/releases</link>
+          <link>http://localhost:11375/valid-mirror/releases/</link>
           <description>...</description>
           <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
             <mirror:continent>Asia</mirror:continent>
             <mirror:country>British Indian Ocean Territory</mirror:country>
           </mirror:location>
-          <guid>http://localhost:11375/valid-mirror/releases</guid>
+          <guid>http://localhost:11375/valid-mirror/releases/</guid>
         </item>
         <item>
         ...
