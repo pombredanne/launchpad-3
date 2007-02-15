@@ -543,8 +543,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False, exclude_pocket=None):
+    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+            pocket=None, include_pending=False, exclude_pocket=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -568,6 +568,9 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if version is not None:
+            queries.append("version=%s" % sqlvalues(version))
 
         if exclude_pocket is not None:
             queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
