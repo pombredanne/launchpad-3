@@ -48,7 +48,8 @@ from canonical.launchpad.webapp import (
     stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class DistributionNavigation(
@@ -397,8 +398,9 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'gotchi', 'emblem']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -438,11 +440,13 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "gotchi", "emblem", "domainname", "members"]
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -452,8 +456,8 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

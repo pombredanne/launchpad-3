@@ -82,7 +82,8 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
+from canonical.widgets import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -1896,7 +1897,8 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
 
 
 class TeamJoinView(PersonView):

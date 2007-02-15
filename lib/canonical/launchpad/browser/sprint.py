@@ -36,7 +36,8 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -192,8 +193,9 @@ class SprintAddView(LaunchpadFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
 
     sprint = None
 
@@ -214,6 +216,7 @@ class SprintAddView(LaunchpadFormView):
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         self.sprint = getUtility(ISprintSet).new(
             owner=self.user,
             name=data['name'],
@@ -224,7 +227,8 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         self.request.response.addInfoNotification('Sprint created.')
 
@@ -246,8 +250,9 @@ class SprintEditView(LaunchpadEditFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

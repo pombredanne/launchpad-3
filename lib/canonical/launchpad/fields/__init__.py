@@ -460,12 +460,12 @@ class BaseImageUpload(Bytes):
             raise LaunchpadValidationError(_(dedent("""
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
-            image = PIL.Image.open(StringIO(image))
+            pil_image = PIL.Image.open(StringIO(image))
         except IOError:
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
-        width, height = image.size
+        width, height = pil_image.size
         max_width, max_height = self.max_dimensions
         if width > max_width or height > max_height:
             raise LaunchpadValidationError(_(dedent("""
@@ -484,6 +484,9 @@ class BaseImageUpload(Bytes):
             Bytes.set(self, object, value)
 
 
+# XXX: I'll rename this field on the following iteration (which is going to
+# hapen before this branch lands); I just don't want to do it now because this
+# branch is quite big already. -- Guilherme Salgado 2007-02-14
 class LargeImageUpload(BaseImageUpload):
 
     # The max dimensions here is actually a bit bigger than the advertised
@@ -493,10 +496,20 @@ class LargeImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+    def set(self, object, value):
+        assert isinstance(value, (list, tuple))
+        original_img, small_img = value
+        if original_img is not KEEP_SAME_IMAGE:
+            assert small_img is not KEEP_SAME_IMAGE
+            BaseImageUpload.set(self, object, original_img)
+            object.gotchi_heading = small_img
+        else:
+            assert small_img is KEEP_SAME_IMAGE
+
 
 class SmallImageUpload(BaseImageUpload):
 
-    max_dimensions = (64, 64)
-    max_size = 25*1024
+    max_dimensions = (16, 16)
+    max_size = 10*1024
     default_image_resource = '/@@/nyet-mini'
 

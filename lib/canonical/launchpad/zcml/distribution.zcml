@@ -16,7 +16,8 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin homepage_content emblem gotchi"
+                            mirror_admin homepage_content emblem gotchi
+                            gotchi_heading"
             />
         <!-- ITicketTarget -->
         <allow attributes="getTicket searchTickets findSimilarTickets
