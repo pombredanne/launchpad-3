@@ -22,7 +22,8 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
     IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
-    ILaunchpadCelebrities, IMessage, IPerson, IQuestion, IQuestionSet,
+    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
+    IQuestionSet,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -571,7 +572,13 @@ class QuestionSearch:
         constraints = []
 
         if self.product:
-            constraints.append('Ticket.product = %s' % sqlvalues(self.product))
+            # We accept either a product or an iterable of products.
+            if IProduct.providedBy(self.product):
+                constraints.append(
+                    'Ticket.product = %s' % sqlvalues(self.product))
+            else:
+                constraints.append('Ticket.product IN (%s)' % ", ".join(
+                    sqlvalues(*self.product)))
         elif self.distribution:
             constraints.append(
                 'Ticket.distribution = %s' % sqlvalues(self.distribution))

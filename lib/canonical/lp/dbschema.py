@@ -1627,67 +1627,62 @@ class ImportStatus(DBSchema):
     on."""
 
     DONTSYNC = Item(1, """
-        Do Not Sync
+        Do Not Import
 
-        We do not want to attempt to test or sync this upstream repository
-        or branch. The ProductSeries can be set to DONTSYNC from any state
-        other than SYNCING. Once it is Syncing, it can be STOPPED but should
-        not be set to DONTSYNC. This prevents us from forgetting that we
-        were at one stage SYNCING the ProductSeries.  """)
+        Launchpad will not attempt to make a Bazaar import.
+        """)
 
     TESTING = Item(2, """
         Testing
 
-        New entries should start in this mode. We will try to import the
-        given upstream branch from CVS or SVN automatically. When / if this
-        ever succeeds it should set the status to AUTOTESTED.  """)
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
 
     TESTFAILED = Item(3, """
         Test Failed
 
-        This sourcesource has failed its test import run. Failures can be
-        indicative of a problem with the RCS server, or a problem with the
-        actual data in their RCS system, or a network error.""")
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
 
     AUTOTESTED = Item(4, """
-        Auto Tested
+        Test Successful
 
-        The automatic testing system ("roomba") has successfully imported
-        and in theory verified its import of the upstream revision control
-        system. This ProductSeries is a definite candidate for manual review
-        and should be switched to PROCESSING.  """)
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
 
     PROCESSING = Item(5, """
         Processing
 
-        This ProductSeries is nearly ready for syncing. We will run it
-        through the official import process, and then manually review the
-        results. If they appear to be correct, then the
-        ProductSeries.bazimportstatus can be set to SYNCING.  """)
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
     SYNCING = Item(6, """
-        Syncing
+        Online
 
-        This ProductSeries is in Sync mode and SHOULD NOT BE EDITED OR
-        CHANGED.  At this point, protection of the data related to the
-        upstream revision control system should be extreme, with only
-        launchpad.Special (in this case the vcs-imports team) able to affect
-        these fields. If it is necessary to stop the syncing then the status
-        must be changed to STOPPED, and not to DONTSYNC.  """)
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
 
     STOPPED = Item(7, """
         Stopped
 
-        This state is used for ProductSeries that were in SYNCING mode and
-        it was necessary to stop the sync activity. For example, when an
-        upstream uses the same branch for versions 1, 2 and 3 of their
-        product, we should put the ProductSeries into STOPPED after each
-        release, create a new ProductSeries for the next version with the
-        same branch details for upstream revision control system. That way,
-        if they go back and branch off the previous release tag, we can
-        amend the previous ProductSeries.  In theory, a STOPPED
-        ProductSeries can be set to Sync again, but this requires serious
-        Bazaar fu, and the vcs-imports team.  """)
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
 
 class SourcePackageFileType(DBSchema):

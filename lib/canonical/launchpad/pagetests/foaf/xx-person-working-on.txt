@@ -54,5 +54,6 @@ Which obviously contains only the above two bugs we changed statuses.
     >>> for link in table.findAll('a'):
     ...     print link.renderContents()
     Firefox install instructions should be complete
+    <img src="/@@/branch" />
     Blackhole Trash folder
 

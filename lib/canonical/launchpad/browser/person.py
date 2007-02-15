@@ -2497,7 +2497,7 @@ class PersonSearchQuestionsView(SearchQuestionsView):
     involved.
     """
 
-    displayTargetColumn = True
+    display_target_column = True
 
     @property
     def pageheading(self):
@@ -2516,7 +2516,7 @@ class PersonSearchQuestionsView(SearchQuestionsView):
 class SearchAnsweredQuestionsView(SearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
@@ -2539,7 +2539,7 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
 class SearchAssignedQuestionsView(SearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
@@ -2562,7 +2562,7 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
 class SearchCommentedQuestionsView(SearchQuestionsView):
     """View used to search and display questions commented on by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
@@ -2585,7 +2585,7 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
 class SearchCreatedQuestionsView(SearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
@@ -2608,7 +2608,7 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
 class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     """View used to search and display questions needing an IPerson attention."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
@@ -2630,7 +2630,7 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
 class SearchSubscribedQuestionsView(SearchQuestionsView):
     """View used to search and display questions subscribed to by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""

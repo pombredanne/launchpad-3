@@ -150,6 +150,8 @@ After receiving that notification, Foo Bar unassigned himself:
 
 == Bug Linking and Unlinking Notifications ==
 
+=== Bug link Notification ===
+
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
 
@@ -176,11 +178,61 @@ bug that has been linked to the request:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
-        Linked to bug: #11
-        http://.../bugs/11
+        Linked to bug: #...
+        http://.../bugs/...
     <BLANKLINE>
 
-And if we remove the link again, we get:
+=== Linked Bug Status Changed Notification ===
+
+While a bug is linked to a question , its subscribers will be notified
+of changes to the bug status:
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> bugtask = bug.bugtasks[0]
+    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
+    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> bugtask.statusexplanation = 'This bug really happened to me.'
+    >>> notify(SQLObjectModifiedEvent(
+    ...     bugtask, original_bugtask, ['status', 'statusexplanation']))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+    >>> [notification['To'] for notification in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notifications[0]['Subject']
+    [Question #...]: Status of bug #... changed to 'Confirmed' in Ubuntu
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Bug #... status changed in Ubuntu:
+    <BLANKLINE>
+        Unconfirmed => Confirmed
+    <BLANKLINE>
+    Status change explanation given by No Privileges Person:
+    <BLANKLINE>
+    This bug really happened to me.
+    <BLANKLINE>
+    http://.../ubuntu/+bug/...
+    <BLANKLINE>
+    --
+    You received this email because you are a subscriber of question #...
+    which is linked to this bug.
+    Installer doesn't work on a Mac
+    http://.../ubuntu/+ticket/...
+
+Only a change in status triggers a notification.
+
+    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
+    >>> bugtask.transitionToAssignee(sample_person)
+    >>> notify(SQLObjectModifiedEvent(
+    ...     bugtask, original_bugtask, ['assignee', 'dateassigned']))
+
+    >>> len(pop_notifications())
+    0
+
+=== Bug Unlinked Notification ===
+
+A notification is also sent when a bug is unlinked from the ticket:
 
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))

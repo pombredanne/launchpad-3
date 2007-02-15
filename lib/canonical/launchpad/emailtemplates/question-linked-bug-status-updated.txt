@@ -1,0 +1,12 @@
+Bug #%(bug_id)s status changed in %(bugtask_target_name)s:
+
+    %(old_status)s => %(new_status)s
+
+%(statusexplanation)s
+%(bugtask_url)s
+
+--
+You received this email because you are a subscriber of 
+question #%(question_id)s which is linked to this bug.
+%(question_title)s
+%(question_url)s

@@ -716,7 +716,7 @@ class QuestionMessageDisplayView(LaunchpadView):
 class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     @property
     def pageheading(self):

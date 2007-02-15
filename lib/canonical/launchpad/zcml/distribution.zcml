@@ -292,18 +292,6 @@
         />
 
     <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
-        fields="driver"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
-
-    <browser:editform
         name="+uploadadmin"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"

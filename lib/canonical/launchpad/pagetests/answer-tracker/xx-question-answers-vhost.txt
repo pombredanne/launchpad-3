@@ -28,6 +28,13 @@ selected facet is the Answers facet.
     >>> print anon_browser.title
     Questions for Hoary mozilla-firefox
 
+== Project ==
+
+    >>> anon_browser.open(
+    ...     'http://answers.launchpad.dev/mozilla')
+    >>> print anon_browser.title
+    Questions for the Mozilla Project
+
 == Person ==
 
     >>> anon_browser.open('http://answers.launchpad.dev/~name16')
