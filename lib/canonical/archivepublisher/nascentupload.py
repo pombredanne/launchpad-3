@@ -266,8 +266,8 @@ class NascentUpload:
                 files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BinaryUploadFile):
                 files_binaryful = files_binaryful or True
-                files_archindep = files_archindep or uploaded_file.is_archindep()
-                files_archdep = files_archdep or not uploaded_file.is_archindep()
+                files_archindep = files_archindep or uploaded_file.is_archindep
+                files_archdep = files_archdep or not uploaded_file.is_archindep
             elif isinstance(uploaded_file, (SourceUploadFile, DSCFile)):
                 files_sourceful = True
             else:
@@ -504,12 +504,9 @@ class NascentUpload:
         """Return the published binaries (parents) for given file & pocket."""
         # Look up the binary package overrides in the relevant
         # distroarchrelease
-        binaryname = getUtility(IBinaryPackageNameSet).getOrCreateByName(
-            uploaded_file.package)
-
-        # XXX cprov 20060308: For god sake !!!!
-        # Cache the bpn for later.
-        uploaded_file.bpn = binaryname
+        binaryname = getUtility(IBinaryPackageNameSet).queryByName(uploaded_file.package)
+        if not binaryname:
+            return []
 
         try:
             dar = self.policy.distrorelease[archtag]

@@ -25,11 +25,11 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet)
+    IPersonSet, ISourcePackageNameSet)
 
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadedFile, re_no_epoch,
-    re_valid_pkg_name, re_valid_version, re_issource)
+    UploadWarning, UploadError, NascentUploadFile, PackageUploadFile,
+    re_no_epoch, re_valid_pkg_name, re_valid_version, re_issource)
 
 from canonical.archivepublisher.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError)
@@ -126,7 +126,7 @@ class SignableTagFile:
             }
 
 
-class DSCFile(NascentUploadedFile, SignableTagFile):
+class DSCFile(PackageUploadFile, SignableTagFile):
     """XXX"""
 
     mandatory_fields = set([
@@ -144,36 +144,27 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    def __init__(self, filename, digest, size, component_and_section,
-                 priority, package, version, type, fsroot, policy,
-                 logger):
+    def __init__(self, *args, **kwargs):
         """Construct a DSCFile instance. 
 
-        This takes all NascentUploadedFile constructor parameters plus package
+        This takes all NascentUploadFile constructor parameters plus package
         and version.
 
         Can raise UploadError.
         """
-        NascentUploadedFile.__init__(
-            self, filename, digest, size, component_and_section,
-            priority, fsroot, policy, logger)
-
-        self.package = package
-        self.version = version
-        self.type = type
-
+        PackageUploadFile.__init__(self, *args, **kwargs)
         try:
             self._dict = parse_tagfile(self.full_filename,
                 dsc_whitespace_rules=1,
-                allow_unsigned=policy.unsigned_dsc_ok)
+                allow_unsigned=self.policy.unsigned_dsc_ok)
         except TagFileParseError, e:
-            raise UploadError("Unable to parse the dsc %s: %s" % (filename, e))
+            raise UploadError("Unable to parse the dsc %s: %s" % (self.filename, e))
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
             if mandatory_field not in self._dict:
                 self.reject("Unable to find mandatory field %s in %s" % (
-                    mandatory_field, filename))
+                    mandatory_field, self.filename))
                 return False
 
         self.maintainer = self.parse_address(self._dict['maintainer'])
@@ -383,8 +374,6 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
 
     def store_in_database(self):
         spns = getUtility(ISourcePackageNameSet)
-        arg_component = getUtility(IComponentSet)[self.component]
-        arg_section = getUtility(ISectionSet)[self.section]
 
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
@@ -401,7 +390,7 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             builddependsindep=encoded.get('build-depends-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
             creator=self.changes.changed_by['person'],
-            urgency=self.changes.urgency,
+            urgency=self.changes.converted_urgency,
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
             manifest=None,
@@ -409,9 +398,9 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             dsc_format=encoded['format'],
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version', None),
-            component=arg_component,
+            component=self.converted_component,
             changelog=guess_encoding(self.changes.simulated_changelog),
-            section=arg_section,
+            section=self.converted_section,
             # dateuploaded by default is UTC:now in the database
             )
 
@@ -426,11 +415,11 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
         return release
 
 
-class DSCUploadedFile(NascentUploadedFile):
+class DSCUploadedFile(NascentUploadFile):
     """Represents a file referred to in a DSC.
 
     The DSC holds references to files, and it's easier to use regular
-    NascentUploadedFiles to represent them, since they are in many ways
+    NascentUploadFiles to represent them, since they are in many ways
     similar to a regular NU. However, there are the following warts:
         - Component, section and priority are set to a bogus value and
           do not apply.
@@ -440,7 +429,7 @@ class DSCUploadedFile(NascentUploadedFile):
     """
     def __init__(self, filename, digest, size, fsroot, policy, logger):
             component_and_section = priority = "--no-value--"
-            NascentUploadedFile.__init__(
+            NascentUploadFile.__init__(
                 self, filename, digest, size, component_and_section,
                 priority, fsroot, policy, logger)
 

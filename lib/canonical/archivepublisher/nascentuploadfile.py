@@ -16,7 +16,8 @@ from canonical.encoding import guess as guess_encoding
 from canonical.archivepublisher.utils import prefix_multi_line_string
 from canonical.librarian.utils import filechunks
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet)
+    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
+    IBinaryPackageNameSet)
 from canonical.lp.dbschema import (
     PackagePublishingPriority, DistroReleaseQueueCustomFormat, 
     DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
@@ -64,14 +65,12 @@ class TarFileDateChecker:
             self.ancient_files[Name] = MTime
 
 
-class NascentUploadedFile:
+class NascentUploadFile:
     """A nascent uploaded file is a file on disk that is part of an upload.
 
     The filename, along with information about it, is kept here.
     """
     new = False
-    # XXX: try and get rid of type
-    type = None
     sha_digest = None
 
     # Files need their content type for creating in the librarian.
@@ -189,7 +188,7 @@ class NascentUploadedFile:
         self.sha_digest = sha_cksum.hexdigest()
 
 
-class CustomUploadFile(NascentUploadedFile):
+class CustomUploadFile(NascentUploadFile):
     """XXX"""
 
     # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
@@ -223,11 +222,11 @@ class CustomUploadFile(NascentUploadedFile):
         return libraryfile
 
 
-class PackageUploadFile(NascentUploadedFile):
+class PackageUploadFile(NascentUploadFile):
     """XXX"""
 
     def __init__(self, filename, digest, size, component_and_section,
-                 priority, package, version, type, changes, fsroot, policy,
+                 priority, package, version, changes, fsroot, policy,
                  logger):
         """
         XXX
@@ -238,12 +237,11 @@ class PackageUploadFile(NascentUploadedFile):
         SourcePackageRelease creation, so component and section need to exist.
         Even if they might be overriden in the future.
         """
-        NascentUploadedFile.__init__(
+        NascentUploadFile.__init__(
             self, filename, digest, size, component_and_section,
             priority, fsroot, policy, logger)
         self.package = package
         self.version = version
-        self.type = type
         # XXX: to do away with this we need to find a way of receiving
         # the changes' architectures and binaries
         self.changes = changes
@@ -266,14 +264,23 @@ class PackageUploadFile(NascentUploadedFile):
                       % (self.section, default_section))
             self.section = default_section
 
+    @property
+    def converted_component(self):
+        return getUtility(IComponentSet)[self.component]
+
+    @property
+    def converted_section(self):
+        return getUtility(ISectionSet)[self.section]
+
     def verify(self):
         raise NotImplementedError
 
 
 class SourceUploadFile(PackageUploadFile):
-    """XXX"""
-    # XXX: we can probably get rid of this class altogether
-    # XXX: how does this differ from DSCUploadFile
+    """XXX
+
+    XXX: compare to DSCUploadFile
+    """
     def verify(self):
         """Verify the uploaded source file.
 
@@ -287,7 +294,7 @@ class SourceUploadFile(PackageUploadFile):
                 "Architecture field." % (self.filename))
 
         version_chopped = re_no_epoch.sub('', self.version)
-        if self.type == "orig.tar.gz":
+        if self.filename.endswith("orig.tar.gz"):
             version_chopped = re_no_revision.sub('', version_chopped)
 
         source_match = re_issource.match(self.filename)
@@ -298,12 +305,9 @@ class SourceUploadFile(PackageUploadFile):
 
 
 class UBinaryUploadFile(PackageUploadFile):
-    """XXX"""
-    # Capitalised because we extract direct from the deb/udeb where the
-    # other mandatory fields lists are lowercased by parse_tagfile
-    mandatory_fields = set([
-        "Package", "Architecture", "Version"
-        ])
+    """Represents an uploaded binary package file."""
+    # Capitalised because we extract these directly from the control file.
+    mandatory_fields = set(["Package", "Architecture", "Version"])
 
     # Map priorities to their dbschema valuesa
     # We treat a priority of '-' as EXTRA since some packages in some distros
@@ -319,18 +323,30 @@ class UBinaryUploadFile(PackageUploadFile):
 
     format = BinaryPackageFormat.UDEB
 
-    # sourcepackagerelease and architecture is divined when parsing the
-    # package file, and then used to locate or create the relevant
-    # build.
+    # control, sourcepackagerelease and architecture is divined when
+    # parsing the package file, and then used to locate or create the
+    # relevant build.
+    control = None
     sourcepackagerelease = None
     architecture = None
 
-    def __init__(self, XXX, changes):
-        self.changes = changes
-        self.convert_priority()
+    def __init__(self, *args, **kwargs):
+        PackageUploadFile.__init__(self, *args, **kwargs)
 
+        if self.priority not in self.priority_map:
+            default_priority = 'extra'
+            self.logger.warn(
+                 "Unable to grok priority %r, overriding it with %s"
+                 % (self.priority, default_priority))
+            self.priority = default_priority
+
+    #
+    #
+    #
+
+    @property
     def is_archindep(self):
-        return "XXX"
+        return self.architecture.lower() != 'all'
 
     @property
     def archtag(self):
@@ -339,22 +355,20 @@ class UBinaryUploadFile(PackageUploadFile):
             return self.changes.filename_archtag
         return archtag
 
-    def convert_priority(self):
+    @property
+    def version(self):
+        # XXX: why not just ensure that the version I think I am is the
+        # same as in the control in verify()?
+        return self.control['Version']
+
+    @property
+    def converted_priority(self):
         """Checks whether the priority indicated is valid"""
+        return self.priority_map[self.priority]
 
-        # XXX: doesn't this need to be mapped for sources?
-        # XXX: can't we do this on the fly?
-
-        if self.priority in self.priority_map:
-            # map priority tag to dbschema
-            priority = self.priority_map[self.priority]
-        else:
-            default_priority = self.priority_map['extra']
-            self.warn("Unable to grok priority %r, overriding it with %s"
-                      % (self.priority, default_priority))
-            priority = default_priority
-
-        self.priority = priority
+    #
+    #
+    #
 
     def verify(self):
         """Verify the contents of the .deb or .udeb as best we can.
@@ -651,50 +665,56 @@ class UBinaryUploadFile(PackageUploadFile):
 
     def store_in_database(self, build):
         """Insert this binary release and build into the database."""
-        desclines = uploaded_file.control['Description'].split("\n")
+        bpns = getUtility(IBinaryPackageNameSet)
+
+        # Reencode everything we are supplying, because old packages
+        # contain latin-1 text and that sucks.
+        encoded = {}
+        for k, v in self.control.items():
+            encoded[k] = guess_encoding(v)
+
+        desclines = encoded['Description'].split("\n")
         summary = desclines[0]
         description = "\n".join(desclines[1:])
-        component = getUtility(IComponentSet)[uploaded_file.component]
-        section = getUtility(ISectionSet)[uploaded_file.section]
-        # Also remember the control data for the uploaded file
-        control = uploaded_file.control
-        binary = build.createBinaryPackageRelease(
-            binarypackagename=uploaded_file.bpn,
-            version=uploaded_file.control['Version'],
-            summary=guess_encoding(summary),
-            description=guess_encoding(description),
-            binpackageformat=uploaded_file.format,
-            component=component,
-            section=section,
-            priority=uploaded_file.priority,
-            # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
-            # bug 3160
-            shlibdeps='',
-            depends=guess_encoding(control.get('Depends', '')),
-            recommends=guess_encoding(control.get('Recommends', '')),
-            suggests=guess_encoding(control.get('Suggests', '')),
-            conflicts=guess_encoding(control.get('Conflicts', '')),
-            replaces=guess_encoding(control.get('Replaces', '')),
-            provides=guess_encoding(control.get('Provides', '')),
-            essential=uploaded_file.control.get('Essential',
-                                                '').lower()=='yes',
-            installedsize=int(control.get('Installed-Size','0')),
-            # XXX: dsilvers: 20051014: erm, source should have a copyright
-            # but not binaries. bug 3161
-            copyright='',
-            licence='',
-            architecturespecific=control.get("Architecture",
-                                             "").lower()!='all'
-            ) # the binarypackagerelease constructor
 
-        library_file = self.librarian.create(
-            uploaded_file.filename,
-            uploaded_file.size,
-            open(uploaded_file.full_filename, "rb"),
-            uploaded_file.content_type)
+        # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
+        # bug 3160
+        shlibdeps = ""
+        # XXX: dsilvers: 20051014: erm, source should have a copyright
+        # but not binaries. bug 3161
+        copyright = ""
+        licence = ""
+
+        is_essential = encoded.get('Essential', '').lower() == 'yes'
+        architecturespecific = not self.is_archindep
+        installedsize = int(self.control.get('Installed-Size','0'))
+
+        binary = build.createBinaryPackageRelease(
+            binarypackagename=bpns.getOrCreateByName(self.package),
+            version=self.version,
+            summary=summary,
+            description=description,
+            binpackageformat=self.format,
+            component=self.converted_component,
+            section=self.converted_section,
+            priority=self.converted_priority,
+            shlibdeps=shlibdeps,
+            depends=encoded.get('Depends', ''),
+            recommends=encoded.get('Recommends', ''),
+            suggests=encoded.get('Suggests', ''),
+            conflicts=encoded.get('Conflicts', ''),
+            replaces=encoded.get('Replaces', ''),
+            provides=encoded.get('Provides', ''),
+            essential=is_essential, 
+            installedsize=installedsize,
+            copyright=copyright,
+            licence=licence,
+            architecturespecific=architecturespecific)
+
+        library_file = self.librarian.create(self.filename,
+             self.size, open(self.full_filename, "rb"), self.content_type)
         binary.addFile(library_file)
         return binary
-
 
 
 class BinaryUploadFile(UBinaryUploadFile):
