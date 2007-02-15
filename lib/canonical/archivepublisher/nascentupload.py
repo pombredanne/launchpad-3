@@ -2118,6 +2118,14 @@ class NascentUpload:
 
             self.insert_into_queue()
 
+            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
+            # section 'translation' should not generate any emails.
+            if (self.sourceful and self._find_dsc().section == 'translations'):
+                self.logger.debug(
+                    "Skipping acceptance and announcement, it is a language-"
+                    "package upload.")
+                return True, []
+
             # Unknown uploads
             if self.is_new():
                 return True, [new_msg % interpolations]
