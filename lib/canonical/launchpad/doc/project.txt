@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, emblem=None)
+    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
     >>> test_project.name
     u'project-test'
 
