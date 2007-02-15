@@ -12,6 +12,7 @@ __all__ = [
     'IBugTaskSearch',
     'IAddBugTaskForm',
     'IPersonBugTaskSearch',
+    'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
@@ -270,6 +271,13 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+
+
+class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+
+    target = Choice(
+        title=u"Bug Target", required=False,
+        vocabulary="DistributionOrProductOrProject")
 
 
 class IBugTaskDelta(Interface):

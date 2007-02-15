@@ -33,7 +33,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistributionSourcePackage,
+    IBugWatchSet, ICveSet, IDistributionSourcePackage, IFrontPageBugTaskSearch,
     ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
@@ -180,12 +180,16 @@ class BugContextMenu(ContextMenu):
 
 
 
-class MaloneView(LaunchpadView):
+class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
+
+    schema = IFrontPageBugTaskSearch
+    field_names = ['searchtext', 'target']
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
     def initialize(self):
+        LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
         if not bug_id:
             return

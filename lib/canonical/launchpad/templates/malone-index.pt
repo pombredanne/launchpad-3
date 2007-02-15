@@ -25,7 +25,7 @@
                           tal:content="view/error_message"
                           class="error message"
                         >Error message.</p>
-                        <form class="central" action="/bugs" method="get">
+                        <form class="central" action="/bugs/+bugs" method="get">
                           <table style="margin-left: 0;">
                             <tbody>
                               <tr>
@@ -33,13 +33,14 @@
                                   <input
                                     id="text"
                                     type="text"
-                                    name="text"
+                                    name="field.searchtext"
                                     size="50"
                                   />
                                 </td>
                                 <td>
                                   <input
                                     type="submit"
+                                    name="search"
                                     value="Search Bug Reports"
                                   />
                                 </td>
@@ -65,12 +66,12 @@
                                     One project:
                                     <input
                                       id="project"
-                                      name="project"
+                                      name="field.target"
                                       type="text"
                                     />
                                   </label>
                                 </td>
-                                <td>(<a href="choose">Choose&hellip;</a>)</td>
+                                <td>(<a tal:attributes="href view/widgets/target/popupHref">Choose&hellip;</a>)</td>
                               </tr>
                             </tbody>
                           </table>

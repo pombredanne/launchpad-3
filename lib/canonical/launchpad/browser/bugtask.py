@@ -22,7 +22,8 @@ __all__ = [
     'BugTaskView',
     'get_sortorder_from_request',
     'BugTargetTextView',
-    'upstream_status_vocabulary_factory']
+    'upstream_status_vocabulary_factory',
+    'BugsBugTaskSearchListingView']
 
 import cgi
 import re
@@ -31,7 +32,8 @@ from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.app.form.interfaces import (
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
@@ -55,12 +57,12 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugAttachmentSet, IBugExternalRefSet, IBugSet,
     IBugTask, IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
     IDistributionSourcePackage, IBug, IDistroBugTask, IDistroRelease,
-    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
-    valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries)
+    IDistroReleaseBugTask, IFrontPageBugTaskSearch, ILaunchBag,
+    INullBugTask, IPerson, IPersonBugTaskSearch, IProduct, IProject,
+    ISourcePackage, IUpstreamBugTask, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
+    IProductSeriesBugTask, IBugNominationSet, IProductSeries)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -1159,12 +1161,14 @@ class BugTaskSearchListingView(LaunchpadView):
     owner_error = ""
     assignee_error = ""
 
-    def initialize(self):
+    @property
+    def schema(self):
         if self._personContext():
-            self.schema = IPersonBugTaskSearch
+            return IPersonBugTaskSearch
         else:
-            self.schema = IBugTaskSearch
+            return IBugTaskSearch
 
+    def initialize(self):
         if self.shouldShowComponentWidget():
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually
@@ -1734,3 +1738,26 @@ class BugTaskTableRowView(LaunchpadView):
     def shouldShowProductIcon(self):
         """Should we show the product icon?"""
         return IUpstreamBugTask.providedBy(self.context)
+
+
+class BugsBugTaskSearchListingView(BugTaskSearchListingView):
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    schema = IFrontPageBugTaskSearch
+
+    def initialize(self):
+        BugTaskSearchListingView.initialize(self)
+        try:
+            search_target = self.target_widget.getInputValue()
+        except InputErrors
+            # XXX: Should redirect to the front page again, and handle
+            # the error there.
+            pass
+        else:
+            query_string = self.request['QUERY_STRING']
+            search_url = "%s/+bugs?%s" % (
+                canonical_url(search_target), query_string)
+            self.request.response.redirect(search_url)
+
+    def getSearchPageHeading(self):
+        return "Search all bug reports"
