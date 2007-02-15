@@ -5,9 +5,6 @@ __metaclass__ = type
 __all__ = [
     'can_be_nominated_for_releases',
     'validate_url',
-    'valid_http_url',
-    'valid_ftp_url',
-    'valid_rsync_url',
     'valid_webref',
     'valid_branch_url',
     'non_duplicate_bug',
@@ -269,30 +266,6 @@ def valid_branch_url(branch_url):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses http, https, ftp, sftp, or bzr+ssh.""")))
-
-def valid_ftp_url(url):
-    if validate_url(url, ['ftp']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid FTP URL. Please enter the full URL, including the
-            ftp:// part.""")))
-
-def valid_rsync_url(url):
-    if validate_url(url, ['rsync']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid Rsync URL. Please enter the full URL, including the
-            rsync:// part.""")))
-
-def valid_http_url(url):
-    if validate_url(url, ['http']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid HTTP URL. Please enter the full URL, including the
-            http:// part.""")))
 
 def non_duplicate_bug(value):
     """Prevent dups of dups.

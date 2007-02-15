@@ -932,38 +932,38 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad support tracker'
+tickets_index = 'Launchpad Answer Tracker'
 
 def ticket_add(context, view):
     return view.pagetitle
 
 ticket_add_search = ticket_add
 
-ticket_bug = ContextId('Link support request #%s to a bug report')
+ticket_bug = ContextId('Link question #%s to a bug report')
 
-ticket_change_status = ContextId('Change status of support request #%s')
+ticket_change_status = ContextId('Change status of question #%s')
 
-ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
+ticket_confirm_answer = ContextId('Confirm an answer to question #%s')
 
-ticket_edit = ContextId('Edit support request #%s details')
+ticket_edit = ContextId('Edit question #%s details')
 
 def ticket_index(context, view):
     text = (
-        smartquote('%s support request #%d: "%s"') %
+        smartquote('%s question #%d: "%s"') %
         (context.target.displayname, context.id, context.title))
     return text
 
-ticket_history = ContextId('History of support request #%s')
+ticket_history = ContextId('History of question #%s')
 
-ticket_linkbug = ContextId('Link support request #%s to a bug report')
+ticket_linkbug = ContextId('Link question  #%s to a bug report')
 
-ticket_makebug = ContextId('Create bug report based on request #%s')
+ticket_makebug = ContextId('Create bug report based on question #%s')
 
-ticket_reject = ContextId('Reject support request #%s')
+ticket_reject = ContextId('Reject question #%s')
 
-ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
+ticket_unlinkbugs = ContextId('Remove bug links from question #%s')
 
-ticket_subscription = ContextId('Subscription to request #%s')
+ticket_subscription = ContextId('Subscription to question #%s')
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -1010,7 +1010,7 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 def ticket_listing(context, view):
     return view.pagetitle
 
-tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
+tickettarget_manage_supportcontacts = ContextTitle("Answer contact for %s")
 
 translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 

@@ -1,8 +1,8 @@
-= The Launchpad Ticket Tracker =
+= The Launchpad Answer Tracker =
 
-Launchpad has a "tech support request tracker" built in to it. So you
-can have your community provide technical support using Launchpad for
-any upstream application, or any distribution.
+Launchpad has an 'Answer Tracker' built in to it. So you can have your
+community answers user questions about any upstream application, or any
+distribution.
 
 == Products ==
 
@@ -12,7 +12,7 @@ product. Users simply click the 'Ask a question' buttion.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Mozilla Firefox
+    Ask a question about Mozilla Firefox
 
 There is also an 'Ask a question' link on the Bugs home page of the
 product:
@@ -20,41 +20,41 @@ product:
     >>> user_browser.open('http://bugs.launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Mozilla Firefox
+    Ask a question about Mozilla Firefox
 
-The list of all the currently open support requests for the product is
-available from the 'Support' facet.
+The list of all the currently active questions for the product is
+available from the 'Answers' facet.
 
     >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> print soup.first('h1').renderContents()
-    Support requests for Mozilla Firefox
+    Questions for Mozilla Firefox
     >>> browser.getLink('Firefox loses focus and gets stuck').url
     '.../firefox/+ticket/4'
 
-There is also a 'Request Support' link to open new ticket.
+There is also a 'Ask Question' link to open a new question.
 
-    >>> browser.getLink('Request Support').url
-    '.../firefox/+addticket'
+    >>> browser.getLink('Ask Question').url
+    'http://answers.launchpad.dev/firefox/+addticket'
 
-There are links to some common listing of support requests:
+There are links to some common listing of questions:
 
     >>> browser.getLink('Open').url
     '.../firefox/+tickets?...'
     >>> browser.getLink('Answered').url
     '.../firefox/+tickets?...'
-    >>> browser.getLink('My Requests').url
+    >>> browser.getLink('My Questions').url
     '.../firefox/+mytickets'
 
-Information on a particular ticket can be seen by browsing to the ticket
-page.
+Information on a particular question can be seen by browsing to the
+question page.
 
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> browser.title
-    'Mozilla Firefox support request #2:...'
+    'Mozilla Firefox question #2:...'
     >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
@@ -65,24 +65,24 @@ Distributions also have the 'Ask a question' button on the front page:
     >>> user_browser.open('http://launchpad.dev/ubuntu')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Ubuntu
+    Ask a question about Ubuntu
 
 As well as on the Bugs facet home page:
 
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Ubuntu
+    Ask a question about Ubuntu
 
-Distributions also have the 'Support' facet.
+The distribution home page also has a link to the 'Answers' facet:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Support').url
+    >>> browser.getLink('Answers').url
     '.../ubuntu/+tickets'
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Support requests for Ubuntu
-    >>> browser.getLink('Request Support')
+    Questions for Ubuntu
+    >>> browser.getLink('Ask Question')
     <Link...>
 
 On that facet, we will find the same common listings:
@@ -91,19 +91,19 @@ On that facet, we will find the same common listings:
     '.../ubuntu/+tickets?...'
     >>> browser.getLink('Answered').url
     '.../ubuntu/+tickets?...'
-    >>> browser.getLink('My Requests').url
+    >>> browser.getLink('My Questions').url
     '.../ubuntu/+mytickets'
 
 == Distroreleases ==
 
-On a distrorelease there is a "Ask a question" link, but note that it
-points at its distro, not itself. Support tickets are linked to distro,
+On a distrorelease there is a "Ask Question" link, but note that it
+points at its distro, not itself. Questions are linked to distro,
 and optionally source package too.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Ubuntu
+    Ask a question about Ubuntu
     >>> user_browser.url
     '.../ubuntu/+addticket'
 
@@ -113,22 +113,22 @@ home page, which also links to the related distribution page.
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with Ubuntu
+    Ask a question about Ubuntu
     >>> user_browser.url
     '.../ubuntu/+addticket'
 
 == Source packages ==
 
-On a source package, the 'Request Support' link is accessible through
-the Support facet.
+On a source package, the 'Ask Question' link is accessible through
+the Answers facet.
 
     >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution')
-    >>> browser.getLink('Support').url
+    >>> browser.getLink('Answers').url
     '.../ubuntu/hoary/+source/evolution/+tickets'
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Support requests for Hoary evolution...
-    >>> browser.getLink('Request Support').url
+    Questions for Hoary evolution...
+    >>> browser.getLink('Ask Question').url
     '.../ubuntu/hoary/+source/evolution/+addticket'
 
 As are the common listings:
@@ -137,25 +137,25 @@ As are the common listings:
     '.../ubuntu/hoary/+source/evolution/+tickets?...'
     >>> browser.getLink('Answered').url
     '.../ubuntu/hoary/+source/evolution/+tickets?...'
-    >>> browser.getLink('My Requests').url
+    >>> browser.getLink('My Questions').url
     '.../ubuntu/hoary/+source/evolution/+mytickets'
 
-The support facet is also available on the distribution source package
+The 'Answers' facet is also available on the distribution source package
 page:
 
     >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
-    >>> browser.getLink('Support').url
+    >>> browser.getLink('Answers').url
     '.../ubuntu/+source/mozilla-firefox/+tickets'
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Support requests for mozilla-firefox in ubuntu
-    >>> browser.getLink('Request Support').url
+    Questions for mozilla-firefox in ubuntu
+    >>> browser.getLink('Ask Question').url
     '.../ubuntu/+source/mozilla-firefox/+addticket'
     >>> browser.getLink('Open').url
     '.../ubuntu/+source/mozilla-firefox/+tickets?...'
     >>> browser.getLink('Answered').url
     '.../ubuntu/+source/mozilla-firefox/+tickets?...'
-    >>> browser.getLink('My Requests').url
+    >>> browser.getLink('My Questions').url
     '.../ubuntu/+source/mozilla-firefox/+mytickets'
 
 == Project ==
@@ -165,17 +165,17 @@ Project also have the 'Ask a question' button on their overview page.
     >>> user_browser.open('http://launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Request support with a product from the Mozilla Project
+    Ask a question about a product from the Mozilla Project
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest ticket
-opened by that person.
+On the page about a person, there is a porlet showing the latest
+questions opened by that person.
 
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> find_portlet(browser.contents, 'Latest support requests')
+    >>> find_portlet(browser.contents, 'Latest questions')
     <div class="portlet">
-        <h2>Latest support requests</h2>
+        <h2>Latest questions</h2>
         ...
     </div>
     >>> browser.getLink('Slow system').url
@@ -183,16 +183,16 @@ opened by that person.
     >>> browser.getLink('Firefox loses focus').url
     '.../firefox/+ticket/4'
 
-The 'Support' facet link will display a page listing all the tickets
+The 'Answers' facet link will display a page listing all the questions
 involving that person.
 
-    >>> browser.getLink('Support').url
+    >>> browser.getLink('Answers').url
     '.../~name16/+tickets'
-    >>> browser.getLink('Support').click()
+    >>> browser.getLink('Answers').click()
     >>> browser.title
-    'Support requests involving Foo Bar'
+    'Questions involving Foo Bar'
     >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
-    Support requests involving Foo Bar
+    Questions involving Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+ticket/7'
 
