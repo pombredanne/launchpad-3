@@ -18,7 +18,8 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
-    'DefaultShortLink'
+    'DefaultShortLink',
+    'BrowserWindowDimensions'
     ]
 
 import cgi
@@ -876,3 +877,9 @@ class DefaultShortLink(LaunchpadView):
         L.append('</a>')
         return u''.join(L)
 
+
+class BrowserWindowDimensions(LaunchpadView):
+    """Allow capture of browser window dimensions."""
+
+    def render(self):
+        return u'Thanks.'
