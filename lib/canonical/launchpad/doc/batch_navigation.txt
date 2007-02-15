@@ -249,4 +249,3 @@ that are batched.
   ['Dasher', 'Dancer', 'Prancer']
   >>> print list(batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']
-

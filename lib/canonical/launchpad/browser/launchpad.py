@@ -18,7 +18,8 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
-    'DefaultShortLink'
+    'DefaultShortLink',
+    'BrowserWindowDimensions'
     ]
 
 import cgi
@@ -855,10 +856,7 @@ class SearchProjectsView(LaunchpadView):
         self.results = getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
-        if len(self.results) > self.max_results_to_display:
-            return True
-        else:
-            return False
+        return len(self.results) > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):
@@ -881,3 +879,9 @@ class DefaultShortLink(LaunchpadView):
         L.append('</a>')
         return u''.join(L)
 
+
+class BrowserWindowDimensions(LaunchpadView):
+    """Allow capture of browser window dimensions."""
+
+    def render(self):
+        return u'Thanks.'

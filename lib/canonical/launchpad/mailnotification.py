@@ -16,9 +16,11 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, IProductSeriesBugTask,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
+    IBugTask, IDistroBugTask, IDistroReleaseBugTask, ILanguageSet,
+    IProductSeriesBugTask, ISpecification, ITeamMembershipSet,
+    IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -916,6 +918,14 @@ def notify_team_join(event):
     simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
+def dispatch_linked_ticket_notifications(bugtask, event):
+    """Send notifications to linked ticket subscribers when the bugtask status
+    change.
+    """
+    for ticket in bugtask.bug.tickets:
+        TicketLinkedBugStatusChangeNotification(ticket, event)
+
+
 class TicketNotification:
     """Base class for a notification related to a ticket.
 
@@ -1311,6 +1321,50 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
             'ticket_url': canonical_url(ticket),
             'ticket_language': ticket.language.englishname,
             'comment': ticket.description}
+
+
+class TicketLinkedBugStatusChangeNotification(TicketNotification):
+    """Notification sent when a linked bug status is changed."""
+
+    def initialize(self):
+        assert ISQLObjectModifiedEvent.providedBy(self.event), (
+            "Should only be subscribed for ISQLObjectModifiedEvent.")
+        assert IBugTask.providedBy(self.event.object), (
+            "Should only be subscribed for IBugTask modification.")
+        self.bugtask = self.event.object
+        self.old_bugtask = self.event.object_before_modification
+
+    def shouldNotify(self):
+        """Only send notification when the status changed."""
+        return self.bugtask.status != self.old_bugtask.status
+
+    def getSubject(self):
+        """See TicketNotification."""
+        return "[Support #%s]: Status of bug #%s changed to '%s' in %s" % (
+            self.ticket.id, self.bugtask.bug.id, self.bugtask.status.title,
+            self.bugtask.target.displayname)
+
+    def getBody(self):
+        """See TicketNotification."""
+        if self.bugtask.statusexplanation:
+            wrapper = MailWrapper()
+            statusexplanation = (
+                'Status change explanation given by %s:\n\n%s\n' % (
+                    self.event.user.displayname,
+                    wrapper.format(self.bugtask.statusexplanation)))
+        else:
+            statusexplanation = ''
+
+        return get_email_template('ticket-linked-bug-status-updated.txt') % {
+            'bugtask_target_name': self.bugtask.target.displayname,
+            'ticket_id': self.ticket.id,
+            'ticket_title':self.ticket.title,
+            'ticket_url': canonical_url(self.ticket),
+            'bugtask_url':canonical_url(self.bugtask),
+            'bug_id': self.bugtask.bug.id,
+            'old_status': self.old_bugtask.status.title,
+            'new_status': self.bugtask.status.title,
+            'statusexplanation': statusexplanation}
 
 
 def notify_specification_modified(spec, event):

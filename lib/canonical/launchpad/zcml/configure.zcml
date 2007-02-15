@@ -57,6 +57,7 @@
     <include file="distroarchrelease.zcml" />
     <include file="distroarchreleasebinarypackage.zcml" />
     <include file="distroarchreleasebinarypackagerelease.zcml" />
+    <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />

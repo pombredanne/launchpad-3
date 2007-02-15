@@ -84,6 +84,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
@@ -858,7 +860,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
+            members, owner, gotchi, gotchi_heading, emblem):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -870,5 +872,6 @@ class DistributionSet:
             mirror_admin=owner,
             owner=owner,
             gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=emblem)
 
