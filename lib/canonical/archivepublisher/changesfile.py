@@ -14,13 +14,11 @@ from canonical.lp.dbschema import (
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.archivepublisher.dscfile import (
-    DSCFile, SignableTagFile, re_issource)
+    DSCFile, SignableTagFile)
 from canonical.archivepublisher.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, BinaryUploadFile,
-    SourceUploadFile, re_isadeb, re_no_epoch)
+    UBinaryUploadFile, SourceUploadFile, re_isadeb, re_issource)
 
-
-re_no_revision = re.compile(r"-[^-]+$")
 re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 
 
@@ -122,13 +120,12 @@ class ChangesFile(SignableTagFile):
                         priority, self.fsroot, self.policy, self.logger)
                 elif source_match:
                     package = source_match.group(1)
-                    version = source_match.group(2)
                     type = source_match.group(3)
-                    if filename.endswith(".dsc"):
+                    if type == "dsc":
                         file_instance = DSCFile(
                             filename, digest, size,
                             component_and_section, priority, package,
-                            version, type, self.fsroot, self.policy,
+                            self.version, type, self.fsroot, self.policy,
                             self.logger)
                         # Store the DSC because it is very convenient
                         self.dsc = file_instance
@@ -136,14 +133,20 @@ class ChangesFile(SignableTagFile):
                         file_instance = SourceUploadFile(
                             filename, digest, size,
                             component_and_section, priority, package,
-                            version, type, self, self.fsroot,
+                            self.version, type, self, self.fsroot,
                             self.policy, self.logger)
                 elif binary_match:
                     type = source_match.group(4)
-                    file_instance = BinaryUploadFile(
-                        filename, digest, size, component_and_section,
-                        priority, type, self, self.fsroot, self.policy,
-                        self.logger)
+                    if type == "udeb":
+                        file_instance = UBinaryUploadFile(
+                            filename, digest, size, component_and_section,
+                            priority, type, self, self.fsroot, self.policy,
+                            self.logger)
+                    else:
+                        file_instance = BinaryUploadFile(
+                            filename, digest, size, component_and_section,
+                            priority, type, self, self.fsroot, self.policy,
+                            self.logger)
                 else:
                     # XXX: byhand will fall into this category now. is
                     # that right?
@@ -234,13 +237,5 @@ class ChangesFile(SignableTagFile):
     @property
     def filecontents(self):
         return self._dict['filecontents']
-
-    @property
-    def chopversion(self):
-        return re_no_epoch.sub('', self._dict["version"])
-
-    @property
-    def chopversion2(self):
-        return re_no_revision.sub('', self.chopversion)
 
 

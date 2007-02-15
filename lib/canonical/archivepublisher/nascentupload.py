@@ -24,7 +24,7 @@ from canonical.config import config
 from canonical.encoding import guess as guess_encoding
 
 from canonical.lp.dbschema import (
-    BinaryPackageFormat, BuildStatus, PackagePublishingPocket)
+    BuildStatus, PackagePublishingPocket)
 
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
@@ -942,9 +942,6 @@ class NascentUpload:
             desclines = uploaded_file.control['Description'].split("\n")
             summary = desclines[0]
             description = "\n".join(desclines[1:])
-            format=BinaryPackageFormat.DEB
-            if uploaded_file.type == "udeb":
-                format=BinaryPackageFormat.UDEB
             archtag = uploaded_file.architecture
             if archtag == 'all':
                 archtag = self.changes.filename_archtag
@@ -958,7 +955,7 @@ class NascentUpload:
                 version=uploaded_file.control['Version'],
                 summary=guess_encoding(summary),
                 description=guess_encoding(description),
-                binpackageformat=format,
+                binpackageformat=uploaded_file.format,
                 component=component,
                 section=section,
                 priority=uploaded_file.priority,

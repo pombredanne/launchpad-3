@@ -4,7 +4,6 @@
 Class representing a DSC file, which encapsulates collections of
 files representing a source uploaded.
 """
-import re
 import os
 import errno
 import shutil
@@ -31,12 +30,10 @@ from canonical.launchpad.interfaces import (
 
 from canonical.archivepublisher.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadedFile, re_no_epoch,
-    re_valid_pkg_name, re_valid_version)
+    re_valid_pkg_name, re_valid_version, re_issource)
 
 from canonical.archivepublisher.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError)
-
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
 
 class SignableTagFile:
