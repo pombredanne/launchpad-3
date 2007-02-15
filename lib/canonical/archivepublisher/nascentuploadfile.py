@@ -35,6 +35,7 @@ re_valid_version = re.compile(r"^([0-9]+:)?[0-9A-Za-z\.\-\+~:]+$")
 re_valid_pkg_name = re.compile(r"^[\dA-Za-z][\dA-Za-z\+\-\.]+$")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
+apt_pkg.InitSystem()
 
 class UploadError(Exception):
     """All upload errors are returned in this form."""
@@ -242,8 +243,6 @@ class PackageUploadFile(NascentUploadFile):
             priority, fsroot, policy, logger)
         self.package = package
         self.version = version
-        # XXX: to do away with this we need to find a way of receiving
-        # the changes' architectures and binaries
         self.changes = changes
 
         valid_components = [component.name for component in
@@ -251,7 +250,8 @@ class PackageUploadFile(NascentUploadFile):
         valid_sections = [section.name for section in getUtility(ISectionSet)]
 
         if self.component not in valid_components:
-            self.reject("%s: Component %s is not valid" % (
+            yield UploadError(
+                "%s: Component %r is not valid" % (
                 self.filename, self.component))
 
         if self.section not in valid_sections:
@@ -260,7 +260,7 @@ class PackageUploadFile(NascentUploadFile):
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
             default_section = 'misc'
-            self.warn("Unable to grok section %s, overriding it with %s"
+            self.logger.warn("Unable to grok section %r, overriding it with %s"
                       % (self.section, default_section))
             self.section = default_section
 
@@ -328,7 +328,6 @@ class UBinaryUploadFile(PackageUploadFile):
     # relevant build.
     control = None
     sourcepackagerelease = None
-    architecture = None
 
     def __init__(self, *args, **kwargs):
         PackageUploadFile.__init__(self, *args, **kwargs)
@@ -340,13 +339,18 @@ class UBinaryUploadFile(PackageUploadFile):
                  % (self.priority, default_priority))
             self.priority = default_priority
 
+        # Yeah, this is weird. Where else can I discover this without
+        # unpacking the deb file, though?
+        binary_match = re_isadeb.match(self.filename)
+        self.architecture = binary_match.group(3)
+
     #
     #
     #
 
     @property
     def is_archindep(self):
-        return self.architecture.lower() != 'all'
+        return self.architecture.lower() == 'all'
 
     @property
     def archtag(self):
@@ -354,12 +358,6 @@ class UBinaryUploadFile(PackageUploadFile):
         if archtag == 'all':
             return self.changes.filename_archtag
         return archtag
-
-    @property
-    def version(self):
-        # XXX: why not just ensure that the version I think I am is the
-        # same as in the control in verify()?
-        return self.control['Version']
 
     @property
     def converted_priority(self):
@@ -378,202 +376,175 @@ class UBinaryUploadFile(PackageUploadFile):
         apt_inst may go bonkers. Those are generally caught and swallowed.
         """
         self.logger.debug("Verifying binary %s" % self.filename)
-
-        binary_match = re_isadeb.match(self.filename)
-        filename_version = binary_match.group(2)
-        version_chopped = re_no_epoch.sub('', self.version)
-        if filename_version != version_chopped:
-            yield UploadError("%s: should be %s according to changes file."
-                % (filename_version, version_chopped))
-
-        for error in self.unpack_and_check_deb():
-            yield error
-
-    def unpack_and_check_deb(self):
+        # First thing we need to do is extract the control information.
+        # We can only really rely on what's in the control file, so this
+        # is why the UBinaryUploadFile has this weird dependency on
+        # verify() being called to be API complete.
         deb_file = open(self.full_filename, "r")
-        # Extract the control information
         try:
             control_file = apt_inst.debExtractControl(deb_file)
             control_lines = apt_pkg.ParseSection(control_file)
         except:
             deb_file.close()
             yield UploadError(
-                "%s: debExtractControl() raised %s."
+                "%s: debExtractControl() raised %s, giving up."
                  % (self.filename, sys.exc_type))
             return
 
-        # Check for mandatory control fields
         for mandatory_field in self.mandatory_fields:
             if control_lines.Find(mandatory_field) is None:
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
 
-        # Ensure the package name matches one in the changes file
-        if control.Find("Package", "") not in self.changes.binaries:
-            self.reject(
-                "%s: control file lists name as `%s', which isn't in changes "
-                "file." % (self.filename,
-                           control.Find("Package", "")))
-
-        # Cache the control information for later.
         self.control = {}
-        for key in control.keys():
-            self.control[key] = control.Find(key)
+        for key in control_lines.keys():
+            self.control[key] = control_lines.Find(key)
 
-        # Validate the package field
-        package = control.Find("Package");
-        if not re_valid_pkg_name.match(package):
-            self.reject("%s: invalid package name '%s'." % (
-                self.filename, package));
+        # XXX: we never use the Maintainer information in the control
+        # file for anything. Should we? -- kiko, 2007-02-15
 
-        # Validate the version field
-        version = control.Find("Version");
-        if not re_valid_version.match(version):
-            self.reject("%s: invalid version number '%s'." % (
-                self.filename, version));
+        #
+        # Check Package
+        #
+        binary_match = re_isadeb.match(self.filename)
+        control_package = control_lines.Find("Package");
+        if control_package not in self.changes.binaries:
+            yield UploadError(
+                "%s: control file lists name as %r, which isn't in changes "
+                "file." % (self.filename, control_package))
 
-        # Ensure the architecture of the .deb is valid in the target
-        # distrorelease
-        arch = control.Find('Architecture', "")
-        valid_archs = self.policy.distrorelease.architectures
-        found_arch = False
-        for valid_arch in valid_archs:
-            if valid_arch.architecturetag == arch:
-                found_arch = True
-        if not found_arch and arch != "all":
-            self.reject("%s: Unknown architecture: '%s'." % (
-                self.filename, arch))
+        if not re_valid_pkg_name.match(control_package):
+            yield UploadError("%s: invalid package name %r." % (
+                self.filename, control_package))
 
-        # Ensure the arch of the .deb is listed in the changes file
-        if arch not in self.changes.architectures:
-            self.reject("%s: control file lists arch as '%s' which isn't "
-                        "in the changes file." % (self.filename,
-                                                  arch))
 
-        # Sanity check the depends field.
-        depends = control.Find('Depends')
-        if depends == '':
-            self.reject("%s: Depends field present and empty." % (
-                self.filename))
+        # Ensure the filename matches the contents of the .deb
+        # First check the file package name matches the deb contents.
+        file_package = binary_match.group(1)
+        if control_package != file_package:
+            yield UploadError(
+                "%s: package part of filename %r does not match "
+                "package name in the control fields %r"
+                % (self.filename, file_package, control_package))
+
+
+        #
+        # Check Version
+        #
+        control_version = control_lines.Find("Version");
+        if not re_valid_version.match(control_version):
+            yield UploadError("%s: invalid version number %r." % (
+                self.filename, control_version))
+
+        if control_version != self.version:
+            yield UploadError("%s: version number %r in control file "
+                "doesn't match version %r in changes file." % (
+                self.filename, control_version, self.version))
+
+        filename_version = binary_match.group(2)
+        changes_version_chopped = re_no_epoch.sub('', self.version)
+        if filename_version != changes_version_chopped:
+            yield UploadError("%s: should be %s according to changes file."
+                % (filename_version, changes_version_chopped))
+
+        #
+        # Check Architecture
+        #
+        control_arch = control_lines.Find('Architecture')
+        valid_archs = [a.architecturetag
+                       for a in self.policy.distrorelease.architectures]
+        if control_arch not in valid_archs and control_arch != "all":
+            yield UploadError(
+                "%s: Unknown architecture: %r" % (self.filename, control_arch))
+
+        if control_arch not in self.changes.architectures:
+            yield UploadError(
+                "%s: control file lists arch as %r which isn't "
+                "in the changes file." % (self.filename, control_arch))
+
+        if control_arch != self.architecture:
+            yield UploadError(
+                "%s: control file lists arch as %r which doesn't "
+                "agree with version %r in the filename."
+                % (self.filename, control_arch, self.architecture))
+
+        control_depends = control_lines.Find('Depends', "--unset-marker--")
+        if not control_depends:
+            yield UploadError(
+                "%s: Depends field present and empty." % self.filename)
+
+        #
+        # Check Section and Priority
+        #
 
         # Check the section & priority match those in the .changes Files entry
         control_component, control_section = self.split_component_and_section(
-            control.Find("Section"))
+            control_lines.Find("Section"))
         if ((control_component, control_section) !=
             (self.component, self.section)):
-            self.reject(
+            yield UploadError(
                 "%s control file lists section as %s/%s but changes file "
                 "has %s/%s." % (self.filename, control_component,
                                 control_section, self.component,
                                 self.section))
+        control_priority = control_lines.Find("Priority")
+        if control_priority and self.priority != control_priority:
+            yield UploadError(
+                "%s control file lists priority as %s but changes file has %s."
+                % (self.filename, control_priority, self.priority))
 
-        if (control.Find("Priority") and
-            self.priority != "" and
-            self.priority != control.Find("Priority")):
-            self.reject("%s control file lists priority as %s but changes file"
-                        " has %s." % (self.filename,
-                                      control.Find("Priority"),
-                                      self.priority))
 
-        # Check the filename ends with .deb or .udeb
-        if not (self.filename.endswith(".deb") or
-                self.filename.endswith(".udeb")):
-            self.reject(
-                "%s is neither a .deb or a .udeb" % self.filename)
+        #
+        # Check and locate Source
+        #
 
-        self.package = package
-        self.architecture = arch
-        self.version = version
-        self.maintainer = control.Find("Maintainer", "")
-        self.source = control.Find("Source", package)
-
-        # Find the source version for the package.
-        source = self.source
-        source_version = ""
-        if "(" in source:
-            src_match = re_extract_src_version.match(source)
-            source = src_match.group(1)
+        control_source = control_lines.Find("Source")
+        if control_source is not None and "(" in control_source:
+            src_match = re_extract_src_version.match(control_source)
+            source_name = src_match.group(1)
             source_version = src_match.group(2)
-        if not source_version:
-            source_version = version
-
-        self.source_package = source
-        self.source_version = source_version
-
-        # Ensure the filename matches the contents of the .deb
-        deb_match = re_isadeb.match(self.filename)
-        # First check the file package name matches the deb contents.
-        file_package = deb_match.group(1)
-        if package != file_package:
-            self.reject(
-                "%s: package part of filename (%s) does not match "
-                "package name in the control fields (%s)." % (
-                self.filename,
-                file_package,
-                package))
-
-        # Next check the version matches.
-        epochless_version = re_no_epoch.sub('', version)
-        file_version = deb_match.group(2)
-        if epochless_version != file_version:
-            self.reject(
-                "%s: version part of the filename (%s) does not match "
-                "the version in the control fields (%s)." % (
-                self.filename,
-                file_version,
-                epochless_version))
-
-        # Verify that the source versions match if present.
-        if 'source' in self.changes.architectures:
-            if source_version != self.version:
-                self.reject(
-                    "source version (%s) for %s does not match changes "
-                    "version %s" % (
-                    source_version,
-                    self.filename,
-                    self.version))
         else:
-            found = False
+            source_name = control_package
+            source_version = control_version
 
-            # Try and find the source in the distrorelease.
-            dr = self.policy.distrorelease
-            # Check published source in any pocket
-            releases = dr.getPublishedReleases(source, include_pending=True)
-            for spr in releases:
-                if spr.sourcepackagerelease.version == source_version:
-                    # XXX: DO NOT FUCKING CHANGE THE POLICY HERE OR YOU
-                    # WILL GO TO HELL TEN TIMES
-                    self.policy.sourcepackagerelease = spr.sourcepackagerelease
-                    found = True
+        # For mixed-mode uploads, check that the versions match up
+        if ('source' in self.changes.architectures and 
+            source_version != self.version):
+            yield UploadError(
+                "source version %r for %s does not match changes "
+                "version %r"
+                % (source_version, self.filename, self.version))
 
-            # If we didn't find it, try to find it in the queues...
-            if not found:
-                # Obtain the ACCEPTED queue
+        distrorelease = self.policy.distrorelease
+        spphs = distrorelease.getPublishedReleases(
+                        source_name, source_version, include_pending=True)
+        if spphs:
+            # We know there's only going to be one release because
+            # version is unique.
+            assert len(spphs) == 1
+            self.sourcepackagerelease = spphs[0].sourcepackagerelease
+        else:
+            # XXX cprov 20060809: Building from ACCEPTED is special
+            # condition, not really used in production. We should
+            # remove the support for this use case, see further
+            # info in bug #55774.
+            self.logger.debug("No source published, checking the ACCEPTED queue")
+            q = distrorelease.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+                                            name=source_name,
+                                            version=source_version)
+            if q:
+                assert len(q) == 1
+                self.sourcepackagerelease = q[0].sourcepackagerelease
 
-                # XXX cprov 20060809: Building from ACCEPTED is special
-                # condition, not really used in production. We should
-                # remove the support for this use case, see further
-                # info in bug #55774.
-                self.logger.debug("Checking in the ACCEPTED queue")
-                q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
-                for qitem in q:
-                    self.logger.debug("Looking at qitem %s/%s" % (
-                        qitem.sourcepackagerelease.name,
-                        qitem.sourcepackagerelease.version))
-                    if (qitem.sourcepackagerelease.name == source and
-                        qitem.sourcepackagerelease.version == source_version):
-                        # XXX: DO NOT FUCKING CHANGE THE POLICY HERE OR YOU
-                        # WILL GO TO HELL TEN TIMES
-                        self.policy.sourcepackagerelease = (
-                            qitem.sourcepackagerelease )
-                        found = True
-
-            if not found:
-                # XXX: dsilvers: 20051012: Perhaps check the NEW queue too?
-                # bug 3138
-                self.reject("Unable to find source package %s/%s in %s" % (
-                    source, source_version, dr.name))
+        if self.sourcepackagerelease is None:
+            # At this point, we can't really do much more to try
+            # building this package. If we look in the NEW queue it is
+            # possible that multiple versions of the package exist there
+            # and we know how bad that can be. Time to give up!
+            yield UploadError(
+                "Unable to find source package %s/%s in %s" % (
+                source_name, source_version, distrorelease.name))
 
         # Debian packages are in fact 'ar' files. Thus we run '/usr/bin/ar'
         # to look at the contents of the deb files to confirm they make sense.
@@ -583,29 +554,35 @@ class UBinaryUploadFile(PackageUploadFile):
         output = ar_process.stdout.read()
         result = ar_process.wait()
         if result != 0:
-            self.reject("%s: 'ar t' invocation failed." % (
-                self.filename))
-            self.reject(prefix_multi_line_string(output, " [ar output:] "))
+            yield UploadError(
+                "%s: 'ar t' invocation failed." % self.filename)
+            yield UploadError(
+                prefix_multi_line_string(output, " [ar output:] "))
+
         chunks = output.strip().split("\n")
         if len(chunks) != 3:
-            self.reject("%s: found %d chunks, expecting 3. %r" % (
+            yield UploadError(
+                "%s: found %d chunks, expecting 3. %r" % (
                 self.filename, len(chunks), chunks))
 
         debian_binary, control_tar, data_tar = chunks
         if debian_binary != "debian-binary":
-            self.reject("%s: first chunk is %s, expected debian-binary" % (
+            yield UploadError(
+                "%s: first chunk is %s, expected debian-binary" % (
                 self.filename, debian_binary))
         if control_tar != "control.tar.gz":
-            self.reject("%s: second chunk is %s, expected control.tar.gz" % (
+            yield UploadError(
+                "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
         if data_tar == "data.tar.bz2":
             # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            apt_pkg.InitSystem()
             found = False
-            for parsed_dep in apt_pkg.ParseDepends(
-                control.Find("Pre-Depends", "")):
-                if len(parsed_dep) > 1:
-                    continue
+            control_pre_depends = control_lines.Find("Pre-Depends", "")
+            for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
+                # apt_pkg is weird and returns a list containing lists
+                # containing a single tuple.
+                assert len(parsed_dep) == 1
+                parsed_dep = parsed_dep[0]
                 for dep, version, constraint in parsed_dep:
                     if dep != "dpkg" or (constraint not in ('>=', '>>')):
                         continue
@@ -614,13 +591,18 @@ class UBinaryUploadFile(PackageUploadFile):
                         (constraint == ">>" and
                          apt_pkg.VersionCompare(version, "1.10.23") < 0)):
                         continue
-                    found = True
-            if not found:
-                self.reject("%s uses bzip2 compression but doesn't Pre-Depend "
-                            "on dpkg (>= 1.10.24)" % self.filename)
-        elif data_tar != "data.tar.gz":
-            self.reject("%s: third chunk is %s, expected data.tar.gz or "
-                        "data.tar.bz2" % (self.filename, data_tar))
+                    break
+                else:
+                    yield UploadError(
+                        "%s uses bzip2 compression but doesn't Pre-Depend "
+                        "on dpkg (>= 1.10.24)" % self.filename)
+        elif data_tar == "data.tar.gz":
+            # No tests are needed for tarballs, yay
+            pass
+        else:
+            yield UploadError(
+                "%s: third chunk is %s, expected data.tar.gz or "
+                "data.tar.bz2" % (self.filename, data_tar))
 
         # That's all folks.
 
@@ -634,8 +616,8 @@ class UBinaryUploadFile(PackageUploadFile):
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
         """
+        assert self.sourcepackagerelease
         build_id = getattr(self.policy.options, 'buildid', None)
-
         if build_id is None:
             dar = self.policy.distrorelease[self.archtag]
 
