@@ -179,3 +179,31 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
+
+= Branch Revisions =
+
+  >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
+  >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.contrib')
+
+  >>> branch_revision_set = getUtility(IBranchRevisionSet)
+  >>> for branch_revision in branch_revision_set.getRevisionHistoryForBranch(branch):
+  ...     print branch_revision.sequence, branch_revision.revision.id
+  6 9
+  5 8
+  4 11
+  3 10
+  2 5
+  1 4
+
+  >>> ancestry = branch_revision_set.getAncestryForBranch(branch)
+  >>> for branch_revision in sorted(ancestry,
+  ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
+  ...     print branch_revision.sequence, branch_revision.revision.id
+  6 9
+  5 8
+  4 11
+  3 10
+  2 5
+  1 4
+  None 7
+  None 6

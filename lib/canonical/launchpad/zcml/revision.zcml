@@ -27,4 +27,15 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
+  <!-- BranchRevisionSet -->
+  <content class="canonical.launchpad.database.BranchRevisionSet">
+    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.BranchRevisionSet"
+      provides="canonical.launchpad.interfaces.IBranchRevisionSet" >
+    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
+  </securedutility>
+
 </configure>

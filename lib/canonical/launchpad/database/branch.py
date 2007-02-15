@@ -5,6 +5,7 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import re
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -17,8 +18,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.interfaces import (IBranch, IBranchSet,
-    NotFoundError)
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchSet, IBranchRevisionSet, NotFoundError)
 from canonical.launchpad.database.revision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
@@ -75,8 +76,9 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = SQLMultipleJoin('BranchRevision', joinColumn='branch',
-        orderBy='-sequence')
+    @property
+    def revision_history(self):
+        return getUtility(IBranchRevisionSet).getRevisionHistoryForBranch(self)
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -147,14 +149,15 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return BranchRevision.selectBy(
-            branch=self, orderBy='-sequence').limit(quantity)
+        return getUtility(IBranchRevisionSet).getRevisionHistoryForBranch(
+            self, limit=quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
             'BranchRevision.branch = %d AND '
+            'BranchRevision.sequence IS NOT NULL AND '
             'Revision.revision_date > %s' %
             (self.id, quote(timestamp)),
             orderBy='-sequence',
