@@ -56,19 +56,40 @@ def find_portlet(content, name):
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h2').renderContents()
-        if name == whitespace_re.sub(' ', portlet_title.strip()):
-            return portlet
+        if portlet.find('h2'):
+            portlet_title = portlet.find('h2').renderContents()
+            if name == whitespace_re.sub(' ', portlet_title.strip()):
+                return portlet
     return None
 
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
     soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'region-content'})
+    tag = soup.find(attrs={'id': 'maincontent'}) # standard page with portlets
     if tag:
         return tag
-    return soup.find(attrs={'id': 'content'})
+    return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
+
+
+def extract_text(soup):
+    """Return the text stripped of all tags.
+
+    >>> soup = BeautifulSoup('<html><h1>Title</h1><p>foo bar</p></html>')
+    >>> extract_text(soup)
+    u'Titlefoo bar'
+    """
+    # XXX Tim Penhey 22-01-2007
+    # At the moment this does not nicely give whitespace between
+    # tags that would have visual separation when rendered.
+    # eg. <p>foo</p><p>bar</p>
+    result = u''
+    for node in soup:
+        if isinstance(node, NavigableString):
+            result = result + unicode(node)
+        else:
+            result = result + extract_text(node)
+    return result
 
 
 def extract_text(soup):

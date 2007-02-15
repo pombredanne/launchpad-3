@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, emblem=None)
+    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
     >>> test_project.name
     u'project-test'
 
@@ -150,3 +150,59 @@ and all valid specifications via the valid_specifications property:
  extension-manager-upgrades
  mergewin
  e4x
+
+
+== translatables ==
+
+A project would have IProduct objects that have resources to translate. This
+method return us the ones that are translatable and officially using Rosetta
+to handle translations.
+
+  # Revert any change done until now.
+  >>> import transaction
+  >>> transaction.abort()
+
+GNOME Project is a good example that has translations.
+It has one translatable product.
+
+  >>> gnome = getUtility(IProjectSet)['gnome']
+  >>> translatables = gnome.translatables()
+  >>> translatables.count()
+  1
+
+And that translatable product is 'Evolution'.
+
+  >>> evolution = translatables[0]
+  >>> print evolution.title
+  The Evolution Groupware Application
+
+With its 'trunk' series translatable.
+
+  >>> evo_series = evolution.translatable_series
+  >>> len(evo_series)
+  1
+  >>> evo_trunk = evo_series[0]
+  >>> print evo_trunk.name
+  trunk
+
+That is using Rosetta officially.
+
+  >>> evolution.official_rosetta
+  True
+
+GNOME project has also another product, netapplet.
+
+  >>> netapplet = gnome.getProduct('netapplet')
+  >>> print netapplet.title
+  Network Applet
+
+But it was not returned from 'translatables' method because it's not using
+Rosetta officially.
+
+  >>> netapplet.official_rosetta
+  False
+
+Even if it has resources to translate.
+
+  >>> len(netapplet.translatable_series)
+  1

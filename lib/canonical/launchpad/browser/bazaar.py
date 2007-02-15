@@ -9,10 +9,12 @@ __all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
 import operator
 
 from zope.component import getUtility
+
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
 import canonical.launchpad.layers
@@ -37,6 +39,15 @@ class BazaarApplicationView:
         self.context = context
         self.request = request
         self.seriesset = getUtility(IProductSeriesSet)
+
+    def branch_count(self):
+        return getUtility(IBranchSet).count()
+
+    def product_count(self):
+        return getUtility(IProductSet).getProductsWithBranches().count()
+
+    def branches_with_bugs_count(self):
+        return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
         return self.seriesset.importcount()
@@ -69,6 +80,21 @@ class BazaarApplicationView:
                     count += 1
                     continue
         return count
+
+    @cachedproperty
+    def recently_changed_branches(self):
+        """Return the five most recently changed branches."""
+        return list(getUtility(IBranchSet).getRecentlyChangedBranches(5))
+
+    @cachedproperty
+    def recently_imported_branches(self):
+        """Return the five most recently imported branches."""
+        return list(getUtility(IBranchSet).getRecentlyImportedBranches(5))
+
+    @cachedproperty
+    def recently_registered_branches(self):
+        """Return the five most recently registered branches."""
+        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(5))
 
 
 class BazaarApplicationNavigation(Navigation):

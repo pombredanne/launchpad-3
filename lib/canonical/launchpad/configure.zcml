@@ -109,5 +109,10 @@
       directory="../../contrib/MochiKit"
       />
 
+  <browser:resourceDirectory
+      name="PlotKit"
+      directory="../../contrib/PlotKit"
+      />
+
 
 </configure>

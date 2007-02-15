@@ -58,35 +58,34 @@
   <tal:no-results condition="not: tickets/batch">
     <p i18n:translate=""
        tal:content="view/empty_listing_message">
-      No support requests.
+      No questions.
     </p>
   </tal:no-results>
 
   <p class="informational message"
      tal:condition="not: view/all_languages_shown" i18n:translate="">
-    Only support requests in
+    Only questions in
       <tal:languages i18n:name="languages">
         <tal:language_loop repeat="lang view/displayed_languages">
           <span tal:replace="lang/englishname"
             /><tal:comma condition="not: repeat/lang/end">,</tal:comma>
         </tal:language_loop>
       </tal:languages>
-    are displayed. To see support requests in other languages, either
+    are displayed. To see questions in other languages, either
     <a href="/+editmylanguages">change your preferred</a> languages
     or select the &ldquo;All Languages&rdquo; option.
   </p>
 
   <tal:block condition="tickets/batch">
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links-upper" />
     <table class="listing" id="ticket-listing">
       <thead>
         <tr>
           <th colspan="3" i18n:translate="">Summary</th>
           <th i18n:translate="">Created</th>
           <th i18n:translate="">Submitter</th>
-          <th tal:condition="view/displayTargetColumn"
+          <th tal:condition="view/display_target_column"
               i18n:translate="">In</th>
-          <th tal:condition="view/displaySourcePackageColumn"
+          <th tal:condition="view/display_sourcepackage_column"
               i18n:translate="">Source Package</th>
           <th i18n:translate="">Status</th>
         </tr>
@@ -116,12 +115,12 @@
               >Foo Bar</a>
           </td>
           <td class="ticket-target"
-              tal:condition="view/displayTargetColumn"
+              tal:condition="view/display_target_column"
               ><a href="#"
                   tal:define="target ticket/target"
                   tal:attributes="href string:${target/fmt:url}/+tickets"
                   tal:content="target/displayname">Firefox</a></td>
-          <td tal:condition="view/displaySourcePackageColumn"
+          <td tal:condition="view/display_sourcepackage_column"
               tal:content="structure python:view.formatSourcePackageName(ticket)"
               >mozilla-firefox</td>
           <td class="ticketstatus"
@@ -131,18 +130,21 @@
         </tr>
       </tbody>
     </table>
-    <div class="lesser" tal:content="structure tickets/@@+navigation-links-lower" />
+    <div
+      class="results"
+      tal:content="structure tickets/@@+navigation-links-lower"
+    />
   </tal:block>
 </div>
 
 <metal:help fill-slot="help">
-  <p>This listing displays the support requests matching the selected
+  <p>This listing displays the questions matching the selected
     criteria in this context (distribution, product, person, sourcepackage).
   </p>
   <p>The search criteria for the current listing can be modified directly at
     the top of the page.
   </p>
-  <p>If you hover the mouse over a support request, the beginning of its
+  <p>If you hover the mouse over a question, the beginning of its
     description will pop-up after a few seconds.
   </p>
 </metal:help>

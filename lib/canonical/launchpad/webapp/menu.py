@@ -58,9 +58,9 @@ def nearest_menu(obj, menuinterface):
     menuinterface will typically be IFacetMenu.
     """
     for current_obj in canonical_url_iterator(obj):
-        facetmenu = menuinterface(current_obj, None)
-        if facetmenu is not None:
-            return facetmenu
+        menu = menuinterface(current_obj, None)
+        if menu is not None:
+            return menu
     return None
 
 

@@ -17,11 +17,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, IKarmaContext, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.fields import LargeImageUpload, SmallImageUpload
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class ProductNameField(PillarNameField):
@@ -31,8 +31,8 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, IKarmaContext):
+class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+               ISpecificationTarget, IHasSecurityContact, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -81,6 +81,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "appoint a team for each specific series, rather than having "
             "one product team that does it all."),
         required=False, vocabulary='ValidPersonOrTeam')
+
     drivers = Attribute(
         "Presents the drivers of this product as a list. A list is "
         "required because there might be a product driver and a project "
@@ -173,6 +174,15 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this product."))
+
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this product. It should be "
+            "no bigger than 50k in size."))
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
@@ -347,12 +357,16 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
+    def getProductsWithBranches():
+        """Return an iterator over all products that have branches."""
+        
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, emblem=None):
+                      reviewed=False, gotchi=None, gotchi_heading=None,
+                      emblem=None):
         """Create and Return a brand new Product."""
 
     def forReview():

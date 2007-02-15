@@ -28,7 +28,7 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, LargeImageUpload, PasswordField,
-    SmallImageUpload, StrippedTextLine)
+    BaseImageUpload, SmallImageUpload, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -123,6 +123,15 @@ class IPerson(IHasSpecifications, ITicketCollection):
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to you. It should be no bigger "
+            "than 50k in size. Traditionally this is a great big grinning "
+            "image of your mug. Make the most of it."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
@@ -561,6 +570,12 @@ class IPerson(IHasSpecifications, ITicketCollection):
         specified in the TeamMembership spec. It's also responsible for
         filling/cleaning the TeamParticipation table when the transition
         requires it.
+        """
+
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
         """
 
     def getTeamAdminsEmailAddresses():

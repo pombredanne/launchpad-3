@@ -1,25 +1,25 @@
-= Support Tracker Introduction Page =
+= Answer Tracker Introduction Page =
 
-The support tracker main page present a short introduction to the
+The Answer Tracker main page present a short introduction to the
 application.
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
-    Launchpad support tracker
+    Launchpad Answer Tracker
 
 It also displays an indication of recent activity by
-displaying the number of requests tracked by the system.
+displaying the number of questions tracked by the system.
 
     >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'requests-count').renderContents()
-    The support tracker contains 13 requests.
+    ...     anon_browser.contents, 'application-footer').renderContents()
+    13 questions asked
 
-It also shows the 10 latest requests made:
+It also shows the 10 latest questions made:
 
     >>> latest_made_requests = find_tag_by_id(
     ...     anon_browser.contents, 'latest-requests-made')
     >>> print latest_made_requests.first('h2').renderContents()
-    Latest requests made
+    Latest questions asked
     >>> for row in latest_made_requests.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
@@ -30,12 +30,12 @@ It also shows the 10 latest requests made:
     'Problem showing the SVG demo on W3C site'
     'Firefox cannot render Bank Site'
 
-As well as the 10 latest requests solved:
+As well as the 10 latest questions solved:
 
     >>> latest_solved_requests = find_tag_by_id(
     ...     anon_browser.contents, 'latest-requests-resolved')
     >>> print latest_solved_requests.first('h2').renderContents()
-    Latest requests resolved
+    Latest questions solved
     >>> for row in latest_solved_requests.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'mailto: problem in webpage'

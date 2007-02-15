@@ -81,6 +81,8 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
@@ -560,13 +562,19 @@ class ProductSet:
             return default
         return product
 
+    def getProductsWithBranches(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        return Product.select('Product.id = Branch.product',
+                              clauseTables=['Branch'],
+                              distinct=True)
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, emblem=None):
+                      reviewed=False, gotchi=None, gotchi_heading=None,
+                      emblem=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -576,7 +584,7 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed, gotchi=gotchi,
-            emblem=emblem)
+            emblem=emblem, gotchi_heading=gotchi_heading)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
