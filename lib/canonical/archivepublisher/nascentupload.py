@@ -1600,7 +1600,7 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = uploaded_file.version
+        proposed_version = self.changes['version']
         archive_version = ancestry.sourcepackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
