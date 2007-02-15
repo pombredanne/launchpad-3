@@ -420,7 +420,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 pot_header['Content-Type'] = 'text/plain; charset=UTF-8'
                 pot_header.updateDict()
 
-            if row.pofile is not None:
+            pofile = row.pofile
+            if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
                     commentText=row.potopcomment,
@@ -464,30 +465,30 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
-            if (row.pofile is not None and
-                row.pofile.last_touched_pomsgset is not None and
-                row.pofile.last_touched_pomsgset.reviewer is not None):
+            if (pofile is not None and
+                pofile.last_touched_pomsgset is not None and
+                pofile.last_touched_pomsgset.reviewer is not None):
                 # Update the last translator field.
+                last_touched_pomsgset = pofile.last_touched_pomsgset
 
                 header['Last-Translator'] = last_translator_text(
-                    row.pofile.last_touched_pomsgset.reviewer)
+                    last_touched_pomsgset.reviewer)
 
                 # Update the revision date field.
 
                 header['PO-Revision-Date'] = (
-                    row.pofile.last_touched_pomsgset.date_reviewed.strftime(
-                        '%F %R%z'))
+                    last_touched_pomsgset.date_reviewed.strftime('%F %R%z'))
 
             if row.potemplate.hasPluralMessage():
-                if row.pofile.language.pluralforms is not None:
+                if pofile.language.pluralforms is not None:
                     # We have pluralforms information for this language so we
                     # update the header to be sure that we use the language
                     # information from our database instead of use the one
                     # that we got from upstream. We check this information so
                     # we are sure it's valid.
                     header['Plural-Forms'] = 'nplurals=%d; plural=(%s);' % (
-                        row.pofile.language.pluralforms,
-                        row.pofile.language.pluralexpression)
+                        pofile.language.pluralforms,
+                        pofile.language.pluralexpression)
             elif 'Plural-Forms' in header:
                 # There is no plural forms here but we have a 'Plural-Forms'
                 # header, we remove it because it's not needed.
@@ -548,8 +549,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # There is an active submission, the plural form is higher than
             # the last imported plural form.
 
-            if (row.pofile.language.pluralforms is not None and
-                row.translationpluralform >= row.pofile.language.pluralforms):
+            if (pofile.language.pluralforms is not None and
+                row.translationpluralform >= pofile.language.pluralforms):
                 # The plural form index is higher than the number of plural
                 # form for this language, so we should ignore it.
                 continue

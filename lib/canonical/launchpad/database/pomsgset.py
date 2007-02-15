@@ -209,11 +209,14 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_active = self.getActiveSubmission(pluralform)
         if current_active is not None:
             current_active.active = False
+            # We need this syncUpdate so if the next submission.active change
+            # is done we are sure that we will store this change first in the
+            # database. This is because we can only have an IPOSubmission with
+            # the active flag set to TRUE.
             current_active.syncUpdate()
 
         if submission is not None:
             submission.active = True
-            submission.syncUpdate()
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
@@ -223,11 +226,14 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_published = self.getPublishedSubmission(pluralform)
         if current_published is not None:
             current_published.published = False
+            # We need this syncUpdate so if the next submission.published change
+            # is done we are sure that we will store this change first in the
+            # database. This is because we can only have an IPOSubmission with
+            # the published flag set to TRUE.
             current_published.syncUpdate()
 
         if submission is not None:
             submission.published = True
-            submission.syncUpdate()
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
@@ -244,6 +250,21 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             POSubmission.pluralform = %s AND
             POSubmission.published
             """ % sqlvalues(self, pluralform))
+
+    def _updateReviewerInfo(self):
+        """Update a couple of fields to note there was an update.
+
+        The updated fields are:
+            - self.pofile.last_touched_pomsgset: To cache which message was
+              the last one updated so we can know when was an IPOFile last
+               updated.
+            - self.reviewer: To note who did last review for this message.
+            - self.date_reviewed: To note when was done last review.
+        """
+            self.pofile.last_touched_pomsgset = self
+            self.reviewer = person
+            self.date_reviewed = UTC_NOW
+            self.sync()
 
     def updateTranslationSet(self, person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):
@@ -344,11 +365,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 has_changed = True
 
         if has_changed and is_editor:
-            self.pofile.last_touched_pomsgset = self
-            self.pofile.syncUpdate()
-            self.reviewer = person
-            self.date_reviewed = UTC_NOW
-            self.sync()
+            self._updateReviewerInfo()
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
@@ -478,27 +495,29 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         # test if we are working with the published pofile, and if this
         # translation is already published
-        if published and published_submission is not None:
-            if published_submission.potranslation == translation:
-                # Sets the validation status to the current status.
-                # We do it always so the changes in our validation code will
-                # apply automatically.
-                published_submission.validationstatus = validation_status
+        if (published and
+            published_submission is not None and
+            published_submission.potranslation == translation):
+            # Sets the validation status to the current status.
+            # We do it always so the changes in our validation code will
+            # apply automatically.
+            published_submission.validationstatus = validation_status
 
-                # return the existing submission that made this translation
-                # the published one in the db
-                return published_submission
+            # return the existing submission that made this translation
+            # the published one in the db
+            return published_submission
 
-        if not published and active_submission is not None:
-            if active_submission.potranslation == translation:
-                # Sets the validation status to the current status.
-                # If our validation code has been improved since the last
-                # import we might detect new errors in previously validated
-                # strings, so we always do this, regardless of the status in
-                # the database.
-                active_submission.validationstatus = validation_status
-                # and return the active submission
-                return active_submission
+        if (not published and
+            active_submission is not None and
+            active_submission.potranslation == translation):
+            # Sets the validation status to the current status.
+            # If our validation code has been improved since the last
+            # import we might detect new errors in previously validated
+            # strings, so we always do this, regardless of the status in
+            # the database.
+            active_submission.validationstatus = validation_status
+            # and return the active submission
+            return active_submission
 
         # let's make a record of whether this translation was published
         # complete, was actively complete, and was an updated one
