@@ -637,13 +637,7 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.http_url))
 
-                # We send a notification email only if the upload
-                # was sourceful, or had exactly one customfile and
-                # no binaries.
-                if (queue_item.sources.count()
-                    or (queue_item.builds.count() == 0
-                        and queue_item.customfiles.count() == 1)):
-                    self.sendAcceptEmail(queue_item, "\n".join(summary))
+                self.sendAcceptEmail(queue_item, "\n".join(summary))
 
         self.displayRule()
         self.displayBottom()
@@ -654,24 +648,33 @@ class QueueActionAccept(QueueAction):
         Take the summary given, and derive the rest of the information
         for the email from the queue_item.
         """
-        # We only send accept emails for sourceful or single-custom
-        # uploads
-        assert(queue_item.sources.count() or
-               (queue_item.builds.count() == 0 and
-                queue_item.customfiles.count() == 1))
+        # We send acceptance email only if the upload is sourceful,
+        # or had exactly one customfile and no binaries.
+        if (queue_item.sources.count() == 0 and
+            (queue_item.builds.count() > 0 and
+             queue_item.customfiles.count() != 1)):
+            return
+
+        # We do not send acceptance emails for source uploads targeted
+        # to 'translation' section ('laguage-pack-*' & 'language-support-*')
+        if queue_item.sources.count() == 1:
+            source = queue_item.sources[0]
+            section_name = source.sourcepackagerelease.section.name
+            if section_name == 'translations':
+                return
 
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
-        # only announce for acceptation if it's not for BACKPORTS
+
+        # only announce acceptance if the upload is not targeted for
+        # BACKPORTS
         if (self.announcelist is not None and
             queue_item.pocket != PackagePublishingPocket.BACKPORTS):
             recipients.append(self.announcelist)
 
         queue_item.changesfile.open()
-        # XXX cprov 20060221: guess_encoding breaks the
-        # GPG signature.
-        changescontent = guess_encoding(
-            queue_item.changesfile.read())
+        # XXX cprov 20060221: guess_encoding breaks the GPG signature.
+        changescontent = guess_encoding(queue_item.changesfile.read())
         queue_item.changesfile.close()
 
         replacements = {
