@@ -41,8 +41,7 @@ hardcoded URL or we set up some hidden URLs to be used
 
 After determining the URL of the OpenID server, the next thing a consumer
 needs to do is associate with the server and get a shared secret via a
-POST request. Note that we force Diffie-Hellman even if the consumer
-requested plaintext.
+POST request.
 
 >>> from urllib import urlencode
 >>> anon_browser.open('http://openid.launchpad.dev/', data=urlencode({
@@ -58,9 +57,6 @@ Content-Type: text/plain
 assoc_handle:{HMAC-SHA1}{...}{...}
 assoc_type:HMAC-SHA1
 expires_in:1209600
-session_type:DH-SHA1
-dh_server_public:???
-enc_mac_key: ???
-mac_key: ???
+mac_key:...
 <BLANKLINE>
 
