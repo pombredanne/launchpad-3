@@ -270,7 +270,7 @@ class WriteLoggingFile(osfs.OSFile):
     """
 
     def __init__(self, listener, path, name=None, parent=None):
-        self.listener = listener
+        self._flagAsDirty = listener
         osfs.OSFile.__init__(self, path, name, parent)
 
     def open(self, flags):
@@ -279,7 +279,7 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.open(self, flags)
 
     def touch(self):
-        self.listener()
+        self._flagAsDirty()
 
     def writeChunk(self, offset, data):
         self.touch()

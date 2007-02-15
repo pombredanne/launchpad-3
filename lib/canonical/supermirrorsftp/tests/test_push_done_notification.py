@@ -174,7 +174,7 @@ class WriteLoggingFile(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.listener,
+        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
                                                         self.tempDir)
         self.file = self.directory.createFile('foo')
         self.dirty = False
@@ -182,12 +182,13 @@ class WriteLoggingFile(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempDir)
 
-    def listener(self):
+    def flagAsDirty(self):
         self.dirty = True
 
     def test_file_has_listener(self):
         # The created file should refer to the listener of its parent directory.
-        self.assertEqual(self.listener, self.file.listener)
+        # XXX - whitebox test (jml, 2007-02-15)
+        self.assertEqual(self.flagAsDirty, self.file._flagAsDirty)
 
     def test_writeChunk(self):
         # Opening the file and writing to it should dirty the listener.
