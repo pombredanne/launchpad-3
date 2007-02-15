@@ -97,8 +97,8 @@ class BzrSync:
                 continue
             self.syncRevision(revision)
 
-        # now synchronise the RevisionNumber objects
-        self.syncRevisionNumbers()
+        # now synchronise the BranchRevision objects
+        self.syncBranchRevisions()
 
     def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -197,7 +197,7 @@ class BzrSync:
         revision_date += timedelta(seconds=timestamp - int_timestamp)
         return revision_date
 
-    def syncRevisionNumbers(self):
+    def syncBranchRevisions(self):
         """Synchronise the revision numbers for the branch."""
         self.logger.info(
             "synchronizing revision numbers for branch: %s",
@@ -206,9 +206,9 @@ class BzrSync:
         did_something = False
         self.trans_manager.begin()
 
-        # now synchronise the RevisionNumber objects
+        # now synchronise the BranchRevision objects
         for (sequence, revision_id) in self.getRevisions():
-            self.syncRevisionNumber(sequence, revision_id)
+            self.syncBranchRevision(sequence, revision_id)
 
         # finally truncate any further revision numbers (if they exist):
         if self.db_branch.truncateHistory(len(self.bzr_history) + 1):
@@ -231,7 +231,7 @@ class BzrSync:
         else:
             self.trans_manager.abort()
 
-    def syncRevisionNumber(self, sequence, revision_id):
+    def syncBranchRevision(self, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
 
         :param sequence: the sequence number for this revision number
@@ -244,7 +244,7 @@ class BzrSync:
         self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
-        db_revno = self.db_branch.getRevisionNumber(sequence)
+        db_revno = self.db_branch.getBranchRevision(sequence)
 
         # If the database revision history has diverged, so we
         # truncate the database history from this point on.  The
@@ -255,7 +255,7 @@ class BzrSync:
             db_revno = None
 
         if db_revno is None:
-            db_revno = self.db_branch.createRevisionNumber(
+            db_revno = self.db_branch.createBranchRevision(
                 sequence, db_revision)
             did_something = True
 
