@@ -1,24 +1,42 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE POSubmission ADD COLUMN active BOOLEAN DEFAULT FALSE NOT NULL;
-UPDATE POSubmission SET active=TRUE FROM POSelection WHERE POSubmission.id = POSelection.activesubmission;
-
 ALTER TABLE POSubmission ADD COLUMN published BOOLEAN DEFAULT FALSE NOT NULL;
-UPDATE POSubmission SET published=TRUE FROM POSelection WHERE POSubmission.id = POSelection.publishedsubmission;
 
-CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__active__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(active, FALSE));
-CREATE UNIQUE INDEX posubmission__pomsgset__pluralform_published__only_one_idx ON POSubmission (pomsgset, pluralform, NULLIF(published, FALSE));
+UPDATE POSubmission SET active=TRUE FROM POSelection
+WHERE POSubmission.id = POSelection.activesubmission;
+
+UPDATE POSubmission SET published=TRUE FROM POSelection
+WHERE POSubmission.id = POSelection.publishedsubmission;
+
+CREATE UNIQUE INDEX posubmission_only_one_active_unique
+ON POSubmission (pomsgset, pluralform) WHERE active IS TRUE;
+
+CREATE UNIQUE INDEX posubmission_only_one_published_unique
+ON POSubmission (pomsgset, pluralform) WHERE published IS TRUE;
 
 -- Do we still need this other INDEX ?
-CREATE INDEX posubmission__pomsgset__pluralform__active__idx ON POSubmission(pomsgset, pluralform, active);
-CREATE INDEX posubmission__pomsgset__pluralform__published__idx ON POSubmission(pomsgset, pluralform, published);
+CREATE INDEX posubmission__pomsgset__pluralform__active__idx
+ON POSubmission(pomsgset, pluralform, active);
+
+CREATE INDEX posubmission__pomsgset__pluralform__published__idx
+ON POSubmission(pomsgset, pluralform, published);
 
 ALTER TABLE POMsgSet ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE;
 ALTER TABLE POMsgSet ADD COLUMN reviewer INTEGER REFERENCES Person(id);
-ALTER TABLE POMsgSet ADD CONSTRAINT review_fields_valid CHECK (reviewer IS NULL = date_reviewed IS NULL);
-UPDATE POMsgSet SET date_reviewed = POSelection.date_reviewed, reviewer = POSelection.reviewer
-FROM POSelection
-WHERE POMsgSet.id = POSelection.pomsgset AND POSelection.id = (SELECT id FROM POSelection WHERE POSelection.pomsgset = POMsgset.id ORDER BY date_reviewed DESC LIMIT 1);
+ALTER TABLE POMsgSet ADD CONSTRAINT review_fields_valid CHECK (
+    reviewer IS NULL = date_reviewed IS NULL
+    );
+UPDATE POMsgSet
+SET
+    date_reviewed = ReviewedPOSelection.date_reviewed,
+    reviewer = ReviewedPOSelection.reviewer
+FROM (
+    SELECT DISTINCT ON (pomsgset) id, pomsgset, date_reviewed, reviewer
+    FROM POSelection
+    ORDER BY pomsgset, date_reviewed DESC
+    ) AS ReviewedPOSelection
+WHERE ReviewedPOSelection.pomsgset = POMsgSet.id;
 
 CREATE INDEX pomsgset__reviewer__idx ON POMsgSet(reviewer);
 
@@ -75,19 +93,17 @@ FROM
             posubmission.active
         LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation;
 
-ALTER TABLE POFile ADD COLUMN last_touched_pomsgset INTEGER REFERENCES POMsgSet(id);
-UPDATE POFile SET last_touched_pomsgset=pms.id
-FROM POMsgSet pms
-WHERE pms.id = (
-    SELECT id
-    FROM POMsgSet
-    WHERE POMsgSet.pofile = POFile.id AND POMsgSet.date_reviewed IS NOT NULL
-    ORDER BY date_reviewed
-    DESC
-    LIMIT 1);
-
 ALTER TABLE POFile DROP COLUMN latestsubmission;
-
+ALTER TABLE POFile ADD COLUMN last_touched_pomsgset
+    INTEGER REFERENCES POMsgSet(id);
+UPDATE POFile SET last_touched_pomsgset=pms.id
+FROM (
+    SELECT DISTINCT ON (pofile) id, pofile
+    FROM POMsgSet
+    WHERE POMsgSet.date_reviewed IS NOT NULL
+    ORDER BY pofile, date_reviewed DESC
+    ) AS pms
+WHERE POFile.id = pms.pofile;
 DROP TABLE POSelection;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 8, 0);
