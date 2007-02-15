@@ -80,13 +80,13 @@
 </div>
 
   <metal:help fill-slot="help">
-    <p>The support request and the following discussion is displayed on this
+    <p>The question and the following discussion is displayed on this
       page.
     </p>
-    <p>If you are the person who posted that support request, consult the
+    <p>If you are the person who posted that question, consult the
       <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
         Support in Launchpad</a> document for help on how to follow-up on your
-      request.</p>
+      question.</p>
     <p>If you want to help the user, consult the
       <a href="https://help.launchpad.net/ProvidingSupportThroughLaunchpad">
         Providing Support Through Launchpad</a> document.

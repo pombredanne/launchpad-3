@@ -5,7 +5,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Support request from:</b><br />
+    <b>Question from:</b><br />
     <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">Foo Bar</a><br />
