@@ -414,7 +414,7 @@ The ed source would be in NEW, so punt it into accepted.
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in new_queue:
   ...     try:
-  ...         print "%s/%s" % (item.sourcepackagerelease.name, 
+  ...         print "%s/%s" % (item.sourcepackagerelease.name,
   ...                          item.sourcepackagerelease.version)
   ...         item.setAccepted()
   ...         item.sync()
@@ -474,8 +474,8 @@ XXX cprov 20060728: Building from ACCEPTED is special condition, not
 really used in production. We should remove the support for this use
 case, see further info in bug #55774.
 
-  >>> ed_bin = NascentUpload(findPolicyByName('sync'), 
-  ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes", 
+  >>> ed_bin = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes",
   ...          MockMunchyLogger())
   >>> ed_bin.policy.setOptions(MockOptions())
   >>> ed_bin.policy.can_upload_binaries = True
@@ -771,3 +771,20 @@ is stored in NascentUpload instance for further checks:
   >>> ed_failed.dsc_signing_key.fingerprint == uploader_key.fingerprint
   True
 
+== Check if deb packages using bzip are properly checked ==
+
+  >>> foo_failed = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('suite/foo_1.0-1_mixed'),
+  ...     "foo_1.0-1_i386.changes", MockMunchyLogger())
+
+    >>> mock_options = MockOptions()
+  >>> foo_failed.policy.setOptions(MockOptions())
+
+  >>> foo_failed.policy.can_upload_binaries = True
+  >>> foo_failed.policy.can_upload_mixed = True
+
+  >>> foo_failed.process()
+
+
+  >>> print foo_failed.rejection_message
+  foo_1.0-1_i386.deb uses bzip2 compression but doesn't Pre-Depend on dpkg (>= 1.10.24)
