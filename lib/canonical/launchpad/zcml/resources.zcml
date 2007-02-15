@@ -46,7 +46,7 @@
     <resource name="blue-bar" file="../images/blue-bar.png" />
     <resource name="blueprint" file="../images/specification.png" />
     <resource name="bounty" file="../images/bounty.png" />
-    <resource name="branch" file="../images/list.png" />
+    <resource name="branch" file="../images/branch.png" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
