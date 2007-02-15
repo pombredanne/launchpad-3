@@ -105,14 +105,6 @@ class NascentUpload:
             # script log.
             raise FatalUploadError(str(e))
 
-        try:
-            self.policy.setDistroReleaseAndPocket(self.changes.distrorelease_and_pocket)
-        except NotFoundError:
-            self.reject("Unable to find distrorelease: %s"
-                        % self.changes.distrorelease_and_pocket)
-
-        self.run_and_collect_errors(self.changes.process_files)
-
     def process(self):
         """Process this upload, checking it against policy, loading it into
         the database if it seems okay.
@@ -122,6 +114,14 @@ class NascentUpload:
         the caller should call the reject method and process a rejection.
         """
         self.logger.debug("Beginning processing.")
+
+        try:
+            self.policy.setDistroReleaseAndPocket(self.changes.distrorelease_and_pocket)
+        except NotFoundError:
+            self.reject("Unable to find distrorelease: %s"
+                        % self.changes.distrorelease_and_pocket)
+
+        self.run_and_collect_errors(self.changes.process_files)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
