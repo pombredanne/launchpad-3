@@ -8,9 +8,9 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-supportcontacts" />
+  <div tal:replace="structure context/@@+portlet-answercontacts" />
   <div tal:condition="context/distribution|nothing"
-       tal:replace="structure context/distribution/@@+portlet-supportcontacts" />
+       tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

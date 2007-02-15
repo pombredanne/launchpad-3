@@ -42,7 +42,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     CreateBugParams, ILanguageSet, IQuestion, IQuestionAddMessageForm,
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget,
     UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -59,22 +59,22 @@ class QuestionSetNavigation(Navigation):
 
 
 class QuestionSetView:
-    """View for the support tracker index page."""
+    """View for the Answer Tracker index page."""
 
     @property
-    def requests_count(self):
-        """Return the number of requests in the system."""
+    def questions_count(self):
+        """Return the number of questions in the system."""
         return self.context.searchQuestions(status=None).count()
 
     @property
-    def latest_requests_made(self):
-        """Return the 10 latest requests made."""
+    def latest_questions_asked(self):
+        """Return the 10 latest questions asked."""
         return self.context.searchQuestions(
             status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
 
     @property
-    def latest_requests_resolved(self):
-        """Return the 10 latest requests solved."""
+    def latest_questions_solved(self):
+        """Return the 10 latest questions solved."""
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(

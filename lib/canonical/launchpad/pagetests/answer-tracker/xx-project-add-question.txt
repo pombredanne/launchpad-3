@@ -1,4 +1,4 @@
-= Asking a New Quesiton from a Project =
+= Asking a New Question from a Project =
 
 Even if projects are not QuestionTargets, it is still possible to create a
 question from a project.

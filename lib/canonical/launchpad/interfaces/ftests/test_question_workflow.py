@@ -32,8 +32,8 @@ from canonical.lp.dbschema import QuestionAction, QuestionStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
-class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
-    """Base class for test cases related to the support tracker workflow.
+class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
+    """Base class for test cases related to the Answer Tracker workflow.
 
     It provides the common fixture and test helper methods.
     """
@@ -272,8 +272,8 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
                     set(modified_event.edited_fields), set(edited_fields))))
 
 
-class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
-    """Various other test cases for the support tracker workflow."""
+class MiscAnswerTrackerWorkflowTestCase(BaseAnswerTrackerWorkflowTestCase):
+    """Various other test cases for the Answer Tracker workflow."""
 
     def testDisallowNoOpSetStatus(self):
         """Test that calling setStatus to change to the same status
@@ -284,7 +284,7 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
                 self.admin, QuestionStatus.OPEN, 'Status Change')
 
 
-class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
+class RequestInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the requestInfo() workflow action method."""
 
     def test_can_request_info(self):
@@ -346,7 +346,7 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'requestInfo')
 
 
-class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
+class GiveInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the giveInfo() workflow action method."""
 
     def test_can_give_info(self):
@@ -389,7 +389,7 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'giveInfo')
 
 
-class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
+class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the giveAnswer() workflow action method."""
 
     def test_can_give_answer(self):
@@ -456,7 +456,7 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'giveAnswer')
 
 
-class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
+class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the confirmAnswer() workflow action method."""
 
     def test_can_confirm_answer_without_answer(self):
@@ -557,7 +557,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'confirmAnswer')
 
 
-class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
+class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the reopen() workflow action method."""
 
     def test_can_reopen(self):
@@ -627,7 +627,7 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'reopen')
 
 
-class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
+class ExpireQuestionTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the expireQuestion() workflow action method."""
 
     def test_expireQuestionFromInvalidStates(self):
@@ -661,7 +661,7 @@ class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.question, 'expireQuestion')
 
 
-class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
+class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the reject() workflow action method."""
 
     def test_rejectFromInvalidStates(self):
@@ -670,7 +670,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         """
         valid_statuses = [status.name for status in QuestionStatus.items
                           if status.name != 'INVALID']
-        # Reject user must be a support contact, (or admin, or product owner).
+        # Reject user must be an answer contact, (or admin, or product owner).
         self.ubuntu.addAnswerContact(self.answerer)
         login(self.answerer.preferredemail.email)
         self._testInvalidTransition(
@@ -681,7 +681,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         """Test that reject() can be called when the question status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
-        # Reject user must be a support contact, (or admin, or product owner).
+        # Reject user must be an answer contact, (or admin, or product owner).
         login(self.answerer.preferredemail.email)
         self.ubuntu.addAnswerContact(self.answerer)
         valid_statuses = [status for status in QuestionStatus.items
@@ -709,7 +709,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
     def testRejectPermission(self):
         """Test the reject() access control.
 
-        Only a support contacts and administrator can reject a question.
+        Only an answer contacts and administrator can reject a question.
         """
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'reject')

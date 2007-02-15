@@ -55,7 +55,7 @@
         module="canonical.launchpad.browser.sourcepackage"
         classes="
             SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
-            SourcePackageSupportMenu SourcePackageTranslationsMenu"
+            SourcePackageAnswersMenu SourcePackageTranslationsMenu"
         />
 
     <browser:pages

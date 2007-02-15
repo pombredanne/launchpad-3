@@ -1,4 +1,4 @@
-<div class="portlet" id="portlet-support-contacts">
+<div class="portlet" id="portlet-answer-contacts">
 
   <h2>Answer contacts for <span tal:replace="context/displayname"/></h2>
 

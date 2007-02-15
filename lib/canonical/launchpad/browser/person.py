@@ -53,7 +53,7 @@ __all__ = [
     'RedirectToEditLanguagesView',
     'PersonLatestQuestionsView',
     'PersonSearchQuestionsView',
-    'PersonSupportMenu',
+    'PersonAnswersMenu',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
@@ -260,7 +260,7 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'branches', 'translations']
 
     def overview(self):
@@ -294,7 +294,7 @@ class PersonFacets(StandardLaunchpadFacets):
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
 
-    def support(self):
+    def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
         return Link('+tickets', text, summary)
@@ -2650,10 +2650,10 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class PersonSupportMenu(ApplicationMenu):
+class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
-    facet = 'support'
+    facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
              'subscribed']
 

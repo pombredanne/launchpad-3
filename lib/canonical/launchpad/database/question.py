@@ -163,7 +163,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     # Workflow methods
 
-    # The lifecycle of a support request is documented in
+    # The lifecycle of a question is documented in
     # https://help.launchpad.net/SupportRequestLifeCycle, so remember
     # to update that document for any pertinent changes.
     @notify_question_modified()

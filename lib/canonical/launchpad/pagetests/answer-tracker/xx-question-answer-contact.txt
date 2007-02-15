@@ -11,7 +11,7 @@ distro.
     >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> portlet = soup.first('div', id='portlet-support-contacts')
+    >>> portlet = soup.first('div', id='portlet-answer-contacts')
     >>> portlet.first('h2')
     <h2>Answer contacts for Ubuntu</h2>
     >>> portlet.first('p')
@@ -56,7 +56,7 @@ new answer contacts appear in the 'Answer Contacts' portlet:
     Landscape Developers has been added as an answer contact for Ubuntu.
     Ubuntu Gnome Team has been added as an answer contact for Ubuntu.
 
-    >>> soup.first('div', id='portlet-support-contacts').first('ul')
+    >>> soup.first('div', id='portlet-answer-contacts').first('ul')
      <ul class="people">
       <li>
         <a href=".../~landscape-developers">Landscape Developers</a>

@@ -94,23 +94,23 @@
                             </a>
                           </li>
                         </ul>
-                        <div id="latest-requests-made" class="left">
+                        <div id="latest-questions-asked" class="left">
 
       <h2 i18n:translate="">Latest questions asked</h2>
       <table>
         <tal:question
-          repeat="question view/latest_requests_made"
+          repeat="question view/latest_questions_asked"
           content="structure question/@@+listing-detailed"
         />
       </table>
 
                         </div>
-                        <div id="latest-requests-resolved" class="right">
+                        <div id="latest-questions-solved" class="right">
 
       <h2 i18n:translate="">Latest questions solved</h2>
       <table>
         <tal:question
-          repeat="question view/latest_requests_resolved"
+          repeat="question view/latest_questions_solved"
           content="structure question/@@+listing-detailed"
         />
       </table>
@@ -119,7 +119,7 @@
                         <p id="application-footer" i18n:translate="">
                           <tal:count
                             i18n:name="count"
-                            tal:content="view/requests_count"
+                            tal:content="view/questions_count"
                           >318</tal:count>
                           questions asked
                         </p>

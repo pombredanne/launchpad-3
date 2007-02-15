@@ -633,7 +633,7 @@
   </browser:pages>
 </facet>
 
-<facet facet="support">
+<facet facet="answers">
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonLatestQuestionsView"
@@ -686,7 +686,7 @@
 
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="PersonSupportMenu"
+    classes="PersonAnswersMenu"
     />
 </facet>
 

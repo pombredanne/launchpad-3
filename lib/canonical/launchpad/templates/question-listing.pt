@@ -6,10 +6,10 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-supportcontacts|nothing" />
+  <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
   <div tal:replace="structure context/@@+portlet-details|nothing" />
   <div tal:condition="context/distribution|nothing"
-       tal:replace="structure context/distribution/@@+portlet-supportcontacts" />
+       tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
 
 <metal:css fill-slot="head_epilogue">
@@ -25,7 +25,7 @@
 </metal:css>
 
 <metal:heading fill-slot="pageheading">
-  <h1 i18n:translate="" tal:content="view/pageheading">Support Requests</h1>
+  <h1 i18n:translate="" tal:content="view/pageheading">Questions</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"

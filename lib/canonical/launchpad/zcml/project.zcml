@@ -226,7 +226,7 @@
       template="../templates/bounty-add.pt"
       />
 
-    <facet facet="support">
+    <facet facet="answers">
         <browser:page
             name="+addticket"
             for="canonical.launchpad.interfaces.IProject"

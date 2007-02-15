@@ -266,8 +266,8 @@ class MaloneHandler:
         return True
 
 
-class SupportTrackerHandler:
-    """Handles emails sent to the support tracker."""
+class AnswerTrackerHandler:
+    """Handles emails sent to the Answer Tracker."""
 
     implements(IMailHandler)
 
@@ -428,7 +428,7 @@ class MailHandlers:
         self._handlers = {
             config.launchpad.bugs_domain: MaloneHandler(),
             config.launchpad.specs_domain: SpecificationHandler(),
-            config.tickettracker.email_domain: SupportTrackerHandler()
+            config.tickettracker.email_domain: AnswerTrackerHandler()
             }
 
     def get(self, domain):

@@ -35,7 +35,7 @@ and another one listing those of the distribution.
     ...     print answer_contact.renderContents()
     Sample Person
 
-To register himself as support contact, the user clicks on the
+To register himself as anwer contact, the user clicks on the
 'Answer Contact' link. He needs to login to access that function.
 
     >>> anon_browser.getLink('Answer Contact').click()

@@ -11,10 +11,10 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
-    'QuestionCollectionSupportMenu',
+    'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
     'QuestionTargetTraversalMixin',
-    'QuestionTargetSupportMenu',
+    'QuestionTargetAnswersMenu',
     'UserSupportLanguagesMixin',
     ]
 
@@ -76,7 +76,7 @@ class UserSupportLanguagesMixin:
 
 
 class QuestionCollectionLatestQuestionsView:
-    """View used to display the latest support requests on a question target."""
+    """View used to display the latest questions on a question target."""
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
@@ -288,7 +288,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My Questions' report.
 
-    It displays and searches the support requests made by the logged
+    It displays and searches the questions made by the logged
     in user in a questiontarget context.
     """
 
@@ -325,7 +325,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'Need Attention' report.
 
-    It displays and searches the support requests needing attention from the
+    It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
     """
 
@@ -359,7 +359,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
 
 class ManageAnswerContactView(GeneralFormView):
-    """View class for managing support contacts."""
+    """View class for managing answer contacts."""
 
     schema = IManageAnswerContactsForm
     label = "Manage answer contacts"
@@ -421,7 +421,7 @@ class ManageAnswerContactView(GeneralFormView):
 class QuestionTargetFacetMixin:
     """Mixin for questiontarget facet definition."""
 
-    def support(self):
+    def answers(self):
         summary = (
             'Questions for %s' % self.context.displayname)
         return Link('+tickets', 'Answers', summary)
@@ -442,11 +442,11 @@ class QuestionTargetTraversalMixin:
     redirection('+ticket', '+tickets')
 
 
-class QuestionCollectionSupportMenu(ApplicationMenu):
+class QuestionCollectionAnswersMenu(ApplicationMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 
     usedfor = ISearchableByQuestionOwner
-    facet = 'support'
+    facet = 'answers'
     links = ['open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
@@ -475,12 +475,12 @@ class QuestionCollectionSupportMenu(ApplicationMenu):
         return Link('+need-attention', text, icon='question')
 
 
-class QuestionTargetSupportMenu(QuestionCollectionSupportMenu):
+class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
     """Base menu definition for QuestionTargets."""
 
     usedfor = IQuestionTarget
-    facet = 'support'
-    links = QuestionCollectionSupportMenu.links + ['new', 'answer_contact']
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
         text = 'Ask Question'

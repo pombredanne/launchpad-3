@@ -5,7 +5,7 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-<facet facet="support">
+<facet facet="answers">
 
   <!-- Question -->
   <content class="canonical.launchpad.database.Question">
@@ -124,7 +124,7 @@
     schema="canonical.launchpad.interfaces.IBug"
     for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.QuestionMakeBugView"
-    label="Create a bug based on support request"
+    label="Create a bug based on question"
     fields="title description"
     arguments="title description"
     permission="launchpad.AnyPerson"

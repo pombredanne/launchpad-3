@@ -7,7 +7,7 @@ user decides to reply to a question notification, his email won't be lost,
 it will be added to the question.
 
 Incoming emails for the support tracker are processed by the
-SupportTrackerHandler.
+AnswerTrackerHandler.
 
     # Define a time generator to ensure ordering of the messages. That is
     # necessary because the date of the messages created from an email has
@@ -28,10 +28,10 @@ SupportTrackerHandler.
     >>> now = now_generator(datetime.now(UTC) - timedelta(hours=24))
 
     # Define a helper function to send email to the support tracker handler.
-    >>> from canonical.launchpad.mail.handlers import SupportTrackerHandler
+    >>> from canonical.launchpad.mail.handlers import AnswerTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
     >>> from canonical.launchpad.mail import signed_message_from_string
-    >>> handler = SupportTrackerHandler()
+    >>> handler = AnswerTrackerHandler()
     >>> def send_support_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
     ...     lines = ['From: %s' % from_addr]
@@ -342,10 +342,10 @@ interpretation is that it is a comment.
     Comment
 
 
-== SupportTrackerHandler Integration ==
+== AnswerTrackerHandler Integration ==
 
 The general mail processor delegates all emails to the
-config.tickettracker.email_domain to the SupportTrackerHandler.
+config.tickettracker.email_domain to the AnswerTrackerHandler.
 
     >>> from canonical.config import config
     >>> to_addr = 'ticket1@%s' % config.tickettracker.email_domain
