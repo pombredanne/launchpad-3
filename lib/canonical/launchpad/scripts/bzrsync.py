@@ -25,7 +25,7 @@ from canonical.lp import initZopeless
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, IRevisionSet)
+    ILaunchpadCelebrities, IBranchRevisionSet, IBranchSet, IRevisionSet)
 
 UTC = pytz.timezone('UTC')
 
@@ -52,6 +52,7 @@ class BzrSync:
         if branch_url is None:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
+        self.bzr_branch.lock_read()
 
     def close(self):
         """Explicitly release resources."""
@@ -69,6 +70,11 @@ class BzrSync:
         common case of calling `syncHistory` and immediately `close`.
         """
         try:
+            # Load the ancestry as the database knows of it.
+            self.retrieveDatabaseAncestry()
+            # And get the history and ancestry from the branch.
+            self.retrieveBranchDetails()
+            self.syncInitialAncestry()
             self.syncHistory()
         finally:
             self.close()
@@ -89,7 +95,7 @@ class BzrSync:
         self.db_ancestry = set()
         self.db_history = []
         self.db_branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchAll():
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
             self.db_ancestry.add(revision_id)
             self.db_branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
@@ -101,7 +107,7 @@ class BzrSync:
             self.last_revision)
         self.bzr_history = self.bzr_branch.revision_history()
 
-    def syncInitialAncestry():
+    def syncInitialAncestry(self):
         # If the database history is the same as the start of
         # the bzr history, then this branch has only been appended to.
         # If not then we need to clean out the db ancestry before
@@ -118,10 +124,11 @@ class BzrSync:
             match_position -= 1
 
         # Remove the revisions from the db history that don't match
+        branch_revision_set = getUtility(IBranchRevisionSet)
         removed = set()
         for rev_id in self.db_history[match_position:]:
             removed.add(rev_id)
-            BranchRevision.delete(self.db_branch_revision_map[rev_id])
+            branch_revision_set.delete(self.db_branch_revision_map[rev_id])
 
         # Now realign our db_history.
         self.db_history = self.db_history[:match_position]
@@ -130,7 +137,7 @@ class BzrSync:
         to_remove = self.db_ancestry - set(self.bzr_ancestry) - removed
         for rev_id in to_remove:
             self.db_ancestry.remove(rev_id)
-            BranchRevision.delete(self.db_branch_revision_map[rev_id])
+            branch_revision_set.delete(self.db_branch_revision_map[rev_id])
 
         # The database and db_history, and db_ancestry are now all
         # in sync with the common parts of the branch.
@@ -140,13 +147,6 @@ class BzrSync:
         # Keep track if something was actually loaded in the database.
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
-
-        # Load the ancestry as the database knows of it.
-        self.retrieveDatabaseAncestry()
-        # And get the history and ancestry from the branch.
-        self.retrieveBranchDetails()
-
-        self.syncInitialAncestry()
         
         for revision_id in self.bzr_ancestry:
             if revision_id is None:
@@ -174,7 +174,7 @@ class BzrSync:
         # loaded into the database.
         did_something = False
 
-        self.trans_manager.begin()
+        # self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         if db_revision is not None:
@@ -219,10 +219,10 @@ class BzrSync:
                 parent_ids=bzr_revision.parent_ids)
             did_something = True
 
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
+        #if did_something:
+        #    self.trans_manager.commit()
+        #else:
+        #    self.trans_manager.abort()
 
     def getRevisions(self):
         """Generate revision IDs that make up the branch's ancestry.
@@ -263,7 +263,7 @@ class BzrSync:
             self.bzr_branch.base)
 
         did_something = False
-        self.trans_manager.begin()
+        # self.trans_manager.begin()
 
         # now synchronise the BranchRevision objects
         for (sequence, revision_id) in self.getRevisions():
@@ -281,10 +281,10 @@ class BzrSync:
             self.db_branch.updateScannedDetails(last_revision, revision_count)
             did_something = True
 
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
+        #if did_something:
+        #    self.trans_manager.commit()
+        #else:
+        #    self.trans_manager.abort()
 
     def syncBranchRevision(self, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
@@ -296,27 +296,19 @@ class BzrSync:
         """
         did_something = False
 
-        self.trans_manager.begin()
+        # self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         db_revno = self.db_branch.getBranchRevision(sequence)
-
-        # If the database revision history has diverged, so we
-        # truncate the database history from this point on.  The
-        # replacement revision numbers will be created in their place.
-        if db_revno is not None and db_revno.revision != db_revision:
-            if self.db_branch.truncateHistory(sequence):
-                did_something = True
-            db_revno = None
 
         if db_revno is None:
             db_revno = self.db_branch.createBranchRevision(
                 sequence, db_revision)
             did_something = True
 
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
+        #if did_something:
+        #    self.trans_manager.commit()
+        #else:
+        #    self.trans_manager.abort()
 
         return did_something

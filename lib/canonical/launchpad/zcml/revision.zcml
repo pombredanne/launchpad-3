@@ -12,10 +12,6 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
   </content>
 
-  <content class="canonical.launchpad.database.BranchRevision">
-    <allow interface="canonical.launchpad.interfaces.IBranchRevision" />
-  </content>
-
   <!-- RevisionSet -->
   <content class="canonical.launchpad.database.RevisionSet">
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
@@ -25,17 +21,6 @@
       class="canonical.launchpad.database.RevisionSet"
       provides="canonical.launchpad.interfaces.IRevisionSet" >
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
-  </securedutility>
-
-  <!-- BranchRevisionSet -->
-  <content class="canonical.launchpad.database.BranchRevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.BranchRevisionSet"
-      provides="canonical.launchpad.interfaces.IBranchRevisionSet" >
-    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
   </securedutility>
 
 </configure>

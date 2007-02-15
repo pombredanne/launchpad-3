@@ -64,7 +64,7 @@ class BzrSyncTestCase(unittest.TestCase):
         self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
-        self.txn.begin()
+        #self.txn.begin()
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
             name="test",
@@ -73,14 +73,14 @@ class BzrSyncTestCase(unittest.TestCase):
             url=self.bzr_branch_url,
             title="Test branch",
             summary="Branch for testing")
-        self.txn.commit()
+        #self.txn.commit()
 
     def setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
         if not self.db_author:
-            self.txn.begin()
+            #self.txn.begin()
             self.db_author = RevisionAuthor(name=self.AUTHOR)
-            self.txn.commit()
+            #self.txn.commit()
 
     def getCounts(self):
         return (Revision.select().count(),
@@ -156,6 +156,10 @@ class TestBzrSync(BzrSyncTestCase):
 
     def makeBzrSync(self):
         self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        # Load the ancestry as the database knows of it.
+        self.bzrsync.retrieveDatabaseAncestry()
+        # And get the history and ancestry from the branch.
+        self.bzrsync.retrieveBranchDetails()
         return self.bzrsync
 
     def syncAndCount(self, new_revisions=0, new_numbers=0,
@@ -236,8 +240,17 @@ class TestBzrSync(BzrSyncTestCase):
 
         counts = self.getCounts()
         bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync.retrieveDatabaseAncestry()
+        bzrsync.retrieveBranchDetails()
+        # now overwrite the bzr_history
         bzrsync.bzr_history = new_revision_history
-        bzrsync.syncHistoryAndClose()
+        bzrsync.bzr_ancestry.remove(old_revision_history[-2])
+        try:
+            bzrsync.syncInitialAncestry()
+            bzrsync.syncHistory()
+        finally:
+            bzrsync.close()
+
         # the new history is one revision shorter:
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
@@ -283,10 +296,11 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
     def test_get_revisions_branched(self):
+        # import pdb;pdb.set_trace()
         rev0 = self.bzr_tree.commit(u'common parent', committer=self.AUTHOR,
                                     allow_pointless=True)
         new_bzrdir = self.bzr_tree.bzrdir.sprout('new-branch-2')
-        new_tree = new_bzrdir.create_workingtree()
+        new_tree = new_bzrdir.open_workingtree()
         rev1 = self.bzr_tree.commit(u'commit one', committer=self.AUTHOR,
                                     allow_pointless=True)
         rev2 = new_tree.commit(u'commit two', committer=self.AUTHOR,
