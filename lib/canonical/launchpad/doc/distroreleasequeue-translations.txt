@@ -53,7 +53,7 @@ queue:
   # We are going to import the pmount build into RELEASE pocket.
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
-  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
+  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     Manifest.get(1), None, None, None, None)

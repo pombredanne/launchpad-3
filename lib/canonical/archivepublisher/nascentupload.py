@@ -1,38 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
 """The processing of nascent uploads.
-
-See the docstring on NascentUpload for more information.
-"""
-
-__metaclass__ = type
-
-import apt_pkg
-
-from zope.component import getUtility
-
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-
-from canonical.lp.dbschema import (
-    BinaryPackageFormat, BuildStatus, PackagePublishingPocket)
-
-from canonical.launchpad.mail import format_address
-from canonical.launchpad.interfaces import (
-    ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    IComponentSet, ISectionSet, IBuildSet, NotFoundError)
-
-from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
-from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, ByHandUploadedFile,
-    SourceNascentUploadFile, BinaryNascentUploadedFile)
-from canonical.archivepublisher.template_messages import (
-    rejection_template, new_template, accepted_template, announce_template)
-
-
-class FatalUploadError(Exception):
-    """XXX"""
-
 
 # XXX: documentation on general design
 #   - want to log all possible errors to the end-user
@@ -45,9 +12,52 @@ class FatalUploadError(Exception):
 #   - NascentUpload is a motor that creates the changes file, does
 #     verifications, gets overrides, triggers creation or rejection and
 #     prepares the email message
+"""
+
+__metaclass__ = type
+
+import apt_pkg
+
+from zope.component import getUtility
+
+from canonical.config import config
+from canonical.encoding import guess as guess_encoding
+
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
+
+from canonical.launchpad.mail import format_address
+from canonical.launchpad.interfaces import (
+    ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
+    IComponentSet, ISectionSet, IBuildSet, NotFoundError)
+
+from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
+from canonical.archivepublisher.nascentuploadfile import (
+    UploadError, UploadWarning, CustomUploadFile,
+    SourceUploadFile, BinaryUploadFile)
+from canonical.archivepublisher.template_messages import (
+    rejection_template, new_template, accepted_template, announce_template)
+
+
+class FatalUploadError(Exception):
+    """A fatal error occurred processing the upload; processing aborted."""
+
 
 class NascentUpload:
-    """XXX
+    """Represents an upload being born. NascentUpload's responsibilities
+    are:
+
+        1. Instantiating the ChangesFile and supplying to it the relevant
+           context.
+        2. Checking consistency of the upload in overall terms: given all
+           present binaries, sources and other bits and pieces, does this
+           upload "make sense"?
+        2. Collecting errors and warnings that occurred while processing
+           the upload.
+        3. Checking signer ACL and keyring constraints.
+        4. Creating state in the database once we've decided the upload
+           is good, and throwing it away otherwise.
+        5. Sending email to concerned individuals.
 
     The collaborative international dictionary of English defines nascent as:
 
@@ -72,6 +82,7 @@ class NascentUpload:
     # Defined in check_sourceful_consistency()
     native = False
     hasorig = False
+
     def __init__(self, policy, fsroot, changes_filename, logger):
         """XXX
 
@@ -102,6 +113,16 @@ class NascentUpload:
 
         self.run_and_collect_errors(self.changes.process_files)
 
+    def process(self):
+        """Process this upload, checking it against policy, loading it into
+        the database if it seems okay.
+
+        No exceptions should be raised. In a few very unlikely events, an
+        UploadError will be raised and sent up to the caller. If this happens
+        the caller should call the reject method and process a rejection.
+        """
+        self.logger.debug("Beginning processing.")
+
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
             self.run_and_check_error(uploaded_file.checkSizeAndCheckSum)
@@ -111,6 +132,94 @@ class NascentUpload:
             self._check_sourceful_consistency()
         if self.binaryful:
             self._check_binaryful_consistency()
+
+        self.run_and_collect_errors(self.changes.verify)
+
+        self.logger.debug("Verifying files in upload.")
+        for uploaded_file in self.changes.files:
+            self.run_and_collect_errors(uploaded_file.verify)
+
+        if self.single_custom:
+            self.logger.debug("Single Custom Upload detected.")
+            return
+
+        # Policy checks
+        if self.sourceful and not self.policy.can_upload_source:
+            self.reject(
+                "Upload is sourceful, but policy refuses sourceful uploads.")
+
+        if self.binaryful and not self.policy.can_upload_binaries:
+            self.reject(
+                "Upload is binaryful, but policy refuses binaryful uploads.")
+
+        if (self.sourceful and self.binaryful and
+            not self.policy.can_upload_mixed):
+            self.reject(
+                "Upload is source/binary but policy refuses mixed uploads.")
+
+        if self.sourceful and not self.changes.dsc:
+            self.reject("Unable to find the dsc file in the sourceful upload?")
+
+        # Apply the overrides from the database. This needs to be done
+        # before doing component verifications because the component
+        # actually comes from overrides for packages that are not NEW.
+        self.find_and_apply_overrides()
+
+        signer_components = self.process_signer_acl()
+        if not self.is_new:
+            # check rights for OLD packages, the NEW ones goes straight to queue
+            self.verify_acl(signer_components)
+
+        if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
+            self.reject(
+                "Not permitted to upload to the %s pocket in a "
+                "release in the '%s' state." % (
+                self.policy.pocket.name,
+                self.policy.distrorelease.releasestatus.name))
+
+        # That's all folks.
+        self.logger.debug("Finished checking upload.")
+
+
+    #
+    # Minor helpers
+    #
+
+    @property
+    def single_custom(self):
+        """Identify single custom uploads.
+
+        Return True if the current upload is a single custom file.
+        It is necessary to identify dist-upgrade section uploads.
+        """
+        # XXX: I'm not sure why single_custom is important. What if two
+        # custom files are uploaded at once? What should happen? I don't
+        # think that is handled correctly..
+        return (len(self.changes.files) == 1 and 
+                isinstance(self.changes.files[0], CustomUploadFile))
+
+    @property
+    def is_new(self):
+        """Return true if any portion of the upload is NEW."""
+        for uploaded_file in self.changes.files:
+            if uploaded_file.new:
+                return True
+        return False
+
+    @property
+    def sender(self):
+        return "%s <%s>" % (
+            config.uploader.default_sender_name,
+            config.uploader.default_sender_address)
+
+    @property
+    def default_recipient(self):
+        return "%s <%s>" % (config.uploader.default_recipient_name,
+                         config.uploader.default_recipient_address)
+
+    #
+    # Overall consistency checks
+    #
 
     def _check_overall_consistency(self):
         """
@@ -148,13 +257,13 @@ class NascentUpload:
         files_archdep = False
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, ByHandUploadedFile):
+            if isinstance(uploaded_file, CustomUploadFile):
                 files_binaryful = files_binaryful or True
-            elif isinstance(uploaded_file, BinaryNascentUploadedFile):
+            elif isinstance(uploaded_file, BinaryUploadFile):
                 files_binaryful = files_binaryful or True
                 files_archindep = files_archindep or uploaded_file.is_archindep()
                 files_archdep = files_archdep or not uploaded_file.is_archindep()
-            elif isinstance(uploaded_file, (SourceNascentUploadFile, DSCFile)):
+            elif isinstance(uploaded_file, (SourceUploadFile, DSCFile)):
                 files_sourceful = True
             else:
                 # This is already caught in ChangesFile.__init__
@@ -198,7 +307,7 @@ class NascentUpload:
             elif uploaded_file.filename.endswith(".orig.tar.gz"):
                 orig += 1
             elif (uploaded_file.filename.endswith(".tar.gz")
-                  and not uploaded_file.custom):
+                  and not isinstance(uploaded_file, CustomUploadFile)):
                 tar += 1
 
         # Okay, let's check the sanity of the upload.
@@ -243,73 +352,8 @@ class NascentUpload:
         if len(considered_archs) > max:
             self.reject("Policy permits only one build per upload.")
 
-    def process(self):
-        """Process this upload, checking it against policy, loading it into
-        the database if it seems okay.
-
-        No exceptions should be raised. In a few very unlikely events, an
-        UploadError will be raised and sent up to the caller. If this happens
-        the caller should call the reject method and process a rejection.
-        """
-        self.logger.debug("Beginning processing.")
-
-        self.run_and_collect_errors(self.changes.verify)
-
-        self.logger.debug("Verifying files in upload.")
-        for uploaded_file in self.changes.files:
-            self.run_and_collect_errors(uploaded_file.verify)
-
-        if self.single_custom:
-            self.logger.debug("Single Custom Upload detected.")
-            return
-
-        # Policy checks
-        if self.sourceful and not self.policy.can_upload_source:
-            self.reject(
-                "Upload is sourceful, but policy refuses sourceful uploads.")
-
-        if self.binaryful and not self.policy.can_upload_binaries:
-            self.reject(
-                "Upload is binaryful, but policy refuses binaryful uploads.")
-
-        if (self.sourceful and self.binaryful and
-            not self.policy.can_upload_mixed):
-            self.reject(
-                "Upload is source/binary but policy refuses mixed uploads.")
-
-        if self.sourceful and not self.changes.dsc:
-            self.reject("Unable to find the dsc file in the sourceful upload?")
-
-        # Apply the overrides from the database. This needs to be done
-        # before doing component verifications because the component
-        # actually comes from overrides for packages that are not NEW.
-        self.find_and_apply_overrides()
-
-        # If there are no possible components, then this uploader simply does
-        # not have any rights on this distribution so stop now before we
-        # go processing crap.
-        permitted_components = self.policy.getDefaultPermittedComponents()
-        if not permitted_components:
-            self.reject("Unable to find a component acl OK for the uploader")
-            return
-
-        # check rights for OLD packages, the NEW ones goes straight to queue
-        signer_components = self.process_signer_acl()
-        if not self.is_new:
-            self.verify_acl(signer_components)
-
-        if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
-            self.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.policy.pocket.name,
-                self.policy.distrorelease.releasestatus.name))
-
-        # That's all folks.
-        self.logger.debug("Finished checking upload.")
-
     #
-    # Helpers for rejections
+    # Helpers for warnings and rejections
     #
 
     def run_and_check_error(self, callable):
@@ -347,27 +391,6 @@ class NascentUpload:
     def is_rejected(self):
         """Returns whether or not this upload was rejected."""
         return len(self.rejection_message) > 0
-
-    #
-    # Other helpers
-    #
-
-    @property
-    def single_custom(self):
-        """Identify single custom uploads.
-
-        Return True if the current upload is a single custom file.
-        It is necessary to identify dist-upgrade section uploads.
-        """
-        return len(self.changes.files) == 1 and self.changes.files[0].custom
-
-    @property
-    def is_new(self):
-        """Return true if any portion of the upload is NEW."""
-        for uploaded_file in self.changes.files:
-            if uploaded_file.new:
-                return True
-        return False
 
     #
     # Signature and ACL stuff
@@ -423,7 +446,7 @@ class NascentUpload:
             return
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, SourceNascentUploadFile):
+            if isinstance(uploaded_file, SourceUploadFile):
                 # We don't do overrides on diff/tar
                 continue
             if (uploaded_file.component not in signer_components and
@@ -433,7 +456,7 @@ class NascentUpload:
                     uploaded_file.component, uploaded_file.filename))
 
     #
-    # Version and overrides
+    # Handling checking of versions and overrides
     #
 
     def _checkVersion(self, proposed_version, archive_version,
@@ -580,16 +603,9 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.changes.files:
-            if uploaded_file.custom or uploaded_file.section == "byhand":
-                # handled specially in insert_into_queue -- it goes
-                # into a custom queue, no overrides applied.
-
-                # XXX cprov 20060308: since the ftpmaster can't yet verify
-                # the content of custom uploads via the queue tool, moving
-                # them to NEW only makes it more confused. bug # 34070
-                # Single_Custom uploads should be NEW.
-                #if self.single_custom:
-                #    uploaded_file.new = True
+            if isinstance(uploaded_file, (CustomUploadFile, SourceUploadFile)):
+                # Source files are irrelevant, being represented by the
+                # DSC, and custom files don't have overrides.
                 continue
 
             if isinstance(uploaded_file, DSCFile):
@@ -621,7 +637,7 @@ class NascentUpload:
                 if self.policy.pocket != PackagePublishingPocket.BACKPORTS:
                     self._checkSourceBackports(uploaded_file)
 
-            elif isinstance(uploaded_file, BinaryNascentUploadedFile):
+            elif isinstance(uploaded_file, BinaryUploadFile):
                 # XXX: this is actually is_binary!
                 self.logger.debug("getPublishedReleases()")
 
@@ -669,256 +685,8 @@ class NascentUpload:
                 pass
 
     #
-    # Once verified, here we go
+    # Actually processing accepted or rejected uploads -- and mailing people
     #
-
-    def do_reject(self, template=rejection_template):
-        """Reject the current upload given the reason provided."""
-        assert self.is_rejected
-
-        interpolations = {
-            "SENDER": self.sender,
-            "CHANGES": self.changes.filename,
-            "SUMMARY": self.rejection_message,
-            "CHANGESFILE": guess_encoding(self.changes.filecontents)
-            }
-        recipients = self.build_recipients()
-        interpolations['RECIPIENT'] = ", ".join(recipients)
-        interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-        interpolations = self.policy.filterInterpolations(self,
-                                                          interpolations)
-        outgoing_msg = template % interpolations
-
-        return [outgoing_msg]
-
-    @property
-    def sender(self):
-        return "%s <%s>" % (
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
-
-    @property
-    def default_recipient(self):
-        return "%s <%s>" % (config.uploader.default_recipient_name,
-                         config.uploader.default_recipient_address)
-
-    def build_recipients(self):
-        """Build self.recipients up to include every address we trust."""
-        recipients = []
-        self.logger.debug("Building recipients list.")
-        maintainer = self.changes.maintainer['person']
-        changer = self.changes.changed_by['person']
-
-        if self.changes.signer:
-            recipients.append(self.changes.signer_address['person'])
-
-            if (maintainer != self.changes.signer and
-                self.is_person_in_keyring(maintainer)):
-                self.logger.debug("Adding maintainer to recipients")
-                recipients.append(maintainer)
-
-            if (changer != self.changes.signer and changer != maintainer
-                and self.is_person_in_keyring(changer)):
-                self.logger.debug("Adding changed-by to recipients")
-                recipients.append(changer)
-        else:
-            # Only autosync policy allow unsigned changes
-            # We rely on the person running sync-tool about the identity
-            # of the changer.
-            self.logger.debug(
-                "Changes file is unsigned, adding changer as recipient")
-            recipients.append(changer)
-
-        recipients = self.policy.filterRecipients(self, recipients)
-        real_recipients = []
-        for person in recipients:
-            # We should only actually send mail to people that are
-            # registered Launchpad user with preferred email;
-            # this is a sanity check to avoid spamming the innocent.
-            # Not that we do that sort of thing.
-            if person is None:
-                self.logger.debug("Could not find a person for <%r> or that "
-                                  "person has no preferred email address set "
-                                  "in launchpad" % recipients)
-            elif person.preferredemail is not None:
-                recipient = format_address(person.displayname,
-                                           person.preferredemail.email)
-                self.logger.debug("Adding recipient: '%s'" % recipient)
-                real_recipients.append(recipient)
-        return real_recipients
-
-    def build_summary(self):
-        """List the files and build a summary as needed."""
-        summary = []
-        for uploaded_file in self.changes.files:
-            if uploaded_file.new:
-                summary.append("NEW: %s" % uploaded_file.filename)
-            else:
-                summary.append(" OK: %s" % uploaded_file.filename)
-                if uploaded_file.type == 'dsc':
-                    summary.append("     -> Component: %s Section: %s" % (
-                        uploaded_file.component,
-                        uploaded_file.section))
-
-        return "\n".join(summary)
-
-    def insert_source_into_db(self):
-        """Insert the source into the database and inform the policy."""
-        release = self.changes.dsc.create_source_package_release(self.changes)
-        for uploaded_file in self.changes.dsc.files:
-            library_file = self.librarian.create(
-                uploaded_file.filename,
-                uploaded_file.size,
-                open(uploaded_file.full_filename, "rb"),
-                uploaded_file.content_type)
-            release.addFile(library_file)
-        self.policy.sourcepackagerelease = release
-
-    def find_build(self, archtag):
-        """Find and return a build for the given archtag, cached on policy.
-
-        To find the right build, we try these steps, in order, until we have
-        one:
-        - Check first if a build id was provided. If it was, load that build.
-        - Try to locate an existing suitable build, and use that. We also,
-        in this case, change this build to be FULLYBUILT.
-        - Create a new build in FULLYBUILT status.
-        """
-        if getattr(self.policy, 'build', None) is not None:
-            return self.policy.build
-
-        build_id = getattr(self.policy.options, 'buildid', None)
-        spr = self.policy.sourcepackagerelease
-
-        if build_id is None:
-            spr = self.policy.sourcepackagerelease
-            dar = self.policy.distrorelease[archtag]
-
-            # Check if there's a suitable existing build.
-            build = spr.getBuildByArch(dar)
-            if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
-            else:
-                # No luck. Make one.
-                build = spr.createBuild(
-                    dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
-            self.policy.build = build
-        else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
-
-            # Sanity check; raise an error if the build we've been
-            # told to link to makes no sense (ie. is not for the right
-            # source package).
-            if (build.sourcepackagerelease != spr or
-                build.pocket != self.policy.pocket):
-                raise FatalUploadError("Attempt to upload binaries specifying "
-                                  "build %s, where they don't fit" % build_id)
-            self.policy.build = build
-            self.logger.debug("Build %s found" % self.policy.build.id)
-
-        return self.policy.build
-
-    def insert_binary_into_db(self):
-        """Insert this nascent upload's builds into the database."""
-        for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, BinaryNascentUploadedFile):
-                continue
-            desclines = uploaded_file.control['Description'].split("\n")
-            summary = desclines[0]
-            description = "\n".join(desclines[1:])
-            format=BinaryPackageFormat.DEB
-            if uploaded_file.type == "udeb":
-                format=BinaryPackageFormat.UDEB
-            archtag = uploaded_file.architecture
-            if archtag == 'all':
-                archtag = self.changes.filename_archtag
-            build = self.find_build(archtag)
-            component = getUtility(IComponentSet)[uploaded_file.component]
-            section = getUtility(ISectionSet)[uploaded_file.section]
-            # Also remember the control data for the uploaded file
-            control = uploaded_file.control
-            binary = build.createBinaryPackageRelease(
-                binarypackagename=uploaded_file.bpn,
-                version=uploaded_file.control['Version'],
-                summary=guess_encoding(summary),
-                description=guess_encoding(description),
-                binpackageformat=format,
-                component=component,
-                section=section,
-                priority=uploaded_file.priority,
-                # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
-                # bug 3160
-                shlibdeps='',
-                depends=guess_encoding(control.get('Depends', '')),
-                recommends=guess_encoding(control.get('Recommends', '')),
-                suggests=guess_encoding(control.get('Suggests', '')),
-                conflicts=guess_encoding(control.get('Conflicts', '')),
-                replaces=guess_encoding(control.get('Replaces', '')),
-                provides=guess_encoding(control.get('Provides', '')),
-                essential=uploaded_file.control.get('Essential',
-                                                    '').lower()=='yes',
-                installedsize=int(control.get('Installed-Size','0')),
-                # XXX: dsilvers: 20051014: erm, source should have a copyright
-                # but not binaries. bug 3161
-                copyright='',
-                licence='',
-                architecturespecific=control.get("Architecture",
-                                                 "").lower()!='all'
-                ) # the binarypackagerelease constructor
-
-            library_file = self.librarian.create(
-                uploaded_file.filename,
-                uploaded_file.size,
-                open(uploaded_file.full_filename, "rb"),
-                uploaded_file.content_type)
-            binary.addFile(library_file)
-
-    def insert_into_queue(self):
-        """Insert this nascent upload into the database."""
-        if self.sourceful:
-            self.insert_source_into_db()
-        if self.binaryful and not self.single_custom:
-            self.insert_binary_into_db()
-
-        # create a DRQ entry in new state
-        self.logger.debug("Creating a New queue entry")
-        queue_root = self.policy.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes.filename, self.changes["filecontents"])
-
-        # Next, if we're sourceful, add a source to the queue
-        if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
-        # If we're binaryful, add the build
-        if self.binaryful and not self.single_custom:
-            # We cannot rely on the distrorelease coming in for a binary
-            # release because it is always set to 'autobuild' by the builder.
-            # We instead have to take it from the policy which gets instructed
-            # by the buildd master during the upload.
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
-        # Finally, add any custom files.
-        for uploaded_file in self.changes.files:
-            if uploaded_file.custom:
-                queue_root.addCustom(
-                    self.librarian.create(
-                    uploaded_file.filename, uploaded_file.size,
-                    open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
-
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
-
-        # if it is known (already overridden properly), move it
-        # to ACCEPTED state automatically
-        if not self.is_new:
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):
@@ -955,10 +723,7 @@ class NascentUpload:
             interpolations['RECIPIENT'] = ", ".join(recipients)
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
-            interpolations = self.policy.filterInterpolations(
-                self, interpolations)
-
-            self.insert_into_queue()
+            self.create_objects_in_database()
 
             # Unknown uploads
             if self.is_new:
@@ -993,4 +758,231 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("Exception while accepting: %s" % e)
             return False, self.do_reject()
+
+    def do_reject(self, template=rejection_template):
+        """Reject the current upload given the reason provided."""
+        assert self.is_rejected
+
+        interpolations = {
+            "SENDER": self.sender,
+            "CHANGES": self.changes.filename,
+            "SUMMARY": self.rejection_message,
+            "CHANGESFILE": guess_encoding(self.changes.filecontents)
+            }
+        recipients = self.build_recipients()
+        interpolations['RECIPIENT'] = ", ".join(recipients)
+        interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
+        outgoing_msg = template % interpolations
+
+        return [outgoing_msg]
+
+    def build_recipients(self):
+        """Build self.recipients up to include every address we trust."""
+        recipients = []
+        self.logger.debug("Building recipients list.")
+        maintainer = self.changes.maintainer['person']
+        changer = self.changes.changed_by['person']
+
+        if self.changes.signer:
+            recipients.append(self.changes.signer_address['person'])
+
+            if (maintainer != self.changes.signer and
+                self.is_person_in_keyring(maintainer)):
+                self.logger.debug("Adding maintainer to recipients")
+                recipients.append(maintainer)
+
+            if (changer != self.changes.signer and changer != maintainer
+                and self.is_person_in_keyring(changer)):
+                self.logger.debug("Adding changed-by to recipients")
+                recipients.append(changer)
+        else:
+            # Only autosync policy allow unsigned changes
+            # We rely on the person running sync-tool about the identity
+            # of the changer.
+            self.logger.debug(
+                "Changes file is unsigned, adding changer as recipient")
+            recipients.append(changer)
+
+        valid_recipients = []
+        for person in recipients:
+            # We should only actually send mail to people that are
+            # registered Launchpad user with preferred email;
+            # this is a sanity check to avoid spamming the innocent.
+            # Not that we do that sort of thing.
+            if person is None or person.preferredemail is None:
+                self.logger.debug("Could not find a person for <%r> or that "
+                                  "person has no preferred email address set "
+                                  "in launchpad" % recipients)
+                continue
+            recipient = format_address(person.displayname,
+                                       person.preferredemail.email)
+            self.logger.debug("Adding recipient: '%s'" % recipient)
+            valid_recipients.append(recipient)
+        return valid_recipients
+
+    def build_summary(self):
+        """List the files and build a summary as needed."""
+        summary = []
+        for uploaded_file in self.changes.files:
+            if uploaded_file.new:
+                summary.append("NEW: %s" % uploaded_file.filename)
+            else:
+                summary.append(" OK: %s" % uploaded_file.filename)
+                if isinstance(uploaded_file, DSCFile):
+                    summary.append("     -> Component: %s Section: %s" % (
+                        uploaded_file.component,
+                        uploaded_file.section))
+
+        return "\n".join(summary)
+
+    #
+    # Inserting stuff in the database
+    #
+
+    def create_objects_in_database(self):
+        """Insert this nascent upload into the database."""
+        if self.sourceful:
+            self.changes.dsc.create_source_package_release(self.changes)
+
+        if self.binaryful and not self.single_custom:
+            # XXX: 
+            self.insert_binary_into_db()
+
+        # create a DRQ entry in new state
+        self.logger.debug("Creating a New queue entry")
+        distrorelease = self.policy.distrorelease
+        queue_root = distrorelease.createQueueEntry(self.policy.pocket,
+            self.changes.filename, self.changes.filecontents)
+
+        # Next, if we're sourceful, add a source to the queue
+        if self.sourceful:
+            queue_root.addSource(self.policy.sourcepackagerelease)
+        # If we're binaryful, add the build
+        if self.binaryful and not self.single_custom:
+            # We cannot rely on the distrorelease coming in for a binary
+            # release because it is always set to 'autobuild' by the builder.
+            # We instead have to take it from the policy which gets instructed
+            # by the buildd master during the upload.
+            # XXX: stop using the policy to shove things around
+            queue_root.pocket = self.policy.build.pocket
+            queue_root.addBuild(self.policy.build)
+        # Finally, add any custom files.
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, CustomUploadFile):
+                queue_root.addCustom(
+                    self.librarian.create(
+                    uploaded_file.filename, uploaded_file.size,
+                    open(uploaded_file.full_filename, "rb"),
+                    uploaded_file.content_type),
+                    uploaded_file.custom_type)
+
+        # Stuff the queue item away in case we want it later
+        self.queue_root = queue_root
+
+        # if it is known (already overridden properly), move it
+        # to ACCEPTED state automatically
+        if not self.is_new:
+            if self.policy.autoApprove(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.setAccepted()
+            else:
+                self.logger.debug("Setting it to UNAPPROVED")
+                queue_root.setUnapproved()
+
+    def find_build(self, archtag):
+        """Find and return a build for the given archtag, cached on policy.
+
+        To find the right build, we try these steps, in order, until we have
+        one:
+        - Check first if a build id was provided. If it was, load that build.
+        - Try to locate an existing suitable build, and use that. We also,
+        in this case, change this build to be FULLYBUILT.
+        - Create a new build in FULLYBUILT status.
+        """
+        if getattr(self.policy, 'build', None) is not None:
+            return self.policy.build
+
+        build_id = getattr(self.policy.options, 'buildid', None)
+        spr = self.policy.sourcepackagerelease
+
+        if build_id is None:
+            spr = self.policy.sourcepackagerelease
+            dar = self.policy.distrorelease[archtag]
+
+            # Check if there's a suitable existing build.
+            build = spr.getBuildByArch(dar)
+            if build is not None:
+                build.buildstate = BuildStatus.FULLYBUILT
+            else:
+                # No luck. Make one.
+                build = spr.createBuild(
+                    dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
+                self.logger.debug("Build %s created" % build.id)
+        else:
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+
+            # Sanity check; raise an error if the build we've been
+            # told to link to makes no sense (ie. is not for the right
+            # source package).
+            if (build.sourcepackagerelease != spr or
+                build.pocket != self.policy.pocket):
+                raise FatalUploadError("Attempt to upload binaries specifying "
+                                  "build %s, where they don't fit" % build_id)
+            self.logger.debug("Build %s found" % build.id)
+        # XXX: stop shoving stuff into the policy
+        self.policy.build = build
+
+        return self.policy.build
+
+    def insert_binary_into_db(self):
+        """Insert this nascent upload's builds into the database."""
+        for uploaded_file in self.changes.files:
+            if not isinstance(uploaded_file, BinaryUploadFile):
+                continue
+            desclines = uploaded_file.control['Description'].split("\n")
+            summary = desclines[0]
+            description = "\n".join(desclines[1:])
+            archtag = uploaded_file.architecture
+            if archtag == 'all':
+                archtag = self.changes.filename_archtag
+            build = self.find_build(archtag)
+            component = getUtility(IComponentSet)[uploaded_file.component]
+            section = getUtility(ISectionSet)[uploaded_file.section]
+            # Also remember the control data for the uploaded file
+            control = uploaded_file.control
+            binary = build.createBinaryPackageRelease(
+                binarypackagename=uploaded_file.bpn,
+                version=uploaded_file.control['Version'],
+                summary=guess_encoding(summary),
+                description=guess_encoding(description),
+                binpackageformat=uploaded_file.format,
+                component=component,
+                section=section,
+                priority=uploaded_file.priority,
+                # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
+                # bug 3160
+                shlibdeps='',
+                depends=guess_encoding(control.get('Depends', '')),
+                recommends=guess_encoding(control.get('Recommends', '')),
+                suggests=guess_encoding(control.get('Suggests', '')),
+                conflicts=guess_encoding(control.get('Conflicts', '')),
+                replaces=guess_encoding(control.get('Replaces', '')),
+                provides=guess_encoding(control.get('Provides', '')),
+                essential=uploaded_file.control.get('Essential',
+                                                    '').lower()=='yes',
+                installedsize=int(control.get('Installed-Size','0')),
+                # XXX: dsilvers: 20051014: erm, source should have a copyright
+                # but not binaries. bug 3161
+                copyright='',
+                licence='',
+                architecturespecific=control.get("Architecture",
+                                                 "").lower()!='all'
+                ) # the binarypackagerelease constructor
+
+            library_file = self.librarian.create(
+                uploaded_file.filename,
+                uploaded_file.size,
+                open(uploaded_file.full_filename, "rb"),
+                uploaded_file.content_type)
+            binary.addFile(library_file)
 

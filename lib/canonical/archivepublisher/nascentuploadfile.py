@@ -12,34 +12,12 @@ import subprocess
 from zope.component import getUtility
 
 from canonical.librarian.utils import filechunks
-
+from canonical.launchpad.interfaces import IComponentSet, ISectionSet
+from canonical.archivepublisher.utils import prefix_multi_line_string
 from canonical.lp.dbschema import (
     PackagePublishingPriority, DistroReleaseQueueCustomFormat, 
-    DistroReleaseQueueStatus)
+    DistroReleaseQueueStatus, BinaryPackageFormat)
 
-from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet)
-
-from canonical.archivepublisher.utils import (
-    prefix_multi_line_string)
-
-
-# This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
-# Essentially if you change anything to do with custom formats, grep for
-# the marker in the codebase and make sure the same changes are made
-# everywhere which needs them.
-custom_sections = {
-    'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-    'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
-    }
-
-# Capitalised because we extract direct from the deb/udeb where the
-# other mandatory fields lists are lowercased by parse_tagfile
-deb_mandatory_fields = set([
-    "Package", "Architecture", "Version"
-    ])
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
@@ -47,38 +25,11 @@ re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
 re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
+re_no_revision = re.compile(r"-[^-]+$")
+
 re_valid_version = re.compile(r"^([0-9]+:)?[0-9A-Za-z\.\-\+~:]+$")
 re_valid_pkg_name = re.compile(r"^[\dA-Za-z][\dA-Za-z\+\-\.]+$")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
-
-# Map priorities to their dbschema valuesa
-# We treat a priority of '-' as EXTRA since some packages in some distros
-# are broken and we can't fix the world.
-priority_map = {
-    "required": PackagePublishingPriority.REQUIRED,
-    "important": PackagePublishingPriority.IMPORTANT,
-    "standard": PackagePublishingPriority.STANDARD,
-    "optional": PackagePublishingPriority.OPTIONAL,
-    "extra": PackagePublishingPriority.EXTRA,
-    "-": PackagePublishingPriority.EXTRA
-    }
-
-# Files need their content type for creating in the librarian.
-# This maps endings of filenames onto content types we may encounter
-# in the processing of an upload
-filename_ending_content_type_map = {
-    ".dsc": "text/x-debian-source-package",
-    ".deb": "application/x-debian-package",
-    ".udeb": "application/x-micro-debian-package",
-    ".diff.gz": "application/gzipped-patch",
-    ".tar.gz": "application/gzipped-tar"
-    }
-
-def split_section(section):
-    """Split the component out of the section."""
-    if "/" not in section:
-        return "main", section
-    return section.split("/", 1)
 
 
 class UploadError(Exception):
@@ -115,30 +66,34 @@ class NascentUploadedFile:
 
     The filename, along with information about it, is kept here.
     """
-
+    new = False
+    # XXX: try and get rid of type
     type = None
+    sha_digest = None
 
-    #
-    # XXX
-    #   - policy
-    #   - logger
-    #   - fsroot
-    # XXX
-    #
+    # Files need their content type for creating in the librarian.
+    # This maps endings of filenames onto content types we may encounter
+    # in the processing of an upload
+    filename_ending_content_type_map = {
+        ".dsc": "text/x-debian-source-package",
+        ".deb": "application/x-debian-package",
+        ".udeb": "application/x-micro-debian-package",
+        ".diff.gz": "application/gzipped-patch",
+        ".tar.gz": "application/gzipped-tar"
+        }
 
     def __init__(self, filename, digest, size, component_and_section,
                  priority, fsroot, policy, logger):
         self.filename = filename
         self.digest = digest
-        self.size = int(size)
-        self.component, self.section = split_section(component_and_section)
         self.priority = priority
-        self.new = False
-        self._values_checked = False
-        self.policy = policy
         self.fsroot = fsroot
+        self.policy = policy
         self.logger = logger
 
+        self.size = int(size)
+        self.component, self.section = self.split_component_and_section(
+            component_and_section)
         self.full_filename = os.path.join(fsroot, filename)
 
     #
@@ -148,30 +103,25 @@ class NascentUploadedFile:
     @property
     def content_type(self):
         """The content type for this file ready for adding to the librarian."""
-        for ending, content_type in filename_ending_content_type_map.items():
+        for ending, content_type in self.filename_ending_content_type_map.items():
             if self.filename.endswith(ending):
                 return content_type
         return "application/octet-stream"
 
-    @property
-    def custom_type(self):
-        """The custom upload type for this file. (None if not custom)."""
-        if self.custom:
-            return custom_sections[self.section]
-        return None
-
     #
     #
     #
-
-    @property
-    def custom(self):
-        return self.priority == "-" and self.section in custom_sections
 
     @property
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
         return os.path.exists(self.full_filename)
+
+    def split_component_and_section(self, component_and_section):
+        """Split the component out of the section."""
+        if "/" not in component_and_section:
+            return "main", component_and_section
+        return component_and_section.split("/", 1)
 
     #
     # Verification
@@ -195,8 +145,8 @@ class NascentUploadedFile:
         """
         if not self.exists_on_disk:
             raise UploadError(
-                "File %s as mentioned in the changes file was not found." % (
-                self.filename))
+                "File %s mentioned in the changes file was not found."
+                % self.filename)
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
@@ -220,12 +170,40 @@ class NascentUploadedFile:
                 "File %s mentioned in the changes has a size mismatch. "
                 "%s != %s" % (self.filename, size, self.size))
 
-        # Record the sha1 digest and note that we have checked things.
+        # The sha_digest is used later when verifying packages mentioned
+        # in the DSC file; it's used to compare versus files in the
+        # Librarian.
         self.sha_digest = sha_cksum.hexdigest()
 
 
+class CustomUploadFile(NascentUploadedFile):
+    """XXX"""
 
-class PackageNascentUploadFile(NascentUploadedFile):
+    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+    # Essentially if you change anything to do with custom formats, grep for
+    # the marker in the codebase and make sure the same changes are made
+    # everywhere which needs them.
+    custom_sections = {
+        'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
+        'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
+        'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
+        'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+        }
+
+    # These uploads are by definition, new.
+    new = True
+
+    @property
+    def custom_type(self):
+        """The custom upload type for this file. (None if not custom)."""
+        return self.custom_sections[self.section]
+
+    def verify(self):
+        if self.section not in self.custom_sections:
+            yield UploadError("Unsupported custom section name %r" % self.section)
+
+
+class PackageUploadFile(NascentUploadedFile):
     """XXX"""
 
     def __init__(self, filename, digest, size, component_and_section,
@@ -246,10 +224,8 @@ class PackageNascentUploadFile(NascentUploadedFile):
         self.package = package
         self.version = version
         self.type = type
-        # XXX: I hate that we need to supply changes here, but the
-        # verification methods need information from the changes. To
-        # avoid this we could supply chopversion, chopversion2 and
-        # architectures.
+        # XXX: to do away with this we need to find a way of receiving
+        # the changes' architectures and binaries
         self.changes = changes
 
         valid_components = [component.name for component in
@@ -274,10 +250,10 @@ class PackageNascentUploadFile(NascentUploadedFile):
         raise NotImplementedError
 
 
-class SourceNascentUploadFile(PackageNascentUploadFile):
+class SourceUploadFile(PackageUploadFile):
     """XXX"""
-
-
+    # XXX: we can probably get rid of this class altogether
+    # XXX: how does this differ from DSCUploadFile
     def verify(self):
         """Verify the uploaded source file.
 
@@ -286,22 +262,43 @@ class SourceNascentUploadFile(PackageNascentUploadFile):
         """
         self.logger.debug("Verifying source file %s" % self.filename)
 
-        if self.type == "orig.tar.gz":
-            changes_version = self.changes.chopversion2
-        else:
-            changes_version = self.changes.chopversion
-        if changes_version != self.version:
-            self.reject("%s: should be %s according to changes file." % (
-                self.filename, changes_version))
-
         if 'source' not in self.changes.architectures:
-            self.reject("%s: changes file doesn't list 'source' in "
-                        "Architecture field." % (self.filename))
-        return []
+            yield UploadError("%s: changes file doesn't list 'source' in "
+                "Architecture field." % (self.filename))
+
+        version_chopped = re_no_epoch.sub('', self.version)
+        if self.type == "orig.tar.gz":
+            version_chopped = re_no_revision.sub('', version_chopped)
+
+        source_match = re_issource.match(self.filename)
+        filename_version = source_match.group(2)
+        if filename_version != version_chopped:
+            yield UploadError("%s: should be %s according to changes file."
+                % (filename_version, version_chopped))
 
 
-class BinaryNascentUploadedFile(PackageNascentUploadFile):
+class UBinaryUploadFile(PackageUploadFile):
     """XXX"""
+    # Capitalised because we extract direct from the deb/udeb where the
+    # other mandatory fields lists are lowercased by parse_tagfile
+    mandatory_fields = set([
+        "Package", "Architecture", "Version"
+        ])
+
+    # Map priorities to their dbschema valuesa
+    # We treat a priority of '-' as EXTRA since some packages in some distros
+    # are broken and we can't fix the world.
+    priority_map = {
+        "required": PackagePublishingPriority.REQUIRED,
+        "important": PackagePublishingPriority.IMPORTANT,
+        "standard": PackagePublishingPriority.STANDARD,
+        "optional": PackagePublishingPriority.OPTIONAL,
+        "extra": PackagePublishingPriority.EXTRA,
+        "-": PackagePublishingPriority.EXTRA
+        }
+
+    format = BinaryPackageFormat.UDEB
+
     def __init__(self, XXX, changes):
         self.changes = changes
         self.convert_priority()
@@ -309,86 +306,24 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
     def is_archindep(self):
         return "XXX"
 
-    def verify(self):
-        if self.type == "deb":
-            # XXX: don't we verify timestamps for udebs?
-            self.verify_timestamp()
-        self.real_verify()
-        return []
-
     def convert_priority(self):
         """Checks whether the priority indicated is valid"""
 
-        if self.priority in priority_map:
+        # XXX: doesn't this need to be mapped for sources?
+        # XXX: can't we do this on the fly?
+
+        if self.priority in self.priority_map:
             # map priority tag to dbschema
-            priority = priority_map[self.priority]
+            priority = self.priority_map[self.priority]
         else:
-            default_priority = priority_map['extra']
+            default_priority = self.priority_map['extra']
             self.warn("Unable to grok priority %r, overriding it with %s"
                       % (self.priority, default_priority))
             priority = default_priority
 
         self.priority = priority
 
-    def verify_timestamp(self):
-        self.logger.debug("Verifying timestamps in %s" % (
-            self.filename))
-
-        future_cutoff = time.time() + self.policy.future_time_grace
-        past_cutoff = time.mktime(
-            time.strptime(str(self.policy.earliest_year), "%Y"))
-        tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
-
-        tar_checker.reset()
-        try:
-            deb_file = open(self.full_filename, "rb")
-            apt_inst.debExtract(deb_file, tar_checker.callback,
-                                "control.tar.gz")
-            deb_file.seek(0)
-            try:
-                apt_inst.debExtract(deb_file,tar_checker.callback,
-                                    "data.tar.gz")
-            except SystemError, e:
-                # If we can't find a data.tar.gz,
-                # look for data.tar.bz2 instead.
-                if not re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
-                                 str(e)):
-                    raise
-                deb_file.seek(0)
-                apt_inst.debExtract(deb_file,tar_checker.callback,
-                                    "data.tar.bz2")
-            deb_file.close();
-
-            future_files = tar_checker.future_files.keys()
-            if future_files:
-                self.reject("%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])." % (
-                    self.filename, len(future_files),
-                    future_files[0],
-                    time.ctime(
-                    tar_checker.future_files[future_files[0]])))
-
-            ancient_files = tar_checker.ancient_files.keys()
-            if ancient_files:
-                self.reject("%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])." % (
-                    self.filename, len(ancient_files),
-                    ancient_files[0],
-                    time.ctime(
-                    tar_checker.ancient_files[ancient_files[0]])))
-
-        except:
-            # There is a very large number of places where we
-            # might get an exception while checking the timestamps.
-            # Many of them come from apt_inst/apt_pkg and they are
-            # terrible in giving sane exceptions. We thusly capture
-            # them all and make them into rejection messages instead
-            self.reject("%s: deb contents timestamp check failed "
-                        "[%s: %s]" % (
-                self.filename, sys.exc_type, sys.exc_value));
-
-
-    def real_verify(self):
+    def verify(self):
         """Verify the contents of the .deb or .udeb as best we can.
 
         Should not raise anything itself but makes little effort to catch
@@ -396,28 +331,36 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
         apt_inst may go bonkers. Those are generally caught and swallowed.
         """
         self.logger.debug("Verifying binary %s" % self.filename)
-        if not self.binaryful:
-            self.reject("Found %s in an allegedly non-binaryful upload." % (
-                self.filename))
+
+        binary_match = re_isadeb.match(self.filename)
+        filename_version = binary_match.group(2)
+        version_chopped = re_no_epoch.sub('', self.version)
+        if filename_version != version_chopped:
+            yield UploadError("%s: should be %s according to changes file."
+                % (filename_version, version_chopped))
+
+        for error in self.unpack_and_check_deb():
+            yield error
+
+    def unpack_and_check_deb(self):
         deb_file = open(self.full_filename, "r")
         # Extract the control information
         try:
             control_file = apt_inst.debExtractControl(deb_file)
-            control = apt_pkg.ParseSection(control_file)
+            control_lines = apt_pkg.ParseSection(control_file)
         except:
-            # Swallow everything apt_pkg and apt_inst throw at us because they
-            # are not desperately pythonic and can raise odd or confusing
-            # exceptions at times and are out of our control.
-            deb_file.close();
-            self.reject("%s: debExtractControl() raised %s." % (
-                self.filename, sys.exc_type));
+            deb_file.close()
+            yield UploadError(
+                "%s: debExtractControl() raised %s."
+                 % (self.filename, sys.exc_type))
             return
 
         # Check for mandatory control fields
-        for mandatory_field in deb_mandatory_fields:
-            if control.Find(mandatory_field) is None:
-                self.reject("%s: control file lacks %s field." % (
-                    self.filename, mandatory_field))
+        for mandatory_field in self.mandatory_fields:
+            if control_lines.Find(mandatory_field) is None:
+                yield UploadError(
+                    "%s: control file lacks mandatory field %r"
+                     % (self.filename, mandatory_field))
 
         # Ensure the package name matches one in the changes file
         if control.Find("Package", "") not in self.changes.binaries:
@@ -468,7 +411,7 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
                 self.filename))
 
         # Check the section & priority match those in the .changes Files entry
-        control_component, control_section = split_section(
+        control_component, control_section = self.split_component_and_section(
             control.Find("Section"))
         if ((control_component, control_section) !=
             (self.component, self.section)):
@@ -536,13 +479,13 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
 
         # Verify that the source versions match if present.
         if 'source' in self.changes.architectures:
-            if source_version != self.changes['version']:
+            if source_version != self.version:
                 self.reject(
                     "source version (%s) for %s does not match changes "
                     "version %s" % (
                     source_version,
                     self.filename,
-                    self.changes['version']))
+                    self.version))
         else:
             found = False
 
@@ -635,11 +578,74 @@ class BinaryNascentUploadedFile(PackageNascentUploadFile):
         # That's all folks.
 
 
-class ByHandUploadedFile(NascentUploadedFile):
-    pass
+class BinaryUploadFile(UBinaryUploadFile):
 
-class DSCUploadedFile(NascentUploadedFile):
-    # XXX XXX
-    pass
+    format = BinaryPackageFormat.DEB
+
+    def verify(self):
+        for error in UBinaryUploadFile.verify(self):
+            yield error
+
+        self.logger.debug("Verifying timestamps in %s" % (
+            self.filename))
+
+        future_cutoff = time.time() + self.policy.future_time_grace
+
+        earliest_year = time.strptime(str(self.policy.earliest_year), "%Y")
+        past_cutoff = time.mktime(earliest_year)
+
+        tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
+
+        tar_checker.reset()
+        try:
+            deb_file = open(self.full_filename, "rb")
+            apt_inst.debExtract(deb_file, tar_checker.callback,
+                                "control.tar.gz")
+            deb_file.seek(0)
+            try:
+                apt_inst.debExtract(deb_file, tar_checker.callback,
+                                    "data.tar.gz")
+            except SystemError, e:
+                # If we can't find a data.tar.gz,
+                # look for data.tar.bz2 instead.
+                if re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
+                                 str(e)):
+                    deb_file.seek(0)
+                    apt_inst.debExtract(deb_file,tar_checker.callback,
+                                        "data.tar.bz2")
+                else:
+                    yield UploadError("Could not find data tarball in %s"
+                                       % self.filename)
+                    deb_file.close();
+                    return
+
+            deb_file.close();
+
+            future_files = tar_checker.future_files.keys()
+            if future_files:
+                first_file = future_files[0]
+                ts = time.ctime(tar_checker.future_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(future_files), first_file, ts))
+
+            ancient_files = tar_checker.ancient_files.keys()
+            if ancient_files:
+                first_file = ancient_files[0]
+                ts = time.ctime(tar_checker.ancient_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(ancient_files), first_file, ts))
+
+        except Exception, e:
+            # There is a very large number of places where we
+            # might get an exception while checking the timestamps.
+            # Many of them come from apt_inst/apt_pkg and they are
+            # terrible in giving sane exceptions. We thusly capture
+            # them all and make them into rejection messages instead
+            yield UploadError("%s: deb contents timestamp check failed: %s"
+                 % (self.filename, e))
 
 

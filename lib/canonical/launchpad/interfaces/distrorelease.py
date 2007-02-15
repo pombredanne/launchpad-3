@@ -235,11 +235,11 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         """
 
     def createUploadedSourcePackageRelease(
-        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -247,7 +247,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, usually UTC_NOW
+         * dateuploaded: timestamp, if not provided will be UTC_NOW
          * sourcepackagename: ISourcePackageName
          * version: string, a debian valid version
          * maintainer: IPerson designed as package maintainer
