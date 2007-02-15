@@ -1,19 +1,20 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
-           'RevisionSet']
+__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'BranchRevision',
+           'BranchRevisionSet', 'RevisionSet']
 
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
-from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
-from canonical.launchpad.helpers import shortlist
-
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import (
+    IBranchRevision, IBranchRevisionSet,
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 
 class Revision(SQLBase):
@@ -70,18 +71,17 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
-class RevisionNumber(SQLBase):
+class BranchRevision(SQLBase):
     """The association between a revision and a branch."""
 
-    implements(IRevisionNumber)
+    implements(IBranchRevision)
 
-    _table = 'RevisionNumber'
-    _idSequence = 'branchrevision_id_seq'
+    _table = 'BranchRevision'
     
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)
 
-    sequence = IntCol(notNull=True)
+    sequence = IntCol()
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
 
@@ -116,3 +116,30 @@ class RevisionSet:
                            parent_id=parent_id)
         
         return revision
+
+
+class BranchRevisionSet:
+
+    implements(IBranchRevisionSet)
+
+    def new(self, branch, sequence, revision):
+        """See IBranchSet."""
+        return BranchRevision(
+            branch=branch, sequence=sequence, revision=revision)
+
+    def getAncestryForBranch(self, branch):
+        """See IBranchSet."""
+        return BranchRevision.select(
+            'BranchRevision.branch = %s' %sqlvalues(branch))
+
+    def getRevisionHistoryForBranch(self, branch, limit=None):
+        """See IBranchSet."""
+        query = BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
+            ''' % sqlvalues(branch), orderBy='-sequence')
+        if limit is None:
+            return query
+        else:
+            return query.limit(limit)
+

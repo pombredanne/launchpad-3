@@ -4,7 +4,7 @@ The Branch table holds information about an Bazaar Branch. It describes the
 Launchpad user model of a branch, and in particular should be able (in the
 future) to support un-committing of revisions.
 
-It has a N-N association to the Revision table through the RevisionNumber
+It has a N-N association to the Revision table through the BranchRevision
 table. An association table is required because the sequence of revisions
 listed by "bzr log" is defined by a "revision-history" file which has some
 freedom with respect to the ancestry of revisions.
@@ -311,14 +311,14 @@ Let's get a branch with some revisions in it.
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
-IRevisionNumber interface. The Branch.revision_count attribute gives the length
+IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
->>> from canonical.launchpad.interfaces import IRevisionNumber
+>>> from canonical.launchpad.interfaces import IBranchRevision
 >>> count = junk.revision_count
 >>> count
 6
->>> [verifyObject(IRevisionNumber, a) for a in junk.revision_history]
+>>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
 >>> [revno.sequence for revno in junk.revision_history]
 [6, 5, 4, 3, 2, 1]
@@ -326,14 +326,14 @@ of the revision_history attribute but without building the list.
 There are two methods for getting only the the latest items of the revision
 history.
 
-Branch.latest_revisions give a specific count of RevisionNumbers at the end of
+Branch.latest_revisions give a specific count of BranchRevisions at the end of
 the history.
 
 >>> three_latest = list(junk.revision_history)[:3]
 >>> list(junk.latest_revisions(3)) == three_latest
 True
 
-Branch.revisions_since gives all the RevisionNumbers for revisions comitted
+Branch.revisions_since gives all the BranchRevisions for revisions comitted
 since a given timestamp. It may give suprising results if some committers had a
 skewed clock.
 
