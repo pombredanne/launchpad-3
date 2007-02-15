@@ -117,5 +117,7 @@ def main(argv):
     if not options.check:
         ztm.commit()
 
+    logger_object.info('Finished.')
+
 if __name__ == '__main__':
     main(sys.argv)
