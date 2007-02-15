@@ -98,6 +98,12 @@
 
   <browser:page
       for="*"
+      name="branch-badges"
+      permission="zope.Public"
+      template="../templates/branch-badge-macros.pt" />
+
+  <browser:page
+      for="*"
       name="branch-javascript-macros"
       permission="zope.Public"
       template="../templates/branch-javascript-macros.pt" />
