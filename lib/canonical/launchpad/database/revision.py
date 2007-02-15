@@ -7,7 +7,8 @@ __all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'BranchRevision',
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor, flush_database_updates, flush_database_caches, SQLBase, sqlvalues)
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -123,17 +124,17 @@ class BranchRevisionSet:
     implements(IBranchRevisionSet)
 
     def new(self, branch, sequence, revision):
-        """See IBranchSet."""
+        """See IBranchRevisionSet."""
         return BranchRevision(
             branch=branch, sequence=sequence, revision=revision)
 
     def getAncestryForBranch(self, branch):
-        """See IBranchSet."""
+        """See IBranchRevisionSet."""
         return BranchRevision.select(
             'BranchRevision.branch = %s' %sqlvalues(branch))
 
     def getRevisionHistoryForBranch(self, branch, limit=None):
-        """See IBranchSet."""
+        """See IBranchRevisionSet."""
         query = BranchRevision.select('''
             BranchRevision.branch = %s AND
             BranchRevision.sequence IS NOT NULL
@@ -142,4 +143,3 @@ class BranchRevisionSet:
             return query
         else:
             return query.limit(limit)
-

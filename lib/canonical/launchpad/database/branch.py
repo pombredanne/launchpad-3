@@ -201,21 +201,6 @@ class Branch(SQLBase):
         """See IBranch.createBranchRevision()"""
         return BranchRevision(branch=self, sequence=sequence, revision=revision)
 
-    def truncateHistory(self, from_rev):
-        """See IBranch.truncateHistory()"""
-        revnos = BranchRevision.select(AND(
-            BranchRevision.q.branchID == self.id,
-            BranchRevision.q.sequence >= from_rev))
-        did_something = False
-        # Since in the future we may not be storing the entire
-        # revision history, a simple count against BranchRevision
-        # may not be sufficient to adjust the revision_count.
-        for revno in revnos:
-            revno.destroySelf()
-            self.revision_count -= 1
-            did_something = True
-        return did_something
-
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""
         self.last_scanned = UTC_NOW
