@@ -1,7 +1,11 @@
 SET client_min_messages=ERROR;
 
-ALTER TABLE POSubmission ADD COLUMN active BOOLEAN DEFAULT FALSE NOT NULL;
-ALTER TABLE POSubmission ADD COLUMN published BOOLEAN DEFAULT FALSE NOT NULL;
+-- Disable some triggers to allow this patch to be applied faster.
+ALTER TABLE POSubmission DISABLE TRIGGER mv_pofiletranslator_posubmission;
+ALTER TABLE POMsgSet DISABLE TRIGGER mv_pofiletranslator_pomsgset;
+
+ALTER TABLE POSubmission ADD COLUMN active BOOLEAN DEFAULT FALSE NOT NULL,
+    ADD COLUMN published BOOLEAN DEFAULT FALSE NOT NULL;
 
 UPDATE POSubmission SET active=TRUE FROM POSelection
 WHERE POSubmission.id = POSelection.activesubmission;
@@ -22,8 +26,9 @@ ON POSubmission(pomsgset, pluralform, active);
 CREATE INDEX posubmission__pomsgset__pluralform__published__idx
 ON POSubmission(pomsgset, pluralform, published);
 
-ALTER TABLE POMsgSet ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE;
-ALTER TABLE POMsgSet ADD COLUMN reviewer INTEGER REFERENCES Person(id);
+ALTER TABLE POMsgSet ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE,
+    ADD COLUMN reviewer INTEGER REFERENCES Person(id);
+
 ALTER TABLE POMsgSet ADD CONSTRAINT review_fields_valid CHECK (
     reviewer IS NULL = date_reviewed IS NULL
     );
@@ -93,9 +98,9 @@ FROM
             posubmission.active
         LEFT JOIN potranslation ON potranslation.id = posubmission.potranslation;
 
-ALTER TABLE POFile DROP COLUMN latestsubmission;
-ALTER TABLE POFile ADD COLUMN last_touched_pomsgset
+ALTER TABLE POFile DROP COLUMN latestsubmission, ADD COLUMN last_touched_pomsgset
     INTEGER REFERENCES POMsgSet(id);
+
 UPDATE POFile SET last_touched_pomsgset=pms.id
 FROM (
     SELECT DISTINCT ON (pofile) id, pofile
@@ -105,5 +110,9 @@ FROM (
     ) AS pms
 WHERE POFile.id = pms.pofile;
 DROP TABLE POSelection;
+
+-- Enable again the triggers.
+ALTER TABLE POSubmission ENABLE TRIGGER mv_pofiletranslator_posubmission;
+ALTER TABLE POMsgSet ENABLE TRIGGER mv_pofiletranslator_pomsgset;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 8, 0);
