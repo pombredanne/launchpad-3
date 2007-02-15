@@ -19,13 +19,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.answercontact import SupportContact
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
@@ -455,7 +455,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
         """See IQuestionTarget."""
-        return TicketSet.new(
+        return QuestionSet.new(
             title=title, description=description, owner=owner,
             distribution=self, datecreated=datecreated, language=language)
 
@@ -463,7 +463,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IQuestionTarget."""
         # First see if there is a ticket with that number.
         try:
-            ticket = Ticket.get(ticket_id)
+            ticket = Question.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # Now verify that that ticket is actually for this distribution.
@@ -473,18 +473,18 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def searchTickets(self, **search_criteria):
         """See IQuestionTarget."""
-        return TicketTargetSearch(
+        return QuestionTargetSearch(
             distribution=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See IQuestionTarget."""
-        return SimilarTicketsSearch(title, distribution=self).getResults()
+        return SimilarQuestionsSearch(title, distribution=self).getResults()
 
     def addSupportContact(self, person):
         """See IQuestionTarget."""
         if person in self.support_contacts:
             return False
-        SupportContact(
+        AnswerContact(
             product=None, person=person,
             sourcepackagename=None, distribution=self)
         return True
@@ -493,7 +493,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IQuestionTarget."""
         if person not in self.support_contacts:
             return False
-        support_contact_entry = SupportContact.selectOne(
+        support_contact_entry = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
         support_contact_entry.destroySelf()
@@ -502,7 +502,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     @property
     def support_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = SupportContact.select(
+        support_contacts = AnswerContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
         return sorted(

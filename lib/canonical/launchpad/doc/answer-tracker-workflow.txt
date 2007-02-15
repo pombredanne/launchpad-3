@@ -535,22 +535,22 @@ Changing the status triggers the event:
 
     >>> login(stub.preferredemail.email)
     >>> msg = ticket.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
-    Received SQLObjectCreatedEvent on TicketMessage
-    Received SQLObjectModifiedEvent on Ticket
+    Received SQLObjectCreatedEvent on QuestionMessage
+    Received SQLObjectModifiedEvent on Question
 
 Example of a workflow method that triggers the events:
 
     >>> msg = ticket.reject(stub, 'Close this ticket.')
-    Received SQLObjectCreatedEvent on TicketMessage
-    Received SQLObjectModifiedEvent on Ticket
+    Received SQLObjectCreatedEvent on QuestionMessage
+    Received SQLObjectModifiedEvent on Question
 
 Even only adding a comment without changing the status will send
 these events.
 
     >>> login('test@canonical.com')
     >>> msg = ticket.addComment(sample_person, 'A comment')
-    Received SQLObjectCreatedEvent on TicketMessage
-    Received SQLObjectModifiedEvent on Ticket
+    Received SQLObjectCreatedEvent on QuestionMessage
+    Received SQLObjectModifiedEvent on Question
 
     # Cleanup
     >>> ticketmessage_event_listener.unregister()
@@ -559,10 +559,10 @@ these events.
 == Reopenings ==
 
 Whenever a ticket considered answered (in the SOLVED or INVALID state)
-is reopened, a TicketReopening is created.
+is reopened, a QuestionReopening is created.
 
     # Let's register an event listener to notify us whenever a
-    # TicketReopening is created.
+    # QuestionReopening is created.
     >>> from canonical.launchpad.interfaces import IQuestionReopening
     >>> reopening_event_listener = TestEventListener(
     ...     IQuestionReopening, ISQLObjectCreatedEvent, print_event)
@@ -584,12 +584,12 @@ comes back to say that it doesn't work in fact.
     ...     "Actually, altough the installer boots properly. I'm not able "
     ...     "to pass beyond the partitioning.",
     ...     datecreated=now_plus_three_hours)
-    Received SQLObjectCreatedEvent on TicketReopening
+    Received SQLObjectCreatedEvent on QuestionReopening
 
 The reopening record is available through the reopenings attribute.
 
     >>> list(ticket.reopenings)
-    [<TicketReopening...>]
+    [<QuestionReopening...>]
     >>> reopening = ticket.reopenings[0]
     >>> verifyObject(IQuestionReopening, reopening)
     True
@@ -627,7 +627,7 @@ back to OPEN after having been rejected.
     ...     stub, QuestionStatus.OPEN, 'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
     ...     datecreated=now_plus_two_hours)
-    Received SQLObjectCreatedEvent on TicketReopening
+    Received SQLObjectCreatedEvent on QuestionReopening
 
     >>> reopening = ticket.reopenings[0]
     >>> print reopening.reopener.name

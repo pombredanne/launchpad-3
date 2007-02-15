@@ -18,16 +18,16 @@ somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the ticket sampledata and
     # forget to update this script.
-    >>> from canonical.launchpad.database import Ticket
+    >>> from canonical.launchpad.database import Question
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> Ticket.select('status IN (%i,%i)' % (
+    >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
     8
 
     # By default, all open and needs info ticket should expire. Make
     # sure that no new tickets were recently added and will make this
     # test fails in the future.
-    >>> Ticket.select(
+    >>> Question.select(
     ...     "datelastresponse >= current_timestamp - interval '15 days' OR "
     ...    "datelastquery >= current_timestamp - interval '15 days'").count()
     0
@@ -62,13 +62,13 @@ somebody are subject to expiration.
     >>> recent_open_ticket = ticketset.get(2)
     >>> recent_open_ticket.giveInfo(
     ...     'SVG works better now, but is still broken')
-    <TicketMessage...>
+    <QuestionMessage...>
 
     # This one was put in the NEEDSINFO state recently.
     >>> recent_needsinfo_ticket = ticketset.get(4)
     >>> recent_needsinfo_ticket.requestInfo(
     ...     no_priv, 'What URL were you visiting?')
-    <TicketMessage...>
+    <QuestionMessage...>
 
     # Old open tickets.
     >>> old_open_ticket = ticketset.get(5)
@@ -77,7 +77,7 @@ somebody are subject to expiration.
     # to make sure that DB permissions are correct.
     >>> admin_team = getUtility(IPersonSet).getByName('admins')
     >>> old_open_ticket.subscribe(admin_team)
-    <TicketSubscription...>
+    <QuestionSubscription...>
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> old_open_ticket.target.addSupportContact(salgado)
     True

@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-__all__ = ['TicketBug']
+__all__ = ['QuestionBug']
 
 from zope.interface import implements
 
@@ -15,14 +15,14 @@ from canonical.launchpad.interfaces import IQuestionBug
 from canonical.database.sqlbase import SQLBase
 
 
-class TicketBug(SQLBase):
+class QuestionBug(SQLBase):
     """A link between a ticket and a bug."""
 
     implements(IQuestionBug)
 
     _table='TicketBug'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Ticket', notNull=True)
+    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
 
     @property

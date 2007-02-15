@@ -1,6 +1,6 @@
 = Asking a New Quesiton from a Project =
 
-Even if projects are not TicketTargets, it is still possible to create a
+Even if projects are not QuestionTargets, it is still possible to create a
 question from a project.
 
 The user must login to proceed:

@@ -290,7 +290,7 @@ user subscribed to.
     >>> pt_BR_ticket = getUtility(IQuestionSet).get(13)
     >>> login('foo.bar@canonical.com')
     >>> pt_BR_ticket.subscribe(foo_bar)
-    <TicketSubscription...>
+    <QuestionSubscription...>
 
     >>> sorted(language.code for language in foo_bar.getTicketLanguages())
     [u'en', u'pt_BR']
@@ -299,7 +299,7 @@ And also tickets for which he's the answerer.
 
     >>> es_ticket = getUtility(IQuestionSet).get(12)
     >>> es_ticket.reject(foo_bar, 'Reject ticket.')
-    <TicketMessage...>
+    <QuestionMessage...>
 
     >>> sorted(language.code for language in foo_bar.getTicketLanguages())
     [u'en', u'es', u'pt_BR']
@@ -318,7 +318,7 @@ And tickets on which the user commented:
     >>> en_ticket = getUtility(IQuestionSet).get(1)
     >>> login('carlos@canonical.com')
     >>> en_ticket.addComment(carlos, 'A simple comment.')
-    <TicketMessage...>
+    <QuestionMessage...>
 
     >>> sorted(language.code for language in carlos.getTicketLanguages())
     [u'en', u'es', u'pt_BR']

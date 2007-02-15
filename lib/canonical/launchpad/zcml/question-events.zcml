@@ -5,21 +5,21 @@
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.TicketAddedNotification" />
+   handler="canonical.launchpad.mailnotification.QuestionAddedNotification" />
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.TicketUnsupportedLanguageNotification" />
+   handler="canonical.launchpad.mailnotification.QuestionUnsupportedLanguageNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.TicketModifiedDefaultNotification" />
+   handler="canonical.launchpad.mailnotification.QuestionModifiedDefaultNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.TicketModifiedOwnerNotification" />
+   handler="canonical.launchpad.mailnotification.QuestionModifiedOwnerNotification" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
@@ -44,6 +44,6 @@
 <subscriber
    for="canonical.launchpad.interfaces.IQuestion
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.database.create_ticketreopening" />
+   handler="canonical.launchpad.database.create_questionreopening" />
 
 </configure>

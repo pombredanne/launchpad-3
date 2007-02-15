@@ -26,7 +26,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.database.answercontact import SupportContact
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -40,7 +40,7 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.question import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.cal import Calendar
@@ -248,7 +248,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
         """See IQuestionTarget."""
-        return TicketSet.new(title=title, description=description,
+        return QuestionSet.new(title=title, description=description,
             owner=owner, product=self, datecreated=datecreated,
             language=language)
 
@@ -256,7 +256,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IQuestionTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_id)
+            ticket = Question.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -266,18 +266,18 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def searchTickets(self, **search_criteria):
         """See IQuestionTarget."""
-        return TicketTargetSearch(
+        return QuestionTargetSearch(
             product=self, **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See IQuestionTarget."""
-        return SimilarTicketsSearch(title, product=self).getResults()
+        return SimilarQuestionsSearch(title, product=self).getResults()
 
     def addSupportContact(self, person):
         """See IQuestionTarget."""
         if person in self.support_contacts:
             return False
-        SupportContact(
+        AnswerContact(
             product=self, person=person,
             sourcepackagename=None, distribution=None)
         return True
@@ -286,7 +286,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IQuestionTarget."""
         if person not in self.support_contacts:
             return False
-        support_contact_entry = SupportContact.selectOneBy(
+        support_contact_entry = AnswerContact.selectOneBy(
             product=self, person=person)
         support_contact_entry.destroySelf()
         return True
@@ -294,7 +294,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     @property
     def support_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = SupportContact.selectBy(product=self)
+        support_contacts = AnswerContact.selectBy(product=self)
         return sorted(
             [support_contact.person for support_contact in support_contacts],
             key=attrgetter('displayname'))

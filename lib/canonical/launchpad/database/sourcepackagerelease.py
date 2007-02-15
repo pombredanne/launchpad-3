@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-from canonical.launchpad.database.question import Ticket
+from canonical.launchpad.database.question import Question
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
@@ -192,7 +192,7 @@ class SourcePackageRelease(SQLBase):
     @property
     def open_ticket_count(self):
         """See ISourcePackageRelease."""
-        results = Ticket.select("""
+        results = Question.select("""
             status = %s AND
             distribution = %s AND
             sourcepackagename = %s

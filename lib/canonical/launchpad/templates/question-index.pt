@@ -59,7 +59,7 @@
       <metal:no-heading fill-slot="heading" />
       <tal:comment replace="nothing">
         We control here the order of the action buttons and we omit
-        the confirmation action which is rendered using the TicketMessage
+        the confirmation action which is rendered using the QuestionMessage
         view.
       </tal:comment>
       <div class="actions" metal:fill-slot="buttons">

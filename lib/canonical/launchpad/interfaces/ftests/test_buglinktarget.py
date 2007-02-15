@@ -3,7 +3,7 @@
 """Test harness for running the buglinktarget.txt interface test
 
 This module will run the interface test against the CVE, Specification and
-Ticket implementations of that interface.
+Question implementations of that interface.
 """
 
 __metaclass__ = type

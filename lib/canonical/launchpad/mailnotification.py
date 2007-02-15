@@ -916,12 +916,12 @@ def notify_team_join(event):
     simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
-class TicketNotification:
+class QuestionNotification:
     """Base class for a notification related to a ticket.
 
     Creating an instance of that class will build the notification and
     send it to the appropriate recipients. That way, subclasses of
-    TicketNotification can be registered as event subscribers.
+    QuestionNotification can be registered as event subscribers.
     """
 
     def __init__(self, ticket, event):
@@ -1070,11 +1070,11 @@ class TicketNotification:
                 'target_name': self.ticket.target.displayname}
 
 
-class TicketAddedNotification(TicketNotification):
+class QuestionAddedNotification(QuestionNotification):
     """Notification sent when a ticket is added."""
 
     def getBody(self):
-        """See TicketNotification."""
+        """See QuestionNotification."""
         ticket = self.ticket
         body = get_email_template('question-added-notification.txt') % {
             'target_name': ticket.target.displayname,
@@ -1086,7 +1086,7 @@ class TicketAddedNotification(TicketNotification):
         return body
 
 
-class TicketModifiedDefaultNotification(TicketNotification):
+class QuestionModifiedDefaultNotification(QuestionNotification):
     """Base implementation of a notification when a ticket is modified."""
 
     # Email template used to render the body.
@@ -1160,7 +1160,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
 
     def getHeaders(self):
         """Add a References header."""
-        headers = TicketNotification.getHeaders(self)
+        headers = QuestionNotification.getHeaders(self)
         if self.new_message:
             # XXX flacoste 2007/02/02 The first message cannot contain
             # a References because we don't create a Message instance
@@ -1179,7 +1179,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
         return self.new_message or self.metadata_changes_text
 
     def getBody(self):
-        """See TicketNotification."""
+        """See QuestionNotification."""
         body = self.metadata_changes_text
         replacements = dict(
             ticket_id=self.ticket.id,
@@ -1201,7 +1201,7 @@ class TicketModifiedDefaultNotification(TicketNotification):
         """The default notification goes to all ticket susbcribers that
         speaks the request language, except the owner.
         """
-        return [person for person in TicketNotification.getRecipients(self)
+        return [person for person in QuestionNotification.getRecipients(self)
                 if person != self.ticket.owner]
 
     # Header template used when a new message is added to the ticket.
@@ -1239,12 +1239,12 @@ class TicketModifiedDefaultNotification(TicketNotification):
             header, self.wrapper.format(self.new_message.text_contents)])
 
 
-class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
+class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
     """Notification sent to the owner when his ticket is modified."""
 
     # These actions will be done by the owner, so use the second person.
     action_header_template = dict(
-        TicketModifiedDefaultNotification.action_header_template)
+        QuestionModifiedDefaultNotification.action_header_template)
     action_header_template.update({
         QuestionAction.CONFIRM:
             'You confirmed that the question is solved:',
@@ -1266,7 +1266,7 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
 
     def initialize(self):
         """Set the template that will be used based on the new comment action."""
-        TicketModifiedDefaultNotification.initialize(self)
+        QuestionModifiedDefaultNotification.initialize(self)
         if self.new_message:
             self.body_template = self.body_template_by_action.get(
                 self.new_message.action, self.body_template)
@@ -1279,18 +1279,18 @@ class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
             return []
 
     def getBody(self):
-        """See TicketNotification."""
-        body = TicketModifiedDefaultNotification.getBody(self)
+        """See QuestionNotification."""
+        body = QuestionModifiedDefaultNotification.getBody(self)
         if self.unsupported_language:
             body += self.unsupported_language_warning
         return body
 
 
-class TicketUnsupportedLanguageNotification(TicketNotification):
+class QuestionUnsupportedLanguageNotification(QuestionNotification):
     """Notification sent to support contacts for unsupported languages."""
 
     def getSubject(self):
-        """See TicketNotification."""
+        """See QuestionNotification."""
         return '[Question #%s]: (%s) %s' % (
             self.ticket.id, self.ticket.language.englishname,
             self.ticket.title)
@@ -1303,7 +1303,7 @@ class TicketUnsupportedLanguageNotification(TicketNotification):
         return self.ticket.target.support_contacts
 
     def getBody(self):
-        """See TicketNotification."""
+        """See QuestionNotification."""
         ticket = self.ticket
         return get_email_template('question-unsupported-languages-added.txt') % {
             'target_name': ticket.target.displayname,

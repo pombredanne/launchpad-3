@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketMessage',
+    'QuestionMessage',
     ]
 
 from email.Utils import make_msgid
@@ -24,7 +24,7 @@ from canonical.lp import decorates
 from canonical.lp.dbschema import QuestionAction, QuestionStatus
 
 
-class TicketMessage(SQLBase):
+class QuestionMessage(SQLBase):
     """A table linking tickets and messages."""
 
     implements(IQuestionMessage)
@@ -33,7 +33,7 @@ class TicketMessage(SQLBase):
 
     _table = 'TicketMessage'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Ticket', notNull=True)
+    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
 
     action = EnumCol(

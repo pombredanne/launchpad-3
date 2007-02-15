@@ -1,9 +1,9 @@
-= TicketWorkflowView: Handling of the subscribe_me option =
+= QuestionWorkflowView: Handling of the subscribe_me option =
 
 This test makes sure that it is possible to subscribe to the ticket
 whatever the action used.
 
-    >>> from canonical.launchpad.browser import TicketWorkflowView
+    >>> from canonical.launchpad.browser import QuestionWorkflowView
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -23,7 +23,7 @@ Empty the subscribers list:
 Create a view harness:
 
     >>> workflow_harness = LaunchpadFormHarness(
-    ...     firefox_ticket, TicketWorkflowView)
+    ...     firefox_ticket, QuestionWorkflowView)
     >>> form_data = {'field.message': 'A message.',
     ...              'field.subscribe_me.used': 1,
     ...              'field.subscribe_me': 'on'}

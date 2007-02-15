@@ -1,6 +1,6 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Ticket expiration logic."""
+"""Question expiration logic."""
 
 __metaclass__ = type
 
@@ -16,13 +16,13 @@ from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
 
 
-class TicketJanitor:
+class QuestionJanitor:
     """Object that takes the responsability of expiring tickets
     without activity in a configurable period.
     """
 
     def __init__(self, days_before_expiration=None, log=None):
-        """Create a new TicketJanitor.
+        """Create a new QuestionJanitor.
 
         :days_before_expiration: Days of inactivity before a ticket is
             expired. Defaults to config.tickettracker.days_before_expiration

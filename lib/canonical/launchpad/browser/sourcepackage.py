@@ -30,7 +30,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship, relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
-    TicketTargetFacetMixin, TicketTargetSupportMenu)
+    QuestionTargetFacetMixin, QuestionTargetSupportMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -98,7 +98,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
         raise NotImplementedError
 
 
-class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
     enable_only = ['overview', 'bugs', 'support', 'translations']
@@ -137,12 +137,12 @@ class SourcePackageBugsMenu(ApplicationMenu):
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(TicketTargetSupportMenu):
+class SourcePackageSupportMenu(QuestionTargetSupportMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
 
-    links = TicketTargetSupportMenu.links + ['gethelp']
+    links = QuestionTargetSupportMenu.links + ['gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')

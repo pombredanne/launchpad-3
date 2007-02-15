@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['TicketSubscription']
+__all__ = ['QuestionSubscription']
 
 from zope.interface import implements
 
@@ -13,14 +13,14 @@ from canonical.launchpad.interfaces import IQuestionSubscription
 from canonical.database.sqlbase import SQLBase
 
 
-class TicketSubscription(SQLBase):
+class QuestionSubscription(SQLBase):
     """A subscription for person to a question."""
 
     implements(IQuestionSubscription)
 
     _table='TicketSubscription'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Ticket', notNull=True)
+    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 

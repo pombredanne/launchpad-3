@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'SimilarTicketsSearch',
-    'Ticket',
-    'TicketTargetSearch',
-    'TicketPersonSearch',
-    'TicketSet']
+    'SimilarQuestionsSearch',
+    'Question',
+    'QuestionTargetSearch',
+    'QuestionPersonSearch',
+    'QuestionSet']
 
 import operator
 from email.Utils import make_msgid
@@ -38,16 +38,17 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.database.questionbug import TicketBug
-from canonical.launchpad.database.questionmessage import TicketMessage
-from canonical.launchpad.database.questionsubscription import TicketSubscription
+from canonical.launchpad.database.questionbug import QuestionBug
+from canonical.launchpad.database.questionmessage import QuestionMessage
+from canonical.launchpad.database.questionsubscription import (
+    QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
-class notify_ticket_modified:
+class notify_question_modified:
     """Decorator that sends a SQLObjectModifiedEvent after a workflow action.
 
     This decorator will take a snapshot of the object before the call to
@@ -64,7 +65,7 @@ class notify_ticket_modified:
 
     def __call__(self, func):
         """Return the decorator."""
-        def notify_ticket_modified(self, *args, **kwargs):
+        def notify_question_modified(self, *args, **kwargs):
             old_ticket = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
@@ -78,14 +79,15 @@ class notify_ticket_modified:
                 self, object_before_modification=old_ticket,
                 edited_fields=edited_fields, user=msg.owner))
             return msg
-        return notify_ticket_modified
+        return notify_question_modified
 
 
-class Ticket(SQLBase, BugLinkTargetMixin):
+class Question(SQLBase, BugLinkTargetMixin):
     """See IQuestion."""
 
     implements(IQuestion, IBugLinkTarget)
 
+    _table = 'Ticket'
     _defaultOrder = ['-priority', 'datecreated']
 
     # db field names
@@ -103,7 +105,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     answerer = ForeignKey(
         dbName='answerer', notNull=False, foreignKey='Person', default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
-        foreignKey='TicketMessage', default=None)
+        foreignKey='QuestionMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -120,18 +122,18 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = SQLMultipleJoin('TicketSubscription',
+    subscriptions = SQLMultipleJoin('QuestionSubscription',
         joinColumn='ticket', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
-    bug_links = SQLMultipleJoin('TicketBug', joinColumn='ticket',
-        orderBy='id')
+    bug_links = SQLMultipleJoin('QuestionBug',
+        joinColumn='ticket', orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
-    messages = SQLMultipleJoin('TicketMessage', joinColumn='ticket',
+    messages = SQLMultipleJoin('QuestionMessage', joinColumn='ticket',
         prejoins=['message'], orderBy=['TicketMessage.id'])
-    reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
+    reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
         joinColumn='ticket')
 
     # attributes
@@ -157,14 +159,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
+        return bool(QuestionSubscription.selectOneBy(ticket=self, person=person))
 
     # Workflow methods
 
     # The lifecycle of a support request is documented in
     # https://help.launchpad.net/SupportRequestLifeCycle, so remember
     # to update that document for any pertinent changes.
-    @notify_ticket_modified()
+    @notify_question_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
         """See IQuestion."""
         if new_status == self.status:
@@ -182,7 +184,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.SETSTATUS, new_status=new_status,
             update_ticket_dates=False)
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
         """See IQuestion."""
         return self._newMessage(
@@ -196,13 +198,13 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return self.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
         """See IQuestion."""
         assert user != self.owner, "Owner cannot use requestInfo()."
         if not self.can_request_info:
             raise InvalidQuestionStateError(
-            "Ticket status != OPEN, NEEDSINFO, or ANSWERED")
+            "Question status != OPEN, NEEDSINFO, or ANSWERED")
         if self.status == QuestionStatus.ANSWERED:
             new_status = self.status
         else:
@@ -216,12 +218,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See IQuestion."""
         return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def giveInfo(self, reply, datecreated=None):
         """See IQuestion."""
         if not self.can_give_info:
             raise InvalidQuestionStateError(
-                "Ticket status != OPEN or NEEDSINFO")
+                "Question status != OPEN or NEEDSINFO")
         return self._newMessage(
             self.owner, reply, datecreated=datecreated,
             action=QuestionAction.GIVEINFO, new_status=QuestionStatus.OPEN)
@@ -232,12 +234,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return self.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
         """See IQuestion."""
         if not self.can_give_answer:
             raise InvalidQuestionStateError(
-            "Ticket status != OPEN, NEEDSINFO or ANSWERED")
+            "Question status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
             new_status = QuestionStatus.SOLVED
             action = QuestionAction.CONFIRM
@@ -271,7 +273,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 return True
         return False
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def confirmAnswer(self, comment, answer=None, datecreated=None):
         """See IQuestion."""
         if not self.can_confirm_answer:
@@ -312,13 +314,13 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         context = self.product or self.distribution
         return user.inTeam(context.owner) or user.inTeam(admin)
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def reject(self, user, comment, datecreated=None):
         """See IQuestion."""
         assert self.canReject(user), (
             'User "%s" cannot reject the ticket.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
-            raise InvalidQuestionStateError("Ticket is already rejected.")
+            raise InvalidQuestionStateError("Question is already rejected.")
         msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.REJECT, new_status=QuestionStatus.INVALID)
@@ -327,12 +329,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         self.answer = msg
         return msg
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def expireTicket(self, user, comment, datecreated=None):
         """See IQuestion."""
         if self.status not in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
             raise InvalidQuestionStateError(
-                "Ticket status != OPEN or NEEDSINFO")
+                "Question status != OPEN or NEEDSINFO")
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.EXPIRE, new_status=QuestionStatus.EXPIRED)
@@ -343,12 +345,12 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return self.status in [
             QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
 
-    @notify_ticket_modified()
+    @notify_question_modified()
     def reopen(self, comment, datecreated=None):
         """See IQuestion."""
         if not self.can_reopen:
             raise InvalidQuestionStateError(
-                "Ticket status != ANSWERED, EXPIRED or SOLVED.")
+                "Question status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
@@ -365,7 +367,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             if sub.person.id == person.id:
                 return sub
         # since no previous subscription existed, create a new one
-        return TicketSubscription(ticket=self, person=person)
+        return QuestionSubscription(ticket=self, person=person)
 
     def unsubscribe(self, person):
         """See IQuestion."""
@@ -397,7 +399,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_ticket_dates=True):
-        """Create a new TicketMessage, link it to this ticket and update
+        """Create a new QuestionMessage, link it to this ticket and update
         the ticket's status to new_status.
 
         When update_ticket_dates is True, the ticket's datelastquery or
@@ -430,7 +432,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 subject=subject, datecreated=datecreated)
             chunk = MessageChunk(message=msg, content=content, sequence=1)
 
-        tktmsg = TicketMessage(
+        tktmsg = QuestionMessage(
             ticket=self, message=msg, action=action, new_status=new_status)
         notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # make sure we update the relevant date of response or query
@@ -458,14 +460,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return buglink
 
     # Template methods for BugLinkTargetMixin
-    buglinkClass = TicketBug
+    buglinkClass = QuestionBug
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return TicketBug(ticket=self, bug=bug)
+        return QuestionBug(ticket=self, bug=bug)
 
 
-class TicketSet:
+class QuestionSet:
     """The set of support / trouble tickets."""
 
     implements(IQuestionSet)
@@ -476,7 +478,7 @@ class TicketSet:
 
     def findExpiredTickets(self, days_before_expiration):
         """See IQuestionSet."""
-        return Ticket.select(
+        return Question.select(
             """status IN (%s, %s)
                     AND (datelastresponse IS NULL
                          OR datelastresponse < (
@@ -491,7 +493,7 @@ class TicketSet:
     def searchTickets(self, search_text=None, language=None,
                       status=QUESTION_STATUS_DEFAULT_SEARCH, sort=None):
         """See IQuestionSet"""
-        return TicketSearch(
+        return QuestionSearch(
             search_text=search_text, status=status, language=language,
             sort=sort).getResults()
 
@@ -509,7 +511,7 @@ class TicketSet:
             datecreated = UTC_NOW
         if language is None:
             language = getUtility(ILanguageSet)['en']
-        ticket = Ticket(
+        ticket = Question(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated,
@@ -523,12 +525,12 @@ class TicketSet:
     def get(self, ticket_id, default=None):
         """See IQuestionSet."""
         try:
-            return Ticket.get(ticket_id)
+            return Question.get(ticket_id)
         except SQLObjectNotFound:
             return default
 
 
-class TicketSearch:
+class QuestionSearch:
     """Base object for searching tickets.
 
     The search parameters are specified at creation time and getResults()
@@ -641,7 +643,7 @@ class TicketSearch:
             # Same distribution, sourcepackagename will vary.
             return ['owner', 'sourcepackagename']
         else:
-            # TicketTarget will vary.
+            # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
 
     def getOrderByClause(self):
@@ -681,12 +683,12 @@ class TicketSearch:
                 'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
                     '\n'.join(self.getTableJoins()),
                     ' AND '.join(constraints)))
-        return Ticket.select(
+        return Question.select(
             query, prejoins=self.getPrejoins(),
             orderBy=self.getOrderByClause())
 
 
-class TicketTargetSearch(TicketSearch):
+class QuestionTargetSearch(QuestionSearch):
     """Search tickets in an IQuestionTarget context.
 
     Used to implement IQuestionTarget.searchTickets().
@@ -698,7 +700,7 @@ class TicketTargetSearch(TicketSearch):
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
-        TicketSearch.__init__(
+        QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
             product=product, distribution=distribution,
@@ -710,23 +712,23 @@ class TicketTargetSearch(TicketSearch):
         self.owner = owner
 
     def getConstraints(self):
-        """See TicketSearch."""
-        constraints = TicketSearch.getConstraints(self)
+        """See QuestionSearch."""
+        constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Ticket.owner = %s' % self.owner.id)
 
         return constraints
 
     def getPrejoins(self):
-        """See TicketSearch."""
-        prejoins = TicketSearch.getPrejoins(self)
+        """See QuestionSearch."""
+        prejoins = QuestionSearch.getPrejoins(self)
         if self.owner and 'owner' in prejoins:
             # Since it is constant, no need to prefetch it.
             prejoins.remove('owner')
         return prejoins
 
 
-class SimilarTicketsSearch(TicketSearch):
+class SimilarQuestionsSearch(QuestionSearch):
     """Search tickets in a context using a similarity search algorithm.
 
     This search object is used to implement
@@ -737,17 +739,17 @@ class SimilarTicketsSearch(TicketSearch):
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
-        TicketSearch.__init__(
+        QuestionSearch.__init__(
             self, search_text=title, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         # Change the search text to use based on the native language
         # similarity search algorithm.
         self.search_text = nl_phrase_search(
-            title, Ticket, " AND ".join(self.getTargetConstraints()))
+            title, Question, " AND ".join(self.getTargetConstraints()))
 
 
-class TicketPersonSearch(TicketSearch):
+class QuestionPersonSearch(QuestionSearch):
     """Search tickets which are related to a particular person.
 
     Used to implement IPerson.searchTickets().
@@ -761,7 +763,7 @@ class TicketPersonSearch(TicketSearch):
         else:
             needs_attention_from = None
 
-        TicketSearch.__init__(
+        QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort)
 
@@ -776,8 +778,8 @@ class TicketPersonSearch(TicketSearch):
             self.participation = participation
 
     def getTableJoins(self):
-        """See TicketSearch."""
-        joins = TicketSearch.getTableJoins(self)
+        """See QuestionSearch."""
+        joins = QuestionSearch.getTableJoins(self)
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
             joins.append(
@@ -801,8 +803,8 @@ class TicketPersonSearch(TicketSearch):
         QuestionParticipation.ASSIGNEE: "Ticket.assignee = %s"}
 
     def getConstraints(self):
-        """See TicketSearch."""
-        constraints = TicketSearch.getConstraints(self)
+        """See QuestionSearch."""
+        constraints = QuestionSearch.getConstraints(self)
 
         participations_filter = []
         for participation_type in self.participation:

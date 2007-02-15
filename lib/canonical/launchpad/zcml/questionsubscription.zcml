@@ -5,8 +5,8 @@
   xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
-  <!-- TicketSubscription -->
-  <content class="canonical.launchpad.database.TicketSubscription">
+  <!-- QuestionSubscription -->
+  <content class="canonical.launchpad.database.QuestionSubscription">
     <allow
       interface="canonical.launchpad.interfaces.IQuestionSubscription" />
     <require

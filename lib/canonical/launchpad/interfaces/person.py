@@ -645,7 +645,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         sequence, all relationships are considered.
 
         :needs_attention: If this flag is true, only tickets needing attention
-        from the person will be included. Tickets needing attention are those
+        from the person will be included. Questions needing attention are those
         owned by the person in the ANSWERED or NEEDSINFO state, as well as,
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN

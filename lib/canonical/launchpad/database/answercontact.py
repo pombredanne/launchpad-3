@@ -1,7 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SupportContact']
+__all__ = ['AnswerContact']
 
 
 from zope.interface import implements
@@ -12,15 +12,18 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
 
 
-class SupportContact(SQLBase):
+class AnswerContact(SQLBase):
     """An entry for an answer contact for an IQuestionTarget."""
 
     implements(IAnswerContact)
 
     _defaultOrder = ['id']
+    _table = 'SupportContact'
 
-    person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
-    product = ForeignKey(dbName='product', notNull=False, foreignKey='Product')
+    person = ForeignKey(
+        dbName='person', notNull=True, foreignKey='Person')
+    product = ForeignKey(
+        dbName='product', notNull=False, foreignKey='Product')
     distribution = ForeignKey(
         dbName='distribution', notNull=False, foreignKey='Distribution')
     sourcepackagename = ForeignKey(

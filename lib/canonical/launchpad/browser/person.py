@@ -51,15 +51,15 @@ __all__ = [
     'PersonAddView',
     'PersonLanguagesView',
     'RedirectToEditLanguagesView',
-    'PersonLatestTicketsView',
-    'PersonSearchTicketsView',
+    'PersonLatestQuestionsView',
+    'PersonSearchQuestionsView',
     'PersonSupportMenu',
-    'SearchAnsweredTicketsView',
-    'SearchAssignedTicketsView',
-    'SearchCommentedTicketsView',
-    'SearchCreatedTicketsView',
-    'SearchNeedAttentionTicketsView',
-    'SearchSubscribedTicketsView',
+    'SearchAnsweredQuestionsView',
+    'SearchAssignedQuestionsView',
+    'SearchCommentedQuestionsView',
+    'SearchCreatedQuestionsView',
+    'SearchNeedAttentionQuestionsView',
+    'SearchSubscribedQuestionsView',
     ]
 
 import cgi
@@ -101,7 +101,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.questiontarget import SearchTicketsView
+from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 
@@ -2480,7 +2480,7 @@ class TeamReassignmentView(ObjectReassignmentView):
                 oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
 
 
-class PersonLatestTicketsView(LaunchpadView):
+class PersonLatestQuestionsView(LaunchpadView):
     """View used by the porlet displaying the latest requests made by
     a person.
     """
@@ -2492,7 +2492,7 @@ class PersonLatestTicketsView(LaunchpadView):
             participation=QuestionParticipation.OWNER)[:quantity]
 
 
-class PersonSearchTicketsView(SearchTicketsView):
+class PersonSearchQuestionsView(SearchQuestionsView):
     """View used to search and display tickets in which an IPerson is
     involved.
     """
@@ -2501,150 +2501,150 @@ class PersonSearchTicketsView(SearchTicketsView):
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions involving $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions  involving $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredTicketsView(SearchTicketsView):
+class SearchAnsweredQuestionsView(SearchQuestionsView):
     """View used to search and display tickets answered by an IPerson."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(participation=QuestionParticipation.ANSWERER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions answered by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions answered by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedTicketsView(SearchTicketsView):
+class SearchAssignedQuestionsView(SearchQuestionsView):
     """View used to search and display tickets assigned to an IPerson."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(participation=QuestionParticipation.ASSIGNEE)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions assigned to $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions assigned to $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedTicketsView(SearchTicketsView):
+class SearchCommentedQuestionsView(SearchQuestionsView):
     """View used to search and display tickets commented on by an IPerson."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(participation=QuestionParticipation.COMMENTER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedTicketsView(SearchTicketsView):
+class SearchCreatedQuestionsView(SearchQuestionsView):
     """View used to search and display tickets created by an IPerson."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(participation=QuestionParticipation.OWNER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions asked by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions asked by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionTicketsView(SearchTicketsView):
+class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     """View used to search and display tickets needing an IPerson attention."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(needs_attention=True)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions needing $name attention',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions need $name attention.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedTicketsView(SearchTicketsView):
+class SearchSubscribedQuestionsView(SearchQuestionsView):
     """View used to search and display tickets subscribed to by an IPerson."""
 
     displayTargetColumn = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(participation=QuestionParticipation.SUBSCRIBER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('Questions $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return _('No questions subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))

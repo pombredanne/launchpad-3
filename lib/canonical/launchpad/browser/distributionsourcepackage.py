@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
-        TicketTargetFacetMixin, TicketTargetTraversalMixin)
+        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
@@ -41,7 +41,7 @@ class DistributionSourcePackageSOP(StructuralObjectPresentation):
         return None
 
 
-class DistributionSourcePackageFacets(TicketTargetFacetMixin,
+class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
@@ -70,7 +70,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
-    BugTargetTraversalMixin, TicketTargetTraversalMixin):
+    BugTargetTraversalMixin, QuestionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 

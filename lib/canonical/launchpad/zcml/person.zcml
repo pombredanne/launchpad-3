@@ -636,50 +636,50 @@
 <facet facet="support">
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonLatestTicketsView"
+      class="canonical.launchpad.browser.PersonLatestQuestionsView"
       name="+portlet-latesttickets"
       permission="zope.Public"
       template="../templates/questiontarget-portlet-latestquestions.pt"
       />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonSearchTicketsView"
+    class="canonical.launchpad.browser.PersonSearchQuestionsView"
     name="+tickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAnsweredTicketsView"
+    class="canonical.launchpad.browser.SearchAnsweredQuestionsView"
     name="+answeredtickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAssignedTicketsView"
+    class="canonical.launchpad.browser.SearchAssignedQuestionsView"
     name="+assignedtickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCommentedTicketsView"
+    class="canonical.launchpad.browser.SearchCommentedQuestionsView"
     name="+commentedtickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCreatedTicketsView"
+    class="canonical.launchpad.browser.SearchCreatedQuestionsView"
     name="+createdtickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchNeedAttentionTicketsView"
+    class="canonical.launchpad.browser.SearchNeedAttentionQuestionsView"
     name="+needattentiontickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchSubscribedTicketsView"
+    class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
     name="+subscribedtickets"
     permission="zope.Public"
     />

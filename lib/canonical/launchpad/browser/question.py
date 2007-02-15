@@ -5,20 +5,20 @@
 __metaclass__ = type
 
 __all__ = [
-    'SearchAllTicketsView',
-    'TicketAddView',
-    'TicketChangeStatusView',
-    'TicketConfirmAnswerView',
-    'TicketContextMenu',
-    'TicketEditView',
-    'TicketMakeBugView',
-    'TicketMessageDisplayView',
-    'TicketSetContextMenu',
-    'TicketSetNavigation',
-    'TicketRejectView',
-    'TicketSetView',
-    'TicketSubscriptionView',
-    'TicketWorkflowView',
+    'SearchAllQuestionsView',
+    'QuestionAddView',
+    'QuestionChangeStatusView',
+    'QuestionConfirmAnswerView',
+    'QuestionContextMenu',
+    'QuestionEditView',
+    'QuestionMakeBugView',
+    'QuestionMessageDisplayView',
+    'QuestionSetContextMenu',
+    'QuestionSetNavigation',
+    'QuestionRejectView',
+    'QuestionSetView',
+    'QuestionSubscriptionView',
+    'QuestionWorkflowView',
     ]
 
 from operator import attrgetter
@@ -36,7 +36,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.questiontarget import SearchTicketsView
+from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages
@@ -53,12 +53,12 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 
 
-class TicketSetNavigation(Navigation):
+class QuestionSetNavigation(Navigation):
 
     usedfor = IQuestionSet
 
 
-class TicketSetView:
+class QuestionSetView:
     """View for the support tracker index page."""
 
     @property
@@ -81,7 +81,7 @@ class TicketSetView:
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
 
 
-class TicketSubscriptionView(LaunchpadView):
+class QuestionSubscriptionView(LaunchpadView):
     """View for subscribing and unsubscribing from a ticket."""
 
     def initialize(self):
@@ -120,7 +120,7 @@ class TicketSubscriptionView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
-class TicketLanguageVocabularyFactory:
+class QuestionLanguageVocabularyFactory:
     """Factory for a vocabulary containing a subset of the possible languages.
 
     The vocabulary will contain only the languages "interesting" for the user.
@@ -134,7 +134,7 @@ class TicketLanguageVocabularyFactory:
     implements(IContextSourceBinder)
 
     def __init__(self, request):
-        """Create a TicketLanguageVocabularyFactory.
+        """Create a QuestionLanguageVocabularyFactory.
 
         :param request: The request in which the vocabulary will be used. This
         will be used to determine the user languages.
@@ -159,7 +159,7 @@ class TicketLanguageVocabularyFactory:
         return SimpleVocabulary(terms)
 
 
-class TicketSupportLanguageMixin:
+class QuestionSupportLanguageMixin:
     """Helper mixin for views manipulating the ticket language.
 
     It provides a method to check if the selected language is supported
@@ -208,7 +208,7 @@ class TicketSupportLanguageMixin:
         return form.Fields(
                 Choice(
                     __name__='language',
-                    source=TicketLanguageVocabularyFactory(self.request),
+                    source=QuestionLanguageVocabularyFactory(self.request),
                     title=_('Language'),
                     description=_(
                         'The language in which this question is written.')),
@@ -229,7 +229,7 @@ class TicketSupportLanguageMixin:
         return self.chosen_language.code != old_chosen_language
 
 
-class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
+class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     """Multi-page add view.
 
     The user enters first his ticket summary and then he is shown a list
@@ -341,7 +341,7 @@ class TicketAddView(TicketSupportLanguageMixin, LaunchpadFormView):
         return ''
 
 
-class TicketChangeStatusView(LaunchpadFormView):
+class QuestionChangeStatusView(LaunchpadFormView):
     """View for changing a ticket status."""
     schema = IQuestionChangeStatusForm
 
@@ -365,7 +365,7 @@ class TicketChangeStatusView(LaunchpadFormView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class TicketEditView(TicketSupportLanguageMixin, LaunchpadEditFormView):
+class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
     schema = IQuestion
     label = 'Edit question'
@@ -405,7 +405,7 @@ class TicketEditView(TicketSupportLanguageMixin, LaunchpadEditFormView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class TicketMakeBugView(GeneralFormView):
+class QuestionMakeBugView(GeneralFormView):
     """Browser class for adding a bug from a ticket."""
 
     def initialize(self):
@@ -456,7 +456,7 @@ class TicketMakeBugView(GeneralFormView):
         return 'create' in self.request
 
 
-class TicketRejectView(LaunchpadFormView):
+class QuestionRejectView(LaunchpadFormView):
     """View for rejecting a ticket."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
@@ -475,7 +475,7 @@ class TicketRejectView(LaunchpadFormView):
         return ''
 
 
-class TicketWorkflowView(LaunchpadFormView):
+class QuestionWorkflowView(LaunchpadFormView):
     """View managing the ticket workflow action, i.e. action changing
     its status.
     """
@@ -649,7 +649,7 @@ class TicketWorkflowView(LaunchpadFormView):
 
 
 
-class TicketConfirmAnswerView(TicketWorkflowView):
+class QuestionConfirmAnswerView(QuestionWorkflowView):
     """Specialized workflow view for the +confirm link sent in email
     notifications.
     """
@@ -663,7 +663,7 @@ class TicketConfirmAnswerView(TicketWorkflowView):
             self.request.response.redirect(canonical_url(self.context))
             return
 
-        TicketWorkflowView.initialize(self)
+        QuestionWorkflowView.initialize(self)
 
     def getAnswerMessage(self):
         """Return the message that should be confirmed."""
@@ -672,8 +672,8 @@ class TicketConfirmAnswerView(TicketWorkflowView):
         return data['answer']
 
 
-class TicketMessageDisplayView(LaunchpadView):
-    """View that renders a TicketMessage in the context of a Ticket."""
+class QuestionMessageDisplayView(LaunchpadView):
+    """View that renders a QuestionMessage in the context of a Question."""
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -713,14 +713,14 @@ class TicketMessageDisplayView(LaunchpadView):
         return self()
 
 
-class SearchAllTicketsView(SearchTicketsView):
+class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all tickets posted on Launchpad."""
 
     displayTargetColumn = True
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _('Questions matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
@@ -729,7 +729,7 @@ class SearchAllTicketsView(SearchTicketsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _("There are no questions matching "
                      '"${search_text}" with the requested statuses.',
@@ -738,7 +738,7 @@ class SearchAllTicketsView(SearchTicketsView):
             return _('There are no questions with the requested statuses.')
 
 
-class TicketContextMenu(ContextMenu):
+class QuestionContextMenu(ContextMenu):
 
     usedfor = IQuestion
     links = [
@@ -797,7 +797,7 @@ class TicketContextMenu(ContextMenu):
                     enabled=not self.has_bugs)
 
 
-class TicketSetContextMenu(ContextMenu):
+class QuestionSetContextMenu(ContextMenu):
 
     usedfor = IQuestionSet
     links = ['findproduct', 'finddistro']

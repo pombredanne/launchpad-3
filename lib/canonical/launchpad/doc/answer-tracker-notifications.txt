@@ -163,7 +163,7 @@ bug that has been linked to the request:
     ...     comment=ubuntu_ticket.description)
     >>> bug = ubuntu_ticket.target.createBug(params)
     >>> ubuntu_ticket.linkBug(bug)
-    <TicketBug...>
+    <QuestionBug...>
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
 
@@ -185,7 +185,7 @@ And if we remove the link again, we get:
     >>> unmodified_ticket = Snapshot(ubuntu_ticket,
     ...     providing=providedBy(ubuntu_ticket))
     >>> ubuntu_ticket.unlinkBug(bug)
-    <TicketBug...>
+    <QuestionBug...>
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
 
@@ -291,7 +291,7 @@ giveInfo() transitions, let's see the other ones.
     # Subscribe the owner back, to compare the different notifications
     # sent.
     >>> ubuntu_ticket.subscribe(sample_person)
-    <TicketSubscription ...>
+    <QuestionSubscription ...>
 
 === Notifications for expireTicket() ===
 
@@ -618,7 +618,7 @@ that case, all the team members will be notified individually.
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
     >>> ubuntu_ticket.subscribe(launchpad_devs)
-    <TicketSubscription...>
+    <QuestionSubscription...>
 
     >>> login('test@canonical.com')
     >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
@@ -631,7 +631,7 @@ Of course, if the user is also individually subscribed to the ticket, he
 will receives only one notification:
 
     >>> ubuntu_ticket.subscribe(foo_bar)
-    <TicketSubscription...>
+    <QuestionSubscription...>
 
     >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
 
@@ -679,7 +679,7 @@ status changed, only the subscribers speaking that language will receive
 the notifications.
 
     >>> pt_BR_ticket.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
-    <TicketMessage...>
+    <QuestionMessage...>
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']

@@ -1,6 +1,6 @@
 = IQuestionTarget Interface =
 
-Launchpad includes a support request tracker. Tickets are associated to
+Launchpad includes a support request tracker. Questions are associated to
 objects implementing IQuestionTarget. This file documents that interface
 and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
@@ -21,7 +21,7 @@ associated with it at the start of the test.)
 
 == newTicket() ==
 
-Tickets are always owned by a registered user.
+Questions are always owned by a registered user.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
@@ -38,11 +38,11 @@ which defaults to UTC_NOW.
     >>> now = datetime.now(UTC)
 
     >>> ticket = target.newTicket(sample_person, 'New ticket',
-    ...     'Ticket description', datecreated=now)
+    ...     'Question description', datecreated=now)
     >>> print ticket.title
     New ticket
     >>> print ticket.description
-    Ticket description
+    Question description
     >>> ticket.owner == sample_person
     True
     >>> ticket.datecreated == now
@@ -59,7 +59,7 @@ subscribed to the ticket.
     >>> sample_person in [s.person for s in ticket.subscriptions]
     True
 
-Ticket can be written in any languages supported in Launchpad. The
+Question can be written in any languages supported in Launchpad. The
 language of the request is available in the 'language' attribute. By
 default, requests are assumed to be written in English:
 
@@ -120,7 +120,7 @@ owned by sample_person.
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
     ...     tickets.append(target.newTicket(
-    ...         owner, 'Ticket title%d' % num, description,
+    ...         owner, 'Question title%d' % num, description,
     ...         datecreated=now+timedelta(minutes=num+1)))
 
 For more variety, we will set the status of the last to INVALID and the
@@ -179,9 +179,9 @@ The searchTickets() method can also filter tickets by status:
     >>> for t in target.searchTickets(status=QuestionStatus.OPEN):
     ...     print t.title
     Another ticket
-    Ticket title2
-    Ticket title1
-    Ticket title0
+    Question title2
+    Question title1
+    Question title0
     De l'aide S.V.P.
     New ticket
 
@@ -190,7 +190,7 @@ default sort order is from newest to oldest.
 
     >>> for t in target.searchTickets(status=QuestionStatus.INVALID):
     ...     print t.title
-    Ticket title4
+    Question title4
 
 You can also pass in a list of status, and you can also use the
 search_text and status parameters at the same time. This will search
@@ -199,10 +199,10 @@ OPEN and INVALID tickets with the word 'index'
     >>> for t in target.searchTickets(search_text='request index',
     ...         status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
     ...     print t.title
-    Ticket title4
-    Ticket title2
-    Ticket title1
-    Ticket title0
+    Question title4
+    Question title2
+    Question title1
+    Question title0
 
 === sort ===
 
@@ -228,11 +228,11 @@ secondary key.
     ...                               status=None,
     ...                               sort=QuestionSort.STATUS):
     ...     print t.status.title, t.title
-    Open Ticket title2
-    Open Ticket title1
-    Open Ticket title0
-    Answered Ticket title3
-    Invalid Ticket title4
+    Open Question title2
+    Open Question title1
+    Open Question title0
+    Answered Question title3
+    Invalid Question title4
 
 (In the previous example, we used status=None to search for all
 statuses, by default INVALID and EXPIRED tickets are excluded.)
@@ -243,14 +243,14 @@ the tickets will be sorted NEWEST_FIRST.
     >>> for t in target.searchTickets(sort=QuestionSort.RELEVANCY):
     ...     print t.title
     Another ticket
-    Ticket title3
-    Ticket title2
-    Ticket title1
-    Ticket title0
+    Question title3
+    Question title2
+    Question title1
+    Question title0
     De l'aide S.V.P.
     New ticket
 
-('Ticket title4' is not shown in this case because it has INVALID as
+('Question title4' is not shown in this case because it has INVALID as
 its status.)
 
 The RECENT_OWNER_ACTIVITY sort order sorts first tickets which recently
@@ -259,15 +259,15 @@ descending on the datelastquery attribute.)
 
     >>> for t in target.searchTickets(sort=QuestionSort.RECENT_OWNER_ACTIVITY):
     ...     print t.title
-    Ticket title0
+    Question title0
     Another ticket
-    Ticket title3
-    Ticket title2
-    Ticket title1
+    Question title3
+    Question title2
+    Question title1
     De l'aide S.V.P.
     New ticket
 
-(Ticket title0 sorts first because it had a message from its owner
+(Question title0 sorts first because it had a message from its owner
 after the others were created.)
 
 === owner ===
@@ -277,8 +277,8 @@ parameter.
 
     >>> for t in target.searchTickets(owner=foo_bar):
     ...     print t.title
-    Ticket title3
-    Ticket title1
+    Question title3
+    Question title1
 
 === language ===
 
@@ -293,10 +293,10 @@ particular language.
     >>> for t in target.searchTickets(language=[english, french]):
     ...     print t.title
     Another ticket
-    Ticket title3
-    Ticket title2
-    Ticket title1
-    Ticket title0
+    Question title3
+    Question title2
+    Question title1
+    Question title0
     De l'aide S.V.P.
     New ticket
 
@@ -304,7 +304,7 @@ particular language.
 
 You can also search among the tickets that needs the attention of
 somebody. A ticket needs the attention of a user if he owns it and that
-it is in the NEEDSINFO or ANSWERED state. Tickets on which the user gave
+it is in the NEEDSINFO or ANSWERED state. Questions on which the user gave
 an answer or requested for more information and that are back in the
 OPEN state are also included.
 
@@ -328,9 +328,9 @@ OPEN state are also included.
 
     >>> for t in target.searchTickets(needs_attention_from=foo_bar):
     ...     print t.status.title, t.title, t.owner.displayname
-    Answered Ticket title3 Foo Bar
-    Needs information Ticket title1 Foo Bar
-    Open Ticket title0 Sample Person
+    Answered Question title3 Foo Bar
+    Needs information Question title1 Foo Bar
+    Open Question title0 Sample Person
 
 == findSimilarTickets() ==
 

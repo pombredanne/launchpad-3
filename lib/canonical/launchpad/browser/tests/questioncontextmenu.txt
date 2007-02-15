@@ -1,11 +1,11 @@
-TicketContextMenu
+QuestionContextMenu
 -----------------
 
-This file tests the TicketContextMenu implementation.
+This file tests the QuestionContextMenu implementation.
 
-    >>> from canonical.launchpad.browser.ticket import TicketContextMenu
+    >>> from canonical.launchpad.browser.ticket import QuestionContextMenu
 
-TicketContextMenu is for a Ticket context. Since it only uses a few
+QuestionContextMenu is for a Question context. Since it only uses a few
 attributes, we can use mock objects:
 
     >>> class ticket(object):
@@ -16,7 +16,7 @@ attributes, we can use mock objects:
     ...         return self.subscribed
 
     >>> def setup_menu(bugs=(), subscribed=False):
-    ...     menu = TicketContextMenu(ticket(bugs=bugs, subscribed=subscribed))
+    ...     menu = QuestionContextMenu(ticket(bugs=bugs, subscribed=subscribed))
     ...     menu._user = None
     ...     menu.initialize()
     ...     return menu

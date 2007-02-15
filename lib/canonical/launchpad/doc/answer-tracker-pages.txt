@@ -15,7 +15,7 @@ Several views are used to handle the various operations on a ticket.
     # the owner.
     >>> login('test@canonical.com')
     >>> firefox_ticket.subscribe(firefox_ticket.owner)
-    <TicketSubscription...>
+    <QuestionSubscription...>
 
     # Let's define a helper function which commits the transaction, so
     # that the notifications are queued in stub.test_emails and pops these
@@ -32,7 +32,7 @@ Several views are used to handle the various operations on a ticket.
     ...     stub.test_emails = []
     ...     return notifications
 
-== TicketSubscriptionView ==
+== QuestionSubscriptionView ==
 
 This view is used to subscribe and unsubscribe from a ticket.
 Subscription is done when the user click on the 'Subscribe' button.
@@ -72,18 +72,18 @@ These two actions didn't generate any notification mails:
     >>> len(pop_notifications())
     0
 
-== TicketWorkflowView ==
+== QuestionWorkflowView ==
 
-TicketWorkflowView is the view used to handle the comments submitted by
+QuestionWorkflowView is the view used to handle the comments submitted by
 users on the ticket. The actions available on it always depends on the
 current state of the ticket and the identify of the user viewing the
 form.
 
     # Setup a harness to easily test the view.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
-    >>> from canonical.launchpad.browser import TicketWorkflowView
+    >>> from canonical.launchpad.browser import QuestionWorkflowView
     >>> workflow_harness = LaunchpadFormHarness(
-    ...     firefox_ticket, TicketWorkflowView)
+    ...     firefox_ticket, QuestionWorkflowView)
 
     # Let's define a helper method that will return the names of the
     # available actions.
@@ -275,9 +275,9 @@ the SOLVED state.
     # Clear all notifications.
     >>> notifications = pop_notifications()
 
-== TicketMakeBugView ==
+== QuestionMakeBugView ==
 
-The TicketMakeBugView is used to handle the creation of a bug from a
+The QuestionMakeBugView is used to handle the creation of a bug from a
 ticket. In addition to creating a bug, this operation will also link
 the bug to the ticket.
 
@@ -346,7 +346,7 @@ See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'support-tracker-notifications.txt'.
 
-== TicketRejectView ==
+== QuestionRejectView ==
 
 That view is used by administrator and support contacts to reject a
 support request.
@@ -364,9 +364,9 @@ support request.
     >>> print firefox_ticket.status.title
     Invalid
 
-== TicketChangeStatusView ==
+== QuestionChangeStatusView ==
 
-TicketChangeStatusView is used by administrator to change the status
+QuestionChangeStatusView is used by administrator to change the status
 outside of the comment workflow.
 
     >>> request = LaunchpadTestRequest(
@@ -385,9 +385,9 @@ outside of the comment workflow.
     # Clear the notification.
     >>> notifications = pop_notifications()
 
-== TicketEditView ==
+== QuestionEditView ==
 
-TicketEditView available through '+edit' is used to edit most ticket
+QuestionEditView available through '+edit' is used to edit most ticket
 fields. It can be used to edit the ticket title and description and also
 its metadata like language, priority, assignee, source package and
 whiteboard.
@@ -487,9 +487,9 @@ a distribution ticket:
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
 
-== The TicketLanguage vocabulary ==
+== The QuestionLanguage vocabulary ==
 
-The TicketLanguageVocabularyFactory is an IContextSourceBinder which
+The QuestionLanguageVocabularyFactory is an IContextSourceBinder which
 is used in browser forms to create a vocabulary containing only the
 languages that are likely to interest the user.
 
@@ -507,8 +507,8 @@ address is mapped to South Africa in the tests).
     >>> request = LaunchpadTestRequest(
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
     >>> from canonical.launchpad.browser.question import (
-    ...     TicketLanguageVocabularyFactory)
-    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    ...     QuestionLanguageVocabularyFactory)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -523,7 +523,7 @@ same logic is used to find the languages:
     >>> user.languages.count()
     0
 
-    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -538,7 +538,7 @@ are used (plus English):
     >>> sorted(lang.code for lang in user.languages)
     [u'ca', u'es']
 
-    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -554,7 +554,7 @@ English options).
     >>> sorted(lang.code for lang in user.languages)
     [u'cy', u'en_GB', u'ja']
 
-    >>> vocab = TicketLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -568,7 +568,7 @@ by the previous rules.
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> ticket_three.language = afar
-    >>> vocab = TicketLanguageVocabularyFactory(request)(ticket_three)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(ticket_three)
     >>> afar in vocab
     True
 
@@ -637,7 +637,7 @@ excluded:
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
 
-== SearchTicketsView ==
+== SearchQuestionsView ==
 
 This view is used as a base class to search for tickets. It is intended
 to be easily customizable to offer more specific reports, while
@@ -645,8 +645,8 @@ keeping those searchable.
 
     # Define a subclass to demonstrate the customizability of the base
     # view.
-    >>> from canonical.launchpad.browser import SearchTicketsView
-    >>> class MyCustomSearchTicketsView(SearchTicketsView):
+    >>> from canonical.launchpad.browser import SearchQuestionsView
+    >>> class MyCustomSearchQuestionsView(SearchQuestionsView):
     ...
     ...     default_filter = {}
     ...
@@ -656,7 +656,7 @@ keeping those searchable.
     # Set up a harness for easier testing.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> search_view_harness = LaunchpadFormHarness(
-    ...     ubuntu, MyCustomSearchTicketsView)
+    ...     ubuntu, MyCustomSearchQuestionsView)
 
 By default, that class provides widgets to search by text and by status.
 
@@ -701,7 +701,7 @@ Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> MyCustomSearchTicketsView.default_filter = {
+    >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
     >>> search_view_harness.submit('', {})
 
@@ -748,7 +748,7 @@ no results are found based on the selected search filter:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions for Ubuntu with the requested statuses.
 
-    >>> MyCustomSearchTicketsView.default_filter = dict(
+    >>> MyCustomSearchQuestionsView.default_filter = dict(
     ...     status=[QuestionStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
     >>> print translate(search_view_harness.view.pageheading)

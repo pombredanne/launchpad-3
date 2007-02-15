@@ -6,9 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'ProjectAddProductView',
-    'ProjectAddTicketView',
+    'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestTicketsView',
+    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectSetNavigation',
@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.question import TicketAddView
+from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -376,14 +376,14 @@ class ProjectRdfView(object):
         return encodeddata
 
 
-class ProjectAddTicketView(TicketAddView):
+class ProjectAddQuestionView(QuestionAddView):
     """View that handles creation of a ticket from an IProject context."""
 
-    search_field_names = ['product'] + TicketAddView.search_field_names
+    search_field_names = ['product'] + QuestionAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        TicketAddView.setUpFields(self)
+        QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
@@ -413,12 +413,12 @@ class ProjectAddTicketView(TicketAddView):
 
 
 # XXX flacoste 2006-12-13 This should be removed and the
-# TicketTargetLatestTicketsView used instead once we add a
+# QuestionTargetLatestQuestionsView used instead once we add a
 # searchTickets() method to IProject. This will happen when
 # fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestTicketsView:
+class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by
-    TicketAddView.
+    QuestionAddView.
     """
 
     def __call__(self):

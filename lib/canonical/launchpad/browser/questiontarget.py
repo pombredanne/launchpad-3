@@ -6,15 +6,15 @@ __metaclass__ = type
 
 __all__ = [
     'AskAQuestionButtonView',
-    'ManageSupportContactView',
-    'SearchTicketsView',
-    'TicketCollectionLatestTicketsView',
-    'TicketCollectionMyTicketsView',
-    'TicketCollectionNeedAttentionView',
-    'TicketCollectionSupportMenu',
-    'TicketTargetFacetMixin',
-    'TicketTargetTraversalMixin',
-    'TicketTargetSupportMenu',
+    'ManageAnswerContactView',
+    'SearchQuestionsView',
+    'QuestionCollectionLatestQuestionsView',
+    'QuestionCollectionMyQuestionsView',
+    'QuestionCollectionNeedAttentionView',
+    'QuestionCollectionSupportMenu',
+    'QuestionTargetFacetMixin',
+    'QuestionTargetTraversalMixin',
+    'QuestionTargetSupportMenu',
     'UserSupportLanguagesMixin',
     ]
 
@@ -75,7 +75,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class TicketCollectionLatestTicketsView:
+class QuestionCollectionLatestQuestionsView:
     """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
@@ -86,7 +86,7 @@ class TicketCollectionLatestTicketsView:
         return self.context.searchTickets()[:quantity]
 
 
-class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
+class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
     This view provides a search form to filter the displayed tickets.
@@ -285,8 +285,8 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
 
-class TicketCollectionMyTicketsView(SearchTicketsView):
-    """SearchTicketsView specialization for the 'My Tickets' report.
+class QuestionCollectionMyQuestionsView(SearchQuestionsView):
+    """SearchQuestionsView specialization for the 'My Questions' report.
 
     It displays and searches the support requests made by the logged
     in user in a tickettarget context.
@@ -294,7 +294,7 @@ class TicketCollectionMyTicketsView(SearchTicketsView):
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
                      '${context}', mapping=dict(
@@ -306,7 +306,7 @@ class TicketCollectionMyTicketsView(SearchTicketsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _("You didn't ask any questions matching "
                      '"${search_text}" for ${context}.', mapping=dict(
@@ -317,13 +317,13 @@ class TicketCollectionMyTicketsView(SearchTicketsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return {'owner': self.user,
                 'status': set(QuestionStatus.items)}
 
 
-class TicketCollectionNeedAttentionView(SearchTicketsView):
-    """SearchTicketsView specialization for the 'Need Attention' report.
+class QuestionCollectionNeedAttentionView(SearchQuestionsView):
+    """SearchQuestionsView specialization for the 'Need Attention' report.
 
     It displays and searches the support requests needing attention from the
     logged in user in a tickettarget context.
@@ -331,7 +331,7 @@ class TicketCollectionNeedAttentionView(SearchTicketsView):
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
                      'attention for ${context}', mapping=dict(
@@ -343,7 +343,7 @@ class TicketCollectionNeedAttentionView(SearchTicketsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         if self.search_text:
             return _('No questions matching "${search_text}" need your '
                      'attention for ${context}.', mapping=dict(
@@ -354,11 +354,11 @@ class TicketCollectionNeedAttentionView(SearchTicketsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return {'needs_attention_from': self.user}
 
 
-class ManageSupportContactView(GeneralFormView):
+class ManageAnswerContactView(GeneralFormView):
     """View class for managing support contacts."""
 
     schema = IManageAnswerContactsForm
@@ -418,7 +418,7 @@ class ManageSupportContactView(GeneralFormView):
         self._nextURL = canonical_url(self.context) + '/+tickets'
 
 
-class TicketTargetFacetMixin:
+class QuestionTargetFacetMixin:
     """Mixin for tickettarget facet definition."""
 
     def support(self):
@@ -427,7 +427,7 @@ class TicketTargetFacetMixin:
         return Link('+tickets', 'Answers', summary)
 
 
-class TicketTargetTraversalMixin:
+class QuestionTargetTraversalMixin:
     """Navigation mixin for IQuestionTarget."""
 
     @stepthrough('+ticket')
@@ -442,8 +442,8 @@ class TicketTargetTraversalMixin:
     redirection('+ticket', '+tickets')
 
 
-class TicketCollectionSupportMenu(ApplicationMenu):
-    """Base menu definition for TicketCollection searchable by owner."""
+class QuestionCollectionSupportMenu(ApplicationMenu):
+    """Base menu definition for QuestionCollection searchable by owner."""
 
     usedfor = ISearchableByQuestionOwner
     facet = 'support'
@@ -475,12 +475,12 @@ class TicketCollectionSupportMenu(ApplicationMenu):
         return Link('+need-attention', text, icon='ticket')
 
 
-class TicketTargetSupportMenu(TicketCollectionSupportMenu):
-    """Base menu definition for TicketTargets."""
+class QuestionTargetSupportMenu(QuestionCollectionSupportMenu):
+    """Base menu definition for QuestionTargets."""
 
     usedfor = IQuestionTarget
     facet = 'support'
-    links = TicketCollectionSupportMenu.links + ['new', 'support_contact']
+    links = QuestionCollectionSupportMenu.links + ['new', 'support_contact']
 
     def new(self):
         text = 'Ask Question'

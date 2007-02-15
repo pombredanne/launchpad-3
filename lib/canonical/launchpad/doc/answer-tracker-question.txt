@@ -1,6 +1,6 @@
 = Support Tracker System =
 
-Launchpad includes a tech support ticket tracker. Tickets are created
+Launchpad includes a tech support ticket tracker. Questions are created
 and accessed using the IQuestionTarget interface. This interface is
 available on products, distributions and sourcepackages.
 
@@ -46,7 +46,7 @@ IQuestionTarget attribute.
 
 == IQuestion ==
 
-Tickets are manipulated through the IQuestion interface:
+Questions are manipulated through the IQuestion interface:
 
     >>> from canonical.launchpad.interfaces import IQuestion
     >>> from zope.security.proxy import removeSecurityProxy
@@ -192,7 +192,7 @@ The complete ticket workflow is documented in
 
 == Bug Linking ==
 
-Ticket implements the IBugLinkTarget interface which makes it possible
+Question implements the IBugLinkTarget interface which makes it possible
 to link bug report to ticket.
 
     >>> from canonical.launchpad.interfaces import IBugLinkTarget
@@ -210,13 +210,13 @@ the bug.
     >>> bug7.isSubscribed(firefox_ticket.owner)
     False
     >>> firefox_ticket.linkBug(bug7)
-    <TicketBug...>
+    <QuestionBug...>
     >>> bug7.isSubscribed(firefox_ticket.owner)
     True
 
 When the link is removed, the owner is unsubscribed:
 
     >>> firefox_ticket.unlinkBug(bug7)
-    <TicketBug...>
+    <QuestionBug...>
     >>> bug7.isSubscribed(firefox_ticket.owner)
     False

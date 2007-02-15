@@ -230,13 +230,13 @@
         <browser:page
             name="+addticket"
             for="canonical.launchpad.interfaces.IProject"
-            class="canonical.launchpad.browser.ProjectAddTicketView"
+            class="canonical.launchpad.browser.ProjectAddQuestionView"
             permission="launchpad.AnyPerson"
             />
         <browser:page
             name="+portlet-latesttickets"
             for="canonical.launchpad.interfaces.IProject"
-            class="canonical.launchpad.browser.ProjectLatestTicketsView"
+            class="canonical.launchpad.browser.ProjectLatestQuestionsView"
             permission="zope.Public"
             />
     </facet>

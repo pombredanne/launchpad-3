@@ -110,7 +110,7 @@ possibilities for the user.
     ...     "boots.", datecreated=now.next())
 
     # Define an helper to change the ticket status easily.
-    >>> def setTicketStatus(ticket, new_status):
+    >>> def setQuestionStatus(ticket, new_status):
     ...     login('foo.bar@canonical.com')
     ...     msg = ticket.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
@@ -147,7 +147,7 @@ For example, from the Open state:
 And from the Needs information state:
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> setTicketStatus(ticket, QuestionStatus.NEEDSINFO)
+    >>> setQuestionStatus(ticket, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Re: What model?',
@@ -170,7 +170,7 @@ list of open requests.
 When the request is in the Answered or Expired states, we assume that
 the email is reopening the request with more information.
 
-    >>> setTicketStatus(ticket, QuestionStatus.ANSWERED)
+    >>> setQuestionStatus(ticket, QuestionStatus.ANSWERED)
 
     >>> msgid = send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Re: BootX',
@@ -192,7 +192,7 @@ support this use case yet.
 
 From the Expired state:
 
-    >>> setTicketStatus(ticket, QuestionStatus.EXPIRED)
+    >>> setQuestionStatus(ticket, QuestionStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Need Help',
@@ -213,7 +213,7 @@ happen if one reply to the message.
 When the support request is in the Solved or Invalid state, we interpret
 the message as a comment.
 
-    >>> setTicketStatus(ticket, QuestionStatus.SOLVED)
+    >>> setQuestionStatus(ticket, QuestionStatus.SOLVED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', "Thanks",
@@ -231,7 +231,7 @@ assume it was a comment.
 
 And from the Invalid:
 
-    >>> setTicketStatus(ticket, QuestionStatus.INVALID)
+    >>> setQuestionStatus(ticket, QuestionStatus.INVALID)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'no-priv@canonical.com', 'Come on!',
@@ -257,7 +257,7 @@ confirm that the problem is solved. If it was really a request for more
 information, the user can reply and the resulting state will be fine. So
 it is the safest thing to assume.
 
-    >>> setTicketStatus(ticket, QuestionStatus.OPEN)
+    >>> setQuestionStatus(ticket, QuestionStatus.OPEN)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'BootX',
@@ -273,7 +273,7 @@ it is the safest thing to assume.
 
 Needs information example:
 
-    >>> setTicketStatus(ticket, QuestionStatus.NEEDSINFO)
+    >>> setQuestionStatus(ticket, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'What model?',
@@ -306,7 +306,7 @@ When another user than the owner sends a message to a support request
 in the Solved, Invalid or Expired states, the only possible
 interpretation is that it is a comment.
 
-    >>> setTicketStatus(ticket, QuestionStatus.SOLVED)
+    >>> setQuestionStatus(ticket, QuestionStatus.SOLVED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'RAM',
@@ -318,7 +318,7 @@ interpretation is that it is a comment.
     >>> print message.action.title
     Comment
 
-    >>> setTicketStatus(ticket, QuestionStatus.EXPIRED)
+    >>> setQuestionStatus(ticket, QuestionStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'How weird',
@@ -330,7 +330,7 @@ interpretation is that it is a comment.
     >>> print message.action.title
     Comment
 
-    >>> setTicketStatus(ticket, QuestionStatus.INVALID)
+    >>> setQuestionStatus(ticket, QuestionStatus.INVALID)
 
     >>> msgid =  send_support_email(
     ...     ticket.id, 'test@canonical.com', 'Error?',

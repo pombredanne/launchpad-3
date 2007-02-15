@@ -18,26 +18,26 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
-    class="canonical.launchpad.browser.SearchTicketsView"
+    class="canonical.launchpad.browser.SearchQuestionsView"
     name="+tickets"
     permission="zope.Public"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
-    class="canonical.launchpad.browser.TicketCollectionLatestTicketsView"
+    class="canonical.launchpad.browser.QuestionCollectionLatestQuestionsView"
     name="+portlet-latesttickets"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
     for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
-    class="canonical.launchpad.browser.TicketCollectionMyTicketsView"
+    class="canonical.launchpad.browser.QuestionCollectionMyQuestionsView"
     name="+mytickets"
     permission="launchpad.AnyPerson"
     />
   <browser:page
     for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
-    class="canonical.launchpad.browser.TicketCollectionNeedAttentionView"
+    class="canonical.launchpad.browser.QuestionCollectionNeedAttentionView"
     name="+need-attention"
     permission="launchpad.AnyPerson"
     />
@@ -46,7 +46,7 @@
     for="canonical.launchpad.interfaces.IQuestionTarget"
     name="+support-contact"
     permission="launchpad.AnyPerson"
-    class="canonical.launchpad.browser.ManageSupportContactView"
+    class="canonical.launchpad.browser.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt" />
 
   <browser:page
@@ -58,7 +58,7 @@
   <browser:page
     name="+addticket"
     for="canonical.launchpad.interfaces.IQuestionTarget"
-    class="canonical.launchpad.browser.TicketAddView"
+    class="canonical.launchpad.browser.QuestionAddView"
     permission="launchpad.AnyPerson" />
 
   <browser:page
@@ -69,7 +69,7 @@
     />
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="TicketCollectionSupportMenu TicketTargetSupportMenu"
+    classes="QuestionCollectionSupportMenu QuestionTargetSupportMenu"
     />
 
 </facet>

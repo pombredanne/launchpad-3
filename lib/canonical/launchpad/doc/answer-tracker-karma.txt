@@ -57,7 +57,7 @@ to order our messages.
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> firefox_ticket = firefox.newTicket(
-    ...     title='New ticket', description='Ticket description.',
+    ...     title='New ticket', description='Question description.',
     ...     owner=sample_person, datecreated=now.next())
     >>> notify(SQLObjectCreatedEvent(firefox_ticket))
     Karma added: action=ticketcreated, product=firefox, person=name12

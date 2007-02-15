@@ -19,7 +19,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
     DeleteBugContactError)
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.answercontact import SupportContact
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -30,17 +29,15 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
-    SourcePackage, SourcePackageTicketTargetMixin)
+    SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageTicketTargetMixin):
+                                SourcePackageQuestionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of

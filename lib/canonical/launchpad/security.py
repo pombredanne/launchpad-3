@@ -865,7 +865,7 @@ class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
 
-class AdminTicket(AdminByAdminsTeam):
+class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
 
@@ -876,13 +876,13 @@ class AdminTicket(AdminByAdminsTeam):
                 user.inTeam(context.owner))
 
 
-class ModerateTicket(AdminTicket):
+class ModerateQuestion(AdminQuestion):
     permission = 'launchpad.Moderate'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow user who can administer the ticket and support contacts."""
-        if AdminTicket.checkAuthenticated(self, user):
+        if AdminQuestion.checkAuthenticated(self, user):
             return True
         for support_contact in self.obj.target.support_contacts:
             if user.inTeam(support_contact):
@@ -890,7 +890,7 @@ class ModerateTicket(AdminTicket):
         return False
 
 
-class TicketOwner(AuthorizationBase):
+class QuestionOwner(AuthorizationBase):
     permission = 'launchpad.Owner'
     usedfor = IQuestion
 

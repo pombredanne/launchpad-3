@@ -5,8 +5,8 @@
   xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
-  <!-- TicketReopening -->
-  <content class="canonical.launchpad.database.TicketReopening">
+  <!-- QuestionReopening -->
+  <content class="canonical.launchpad.database.QuestionReopening">
     <allow
       interface="canonical.launchpad.interfaces.IQuestionReopening" />
   </content>

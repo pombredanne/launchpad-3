@@ -68,7 +68,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             self.created_event_listener.unregister()
             self.modified_event_listener.unregister()
 
-    def setTicketStatus(self, ticket, new_status, comment="Status change."):
+    def setQuestionStatus(self, ticket, new_status, comment="Status change."):
         """Utility metho to change a ticket status.
 
         This logs in as admin, change the status and log back as
@@ -101,13 +101,13 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
     def _testTransitionGuard(self, guard_name, statuses_expected_true):
         """Helper for transition guard tests.
 
-        Helper that verifies that the Ticket guard_name attribute
+        Helper that verifies that the Question guard_name attribute
         is True when the ticket status is one listed in statuses_expected_true
         and False otherwise.
         """
         for status in QuestionStatus.items:
             if status != self.ticket.status:
-                self.setTicketStatus(self.ticket, status)
+                self.setQuestionStatus(self.ticket, status)
             expected = status.name in statuses_expected_true
             allowed = getattr(self.ticket, guard_name)
             self.failUnless(
@@ -146,7 +146,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             transition_method_kwargs['datecreated'] = self.nowPlus(0)
         for status in statuses:
             if status != self.ticket.status:
-                self.setTicketStatus(self.ticket, status)
+                self.setQuestionStatus(self.ticket, status)
 
             self.collected_events = []
 
@@ -189,7 +189,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             exceptionRaised = False
             try:
                 if status != self.ticket.status:
-                    self.setTicketStatus(self.ticket, status)
+                    self.setQuestionStatus(self.ticket, status)
                 transition_method(*args, **kwargs)
             except InvalidQuestionStateError:
                 exceptionRaised = True
@@ -310,7 +310,7 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
 
         # Even if the ticket is answered, a user can request more
         # information, but that leave the ticket in the ANSWERED state.
-        self.setTicketStatus(self.ticket, QuestionStatus.ANSWERED)
+        self.setQuestionStatus(self.ticket, QuestionStatus.ANSWERED)
         self.collected_events = []
         message = self.ticket.requestInfo(
             self.answerer,
@@ -529,7 +529,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
 
-    def testCannotConfirmAnAnswerFromAnotherTicket(self):
+    def testCannotConfirmAnAnswerFromAnotherQuestion(self):
         """Test that you can't confirm an answer not from the same ticket."""
         ticket1_answer = self.ticket.giveAnswer(
             self.answerer, 'Really, just do it!')
@@ -627,7 +627,7 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
         getattr(self.ticket, 'reopen')
 
 
-class ExpireTicketTestCase(BaseSupportTrackerWorkflowTestCase):
+class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the expireTicket() workflow action method."""
 
     def test_expireTicketFromInvalidStates(self):

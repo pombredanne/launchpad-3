@@ -3,7 +3,7 @@
 __metaclass__ = type
 __all__ = [
     'SourcePackage',
-    'SourcePackageTicketTargetMixin',
+    'SourcePackageQuestionTargetMixin',
     ]
 
 from operator import attrgetter
@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget, get_supported_languages)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.answercontact import SupportContact
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
@@ -34,7 +34,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.question import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -44,13 +44,13 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.build import Build
 
 
-class SourcePackageTicketTargetMixin:
+class SourcePackageQuestionTargetMixin:
     """Implementation of IQuestionTarget for SourcePackage."""
 
     def newTicket(self, owner, title, description, language=None,
                   datecreated=None):
         """See IQuestionTarget."""
-        return TicketSet.new(
+        return QuestionSet.new(
             title=title, description=description, owner=owner,
             language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
@@ -59,7 +59,7 @@ class SourcePackageTicketTargetMixin:
         """See IQuestionTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_id)
+            ticket = Question.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -71,27 +71,27 @@ class SourcePackageTicketTargetMixin:
 
     def searchTickets(self, **search_criteria):
         """See IQuestionTarget."""
-        return TicketTargetSearch(
+        return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             **search_criteria).getResults()
 
     def findSimilarTickets(self, title):
         """See IQuestionTarget."""
-        return SimilarTicketsSearch(
+        return SimilarQuestionsSearch(
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
     def addSupportContact(self, person):
         """See IQuestionTarget."""
-        support_contact_entry = SupportContact.selectOneBy(
+        support_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
         if support_contact_entry:
             return False
 
-        SupportContact(
+        AnswerContact(
             product=None, person=person,
             sourcepackagename=self.sourcepackagename,
             distribution=self.distribution)
@@ -99,7 +99,7 @@ class SourcePackageTicketTargetMixin:
 
     def removeSupportContact(self, person):
         """See IQuestionTarget."""
-        support_contact_entry = SupportContact.selectOneBy(
+        support_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
@@ -120,7 +120,7 @@ class SourcePackageTicketTargetMixin:
     @property
     def direct_support_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = SupportContact.selectBy(
+        support_contacts = AnswerContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return sorted(
@@ -141,7 +141,7 @@ class SourcePackageTicketTargetMixin:
 
 
 
-class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
+class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     """A source package, e.g. apache2, in a distrorelease.
 
     This object implements the MagicSourcePackage specification. It is not a

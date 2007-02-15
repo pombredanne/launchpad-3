@@ -57,7 +57,7 @@ from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
-    TicketTargetFacetMixin, TicketTargetTraversalMixin)
+    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -74,7 +74,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    TicketTargetTraversalMixin):
+    QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -138,7 +138,7 @@ class ProductSOP(StructuralObjectPresentation):
         return None
 
 
-class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
