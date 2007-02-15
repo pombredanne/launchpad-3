@@ -249,11 +249,6 @@ class PackageUploadFile(NascentUploadFile):
                             getUtility(IComponentSet)]
         valid_sections = [section.name for section in getUtility(ISectionSet)]
 
-        if self.component not in valid_components:
-            yield UploadError(
-                "%s: Component %r is not valid" % (
-                self.filename, self.component))
-
         if self.section not in valid_sections:
             # We used to reject invalid sections; when testing stuff we
             # were forced to accept a package with a broken section
@@ -263,6 +258,12 @@ class PackageUploadFile(NascentUploadFile):
             self.logger.warn("Unable to grok section %r, overriding it with %s"
                       % (self.section, default_section))
             self.section = default_section
+
+        if self.component not in valid_components:
+            raise UploadError(
+                "%s: Component %r is not valid" % (
+                self.filename, self.component))
+
 
     @property
     def converted_component(self):
@@ -590,7 +591,10 @@ class UBinaryUploadFile(PackageUploadFile):
                          apt_pkg.VersionCompare(version, "1.10.24") < 0) or
                         (constraint == ">>" and
                          apt_pkg.VersionCompare(version, "1.10.23") < 0)):
-                        continue
+                        yield UploadError(
+                            "%s uses bzip2 compression but pre-depends "
+                            "on an old version of dpkg: %s"
+                            % (self.filename, version))
                     break
                 else:
                     yield UploadError(
