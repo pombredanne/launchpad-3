@@ -135,16 +135,17 @@ class ChangesFile(SignableTagFile):
                             self.version, self, self.fsroot,
                             self.policy, self.logger)
                 elif binary_match:
+                    package = binary_match.group(1)
                     if filename.endswith("udeb"):
                         file_instance = UBinaryUploadFile(
                             filename, digest, size, component_and_section,
-                            priority, self, self.fsroot, self.policy,
-                            self.logger)
+                            priority, package, self.version, self,
+                            self.fsroot, self.policy, self.logger)
                     else:
                         file_instance = BinaryUploadFile(
                             filename, digest, size, component_and_section,
-                            priority, self, self.fsroot, self.policy,
-                            self.logger)
+                            priority, package, self.version, self,
+                            self.fsroot, self.policy, self.logger)
                 else:
                     # XXX: byhand will fall into this category now. is
                     # that right?
