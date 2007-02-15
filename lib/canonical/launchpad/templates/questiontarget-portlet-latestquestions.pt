@@ -1,9 +1,9 @@
-<div class="portlet" tal:condition="view/getLatestTickets">
+<div class="portlet" tal:condition="view/getLatestQuestions">
   <h2>Latest questions</h2>
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="ticket" tal:repeat="ticket view/getLatestTickets">
+      <li class="ticket" tal:repeat="ticket view/getLatestQuestions">
            [<span tal:attributes="
                     class string:ticketstatus${ticket/status/name}"
                   tal:content="ticket/status/title" />]

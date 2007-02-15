@@ -79,11 +79,11 @@ class QuestionCollectionLatestQuestionsView:
     """View used to display the latest support requests on a ticket target."""
 
     @cachedproperty
-    def getLatestTickets(self, quantity=5):
+    def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.searchTickets()[:quantity]
+        return self.context.searchQuestions()[:quantity]
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
@@ -213,7 +213,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @cachedproperty
     def context_ticket_languages(self):
         """Return the set of ILanguages used by this context's tickets."""
-        return self.context.getTicketLanguages()
+        return self.context.getQuestionLanguages()
 
     @property
     def all_languages_shown(self):
@@ -263,7 +263,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
         return BatchNavigator(
-            self.context.searchTickets(**self.search_params), self.request)
+            self.context.searchQuestions(**self.search_params), self.request)
 
     def displaySourcePackageColumn(self):
         """We display the source package column only on distribution."""
@@ -371,46 +371,46 @@ class ManageAnswerContactView(GeneralFormView):
     @property
     def initial_values(self):
         user = self.user
-        support_contacts = self.context.direct_support_contacts
-        support_contact_teams = set(
-            support_contacts).intersection(self.user.teams_participated_in)
+        answer_contacts = self.context.direct_answer_contacts
+        answer_contact_teams = set(
+            answer_contacts).intersection(self.user.teams_participated_in)
         return {
-            'want_to_be_support_contact': user in support_contacts,
-            'support_contact_teams': list(support_contact_teams)
+            'want_to_be_answer_contact': user in answer_contacts,
+            'answer_contact_teams': list(answer_contact_teams)
             }
 
     def _setUpWidgets(self):
         if not self.user:
             return
-        self.support_contact_teams_widget = CustomWidgetFactory(
+        self.answer_contact_teams_widget = CustomWidgetFactory(
             LabeledMultiCheckBoxWidget)
         GeneralFormView._setUpWidgets(self, context=self.user)
 
-    def process(self, want_to_be_support_contact, support_contact_teams=None):
-        if support_contact_teams is None:
-            support_contact_teams = []
+    def process(self, want_to_be_answer_contact, answer_contact_teams=None):
+        if answer_contact_teams is None:
+            answer_contact_teams = []
         response = self.request.response
         replacements = {'context': self.context.displayname}
-        if want_to_be_support_contact:
-            if self.context.addSupportContact(self.user):
+        if want_to_be_answer_contact:
+            if self.context.addAnswerContact(self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
-            if self.context.removeSupportContact(self.user):
+            if self.context.removeAnswerContact(self.user):
                 response.addNotification(
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
 
         for team in self.user.teams_participated_in:
             replacements['teamname'] = team.displayname
-            if team in support_contact_teams:
-                if self.context.addSupportContact(team):
+            if team in answer_contact_teams:
+                if self.context.addAnswerContact(team):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
-                if self.context.removeSupportContact(team):
+                if self.context.removeAnswerContact(team):
                     response.addNotification(
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
@@ -434,10 +434,10 @@ class QuestionTargetTraversalMixin:
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_id = int(name)
+            question_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_id)
+        return self.context.getQuestion(question_id)
 
     redirection('+ticket', '+tickets')
 
@@ -480,13 +480,13 @@ class QuestionTargetSupportMenu(QuestionCollectionSupportMenu):
 
     usedfor = IQuestionTarget
     facet = 'support'
-    links = QuestionCollectionSupportMenu.links + ['new', 'support_contact']
+    links = QuestionCollectionSupportMenu.links + ['new', 'answer_contact']
 
     def new(self):
         text = 'Ask Question'
         return Link('+addticket', text, icon='add')
 
-    def support_contact(self):
+    def answer_contact(self):
         text = 'Answer Contact'
         return Link('+support-contact', text, icon='edit')
 

@@ -1,8 +1,8 @@
 = Person and the Support Tracker =
 
-== searchTickets() ==
+== searchQuestions() ==
 
-IPerson defines a searchTickets() method which can be used to
+IPerson defines a searchQuestions() method which can be used to
 select all or a subset of the support requests in which the person is
 involved. This includes tickets which the person created, is assigned
 to, is subscribed to, commented on, or answered. Various subsets can
@@ -18,7 +18,7 @@ participation type.
 The search_text parameter will limit the tickets to those matching
 the query using the regular full text algorithm.
 
-    >>> for ticket in foo_bar.searchTickets(search_text='firefox'):
+    >>> for ticket in foo_bar.searchQuestions(search_text='firefox'):
     ...     print ticket.title, ticket.status.title
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
@@ -31,7 +31,7 @@ by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
     >>> from canonical.lp.dbschema import QuestionSort
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print ticket.id, ticket.title, ticket.status.title
     4 Firefox loses focus and gets stuck              Open
@@ -41,7 +41,7 @@ one of the constant defined in the QuestionSort enumeration.
 When no text search is done, the default sort order is
 QuestionSort.NEWEST_FIRST.
 
-    >>> for ticket in foo_bar.searchTickets():
+    >>> for ticket in foo_bar.searchQuestions():
     ...     print ticket.id, ticket.title, ticket.status.title
     11 Continue playing after shutdown                      Open
     10 Play DVDs in Totem                                   Answered
@@ -58,13 +58,13 @@ for by default (they excluded expired and invalid tickets). The status
 parameter can be used to control the list of statuses to select:
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> for ticket in foo_bar.searchTickets(status=QuestionStatus.INVALID):
+    >>> for ticket in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
     ...     print ticket.title, ticket.status.title
     Firefox is slow and consumes too much RAM   Invalid
 
 The status parameter can also take a list of statuses.
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
     ...     print ticket.title, ticket.status.title
     mailto: problem in webpage                  Solved
@@ -73,14 +73,14 @@ The status parameter can also take a list of statuses.
 === participation ===
 
 By default, any types of relationship to a ticket is considered by
-searchTickets. This can customized through the participation parameter.
+searchQuestions. This can customized through the participation parameter.
 It takes one or a list of constants from the QuestionParticipation enumeration.
 
 To select only tickets on which the person commented, the
 QuestionParticipation.COMMENTER is used:
 
     >>> from canonical.lp.dbschema import QuestionParticipation
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
     ...     print ticket.title
     Continue playing after shutdown
@@ -92,7 +92,7 @@ QuestionParticipation.COMMENTER is used:
 QuestionParticipation.SUBSCRIBER will only select the tickets to which
 the person is subscribed to:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.SUBSCRIBER, status=None):
     ...     print ticket.title
     Slow system
@@ -100,7 +100,7 @@ the person is subscribed to:
 
 QuestionParticipation.OWNER selects the tickets that the person created:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.OWNER, status=None):
     ...     print ticket.title
     Slow system
@@ -110,7 +110,7 @@ QuestionParticipation.OWNER selects the tickets that the person created:
 QuestionParticipation.ANSWERER selects the tickets for which the person
 was marked as the answerer:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.ANSWERER, status=None):
     ...     print ticket.title
     mailto: problem in webpage
@@ -119,14 +119,14 @@ was marked as the answerer:
 QuestionParticipation.ASSIGNEE selects that tickets which are assigned to
 the person:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.ASSIGNEE, status=None):
     ...     print ticket.title
 
 If a list of these constants is used, all of these participation types
 will be selected:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         participation=[
     ...             QuestionParticipation.OWNER, QuestionParticipation.ANSWERER],
     ...         status=None):
@@ -149,13 +149,13 @@ specify the language filter.
 
 Foo bar doesn't have any tickets written in Spanish.
 
-    >>> for ticket in foo_bar.searchTickets(language=spanish):
+    >>> for ticket in foo_bar.searchQuestions(language=spanish):
     ...     print ticket.title
 
 But carlos has one.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> for ticket in carlos.searchTickets(
+    >>> for ticket in carlos.searchQuestions(
     ...     language=[english, spanish]):
     ...     [ticket.title, ticket.language.code]
     [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
@@ -169,7 +169,7 @@ owned by the person in the ANSWERED or NEEDSINFO state. It also includes
 tickets on which the person requested for more information or gave an
 answer and that are back in the OPEN state.
 
-    >>> for ticket in foo_bar.searchTickets(needs_attention=True):
+    >>> for ticket in foo_bar.searchQuestions(needs_attention=True):
     ...     print ticket.status.title, ticket.owner.displayname, ticket.title
     Open              Sample Person Continue playing after shutdown
     Needs information Foo Bar       Slow system
@@ -179,7 +179,7 @@ answer and that are back in the OPEN state.
 The returned sets of tickets is the intersection of the sets delimited
 by each criteria:
 
-    >>> for ticket in foo_bar.searchTickets(
+    >>> for ticket in foo_bar.searchQuestions(
     ...         search_text='firefox OR Java', status=QuestionStatus.ANSWERED,
     ...         participation=QuestionParticipation.COMMENTER):
     ...     print ticket.title, ticket.status.title
@@ -274,13 +274,13 @@ languages of the Ubuntu Team that will be used.
     >>> language_codes(guadamen_team.getSupportedLanguages())
     ['en', 'es']
 
-== getTicketLanguages() ==
+== getQuestionLanguages() ==
 
-IPerson also defines a getTicketLanguages() attribute which contains the set
+IPerson also defines a getQuestionLanguages() attribute which contains the set
 of languages used by all of the tickets in which this person is
 involved.
 
-    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en']
 
 This includes tickets which the person owns. But also, tickets that the
@@ -292,7 +292,7 @@ user subscribed to.
     >>> pt_BR_ticket.subscribe(foo_bar)
     <QuestionSubscription...>
 
-    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en', u'pt_BR']
 
 And also tickets for which he's the answerer.
@@ -301,7 +301,7 @@ And also tickets for which he's the answerer.
     >>> es_ticket.reject(foo_bar, 'Reject ticket.')
     <QuestionMessage...>
 
-    >>> sorted(language.code for language in foo_bar.getTicketLanguages())
+    >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
 
 As well, as ticket which are assigned to the user.
@@ -310,7 +310,7 @@ As well, as ticket which are assigned to the user.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-    >>> sorted(language.code for language in carlos.getTicketLanguages())
+    >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'es', u'pt_BR']
 
 And tickets on which the user commented:
@@ -320,5 +320,5 @@ And tickets on which the user commented:
     >>> en_ticket.addComment(carlos, 'A simple comment.')
     <QuestionMessage...>
 
-    >>> sorted(language.code for language in carlos.getTicketLanguages())
+    >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']

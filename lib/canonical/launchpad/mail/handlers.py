@@ -281,8 +281,8 @@ class SupportTrackerHandler:
         if not match:
             return False
 
-        ticket_id = int(match.group('id'))
-        ticket = getUtility(IQuestionSet).get(ticket_id)
+        question_id = int(match.group('id'))
+        ticket = getUtility(IQuestionSet).get(question_id)
         if ticket is None:
             # No such ticket, don't process the email.
             return False

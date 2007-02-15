@@ -23,12 +23,12 @@
       attributes="addBugContact removeBugContact subscribe createBug " />
 
     <!-- IQuestionTarget -->
-    <allow attributes="getTicket searchTickets findSimilarTickets
-        support_contacts direct_support_contacts getSupportedLanguages
-	getTicketLanguages"
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+        answer_contacts direct_answer_contacts getSupportedLanguages
+	getQuestionLanguages"
 	/>
     <require permission="launchpad.AnyPerson"
-      attributes="newTicket addSupportContact removeSupportContact" />
+      attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>
 
   <browser:defaultView

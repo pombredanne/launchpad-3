@@ -3,17 +3,17 @@
   <h2>Answer contacts for <span tal:replace="context/displayname"/></h2>
 
   <div class="portletBody portletContent"
-       tal:define="support_contacts context/direct_support_contacts">
+       tal:define="answer_contacts context/direct_answer_contacts">
 
-    <ul class="people" tal:condition="support_contacts">
-      <li tal:repeat="support_contact support_contacts">
+    <ul class="people" tal:condition="answer_contacts">
+      <li tal:repeat="answer_contact answer_contacts">
         <a href="#"
-           tal:content="support_contact/browsername"
-           tal:attributes="href support_contact/fmt:url">Ubuntu Team</a>
+           tal:content="answer_contact/browsername"
+           tal:attributes="href answer_contact/fmt:url">Ubuntu Team</a>
       </li>
     </ul>
 
-    <p tal:condition="not: support_contacts">
+    <p tal:condition="not: answer_contacts">
       <i>There are no answer contacts.</i>
     </p>
 

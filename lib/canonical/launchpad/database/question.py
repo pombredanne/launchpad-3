@@ -305,7 +305,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def canReject(self, user):
         """See IQuestion."""
-        for contact in self.target.support_contacts:
+        for contact in self.target.answer_contacts:
             if user.inTeam(contact):
                 return True
         admin = getUtility(ILaunchpadCelebrities).admin
@@ -330,7 +330,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return msg
 
     @notify_question_modified()
-    def expireTicket(self, user, comment, datecreated=None):
+    def expireQuestion(self, user, comment, datecreated=None):
         """See IQuestion."""
         if self.status not in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
             raise InvalidQuestionStateError(
@@ -390,7 +390,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.support_contacts)
+        subscribers = set(self.target.answer_contacts)
 
         if self.assignee:
             subscribers.add(self.assignee)
@@ -476,7 +476,7 @@ class QuestionSet:
         """See IQuestionSet."""
         self.title = 'Launchpad'
 
-    def findExpiredTickets(self, days_before_expiration):
+    def findExpiredQuestions(self, days_before_expiration):
         """See IQuestionSet."""
         return Question.select(
             """status IN (%s, %s)
@@ -490,14 +490,14 @@ class QuestionSet:
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
-    def searchTickets(self, search_text=None, language=None,
+    def searchQuestions(self, search_text=None, language=None,
                       status=QUESTION_STATUS_DEFAULT_SEARCH, sort=None):
         """See IQuestionSet"""
         return QuestionSearch(
             search_text=search_text, status=status, language=language,
             sort=sort).getResults()
 
-    def getTicketLanguages(self):
+    def getQuestionLanguages(self):
         """See IQuestionSet"""
         return set(Language.select('Language.id = Ticket.language',
             clauseTables=['Ticket'], distinct=True))
@@ -506,7 +506,7 @@ class QuestionSet:
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
             datecreated=None, language=None):
-        """Common implementation for IQuestionTarget.newTicket()."""
+        """Common implementation for IQuestionTarget.newQuestion()."""
         if datecreated is None:
             datecreated = UTC_NOW
         if language is None:
@@ -522,10 +522,10 @@ class QuestionSet:
 
         return ticket
 
-    def get(self, ticket_id, default=None):
+    def get(self, question_id, default=None):
         """See IQuestionSet."""
         try:
-            return Question.get(ticket_id)
+            return Question.get(question_id)
         except SQLObjectNotFound:
             return default
 
@@ -691,7 +691,7 @@ class QuestionSearch:
 class QuestionTargetSearch(QuestionSearch):
     """Search tickets in an IQuestionTarget context.
 
-    Used to implement IQuestionTarget.searchTickets().
+    Used to implement IQuestionTarget.searchQuestions().
     """
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -732,7 +732,7 @@ class SimilarQuestionsSearch(QuestionSearch):
     """Search tickets in a context using a similarity search algorithm.
 
     This search object is used to implement
-    IQuestionTarget.findSimilarTickets().
+    IQuestionTarget.findSimilarQuestions().
     """
 
     def __init__(self, title, product=None, distribution=None,
@@ -752,7 +752,7 @@ class SimilarQuestionsSearch(QuestionSearch):
 class QuestionPersonSearch(QuestionSearch):
     """Search tickets which are related to a particular person.
 
-    Used to implement IPerson.searchTickets().
+    Used to implement IPerson.searchQuestions().
     """
 
     def __init__(self, person, search_text=None,

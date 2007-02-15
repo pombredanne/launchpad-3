@@ -414,7 +414,7 @@ class ProjectAddQuestionView(QuestionAddView):
 
 # XXX flacoste 2006-12-13 This should be removed and the
 # QuestionTargetLatestQuestionsView used instead once we add a
-# searchTickets() method to IProject. This will happen when
+# searchQuestions() method to IProject. This will happen when
 # fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
 class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by

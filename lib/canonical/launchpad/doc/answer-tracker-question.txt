@@ -34,11 +34,11 @@ the distrorelease's distribution.)
     >>> verifyObject(IQuestionTarget, tickettarget)
     True
 
-You create a new ticket by calling the newTicket() method of an
+You create a new ticket by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> firefox_ticket = firefox.newTicket(
+    >>> firefox_ticket = firefox.newQuestion(
     ...     sample_person, "Firefox ticket", "Unable to use Firefox")
 
 (The complete IQuestionTarget interface is documented in
@@ -133,7 +133,7 @@ ticket target are part of the indirect subscribers list.
     >>> [person.displayname
     ...     for person in firefox_ticket.getIndirectSubscribers()]
     []
-    >>> firefox.addSupportContact(no_priv)
+    >>> firefox.addAnswerContact(no_priv)
     True
     >>> [person.displayname
     ...  for person in firefox_ticket.getIndirectSubscribers()]
@@ -145,16 +145,16 @@ package are part of the indirect subscribers list.
 
     # Let's register some support contacts for the distribution and
     # the package.
-    >>> list(ubuntu.support_contacts)
+    >>> list(ubuntu.answer_contacts)
     []
-    >>> list(firefox_package.support_contacts)
+    >>> list(firefox_package.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> ubuntu.addSupportContact(ubuntu_team)
+    >>> ubuntu.addAnswerContact(ubuntu_team)
     True
-    >>> firefox_package.addSupportContact(no_priv)
+    >>> firefox_package.addAnswerContact(no_priv)
     True
-    >>> package_ticket = firefox_package.newTicket(
+    >>> package_ticket = firefox_package.newQuestion(
     ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
     ...     "The FnordsHighlighter theme doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_ticket.subscriptions]

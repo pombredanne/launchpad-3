@@ -7,9 +7,9 @@ Several views are used to handle the various operations on a ticket.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ticket_three = ubuntu.getTicket(3)
+    >>> ticket_three = ubuntu.getQuestion(3)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_ticket = firefox.getTicket(2)
+    >>> firefox_ticket = firefox.getQuestion(2)
 
     # The firefox_ticket doesn't have any subscribers, let's subscribe
     # the owner.

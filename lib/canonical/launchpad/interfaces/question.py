@@ -299,7 +299,7 @@ class IQuestion(IHasOwner):
         :datecreated: Date for the message. Defaults to the current time.
         """
 
-    def expireTicket(user, comment, datecreated=None):
+    def expireQuestion(user, comment, datecreated=None):
         """Mark a question as EXPIRED.
 
         Add an IQuestionMessage with action EXPIRE. This changes the question
@@ -399,8 +399,9 @@ class IQuestionCollection(Interface):
     """An object that can be used to search through a collection of questions.
     """
 
-    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                      language=None, sort=None):
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None):
         """Return the questions from the collection matching search criteria.
 
         :search_text: A string that is matched against the question
@@ -419,7 +420,7 @@ class IQuestionCollection(Interface):
         RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
 
-    def getTicketLanguages():
+    def getQuestionLanguages():
         """Return the set of ILanguage used by all the questions in the
         collection."""
 
@@ -427,9 +428,10 @@ class IQuestionCollection(Interface):
 class ISearchableByQuestionOwner(IQuestionCollection):
     """Collection that support searching by question owner."""
 
-    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                      language=None, sort=None,
-                      owner=None, needs_attention_from=None):
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """Return the questions from the collection matching search criteria.
 
         See IQuestionCollection for the description of the standard search
@@ -450,13 +452,13 @@ class IQuestionSet(IQuestionCollection):
 
     title = Attribute('Title')
 
-    def get(ticket_id, default=None):
+    def get(question_id, default=None):
         """Return the question with the given id.
 
         Return :default: if no such question exists.
         """
 
-    def findExpiredTickets(days_before_expiration):
+    def findExpiredQuestions(days_before_expiration):
         """Return the questions that are expired.
 
         This should return all the questions in the Open or Needs information

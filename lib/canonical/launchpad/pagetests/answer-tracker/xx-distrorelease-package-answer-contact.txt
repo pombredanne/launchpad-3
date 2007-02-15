@@ -16,7 +16,7 @@ Add Foo Bar, Launchpad Developers and the Ubuntu Team as answer
 contacts.
 
   >>> browser.getControl("I want to be an answer contact for Hoary mozilla-firefox").click()
-  >>> browser.getControl(name="field.support_contact_teams").value = ["ubuntu-team", "launchpad"]
+  >>> browser.getControl(name="field.answer_contact_teams").value = ["ubuntu-team", "launchpad"]
   >>> browser.getControl("Continue").click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+tickets'
@@ -33,9 +33,9 @@ Remove Foo Bar and the Ubuntu team as answer contacts.
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+support-contact")
   >>> browser.getControl("I want to be an answer contact for Hoary mozilla-firefox").click()
-  >>> browser.getControl(name="field.support_contact_teams").value
+  >>> browser.getControl(name="field.answer_contact_teams").value
   ['launchpad', 'ubuntu-team']
-  >>> browser.getControl(name="field.support_contact_teams").value = ["launchpad"]
+  >>> browser.getControl(name="field.answer_contact_teams").value = ["launchpad"]
   >>> browser.getControl("Continue").click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+tickets'

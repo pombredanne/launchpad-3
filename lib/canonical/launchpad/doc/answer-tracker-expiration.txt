@@ -79,7 +79,7 @@ somebody are subject to expiration.
     >>> old_open_ticket.subscribe(admin_team)
     <QuestionSubscription...>
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> old_open_ticket.target.addSupportContact(salgado)
+    >>> old_open_ticket.target.addAnswerContact(salgado)
     True
 
     # Commit the current transaction because the script will run in

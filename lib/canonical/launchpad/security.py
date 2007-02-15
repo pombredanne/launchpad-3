@@ -884,8 +884,8 @@ class ModerateQuestion(AdminQuestion):
         """Allow user who can administer the ticket and support contacts."""
         if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for support_contact in self.obj.target.support_contacts:
-            if user.inTeam(support_contact):
+        for answer_contact in self.obj.target.answer_contacts:
+            if user.inTeam(answer_contact):
                 return True
         return False
 

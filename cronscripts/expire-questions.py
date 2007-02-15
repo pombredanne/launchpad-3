@@ -28,7 +28,7 @@ class ExpireQuestions(LaunchpadScript):
 
     def main(self):
         janitor = QuestionJanitor(log=self.logger)
-        janitor.expireTickets(self.txn)
+        janitor.expireQuestions(self.txn)
 
 
 if __name__ == '__main__':

@@ -49,7 +49,7 @@ the Ubuntu Team that owns the distribution.
     >>> stub = personset.getByName('stub')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> ubuntu.addSupportContact(sample_person)
+    >>> ubuntu.addAnswerContact(sample_person)
     True
 
     # Sanity check: the admin isn't in the team owning the distribution.
@@ -67,7 +67,7 @@ A ticket starts its lifecycle in the Open state.
     ...     'description': "I've tried installing Ubuntu on a Mac. "
     ...     "But the installer never boots.",
     ...     'datecreated': now}
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> print ticket.status.title
     Open
 
@@ -84,7 +84,7 @@ This method takes two mandatory parameters: the user making the request
 and his question. It can also takes a 'datecreated' parameter specifying
 the creation date of the request (which defaults to now).
 
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> now_plus_one_hour = now + timedelta(hours=1)
     >>> request_message = ticket.requestInfo(
     ...     sample_person, 'What is your Mac model?',
@@ -255,7 +255,7 @@ and answerer attributes are also updated.
 Another scenario is for the case when the user comes back to answer the
 request himself. The giveAnswer() method is also used for that case.
 
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> self_answer_message = ticket.giveAnswer(
     ...     no_priv, "I found some instructions on the Wiki on how to "
     ...     "install BootX to boot the installation CD on OldWorld Mac: "
@@ -287,12 +287,12 @@ the 'answer' attribute will contain the message that closed the request.
 
 Another case is when nobody comes to answer the message, either because
 the request is too complex or too vague. These requests can be expired
-by using the expireTicket() method. (See support-tracker-expiration.txt
+by using the expireQuestion() method. (See support-tracker-expiration.txt
 for the documentation of the cron script handling this task.)
 
     >>> login('no-priv@canonical.com')
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
-    >>> expire_message = ticket.expireTicket(
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
+    >>> expire_message = ticket.expireQuestion(
     ...     sample_person, "There was no activity on this ticket for two "
     ...     "weeks and this ticket was expired. If you are still having "
     ...     "this problem you should reopen the request and provide more "
@@ -338,7 +338,7 @@ Another scenario to handle is the case where the user posts a message
 that isn't really appropriate for the support tracker like a SPAM
 message or a request for Ubuntu CDs.
 
-    >>> spam_ticket = ubuntu.newTicket(
+    >>> spam_ticket = ubuntu.newQuestion(
     ...     no_priv, 'CDs', 'Please send 10 Ubuntu Dapper CDs.',
     ...     datecreated=now)
 
@@ -420,7 +420,7 @@ exercices all the various possible transitions.)
 It is not possible to change the status attribute directly:
 
     >>> login('foo.bar@canonical.com')
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> ticket.status = QuestionStatus.INVALID
     Traceback (most recent call last):
       ...
@@ -571,7 +571,7 @@ The most common use case is when a user confirms a solution, and then
 comes back to say that it doesn't work in fact.
 
     >>> login('no-priv@canonical.com')
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> answer_message = ticket.giveAnswer(
     ...    sample_person, "You need some setup on the Mac side. "
     ...    "Follow the instructions at "
@@ -617,7 +617,7 @@ Another example of a reopening, would be when the ticket status is set
 back to OPEN after having been rejected.
 
     >>> login('test@canonical.com')
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> reject_message = ticket.reject(
     ...     sample_person, 'This is a frivoulous request.',
     ...     datecreated=now_plus_one_hour)
@@ -652,7 +652,7 @@ a string.
     >>> from canonical.launchpad.interfaces import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
-    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
     >>> reject_message = messageset.fromText(
     ...     'Reject', 'Because I feel like it.', sample_person)
     >>> ticket_message = ticket.reject(sample_person,reject_message)

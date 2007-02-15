@@ -1,4 +1,4 @@
-Your question #%(ticket_id)s on %(target_name)s changed:
+Your question #%(question_id)s on %(target_name)s changed:
 %(ticket_url)s
 
 %(body)s

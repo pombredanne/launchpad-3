@@ -1078,7 +1078,7 @@ class QuestionAddedNotification(QuestionNotification):
         ticket = self.ticket
         body = get_email_template('question-added-notification.txt') % {
             'target_name': ticket.target.displayname,
-            'ticket_id': ticket.id,
+            'question_id': ticket.id,
             'ticket_url': canonical_url(ticket),
             'comment': ticket.description}
         if self.unsupported_language:
@@ -1182,7 +1182,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """See QuestionNotification."""
         body = self.metadata_changes_text
         replacements = dict(
-            ticket_id=self.ticket.id,
+            question_id=self.ticket.id,
             target_name=self.ticket.target.displayname,
             ticket_url=canonical_url(self.ticket))
 
@@ -1300,14 +1300,14 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
 
     def getRecipients(self):
         """Notify all the support contacts."""
-        return self.ticket.target.support_contacts
+        return self.ticket.target.answer_contacts
 
     def getBody(self):
         """See QuestionNotification."""
         ticket = self.ticket
         return get_email_template('question-unsupported-languages-added.txt') % {
             'target_name': ticket.target.displayname,
-            'ticket_id': ticket.id,
+            'question_id': ticket.id,
             'ticket_url': canonical_url(ticket),
             'ticket_language': ticket.language.englishname,
             'comment': ticket.description}

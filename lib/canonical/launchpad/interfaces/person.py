@@ -632,9 +632,9 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchTickets(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                      language=None, sort=None, participation=None,
-                      needs_attention=False):
+    def searchQuestions(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=False):
         """Search the person's tickets.
 
         See IQuestionCollection for the description of the standard search

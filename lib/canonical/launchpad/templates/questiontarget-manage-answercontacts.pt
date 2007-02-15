@@ -41,9 +41,9 @@
 
         <div class="field">
           <strong>Choose:</strong><br />
-          <div tal:replace="structure view/want_to_be_support_contact_widget" />
+          <div tal:replace="structure view/want_to_be_answer_contact_widget" />
           <label style="font-weight: normal"
-              tal:attributes="for view/want_to_be_support_contact_widget/name">
+              tal:attributes="for view/want_to_be_answer_contact_widget/name">
             I want to be an answer contact for
             <span tal:replace="context/displayname">Mozilla Firefox</span>
           </label>
@@ -52,13 +52,13 @@
       </div>
 
       <div class="row"
-           tal:condition="view/support_contact_teams_widget/vocabulary">
+           tal:condition="view/answer_contact_teams_widget/vocabulary">
 
         <div class="field">
           <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
-          <div tal:content="structure view/support_contact_teams_widget" />
+          <div tal:content="structure view/answer_contact_teams_widget" />
         </div>
 
       </div>

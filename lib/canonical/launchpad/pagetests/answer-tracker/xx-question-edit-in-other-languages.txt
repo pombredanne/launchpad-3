@@ -10,7 +10,7 @@ Register a new answer contact to change the list of supported languages.
     >>> login('salgado@ubuntu.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> salgado = getUtility(IPersonSet).getByEmail('salgado@ubuntu.com')
-    >>> ubuntu.addSupportContact(salgado)
+    >>> ubuntu.addAnswerContact(salgado)
     True
     >>> flush_database_updates()
     >>> logout()

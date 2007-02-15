@@ -42,7 +42,7 @@ class QuestionJanitor:
         self.janitor = (
             getUtility(ILaunchpadCelebrities).support_tracker_janitor)
 
-    def expireTickets(self, transaction_manager):
+    def expireQuestions(self, transaction_manager):
         """Expire old tickets.
 
         All tickets in the OPEN or NEEDSINFO state without activity
@@ -57,12 +57,12 @@ class QuestionJanitor:
         self._login()
         try:
             count = 0
-            expired_tickets = getUtility(IQuestionSet).findExpiredTickets(
+            expired_tickets = getUtility(IQuestionSet).findExpiredQuestions(
                 self.days_before_expiration)
             self.log.info(
                 'Found %d tickets to expire.' % expired_tickets.count())
             for ticket in expired_tickets:
-                ticket.expireTicket(
+                ticket.expireQuestion(
                     self.janitor,
                     "This support request was expired because it remained in "
                     "the '%s' state without activity for the last %d days."

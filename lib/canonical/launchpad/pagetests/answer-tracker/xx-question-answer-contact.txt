@@ -32,7 +32,7 @@ each team that user is a member of. Both direct and implicit team
 memberships are listed.
 
     >>> user_browser.getControl(
-    ...     name='field.support_contact_teams').options
+    ...     name='field.answer_contact_teams').options
     ['landscape-developers', 'name18', 'name20']
 
 The user can select any of these checkboxes to register himself or one

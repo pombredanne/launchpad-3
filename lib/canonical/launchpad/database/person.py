@@ -366,7 +366,7 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, **search_criteria):
         """See IPerson."""
         return QuestionPersonSearch(person=self, **search_criteria).getResults()
 
@@ -386,7 +386,7 @@ class Person(SQLBase):
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
-    def getTicketLanguages(self):
+    def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
             '''Language.id = language AND Ticket.id IN (

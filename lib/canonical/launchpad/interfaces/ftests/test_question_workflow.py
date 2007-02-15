@@ -59,7 +59,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         # Simple ubuntu ticket.
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
-        self.ticket = self.ubuntu.newTicket(
+        self.ticket = self.ubuntu.newQuestion(
             self.owner, 'Help!', 'I need help with Ubuntu',
             datecreated=self.now)
 
@@ -533,7 +533,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
         """Test that you can't confirm an answer not from the same ticket."""
         ticket1_answer = self.ticket.giveAnswer(
             self.answerer, 'Really, just do it!')
-        ticket2 = self.ubuntu.newTicket(self.owner, 'Help 2', 'Help me!')
+        ticket2 = self.ubuntu.newQuestion(self.owner, 'Help 2', 'Help me!')
         ticket2_answer = ticket2.giveAnswer(self.answerer, 'Do that!')
         answerRefused = False
         try:
@@ -628,18 +628,18 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
 
 
 class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
-    """Test cases for the expireTicket() workflow action method."""
+    """Test cases for the expireQuestion() workflow action method."""
 
-    def test_expireTicketFromInvalidStates(self):
-        """Test that expireTicket cannot be called when the ticket status is
+    def test_expireQuestionFromInvalidStates(self):
+        """Test that expireQuestion cannot be called when the ticket status is
         not one of OPEN or NEEDSINFO.
         """
         self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO'], self.ticket.expireTicket,
+            ['OPEN', 'NEEDSINFO'], self.ticket.expireQuestion,
             self.answerer, "Too late.", datecreated=self.nowPlus(1))
 
-    def test_expireTicket(self):
-        """Test that expireTicket() can be called when the ticket status is
+    def test_expireQuestion(self):
+        """Test that expireQuestion() can be called when the ticket status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         self._testValidTransition(
@@ -647,43 +647,43 @@ class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.answerer,
             expected_action=QuestionAction.EXPIRE,
             expected_status=QuestionStatus.EXPIRED,
-            transition_method=self.ticket.expireTicket,
+            transition_method=self.ticket.expireQuestion,
             transition_method_args=(
                 self.answerer, 'This ticket is expired.'),
             edited_fields=['status', 'messages', 'datelastresponse'])
 
-    def test_expireTicketPermission(self):
-        """Test that only a logged in user can access expireTicket()."""
+    def test_expireQuestionPermission(self):
+        """Test that only a logged in user can access expireQuestion()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'expireTicket')
+        self.assertRaises(Unauthorized, getattr, self.ticket, 'expireQuestion')
 
         login(self.answerer.preferredemail.email)
-        getattr(self.ticket, 'expireTicket')
+        getattr(self.ticket, 'expireQuestion')
 
 
 class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the reject() workflow action method."""
 
     def test_rejectFromInvalidStates(self):
-        """Test that expireTicket cannot be called when the ticket status is
+        """Test that reject() cannot be called when the ticket status is
         not one of OPEN or NEEDSINFO.
         """
         valid_statuses = [status.name for status in QuestionStatus.items
                           if status.name != 'INVALID']
         # Reject user must be a support contact, (or admin, or product owner).
-        self.ubuntu.addSupportContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer)
         login(self.answerer.preferredemail.email)
         self._testInvalidTransition(
             valid_statuses, self.ticket.reject,
             self.answerer, "This is lame.", datecreated=self.nowPlus(1))
 
     def test_reject(self):
-        """Test that expireTicket() can be called when the ticket status is
+        """Test that reject() can be called when the ticket status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Reject user must be a support contact, (or admin, or product owner).
         login(self.answerer.preferredemail.email)
-        self.ubuntu.addSupportContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer)
         valid_statuses = [status for status in QuestionStatus.items
                           if status.name != 'INVALID']
 
@@ -720,7 +720,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         login(self.answerer.preferredemail.email)
         self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
 
-        self.ticket.target.addSupportContact(self.answerer)
+        self.ticket.target.addAnswerContact(self.answerer)
         getattr(self.ticket, 'reject')
 
         login(self.admin.preferredemail.email)

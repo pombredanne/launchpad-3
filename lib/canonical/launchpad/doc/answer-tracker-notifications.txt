@@ -26,7 +26,7 @@ notification looks like:
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_ticket = ubuntu.newTicket(
+    >>> ubuntu_ticket = ubuntu.newQuestion(
     ...     sample_person, "Can't install Ubuntu",
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
     >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
@@ -37,7 +37,7 @@ only the submitter, Sample Person, is subscribed to the ticket and there
  is no support contact registered on Ubuntu, so only 1 notification is
 sent:
 
-    >>> ubuntu.support_contacts
+    >>> ubuntu.answer_contacts
     []
     >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
     [u'Sample Person']
@@ -72,7 +72,7 @@ notified about the changes as well:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> ubuntu.addSupportContact(ubuntu_team)
+    >>> ubuntu.addAnswerContact(ubuntu_team)
     True
 
 And assign this ticket to Foo Bar, so that he will also receive
@@ -293,10 +293,10 @@ giveInfo() transitions, let's see the other ones.
     >>> ubuntu_ticket.subscribe(sample_person)
     <QuestionSubscription ...>
 
-=== Notifications for expireTicket() ===
+=== Notifications for expireQuestion() ===
 
     >>> login('no-priv@canonical.com')
-    >>> message = ubuntu_ticket.expireTicket(
+    >>> message = ubuntu_ticket.expireQuestion(
     ...     no_priv, "Expired because of no recent activity.")
 
     >>> notifications = pop_notifications()
@@ -647,14 +647,14 @@ receive notifications related to it.
     # Register salgado as support, this makes the pt_BR language
     # supported in Ubuntu.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> ubuntu.addSupportContact(salgado)
+    >>> ubuntu.addAnswerContact(salgado)
     True
     >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
     [u'en', u'pt_BR']
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> login('test@canonical.com')
-    >>> pt_BR_ticket = ubuntu.newTicket(
+    >>> pt_BR_ticket = ubuntu.newQuestion(
     ...     sample_person, title=(
     ...     u"Abrir uma p\xe1gina que requer java quebra o firefox"),
     ...     description=(
@@ -694,7 +694,7 @@ contacts. So after posting a request in French, a notification will be
 sent to the support list about that request:
 
     >>> french = getUtility(ILanguageSet)['fr']
-    >>> french_ticket = ubuntu.newTicket(
+    >>> french_ticket = ubuntu.newQuestion(
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
@@ -793,9 +793,9 @@ will be notified if a Spanish support request is created.
     >>> spanish in carlos.languages
     True
 
-    >>> ubuntu.addSupportContact(rosetta_admins)
+    >>> ubuntu.addAnswerContact(rosetta_admins)
     True
-    >>> spanish_ticket = ubuntu.newTicket(
+    >>> spanish_ticket = ubuntu.newQuestion(
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
     ...     language=spanish)
@@ -827,7 +827,7 @@ if the team supported languages includes the ticket language:
     >>> [member.name for member in launchpad_devs.activemembers]
     [u'name16']
     >>> launchpad_devs.addLanguage(spanish)
-    >>> ubuntu.addSupportContact(launchpad_devs)
+    >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
     >>> notify(SQLObjectCreatedEvent(spanish_ticket))
@@ -846,7 +846,7 @@ to be notified when a request in Spanish is posted.
     []
     >>> carlos.inTeam(admins)
     True
-    >>> ubuntu.addSupportContact(admins)
+    >>> ubuntu.addAnswerContact(admins)
     True
 
     >>> notify(SQLObjectCreatedEvent(spanish_ticket))

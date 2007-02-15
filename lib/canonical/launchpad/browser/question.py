@@ -64,12 +64,12 @@ class QuestionSetView:
     @property
     def requests_count(self):
         """Return the number of requests in the system."""
-        return self.context.searchTickets(status=None).count()
+        return self.context.searchQuestions(status=None).count()
 
     @property
     def latest_requests_made(self):
         """Return the 10 latest requests made."""
-        return self.context.searchTickets(
+        return self.context.searchQuestions(
             status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
 
     @property
@@ -77,7 +77,7 @@ class QuestionSetView:
         """Return the 10 latest requests solved."""
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
-        return self.context.searchTickets(
+        return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
 
 
@@ -303,7 +303,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
 
-        tickets = self.ticket_target.findSimilarTickets(data['title'])
+        tickets = self.ticket_target.findSimilarQuestions(data['title'])
         self.searchResults = tickets[:self._MAX_SIMILAR_TICKETS]
 
         return self.add_template()
@@ -331,10 +331,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             self.searchResults = []
             return self.add_template()
 
-        ticket = self.ticket_target.newTicket(
+        ticket = self.ticket_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
-        # XXX flacoste 2006/07/25 This should be moved to newTicket().
+        # XXX flacoste 2006/07/25 This should be moved to newQuestion().
         notify(SQLObjectCreatedEvent(ticket))
 
         self.request.response.redirect(canonical_url(ticket))

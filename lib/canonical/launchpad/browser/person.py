@@ -2481,14 +2481,14 @@ class TeamReassignmentView(ObjectReassignmentView):
 
 
 class PersonLatestQuestionsView(LaunchpadView):
-    """View used by the porlet displaying the latest requests made by
+    """View used by the porlet displaying the latest questions made by
     a person.
     """
 
     @cachedproperty
-    def getLatestTickets(self, quantity=5):
-        """Return <quantity> latest tickets created for this target. """
-        return self.context.searchTickets(
+    def getLatestQuestions(self, quantity=5):
+        """Return <quantity> latest questions created for this target. """
+        return self.context.searchQuestions(
             participation=QuestionParticipation.OWNER)[:quantity]
 
 

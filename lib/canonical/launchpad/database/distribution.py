@@ -452,69 +452,68 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IQuestionTarget."""
         return get_supported_languages(self)
 
-    def newTicket(self, owner, title, description, language=None,
+    def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):
         """See IQuestionTarget."""
         return QuestionSet.new(
             title=title, description=description, owner=owner,
             distribution=self, datecreated=datecreated, language=language)
 
-    def getTicket(self, ticket_id):
+    def getQuestion(self, question_id):
         """See IQuestionTarget."""
-        # First see if there is a ticket with that number.
         try:
-            ticket = Question.get(ticket_id)
+            question = Question.get(question_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this distribution.
-        if ticket.distribution != self:
+        # Verify that the question is actually for this distribution.
+        if question.distribution != self:
             return None
-        return ticket
+        return question
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, **search_criteria):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
             distribution=self, **search_criteria).getResults()
 
-    def findSimilarTickets(self, title):
+    def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, distribution=self).getResults()
 
-    def addSupportContact(self, person):
+    def addAnswerContact(self, person):
         """See IQuestionTarget."""
-        if person in self.support_contacts:
+        if person in self.answer_contacts:
             return False
         AnswerContact(
             product=None, person=person,
             sourcepackagename=None, distribution=self)
         return True
 
-    def removeSupportContact(self, person):
+    def removeAnswerContact(self, person):
         """See IQuestionTarget."""
-        if person not in self.support_contacts:
+        if person not in self.answer_contacts:
             return False
-        support_contact_entry = AnswerContact.selectOne(
+        answer_contact_entry = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
-        support_contact_entry.destroySelf()
+        answer_contact_entry.destroySelf()
         return True
 
     @property
-    def support_contacts(self):
+    def answer_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = AnswerContact.select(
+        answer_contacts = AnswerContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
         return sorted(
-            [support_contact.person for support_contact in support_contacts],
+            [answer_contact.person for answer_contact in answer_contacts],
             key=attrgetter('displayname'))
 
     @property
-    def direct_support_contacts(self):
+    def direct_answer_contacts(self):
         """See IQuestionTarget."""
-        return self.support_contacts
+        return self.answer_contacts
 
-    def getTicketLanguages(self):
+    def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '

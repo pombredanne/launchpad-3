@@ -56,7 +56,7 @@ to order our messages.
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> firefox_ticket = firefox.newTicket(
+    >>> firefox_ticket = firefox.newQuestion(
     ...     title='New ticket', description='Question description.',
     ...     owner=sample_person, datecreated=now.next())
     >>> notify(SQLObjectCreatedEvent(firefox_ticket))
@@ -64,10 +64,10 @@ to order our messages.
 
 - Expiring a ticket
 
-The expireTicket() workflow method doesn't grant any karma because it
+The expireQuestion() workflow method doesn't grant any karma because it
 will usually be called by an automated script.
 
-    >>> msg = firefox_ticket.expireTicket(
+    >>> msg = firefox_ticket.expireQuestion(
     ...     foo_bar, 'Expiring because of inactivity. Reopen if you are '
     ...     'still having the problem and provide additional information.',
     ...     datecreated=now.next())

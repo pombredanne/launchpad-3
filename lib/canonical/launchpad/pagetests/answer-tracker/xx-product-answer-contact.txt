@@ -26,23 +26,23 @@ contacts.
   ... Content-Type: multipart/form-data; boundary=----------bZSuYgnw4ENVX5W0chYGPT
   ...
   ... ------------bZSuYgnw4ENVX5W0chYGPT
-  ... Content-Disposition: form-data; name="field.want_to_be_support_contact.used"
+  ... Content-Disposition: form-data; name="field.want_to_be_answer_contact.used"
   ...
   ...
   ... ------------bZSuYgnw4ENVX5W0chYGPT
-  ... Content-Disposition: form-data; name="field.want_to_be_support_contact"
+  ... Content-Disposition: form-data; name="field.want_to_be_answer_contact"
   ...
   ... on
   ... ------------bZSuYgnw4ENVX5W0chYGPT
-  ... Content-Disposition: form-data; name="field.support_contact_teams"
+  ... Content-Disposition: form-data; name="field.answer_contact_teams"
   ...
   ... launchpad
   ... ------------bZSuYgnw4ENVX5W0chYGPT
-  ... Content-Disposition: form-data; name="field.support_contact_teams"
+  ... Content-Disposition: form-data; name="field.answer_contact_teams"
   ...
   ... ubuntu-team
   ... ------------bZSuYgnw4ENVX5W0chYGPT
-  ... Content-Disposition: form-data; name="field.support_contact_teams-empty-marker"
+  ... Content-Disposition: form-data; name="field.answer_contact_teams-empty-marker"
   ...
   ... 1
   ... ------------bZSuYgnw4ENVX5W0chYGPT
@@ -65,15 +65,15 @@ Remove Foo Bar and the Ubuntu team as answer contacts.
   ... Content-Type: multipart/form-data; boundary=----------8yNh6b7Mg5GIP3C0U679Ue
   ...
   ... ------------8yNh6b7Mg5GIP3C0U679Ue
-  ... Content-Disposition: form-data; name="field.want_to_be_support_contact.used"
+  ... Content-Disposition: form-data; name="field.want_to_be_answer_contact.used"
   ...
   ...
   ... ------------8yNh6b7Mg5GIP3C0U679Ue
-  ... Content-Disposition: form-data; name="field.support_contact_teams"
+  ... Content-Disposition: form-data; name="field.answer_contact_teams"
   ...
   ... launchpad
   ... ------------8yNh6b7Mg5GIP3C0U679Ue
-  ... Content-Disposition: form-data; name="field.support_contact_teams-empty-marker"
+  ... Content-Disposition: form-data; name="field.answer_contact_teams-empty-marker"
   ...
   ... 1
   ... ------------8yNh6b7Mg5GIP3C0U679Ue

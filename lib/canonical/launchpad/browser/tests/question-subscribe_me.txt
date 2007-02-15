@@ -11,7 +11,7 @@ whatever the action used.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
-    >>> firefox_ticket = firefox.newTicket(
+    >>> firefox_ticket = firefox.newQuestion(
     ...     sample_person, 'New ticket', 'A problem.')
 
 Empty the subscribers list:

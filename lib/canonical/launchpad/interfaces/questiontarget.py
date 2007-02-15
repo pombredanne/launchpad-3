@@ -28,7 +28,7 @@ def get_supported_languages(question_target):
     """Common implementation for IQuestionTarget.getSupportedLanguages()."""
     assert IQuestionTarget.providedBy(question_target)
     langs = set()
-    for contact in question_target.support_contacts:
+    for contact in question_target.answer_contacts:
         langs |= contact.getSupportedLanguages()
     langs.add(getUtility(ILanguageSet)['en'])
     return langs
@@ -37,7 +37,8 @@ def get_supported_languages(question_target):
 class IQuestionTarget(ISearchableByQuestionOwner):
     """An object that can have a new question asked about it."""
 
-    def newTicket(owner, title, description, language=None, datecreated=None):
+    def newQuestion(owner, title, description, language=None,
+                    datecreated=None):
         """Create a new question.
 
          A new question is created with status OPEN.
@@ -54,15 +55,15 @@ class IQuestionTarget(ISearchableByQuestionOwner):
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
         """
 
-    def getTicket(ticket_id):
+    def getQuestion(question_id):
         """Return the question by its id, if it is applicable to this target.
 
-        :ticket_id: A question id.
+        :question_id: A question id.
 
         If there is no such question number for this target, return None
         """
 
-    def findSimilarTickets(title):
+    def findSimilarQuestions(title):
         """Return questions similar to title.
 
         Return a list of question similar to the title provided. These
@@ -72,7 +73,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def addSupportContact(person):
+    def addAnswerContact(person):
         """Add a new answer contact.
 
         :person: An IPerson.
@@ -81,7 +82,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         an answer contact.
         """
 
-    def removeSupportContact(person):
+    def removeAnswerContact(person):
         """Remove an answer contact.
 
         :person: An IPerson.
@@ -98,7 +99,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         language is listed as one of his preferred languages.
         """
 
-    support_contacts = List(
+    answer_contacts = List(
         title=_("Answer Contacts"),
         description=_(
             "Persons that are willing to provide support for this target. "
@@ -106,11 +107,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "well as for changes to any questions related to this target."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
-    direct_support_contacts = List(
+    direct_answer_contacts = List(
         title=_("Direct Answer Contacts"),
         description=_(
             "IPersons that registered as answer contacts explicitely on "
-            "this target. (support_contacts may include answer contacts "
+            "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
@@ -120,10 +121,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
 class IManageAnswerContactsForm(Interface):
     """Schema for managing answer contacts."""
 
-    want_to_be_support_contact = Bool(
+    want_to_be_answer_contact = Bool(
         title=_("Subscribe me automatically to new question"),
         required=False)
-    support_contact_teams = List(
+    answer_contact_teams = List(
         title=_("Team answer contacts"),
         value_type=Choice(vocabulary="PersonTeamParticipations"),
         required=False)

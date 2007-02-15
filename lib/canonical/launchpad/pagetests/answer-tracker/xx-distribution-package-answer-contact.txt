@@ -11,7 +11,7 @@ contacts as well as the distribution answer contacts.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.addSupportContact(getUtility(ILaunchBag).user)
+    >>> ubuntu.addAnswerContact(getUtility(ILaunchBag).user)
     True
     >>> flush_database_updates()
     >>> logout()
@@ -30,9 +30,9 @@ and another one listing those of the distribution.
     <p>
       <i>There are no answer contacts.</i>
     </p>
-    >>> for support_contact in find_portlet(
+    >>> for answer_contact in find_portlet(
     ...     anon_browser.contents, 'Answer contacts for Ubuntu').fetch('a'):
-    ...     print support_contact.renderContents()
+    ...     print answer_contact.renderContents()
     Sample Person
 
 To register himself as support contact, the user clicks on the
@@ -76,10 +76,10 @@ a message is displayed to confirm the changes:
 
 The answer contacts porlet for the source package was updated:
 
-    >>> for support_contact in find_portlet(
+    >>> for answer_contact in find_portlet(
     ...     user_browser.contents,
     ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
-    ...     print support_contact.renderContents()
+    ...     print answer_contact.renderContents()
     Landscape Developers
     Sample Person
 
@@ -102,8 +102,8 @@ portlet for the source package is updated.
     ...     print message.renderContents()
     You have been removed as an answer contact for mozilla-firefox in ubuntu.
 
-    >>> for support_contact in find_portlet(
+    >>> for answer_contact in find_portlet(
     ...     user_browser.contents,
     ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
-    ...     print support_contact.renderContents()
+    ...     print answer_contact.renderContents()
     Landscape Developers

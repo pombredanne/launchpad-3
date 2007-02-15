@@ -32,10 +32,10 @@ SupportTrackerHandler.
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
     >>> from canonical.launchpad.mail import signed_message_from_string
     >>> handler = SupportTrackerHandler()
-    >>> def send_support_email(ticket_id, from_addr, subject, body):
+    >>> def send_support_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
     ...     lines = ['From: %s' % from_addr]
-    ...     to_addr = 'ticket%s@support.launchpad.net' % ticket_id
+    ...     to_addr = 'ticket%s@support.launchpad.net' % question_id
     ...     lines.append('To: %s' % to_addr)
     ...     date = mktime_tz(now.next().utctimetuple() + (0, ))
     ...     lines.append('Date: %s' % formatdate(date))
@@ -104,7 +104,7 @@ possibilities for the user.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> ticket = ubuntu.newTicket(
+    >>> ticket = ubuntu.newQuestion(
     ...     no_priv, 'Unable to boot installer',
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())

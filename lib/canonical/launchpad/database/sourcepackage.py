@@ -47,48 +47,47 @@ from canonical.launchpad.database.build import Build
 class SourcePackageQuestionTargetMixin:
     """Implementation of IQuestionTarget for SourcePackage."""
 
-    def newTicket(self, owner, title, description, language=None,
-                  datecreated=None):
+    def newQuestion(self, owner, title, description, language=None,
+                    datecreated=None):
         """See IQuestionTarget."""
         return QuestionSet.new(
             title=title, description=description, owner=owner,
             language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
-    def getTicket(self, ticket_id):
+    def getQuestion(self, question_id):
         """See IQuestionTarget."""
-        # first see if there is a ticket with that number
         try:
-            ticket = Question.get(ticket_id)
+            question = Question.get(question_id)
         except SQLObjectNotFound:
             return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
+        # Verify that this question is actually for this target.
+        if question.distribution != self.distribution:
             return None
-        if ticket.sourcepackagename != self.sourcepackagename:
+        if question.sourcepackagename != self.sourcepackagename:
             return None
-        return ticket
+        return question
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, **search_criteria):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             **search_criteria).getResults()
 
-    def findSimilarTickets(self, title):
+    def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
-    def addSupportContact(self, person):
+    def addAnswerContact(self, person):
         """See IQuestionTarget."""
-        support_contact_entry = AnswerContact.selectOneBy(
+        answer_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if support_contact_entry:
+        if answer_contact_entry:
             return False
 
         AnswerContact(
@@ -97,41 +96,41 @@ class SourcePackageQuestionTargetMixin:
             distribution=self.distribution)
         return True
 
-    def removeSupportContact(self, person):
+    def removeAnswerContact(self, person):
         """See IQuestionTarget."""
-        support_contact_entry = AnswerContact.selectOneBy(
+        answer_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if not support_contact_entry:
+        if not answer_contact_entry:
             return False
 
-        support_contact_entry.destroySelf()
+        answer_contact_entry.destroySelf()
         return True
 
     @property
-    def support_contacts(self):
+    def answer_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = set()
-        support_contacts.update(self.direct_support_contacts)
-        support_contacts.update(self.distribution.support_contacts)
-        return sorted(support_contacts, key=attrgetter('displayname'))
+        answer_contacts = set()
+        answer_contacts.update(self.direct_answer_contacts)
+        answer_contacts.update(self.distribution.answer_contacts)
+        return sorted(answer_contacts, key=attrgetter('displayname'))
 
     @property
-    def direct_support_contacts(self):
+    def direct_answer_contacts(self):
         """See IQuestionTarget."""
-        support_contacts = AnswerContact.selectBy(
+        answer_contacts = AnswerContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return sorted(
-            [contact.person for contact in support_contacts],
+            [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
 
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)
 
-    def getTicketLanguages(self):
+    def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
