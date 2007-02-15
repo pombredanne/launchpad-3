@@ -24,12 +24,12 @@ from canonical.config import config
 from canonical.encoding import guess as guess_encoding
 
 from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket)
+    PackagePublishingPocket)
 
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    IComponentSet, ISectionSet, IBuildSet, NotFoundError)
+    NotFoundError)
 
 from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
 from canonical.archivepublisher.nascentuploadfile import (
@@ -138,8 +138,13 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
+            if (isinstance(uploaded_file, CustomUploadFile) and
+                not self.single_custom):
+                self.reject("Mixed custom upload detected.")
 
         if self.single_custom:
+            if len(self.changes.files) > 1:
+                self.reject("More than one file detected in custom upload.")
             self.logger.debug("Single Custom Upload detected.")
             return
 
@@ -723,7 +728,7 @@ class NascentUpload:
             interpolations['RECIPIENT'] = ", ".join(recipients)
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
-            self.create_objects_in_database()
+            self.store_objects_in_database()
 
             # Unknown uploads
             if self.is_new:
@@ -839,150 +844,59 @@ class NascentUpload:
     # Inserting stuff in the database
     #
 
-    def create_objects_in_database(self):
+    def store_objects_in_database(self):
         """Insert this nascent upload into the database."""
-        if self.sourceful:
-            self.changes.dsc.create_source_package_release(self.changes)
 
-        if self.binaryful and not self.single_custom:
-            # XXX: 
-            self.insert_binary_into_db()
-
-        # create a DRQ entry in new state
-        self.logger.debug("Creating a New queue entry")
+        # Queue entries are created in the NEW state by default; at the
+        # end of this method we cope with uploads that aren't new.
+        self.logger.debug("Creating queue entry")
         distrorelease = self.policy.distrorelease
         queue_root = distrorelease.createQueueEntry(self.policy.pocket,
             self.changes.filename, self.changes.filecontents)
 
-        # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
-        # If we're binaryful, add the build
-        if self.binaryful and not self.single_custom:
-            # We cannot rely on the distrorelease coming in for a binary
-            # release because it is always set to 'autobuild' by the builder.
-            # We instead have to take it from the policy which gets instructed
-            # by the buildd master during the upload.
-            # XXX: stop using the policy to shove things around
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
-        # Finally, add any custom files.
-        for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, CustomUploadFile):
-                queue_root.addCustom(
-                    self.librarian.create(
+            assert self.changes.dsc
+            sourcepackagerelease = self.changes.dsc.store_in_database()
+            queue_root.addSource(sourcepackagerelease)
+
+        if self.binaryful:
+            if self.single_custom:
+                # Finally, add any custom files.
+                uploaded_file = self.changes.files[0]
+                libraryfile = uploaded_file.store_in_database()
+                assert isinstance(uploaded_file, CustomUploadFile)
+                libraryfile = self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,
                     open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
+                    uploaded_file.content_type)
+                queue_root.addCustom(libraryfile, uploaded_file.custom_type)
+            else:
+                for binary_package_file in self.changes.binary_package_files:
+                    try:
+                        build = binary_package_file.find_build()
+                        binary_package_file.store_in_database(build)
+                    except UploadError, e:
+                        self.reject("Error storing binaries: %s" % e)
+                        return
 
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
+                    # XXX: two questions: did we mean distrorelease or
+                    # pocket here, and can we assert build.pocket ==
+                    # self.policy.pocket?
+                    #
+                    # We cannot rely on the distrorelease coming in for a binary
+                    # release because it is always set to 'autobuild' by the builder.
+                    # We instead have to take it from the policy which gets instructed
+                    # by the buildd master during the upload.
+                    queue_root.pocket = build.pocket
+                    queue_root.addBuild(build)
 
-        # if it is known (already overridden properly), move it
-        # to ACCEPTED state automatically
         if not self.is_new:
+            # if it is known (already overridden properly), move it to
+            # ACCEPTED state automatically
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 queue_root.setUnapproved()
-
-    def find_build(self, archtag):
-        """Find and return a build for the given archtag, cached on policy.
-
-        To find the right build, we try these steps, in order, until we have
-        one:
-        - Check first if a build id was provided. If it was, load that build.
-        - Try to locate an existing suitable build, and use that. We also,
-        in this case, change this build to be FULLYBUILT.
-        - Create a new build in FULLYBUILT status.
-        """
-        if getattr(self.policy, 'build', None) is not None:
-            return self.policy.build
-
-        build_id = getattr(self.policy.options, 'buildid', None)
-        spr = self.policy.sourcepackagerelease
-
-        if build_id is None:
-            spr = self.policy.sourcepackagerelease
-            dar = self.policy.distrorelease[archtag]
-
-            # Check if there's a suitable existing build.
-            build = spr.getBuildByArch(dar)
-            if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
-            else:
-                # No luck. Make one.
-                build = spr.createBuild(
-                    dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
-        else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
-
-            # Sanity check; raise an error if the build we've been
-            # told to link to makes no sense (ie. is not for the right
-            # source package).
-            if (build.sourcepackagerelease != spr or
-                build.pocket != self.policy.pocket):
-                raise FatalUploadError("Attempt to upload binaries specifying "
-                                  "build %s, where they don't fit" % build_id)
-            self.logger.debug("Build %s found" % build.id)
-        # XXX: stop shoving stuff into the policy
-        self.policy.build = build
-
-        return self.policy.build
-
-    def insert_binary_into_db(self):
-        """Insert this nascent upload's builds into the database."""
-        for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, BinaryUploadFile):
-                continue
-            desclines = uploaded_file.control['Description'].split("\n")
-            summary = desclines[0]
-            description = "\n".join(desclines[1:])
-            archtag = uploaded_file.architecture
-            if archtag == 'all':
-                archtag = self.changes.filename_archtag
-            build = self.find_build(archtag)
-            component = getUtility(IComponentSet)[uploaded_file.component]
-            section = getUtility(ISectionSet)[uploaded_file.section]
-            # Also remember the control data for the uploaded file
-            control = uploaded_file.control
-            binary = build.createBinaryPackageRelease(
-                binarypackagename=uploaded_file.bpn,
-                version=uploaded_file.control['Version'],
-                summary=guess_encoding(summary),
-                description=guess_encoding(description),
-                binpackageformat=uploaded_file.format,
-                component=component,
-                section=section,
-                priority=uploaded_file.priority,
-                # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
-                # bug 3160
-                shlibdeps='',
-                depends=guess_encoding(control.get('Depends', '')),
-                recommends=guess_encoding(control.get('Recommends', '')),
-                suggests=guess_encoding(control.get('Suggests', '')),
-                conflicts=guess_encoding(control.get('Conflicts', '')),
-                replaces=guess_encoding(control.get('Replaces', '')),
-                provides=guess_encoding(control.get('Provides', '')),
-                essential=uploaded_file.control.get('Essential',
-                                                    '').lower()=='yes',
-                installedsize=int(control.get('Installed-Size','0')),
-                # XXX: dsilvers: 20051014: erm, source should have a copyright
-                # but not binaries. bug 3161
-                copyright='',
-                licence='',
-                architecturespecific=control.get("Architecture",
-                                                 "").lower()!='all'
-                ) # the binarypackagerelease constructor
-
-            library_file = self.librarian.create(
-                uploaded_file.filename,
-                uploaded_file.size,
-                open(uploaded_file.full_filename, "rb"),
-                uploaded_file.content_type)
-            binary.addFile(library_file)
 

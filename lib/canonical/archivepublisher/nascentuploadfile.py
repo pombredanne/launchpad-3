@@ -11,12 +11,15 @@ import subprocess
 
 from zope.component import getUtility
 
-from canonical.librarian.utils import filechunks
-from canonical.launchpad.interfaces import IComponentSet, ISectionSet
+from canonical.encoding import guess as guess_encoding
+
 from canonical.archivepublisher.utils import prefix_multi_line_string
+from canonical.librarian.utils import filechunks
+from canonical.launchpad.interfaces import (
+    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet)
 from canonical.lp.dbschema import (
     PackagePublishingPriority, DistroReleaseQueueCustomFormat, 
-    DistroReleaseQueueStatus, BinaryPackageFormat)
+    DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -96,6 +99,8 @@ class NascentUploadedFile:
             component_and_section)
         self.full_filename = os.path.join(fsroot, filename)
 
+        self.librarian = getUtility(ILibraryFileAliasSet)
+
     #
     # Helpers used quen inserting into queue
     #
@@ -122,6 +127,14 @@ class NascentUploadedFile:
         if "/" not in component_and_section:
             return "main", component_and_section
         return component_and_section.split("/", 1)
+
+    #
+    #
+    #
+
+    def store_in_database(self):
+        """Implement this to store this representation in the database."""
+        raise NotImplementedError
 
     #
     # Verification
@@ -201,6 +214,13 @@ class CustomUploadFile(NascentUploadedFile):
     def verify(self):
         if self.section not in self.custom_sections:
             yield UploadError("Unsupported custom section name %r" % self.section)
+
+    def store_in_database(self):
+        libraryfile = self.librarian.create(
+            self.filename, self.size,
+            open(self.full_filename, "rb"),
+            self.content_type)
+        return libraryfile
 
 
 class PackageUploadFile(NascentUploadedFile):
@@ -299,12 +319,25 @@ class UBinaryUploadFile(PackageUploadFile):
 
     format = BinaryPackageFormat.UDEB
 
+    # sourcepackagerelease and architecture is divined when parsing the
+    # package file, and then used to locate or create the relevant
+    # build.
+    sourcepackagerelease = None
+    architecture = None
+
     def __init__(self, XXX, changes):
         self.changes = changes
         self.convert_priority()
 
     def is_archindep(self):
         return "XXX"
+
+    @property
+    def archtag(self):
+        archtag = self.architecture
+        if archtag == 'all':
+            return self.changes.filename_archtag
+        return archtag
 
     def convert_priority(self):
         """Checks whether the priority indicated is valid"""
@@ -576,6 +609,92 @@ class UBinaryUploadFile(PackageUploadFile):
                         "data.tar.bz2" % (self.filename, data_tar))
 
         # That's all folks.
+
+    def find_build(self):
+        """Find and return a build for the given archtag, cached on policy.
+
+        To find the right build, we try these steps, in order, until we have
+        one:
+        - Check first if a build id was provided. If it was, load that build.
+        - Try to locate an existing suitable build, and use that. We also,
+        in this case, change this build to be FULLYBUILT.
+        - Create a new build in FULLYBUILT status.
+        """
+        build_id = getattr(self.policy.options, 'buildid', None)
+
+        if build_id is None:
+            dar = self.policy.distrorelease[self.archtag]
+
+            # Check if there's a suitable existing build.
+            build = self.sourcepackagerelease.getBuildByArch(dar)
+            if build is not None:
+                build.buildstate = BuildStatus.FULLYBUILT
+            else:
+                # No luck. Make one.
+                # XXX: how can this happen?! oh, security?
+                build = self.sourcepackagerelease.createBuild(
+                    dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
+                self.logger.debug("Build %s created" % build.id)
+        else:
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+
+            # Sanity check; raise an error if the build we've been
+            # told to link to makes no sense (ie. is not for the right
+            # source package).
+            if (build.sourcepackagerelease != self.sourcepackagerelease or
+                build.pocket != self.policy.pocket):
+                raise UploadError("Attempt to upload binaries specifying "
+                                  "build %s, where they don't fit" % build_id)
+            self.logger.debug("Build %s found" % build.id)
+
+        return build
+
+    def store_in_database(self, build):
+        """Insert this binary release and build into the database."""
+        desclines = uploaded_file.control['Description'].split("\n")
+        summary = desclines[0]
+        description = "\n".join(desclines[1:])
+        component = getUtility(IComponentSet)[uploaded_file.component]
+        section = getUtility(ISectionSet)[uploaded_file.section]
+        # Also remember the control data for the uploaded file
+        control = uploaded_file.control
+        binary = build.createBinaryPackageRelease(
+            binarypackagename=uploaded_file.bpn,
+            version=uploaded_file.control['Version'],
+            summary=guess_encoding(summary),
+            description=guess_encoding(description),
+            binpackageformat=uploaded_file.format,
+            component=component,
+            section=section,
+            priority=uploaded_file.priority,
+            # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
+            # bug 3160
+            shlibdeps='',
+            depends=guess_encoding(control.get('Depends', '')),
+            recommends=guess_encoding(control.get('Recommends', '')),
+            suggests=guess_encoding(control.get('Suggests', '')),
+            conflicts=guess_encoding(control.get('Conflicts', '')),
+            replaces=guess_encoding(control.get('Replaces', '')),
+            provides=guess_encoding(control.get('Provides', '')),
+            essential=uploaded_file.control.get('Essential',
+                                                '').lower()=='yes',
+            installedsize=int(control.get('Installed-Size','0')),
+            # XXX: dsilvers: 20051014: erm, source should have a copyright
+            # but not binaries. bug 3161
+            copyright='',
+            licence='',
+            architecturespecific=control.get("Architecture",
+                                             "").lower()!='all'
+            ) # the binarypackagerelease constructor
+
+        library_file = self.librarian.create(
+            uploaded_file.filename,
+            uploaded_file.size,
+            open(uploaded_file.full_filename, "rb"),
+            uploaded_file.content_type)
+        binary.addFile(library_file)
+        return binary
+
 
 
 class BinaryUploadFile(UBinaryUploadFile):

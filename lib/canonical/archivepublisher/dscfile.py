@@ -25,8 +25,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet,
-    ILibraryFileAliasSet)
+    IPersonSet, ISourcePackageNameSet, IComponentSet, ISectionSet)
 
 from canonical.archivepublisher.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadedFile, re_no_epoch,
@@ -131,7 +130,12 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
     """XXX"""
 
     mandatory_fields = set([
-        "source", "version", "binary", "maintainer", "architecture", "files"])
+        "source", 
+        "version", 
+        "binary", 
+        "maintainer",
+        "architecture",
+        "files"])
 
     fingerprint = None
     signingkey = None
@@ -143,7 +147,10 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
     def __init__(self, filename, digest, size, component_and_section,
                  priority, package, version, type, fsroot, policy,
                  logger):
-        """XXX
+        """Construct a DSCFile instance. 
+
+        This takes all NascentUploadedFile constructor parameters plus package
+        and version.
 
         Can raise UploadError.
         """
@@ -205,18 +212,19 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME
             digest, size, filename = fileline.strip().split()
             if not re_issource.match(filename):
+                # DSC files only really hold on references to source
+                # files; they are essentially a description of a source
+                # package. Anything else is crack.
                 yield UploadError("%s: File %s does not look sourceful." % (
                                   self.filename, filename))
+                continue
+            try:
+                file_instance = DSCUploadedFile(
+                    filename, digest, size, self.fsroot, self.policy, self.logger)
+            except UploadError, e:
+                yield e
             else:
-                component_and_section = priority = "-"
-                try:
-                    file_instance = DSCUploadedFile(
-                        filename, digest, size, component_and_section, priority,
-                        self.fsroot, self.policy, self.logger)
-                except UploadError, e:
-                    yield e
-                else:
-                    files.append(file_instance)
+                files.append(file_instance)
         self.files = files
 
         source = self._dict['source']
@@ -333,9 +341,9 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
         os.chdir(tmpdir)
         dsc_in_tmpdir = os.path.join(tmpdir, self.filename)
 
-        files = self.files + [self]
+        package_files = self.files + [self]
         try:
-            for source_file in files:
+            for source_file in package_files:
                 os.symlink(source_file.full_filename,
                            os.path.join(tmpdir, source_file.filename))
             args = ["dpkg-source", "-sn", "-x", dsc_in_tmpdir]
@@ -373,7 +381,7 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
 
         self.logger.debug("Done")
 
-    def create_source_package_release(self, changes):
+    def store_in_database(self):
         spns = getUtility(ISourcePackageNameSet)
         arg_component = getUtility(IComponentSet)[self.component]
         arg_section = getUtility(ISectionSet)[self.section]
@@ -386,14 +394,14 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
 
         release = self.policy.distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=spns.getOrCreateByName(self.source),
-            version=changes.version,
+            version=self.changes.version,
             maintainer=self.maintainer['person'],
 
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
-            creator=changes.changed_by['person'],
-            urgency=changes.urgency,
+            creator=self.changes.changed_by['person'],
+            urgency=self.changes.urgency,
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
             manifest=None,
@@ -402,23 +410,37 @@ class DSCFile(NascentUploadedFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version', None),
             component=arg_component,
-            changelog=guess_encoding(changes.simulated_changelog),
+            changelog=guess_encoding(self.changes.simulated_changelog),
             section=arg_section,
             # dateuploaded by default is UTC:now in the database
             )
 
-        librarian = getUtility(ILibraryFileAliasSet)
         for uploaded_file in self.files:
-            library_file = librarian.create(
+            library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
             release.addFile(library_file)
-        # XXX: stop shoving stuff into the policy
-        self.policy.sourcepackagerelease = release
+
+        return release
 
 
 class DSCUploadedFile(NascentUploadedFile):
-    """XXX"""
+    """Represents a file referred to in a DSC.
+
+    The DSC holds references to files, and it's easier to use regular
+    NascentUploadedFiles to represent them, since they are in many ways
+    similar to a regular NU. However, there are the following warts:
+        - Component, section and priority are set to a bogus value and
+          do not apply.
+        - The actual file instance isn't used for anything but
+          validation inside DSCFile.verify(); there is no
+          store_in_database() method.
+    """
+    def __init__(self, filename, digest, size, fsroot, policy, logger):
+            component_and_section = priority = "--no-value--"
+            NascentUploadedFile.__init__(
+                self, filename, digest, size, component_and_section,
+                priority, fsroot, policy, logger)
 

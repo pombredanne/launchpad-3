@@ -185,6 +185,14 @@ class ChangesFile(SignableTagFile):
     #
 
     @property
+    def binary_package_files(self):
+        binaries = []
+        for file in self.files:
+            if isinstance(UBinaryUploadFile):
+                binaries.append(file)
+        return binaries
+
+    @property
     def distrorelease_and_pocket(self):
         """Returns a string like hoary or hoary-security"""
         return self._dict['distribution']
