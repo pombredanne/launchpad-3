@@ -8,47 +8,188 @@ __metaclass__ = type
 __all__ = []
 
 
+import shutil
+import tempfile
 import unittest
 
 from twisted.conch.ssh import filetransfer
+from twisted.internet import defer
 
-from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
+from canonical.supermirrorsftp import bazaarfs
+from canonical.supermirrorsftp.sftponly import (
+    BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
-class TestAvatar(SFTPOnlyAvatar):
-    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
-        SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                launchpad)
-        self.subsystemLookup['sftp'] = self._makeFileTransferServer
+class Launchpad:
 
-    def _makeFileTransferServer(self, data=None, avatar=None):
-        self._fileTransferServer = filetransfer.FileTransferServer(
-            data=data, avatar=avatar)
-        return self._fileTransferServer
+    def __init__(self):
+        self.requests = []
+
+    def createBranch(self, userID, productID, branchName):
+        self.requests.append(('createBranch', userID, productID, branchName))
+        return defer.succeed(6)
+
+    def fetchProductID(self, productName):
+        return defer.succeed(3)
+
+    def requestMirror(self, branchID):
+        self.requests.append(('requestMirror', branchID))
 
 
 class TestPushDoneNotification(AvatarTestCase):
+
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.launchpad = Launchpad()
+        self.avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                     self.launchpad)
+        self.server = self.avatar.lookupSubsystem('sftp', None)
+        self.filesystem = self.server.client.filesystem
+
+    def create_branch(self, avatar, productID, branchName):
+        productDir = self.filesystem.fetch(
+            '/~%s/%s' % (avatar.avatarId, productID))
+        d = defer.maybeDeferred(productDir.createDirectory, branchName)
+        return d
     
     def test_no_writes(self):
-        class Launchpad:
-            requestedMirror = False
-            def requestMirror(self, branchID):
-                self.requestedMirror = True
-
-        launchpad = Launchpad()
-        avatar = TestAvatar('alice', self.tmpdir, self.aliceUserDict,
-                            launchpad)
-        # do nothing -- no writes.
-        pass # :)
-
         # 'connect' and disconnect
-        avatar._makeFileTransferServer(avatar=avatar)
-        avatar._fileTransferServer.connectionLost(None)
-        self.failIf(launchpad.requestedMirror,
-                    "No writes, but requestMirror called.")
+        self.server.connectionLost(None)
+        self.assertEqual([], self.launchpad.requests)
+
+    def fake_listener_factory(self, branchID):
+        def func():
+            self.called = branchID
+        return func
+
+    def test_branch_dir_gets_listener_factory_from_root(self):
+        self.filesystem.root.setListenerFactory(self.fake_listener_factory)
+        d = self.create_branch(self.avatar, 'some-product', 'some-branch')
+        self.called = None
+        def post_create(branchDir):
+            # dirty the branch
+            branchDir.createDirectory('.bzr')
+            self.assertEqual(self.called, branchDir.branchID)
+        return d.addCallback(post_create)
+
+    def test_creating_branch_notifies_launchpad(self):
+        d = self.create_branch(self.avatar, 'some-product', 'some-branch')
+
+        def post_create(branchDir):
+            branchID = branchDir.branchID
+            # check for no events yet
+            self.assertEqual(
+                [('createBranch', self.avatar.lpid, '3', 'some-branch')],
+                self.launchpad.requests)
+            self.launchpad.requests = []
+            # dirty it
+            branchDir.createDirectory('.bzr')
+            # disconnect
+            self.server.connectionLost(None)
+            # check for events
+            self.assertEqual([('requestMirror', branchID)],
+                             self.launchpad.requests)
+
+        return d.addCallback(post_create)
+
+
+class WriteLoggingNode(unittest.TestCase):
+
+    def setUp(self):
+        testName = self.id().split('.')[-1]
+        self.dirty = False
+        self.tempDir = tempfile.mkdtemp(prefix=testName)
+        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
+                                                        self.tempDir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempDir)
+
+    def flagAsDirty(self):
+        self.dirty = True
+
+    def test_listener(self):
+        # Children of a WriteLoggingDirectory should maintain a reference
+        # to the top-level WriteLoggingDirectory.
+        # XXX - whitebox test (jml, 2007-02-15)
+        self.assertEqual(self.flagAsDirty, self.directory._flagAsDirty)
+        self.assertEqual(self.flagAsDirty,
+                         self.directory.createDirectory('foo')._flagAsDirty)
+
+    def test_childDirFactory(self):
+        # childDirFactory should return the same class (child nodes also need
+        # to track writes).
+        child = self.directory.createDirectory('foo')
+        self.assertTrue(isinstance(child, bazaarfs.WriteLoggingDirectory),
+                        "Child directory should be same type as parent "
+                        "directory.")
+
+    def test_noWrites(self):
+        self.assertEqual(self.dirty, False)
+
+    def test_createDirectory(self):
+        # creating a directory in a directory is a write
+        self.directory.createDirectory('foo')
+        self.assertEqual(self.dirty, True)
+
+    def test_createDirectoryInSubdir(self):
+        # creating a directory in a subdirectory should dirty the watcher
+        subdir = self.directory.createDirectory('foo')
+        self.directory.dirty = False
+        subdir.createDirectory('bar')
+        self.assertEqual(self.dirty, True)
+
+    def test_createFile(self):
+        # creating a file in a directory is a write
+        self.directory.createFile('foo')
+        self.assertEqual(self.dirty, True)
+
+    def test_createFileInSubdir(self):
+        # creating a file in a subdirectory should dirty the watcher
+        subdir = self.directory.createDirectory('foo')
+        self.directory.dirty = False
+        subdir.createFile('bar')
+        self.assertEqual(self.dirty, True)
+
+    def test_rename(self):
+        # renaming a directory is a write
+        subdir = self.directory.createDirectory('bar')
+        self.directory.dirty = False
+        subdir.rename('bar')
+        self.assertEqual(self.dirty, True)
+
+    def test_remove(self):
+        # removing a directory is a write
+        subdir = self.directory.createDirectory('foo')
+        self.directory.dirty = False
+        subdir.remove()
+        self.assertEqual(self.dirty, True)
+
+
+class BazaarFileTransferServerTests(AvatarTestCase):
+
+    def test_branchDirty(self):
+        launchpad = Launchpad()
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                launchpad)
+        server = BazaarFileTransferServer(avatar=avatar)
+        server.branchDirtied(1234)
+        server.branchDirtied(2357)
+        server.sendMirrorRequests()
+        self.assertEqual([('requestMirror', 1234), ('requestMirror', 2357)],
+                         sorted(launchpad.requests))
+
+    def test_branchDirtyDuplicate(self):
+        launchpad = Launchpad()
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                launchpad)
+        server = BazaarFileTransferServer(avatar=avatar)
+        server.branchDirtied(1234)
+        server.branchDirtied(1234)
+        server.sendMirrorRequests()
+        self.assertEqual([('requestMirror', 1234)], launchpad.requests)
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

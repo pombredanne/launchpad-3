@@ -33,13 +33,16 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
             if team['name'] == avatar.lpname:
                 # skip the team of just the user
                 continue
-            self.putChild('~' + team['name'], 
+            self.putChild('~' + team['name'],
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             parent=self, junkAllowed=False))
 
     def createDirectory(self, childName):
-        raise PermissionError( 
+        raise PermissionError(
             "Branches must be inside a person or team directory.")
+
+    def setListenerFactory(self, factory):
+        self.listenerFactory = factory
     
 
 class SFTPServerUserDir(adhoc.AdhocDirectory):
@@ -205,7 +208,55 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         return deferred.addCallback(cb)
         
 
-class SFTPServerBranch(osfs.OSDirectory):
+class WriteLoggingDirectory(osfs.OSDirectory):
+    """VFS directory that keeps track of whether it has been written to.
+
+    Useful within, say, an SFTP server to see if a particular directory has
+    been written to as part of a connection.
+    """
+
+    def __init__(self, flagAsDirty, path, name=None, parent=None):
+        """
+        Create a new WriteLoggingDirectory.
+
+        :type flagAsDirty: callable
+        :param flagAsDirty: Called when the directory is written to.
+
+        For other parameters, see osfs.OSDirectory.
+        """
+        osfs.OSDirectory.__init__(self, path, name, parent)
+        self._flagAsDirty = flagAsDirty
+
+    def childDirFactory(self):
+        """Return a child directory which uses the same listener.
+
+        The listener is the '_flagAsDirty' callable, set by the constructor.
+        """
+        def childWithListener(path, name, parent):
+            return WriteLoggingDirectory(self._flagAsDirty, path, name, parent)
+        return childWithListener
+
+    def createDirectory(self, name):
+        self.touch()
+        return osfs.OSDirectory.createDirectory(self, name)
+
+    def createFile(self, name, exclusive=True):
+        self.touch()
+        return osfs.OSDirectory.createFile(self, name, exclusive)
+
+    def remove(self):
+        self.touch()
+        osfs.OSDirectory.remove(self)
+
+    def rename(self, newName):
+        self.touch()
+        osfs.OSDirectory.rename(self, newName)
+
+    def touch(self):
+        self._flagAsDirty()
+
+
+class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
     
     Anything is allowed here, except for tricks like symlinks that point above
@@ -214,23 +265,33 @@ class SFTPServerBranch(osfs.OSDirectory):
     Can also be used for Bazaar 1.x branches.
     """
     def __init__(self, avatar, branchID, branchName, parent):
+        self.branchID = branchID
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
         # places, such as librarian.storage._relFileLocation and
         # supermirror_rewritemap.split_branch_id.
         h = "%08x" % int(branchID)
-        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:]) 
+        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
-        osfs.OSDirectory.__init__(self,
+        self._flagAsDirty = None
+        WriteLoggingDirectory.__init__(self, self._flagAsDirty,
             os.path.join(avatar.homeDirsRoot, path), branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
-    @classmethod
-    def childDirFactory(cls):
-        # Directories under this one are normal OSDirectory instances, they
-        # don't have any restrictions.
-        return osfs.OSDirectory
-
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
+
+    def touch(self):
+        if self._flagAsDirty is None:
+            # Find the root object and create a listener. If the listener is
+            # not already set, then we must be at the top-level directory in
+            # the branch. One parent up is the product, the next is the
+            # username and the third is the root of the SFTP server.
+
+            # XXX - this is an awkward way of finding the root. Replace with
+            # something that is clearer and requires fewer comments.
+            # -- jml, 2007-02-14
+            self._flagAsDirty = self.parent.parent.parent.listenerFactory(
+                self.branchID)
+        self._flagAsDirty()
