@@ -60,3 +60,40 @@ expires_in:1209600
 mac_key:...
 <BLANKLINE>
 
+Get the association handle, which we will need for later tests.
+
+>>> import re
+>>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
+
+
+Once the shared secret is negotiated, the consumer can send
+checkid_immediate and checkid_setup GET requests. checkid_immediate requests
+will currently return "can't say" as we are not yet logged into Launchpad.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_immediate',
+...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.return_to': 'http://example.com/',
+...     })
+>>> result = http("GET /?%s HTTP/1.1\nHost: openid.launchpad.dev\n" % args)
+>>> print result
+HTTP/1.1 302 Moved Temporarily
+...
+Location: http://example.com/?openid...
+<BLANKLINE>
+
+
+checkid_setup is interactive with the user, giving them the oppertunity
+to log in and approve access to the consumer site. We can extract the
+URL for the checkid_setup from the result of the previous test.
+
+>>> [url] = re.findall('(?m)^Location: (.*)$', str(result))
+>>> from cgi import parse_qs
+>>> from urlparse import urlparse
+>>> parameters = parse_qs(urlparse(url)[4])
+>>> [setup_url] = parameters['openid.user_setup_url']
+
+>>> anon_browser.open(setup_url)
+>>> print anon_browser.contents
+

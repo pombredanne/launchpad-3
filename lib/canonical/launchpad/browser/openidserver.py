@@ -12,6 +12,7 @@ from openid.server.server import ProtocolError, Server, ENCODE_URL
 from openid.store.filestore import FileOpenIDStore
 
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIdView(LaunchpadView):
@@ -30,15 +31,16 @@ class OpenIdView(LaunchpadView):
             return self.template()
 
         if openid_request.mode in ['checkid_immediate', 'checkid_setup']:
-            raise NotImplementedError
-            # if self.isAuthorized(
-            #     openid_request.identity, openid_request.trust_root):
-            #     response = openid_request.answer(True)
-            # elif openid_request.immediate:
-            #     response = openid_request.answer(False, self.base_url)
-            # else:
-            #     self.showDecidePage(openid_request)
-            #     return
+            if self.isAuthorized(
+                openid_request.identity, openid_request.trust_root):
+                openid_response = openid_request.answer(True)
+            elif openid_request.immediate:
+                openid_response = openid_request.answer(
+                        False, allvhosts.configs['openid'].rooturl
+                        )
+            else:
+                self.showDecidePage(openid_request)
+                return
         else:
             openid_response = self.openid_server.handleRequest(openid_request)
 
@@ -46,9 +48,12 @@ class OpenIdView(LaunchpadView):
 
         response = self.request.response
         response.setStatus(webresponse.code)
-        for header, value in webresponse.headers:
+        for header, value in webresponse.headers.items():
             response.setHeader(header, value)
         return webresponse.body
+
+    def isAuthorized(self, identity, trust_root):
+        return False
 
     def renderProtocolError(self, exception):
         response = self.request.response
