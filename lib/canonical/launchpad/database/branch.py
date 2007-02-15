@@ -78,7 +78,10 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        return getUtility(IBranchRevisionSet).getRevisionHistoryForBranch(self)
+        branch_revision_set = getUtility(IBranchRevisionSet)
+        history = branch_revision_set.getRevisionHistoryForBranch(self)
+        history.prejoin('revision')
+        return history
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
