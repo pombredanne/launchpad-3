@@ -1,6 +1,6 @@
 = Support Tracker System =
 
-Launchpad includes a tech support ticket tracker. Questions are created
+Launchpad includes a tech support question tracker. Questions are created
 and accessed using the IQuestionTarget interface. This interface is
 available on products, distributions and sourcepackages.
 
@@ -30,19 +30,19 @@ the distrorelease's distribution.)
     >>> ubuntu_warty = ubuntu.getRelease('warty')
     >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
-    >>> tickettarget = IQuestionTarget(ubuntu_warty)
-    >>> verifyObject(IQuestionTarget, tickettarget)
+    >>> questiontarget = IQuestionTarget(ubuntu_warty)
+    >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
-You create a new ticket by calling the newQuestion() method of an
+You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> firefox_ticket = firefox.newQuestion(
-    ...     sample_person, "Firefox ticket", "Unable to use Firefox")
+    >>> firefox_question = firefox.newQuestion(
+    ...     sample_person, "Firefox question", "Unable to use Firefox")
 
 (The complete IQuestionTarget interface is documented in
-../interfaces/ftests/tickettarget.txt.)
+../interfaces/ftests/questiontarget.txt.)
 
 == IQuestion ==
 
@@ -53,23 +53,23 @@ Questions are manipulated through the IQuestion interface:
 
     # The complete interface is not necessarily available to the
     # logged in user.
-    >>> verifyObject(IQuestion, removeSecurityProxy(firefox_ticket))
+    >>> verifyObject(IQuestion, removeSecurityProxy(firefox_question))
     True
 
-The person who submitted the ticket is available in the owner field.
+The person who submitted the question is available in the owner field.
 
-    >>> firefox_ticket.owner == sample_person
+    >>> firefox_question.owner == sample_person
     True
 
-When the ticket is created, the owner is added to the ticket's
+When the question is created, the owner is added to the question's
 subscribers:
 
-    >>> sample_person in [s.person for s in firefox_ticket.subscriptions]
+    >>> sample_person in [s.person for s in firefox_question.subscriptions]
     True
 
-The ticket status is 'Open':
+The question status is 'Open':
 
-    >>> firefox_ticket.status.title
+    >>> firefox_question.status.title
     'Open'
 
 And the creation time is recorded in the datecreated attribute:
@@ -77,69 +77,69 @@ And the creation time is recorded in the datecreated attribute:
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
-    >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
+    >>> now - firefox_question.datecreated < timedelta(seconds=5)
     True
 
-The target onto which the ticket was created is available through the
+The target onto which the question was created is available through the
 'target' attribute:
 
-    >>> firefox_ticket.target == firefox
+    >>> firefox_question.target == firefox
     True
 
-It is also possible to adapt a ticket to its IQuestionTarget.
+It is also possible to adapt a question to its IQuestionTarget.
 
-    >>> target = IQuestionTarget(firefox_ticket)
+    >>> target = IQuestionTarget(firefox_question)
     >>> verifyObject(IQuestionTarget, target)
     True
 
 == Subscriptions and Notifications ==
 
-Whenever a ticket is created or changed, email notifications will be
+Whenever a question is created or changed, email notifications will be
 sent. To receive such notification, one can subscribe to the bug using
 the subscribe() method.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> subscription = firefox_ticket.subscribe(no_priv)
+    >>> subscription = firefox_question.subscribe(no_priv)
 
 The list of subscriptions is available in the subscriptions attribute.
 In the current case, the subscribers will include the owner
 ('Sample Person') and the newly subscribed person.
 
-    >>> [s.person.displayname for s in firefox_ticket.subscriptions]
+    >>> [s.person.displayname for s in firefox_question.subscriptions]
     [u'Sample Person', u'No Privileges Person']
 
 To remove a person from the subscriptions list, we use the unsubscribe()
 method.
 
-    >>> firefox_ticket.unsubscribe(no_priv)
-    >>> [s.person.displayname for s in firefox_ticket.subscriptions]
+    >>> firefox_question.unsubscribe(no_priv)
+    >>> [s.person.displayname for s in firefox_question.subscriptions]
     [u'Sample Person']
 
 The persons who are on the subscription list are said to be directly
-subscribed to the ticket. They explicitely choose to get notifications
-about that particular ticket. This list of persons is available through
+subscribed to the question. They explicitely choose to get notifications
+about that particular question. This list of persons is available through
 the getDirectSubscribers() method.
 
     >>> [person.displayname
-    ...     for person in firefox_ticket.getDirectSubscribers()]
+    ...     for person in firefox_question.getDirectSubscribers()]
     [u'Sample Person']
 
-There is also a list of 'indirect' subscribers to the ticket. These
-are persons that didn't explicitely subscribed to the ticket, but that
+There is also a list of 'indirect' subscribers to the question. These
+are persons that didn't explicitely subscribed to the question, but that
 will receive notifications for other reason. Support contacts for the
-ticket target are part of the indirect subscribers list.
+question target are part of the indirect subscribers list.
 
     # There is no support contact on the firefox product.
     >>> [person.displayname
-    ...     for person in firefox_ticket.getIndirectSubscribers()]
+    ...     for person in firefox_question.getIndirectSubscribers()]
     []
     >>> firefox.addAnswerContact(no_priv)
     True
     >>> [person.displayname
-    ...  for person in firefox_ticket.getIndirectSubscribers()]
+    ...  for person in firefox_question.getIndirectSubscribers()]
     [u'No Privileges Person']
 
-There is a special case for when the ticket's is associated to a source
+There is a special case for when the question's is associated to a source
 package. The support contacts for both the distribution and the source
 package are part of the indirect subscribers list.
 
@@ -154,21 +154,21 @@ package are part of the indirect subscribers list.
     True
     >>> firefox_package.addAnswerContact(no_priv)
     True
-    >>> package_ticket = firefox_package.newQuestion(
+    >>> package_question = firefox_package.newQuestion(
     ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
     ...     "The FnordsHighlighter theme doesn't work after upgrade.")
-    >>> [s.person.displayname for s in package_ticket.subscriptions]
+    >>> [s.person.displayname for s in package_question.subscriptions]
     [u'Sample Person']
     >>> [person.displayname
-    ...  for person in package_ticket.getIndirectSubscribers()]
+    ...  for person in package_question.getIndirectSubscribers()]
     [u'No Privileges Person', u'Ubuntu Team']
 
-The ticket's assignee is also part of the indirect subscription list:
+The question's assignee is also part of the indirect subscription list:
 
     >>> login('foo.bar@canonical.com')
-    >>> package_ticket.assignee = getUtility(IPersonSet).getByName('name16')
+    >>> package_question.assignee = getUtility(IPersonSet).getByName('name16')
     >>> [person.displayname
-    ...  for person in package_ticket.getIndirectSubscribers()]
+    ...  for person in package_question.getIndirectSubscribers()]
     [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
 
 Notifications are sent to the list of direct and indirect subscribers.
@@ -176,47 +176,47 @@ The notification recipients list can be obtained by using the
 getSubscribers() method.
 
     >>> login('no-priv@canonical.com')
-    >>> [person.displayname for person in firefox_ticket.getSubscribers()]
+    >>> [person.displayname for person in firefox_question.getSubscribers()]
     [u'No Privileges Person', u'Sample Person']
 
-(More documentation on the ticket notifications can be found in
+(More documentation on the question notifications can be found in
 'support-tracker-notifications.txt'.)
 
 == Workflow ==
 
-A ticket status should not be manipulated directly but through the
+A question status should not be manipulated directly but through the
 workflow methods.
 
-The complete ticket workflow is documented in
+The complete question workflow is documented in
 'support-tracker-workflow.txt'.
 
 == Bug Linking ==
 
 Question implements the IBugLinkTarget interface which makes it possible
-to link bug report to ticket.
+to link bug report to question.
 
     >>> from canonical.launchpad.interfaces import IBugLinkTarget
-    >>> verifyObject(IBugLinkTarget, firefox_ticket)
+    >>> verifyObject(IBugLinkTarget, firefox_question)
     True
 
 (See ../interfaces/ftests/buglinktarget.txt for the documentation and
 test of the IBugLinkTarget interface.)
 
-When a bug is linked to a ticket, the ticket's owner is subscribed to
+When a bug is linked to a question, the question's owner is subscribed to
 the bug.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug7 = getUtility(IBugSet).get(7)
-    >>> bug7.isSubscribed(firefox_ticket.owner)
+    >>> bug7.isSubscribed(firefox_question.owner)
     False
-    >>> firefox_ticket.linkBug(bug7)
+    >>> firefox_question.linkBug(bug7)
     <QuestionBug...>
-    >>> bug7.isSubscribed(firefox_ticket.owner)
+    >>> bug7.isSubscribed(firefox_question.owner)
     True
 
 When the link is removed, the owner is unsubscribed:
 
-    >>> firefox_ticket.unlinkBug(bug7)
+    >>> firefox_question.unlinkBug(bug7)
     <QuestionBug...>
-    >>> bug7.isSubscribed(firefox_ticket.owner)
+    >>> bug7.isSubscribed(firefox_question.owner)
     False

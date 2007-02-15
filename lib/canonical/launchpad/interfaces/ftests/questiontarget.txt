@@ -5,7 +5,7 @@ objects implementing IQuestionTarget. This file documents that interface
 and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
 variable which is defined outside of this file, usually by a
-LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
+LaunchpadFunctionalTestCase. This instance shouldn't have any questions
 associated with it at the start of the test.)
 
     # Some parts of the IQuestionTarget interface are only accessible
@@ -27,8 +27,8 @@ Questions are always owned by a registered user.
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
 
-The newQuestion() method is used to create ticket that will be associated
-with the target. It takes as parameters the ticket's owner, title and
+The newQuestion() method is used to create question that will be associated
+with the target. It takes as parameters the question's owner, title and
 description. It also takes an optional parameter 'datecreated' parameter
 which defaults to UTC_NOW.
 
@@ -37,51 +37,51 @@ which defaults to UTC_NOW.
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
 
-    >>> ticket = target.newQuestion(sample_person, 'New ticket',
+    >>> question = target.newQuestion(sample_person, 'New question',
     ...     'Question description', datecreated=now)
-    >>> print ticket.title
-    New ticket
-    >>> print ticket.description
+    >>> print question.title
+    New question
+    >>> print question.description
     Question description
-    >>> ticket.owner == sample_person
+    >>> question.owner == sample_person
     True
-    >>> ticket.datecreated == now
+    >>> question.datecreated == now
     True
-    >>> ticket.datelastquery == now
+    >>> question.datelastquery == now
     True
 
-The created ticket starts in the 'Open' status and should have the owner
-subscribed to the ticket.
+The created question starts in the 'Open' status and should have the owner
+subscribed to the question.
 
-    >>> ticket.status.title
+    >>> question.status.title
     'Open'
 
-    >>> sample_person in [s.person for s in ticket.subscriptions]
+    >>> sample_person in [s.person for s in question.subscriptions]
     True
 
 Question can be written in any languages supported in Launchpad. The
 language of the request is available in the 'language' attribute. By
 default, requests are assumed to be written in English:
 
-    >>> print ticket.language.code
+    >>> print question.language.code
     en
 
-It is possible to create ticket in another language than English. One
-just need to pass the language in which the ticket is written in the
+It is possible to create question in another language than English. One
+just need to pass the language in which the question is written in the
 language parameter.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> french = getUtility(ILanguageSet)['fr']
-    >>> ticket = target.newQuestion(sample_person, "De l'aide S.V.P.",
+    >>> question = target.newQuestion(sample_person, "De l'aide S.V.P.",
     ...     "Pouvez-vous m'aider?", language=french,
     ...     datecreated=now + timedelta(seconds=30))
-    >>> print ticket.language.code
+    >>> print question.language.code
     fr
 
 Anonymous users cannot use newQuestion():
 
     >>> login(ANONYMOUS)
-    >>> ticket = target.newQuestion(sample_person, 'This will fail',
+    >>> question = target.newQuestion(sample_person, 'This will fail',
     ...     'Failed?')
     Traceback (most recent call last):
       ...
@@ -89,13 +89,13 @@ Anonymous users cannot use newQuestion():
 
 == getQuestion() ==
 
-The getQuestion() method is used to retrieve a ticket by id for a
+The getQuestion() method is used to retrieve a question by id for a
 particular target.
 
-    >>> target.getQuestion(ticket.id) == ticket
+    >>> target.getQuestion(question.id) == question
     True
 
-If you pass in a non-existent id or a ticket for a different target, the
+If you pass in a non-existent id or a question for a different target, the
 method must return None.
 
     >>> target.getQuestion(2) is None
@@ -103,15 +103,15 @@ method must return None.
     >>> target.getQuestion(12345) is None
     True
 
-== Creating some additional tickets ==
+== Creating some additional questions ==
 
-For the following methods, we will require some more tickets. Create five
-new tickets. Odd tickets will be owned by foo_bar and even tickets will be
+For the following methods, we will require some more questions. Create five
+new questions. Odd questions will be owned by foo_bar and even questions will be
 owned by sample_person.
 
     >>> login('no-priv@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> tickets = []
+    >>> questions = []
     >>> for num in range(5):
     ...     if num % 2:
     ...         owner = foo_bar
@@ -119,7 +119,7 @@ owned by sample_person.
     ...         owner = sample_person
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
-    ...     tickets.append(target.newQuestion(
+    ...     questions.append(target.newQuestion(
     ...         owner, 'Question title%d' % num, description,
     ...         datecreated=now+timedelta(minutes=num+1)))
 
@@ -128,23 +128,23 @@ fourth one to ANSWERED.
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> message = tickets[-1].reject(
-    ...     foo_bar, 'Invalid ticket.', datecreated=now+timedelta(hours=1))
-    >>> message = tickets[3].giveAnswer(
+    >>> message = questions[-1].reject(
+    ...     foo_bar, 'Invalid question.', datecreated=now+timedelta(hours=1))
+    >>> message = questions[3].giveAnswer(
     ...     sample_person, 'This is your answer.',
     ...     datecreated=now+timedelta(hours=1))
 
 Also add a reply from the owner on the first of these.
 
     >>> login('test@canonical.com')
-    >>> message = tickets[0].giveInfo(
+    >>> message = questions[0].giveInfo(
     ...     'I think I forgot something.', datecreated=now+timedelta(hours=4))
 
 And create another one that will also have the word 'new' in its
 description.
 
-    >>> ticket = target.newQuestion(sample_person, 'Another ticket',
-    ...     'Another new ticket that is actually very new.',
+    >>> question = target.newQuestion(sample_person, 'Another question',
+    ...     'Another new question that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
 
@@ -154,36 +154,36 @@ description.
 
 == searchQuestions() ==
 
-The searchQuestions() method is used to search for tickets.
+The searchQuestions() method is used to search for questions.
 
 === search_text ===
 
-The search_text parameter will select the tickets that contain the
+The search_text parameter will select the questions that contain the
 passed in text. (The standard text searching algorithm is used, see
 textsearching.txt.)
 
     >>> for t in target.searchQuestions(search_text='new'):
     ...     print t.title
-    New ticket
-    Another ticket
+    New question
+    Another question
 
-The results here are sorted by relevancy. (In the last tickets, 'New'
+The results here are sorted by relevancy. (In the last questions, 'New'
 appeared in the description which makes it less relevant than when the
 word appears in the title.)
 
 === status ===
 
-The searchQuestions() method can also filter tickets by status:
+The searchQuestions() method can also filter questions by status:
 
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> for t in target.searchQuestions(status=QuestionStatus.OPEN):
     ...     print t.title
-    Another ticket
+    Another question
     Question title2
     Question title1
     Question title0
     De l'aide S.V.P.
-    New ticket
+    New question
 
 In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
@@ -194,7 +194,7 @@ default sort order is from newest to oldest.
 
 You can also pass in a list of status, and you can also use the
 search_text and status parameters at the same time. This will search
-OPEN and INVALID tickets with the word 'index'
+OPEN and INVALID questions with the word 'index'
 
     >>> for t in target.searchQuestions(search_text='request index',
     ...         status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
@@ -217,8 +217,8 @@ You can sort also from oldest to newest using the OLDEST_FIRST constant:
     >>> for t in target.searchQuestions(search_text='new',
     ...                               sort=QuestionSort.OLDEST_FIRST):
     ...     print t.title
-    New ticket
-    Another ticket
+    New question
+    Another question
 
 You can sort by status, (the status order is OPEN, NEEDSINFO, ANSWERED,
 SOLVED, EXPIRED, INVALID), this also sorts from newest to oldest as a
@@ -235,44 +235,44 @@ secondary key.
     Invalid Question title4
 
 (In the previous example, we used status=None to search for all
-statuses, by default INVALID and EXPIRED tickets are excluded.)
+statuses, by default INVALID and EXPIRED questions are excluded.)
 
 If there is no search_text and the requested sort order is RELEVANCY,
-the tickets will be sorted NEWEST_FIRST.
+the questions will be sorted NEWEST_FIRST.
 
     >>> for t in target.searchQuestions(sort=QuestionSort.RELEVANCY):
     ...     print t.title
-    Another ticket
+    Another question
     Question title3
     Question title2
     Question title1
     Question title0
     De l'aide S.V.P.
-    New ticket
+    New question
 
 ('Question title4' is not shown in this case because it has INVALID as
 its status.)
 
-The RECENT_OWNER_ACTIVITY sort order sorts first tickets which recently
+The RECENT_OWNER_ACTIVITY sort order sorts first questions which recently
 received a new message by their owner. (It effectively sorts
 descending on the datelastquery attribute.)
 
     >>> for t in target.searchQuestions(sort=QuestionSort.RECENT_OWNER_ACTIVITY):
     ...     print t.title
     Question title0
-    Another ticket
+    Another question
     Question title3
     Question title2
     Question title1
     De l'aide S.V.P.
-    New ticket
+    New question
 
 (Question title0 sorts first because it had a message from its owner
 after the others were created.)
 
 === owner ===
 
-You can also find ticket owner by a particular user by using the owner
+You can also find question owner by a particular user by using the owner
 parameter.
 
     >>> for t in target.searchQuestions(owner=foo_bar):
@@ -282,7 +282,7 @@ parameter.
 
 === language ===
 
-The language criteria can be used to select only tickets written in a
+The language criteria can be used to select only questions written in a
 particular language.
 
     >>> english = getUtility(ILanguageSet)['en']
@@ -292,33 +292,33 @@ particular language.
 
     >>> for t in target.searchQuestions(language=[english, french]):
     ...     print t.title
-    Another ticket
+    Another question
     Question title3
     Question title2
     Question title1
     Question title0
     De l'aide S.V.P.
-    New ticket
+    New question
 
 === needs_attention_from ===
 
-You can also search among the tickets that needs the attention of
-somebody. A ticket needs the attention of a user if he owns it and that
+You can also search among the questions that needs the attention of
+somebody. A question needs the attention of a user if he owns it and that
 it is in the NEEDSINFO or ANSWERED state. Questions on which the user gave
 an answer or requested for more information and that are back in the
 OPEN state are also included.
 
-    # One of Sample Person's ticket gets to need attention from Foo Bar.
+    # One of Sample Person's question gets to need attention from Foo Bar.
     >>> login('foo.bar@canonical.com')
-    >>> message = tickets[0].requestInfo(
+    >>> message = questions[0].requestInfo(
     ...     foo_bar, 'Do you have a clue?',
     ...     datecreated=now+timedelta(hours=1))
     >>> login('test@canonical.com')
-    >>> message = tickets[0].giveInfo(
+    >>> message = questions[0].giveInfo(
     ... 'I do, now please help me.', datecreated=now+timedelta(hours=2))
 
-    # Another one of Foo Bar's ticket needs attention.
-    >>> message = tickets[1].requestInfo(
+    # Another one of Foo Bar's question needs attention.
+    >>> message = questions[1].requestInfo(
     ...     sample_person, 'And you, do you have a clue?',
     ...     datecreated=now+timedelta(hours=1))
 
@@ -334,17 +334,17 @@ OPEN state are also included.
 
 == findSimilarQuestions() ==
 
-The method findSimilarQuestions() can be use to find tickets similar to a
-sentence. The tickets don't have to contain all the words of the sentence,
+The method findSimilarQuestions() can be use to find questions similar to a
+sentence. The questions don't have to contain all the words of the sentence,
 just some.
 
-    >>> for t in target.findSimilarQuestions('new tickets with a title'):
+    >>> for t in target.findSimilarQuestions('new questions with a title'):
     ...     print t.title
-    New ticket
-    Another ticket
+    New question
+    Another question
 
 In this case, it returned the same results than with the search 'new' because
-all other words in the sentence are either common ('ticket', 'title') or stop
+all other words in the sentence are either common ('question', 'title') or stop
 words ('with', 'a').
 
 == Support contacts ==
@@ -356,7 +356,7 @@ target is available through the answer_contacts attribute.
     []
 
 There is also a direct_answer_contacts which includes only the
-support contacts registered explicitely on the ticket target. (In
+support contacts registered explicitely on the question target. (In
 general, it will be equal to answer_contacts attribute, but some
 IQuestionTarget implementations may inherit support contacts
 from other context. In these cases, that attribute would only contain
@@ -412,7 +412,7 @@ Only registered users can remove a support contact:
 == Supported Languages ==
 
 The supported languages for a given IQuestionTarget are given by
-getSupportedLanguages(). The supported languages of a ticket target
+getSupportedLanguages(). The supported languages of a question target
 include English plus all languages spoken by at least one of its support
 contacts (with the exception of all English variations).
 
@@ -450,7 +450,7 @@ because we ignore all English variants.
 == getQuestionLanguages() ==
 
 The getQuestionLanguages() method returns the set of languages used by all
-of the target's tickets.
+of the target's questions.
 
     >>> sorted([language.code for language in target.getQuestionLanguages()])
     [u'en', u'fr']

@@ -2,9 +2,9 @@
 
 The support tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is post new messages on the
-ticket. This is an important feature, though, since it ensures that if a
-user decides to reply to a ticket notification, his email won't be lost,
-it will be added to the ticket.
+question. This is an important feature, though, since it ensures that if a
+user decides to reply to a question notification, his email won't be lost,
+it will be added to the question.
 
 Incoming emails for the support tracker are processed by the
 SupportTrackerHandler.
@@ -52,7 +52,7 @@ SupportTrackerHandler.
     ...         return None
 
 It only processes emails which are sent to an address of the form
-'ticket<ID>@support.launchpad.net', where <ID> is the ticket id. (The
+'ticket<ID>@support.launchpad.net', where <ID> is the question id. (The
 domain is configured through the config.tickettracker.email_domain
 configuration variable.)
 
@@ -68,7 +68,7 @@ All other email addresses are ignored:
     False
 
 
-The message will also be ignored if no ticket with the addressed ID
+The message will also be ignored if no question with the addressed ID
 can be found:
 
     >>> comment_msgid = send_support_email(
@@ -90,11 +90,11 @@ but we chose the defaults based on what we assume is the common case
 and by trying to minimize the impact of that error on future
 possibilities for the user.
 
-    # We will use a new ticket on the Ubuntu distribution in these
+    # We will use a new question on the Ubuntu distribution in these
     # examples. We also use two actors, No Privileges Person which will
-    # be the ticket owner and Sample Person who will play the role of
+    # be the question owner and Sample Person who will play the role of
     # support contact. Foo Bar is used to change the status of the
-    # ticket.
+    # question.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
     >>> login('no-priv@canonical.com')
@@ -104,22 +104,22 @@ possibilities for the user.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> ticket = ubuntu.newQuestion(
+    >>> question = ubuntu.newQuestion(
     ...     no_priv, 'Unable to boot installer',
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
 
-    # Define an helper to change the ticket status easily.
-    >>> def setQuestionStatus(ticket, new_status):
+    # Define an helper to change the question status easily.
+    >>> def setQuestionStatus(question, new_status):
     ...     login('foo.bar@canonical.com')
-    ...     msg = ticket.setStatus(foo_bar, new_status, 'Status Change',
+    ...     msg = question.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 
 == Message From the Request Owner ==
 
 When the owner sends a message on the support request, the message
-is interpretated in three different manners based on the current ticket
+is interpretated in three different manners based on the current question
 state.
 
 === Open and Needs Information ===
@@ -130,9 +130,9 @@ more information on the problem.
 For example, from the Open state:
 
     >>> msgid = send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', 'PowerMac 7200',
+    ...     question.id, 'no-priv@canonical.com', 'PowerMac 7200',
     ...     "I forgot to specify that I'm installing on a PowerMac 7200.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -147,12 +147,12 @@ For example, from the Open state:
 And from the Needs information state:
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> setQuestionStatus(ticket, QuestionStatus.NEEDSINFO)
+    >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', 'Re: What model?',
+    ...     question.id, 'no-priv@canonical.com', 'Re: What model?',
     ...     'A PowerMac 7200.')
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -170,14 +170,14 @@ list of open requests.
 When the request is in the Answered or Expired states, we assume that
 the email is reopening the request with more information.
 
-    >>> setQuestionStatus(ticket, QuestionStatus.ANSWERED)
+    >>> setQuestionStatus(question, QuestionStatus.ANSWERED)
 
     >>> msgid = send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', 'Re: BootX',
+    ...     question.id, 'no-priv@canonical.com', 'Re: BootX',
     ...     "I installed BootX, but I must have made a mistake somewhere "
     ...     "because it still doesn't boot. I have a dialog which says "
     ...     "cannot find any kernel images.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -192,12 +192,12 @@ support this use case yet.
 
 From the Expired state:
 
-    >>> setQuestionStatus(ticket, QuestionStatus.EXPIRED)
+    >>> setQuestionStatus(question, QuestionStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', 'Need Help',
+    ...     question.id, 'no-priv@canonical.com', 'Need Help',
     ...     "I still cannot install on my PowerMac.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -213,12 +213,12 @@ happen if one reply to the message.
 When the support request is in the Solved or Invalid state, we interpret
 the message as a comment.
 
-    >>> setQuestionStatus(ticket, QuestionStatus.SOLVED)
+    >>> setQuestionStatus(question, QuestionStatus.SOLVED)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', "Thanks",
+    ...     question.id, 'no-priv@canonical.com', "Thanks",
     ...     "Thanks for helping me make BootX work.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -231,13 +231,13 @@ assume it was a comment.
 
 And from the Invalid:
 
-    >>> setQuestionStatus(ticket, QuestionStatus.INVALID)
+    >>> setQuestionStatus(question, QuestionStatus.INVALID)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'no-priv@canonical.com', 'Come on!',
+    ...     question.id, 'no-priv@canonical.com', 'Come on!',
     ...     "Trying to install on an old machine shouldn't be considered "
     ...     "an invalid request!")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -257,13 +257,13 @@ confirm that the problem is solved. If it was really a request for more
 information, the user can reply and the resulting state will be fine. So
 it is the safest thing to assume.
 
-    >>> setQuestionStatus(ticket, QuestionStatus.OPEN)
+    >>> setQuestionStatus(question, QuestionStatus.OPEN)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'BootX',
+    ...     question.id, 'test@canonical.com', 'BootX',
     ...     "You need to install and configure BootX to boot the installer "
     ...     "CD.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -273,12 +273,12 @@ it is the safest thing to assume.
 
 Needs information example:
 
-    >>> setQuestionStatus(ticket, QuestionStatus.NEEDSINFO)
+    >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'What model?',
+    ...     question.id, 'test@canonical.com', 'What model?',
     ...     "What Mac model are you trying to install on?")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -286,14 +286,14 @@ Needs information example:
 
 Answered example:
 
-    >>> print ticket.status.title
+    >>> print question.status.title
     Answered
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'More info on BootX',
+    ...     question.id, 'test@canonical.com', 'More info on BootX',
     ...     "You can find instructions on BootX installation at that URL: "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -306,36 +306,36 @@ When another user than the owner sends a message to a support request
 in the Solved, Invalid or Expired states, the only possible
 interpretation is that it is a comment.
 
-    >>> setQuestionStatus(ticket, QuestionStatus.SOLVED)
+    >>> setQuestionStatus(question, QuestionStatus.SOLVED)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'RAM',
+    ...     question.id, 'test@canonical.com', 'RAM',
     ...     "You will probably need to install some RAM to make this usable "
     ...     "though.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
     Comment
 
-    >>> setQuestionStatus(ticket, QuestionStatus.EXPIRED)
+    >>> setQuestionStatus(question, QuestionStatus.EXPIRED)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'How weird',
+    ...     question.id, 'test@canonical.com', 'How weird',
     ...     "Is somebody really trying to install Ubuntu on such obsolete "
     ...     "hardware?")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
     Comment
 
-    >>> setQuestionStatus(ticket, QuestionStatus.INVALID)
+    >>> setQuestionStatus(question, QuestionStatus.INVALID)
 
     >>> msgid =  send_support_email(
-    ...     ticket.id, 'test@canonical.com', 'Error?',
+    ...     question.id, 'test@canonical.com', 'Error?',
     ...     "I think the rejection was an error.")
-    >>> message = ticket.messages[-1]
+    >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
     >>> print message.action.title
@@ -364,7 +364,7 @@ config.tickettracker.email_domain to the SupportTrackerHandler.
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> handleMail()
 
-    >>> ticket_one = getUtility(IQuestionSet).get(1)
+    >>> question_one = getUtility(IQuestionSet).get(1)
     >>> '<comment1@localhost>' in [
-    ...     comment.rfc822msgid for comment in ticket_one.messages]
+    ...     comment.rfc822msgid for comment in question_one.messages]
     True

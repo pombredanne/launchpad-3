@@ -25,7 +25,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.QuestionCollectionLatestQuestionsView"
-    name="+portlet-latesttickets"
+    name="+portlet-latestquestions"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />

@@ -60,8 +60,8 @@ displayed.
     ...     'Visiting a web page requiring java crashes firefox')
     >>> user_browser.getControl('Continue').click()
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> soup.first('table', {'id': 'similar-tickets'})
-    <table id="similar-tickets">
+    >>> soup.first('table', {'id': 'similar-questions'})
+    <table id="similar-questions">
     ...<a...href=".../mozilla-firefox/+ticket/8"...>Installation of Java
     Runtime Environment for Mozilla</a>...
     </table>
@@ -129,8 +129,8 @@ redirect the user to the question page.
 
 The user automatically got subscribed to this new question.
 
-    >>> soup.first('div', {'id': 'ticket-subscribers'})
-    <div id="ticket-subscribers" class="portlet">
+    >>> soup.first('div', {'id': 'question-subscribers'})
+    <div id="question-subscribers" class="portlet">
     ...<a href=".../~name12">Sample Person</a>...
     </div>
 

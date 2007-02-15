@@ -76,20 +76,20 @@ class UserSupportLanguagesMixin:
 
 
 class QuestionCollectionLatestQuestionsView:
-    """View used to display the latest support requests on a ticket target."""
+    """View used to display the latest support requests on a question target."""
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
-        """Return <quantity> latest tickets created for this target. This
-        is used by the +portlet-latesttickets view.
+        """Return <quantity> latest questions created for this target. This
+        is used by the +portlet-latestquestions view.
         """
         return self.context.searchQuestions()[:quantity]
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
-    """View that can filter the target's ticket in a batched listing.
+    """View that can filter the target's question in a batched listing.
 
-    This view provides a search form to filter the displayed tickets.
+    This view provides a search form to filter the displayed questions.
     """
 
     schema = ISearchQuestionsForm
@@ -100,7 +100,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     template = ViewPageTemplateFile('../templates/question-listing.pt')
 
-    # Set to true to display a column showing the ticket's target
+    # Set to true to display a column showing the question's target
     displayTargetColumn = False
 
     # Will contain the parameters used by searchResults
@@ -165,7 +165,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def empty_listing_message(self):
-        """Message displayed when there is no tickets matching the filter."""
+        """Message displayed when there is no questions matching the filter."""
         replacements = dict(
             context=self.context.displayname,
             search_text=self.search_text)
@@ -211,8 +211,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return set(self.getDefaultFilter().get('status', []))
 
     @cachedproperty
-    def context_ticket_languages(self):
-        """Return the set of ILanguages used by this context's tickets."""
+    def context_question_languages(self):
+        """Return the set of ILanguages used by this context's questions."""
         return self.context.getQuestionLanguages()
 
     @property
@@ -220,20 +220,20 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Return whether all the used languages are displayed."""
         if self.request.form.get('all_languages'):
             return True
-        return self.context_ticket_languages.issubset(
+        return self.context_question_languages.issubset(
             self.user_support_languages)
 
     @property
     def displayed_languages(self):
-        """Return the ticket languages displayed ordered by language name."""
+        """Return the question languages displayed ordered by language name."""
         displayed_languages = self.user_support_languages.intersection(
-            self.context_ticket_languages)
+            self.context_question_languages)
         return sorted(displayed_languages, key=attrgetter('englishname'))
 
     @property
     def show_all_languages_checkbox(self):
         """Whether to show the 'All Languages' checkbox or not."""
-        return not self.context_ticket_languages.issubset(
+        return not self.context_question_languages.issubset(
             self.user_support_languages)
 
     @action(_('Search'))
@@ -247,7 +247,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         self.search_params.update(**data)
 
     def searchResults(self):
-        """Return the tickets corresponding to the search."""
+        """Return the questions corresponding to the search."""
         if self.search_params is None:
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
@@ -269,27 +269,27 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """We display the source package column only on distribution."""
         return IDistribution.providedBy(self.context)
 
-    def formatSourcePackageName(self, ticket):
-        """Format the source package name related to ticket.
+    def formatSourcePackageName(self, question):
+        """Format the source package name related to question.
 
         Return an URL to the support page of the source package related
-        to ticket or mdash if there is no related source package.
+        to question or mdash if there is no related source package.
         """
-        assert self.context == ticket.distribution
-        if not ticket.sourcepackagename:
+        assert self.context == question.distribution
+        if not question.sourcepackagename:
             return "&mdash;"
         else:
             sourcepackage = self.context.getSourcePackage(
-                ticket.sourcepackagename)
+                question.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
-                canonical_url(sourcepackage), ticket.sourcepackagename.name)
+                canonical_url(sourcepackage), question.sourcepackagename.name)
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My Questions' report.
 
     It displays and searches the support requests made by the logged
-    in user in a tickettarget context.
+    in user in a questiontarget context.
     """
 
     @property
@@ -326,7 +326,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'Need Attention' report.
 
     It displays and searches the support requests needing attention from the
-    logged in user in a tickettarget context.
+    logged in user in a questiontarget context.
     """
 
     @property
@@ -419,7 +419,7 @@ class ManageAnswerContactView(GeneralFormView):
 
 
 class QuestionTargetFacetMixin:
-    """Mixin for tickettarget facet definition."""
+    """Mixin for questiontarget facet definition."""
 
     def support(self):
         summary = (
@@ -431,8 +431,8 @@ class QuestionTargetTraversalMixin:
     """Navigation mixin for IQuestionTarget."""
 
     @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
+    def traverse_question(self, name):
+        # questions should be ints
         try:
             question_id = int(name)
         except ValueError:
@@ -459,20 +459,20 @@ class QuestionCollectionSupportMenu(ApplicationMenu):
 
     def open(self):
         url = self.makeSearchLink('Open', sort='recently updated first')
-        return Link(url, 'Open', icon='ticket')
+        return Link(url, 'Open', icon='question')
 
     def answered(self):
         text = 'Answered'
         return Link(
-            self.makeSearchLink(['Answered', 'Solved']), text, icon='ticket')
+            self.makeSearchLink(['Answered', 'Solved']), text, icon='question')
 
     def myrequests(self):
         text = 'My Questions'
-        return Link('+mytickets', text, icon='ticket')
+        return Link('+mytickets', text, icon='question')
 
     def need_attention(self):
         text = 'Need Attention'
-        return Link('+need-attention', text, icon='ticket')
+        return Link('+need-attention', text, icon='question')
 
 
 class QuestionTargetSupportMenu(QuestionCollectionSupportMenu):

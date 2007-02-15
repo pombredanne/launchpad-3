@@ -23,7 +23,7 @@ class IQuestionMessage(IMessage):
     """
     # This is really an Object field with schema=IQuestion, but that
     # would create a circular dependency between IQuestion and IQuestionMessage
-    ticket = Field(
+    question = Field(
         title=_("The question related to this message."),
         description=_("An IQuestion object."), required=True, readonly=True)
 

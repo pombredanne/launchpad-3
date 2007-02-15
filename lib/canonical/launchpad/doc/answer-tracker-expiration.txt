@@ -2,7 +2,7 @@
 
 It is not productive to have support requests lying around forever in
 the support tracker. That's why we have a script which runs daily to
-expire old tickets on which there was no activity for the past two
+expire old questions on which there was no activity for the past two
 weeks.
 
 The expiration period is set using the
@@ -13,10 +13,10 @@ defaults to 15 days.
     >>> config.tickettracker.days_before_expiration
     15
 
-Only tickets in the OPEN or NEEDSINFO state which aren't assigned to
+Only questions in the OPEN or NEEDSINFO state which aren't assigned to
 somebody are subject to expiration.
 
-    # Sanity check in case somebody modifies the ticket sampledata and
+    # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
     >>> from canonical.launchpad.database import Question
     >>> from canonical.lp.dbschema import QuestionStatus
@@ -24,8 +24,8 @@ somebody are subject to expiration.
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
     8
 
-    # By default, all open and needs info ticket should expire. Make
-    # sure that no new tickets were recently added and will make this
+    # By default, all open and needs info question should expire. Make
+    # sure that no new questions were recently added and will make this
     # test fails in the future.
     >>> Question.select(
     ...     "datelastresponse >= current_timestamp - interval '15 days' OR "
@@ -45,41 +45,41 @@ somebody are subject to expiration.
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 
-    >>> ticketset = getUtility(IQuestionSet)
+    >>> questionset = getUtility(IQuestionSet)
 
-    # An old ticket in NEEDSINFO the state.
-    >>> old_needs_info_ticket = ticketset.get(7)
-    >>> print old_needs_info_ticket.status.title
+    # An old question in NEEDSINFO the state.
+    >>> old_needs_info_question = questionset.get(7)
+    >>> print old_needs_info_question.status.title
     Needs information
 
-    # An open ticket assigned to somebody.
+    # An open question assigned to somebody.
     >>> login('foo.bar@canonical.com')
-    >>> old_assigned_open_ticket = ticketset.get(1)
-    >>> old_assigned_open_ticket.assignee = getUtility(ILaunchBag).user
+    >>> old_assigned_open_question = questionset.get(1)
+    >>> old_assigned_open_question.assignee = getUtility(ILaunchBag).user
 
     # This one got an update from its owner recently.
     >>> login('test@canonical.com')
-    >>> recent_open_ticket = ticketset.get(2)
-    >>> recent_open_ticket.giveInfo(
+    >>> recent_open_question = questionset.get(2)
+    >>> recent_open_question.giveInfo(
     ...     'SVG works better now, but is still broken')
     <QuestionMessage...>
 
     # This one was put in the NEEDSINFO state recently.
-    >>> recent_needsinfo_ticket = ticketset.get(4)
-    >>> recent_needsinfo_ticket.requestInfo(
+    >>> recent_needsinfo_question = questionset.get(4)
+    >>> recent_needsinfo_question.requestInfo(
     ...     no_priv, 'What URL were you visiting?')
     <QuestionMessage...>
 
-    # Old open tickets.
-    >>> old_open_ticket = ticketset.get(5)
+    # Old open questions.
+    >>> old_open_question = questionset.get(5)
 
-    # Subscribe a team to that ticket, and a support contact,
+    # Subscribe a team to that question, and a support contact,
     # to make sure that DB permissions are correct.
     >>> admin_team = getUtility(IPersonSet).getByName('admins')
-    >>> old_open_ticket.subscribe(admin_team)
+    >>> old_open_question.subscribe(admin_team)
     <QuestionSubscription...>
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> old_open_ticket.target.addAnswerContact(salgado)
+    >>> old_open_question.target.addAnswerContact(salgado)
     True
 
     # Commit the current transaction because the script will run in
@@ -101,10 +101,10 @@ somebody are subject to expiration.
     >>> (out, err) = process.communicate()
     >>> print err
     INFO    creating lockfile
-    INFO    Expiring OPEN and NEEDSINFO tickets without activity for the
+    INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
-    INFO    Found 5 tickets to expire.
-    INFO    Expired 5 tickets.
+    INFO    Found 5 questions to expire.
+    INFO    Expired 5 questions.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out
@@ -117,30 +117,30 @@ somebody are subject to expiration.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
-The status of the OPEN and NEEDSINFO tickets that had recent activity
+The status of the OPEN and NEEDSINFO questions that had recent activity
 wasn't modified by the script:
 
-    >>> print recent_open_ticket.status.title
+    >>> print recent_open_question.status.title
     Open
-    >>> print recent_needsinfo_ticket.status.title
+    >>> print recent_needsinfo_question.status.title
     Needs information
 
 Neither the old one which was assigned to Foo Bar:
 
-    >>> print old_assigned_open_ticket.status.title
+    >>> print old_assigned_open_question.status.title
     Open
 
 But the other ones status was changed to 'Expired':
 
-    >>> print old_needs_info_ticket.status.title
+    >>> print old_needs_info_question.status.title
     Expired
-    >>> print old_open_ticket.status.title
+    >>> print old_open_question.status.title
     Expired
 
 The message explaining the reason for the expiration was posted by the
 Support Tracker Janitor celebrity:
 
-    >>> expiration_message = old_needs_info_ticket.messages[-1]
+    >>> expiration_message = old_needs_info_question.messages[-1]
     >>> print expiration_message.action.name
     EXPIRE
     >>> print expiration_message.new_status.title
@@ -149,7 +149,7 @@ Support Tracker Janitor celebrity:
     support-tracker-janitor
 
     >>> print expiration_message.text_contents
-    This support request was expired because it remained in the
+    This question was expired because it remained in the
     'Needs information' state without activity for the last 15 days.
 
 

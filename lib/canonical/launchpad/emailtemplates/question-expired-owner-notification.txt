@@ -1,5 +1,5 @@
 Your question #%(question_id)s on %(target_name)s changed:
-%(ticket_url)s
+%(question_url)s
 
 %(body)s
 
@@ -7,4 +7,4 @@ _______________________________________________________________________
 If you're still having this problem, you can reopen your question either
 by replying to this email or by going to the following page and
 entering more information about your problem:
-%(ticket_url)s
+%(question_url)s

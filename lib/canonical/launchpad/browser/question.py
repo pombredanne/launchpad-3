@@ -82,14 +82,14 @@ class QuestionSetView:
 
 
 class QuestionSubscriptionView(LaunchpadView):
-    """View for subscribing and unsubscribing from a ticket."""
+    """View for subscribing and unsubscribing from a question."""
 
     def initialize(self):
         if not self.user or self.request.method != "POST":
             # No post, nothing to do
             return
 
-        ticket_unmodified = Snapshot(
+        question_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
         modified_fields = set()
 
@@ -110,7 +110,7 @@ class QuestionSubscriptionView(LaunchpadView):
                 modified_fields.add('subscribers')
             response.redirect(canonical_url(self.context))
         notify(SQLObjectModifiedEvent(
-            self.context, ticket_unmodified, list(modified_fields)))
+            self.context, question_unmodified, list(modified_fields)))
 
     @property
     def subscription(self):
@@ -127,7 +127,7 @@ class QuestionLanguageVocabularyFactory:
     That's English plus the users preferred languages. These will be guessed
     from the request when the preferred languages weren't configured.
 
-    It also always include the ticket's current language and excludes all
+    It also always include the question's current language and excludes all
     English variants.
     """
 
@@ -160,10 +160,10 @@ class QuestionLanguageVocabularyFactory:
 
 
 class QuestionSupportLanguageMixin:
-    """Helper mixin for views manipulating the ticket language.
+    """Helper mixin for views manipulating the question language.
 
     It provides a method to check if the selected language is supported
-    and another to create the form field to select the ticket language.
+    and another to create the form field to select the question language.
 
     This mixin adapts its context to IQuestionTarget, so it will work if
     the context either provides IQuestionTarget directly or if an adapter
@@ -188,7 +188,7 @@ class QuestionSupportLanguageMixin:
         return macros['unsupported_languages_warning']
 
     @property
-    def ticket_target(self):
+    def question_target(self):
         """Return the IQuestionTarget related to the context."""
         return IQuestionTarget(self.context)
 
@@ -196,11 +196,11 @@ class QuestionSupportLanguageMixin:
     def supported_languages(self):
         """Return the list of supported languages ordered by name."""
         return sorted(
-            self.ticket_target.getSupportedLanguages(),
+            self.question_target.getSupportedLanguages(),
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field to edit a ticket language using a special vocabulary.
+        """Create a field to edit a question language using a special vocabulary.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -222,7 +222,7 @@ class QuestionSupportLanguageMixin:
         will only be displayed one time, except if the user changes the
         request language to another unsupported value.
         """
-        if self.chosen_language in self.ticket_target.getSupportedLanguages():
+        if self.chosen_language in self.question_target.getSupportedLanguages():
             return False
 
         old_chosen_language = self.request.form.get('chosen_language')
@@ -232,8 +232,8 @@ class QuestionSupportLanguageMixin:
 class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     """Multi-page add view.
 
-    The user enters first his ticket summary and then he is shown a list
-    of similar results before adding the ticket.
+    The user enters first his question summary and then he is shown a list
+    of similar results before adding the question.
     """
     label = _('Ask a question')
 
@@ -295,7 +295,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     @action(_('Continue'))
     def continue_action(self, action, data):
-        """Search for tickets similar to the entered summary."""
+        """Search for questions similar to the entered summary."""
         # If the description widget wasn't setup, add it here
         if self.widgets.get('description') is None:
             self.widgets += form.setUpWidgets(
@@ -303,13 +303,13 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
 
-        tickets = self.ticket_target.findSimilarQuestions(data['title'])
-        self.searchResults = tickets[:self._MAX_SIMILAR_TICKETS]
+        questions = self.question_target.findSimilarQuestions(data['title'])
+        self.searchResults = questions[:self._MAX_SIMILAR_TICKETS]
 
         return self.add_template()
 
     def handleAddError(self, action, data, errors):
-        """Handle errors on new ticket creation submission. Either redirect
+        """Handle errors on new question creation submission. Either redirect
         to the search template when the summary is missing or delegate to
         the continue action handler to do the search.
         """
@@ -331,18 +331,18 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             self.searchResults = []
             return self.add_template()
 
-        ticket = self.ticket_target.newQuestion(
+        question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
         # XXX flacoste 2006/07/25 This should be moved to newQuestion().
-        notify(SQLObjectCreatedEvent(ticket))
+        notify(SQLObjectCreatedEvent(question))
 
-        self.request.response.redirect(canonical_url(ticket))
+        self.request.response.redirect(canonical_url(question))
         return ''
 
 
 class QuestionChangeStatusView(LaunchpadFormView):
-    """View for changing a ticket status."""
+    """View for changing a question status."""
     schema = IQuestionChangeStatusForm
 
     def validate(self, data):
@@ -378,7 +378,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     def setUpFields(self):
         """Select the subset of fields to display.
 
-        - Exclude the sourcepackagename field when ticket doesn't have a
+        - Exclude the sourcepackagename field when question doesn't have a
         distribution.
         - Exclude fields that the user doesn't have permission to modify.
         """
@@ -406,47 +406,47 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
 
 class QuestionMakeBugView(GeneralFormView):
-    """Browser class for adding a bug from a ticket."""
+    """Browser class for adding a bug from a question."""
 
     def initialize(self):
-        ticket = self.context
-        if ticket.bugs:
+        question = self.context
+        if question.bugs:
             # we can't make a bug when we have linked bugs
             self.request.response.addErrorNotification(
                 _('You cannot create a bug report from a question'
                   'that already has bugs linked to it.'))
-            self.request.response.redirect(canonical_url(ticket))
+            self.request.response.redirect(canonical_url(question))
             return
 
     @property
     def initial_values(self):
-        ticket = self.context
+        question = self.context
         return {'title': '',
-                'description': ticket.description}
+                'description': question.description}
 
     def process_form(self):
         # Override GeneralFormView.process_form because we don't
         # want form validation when the cancel button is clicked
-        ticket = self.context
+        question = self.context
         if self.request.method == 'GET':
             self.process_status = ''
             return ''
         if 'cancel' in self.request.form:
-            self.request.response.redirect(canonical_url(ticket))
+            self.request.response.redirect(canonical_url(question))
             return ''
         return GeneralFormView.process_form(self)
 
     def process(self, title, description):
-        ticket = self.context
+        question = self.context
 
-        unmodifed_ticket = Snapshot(ticket, providing=providedBy(ticket))
+        unmodifed_question = Snapshot(question, providing=providedBy(question))
         params = CreateBugParams(
             owner=self.user, title=title, comment=description)
-        bug = ticket.target.createBug(params)
-        ticket.linkBug(bug)
-        bug.subscribe(ticket.owner)
+        bug = question.target.createBug(params)
+        question.linkBug(bug)
+        bug.subscribe(question.owner)
         bug_added_event = SQLObjectModifiedEvent(
-            ticket, unmodifed_ticket, ['bugs'])
+            question, unmodifed_question, ['bugs'])
         notify(bug_added_event)
         self.request.response.addNotification(
             _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
@@ -457,7 +457,7 @@ class QuestionMakeBugView(GeneralFormView):
 
 
 class QuestionRejectView(LaunchpadFormView):
-    """View for rejecting a ticket."""
+    """View for rejecting a question."""
     schema = IQuestionChangeStatusForm
     field_names = ['message']
 
@@ -476,7 +476,7 @@ class QuestionRejectView(LaunchpadFormView):
 
 
 class QuestionWorkflowView(LaunchpadFormView):
-    """View managing the ticket workflow action, i.e. action changing
+    """View managing the question workflow action, i.e. action changing
     its status.
     """
     schema = IQuestionAddMessageForm
@@ -519,7 +519,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         """Return whether the comment action should be displayed.
 
         Comments (message without a status change) can be added when the
-        ticket is solved or invalid
+        question is solved or invalid
         """
         return (self.user is not None and
                 self.context.status in [
@@ -527,7 +527,7 @@ class QuestionWorkflowView(LaunchpadFormView):
 
     @action(_('Add Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
-        """Add a comment to a resolved ticket."""
+        """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your comment.'), data)
@@ -540,7 +540,7 @@ class QuestionWorkflowView(LaunchpadFormView):
 
     @action(_('Add Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
-        """Add an answer to the ticket."""
+        """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your answer.'), data)
@@ -567,7 +567,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     @action(_('Add Information Request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
-        """Add a request for more information to the ticket."""
+        """Add a request for more information to the question."""
         self.context.requestInfo(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your information request.'), data)
@@ -611,7 +611,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     def confirm_action(self, action, data):
         """Confirm that an answer solved the request."""
         # The confirmation message is not given by the user when the
-        # 'This Solved my Problem' button on the main ticket view.
+        # 'This Solved my Problem' button on the main question view.
         if not data['message']:
             data['message'] = 'User confirmed that the question is solved.'
         self.context.confirmAnswer(data['message'], answer=data['answer'])
@@ -636,7 +636,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         """Post-processing work common to all workflow actions.
 
         Adds a notification, subscribe the user if he checked the
-        'E-mail me...' option and redirect to the ticket page.
+        'E-mail me...' option and redirect to the question page.
         """
         self.request.response.addNotification(message)
 
@@ -677,21 +677,21 @@ class QuestionMessageDisplayView(LaunchpadView):
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
-        self.ticket = context.ticket
+        self.question = context.question
 
     display_confirm_button = True
 
     @cachedproperty
     def isBestAnswer(self):
-        """Return True when this message is marked as solving the ticket."""
-        return (self.context == self.ticket.answer and
+        """Return True when this message is marked as solving the question."""
+        return (self.context == self.question.answer and
                 self.context.action in [
                     QuestionAction.ANSWER, QuestionAction.CONFIRM])
 
     def renderAnswerIdFormElement(self):
         """Return the hidden form element to refer to that message."""
         return '<input type="hidden" name="answer_id" value="%d" />' % list(
-            self.context.ticket.messages).index(self.context)
+            self.context.question.messages).index(self.context)
 
     def getBodyCSSClass(self):
         """Return the CSS class to use for this message's body."""
@@ -703,8 +703,8 @@ class QuestionMessageDisplayView(LaunchpadView):
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""
         return (self.display_confirm_button and
-                self.user == self.ticket.owner and
-                self.ticket.can_confirm_answer and
+                self.user == self.question.owner and
+                self.question.can_confirm_answer and
                 self.context.action == QuestionAction.ANSWER)
 
     def renderWithoutConfirmButton(self):
@@ -714,7 +714,7 @@ class QuestionMessageDisplayView(LaunchpadView):
 
 
 class SearchAllQuestionsView(SearchQuestionsView):
-    """View that searches among all tickets posted on Launchpad."""
+    """View that searches among all questions posted on Launchpad."""
 
     displayTargetColumn = True
 

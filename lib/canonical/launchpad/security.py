@@ -870,7 +870,7 @@ class AdminQuestion(AdminByAdminsTeam):
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow only admins and owners of the ticket pillar target."""
+        """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
                 user.inTeam(context.owner))
@@ -881,7 +881,7 @@ class ModerateQuestion(AdminQuestion):
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow user who can administer the ticket and support contacts."""
+        """Allow user who can administer the question and answer contacts."""
         if AdminQuestion.checkAuthenticated(self, user):
             return True
         for answer_contact in self.obj.target.answer_contacts:
@@ -895,5 +895,5 @@ class QuestionOwner(AuthorizationBase):
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow the ticket's owner."""
+        """Allow the question's owner."""
         return user.inTeam(self.obj.owner)

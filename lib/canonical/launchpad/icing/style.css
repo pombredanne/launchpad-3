@@ -1167,12 +1167,12 @@ body.tab-support #actions h2, body.tab-support #actions h2:hover {
   color: #3840be;
 }
 
-.ticketstatusOPEN      {color: black;}
-.ticketstatusNEEDSINFO {color: black;}
-.ticketstatusANSWERED  {color: green;}
-.ticketstatusSOLVED    {color: green;}
-.ticketstatusEXPIRED   {color: red;}
-.ticketstatusINVALID   {color: red;}
+.questionstatusOPEN      {color: black;}
+.questionstatusNEEDSINFO {color: black;}
+.questionstatusANSWERED  {color: green;}
+.questionstatusSOLVED    {color: green;}
+.questionstatusEXPIRED   {color: red;}
+.questionstatusINVALID   {color: red;}
 
 
 /* --- Other --- */
@@ -1357,7 +1357,7 @@ dl.products>dt:before                {content: url(/@@/product);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
-ul.ticket>li, li.ticket              {list-style-image: url(/@@/question);}
+ul.question>li, li.question          {list-style-image: url(/@@/question);}
 ul.translations, li.translations     {list-style-image: url(/@@/translations);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}

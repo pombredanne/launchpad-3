@@ -17,14 +17,14 @@ from canonical.launchpad.webapp.interaction import (
 
 
 class QuestionJanitor:
-    """Object that takes the responsability of expiring tickets
+    """Object that takes the responsability of expiring questions
     without activity in a configurable period.
     """
 
     def __init__(self, days_before_expiration=None, log=None):
         """Create a new QuestionJanitor.
 
-        :days_before_expiration: Days of inactivity before a ticket is
+        :days_before_expiration: Days of inactivity before a question is
             expired. Defaults to config.tickettracker.days_before_expiration
         :log: A logger instance to use for logging. Defaults to the default
             logger.
@@ -43,30 +43,30 @@ class QuestionJanitor:
             getUtility(ILaunchpadCelebrities).support_tracker_janitor)
 
     def expireQuestions(self, transaction_manager):
-        """Expire old tickets.
+        """Expire old questions.
 
-        All tickets in the OPEN or NEEDSINFO state without activity
+        All questions in the OPEN or NEEDSINFO state without activity
         in the last X days are expired.
 
         This method will login as the support_tracker_janitor celebrity and
         logout after the expiration is done.
         """
         self.log.info(
-            'Expiring OPEN and NEEDSINFO tickets without activity for the '
+            'Expiring OPEN and NEEDSINFO questions without activity for the '
             'last %d days.' % self.days_before_expiration)
         self._login()
         try:
             count = 0
-            expired_tickets = getUtility(IQuestionSet).findExpiredQuestions(
+            expired_questions = getUtility(IQuestionSet).findExpiredQuestions(
                 self.days_before_expiration)
             self.log.info(
-                'Found %d tickets to expire.' % expired_tickets.count())
-            for ticket in expired_tickets:
-                ticket.expireQuestion(
+                'Found %d questions to expire.' % expired_questions.count())
+            for question in expired_questions:
+                question.expireQuestion(
                     self.janitor,
-                    "This support request was expired because it remained in "
+                    "This question was expired because it remained in "
                     "the '%s' state without activity for the last %d days."
-                        % (ticket.status.title, self.days_before_expiration))
+                        % (question.status.title, self.days_before_expiration))
                 # XXX flacoste 2006/10/24 We commit after each and every
                 # expiration because of bug #29744 (emails are sent
                 # immediately in zopeless). This minimuze the risk of
@@ -74,7 +74,7 @@ class QuestionJanitor:
                 # later on.
                 transaction_manager.commit()
                 count += 1
-            self.log.info('Expired %d tickets.' % count)
+            self.log.info('Expired %d questions.' % count)
         finally:
             self._logout()
         self.log.info('Finished expiration run.')

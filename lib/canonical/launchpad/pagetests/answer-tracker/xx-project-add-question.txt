@@ -37,9 +37,9 @@ problem in the language of his choice:
 
 He's shown a list of similar questions in the product selected:
 
-    >>> similar_tickets = find_tag_by_id(
-    ...     user_browser.contents, 'similar-tickets')
-    >>> for row in similar_tickets.fetch('tr', 'noted'):
+    >>> similar_questions = find_tag_by_id(
+    ...     user_browser.contents, 'similar-questions')
+    >>> for row in similar_questions.fetch('tr', 'noted'):
     ...     print row.a.renderContents()
     Problem showing the SVG demo on W3C site
 

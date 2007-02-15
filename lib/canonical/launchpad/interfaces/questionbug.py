@@ -17,5 +17,5 @@ from canonical.launchpad.interfaces.question import IQuestion
 class IQuestionBug(IBugLink):
     """A link between an IBug and an IQuestion."""
 
-    ticket = Object(title=_('The question to which the bug is linked to.'),
+    question = Object(title=_('The question to which the bug is linked to.'),
         required=True, readonly=True, schema=IQuestion)

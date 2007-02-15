@@ -37,9 +37,9 @@
              tal:content="message/owner/browsername"
               >Foo Bar</a></td>
         <td tal:content="message/action/title">Comment</td>
-        <td class="ticketstatus"
+        <td class="questionstatus"
             tal:content="message/new_status/title"
-            tal:attributes="class string:ticketstatus${message/new_status/name}"
+            tal:attributes="class string:questionstatus${message/new_status/name}"
             >Open</td>
       </tr>
     </tbody>

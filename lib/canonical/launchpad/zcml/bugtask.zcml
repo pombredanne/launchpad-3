@@ -123,7 +123,7 @@
           name="+portlet-specs"
           template="../templates/bug-portlet-specs.pt" />
       <browser:page
-          name="+portlet-tickets"
+          name="+portlet-questions"
           template="../templates/bug-portlet-questions.pt" />
       <browser:page
           name="+portlet-reference"

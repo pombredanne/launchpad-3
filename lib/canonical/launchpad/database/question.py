@@ -56,7 +56,7 @@ class notify_question_modified:
     SQLObjectModifiedEvent after the method returns.
 
     The list of edited_fields will be computed by comparing the snapshot
-    with the modified ticket. The fields that are checked for
+    with the modified question. The fields that are checked for
     modifications are: status, messages, dateanswered, answerer, answer,
     datelastquery and datelastresponse.
 
@@ -66,17 +66,17 @@ class notify_question_modified:
     def __call__(self, func):
         """Return the decorator."""
         def notify_question_modified(self, *args, **kwargs):
-            old_ticket = Snapshot(self, providing=providedBy(self))
+            old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
             for field in ['status', 'dateanswered', 'answerer', 'answer',
                           'datelastquery', 'datelastresponse']:
-                if getattr(self, field) != getattr(old_ticket, field):
+                if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
             notify(SQLObjectModifiedEvent(
-                self, object_before_modification=old_ticket,
+                self, object_before_modification=old_question,
                 edited_fields=edited_fields, user=msg.owner))
             return msg
         return notify_question_modified
@@ -123,18 +123,18 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     # useful joins
     subscriptions = SQLMultipleJoin('QuestionSubscription',
-        joinColumn='ticket', orderBy='id')
+        joinColumn='question', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
     bug_links = SQLMultipleJoin('QuestionBug',
-        joinColumn='ticket', orderBy='id')
+        joinColumn='question', orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
-    messages = SQLMultipleJoin('QuestionMessage', joinColumn='ticket',
+    messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
         prejoins=['message'], orderBy=['TicketMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
-        joinColumn='ticket')
+        joinColumn='question')
 
     # attributes
     @property
@@ -159,7 +159,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(QuestionSubscription.selectOneBy(ticket=self, person=person))
+        return bool(QuestionSubscription.selectOneBy(question=self, person=person))
 
     # Workflow methods
 
@@ -182,7 +182,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.SETSTATUS, new_status=new_status,
-            update_ticket_dates=False)
+            update_question_dates=False)
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -190,7 +190,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.COMMENT, new_status=self.status,
-            update_ticket_dates=False)
+            update_question_dates=False)
 
     @property
     def can_request_info(self):
@@ -282,7 +282,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if answer:
             assert answer in self.messages
             assert answer.owner != self.owner, (
-                'Use giveAnswer() when solving own ticket.')
+                'Use giveAnswer() when solving own question.')
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
@@ -318,7 +318,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def reject(self, user, comment, datecreated=None):
         """See IQuestion."""
         assert self.canReject(user), (
-            'User "%s" cannot reject the ticket.' % user.displayname)
+            'User "%s" cannot reject the question.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
             raise InvalidQuestionStateError("Question is already rejected.")
         msg = self._newMessage(
@@ -362,16 +362,16 @@ class Question(SQLBase, BugLinkTargetMixin):
     # subscriptions
     def subscribe(self, person):
         """See IQuestion."""
-        # first see if a relevant subscription exists, and if so, update it
+        # First see if a relevant subscription exists, and if so, update it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
-        # since no previous subscription existed, create a new one
-        return QuestionSubscription(ticket=self, person=person)
+        # Since no previous subscription existed, create a new one.
+        return QuestionSubscription(question=self, person=person)
 
     def unsubscribe(self, person):
         """See IQuestion."""
-        # see if a relevant subscription exists, and if so, delete it
+        # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 sub.destroySelf()
@@ -398,14 +398,14 @@ class Question(SQLBase, BugLinkTargetMixin):
         return sorted(subscribers, key=operator.attrgetter('displayname'))
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
-                    datecreated=None, update_ticket_dates=True):
-        """Create a new QuestionMessage, link it to this ticket and update
-        the ticket's status to new_status.
+                    datecreated=None, update_question_dates=True):
+        """Create a new QuestionMessage, link it to this question and update
+        the question's status to new_status.
 
-        When update_ticket_dates is True, the ticket's datelastquery or
+        When update_question_dates is True, the question's datelastquery or
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
-        same than the ticket owner, otherwise the datelastresponse is updated.
+        same than the question owner, otherwise the datelastresponse is updated.
 
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
@@ -416,7 +416,7 @@ class Question(SQLBase, BugLinkTargetMixin):
                   when content is an IMessage.
         :datecreated: A datetime object which will be used as the Message
                       creation date. Ignored when content is an IMessage.
-        :update_ticket_dates: A bool.
+        :update_question_dates: A bool.
         """
         if IMessage.providedBy(content):
             assert owner == content.owner, (
@@ -428,15 +428,15 @@ class Question(SQLBase, BugLinkTargetMixin):
             if datecreated is None:
                 datecreated = UTC_NOW
             msg = Message(
-                owner=owner, rfc822msgid=make_msgid('lptickets'),
+                owner=owner, rfc822msgid=make_msgid('lpquestions'),
                 subject=subject, datecreated=datecreated)
             chunk = MessageChunk(message=msg, content=content, sequence=1)
 
         tktmsg = QuestionMessage(
-            ticket=self, message=msg, action=action, new_status=new_status)
+            question=self, message=msg, action=action, new_status=new_status)
         notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
-        # make sure we update the relevant date of response or query
-        if update_ticket_dates:
+        # Make sure we update the relevant date of response or query.
+        if update_question_dates:
             if owner == self.owner:
                 self.datelastquery = msg.datecreated
             else:
@@ -447,7 +447,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
-        # subscribe the ticket's owner to the bug
+        # Subscribe the question's owner to the bug.
         bug.subscribe(self.owner)
         return BugLinkTargetMixin.linkBug(self, bug)
 
@@ -455,20 +455,20 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See IBugLinkTarget."""
         buglink = BugLinkTargetMixin.unlinkBug(self, bug)
         if buglink:
-            # Additionnaly, unsubscribe the ticket's owner to the bug
+            # Additionnaly, unsubscribe the question's owner to the bug
             bug.unsubscribe(self.owner)
         return buglink
 
-    # Template methods for BugLinkTargetMixin
+    # Template methods for BugLinkTargetMixin.
     buglinkClass = QuestionBug
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return QuestionBug(ticket=self, bug=bug)
+        return QuestionBug(question=self, bug=bug)
 
 
 class QuestionSet:
-    """The set of support / trouble tickets."""
+    """The set of questions in the Answer Tracker."""
 
     implements(IQuestionSet)
 
@@ -511,16 +511,16 @@ class QuestionSet:
             datecreated = UTC_NOW
         if language is None:
             language = getUtility(ILanguageSet)['en']
-        ticket = Question(
+        question = Question(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
             sourcepackagename=sourcepackagename, datecreated=datecreated,
             datelastquery=datecreated)
 
         # Subscribe the submitter
-        ticket.subscribe(owner)
+        question.subscribe(owner)
 
-        return ticket
+        return question
 
     def get(self, question_id, default=None):
         """See IQuestionSet."""
@@ -531,10 +531,10 @@ class QuestionSet:
 
 
 class QuestionSearch:
-    """Base object for searching tickets.
+    """Base object for searching questions.
 
     The search parameters are specified at creation time and getResults()
-    is used to retrieve the tickets matching the search criteria.
+    is used to retrieve the questions matching the search criteria.
     """
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -675,7 +675,7 @@ class QuestionSearch:
             raise AssertionError, "Unknown QuestionSort value: %s" % sort
 
     def getResults(self):
-        """Return the tickets that match this query."""
+        """Return the questions that match this query."""
         query = ''
         constraints = self.getConstraints()
         if constraints:
@@ -689,7 +689,7 @@ class QuestionSearch:
 
 
 class QuestionTargetSearch(QuestionSearch):
-    """Search tickets in an IQuestionTarget context.
+    """Search questions in an IQuestionTarget context.
 
     Used to implement IQuestionTarget.searchQuestions().
     """
@@ -729,7 +729,7 @@ class QuestionTargetSearch(QuestionSearch):
 
 
 class SimilarQuestionsSearch(QuestionSearch):
-    """Search tickets in a context using a similarity search algorithm.
+    """Search questions in a context using a similarity search algorithm.
 
     This search object is used to implement
     IQuestionTarget.findSimilarQuestions().
@@ -750,7 +750,7 @@ class SimilarQuestionsSearch(QuestionSearch):
 
 
 class QuestionPersonSearch(QuestionSearch):
-    """Search tickets which are related to a particular person.
+    """Search questions which are related to a particular person.
 
     Used to implement IPerson.searchQuestions().
     """

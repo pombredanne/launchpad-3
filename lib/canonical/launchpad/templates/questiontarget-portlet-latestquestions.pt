@@ -3,12 +3,12 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="ticket" tal:repeat="ticket view/getLatestQuestions">
+      <li class="question" tal:repeat="question view/getLatestQuestions">
            [<span tal:attributes="
-                    class string:ticketstatus${ticket/status/name}"
-                  tal:content="ticket/status/title" />]
-        <a tal:content="ticket/title/fmt:shorten/80"
-           tal:attributes="href ticket/fmt:url">question title</a>
+                    class string:questionstatus${question/status/name}"
+                  tal:content="question/status/title" />]
+        <a tal:content="question/title/fmt:shorten/80"
+           tal:attributes="href question/fmt:url">question title</a>
       </li>
     </ul>
   </div>

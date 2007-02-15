@@ -33,8 +33,8 @@ Answers page and goes there to check.
 He sees a listing of the current questions posted on Ubuntu:
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -49,8 +49,8 @@ results. There, he finds only one other question:
     >>> browser.title
     'Questions for Ubuntu'
     >>> soup = BeautifulSoup(browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Installation failed
 
 This is the last results page, so the next and last links are greyed
@@ -95,12 +95,12 @@ description appears in a small pop-up:
 
     >>> import re
     >>> soup = BeautifulSoup(browser.contents)
-    >>> ticket_link = soup.first('a', text=re.compile('Play DVDs'))
-    >>> print ticket_link.findParent('tr')['title']
+    >>> question_link = soup.first('a', text=re.compile('Play DVDs'))
+    >>> print question_link.findParent('tr')['title']
     How do you play DVDs in Totem..........?
 
-    >>> ticket_link = soup.first('a', text=re.compile('mailto:'))
-    >>> print ticket_link.findParent('tr')['title']
+    >>> question_link = soup.first('a', text=re.compile('mailto:'))
+    >>> print question_link.findParent('tr')['title']
     I am not able to open my email client if i click on a mailto: link in a
     webpage in Firefox 1.5.0.4 (ubuntu dapper).
     <BLANKLINE>
@@ -153,8 +153,8 @@ selected. He adds 'Invalid' to the selection, and run his search again.
 This time, the search returns one item.
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
 
 He clicks on the link to read the question description.
@@ -214,9 +214,9 @@ recent questions on Mozilla Firefox.
     >>> browser.getLink('Open').click()
     >>> print browser.title
     Open questions for Mozilla Firefox
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Firefox loses focus and gets stuck
     Problem showing the SVG demo on W3C site
     Firefox cannot render Bank Site
@@ -234,9 +234,9 @@ problems:
 
     >>> browser.getControl(name='field.search_text').value = 'plug-in'
     >>> browser.getControl('Search').click()
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
 === Answered Requests ===
@@ -252,9 +252,9 @@ questions.)
     Answered questions for Ubuntu
     >>> browser.getControl(name='field.status').value
     ['Answered', 'Solved']
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
@@ -290,9 +290,9 @@ He needs to login to access that page:
     >>> user_browser.getLink('My Questions').click()
     >>> print user_browser.title
     Questions you asked about mozilla-firefox in ubuntu
-    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
 
@@ -311,9 +311,9 @@ other statuses and hits the search button.
 
 The exact question he was searching for is displayed!
 
-    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
 If the user didn't make any questions on the product, a message
@@ -345,9 +345,9 @@ He needs to login to access that page:
     >>> user_browser.getLink('Need Attention').click()
     >>> print user_browser.title
     Questions needing your attention for Ubuntu
-    >>> tickets = find_tag_by_id(user_browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Play DVDs in Totem
     Installation of Java Runtime Environment for Mozilla
 
@@ -385,9 +385,9 @@ commented on.
     >>> print browser.title
     Questions involving Foo Bar
 
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -402,8 +402,8 @@ That listing is batched when there are many questions:
 The listing contains a 'In' column that shows the context where the
 questions was made.
 
-    >>> for ticket in tickets.fetch('td', 'ticket-target'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in questions.fetch('td', 'question-target'):
+    ...     print question.first('a').renderContents()
     Ubuntu
     Ubuntu
     mozilla-firefox in ubuntu
@@ -424,9 +424,9 @@ questions to a particular status:
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
     >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
     mailto: problem in webpage
 
@@ -452,9 +452,9 @@ answerer.
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Questions answered by Foo Bar
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
 === Commented ===
@@ -465,9 +465,9 @@ questions commented on by the person.
     >>> browser.getLink('Commented').click()
     >>> print browser.title
     Questions commented on by Foo Bar
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -482,9 +482,9 @@ asked by the person.
     >>> browser.getLink('Asked').click()
     >>> print browser.title
     Questions asked by Foo Bar
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
 
@@ -496,9 +496,9 @@ the attention of that person.
     >>> browser.getLink('Need Attention').click()
     >>> print browser.title
     Questions needing Foo Bar attention
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Slow system
 
@@ -510,9 +510,9 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> browser.getLink('Subscribed').click()
     >>> print browser.title
     Questions Foo Bar is subscribed to
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Slow system
 
 == Searching All Questions ==
@@ -533,13 +533,13 @@ questions ever filed on Launchpad.
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
 
-    >>> tickets = find_tag_by_id(browser.contents, 'ticket-listing')
-    >>> for ticket in tickets.tbody.fetch('tr'):
-    ...     ticket_title = ticket.first(
-    ...         'td', 'ticket').first('a').renderContents()
-    ...     ticket_target = ticket.first(
-    ...         'td', 'ticket-target').first('a').renderContents()
-    ...     print ticket_title, ticket_target
+    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
+    >>> for question in questions.tbody.fetch('tr'):
+    ...     question_title = question.first(
+    ...         'td', 'question').first('a').renderContents()
+    ...     question_target = question.first(
+    ...         'td', 'question-target').first('a').renderContents()
+    ...     print question_title, question_target
     Firefox loses focus and gets stuck  Mozilla Firefox
     Firefox cannot render Bank Site     Mozilla Firefox
     mailto: problem in webpage          mozilla-firefox in ubuntu

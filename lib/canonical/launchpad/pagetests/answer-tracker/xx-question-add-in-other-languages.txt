@@ -35,8 +35,8 @@ At this point we'll present any similar questions (in any language)
 /and/ a warning message explaining that the chosen language is not
 understood by any member of the support community.
 
-    >>> similar_tickets = find_tag_by_id(browser.contents, 'similar-tickets')
-    >>> for row in similar_tickets.findAll('tr', 'noted'):
+    >>> similar_questions = find_tag_by_id(browser.contents, 'similar-questions')
+    >>> for row in similar_questions.findAll('tr', 'noted'):
     ...     row.first('a').renderContents()
     'Installation of Java Runtime Environment for Mozilla'
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'

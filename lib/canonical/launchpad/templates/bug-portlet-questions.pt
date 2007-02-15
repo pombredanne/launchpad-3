@@ -1,14 +1,14 @@
-<div class="portlet" tal:condition="context/tickets">
+<div class="portlet" tal:condition="context/questions">
 
   <h2>Related questions</h2>
 
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="ticket" tal:repeat="ticket context/tickets">
-        <span tal:replace="ticket/target/displayname">Ubuntu</span>:
-        <a tal:attributes="href ticket/fmt:url"
-           tal:content="ticket/title">question title here</a>
+      <li class="question" tal:repeat="question context/questions">
+        <span tal:replace="question/target/displayname">Ubuntu</span>:
+        <a tal:attributes="href question/fmt:url"
+           tal:content="question/title">question title here</a>
       </li>
     </ul>
 

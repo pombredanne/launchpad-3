@@ -577,12 +577,12 @@ rows will be excluded from the final search.
     >>> from canonical.launchpad.database import Question
     >>> from canonical.database.sqlbase import quote
 
-More than 50% of the tickets matches firefox:
+More than 50% of the questions matches firefox:
 
-    >>> ticket_count = Question.select().count()
-    >>> firefox_tickets = Question.select(
+    >>> question_count = Question.select().count()
+    >>> firefox_questions = Question.select(
     ...     'fti @@ ftq(%s)' % quote('firefox')).count()
-    >>> float(firefox_tickets) / ticket_count > 0.50
+    >>> float(firefox_questions) / question_count > 0.50
     True
 
 So firefox will be removed from the final query:
@@ -592,7 +592,7 @@ So firefox will be removed from the final query:
 
 You can pass a third parameter to the function that will be use as
 an additional constraint to determine the total number of rows that
-could be matched. For example, when searching tickets on the firefox
+could be matched. For example, when searching questions on the firefox
 product more than 50% have the word 'get' in (which surprisingly isn't
 considered a stop word by tsearch2). If the constraint uses any
 additional tables, you can pass in list of names of these tables as a
@@ -603,9 +603,9 @@ forth parameter:
 
     >>> firefox_count = Question.select(
     ...     'product = %s' % firefox_product.id).count()
-    >>> get_tickets = Question.select(
+    >>> get_questions = Question.select(
     ...     'fti @@ ftq(%s)' % quote('get')).count()
-    >>> float(get_tickets) / firefox_count > 0.50
+    >>> float(get_questions) / firefox_count > 0.50
     True
 
     >>> nl_phrase_search(

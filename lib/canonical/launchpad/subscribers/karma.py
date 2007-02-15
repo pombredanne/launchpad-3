@@ -135,32 +135,33 @@ def spec_modified(spec, event):
                 distribution=spec.distribution)
 
 
-def _assignKarmaUsingQuestionContext(person, ticket, actionname):
+def _assignKarmaUsingQuestionContext(person, question, actionname):
     """Assign Karma with the given actionname to the given person.
 
-    Use the given ticket's context as the karma context.
+    Use the given question's context as the karma context.
     """
     person.assignKarma(
-        actionname, product=ticket.product, distribution=ticket.distribution,
-        sourcepackagename=ticket.sourcepackagename)
+        actionname, product=question.product, 
+	distribution=question.distribution,
+        sourcepackagename=question.sourcepackagename)
 
 
-def ticket_created(ticket, event):
-    """Assign karma to the user which created <ticket>."""
-    _assignKarmaUsingQuestionContext(ticket.owner, ticket, 'ticketcreated')
+def question_created(question, event):
+    """Assign karma to the user which created <question>."""
+    _assignKarmaUsingQuestionContext(question.owner, question, 'ticketcreated')
 
 
-def ticket_modified(ticket, event):
-    """Check changes made to <ticket> and assign karma to user if needed."""
+def question_modified(question, event):
+    """Check changes made to <question> and assign karma to user if needed."""
     user = event.user
-    old_ticket = event.object_before_modification
+    old_question = event.object_before_modification
 
-    if old_ticket.description != ticket.description:
+    if old_question.description != question.description:
         _assignKarmaUsingQuestionContext(
-            user, ticket, 'ticketdescriptionchanged')
+            user, question, 'ticketdescriptionchanged')
 
-    if old_ticket.title != ticket.title:
-        _assignKarmaUsingQuestionContext(user, ticket, 'tickettitlechanged')
+    if old_question.title != question.title:
+        _assignKarmaUsingQuestionContext(user, question, 'tickettitlechanged')
 
 
 QuestionAction2KarmaAction = {
@@ -176,17 +177,17 @@ QuestionAction2KarmaAction = {
 }
 
 
-def ticket_comment_added(ticketmessage, event):
-    """Assign karma to the user which added <ticketmessage>."""
-    ticket = ticketmessage.ticket
-    karma_action = QuestionAction2KarmaAction.get(ticketmessage.action)
+def question_comment_added(questionmessage, event):
+    """Assign karma to the user which added <questionmessage>."""
+    question = questionmessage.question
+    karma_action = QuestionAction2KarmaAction.get(questionmessage.action)
     if karma_action:
         _assignKarmaUsingQuestionContext(
-            ticketmessage.owner, ticket, karma_action)
+            questionmessage.owner, question, karma_action)
 
 
-def ticket_bug_added(ticketbug, event):
-    """Assign karma to the user which added <ticketbug>."""
-    ticket = ticketbug.ticket
-    _assignKarmaUsingQuestionContext(event.user, ticket, 'ticketlinkedtobug')
+def question_bug_added(questionbug, event):
+    """Assign karma to the user which added <questionbug>."""
+    question = questionbug.question
+    _assignKarmaUsingQuestionContext(event.user, question, 'ticketlinkedtobug')
 

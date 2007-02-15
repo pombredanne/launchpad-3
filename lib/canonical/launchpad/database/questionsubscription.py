@@ -20,7 +20,8 @@ class QuestionSubscription(SQLBase):
 
     _table='TicketSubscription'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 

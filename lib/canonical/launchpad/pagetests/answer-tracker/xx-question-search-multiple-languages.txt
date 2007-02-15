@@ -12,8 +12,8 @@ questions will be shown.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -23,8 +23,8 @@ questions will be shown.
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     print ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
     Installation failed
 
 Since there are some question languages that are not displayed, a message
@@ -43,8 +43,8 @@ whatever the language they are written in are displayed:
     >>> anon_browser.getControl('All Languages').selected = True
     >>> anon_browser.getControl('Search').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
     'Play DVDs in Totem'
@@ -54,8 +54,8 @@ whatever the language they are written in are displayed:
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
     'Slow system'
     'Installation failed'
 
@@ -83,8 +83,8 @@ will appear:
     ...     print message.renderContents()
 
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
     'Play DVDs in Totem'
@@ -94,8 +94,8 @@ will appear:
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for ticket in soup.fetch('td', 'ticket'):
-    ...     ticket.first('a').renderContents()
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
     'Slow system'
     'Installation failed'
 

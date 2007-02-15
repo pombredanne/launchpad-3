@@ -377,7 +377,7 @@ class ProjectRdfView(object):
 
 
 class ProjectAddQuestionView(QuestionAddView):
-    """View that handles creation of a ticket from an IProject context."""
+    """View that handles creation of a question from an IProject context."""
 
     search_field_names = ['product'] + QuestionAddView.search_field_names
 
@@ -404,7 +404,7 @@ class ProjectAddQuestionView(QuestionAddView):
                  mapping=dict(project=self.context.displayname))
 
     @property
-    def ticket_target(self):
+    def question_target(self):
         """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()

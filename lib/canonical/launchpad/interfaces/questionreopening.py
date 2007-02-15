@@ -22,8 +22,8 @@ class IQuestionReopening(Interface):
     answer attribute set is moved back to the OPEN state.
     """
 
-    ticket = Object(
-        title=_("The ticket reopened."), required=True, readonly=True,
+    question = Object(
+        title=_("The question reopened."), required=True, readonly=True,
         schema=IQuestion)
 
     datecreated = Datetime(

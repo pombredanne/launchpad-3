@@ -1,4 +1,4 @@
 New question #%(question_id)s on %(target_name)s:
-%(ticket_url)s
+%(question_url)s
 
 %(comment)s

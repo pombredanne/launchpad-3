@@ -25,7 +25,7 @@ from canonical.lp.dbschema import QuestionAction, QuestionStatus
 
 
 class QuestionMessage(SQLBase):
-    """A table linking tickets and messages."""
+    """A table linking questions and messages."""
 
     implements(IQuestionMessage)
 
@@ -33,7 +33,8 @@ class QuestionMessage(SQLBase):
 
     _table = 'TicketMessage'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
 
     action = EnumCol(

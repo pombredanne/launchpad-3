@@ -1,7 +1,7 @@
 = Support Tracker Workflow =
 
-The state of a support ticket is tracked through its status attribute.
-Six statuses are used to model a ticket lifecycle. These are defined
+The state of a support question is tracked through its status attribute.
+Six statuses are used to model a question lifecycle. These are defined
 in the QuestionStatus enumeration.
 
     >>> from canonical.lp.dbschema import QuestionStatus
@@ -56,19 +56,19 @@ the Ubuntu Team that owns the distribution.
     >>> stub.inTeam(ubuntu.owner)
     False
 
-A ticket starts its lifecycle in the Open state.
+A question starts its lifecycle in the Open state.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
-    >>> new_ticket_args = {
+    >>> new_question_args = {
     ...     'owner': no_priv,
     ...     'title': 'Unable to boot installer',
     ...     'description': "I've tried installing Ubuntu on a Mac. "
     ...     "But the installer never boots.",
     ...     'datecreated': now}
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> print ticket.status.title
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> print question.status.title
     Open
 
 From there, we have four representative scenarios.
@@ -84,28 +84,28 @@ This method takes two mandatory parameters: the user making the request
 and his question. It can also takes a 'datecreated' parameter specifying
 the creation date of the request (which defaults to now).
 
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
+    >>> question = ubuntu.newQuestion(**new_question_args)
     >>> now_plus_one_hour = now + timedelta(hours=1)
-    >>> request_message = ticket.requestInfo(
+    >>> request_message = question.requestInfo(
     ...     sample_person, 'What is your Mac model?',
     ...     datecreated=now_plus_one_hour)
 
-It returns the IQuestionMessage that was added to the ticket messages
+It returns the IQuestionMessage that was added to the question messages
 history:
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True
-    >>> request_message == ticket.messages[-1]
+    >>> request_message == question.messages[-1]
     True
     >>> request_message.datecreated == now_plus_one_hour
     True
     >>> print request_message.owner.displayname
     Sample Person
 
-The ticket message contains the action that was executed in the action
-attribute and the status of the ticket after the action was executed in
+The question message contains the action that was executed in the action
+attribute and the status of the question after the action was executed in
 the new_status attribute:
 
     >>> print request_message.action.name
@@ -121,37 +121,37 @@ The subject of the message was generated automatically:
     >>> print request_message.subject
     Re: Unable to boot installer
 
-The ticket is moved to the NEEDSINFO state and the datelastresponse
+The question is moved to the NEEDSINFO state and the datelastresponse
 attribute is updated to the message timestamp.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     NEEDSINFO
-    >>> ticket.datelastresponse == now_plus_one_hour
+    >>> question.datelastresponse == now_plus_one_hour
     True
 
-The ticket owner can reply to this information by using the giveInfo()
+The question owner can reply to this information by using the giveInfo()
 method which adds an IQuestionMessage with action GIVEINFO.
 
     >>> login('no-priv@canonical.com')
     >>> now_plus_two_hours = now + timedelta(hours=2)
-    >>> reply_message = ticket.giveInfo(
+    >>> reply_message = question.giveInfo(
     ...     "I have a PowerMac 7200.", datecreated=now_plus_two_hours)
 
     >>> print reply_message.action.name
     GIVEINFO
     >>> print reply_message.new_status.name
     OPEN
-    >>> reply_message == ticket.messages[-1]
+    >>> reply_message == question.messages[-1]
     True
     >>> print reply_message.owner.displayname
     No Privileges Person
 
-The ticket is moved back to the OPEN state and the 'datelastquery'
+The question is moved back to the OPEN state and the 'datelastquery'
 attribute is updated to the message's creation date:
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     OPEN
-    >>> ticket.datelastquery == now_plus_two_hours
+    >>> question.datelastquery == now_plus_two_hours
     True
 
 The other user has now enough information to give an answer to the
@@ -161,7 +161,7 @@ providing the answer and the answer itself.
 
     >>> login('test@canonical.com')
     >>> now_plus_three_hours = now + timedelta(hours=3)
-    >>> answer_message = ticket.giveAnswer(
+    >>> answer_message = question.giveAnswer(
     ...     sample_person, "You need some configuration on the Mac side "
     ...     "to boot the installer on that model. Consult "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
@@ -171,12 +171,12 @@ providing the answer and the answer itself.
     >>> print answer_message.new_status.name
     ANSWERED
 
-After that action, the ticket's status is changed to ANSWERED and the
+After that action, the question's status is changed to ANSWERED and the
 datelastresponse is updated to contain the date of the message.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     ANSWERED
-    >>> ticket.datelastresponse == now_plus_three_hours
+    >>> question.datelastresponse == now_plus_three_hours
     True
 
 At that point, the support request is considered answered, but we don't
@@ -186,7 +186,7 @@ for that purpose.
 
     >>> login('no-priv@canonical.com')
     >>> tomorrow = now + timedelta(days=1)
-    >>> reopen_message = ticket.reopen(
+    >>> reopen_message = question.reopen(
     ...     "I installed BootX and I've progressed somewhat. I now get the "
     ...     "boot screen. But soon after the Ubuntu progress bar appears, I "
     ...     "get a OOM Killer message appearing on the screen.",
@@ -198,26 +198,26 @@ for that purpose.
     >>> print reopen_message.owner.displayname
     No Privileges Person
 
-This moves back the ticket to the OPEN state and the datelastquery
+This moves back the question to the OPEN state and the datelastquery
 attribute is updated to the message creation date.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     OPEN
-    >>> ticket.datelastquery == tomorrow
+    >>> question.datelastquery == tomorrow
     True
 
 The giveAnswer() will again be used to give an answer.
 
     >>> login('test@canonical.com')
     >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
-    >>> answer2_message = ticket.giveAnswer(
+    >>> answer2_message = question.giveAnswer(
     ...     marilize, "You probably do not have enough RAM to use the "
     ...     "graphical installer. You can try the alternate CD with the "
     ...     "text installer.")
 
-This again moves the ticket to the ANSWERED state.
+This again moves the question to the ANSWERED state.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     ANSWERED
 
 The submitter will hopefully come back to confirm that his problem is
@@ -226,7 +226,7 @@ problem. The confirmAnswer() method is used for that purpose.
 
     >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
-    >>> confirm_message = ticket.confirmAnswer(
+    >>> confirm_message = question.confirmAnswer(
     ...     "I upgraded to 512M of RAM (found on eBay) and I've "
     ...     "succesfully managed to install Ubuntu. Thanks for all the help.",
     ...     datecreated=two_weeks_from_now, answer=answer_message)
@@ -237,17 +237,17 @@ problem. The confirmAnswer() method is used for that purpose.
     >>> print confirm_message.owner.displayname
     No Privileges Person
 
-The ticket is moved to the SOLVED state, the message that
+The question is moved to the SOLVED state, the message that
 solved the request is saved in the answer attribute, the dateanswered
 and answerer attributes are also updated.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     SOLVED
-    >>> ticket.dateanswered == two_weeks_from_now
+    >>> question.dateanswered == two_weeks_from_now
     True
-    >>> print ticket.answerer.displayname
+    >>> print question.answerer.displayname
     Sample Person
-    >>> ticket.answer == answer_message
+    >>> question.answer == answer_message
     True
 
 == 2) Self-answer ==
@@ -255,8 +255,8 @@ and answerer attributes are also updated.
 Another scenario is for the case when the user comes back to answer the
 request himself. The giveAnswer() method is also used for that case.
 
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> self_answer_message = ticket.giveAnswer(
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> self_answer_message = question.giveAnswer(
     ...     no_priv, "I found some instructions on the Wiki on how to "
     ...     "install BootX to boot the installation CD on OldWorld Mac: "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
@@ -265,22 +265,22 @@ request himself. The giveAnswer() method is also used for that case.
     ...     datecreated=now_plus_one_hour)
 
 In that case, the user is considered to have confirmed that the problem
-is solved and the ticket is moved straight to the SOLVED state. The
+is solved and the question is moved straight to the SOLVED state. The
 'dateanswered' attribute will contain the date of the message,
-the 'answerer' attribute will be identical to the ticket owner and
+the 'answerer' attribute will be identical to the question owner and
 the 'answer' attribute will contain the message that closed the request.
 
     >>> print self_answer_message.action.name
     CONFIRM
     >>> print self_answer_message.new_status.name
     SOLVED
-    >>> print ticket.status.name
+    >>> print question.status.name
     SOLVED
-    >>> print ticket.answerer.displayname
+    >>> print question.answerer.displayname
     No Privileges Person
-    >>> ticket.dateanswered == now_plus_one_hour
+    >>> question.dateanswered == now_plus_one_hour
     True
-    >>> ticket.answer == self_answer_message
+    >>> question.answer == self_answer_message
     True
 
 == 3) The request expires ==
@@ -291,10 +291,10 @@ by using the expireQuestion() method. (See support-tracker-expiration.txt
 for the documentation of the cron script handling this task.)
 
     >>> login('no-priv@canonical.com')
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> expire_message = ticket.expireQuestion(
-    ...     sample_person, "There was no activity on this ticket for two "
-    ...     "weeks and this ticket was expired. If you are still having "
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> expire_message = question.expireQuestion(
+    ...     sample_person, "There was no activity on this question for two "
+    ...     "weeks and this question was expired. If you are still having "
     ...     "this problem you should reopen the request and provide more "
     ...     "information about your problem.",
     ...     datecreated=two_weeks_from_now)
@@ -303,19 +303,19 @@ for the documentation of the cron script handling this task.)
     >>> print expire_message.new_status.name
     EXPIRED
 
-The ticket is moved to the EXPIRED state and the 'datelastresponse'
+The question is moved to the EXPIRED state and the 'datelastresponse'
 attribute is updated to the message creation date.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     EXPIRED
-    >>> ticket.datelastresponse == two_weeks_from_now
+    >>> question.datelastresponse == two_weeks_from_now
     True
 
-If the user comes back and provide more information, the ticket will be
+If the user comes back and provide more information, the question will be
 reopened.
 
     >>> much_later = now + timedelta(days=30)
-    >>> reopen_message = ticket.reopen(
+    >>> reopen_message = question.reopen(
     ...     "I'm installing on PowerMac 7200/120 with 32 Megs of RAM. After "
     ...     "I insert the CD and restart the computer, it boots straight "
     ...     "into Mac OS/9 instead of booting the installer.",
@@ -323,12 +323,12 @@ reopened.
     >>> print reopen_message.action.name
     REOPEN
 
-The ticket status is changed back to OPEN and the 'datelastquery'
+The question status is changed back to OPEN and the 'datelastquery'
 attribute is updated.
 
-    >>> print ticket.status.name
+    >>> print question.status.name
     OPEN
-    >>> ticket.datelastquery == much_later
+    >>> question.datelastquery == much_later
     True
 
 
@@ -338,34 +338,34 @@ Another scenario to handle is the case where the user posts a message
 that isn't really appropriate for the support tracker like a SPAM
 message or a request for Ubuntu CDs.
 
-    >>> spam_ticket = ubuntu.newQuestion(
+    >>> spam_question = ubuntu.newQuestion(
     ...     no_priv, 'CDs', 'Please send 10 Ubuntu Dapper CDs.',
     ...     datecreated=now)
 
 The reject() method is used for such purpose. Only a support contact,
-a product or distribution owner, or an administrator can reject a ticket.
+a product or distribution owner, or an administrator can reject a question.
 
 The canReject() method can be used to test if a user is allowed to
 reject the request. It takes as parameter the user who would reject the
 request:
 
-    >>> spam_ticket.canReject(no_priv)
+    >>> spam_question.canReject(no_priv)
     False
-    >>> spam_ticket.canReject(marilize)
+    >>> spam_question.canReject(marilize)
     False
 
     # Support contact
-    >>> spam_ticket.canReject(sample_person)
+    >>> spam_question.canReject(sample_person)
     True
-    >>> spam_ticket.canReject(ubuntu.owner)
+    >>> spam_question.canReject(ubuntu.owner)
     True
 
     # Administrator
-    >>> spam_ticket.canReject(stub)
+    >>> spam_question.canReject(stub)
     True
 
     >>> login(marilize.preferredemail.email)
-    >>> spam_ticket.reject(
+    >>> spam_question.reject(
     ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
     Traceback (most recent call last):
       ...
@@ -375,7 +375,7 @@ The reject() method takes a comment explaining the reason behind the
 rejection.
 
     >>> login('test@canonical.com')
-    >>> reject_message = spam_ticket.reject(
+    >>> reject_message = spam_question.reject(
     ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
     ...     datecreated=now_plus_one_hour)
     >>> print reject_message.action.name
@@ -383,22 +383,22 @@ rejection.
     >>> print reject_message.new_status.name
     INVALID
 
-After rejection, the ticket is marked as invalid and the
+After rejection, the question is marked as invalid and the
 'datelastresponse' attribute is updated.
 
-    >>> print spam_ticket.status.name
+    >>> print spam_question.status.name
     INVALID
-    >>> spam_ticket.datelastresponse == now_plus_one_hour
+    >>> spam_question.datelastresponse == now_plus_one_hour
     True
 
 The rejection message is also considered as answering the message, so the
 dateanswered, answerer and answer attributes are also updated.
 
-    >>> spam_ticket.answer == reject_message
+    >>> spam_question.answer == reject_message
     True
-    >>> print spam_ticket.answerer.displayname
+    >>> print spam_question.answerer.displayname
     Sample Person
-    >>> spam_ticket.dateanswered == now_plus_one_hour
+    >>> spam_question.dateanswered == now_plus_one_hour
     True
 
 == Other scenarios ==
@@ -406,34 +406,34 @@ dateanswered, answerer and answer attributes are also updated.
 Many other scenarios are possible and some of those are probably more
 common than the ones we exposed. For example, it is likely that a user
 will answer directly a support request (without asking for other
-information first). Or that the ticket user won't come back to confirm
+information first). Or that the question user won't come back to confirm
 that an answer solved his problem. Another likely scenario is where
-the request will expire in the NEEDSINFO state when the ticket owner
+the request will expire in the NEEDSINFO state when the question owner
 doesn't reply to the request for more information. All of these
 scenarios are covered by this API. It is not necessary to cover all
 these various possibilities here.
-(The ../interfaces/ftests/test_ticket_workflow.py functional test
+(The ../interfaces/ftests/test_question_workflow.py functional test
 exercices all the various possible transitions.)
 
-== Changing the ticket status ==
+== Changing the question status ==
 
 It is not possible to change the status attribute directly:
 
     >>> login('foo.bar@canonical.com')
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> ticket.status = QuestionStatus.INVALID
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> question.status = QuestionStatus.INVALID
     Traceback (most recent call last):
       ...
     ForbiddenAttribute...
 
-A user which has launchpad.Admin permission on the ticket, can set the
-ticket status to an arbitrary value by using the setStatus() method.
+A user which has launchpad.Admin permission on the question, can set the
+question status to an arbitrary value by using the setStatus() method.
 That method takes as parameters the new status and a comment explaining
 the status change.
 
-    >>> old_datelastquery = ticket.datelastquery
+    >>> old_datelastquery = question.datelastquery
     >>> login(stub.preferredemail.email)
-    >>> status_change_message = ticket.setStatus(
+    >>> status_change_message = question.setStatus(
     ...      stub, QuestionStatus.INVALID, 'Changed status to INVALID',
     ...     datecreated=now_plus_one_hour)
 
@@ -443,45 +443,45 @@ The method returns the IQuestionMessage recording the change:
     SETSTATUS
     >>> print status_change_message.new_status.name
     INVALID
-    >>> print ticket.status.name
+    >>> print question.status.name
     INVALID
 
 The status change doesn't update the datelastresponse nor the
 datelastquery attributes:
 
-    >>> ticket.datelastresponse is None
+    >>> question.datelastresponse is None
     True
-    >>> ticket.datelastquery == old_datelastquery
+    >>> question.datelastquery == old_datelastquery
     True
 
-If an answer was present on the ticket, the status change also clears
+If an answer was present on the question, the status change also clears
 the answer and dateanswered attributes.
 
-    >>> msg = ticket.setStatus(stub, QuestionStatus.OPEN, 'Status change.')
-    >>> answer_message = ticket.giveAnswer(sample_person, 'Install BootX.')
+    >>> msg = question.setStatus(stub, QuestionStatus.OPEN, 'Status change.')
+    >>> answer_message = question.giveAnswer(sample_person, 'Install BootX.')
 
     >>> login('no-priv@canonical.com')
-    >>> msg = ticket.confirmAnswer('This worked.', answer=answer_message)
-    >>> ticket.dateanswered is not None
+    >>> msg = question.confirmAnswer('This worked.', answer=answer_message)
+    >>> question.dateanswered is not None
     True
-    >>> ticket.answer == answer_message
+    >>> question.answer == answer_message
     True
 
     >>> login(stub.preferredemail.email)
-    >>> status_change_message = ticket.setStatus(
+    >>> status_change_message = question.setStatus(
     ...     stub, QuestionStatus.OPEN, 'Reopen the request',
     ...     datecreated=now_plus_one_hour)
 
-    >>> ticket.dateanswered is None
+    >>> question.dateanswered is None
     True
-    >>> ticket.answer is None
+    >>> question.answer is None
     True
 
 But when the status is changed by a user who doesn't have the
 launchpad.Admin permission, an Unauthorized error is thrown:
 
     >>> login('test@canonical.com')
-    >>> ticket.setStatus(sample_person, QuestionStatus.EXPIRED, 'Expire.')
+    >>> question.setStatus(sample_person, QuestionStatus.EXPIRED, 'Expire.')
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -489,13 +489,13 @@ launchpad.Admin permission, an Unauthorized error is thrown:
 == Adding Comments Without Changing the Status ==
 
 There is an addComment() method that can be use to add a message to the
-ticket without changing its status.
+question without changing its status.
 
     >>> login('no-priv@canonical.com')
-    >>> old_status = ticket.status
-    >>> old_datelastresponse = ticket.datelastresponse
-    >>> old_datelastquery = ticket.datelastquery
-    >>> comment = ticket.addComment(
+    >>> old_status = question.status
+    >>> old_datelastresponse = question.datelastresponse
+    >>> old_datelastquery = question.datelastquery
+    >>> comment = question.addComment(
     ...     no_priv, 'This is a comment.',
     ...     datecreated=now_plus_two_hours)
 
@@ -507,15 +507,15 @@ ticket without changing its status.
 This method does not update the datelastresponse and datelastquery
 attributes.
 
-    >>> ticket.datelastresponse == old_datelastresponse
+    >>> question.datelastresponse == old_datelastresponse
     True
-    >>> ticket.datelastquery == old_datelastquery
+    >>> question.datelastquery == old_datelastquery
     True
 
 == Events ==
 
 Each of the workflow methods will trigger a SQLObjectCreatedEvent for
-the message they create and a SQLObjectModifiedEvent for the ticket.
+the message they create and a SQLObjectModifiedEvent for the question.
 
     # Register an event listener that will print event it receives.
     >>> from canonical.launchpad.event.interfaces import (
@@ -526,21 +526,21 @@ the message they create and a SQLObjectModifiedEvent for the ticket.
     ...     print "Received %s on %s" % (
     ...         event.__class__.__name__.split('.')[-1],
     ...         object.__class__.__name__.split('.')[-1])
-    >>> ticketmessage_event_listener = TestEventListener(
+    >>> questionmessage_event_listener = TestEventListener(
     ...     IQuestionMessage, ISQLObjectCreatedEvent, print_event)
-    >>> ticket_event_listener = TestEventListener(
+    >>> question_event_listener = TestEventListener(
     ...     IQuestion, ISQLObjectModifiedEvent, print_event)
 
 Changing the status triggers the event:
 
     >>> login(stub.preferredemail.email)
-    >>> msg = ticket.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
+    >>> msg = question.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
     Received SQLObjectCreatedEvent on QuestionMessage
     Received SQLObjectModifiedEvent on Question
 
 Example of a workflow method that triggers the events:
 
-    >>> msg = ticket.reject(stub, 'Close this ticket.')
+    >>> msg = question.reject(stub, 'Close this question.')
     Received SQLObjectCreatedEvent on QuestionMessage
     Received SQLObjectModifiedEvent on Question
 
@@ -548,17 +548,17 @@ Even only adding a comment without changing the status will send
 these events.
 
     >>> login('test@canonical.com')
-    >>> msg = ticket.addComment(sample_person, 'A comment')
+    >>> msg = question.addComment(sample_person, 'A comment')
     Received SQLObjectCreatedEvent on QuestionMessage
     Received SQLObjectModifiedEvent on Question
 
     # Cleanup
-    >>> ticketmessage_event_listener.unregister()
-    >>> ticket_event_listener.unregister()
+    >>> questionmessage_event_listener.unregister()
+    >>> question_event_listener.unregister()
 
 == Reopenings ==
 
-Whenever a ticket considered answered (in the SOLVED or INVALID state)
+Whenever a question considered answered (in the SOLVED or INVALID state)
 is reopened, a QuestionReopening is created.
 
     # Let's register an event listener to notify us whenever a
@@ -571,16 +571,16 @@ The most common use case is when a user confirms a solution, and then
 comes back to say that it doesn't work in fact.
 
     >>> login('no-priv@canonical.com')
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> answer_message = ticket.giveAnswer(
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> answer_message = question.giveAnswer(
     ...    sample_person, "You need some setup on the Mac side. "
     ...    "Follow the instructions at "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs",
     ...     datecreated=now_plus_one_hour)
-    >>> confirm_message = ticket.confirmAnswer(
+    >>> confirm_message = question.confirmAnswer(
     ...     "I've installed BootX and the installer now boot properly.",
     ...     answer=answer_message, datecreated=now_plus_two_hours)
-    >>> reopen_message = ticket.reopen(
+    >>> reopen_message = question.reopen(
     ...     "Actually, altough the installer boots properly. I'm not able "
     ...     "to pass beyond the partitioning.",
     ...     datecreated=now_plus_three_hours)
@@ -588,9 +588,9 @@ comes back to say that it doesn't work in fact.
 
 The reopening record is available through the reopenings attribute.
 
-    >>> list(ticket.reopenings)
+    >>> list(question.reopenings)
     [<QuestionReopening...>]
-    >>> reopening = ticket.reopenings[0]
+    >>> reopening = question.reopenings[0]
     >>> verifyObject(IQuestionReopening, reopening)
     True
 
@@ -603,7 +603,7 @@ attribute.
     >>> print reopening.reopener.displayname
     No Privileges Person
 
-It contains the ticket prior answerer, datecreated, as well as the
+It contains the question prior answerer, datecreated, as well as the
 prior status in the priorstate attribute:
 
     >>> print reopening.answerer.displayname
@@ -613,23 +613,23 @@ prior status in the priorstate attribute:
     >>> print reopening.priorstate.name
     SOLVED
 
-Another example of a reopening, would be when the ticket status is set
+Another example of a reopening, would be when the question status is set
 back to OPEN after having been rejected.
 
     >>> login('test@canonical.com')
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
-    >>> reject_message = ticket.reject(
+    >>> question = ubuntu.newQuestion(**new_question_args)
+    >>> reject_message = question.reject(
     ...     sample_person, 'This is a frivoulous request.',
     ...     datecreated=now_plus_one_hour)
 
     >>> login(stub.preferredemail.email)
-    >>> status_change_message = ticket.setStatus(
+    >>> status_change_message = question.setStatus(
     ...     stub, QuestionStatus.OPEN, 'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
     ...     datecreated=now_plus_two_hours)
     Received SQLObjectCreatedEvent on QuestionReopening
 
-    >>> reopening = ticket.reopenings[0]
+    >>> reopening = question.reopenings[0]
     >>> print reopening.reopener.name
     stub
     >>> reopening.datecreated == now_plus_two_hours
@@ -652,22 +652,22 @@ a string.
     >>> from canonical.launchpad.interfaces import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
-    >>> ticket = ubuntu.newQuestion(**new_ticket_args)
+    >>> question = ubuntu.newQuestion(**new_question_args)
     >>> reject_message = messageset.fromText(
     ...     'Reject', 'Because I feel like it.', sample_person)
-    >>> ticket_message = ticket.reject(sample_person,reject_message)
-    >>> print ticket_message.subject
+    >>> question_message = question.reject(sample_person,reject_message)
+    >>> print question_message.subject
     Reject
-    >>> print ticket_message.text_contents
+    >>> print question_message.text_contents
     Because I feel like it.
-    >>> ticket_message.rfc822msgid == reject_message.rfc822msgid
+    >>> question_message.rfc822msgid == reject_message.rfc822msgid
     True
 
 The IMessage owner must be the same than the person passed to the workflow
 method.
 
     >>> login(stub.preferredemail.email)
-    >>> ticket.setStatus(stub, QuestionStatus.OPEN, reject_message)
+    >>> question.setStatus(stub, QuestionStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
     AssertionError...

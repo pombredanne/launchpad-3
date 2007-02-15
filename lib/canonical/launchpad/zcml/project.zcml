@@ -234,7 +234,7 @@
             permission="launchpad.AnyPerson"
             />
         <browser:page
-            name="+portlet-latesttickets"
+            name="+portlet-latestquestions"
             for="canonical.launchpad.interfaces.IProject"
             class="canonical.launchpad.browser.ProjectLatestQuestionsView"
             permission="zope.Public"

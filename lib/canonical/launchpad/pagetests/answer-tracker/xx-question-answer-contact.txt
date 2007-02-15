@@ -100,7 +100,7 @@ question.
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+ticket/7')
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> portlet = soup.first('div', id='question-subscribers')
     >>> also_notified = portlet.first('b')
     >>> also_notified
     <b>Also notified:</b>

@@ -635,16 +635,16 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     def searchQuestions(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
                         needs_attention=False):
-        """Search the person's tickets.
+        """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
         parameters.
 
         :participation: A list of QuestionParticipation that defines the set
-        of relationship to tickets that will be searched. If None or an empty
+        of relationship to questions that will be searched. If None or an empty
         sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only tickets needing attention
+        :needs_attention: If this flag is true, only questions needing attention
         from the person will be included. Questions needing attention are those
         owned by the person in the ANSWERED or NEEDSINFO state, as well as,
         those not owned by the person but on which the person requested for

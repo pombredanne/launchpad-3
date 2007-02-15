@@ -98,9 +98,9 @@
 
       <h2 i18n:translate="">Latest questions asked</h2>
       <table>
-        <tal:ticket
-          repeat="ticket view/latest_requests_made"
-          content="structure ticket/@@+listing-detailed"
+        <tal:question
+          repeat="question view/latest_requests_made"
+          content="structure question/@@+listing-detailed"
         />
       </table>
 
@@ -109,9 +109,9 @@
 
       <h2 i18n:translate="">Latest questions solved</h2>
       <table>
-        <tal:ticket
-          repeat="ticket view/latest_requests_resolved"
-          content="structure ticket/@@+listing-detailed"
+        <tal:question
+          repeat="question view/latest_requests_resolved"
+          content="structure question/@@+listing-detailed"
         />
       </table>
 

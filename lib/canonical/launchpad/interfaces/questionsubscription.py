@@ -15,5 +15,5 @@ class IQuestionSubscription(Interface):
     """A subscription for a person to a question."""
 
     person = Attribute("The subscriber.")
-    ticket = Attribute("The question.")
+    question = Attribute("The question.")
 

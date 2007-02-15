@@ -29,7 +29,7 @@ class QuestionReopening(SQLBase):
 
     _table = 'TicketReopening'
 
-    ticket = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     reopener = ForeignKey(dbName='reopener', foreignKey='Person',
         notNull=True)
@@ -67,7 +67,7 @@ def create_questionreopening(question, event):
             "Reopening message isn't the last one.")
 
     reopening = QuestionReopening(
-            ticket=question, reopener=reopen_msg.owner,
+            question=question, reopener=reopen_msg.owner,
             datecreated=reopen_msg.datecreated, answerer=old_question.answerer,
             dateanswered=old_question.dateanswered,
             priorstate=old_question.status)

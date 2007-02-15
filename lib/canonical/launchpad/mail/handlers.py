@@ -273,18 +273,18 @@ class SupportTrackerHandler:
 
     allow_unknown_users = False
 
-    _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
+    _question_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
-        match = self._ticket_address.match(to_addr)
+        match = self._question_address.match(to_addr)
         if not match:
             return False
 
         question_id = int(match.group('id'))
-        ticket = getUtility(IQuestionSet).get(question_id)
-        if ticket is None:
-            # No such ticket, don't process the email.
+        question = getUtility(IQuestionSet).get(question_id)
+        if question is None:
+            # No such question, don't process the email.
             return False
 
         messageset = getUtility(IMessageSet)
@@ -294,48 +294,48 @@ class SupportTrackerHandler:
             filealias=filealias,
             parsed_message=signed_msg)
 
-        if message.owner == ticket.owner:
-            self.processOwnerMessage(ticket, message)
+        if message.owner == question.owner:
+            self.processOwnerMessage(question, message)
         else:
-            self.processUserMessage(ticket, message)
+            self.processUserMessage(question, message)
         return True
 
-    def processOwnerMessage(self, ticket, message):
+    def processOwnerMessage(self, question, message):
         """Choose the right workflow action for a message coming from
-        the ticket owner.
+        the question owner.
 
-        When the ticket status is OPEN or NEEDINFO,
+        When the question status is OPEN or NEEDINFO,
         the message is a GIVEINFO action; when the status is ANSWERED
         or EXPIRED, we interpret the message as a reopenening request;
         otherwise it's a comment.
         """
-        if ticket.status in [
+        if question.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
-            ticket.giveInfo(message)
-        elif ticket.status in [
+            question.giveInfo(message)
+        elif question.status in [
             QuestionStatus.ANSWERED, QuestionStatus.EXPIRED]:
-            ticket.reopen(message)
+            question.reopen(message)
         else:
-            ticket.addComment(message.owner, message)
+            question.addComment(message.owner, message)
 
-    def processUserMessage(self, ticket, message):
+    def processUserMessage(self, question, message):
         """Choose the right workflow action for a message coming from a user
-        that is not the ticket owner.
+        that is not the question owner.
 
-        When the ticket status is OPEN, NEEDSINFO, or ANSWERED, we interpret
+        When the question status is OPEN, NEEDSINFO, or ANSWERED, we interpret
         the message as containing an answer. (If it was really a request for
         more information, the owner will still be able to answer it while
         reopening the request.)
 
         In the other status, the message is a comment without status change.
         """
-        if ticket.status in [
+        if question.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
 	    QuestionStatus.ANSWERED]:
-            ticket.giveAnswer(message.owner, message)
+            question.giveAnswer(message.owner, message)
         else:
             # In the other states, only a comment can be added.
-            ticket.addComment(message.owner, message)
+            question.addComment(message.owner, message)
 
 
 class SpecificationHandler:

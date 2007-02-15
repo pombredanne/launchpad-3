@@ -4,7 +4,7 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="ticket" tal:repeat="reop context/reopenings">
+      <li class="question" tal:repeat="reop context/reopenings">
         <span tal:replace="reop/datecreated/fmt:date">2005-10-05</span> by
         <img alt="" src="/@@/user" />
         <a tal:attributes="href reop/reopener/fmt:url"

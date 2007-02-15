@@ -15,9 +15,9 @@
     ...     stub.test_emails = []
     ...     return notifications
 
-When a ticket is created or changed, an email notification is sent out,
+When a question is created or changed, an email notification is sent out,
 informing the subscribers and the support contacts about the change.
-Let's start with creating a ticket, and see what the resulting
+Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
@@ -26,20 +26,20 @@ notification looks like:
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_ticket = ubuntu.newQuestion(
+    >>> ubuntu_question = ubuntu.newQuestion(
     ...     sample_person, "Can't install Ubuntu",
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
-    >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
+    >>> notify(SQLObjectCreatedEvent(ubuntu_question))
 
-The notifications get sent to the ticket's subscribers, the ticket's
-target support contacts as well as to the ticket's assignee. Initially,
-only the submitter, Sample Person, is subscribed to the ticket and there
+The notifications get sent to the question's subscribers, the question's
+target support contacts as well as to the question's assignee. Initially,
+only the submitter, Sample Person, is subscribed to the question and there
  is no support contact registered on Ubuntu, so only 1 notification is
 sent:
 
     >>> ubuntu.answer_contacts
     []
-    >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
+    >>> [sub.person.displayname for sub in ubuntu_question.subscriptions]
     [u'Sample Person']
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -61,7 +61,7 @@ sent:
     <BLANKLINE>
 
 The notification also includes a 'X-Launchpad-Question' header that
-contains information about the ticket.
+contains information about the question.
 
     >>> print add_notification['X-Launchpad-Question']
     distribution=ubuntu; sourcepackage=None; status=Open;
@@ -75,11 +75,11 @@ notified about the changes as well:
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
 
-And assign this ticket to Foo Bar, so that he will also receive
+And assign this question to Foo Bar, so that he will also receive
 notifications:
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_ticket.assignee = getUtility(ILaunchBag).user
+    >>> ubuntu_question.assignee = getUtility(ILaunchBag).user
 
 == Edit Notifications ==
 
@@ -92,15 +92,15 @@ sent.
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
-    >>> unmodified_ticket = Snapshot(
-    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
-    >>> ubuntu_ticket.title = "Installer doesn't work on a Mac"
-    >>> ubuntu_ticket.description = """I insert the install CD in the CD-ROM
+    >>> unmodified_question = Snapshot(
+    ...     ubuntu_question, providing=providedBy(ubuntu_question))
+    >>> ubuntu_question.title = "Installer doesn't work on a Mac"
+    >>> ubuntu_question.description = """I insert the install CD in the CD-ROM
     ... drive, but it won't boot.
     ...
     ... It boots straight into MacOS 9."""
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
+    ...     ubuntu_question, unmodified_question, ['title', 'description']))
 
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
@@ -134,10 +134,10 @@ assignee, status whiteboard, priority and source package.
 If we trigger a modification event when no changes worth
 notifying about was made, no notification is sent:
 
-    >>> unmodified_ticket = Snapshot(
-    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
+    >>> unmodified_question = Snapshot(
+    ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['status']))
+    ...     ubuntu_question, unmodified_question, ['status']))
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -146,7 +146,7 @@ notifying about was made, no notification is sent:
 After receiving that notification, Foo Bar unassigned himself:
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_ticket.assignee = None
+    >>> ubuntu_question.assignee = None
 
 == Bug Linking and Unlinking Notifications ==
 
@@ -156,16 +156,16 @@ bug that has been linked to the request:
     >>> from canonical.launchpad.interfaces import CreateBugParams
 
     >>> login('no-priv@canonical.com')
-    >>> unmodified_ticket = Snapshot(
-    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
+    >>> unmodified_question = Snapshot(
+    ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> params = CreateBugParams(
-    ...     owner=no_priv, title=ubuntu_ticket.title,
-    ...     comment=ubuntu_ticket.description)
-    >>> bug = ubuntu_ticket.target.createBug(params)
-    >>> ubuntu_ticket.linkBug(bug)
+    ...     owner=no_priv, title=ubuntu_question.title,
+    ...     comment=ubuntu_question.description)
+    >>> bug = ubuntu_question.target.createBug(params)
+    >>> ubuntu_question.linkBug(bug)
     <QuestionBug...>
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
+    ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -182,12 +182,12 @@ bug that has been linked to the request:
 
 And if we remove the link again, we get:
 
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket,
-    ...     providing=providedBy(ubuntu_ticket))
-    >>> ubuntu_ticket.unlinkBug(bug)
+    >>> unmodified_question = Snapshot(ubuntu_question,
+    ...     providing=providedBy(ubuntu_question))
+    >>> ubuntu_question.unlinkBug(bug)
     <QuestionBug...>
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
+    ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -205,11 +205,11 @@ And if we remove the link again, we get:
 
 == Workflow Notifications ==
 
-Notifications are also sent when workflow actions are done on tickets.
+Notifications are also sent when workflow actions are done on questions.
 The content of the notification will be different depending on the
 workflow action done.
 
-    >>> request_message = ubuntu_ticket.requestInfo(
+    >>> request_message = ubuntu_question.requestInfo(
     ...     no_priv, "What is your Mac model?")
 
     >>> notifications = pop_notifications()
@@ -259,8 +259,8 @@ Of course, if the owner unsubscribe from the request, he won't receives
 a notification.
 
     >>> login('test@canonical.com')
-    >>> ubuntu_ticket.unsubscribe(sample_person)
-    >>> message = ubuntu_ticket.giveInfo('A PowerMac 7200.')
+    >>> ubuntu_question.unsubscribe(sample_person)
+    >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -277,12 +277,12 @@ a notification.
     A PowerMac 7200.
     <BLANKLINE>
 
-The notification for new messages on the ticket contain a 'References'
+The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
 
     >>> print notifications[0]['References']
     <...>
-    >>> notifications[0]['References'] == ubuntu_ticket.messages[-2].rfc822msgid
+    >>> notifications[0]['References'] == ubuntu_question.messages[-2].rfc822msgid
     True
 
 We already saw the notifications sent for the requestInfo() and
@@ -290,13 +290,13 @@ giveInfo() transitions, let's see the other ones.
 
     # Subscribe the owner back, to compare the different notifications
     # sent.
-    >>> ubuntu_ticket.subscribe(sample_person)
+    >>> ubuntu_question.subscribe(sample_person)
     <QuestionSubscription ...>
 
 === Notifications for expireQuestion() ===
 
     >>> login('no-priv@canonical.com')
-    >>> message = ubuntu_ticket.expireQuestion(
+    >>> message = ubuntu_question.expireQuestion(
     ...     no_priv, "Expired because of no recent activity.")
 
     >>> notifications = pop_notifications()
@@ -345,13 +345,13 @@ display.)
     >>> email_msg = getUtility(IMessageSet).fromText(
     ...     subject=(
     ...         "Re: [Question %d]: Installer doesn't work on "
-    ...         "a Mac" % ubuntu_ticket.id),
+    ...         "a Mac" % ubuntu_question.id),
     ...     content=(
     ...         "I really need some help. I tried googling a bit but didn't "
     ...         "find anything useful.\n\nPlease provide some help to a "
     ...         "newbie."),
     ...     owner=sample_person)
-    >>> message = ubuntu_ticket.reopen(email_msg)
+    >>> message = ubuntu_question.reopen(email_msg)
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -397,7 +397,7 @@ Notification received by the owner:
 === Notifications for giveAnswer() ===
 
     >>> login('no-priv@canonical.com')
-    >>> answer_message = ubuntu_ticket.giveAnswer(
+    >>> answer_message = ubuntu_question.giveAnswer(
     ...     no_priv, "Actually, your model is an OldWorld Mac. It needs "
     ...     "some configuration on the Mac side to boot the installer. You "
     ...     "will need to install BootX and some other files in your System "
@@ -457,7 +457,7 @@ Notification received by the owner:
 === Notifications for confirm() ===
 
     >>> login('test@canonical.com')
-    >>> message = ubuntu_ticket.confirmAnswer(
+    >>> message = ubuntu_question.confirmAnswer(
     ...     "I've installed BootX and the installer CD is now booting. "
     ...     "Thanks!", answer=answer_message)
 
@@ -494,7 +494,7 @@ Notification received by the owner:
 === Notifications for addComment() ===
 
     >>> login('no-priv@canonical.com')
-    >>> message = ubuntu_ticket.addComment(
+    >>> message = ubuntu_question.addComment(
     ...     no_priv, "Unless you have lots of RAM... and even then, the "
     ...     "system will probably be very slow.")
 
@@ -530,7 +530,7 @@ Notification received by the owner:
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(ILaunchBag).user
-    >>> message = ubuntu_ticket.reject(
+    >>> message = ubuntu_question.reject(
     ...     foo_bar, "Yeah! It will be awfully slow.")
 
     >>> notifications = pop_notifications()
@@ -572,7 +572,7 @@ Notification received by the owner:
 
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> login('foo.bar@canonical.com')
-    >>> message = ubuntu_ticket.setStatus(
+    >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
 
     >>> notifications = pop_notifications()
@@ -607,7 +607,7 @@ Notification received by the owner:
 
 == Notifications and Teams ==
 
-When a team is subscribed to a ticket, there are two cases two consider.
+When a team is subscribed to a question, there are two cases two consider.
 The first one is if the team has an email address set, a notification
 will only be sent to that address. (That email address is assumed to
 be a mailing list reaching all the team members.) We already saw an
@@ -617,23 +617,23 @@ The other case is when the team doesn't have an email address set. In
 that case, all the team members will be notified individually.
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> ubuntu_ticket.subscribe(launchpad_devs)
+    >>> ubuntu_question.subscribe(launchpad_devs)
     <QuestionSubscription...>
 
     >>> login('test@canonical.com')
-    >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
+    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-Of course, if the user is also individually subscribed to the ticket, he
+Of course, if the user is also individually subscribed to the question, he
 will receives only one notification:
 
-    >>> ubuntu_ticket.subscribe(foo_bar)
+    >>> ubuntu_question.subscribe(foo_bar)
     <QuestionSubscription...>
 
-    >>> message = ubuntu_ticket.addComment(sample_person, 'A comment.')
+    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -641,7 +641,7 @@ will receives only one notification:
 
 == Notifications and Localized Requests ==
 
-In general, only subscribers speaking the language of the ticket will
+In general, only subscribers speaking the language of the question will
 receive notifications related to it.
 
     # Register salgado as support, this makes the pt_BR language
@@ -654,7 +654,7 @@ receive notifications related to it.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> login('test@canonical.com')
-    >>> pt_BR_ticket = ubuntu.newQuestion(
+    >>> pt_BR_question = ubuntu.newQuestion(
     ...     sample_person, title=(
     ...     u"Abrir uma p\xe1gina que requer java quebra o firefox"),
     ...     description=(
@@ -665,7 +665,7 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notify(SQLObjectCreatedEvent(pt_BR_ticket))
+    >>> notify(SQLObjectCreatedEvent(pt_BR_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']
@@ -674,11 +674,11 @@ receive notifications related to it.
     >>> unicode(make_header(decode_header(notifications[0]['Subject'])))
     u'[Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
 
-Similarly, when a ticket in a non-English language is modified or its
+Similarly, when a question in a non-English language is modified or its
 status changed, only the subscribers speaking that language will receive
 the notifications.
 
-    >>> pt_BR_ticket.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
+    >>> pt_BR_question.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
     <QuestionMessage...>
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -694,11 +694,11 @@ contacts. So after posting a request in French, a notification will be
 sent to the support list about that request:
 
     >>> french = getUtility(ILanguageSet)['fr']
-    >>> french_ticket = ubuntu.newQuestion(
+    >>> french_question = ubuntu.newQuestion(
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notify(SQLObjectCreatedEvent(french_ticket))
+    >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
@@ -714,7 +714,7 @@ sent to the support list about that request:
     <BLANKLINE>
     http://.../ubuntu/+ticket/...
 
-The notification received by the ticket owner contain a warning that
+The notification received by the question owner contain a warning that
 the request is in a language spoken by none of the support contacts:
 
     >>> notifications[-1]['Subject']
@@ -741,15 +741,15 @@ the request is in a language spoken by none of the support contacts:
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
 
-No notification will be sent to the support contacts when this ticket is
+No notification will be sent to the support contacts when this question is
 modified. Only the owner will receive a modification notification with a
 warning appended to it.
 
-    >>> unmodified_ticket = Snapshot(
-    ...     french_ticket, providing=providedBy(french_ticket))
-    >>> french_ticket.title = u"CD d'Ubuntu ne d\xe9marre pas"
+    >>> unmodified_question = Snapshot(
+    ...     french_question, providing=providedBy(french_question))
+    >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
     >>> notify(SQLObjectModifiedEvent(
-    ...     french_ticket, unmodified_ticket, ['title']))
+    ...     french_question, unmodified_question, ['title']))
 
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -795,11 +795,11 @@ will be notified if a Spanish support request is created.
 
     >>> ubuntu.addAnswerContact(rosetta_admins)
     True
-    >>> spanish_ticket = ubuntu.newQuestion(
+    >>> spanish_question = ubuntu.newQuestion(
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
     ...     language=spanish)
-    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
@@ -809,17 +809,17 @@ be used. So, if the team only officially speaks French, it will only
 receives notifications about French (and English) requests.
 
     >>> rosetta_admins.addLanguage(french)
-    >>> notify(SQLObjectCreatedEvent(french_ticket))
+    >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
 
 The second case to consider is when the team doesn't use an explicit
 address. When the team has configured its supported languages, all
-team members will be contacted if the ticket language is supported.
+team members will be contacted if the question language is supported.
 For example, the Launchpad Developers team doesn't have any preferred
 email address set. Its only member, Foo Bar will receive a notification
-if the team supported languages includes the ticket language:
+if the team supported languages includes the question language:
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
     >>> list(launchpad_devs.languages)
@@ -830,7 +830,7 @@ if the team supported languages includes the ticket language:
     >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
-    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
@@ -849,7 +849,7 @@ to be notified when a request in Spanish is posted.
     >>> ubuntu.addAnswerContact(admins)
     True
 
-    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['carlos@canonical.com', 'foo.bar@canonical.com',
@@ -879,7 +879,7 @@ address if Spanish is among its preferred languages:
     ...     'maintainers@guadalinex.com', guadamen)
     >>> guadamen.validateAndEnsurePreferredEmail(guadamen_email)
 
-    >>> notify(SQLObjectCreatedEvent(spanish_ticket))
+    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['carlos@canonical.com', 'foo.bar@canonical.com',

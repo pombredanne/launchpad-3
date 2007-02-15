@@ -1,48 +1,48 @@
 = Support Tracker Utility: IQuestionSet =
 
 There is an IQuestionSet utility that can be use to retrieve and search
-for ticket whatever the target they were created in.
+for question whatever the target they were created in.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IQuestionSet
-    >>> ticket_set = getUtility(IQuestionSet)
-    >>> verifyObject(IQuestionSet, ticket_set)
+    >>> question_set = getUtility(IQuestionSet)
+    >>> verifyObject(IQuestionSet, question_set)
     True
 
 == get() ==
 
-The get() method can be used to get a ticket with a specific id:
+The get() method can be used to get a question with a specific id:
 
-    >>> ticket_one = ticket_set.get(1)
-    >>> ticket_one.title
+    >>> question_one = question_set.get(1)
+    >>> question_one.title
     u'Firefox cannot render Bank Site'
 
-If no ticket exists, a default value is returned:
+If no question exists, a default value is returned:
 
     >>> default = object()
-    >>> ticket_nonexistant = ticket_set.get(123456, default=default)
-    >>> ticket_nonexistant is default
+    >>> question_nonexistant = question_set.get(123456, default=default)
+    >>> question_nonexistant is default
     True
 
 If no default value is given, None is returned:
 
-    >>> ticket_set.get(123456) is None
+    >>> question_set.get(123456) is None
     True
 
 == searchQuestions() ==
 
 IQuestionSet also defines a searchQuestions() method that can be used to
-search for tickets defined in any products or distributions (in fact,
-in any context that allows tickets to be defined). Two search criteria
+search for questions defined in any products or distributions (in fact,
+in any context that allows questions to be defined). Two search criteria
 are defined search_text and status.
 
 === search_text ===
 
-The search_text parameter will limit the tickets to those matching
+The search_text parameter will limit the questions to those matching
 the query using the regular full text algorithm.
 
-    >>> for ticket in ticket_set.searchQuestions(search_text='firefox'):
-    ...     print repr(ticket.title), ticket.target.displayname
+    >>> for question in question_set.searchQuestions(search_text='firefox'):
+    ...     print repr(question.title), question.target.displayname
     u'Problemas de Impress\xe3o no Firefox'        Mozilla Firefox
     u'Firefox loses focus and gets stuck'          Mozilla Firefox
     u'Firefox cannot render Bank Site'             Mozilla Firefox
@@ -53,43 +53,46 @@ the query using the regular full text algorithm.
 === status ===
 
 By default, expired and invalid support requests are not searched for.
-The status parameter can be used to select the tickets in the status
+The status parameter can be used to select the questions in the status
 you are interested in.
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> for ticket in ticket_set.searchQuestions(status=QuestionStatus.INVALID):
-    ...     print ticket.title, ticket.status.title, ticket.target.displayname
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.INVALID):
+    ...     print question.title, question.status.title, (
+    ...         question.target.displayname)
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
 
 The status parameter can also take a list of statuses.
 
-    >>> for ticket in ticket_set.searchQuestions(
+    >>> for question in question_set.searchQuestions(
     ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
-    ...     print ticket.title, ticket.status.title, ticket.target.displayname
+    ...     print question.title, question.status.title, (
+    ...          question.target.displayname)
     mailto: problem in webpage                Solved mozilla-firefox in ubuntu
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
 
 === language ===
 
-The language parameter can be used to select only tickets written in a
+The language parameter can be used to select only questions written in a
 particular language.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
-    >>> for t in ticket_set.searchQuestions(language=spanish):
+    >>> for t in question_set.searchQuestions(language=spanish):
     ...     print t.title.encode('us-ascii', 'backslashreplace')
     Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
 
 === Combination ===
 
-The returned sets of tickets is the intersection of the sets delimited
+The returned sets of questions is the intersection of the sets delimited
 by each criteria:
 
-    >>> for ticket in ticket_set.searchQuestions(
+    >>> for question in question_set.searchQuestions(
     ...         search_text='firefox',
     ...         status=[QuestionStatus.OPEN, QuestionStatus.INVALID]):
-    ...     print repr(ticket.title), ticket.status.title, (
-    ...           ticket.target.displayname)
+    ...     print repr(question.title), question.status.title, (
+    ...           question.target.displayname)
     u'Problemas de Impress\xe3o no Firefox'     Open    Mozilla Firefox
     u'Firefox is slow and consumes too much RAM' Invalid mozilla-firefox in ubuntu
     u'Firefox loses focus and gets stuck'       Open    Mozilla Firefox
@@ -103,9 +106,10 @@ by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
     >>> from canonical.lp.dbschema import QuestionSort
-    >>> for ticket in ticket_set.searchQuestions(
+    >>> for question in question_set.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
-    ...     print ticket.id, repr(ticket.title), ticket.target.displayname
+    ...     print question.id, repr(question.title), (
+    ...          question.target.displayname)
     1 u'Firefox cannot render Bank Site'           Mozilla Firefox
     2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
     4 u'Firefox loses focus and gets stuck'        Mozilla Firefox
@@ -116,8 +120,10 @@ one of the constant defined in the QuestionSort enumeration.
 When no text search is done, the default sort order is
 QuestionSort.NEWEST_FIRST.
 
-    >>> for ticket in ticket_set.searchQuestions(status=QuestionStatus.OPEN)[:5]:
-    ...     print ticket.id, repr(ticket.title), ticket.target.displayname
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.OPEN)[:5]:
+    ...     print question.id, repr(question.title), (
+    ...         question.target.displayname)
     13 u'Problemas de Impress\xe3o no Firefox'   Mozilla Firefox
     12 u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)' Ubuntu
     11 u'Continue playing after shutdown'          Ubuntu
@@ -127,7 +133,8 @@ QuestionSort.NEWEST_FIRST.
 == getQuestionLanguages() ==
 
 The getQuestionLanguages() method returns the set of languages in which
-tickets are written in Launchpad.
+questions are written in Launchpad.
 
-    >>> sorted([language.code for language in ticket_set.getQuestionLanguages()])
+    >>> sorted([language.code 
+    ...         for language in question_set.getQuestionLanguages()])
     [u'en', u'es', u'pt_BR']

@@ -4,7 +4,7 @@
 
 IPerson defines a searchQuestions() method which can be used to
 select all or a subset of the support requests in which the person is
-involved. This includes tickets which the person created, is assigned
+involved. This includes questions which the person created, is assigned
 to, is subscribed to, commented on, or answered. Various subsets can
 be selected by using the following criteria status, search_text and
 participation type.
@@ -15,11 +15,11 @@ participation type.
 
 === search_text ===
 
-The search_text parameter will limit the tickets to those matching
+The search_text parameter will limit the questions to those matching
 the query using the regular full text algorithm.
 
-    >>> for ticket in foo_bar.searchQuestions(search_text='firefox'):
-    ...     print ticket.title, ticket.status.title
+    >>> for question in foo_bar.searchQuestions(search_text='firefox'):
+    ...     print question.title, question.status.title
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
     Newly installed plug-in doesn't seem to be used Answered
@@ -31,9 +31,9 @@ by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
     >>> from canonical.lp.dbschema import QuestionSort
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
-    ...     print ticket.id, ticket.title, ticket.status.title
+    ...     print question.id, question.title, question.status.title
     4 Firefox loses focus and gets stuck              Open
     6 Newly installed plug-in doesn't seem to be used Answered
     9 mailto: problem in webpage                      Solved
@@ -41,8 +41,8 @@ one of the constant defined in the QuestionSort enumeration.
 When no text search is done, the default sort order is
 QuestionSort.NEWEST_FIRST.
 
-    >>> for ticket in foo_bar.searchQuestions():
-    ...     print ticket.id, ticket.title, ticket.status.title
+    >>> for question in foo_bar.searchQuestions():
+    ...     print question.id, question.title, question.status.title
     11 Continue playing after shutdown                      Open
     10 Play DVDs in Totem                                   Answered
      9 mailto: problem in webpage                           Solved
@@ -54,83 +54,85 @@ QuestionSort.NEWEST_FIRST.
 === status ===
 
 The last searches showed that by default, not all statuses are searched
-for by default (they excluded expired and invalid tickets). The status
+for by default (they excluded expired and invalid questions). The status
 parameter can be used to control the list of statuses to select:
 
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> for ticket in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
-    ...     print ticket.title, ticket.status.title
+    >>> for question in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
+    ...     print question.title, question.status.title
     Firefox is slow and consumes too much RAM   Invalid
 
 The status parameter can also take a list of statuses.
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
-    ...     print ticket.title, ticket.status.title
+    ...     print question.title, question.status.title
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
 
 === participation ===
 
-By default, any types of relationship to a ticket is considered by
-searchQuestions. This can customized through the participation parameter.
-It takes one or a list of constants from the QuestionParticipation enumeration.
+By default, any types of relationship to a question is considered by
+searchQuestions. This can customized through the participation 
+parameter. It takes one or a list of constants from the 
+QuestionParticipation enumeration.
 
-To select only tickets on which the person commented, the
+To select only questions on which the person commented, the
 QuestionParticipation.COMMENTER is used:
 
     >>> from canonical.lp.dbschema import QuestionParticipation
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
-    ...     print ticket.title
+    ...     print question.title
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
-QuestionParticipation.SUBSCRIBER will only select the tickets to which
+QuestionParticipation.SUBSCRIBER will only select the questions to which
 the person is subscribed to:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.SUBSCRIBER, status=None):
-    ...     print ticket.title
+    ...     print question.title
     Slow system
     Firefox is slow and consumes too much RAM
 
-QuestionParticipation.OWNER selects the tickets that the person created:
+QuestionParticipation.OWNER selects the questions that the person created:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.OWNER, status=None):
-    ...     print ticket.title
+    ...     print question.title
     Slow system
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
-QuestionParticipation.ANSWERER selects the tickets for which the person
+QuestionParticipation.ANSWERER selects the questions for which the person
 was marked as the answerer:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.ANSWERER, status=None):
-    ...     print ticket.title
+    ...     print question.title
     mailto: problem in webpage
     Firefox is slow and consumes too much RAM
 
-QuestionParticipation.ASSIGNEE selects that tickets which are assigned to
+QuestionParticipation.ASSIGNEE selects that questions which are assigned to
 the person:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.ASSIGNEE, status=None):
-    ...     print ticket.title
+    ...     print question.title
 
 If a list of these constants is used, all of these participation types
 will be selected:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         participation=[
-    ...             QuestionParticipation.OWNER, QuestionParticipation.ANSWERER],
+    ...             QuestionParticipation.OWNER, 
+    ...             QuestionParticipation.ANSWERER],
     ...         status=None):
-    ...     print ticket.title
+    ...     print question.title
     mailto: problem in webpage
     Slow system
     Firefox loses focus and gets stuck
@@ -138,8 +140,8 @@ will be selected:
 
 === language ===
 
-By default, tickets in all languages are included in the results. It is
-possible to filter tickets by the language they were writtenin . One or
+By default, questions in all languages are included in the results. It is
+possible to filter questions by the language they were writtenin . One or
 a list of ILanguage object should be passed in the language parameter to
 specify the language filter.
 
@@ -147,42 +149,43 @@ specify the language filter.
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> english = getUtility(ILanguageSet)['en']
 
-Foo bar doesn't have any tickets written in Spanish.
+Foo bar doesn't have any questions written in Spanish.
 
-    >>> for ticket in foo_bar.searchQuestions(language=spanish):
-    ...     print ticket.title
+    >>> for question in foo_bar.searchQuestions(language=spanish):
+    ...     print question.title
 
 But carlos has one.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> for ticket in carlos.searchQuestions(
+    >>> for question in carlos.searchQuestions(
     ...     language=[english, spanish]):
-    ...     [ticket.title, ticket.language.code]
+    ...     [question.title, question.language.code]
     [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
      u'es']
 
 === needs_attention ===
 
 The method accept a parameter called needs_attention which only selects
-the tickets that needs attention from the person. This includes tickets
+the questions that needs attention from the person. This includes questions
 owned by the person in the ANSWERED or NEEDSINFO state. It also includes
-tickets on which the person requested for more information or gave an
+questions on which the person requested for more information or gave an
 answer and that are back in the OPEN state.
 
-    >>> for ticket in foo_bar.searchQuestions(needs_attention=True):
-    ...     print ticket.status.title, ticket.owner.displayname, ticket.title
+    >>> for question in foo_bar.searchQuestions(needs_attention=True):
+    ...     print question.status.title, question.owner.displayname, (
+    ...         question.title)
     Open              Sample Person Continue playing after shutdown
     Needs information Foo Bar       Slow system
 
 === Combination ===
 
-The returned sets of tickets is the intersection of the sets delimited
+The returned sets of questions is the intersection of the sets delimited
 by each criteria:
 
-    >>> for ticket in foo_bar.searchQuestions(
+    >>> for question in foo_bar.searchQuestions(
     ...         search_text='firefox OR Java', status=QuestionStatus.ANSWERED,
     ...         participation=QuestionParticipation.COMMENTER):
-    ...     print ticket.title, ticket.status.title
+    ...     print question.title, question.status.title
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered
 
@@ -276,48 +279,48 @@ languages of the Ubuntu Team that will be used.
 
 == getQuestionLanguages() ==
 
-IPerson also defines a getQuestionLanguages() attribute which contains the set
-of languages used by all of the tickets in which this person is
-involved.
+IPerson also defines a getQuestionLanguages() attribute which contains 
+the set of languages used by all of the questions in which this person 
+is involved.
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en']
 
-This includes tickets which the person owns. But also, tickets that the
-user subscribed to.
+This includes questions which the person owns. But also, questions that 
+the user subscribed to.
 
     >>> from canonical.launchpad.interfaces import IQuestionSet
-    >>> pt_BR_ticket = getUtility(IQuestionSet).get(13)
+    >>> pt_BR_question = getUtility(IQuestionSet).get(13)
     >>> login('foo.bar@canonical.com')
-    >>> pt_BR_ticket.subscribe(foo_bar)
+    >>> pt_BR_question.subscribe(foo_bar)
     <QuestionSubscription...>
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en', u'pt_BR']
 
-And also tickets for which he's the answerer.
+And also questions for which he's the answerer.
 
-    >>> es_ticket = getUtility(IQuestionSet).get(12)
-    >>> es_ticket.reject(foo_bar, 'Reject ticket.')
+    >>> es_question = getUtility(IQuestionSet).get(12)
+    >>> es_question.reject(foo_bar, 'Reject question.')
     <QuestionMessage...>
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
 
-As well, as ticket which are assigned to the user.
+As well, as question which are assigned to the user.
 
-    >>> pt_BR_ticket.assignee = carlos
+    >>> pt_BR_question.assignee = carlos
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'es', u'pt_BR']
 
-And tickets on which the user commented:
+And questions on which the user commented:
 
-    >>> en_ticket = getUtility(IQuestionSet).get(1)
+    >>> en_question = getUtility(IQuestionSet).get(1)
     >>> login('carlos@canonical.com')
-    >>> en_ticket.addComment(carlos, 'A simple comment.')
+    >>> en_question.addComment(carlos, 'A simple comment.')
     <QuestionMessage...>
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())

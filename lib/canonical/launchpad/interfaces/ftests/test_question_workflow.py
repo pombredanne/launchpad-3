@@ -43,7 +43,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
     def setUp(self):
         self.now = datetime.now(UTC)
 
-        # Login as the ticket owner.
+        # Login as the question owner.
         login('no-priv@canonical.com')
 
         # Set up actors.
@@ -53,13 +53,13 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         # User who answers request.
         self.answerer = personset.getByEmail('test@canonical.com')
 
-        # Admin user which can change ticket status.
+        # Admin user which can change question status.
         self.admin = personset.getByEmail('foo.bar@canonical.com')
 
-        # Simple ubuntu ticket.
+        # Simple ubuntu question.
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
-        self.ticket = self.ubuntu.newQuestion(
+        self.question = self.ubuntu.newQuestion(
             self.owner, 'Help!', 'I need help with Ubuntu',
             datecreated=self.now)
 
@@ -68,15 +68,15 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             self.created_event_listener.unregister()
             self.modified_event_listener.unregister()
 
-    def setQuestionStatus(self, ticket, new_status, comment="Status change."):
-        """Utility metho to change a ticket status.
+    def setQuestionStatus(self, question, new_status, comment="Status change."):
+        """Utility metho to change a question status.
 
         This logs in as admin, change the status and log back as
         the previous user.
         """
         old_user = getUtility(ILaunchBag).user
         login(self.admin.preferredemail.email)
-        ticket.setStatus(self.admin, new_status, comment)
+        question.setStatus(self.admin, new_status, comment)
         login(old_user.preferredemail.email)
 
     def setUpEventListeners(self):
@@ -102,14 +102,14 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         """Helper for transition guard tests.
 
         Helper that verifies that the Question guard_name attribute
-        is True when the ticket status is one listed in statuses_expected_true
+        is True when the question status is one listed in statuses_expected_true
         and False otherwise.
         """
         for status in QuestionStatus.items:
-            if status != self.ticket.status:
-                self.setQuestionStatus(self.ticket, status)
+            if status != self.question.status:
+                self.setQuestionStatus(self.question, status)
             expected = status.name in statuses_expected_true
-            allowed = getattr(self.ticket, guard_name)
+            allowed = getattr(self.question, guard_name)
             self.failUnless(
                 expected == allowed, "%s != %s when status = %s" % (
                     guard_name, expected, status.name))
@@ -123,7 +123,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         """Helper for testing valid state transitions.
 
         Helper that verifies that transition_method can be called when
-        the ticket status is one listed in statuses. It will validate the
+        the question status is one listed in statuses. It will validate the
         returned message using checkTransitionMessage(). The transition_method
         is called with the transition_method_args as positional parameters
         and transition_method_kwargs as keyword parameters.
@@ -145,8 +145,8 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         if 'datecreated' not in transition_method_kwargs:
             transition_method_kwargs['datecreated'] = self.nowPlus(0)
         for status in statuses:
-            if status != self.ticket.status:
-                self.setQuestionStatus(self.ticket, status)
+            if status != self.question.status:
+                self.setQuestionStatus(self.question, status)
 
             self.collected_events = []
 
@@ -177,7 +177,7 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         """Helper for testing invalid transitions.
 
         Helper that verifies that transition_method method cannot be
-        called when the ticket status is different than the ones in
+        called when the question status is different than the ones in
         valid_statuses.
 
         args and kwargs contains the parameters that should be passed to the
@@ -188,8 +188,8 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
                 continue
             exceptionRaised = False
             try:
-                if status != self.ticket.status:
-                    self.setQuestionStatus(self.ticket, status)
+                if status != self.question.status:
+                    self.setQuestionStatus(self.question, status)
                 transition_method(*args, **kwargs)
             except InvalidQuestionStateError:
                 exceptionRaised = True
@@ -202,11 +202,11 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         """Helper method to check the message created by a transition.
 
         It make sure that the message provides IQuestionMessage and that it
-        was appended to the ticket messages attribute. It also checks that
+        was appended to the question messages attribute. It also checks that
         the subject was computed correctly and that the new_status, action
         and owner attributes were set correctly.
 
-        It also verifies that the ticket status, datelastquery (or
+        It also verifies that the question status, datelastquery (or
         datelastresponse) were updated to reflect the time of the message.
         """
         self.failUnless(verifyObject(IQuestionMessage, message))
@@ -216,14 +216,14 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
         self.assertEquals(expected_action, message.action)
         self.assertEquals(expected_status, message.new_status)
 
-        self.assertEquals(message, self.ticket.messages[-1])
-        self.assertEquals(expected_status, self.ticket.status)
+        self.assertEquals(message, self.question.messages[-1])
+        self.assertEquals(expected_status, self.question.status)
 
-        if expected_owner == self.ticket.owner:
-            self.assertEquals(message.datecreated, self.ticket.datelastquery)
+        if expected_owner == self.question.owner:
+            self.assertEquals(message.datecreated, self.question.datelastquery)
         else:
             self.assertEquals(
-                message.datecreated, self.ticket.datelastresponse)
+                message.datecreated, self.question.datelastresponse)
 
     def checkTransitionEvents(self, message, edited_fields, status_name):
         """Helper method to validate the events triggered from the transition.
@@ -259,8 +259,8 @@ class BaseSupportTrackerWorkflowTestCase(unittest.TestCase):
             failure_msg(
                 "%s doesn't provide ISQLObjectModifiedEvent" % modified_event))
         self.failUnless(
-            modified_event.object == self.ticket,
-            failure_msg("ISQLObjectModifiedEvent contains wrong ticket"))
+            modified_event.object == self.question,
+            failure_msg("ISQLObjectModifiedEvent contains wrong question"))
         self.failUnless(
             modified_event.user == message.owner,
             failure_msg("%s != %s" % (
@@ -280,7 +280,7 @@ class MiscSupportTrackerWorkflowTestCase(BaseSupportTrackerWorkflowTestCase):
         raises an InvalidQuestionStateError.
         """
         login('foo.bar@canonical.com')
-        self.assertRaises(InvalidQuestionStateError, self.ticket.setStatus,
+        self.assertRaises(InvalidQuestionStateError, self.question.setStatus,
                 self.admin, QuestionStatus.OPEN, 'Status Change')
 
 
@@ -303,16 +303,16 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.answerer,
             expected_action=QuestionAction.REQUESTINFO,
             expected_status=QuestionStatus.NEEDSINFO,
-            transition_method=self.ticket.requestInfo,
+            transition_method=self.question.requestInfo,
             transition_method_args=(
                 self.answerer, "What's your problem?"),
             edited_fields=None)
 
-        # Even if the ticket is answered, a user can request more
-        # information, but that leave the ticket in the ANSWERED state.
-        self.setQuestionStatus(self.ticket, QuestionStatus.ANSWERED)
+        # Even if the question is answered, a user can request more
+        # information, but that leave the question in the ANSWERED state.
+        self.setQuestionStatus(self.question, QuestionStatus.ANSWERED)
         self.collected_events = []
-        message = self.ticket.requestInfo(
+        message = self.question.requestInfo(
             self.answerer,
             "The previous answer is bad. What is the problem again?",
             datecreated=self.nowPlus(3))
@@ -324,26 +324,26 @@ class RequestInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             message, ['messages', 'datelastresponse'], QuestionStatus.OPEN.title)
 
     def test_requestInfoFromOwnerIsInvalid(self):
-        """Test that the ticket owner cannot use requestInfo."""
+        """Test that the question owner cannot use requestInfo."""
         self.assertRaises(
-            AssertionError, self.ticket.requestInfo,
+            AssertionError, self.question.requestInfo,
                 self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
 
     def test_requestInfoFromInvalidStates(self):
-        """Test that requestInfo cannot be called when the ticket status is
+        """Test that requestInfo cannot be called when the question status is
         not OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.requestInfo,
+            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.question.requestInfo,
             self.answerer, "What's up?", datecreated=self.nowPlus(3))
 
     def test_requestInfoPermission(self):
         """Test that only a logged in user can access requestInfo()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'requestInfo')
+        self.assertRaises(Unauthorized, getattr, self.question, 'requestInfo')
 
         login(self.answerer.preferredemail.email)
-        getattr(self.ticket, 'requestInfo')
+        getattr(self.question, 'requestInfo')
 
 
 class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -354,15 +354,15 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
         self._testTransitionGuard('can_give_info', ['OPEN', 'NEEDSINFO'])
 
     def test_giveInfoFromInvalidStates(self):
-        """Test that giveInfo cannot be called when the ticket status is
+        """Test that giveInfo cannot be called when the question status is
         not OPEN or NEEDSINFO.
         """
         self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO'], self.ticket.giveInfo,
+            ['OPEN', 'NEEDSINFO'], self.question.giveInfo,
             "That's that.", datecreated=self.nowPlus(1))
 
     def test_giveInfo(self):
-        """Test that giveInfo() can be called when the ticket status is
+        """Test that giveInfo() can be called when the question status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Do not check the edited_fields attributes since it
@@ -372,21 +372,21 @@ class GiveInfoTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.owner,
             expected_action=QuestionAction.GIVEINFO,
             expected_status=QuestionStatus.OPEN,
-            transition_method=self.ticket.giveInfo,
+            transition_method=self.question.giveInfo,
             transition_method_args=("That's that.",),
             edited_fields=None)
 
     def test_giveInfoPermission(self):
         """Test that only the owner can access giveInfo()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+        self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
         login(self.answerer.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+        self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
         login(self.admin.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveInfo')
+        self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
 
         login(self.owner.preferredemail.email)
-        getattr(self.ticket, 'giveInfo')
+        getattr(self.question, 'giveInfo')
 
 
 class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -398,15 +398,15 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             'can_give_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
 
     def test_giveAnswerFromInvalidStates(self):
-        """Test that giveAnswer cannot be called when the ticket status is
+        """Test that giveAnswer cannot be called when the question status is
         not OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.ticket.giveAnswer,
+            ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.question.giveAnswer,
             self.answerer, "The answer is this.", datecreated=self.nowPlus(1))
 
     def test_giveAnswer(self):
-        """Test that giveAnswer can be called when the ticket status is
+        """Test that giveAnswer can be called when the question status is
         one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
         valid IQuestionMessage.
         """
@@ -418,20 +418,20 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.answerer,
             expected_action=QuestionAction.ANSWER,
             expected_status=QuestionStatus.ANSWERED,
-            transition_method=self.ticket.giveAnswer,
+            transition_method=self.question.giveAnswer,
             transition_method_args=(
                 self.answerer, "It looks like a real problem.",),
             edited_fields=None)
 
-        # When the owner gives the answer, the ticket moves straight to
+        # When the owner gives the answer, the question moves straight to
         # SOLVED.
         def checkAnswerMessage(message):
             """Check additional attributes set when the owner gives the
             answers.
             """
-            self.assertEquals(message, self.ticket.answer)
-            self.assertEquals(self.owner, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+            self.assertEquals(message, self.question.answer)
+            self.assertEquals(self.owner, self.question.answerer)
+            self.assertEquals(message.datecreated, self.question.dateanswered)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -440,7 +440,7 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_action=QuestionAction.CONFIRM,
             expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
-            transition_method=self.ticket.giveAnswer,
+            transition_method=self.question.giveAnswer,
             transition_method_args=(
                 self.owner, "I found the solution.",),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
@@ -450,10 +450,10 @@ class GiveAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_giveAnswerPermission(self):
         """Test that only a logged in user can access giveAnswer()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'giveAnswer')
+        self.assertRaises(Unauthorized, getattr, self.question, 'giveAnswer')
 
         login(self.answerer.preferredemail.email)
-        getattr(self.ticket, 'giveAnswer')
+        getattr(self.question, 'giveAnswer')
 
 
 class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -462,7 +462,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_can_confirm_answer_without_answer(self):
         """Test the can_confirm_answer attribute when no answer was posted.
 
-        When the ticket didn't receive an answer, it should always be
+        When the question didn't receive an answer, it should always be
         false.
         """
         self._testTransitionGuard('can_confirm_answer', [])
@@ -472,7 +472,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
 
         Once one answer was given, it becomes possible in some states.
         """
-        self.ticket.giveAnswer(
+        self.question.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testTransitionGuard(
             'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
@@ -480,40 +480,40 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_confirmAnswerFromInvalidStates_without_answer(self):
         """Test calling confirmAnswer from invalid states.
 
-        confirmAnswer() cannot be called when the ticket has no message with
+        confirmAnswer() cannot be called when the question has no message with
         action ANSWER.
         """
-        self._testInvalidTransition([], self.ticket.confirmAnswer,
+        self._testInvalidTransition([], self.question.confirmAnswer,
             "That answer worked!.", datecreated=self.nowPlus(1))
 
     def test_confirmAnswerFromInvalidStates_with_answer(self):
         """ Test calling confirmAnswer from invalid states with an answer.
 
-        When the ticket has a message with action ANSWER, confirmAnswer()
+        When the question has a message with action ANSWER, confirmAnswer()
         can only be called when it is in the OPEN, NEEDSINFO, or ANSWERED
         state.
         """
-        answer_message = self.ticket.giveAnswer(
+        answer_message = self.question.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
-            self.ticket.confirmAnswer, "That answer worked!.",
+            self.question.confirmAnswer, "That answer worked!.",
             answer=answer_message, datecreated=self.nowPlus(1))
 
     def test_confirmAnswer(self):
         """Test confirmAnswer().
 
-        Test that confirmAnswer() can be called when the ticket status
+        Test that confirmAnswer() can be called when the question status
         is one of OPEN, NEEDSINFO, ANSWERED and that it has at least one
         ANSWER message and check that it returns a valid IQuestionMessage.
         """
-        answer_message = self.ticket.giveAnswer(
+        answer_message = self.question.giveAnswer(
             self.answerer, "Get a grip!", datecreated=self.nowPlus(1))
 
         def checkAnswerMessage(message):
             # Check the attributes that are set when an answer is confirmed.
-            self.assertEquals(answer_message, self.ticket.answer)
-            self.assertEquals(self.answerer, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+            self.assertEquals(answer_message, self.question.answer)
+            self.assertEquals(self.answerer, self.question.answerer)
+            self.assertEquals(message.datecreated, self.question.dateanswered)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -522,7 +522,7 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_action=QuestionAction.CONFIRM,
             expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
-            transition_method=self.ticket.confirmAnswer,
+            transition_method=self.question.confirmAnswer,
             transition_method_args=("That was very useful.",),
             transition_method_kwargs={'answer': answer_message,
                                       'datecreated' : self.nowPlus(2)},
@@ -530,31 +530,31 @@ class ConfirmAnswerTestCase(BaseSupportTrackerWorkflowTestCase):
                            'answer', 'datelastquery'])
 
     def testCannotConfirmAnAnswerFromAnotherQuestion(self):
-        """Test that you can't confirm an answer not from the same ticket."""
-        ticket1_answer = self.ticket.giveAnswer(
+        """Test that you can't confirm an answer not from the same question."""
+        question1_answer = self.question.giveAnswer(
             self.answerer, 'Really, just do it!')
-        ticket2 = self.ubuntu.newQuestion(self.owner, 'Help 2', 'Help me!')
-        ticket2_answer = ticket2.giveAnswer(self.answerer, 'Do that!')
+        question2 = self.ubuntu.newQuestion(self.owner, 'Help 2', 'Help me!')
+        question2_answer = question2.giveAnswer(self.answerer, 'Do that!')
         answerRefused = False
         try:
-            ticket2.confirmAnswer('That worked!', answer=ticket1_answer)
+            question2.confirmAnswer('That worked!', answer=question1_answer)
         except AssertionError:
             answerRefused = True
         self.failUnless(
             answerRefused, 'confirmAnswer accepted a message from a different'
-            'ticket')
+            'question')
 
     def test_confirmAnswerPermission(self):
         """Test that only the owner can access confirmAnswer()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
         login(self.answerer.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
         login(self.admin.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'confirmAnswer')
+        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
 
         login(self.owner.preferredemail.email)
-        getattr(self.ticket, 'confirmAnswer')
+        getattr(self.question, 'confirmAnswer')
 
 
 class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
@@ -566,15 +566,15 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
             'can_reopen', ['ANSWERED', 'EXPIRED', 'SOLVED'])
 
     def test_reopenFromInvalidStates(self):
-        """Test that reopen cannot be called when the ticket status is
+        """Test that reopen cannot be called when the question status is
         not one of OPEN, NEEDSINFO, or ANSWERED.
         """
         self._testInvalidTransition(
-            ['ANSWERED', 'EXPIRED', 'SOLVED'], self.ticket.reopen,
+            ['ANSWERED', 'EXPIRED', 'SOLVED'], self.question.reopen,
             "I still have a problem.", datecreated=self.nowPlus(1))
 
     def test_reopen(self):
-        """Test that reopen() can be called when the ticket is in the
+        """Test that reopen() can be called when the question is in the
         ANSWERED and EXPIRED state and that it returns a valid
         IQuestionMessage.
         """
@@ -583,27 +583,27 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.owner,
             expected_action=QuestionAction.REOPEN,
             expected_status=QuestionStatus.OPEN,
-            transition_method=self.ticket.reopen,
+            transition_method=self.question.reopen,
             transition_method_args=('I still have this problem.',),
             edited_fields=['status', 'messages', 'datelastquery'])
 
     def test_reopenFromSOLVED(self):
-        """Test that reopen() can be called when the ticket is in the
+        """Test that reopen() can be called when the question is in the
         SOLVED state and that it returns an appropriate IQuestionMessage.
         This transition should also clear the dateanswered, answered and
         answerer attributes.
         """
         self.setUpEventListeners()
-        # Mark the ticket as solved by the user.
-        self.ticket.giveAnswer(
+        # Mark the question as solved by the user.
+        self.question.giveAnswer(
             self.owner, 'I solved my own problem.',
             datecreated=self.nowPlus(0))
-        self.assertEquals(self.ticket.status, QuestionStatus.SOLVED)
+        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
 
         # Clear previous events.
         self.collected_events = []
 
-        message = self.ticket.reopen(
+        message = self.question.reopen(
             "My solution doesn't work.", datecreated=self.nowPlus(1))
         self.checkTransitionMessage(
             message, expected_owner=self.owner,
@@ -617,29 +617,29 @@ class ReopenTestCase(BaseSupportTrackerWorkflowTestCase):
     def test_reopenPermission(self):
         """Test that only the owner can access reopen()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
         login(self.answerer.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
         login(self.admin.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reopen')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
 
         login(self.owner.preferredemail.email)
-        getattr(self.ticket, 'reopen')
+        getattr(self.question, 'reopen')
 
 
 class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the expireQuestion() workflow action method."""
 
     def test_expireQuestionFromInvalidStates(self):
-        """Test that expireQuestion cannot be called when the ticket status is
+        """Test that expireQuestion cannot be called when the question status is
         not one of OPEN or NEEDSINFO.
         """
         self._testInvalidTransition(
-            ['OPEN', 'NEEDSINFO'], self.ticket.expireQuestion,
+            ['OPEN', 'NEEDSINFO'], self.question.expireQuestion,
             self.answerer, "Too late.", datecreated=self.nowPlus(1))
 
     def test_expireQuestion(self):
-        """Test that expireQuestion() can be called when the ticket status is
+        """Test that expireQuestion() can be called when the question status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         self._testValidTransition(
@@ -647,25 +647,25 @@ class ExpireQuestionTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_owner=self.answerer,
             expected_action=QuestionAction.EXPIRE,
             expected_status=QuestionStatus.EXPIRED,
-            transition_method=self.ticket.expireQuestion,
+            transition_method=self.question.expireQuestion,
             transition_method_args=(
-                self.answerer, 'This ticket is expired.'),
+                self.answerer, 'This question is expired.'),
             edited_fields=['status', 'messages', 'datelastresponse'])
 
     def test_expireQuestionPermission(self):
         """Test that only a logged in user can access expireQuestion()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'expireQuestion')
+        self.assertRaises(Unauthorized, getattr, self.question, 'expireQuestion')
 
         login(self.answerer.preferredemail.email)
-        getattr(self.ticket, 'expireQuestion')
+        getattr(self.question, 'expireQuestion')
 
 
 class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
     """Test cases for the reject() workflow action method."""
 
     def test_rejectFromInvalidStates(self):
-        """Test that reject() cannot be called when the ticket status is
+        """Test that reject() cannot be called when the question status is
         not one of OPEN or NEEDSINFO.
         """
         valid_statuses = [status.name for status in QuestionStatus.items
@@ -674,11 +674,11 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
         self.ubuntu.addAnswerContact(self.answerer)
         login(self.answerer.preferredemail.email)
         self._testInvalidTransition(
-            valid_statuses, self.ticket.reject,
+            valid_statuses, self.question.reject,
             self.answerer, "This is lame.", datecreated=self.nowPlus(1))
 
     def test_reject(self):
-        """Test that reject() can be called when the ticket status is
+        """Test that reject() can be called when the question status is
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Reject user must be a support contact, (or admin, or product owner).
@@ -689,10 +689,10 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
 
         def checkRejectMessageIsAnAnswer(message):
             # Check that the rejection message was considered answering
-            # the ticket.
-            self.assertEquals(message, self.ticket.answer)
-            self.assertEquals(self.answerer, self.ticket.answerer)
-            self.assertEquals(message.datecreated, self.ticket.dateanswered)
+            # the question.
+            self.assertEquals(message, self.question.answer)
+            self.assertEquals(self.answerer, self.question.answerer)
+            self.assertEquals(message.datecreated, self.question.dateanswered)
 
         self._testValidTransition(
             valid_statuses,
@@ -700,7 +700,7 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
             expected_action=QuestionAction.REJECT,
             expected_status=QuestionStatus.INVALID,
             extra_message_check=checkRejectMessageIsAnAnswer,
-            transition_method=self.ticket.reject,
+            transition_method=self.question.reject,
             transition_method_args=(
                 self.answerer, 'This is lame.'),
             edited_fields=['status', 'messages', 'answerer', 'dateanswered',
@@ -709,22 +709,22 @@ class RejectTestCase(BaseSupportTrackerWorkflowTestCase):
     def testRejectPermission(self):
         """Test the reject() access control.
 
-        Only a support contacts and administrator can reject a ticket.
+        Only a support contacts and administrator can reject a question.
         """
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
         login(self.owner.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
         login(self.answerer.preferredemail.email)
-        self.assertRaises(Unauthorized, getattr, self.ticket, 'reject')
+        self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
-        self.ticket.target.addAnswerContact(self.answerer)
-        getattr(self.ticket, 'reject')
+        self.question.target.addAnswerContact(self.answerer)
+        getattr(self.question, 'reject')
 
         login(self.admin.preferredemail.email)
-        getattr(self.ticket, 'reject')
+        getattr(self.question, 'reject')
 
 
 def test_suite():

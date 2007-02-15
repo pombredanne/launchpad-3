@@ -1,20 +1,20 @@
 = Support Tracker Pages =
 
-Several views are used to handle the various operations on a ticket.
+Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ticket_three = ubuntu.getQuestion(3)
+    >>> question_three = ubuntu.getQuestion(3)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_ticket = firefox.getQuestion(2)
+    >>> firefox_question = firefox.getQuestion(2)
 
-    # The firefox_ticket doesn't have any subscribers, let's subscribe
+    # The firefox_question doesn't have any subscribers, let's subscribe
     # the owner.
     >>> login('test@canonical.com')
-    >>> firefox_ticket.subscribe(firefox_ticket.owner)
+    >>> firefox_question.subscribe(firefox_question.owner)
     <QuestionSubscription...>
 
     # Let's define a helper function which commits the transaction, so
@@ -34,17 +34,17 @@ Several views are used to handle the various operations on a ticket.
 
 == QuestionSubscriptionView ==
 
-This view is used to subscribe and unsubscribe from a ticket.
+This view is used to subscribe and unsubscribe from a question.
 Subscription is done when the user click on the 'Subscribe' button.
 
     >>> request = LaunchpadTestRequest(form={'subscribe': 'Subscribe'})
     >>> request.method = 'POST'
-    >>> view = getView(ticket_three, '+subscribe', request)
+    >>> view = getView(question_three, '+subscribe', request)
     >>> view.initialize()
-    >>> ticket_three.isSubscribed(getUtility(ILaunchBag).user)
+    >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     True
 
-A notification message is displayed and the view redirect to the ticket
+A notification message is displayed and the view redirect to the question
 view page.
 
     >>> for notice in request.notifications:
@@ -57,9 +57,9 @@ Unsubscription works in a similar manner.
 
     >>> request = LaunchpadTestRequest(form={'subscribe': 'Unsubscribe'})
     >>> request.method = 'POST'
-    >>> view = getView(ticket_three, '+subscribe', request)
+    >>> view = getView(question_three, '+subscribe', request)
     >>> view.initialize()
-    >>> ticket_three.isSubscribed(getUtility(ILaunchBag).user)
+    >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     False
     >>> for notice in request.notifications:
     ...     print notice.message
@@ -75,15 +75,15 @@ These two actions didn't generate any notification mails:
 == QuestionWorkflowView ==
 
 QuestionWorkflowView is the view used to handle the comments submitted by
-users on the ticket. The actions available on it always depends on the
-current state of the ticket and the identify of the user viewing the
+users on the question. The actions available on it always depends on the
+current state of the question and the identify of the user viewing the
 form.
 
     # Setup a harness to easily test the view.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.browser import QuestionWorkflowView
     >>> workflow_harness = LaunchpadFormHarness(
-    ...     firefox_ticket, QuestionWorkflowView)
+    ...     firefox_question, QuestionWorkflowView)
 
     # Let's define a helper method that will return the names of the
     # available actions.
@@ -93,14 +93,14 @@ form.
     ...              if action.available()]
     ...     return sorted(names)
 
-Unlogged users cannot post any comments on the ticket:
+Unlogged users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
     []
 
-When ticket is in the OPEN state, the owner can either answer his own
+When question is in the OPEN state, the owner can either answer his own
 question or provide more information.
 
     >>> login('test@canonical.com')
@@ -108,7 +108,7 @@ question or provide more information.
     >>> getAvailableActionNames(workflow_harness.view)
     ['giveinfo', 'selfanswer']
 
-But when another user sees the ticket, he can provide an answer or
+But when another user sees the question, he can provide an answer or
 request for more information.
 
     >>> login('no-priv@canonical.com')
@@ -117,8 +117,8 @@ request for more information.
     ['answer', 'requestinfo']
 
 When the other user requests for more information, a confirmation is
-displayed, the ticket status is changed to NEEDSINFO and the user is
-redirected back to the ticket page.
+displayed, the question status is changed to NEEDSINFO and the user is
+redirected back to the question page.
 
     >>> workflow_harness.submit(
     ...     'requestinfo', {
@@ -127,7 +127,7 @@ redirected back to the ticket page.
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Thanks for your information request.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
@@ -145,14 +145,14 @@ answer or requesting for more information:
     >>> getAvailableActionNames(workflow_harness.view)
     ['answer', 'requestinfo']
 
-And the ticket owner still has the same possibilities then initially:
+And the question owner still has the same possibilities then initially:
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
     ['giveinfo', 'selfanswer']
 
-If he replies with the requested information, the ticket is moved back
+If he replies with the requested information, the question is moved back
 to the OPEN state.
 
     >>> workflow_harness.submit(
@@ -162,7 +162,7 @@ to the OPEN state.
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Thanks for adding more information to your question.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
@@ -178,12 +178,12 @@ The other user can come back and gives an answer:
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Thanks for your answer.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     ANSWERED
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
 
-Once the ticket is answered, the set of possible actions for the ticket
+Once the question is answered, the set of possible actions for the question
 owner changes. He can now either confirm the answer, answer the problem
 himself, or reopen the request because that answer isn't working.
 
@@ -192,24 +192,24 @@ himself, or reopen the request because that answer isn't working.
     >>> getAvailableActionNames(workflow_harness.view)
     ['confirm', 'reopen', 'selfanswer']
 
-Let's say he confirms the previous answer, in this case, the ticket will
+Let's say he confirms the previous answer, in this case, the question will
 move to the 'SOLVED' state. Note that the UI doesn't enable the user to
 enter a confirmation message at that stage.
 
     >>> workflow_harness.submit(
-    ...     'confirm', {'answer_id': firefox_ticket.messages.count()-1,
+    ...     'confirm', {'answer_id': firefox_question.messages.count()-1,
     ...                 'field.message': ''})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Thanks for your feedback.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
 
 Since no confirmation message was given, a default one was used.
 
-    >>> print firefox_ticket.messages[-1].text_contents
+    >>> print firefox_question.messages[-1].text_contents
     User confirmed that the question is solved.
 
 Once in the SOLVED state, the owner can now only either add a comment
@@ -229,17 +229,17 @@ Adding a comment doesn't change the status:
     Thanks for your comment.
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     SOLVED
 
-And the other user can only comment on the ticket:
+And the other user can only comment on the question:
 
     >>> login('no-priv@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment']
 
-If the ticket owner reopens the request, its status is changed back to
+If the question owner reopens the request, its status is changed back to
 'OPEN'.
 
     >>> login('test@canonical.com')
@@ -252,12 +252,12 @@ If the ticket owner reopens the request, its status is changed back to
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Your question was reopened.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
 
-When the ticket owner answers his own request, it is moved straight to
+When the question owner answers his own request, it is moved straight to
 the SOLVED state.
 
     >>> workflow_harness.submit(
@@ -267,7 +267,7 @@ the SOLVED state.
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
     Thanks for sharing your solution.
-    >>> print firefox_ticket.status.name
+    >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
@@ -278,20 +278,20 @@ the SOLVED state.
 == QuestionMakeBugView ==
 
 The QuestionMakeBugView is used to handle the creation of a bug from a
-ticket. In addition to creating a bug, this operation will also link
-the bug to the ticket.
+question. In addition to creating a bug, this operation will also link
+the bug to the question.
 
 If the user cancels a bug creation request, the user is redirected back
-the ticket page.
+the question page.
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
     >>> request.method = 'POST'
-    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug = getView(question_three, '+makebug', request)
     >>> makebug.initialize()
     >>> makebug.process_form()
     ''
-    >>> list(ticket_three.bugs)
+    >>> list(question_three.bugs)
     []
 
 If the user creates a bug, a "Linked to bug" notification is sent and
@@ -302,18 +302,18 @@ the user is subscribed to the bug.
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
-    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug = getView(question_three, '+makebug', request)
     >>> makebug.initialize()
     >>> makebug.process_form()
-    >>> sorted(bug.id for bug in ticket_three.bugs)
+    >>> sorted(bug.id for bug in question_three.bugs)
     [11L]
-    >>> print ticket_three.bugs[0].title
+    >>> print question_three.bugs[0].title
     Bug title
-    >>> print ticket_three.bugs[0].description
+    >>> print question_three.bugs[0].description
     Bug description.
     >>> print makebug.user.name
     name16
-    >>> ticket_three.bugs[0].isSubscribed(makebug.user)
+    >>> question_three.bugs[0].isSubscribed(makebug.user)
     True
     >>> [n.message for n in request.notifications]
     [u'Thank you! Bug #11 created.']
@@ -328,11 +328,11 @@ the user is subscribed to the bug.
         Linked to bug: #11
     ...
 
-If the ticket already has bugs linked to it, no new bug can be created.
+If the question already has bugs linked to it, no new bug can be created.
 
     >>> request = LaunchpadTestRequest(form={'create': 'create'})
     >>> request.method = 'POST'
-    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug = getView(question_three, '+makebug', request)
     >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
@@ -340,8 +340,8 @@ If the ticket already has bugs linked to it, no new bug can be created.
 
 == BugLinkView and BugsUnlinkView ==
 
-Linking bug (+linkbug) to the ticket is managed through the BugLinkView.
-Unlinking bugs from the ticket is managed through the BugsUnlinkView.
+Linking bug (+linkbug) to the question is managed through the BugLinkView.
+Unlinking bugs from the question is managed through the BugsUnlinkView.
 See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'support-tracker-notifications.txt'.
@@ -356,12 +356,12 @@ support request.
     ...     form={'field.actions.reject': 'Reject',
     ...           'field.message': 'Rejecting for the fun of it.'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_ticket, '+reject', request)
+    >>> view = getView(firefox_question, '+reject', request)
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
     You have rejected this question.
-    >>> print firefox_ticket.status.title
+    >>> print firefox_question.status.title
     Invalid
 
 == QuestionChangeStatusView ==
@@ -374,12 +374,12 @@ outside of the comment workflow.
     ...           'field.status': 'Solved',
     ...           'field.message': 'Previous rejection was an error.'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_ticket, '+change-status', request)
+    >>> view = getView(firefox_question, '+change-status', request)
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
     Question status updated.
-    >>> print firefox_ticket.status.title
+    >>> print firefox_question.status.title
     Solved
 
     # Clear the notification.
@@ -387,13 +387,13 @@ outside of the comment workflow.
 
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most ticket
-fields. It can be used to edit the ticket title and description and also
+QuestionEditView available through '+edit' is used to edit most question
+fields. It can be used to edit the question title and description and also
 its metadata like language, priority, assignee, source package and
 whiteboard.
 
     >>> login('test@canonical.com')
-    >>> ticket_three.sourcepackagename = None
+    >>> question_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
@@ -405,24 +405,24 @@ whiteboard.
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
 
-    >>> view = getView(ticket_three, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
-    >>> ticket_three.title
+    >>> question_three.title
     u'Better Title'
-    >>> ticket_three.description
+    >>> question_three.description
     u'A better description.'
-    >>> print ticket_three.sourcepackagename.name
+    >>> print question_three.sourcepackagename.name
     mozilla-firefox
 
 Since only a user with launchpad.Admin privilege can change the
 priority, assignee and status whiteboard, the values won't have been
 changed:
 
-    >>> print ticket_three.priority.title
+    >>> print question_three.priority.title
     Normal
-    >>> ticket_three.assignee is None
+    >>> question_three.assignee is None
     True
-    >>> ticket_three.whiteboard is None
+    >>> question_three.whiteboard is None
     True
 
 This View send the event appropriate to send out a notification:
@@ -455,17 +455,17 @@ priority fields will be updated:
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
-    >>> view = getView(ticket_three, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
-    >>> print ticket_three.priority.title
+    >>> print question_three.priority.title
     Wishlist
-    >>> print ticket_three.assignee.displayname
+    >>> print question_three.assignee.displayname
     Foo Bar
-    >>> print ticket_three.whiteboard
+    >>> print question_three.whiteboard
     Some note
 
 In a similar manner, the sourcepackagename field can only be updated on
-a distribution ticket:
+a distribution question:
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
@@ -477,11 +477,11 @@ a distribution ticket:
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_ticket, '+edit', request)
+    >>> view = getView(firefox_question, '+edit', request)
     >>> view.initialize()
     >>> view.errors
     []
-    >>> firefox_ticket.sourcepackagename is None
+    >>> firefox_question.sourcepackagename is None
     True
 
     # Clear out the pending notifications.
@@ -561,19 +561,19 @@ English options).
     >>> sorted(lang.code for lang in languages[1:])
     [u'cy', u'ja']
 
-Note also that the vocabulary will always contain the current ticket's
+Note also that the vocabulary will always contain the current question's
 language in the vocabulary, even if this language would not be selected
 by the previous rules.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
-    >>> ticket_three.language = afar
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(ticket_three)
+    >>> question_three.language = afar
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(question_three)
     >>> afar in vocab
     True
 
     # Clean up.
-    >>> ticket_three.language = getUtility(ILanguageSet)['en']
+    >>> question_three.language = getUtility(ILanguageSet)['en']
 
 == UserSupportLanguagesMixin ==
 
@@ -639,7 +639,7 @@ excluded:
 
 == SearchQuestionsView ==
 
-This view is used as a base class to search for tickets. It is intended
+This view is used as a base class to search for questions. It is intended
 to be easily customizable to offer more specific reports, while
 keeping those searchable.
 
@@ -671,13 +671,13 @@ It also includes a widget to select the sort order.
     >>> search_view.widgets.get('sort') is not None
     True
 
-The tickets matching the search are available by using the
+The questions matching the search are available by using the
 searchResults() method. The returned results are batched.
 
-    >>> tickets = search_view.searchResults()
-    >>> tickets
+    >>> questions = search_view.searchResults()
+    >>> questions
     <canonical.launchpad.webapp.batching.BatchNavigator ...>
-    >>> print "\n".join([ticket.title for ticket in tickets.batch])
+    >>> print "\n".join([question.title for question in questions.batch])
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -692,9 +692,9 @@ can tweak the search and filter the results:
     ...     'field.search_text': 'firefox',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
-    >>> tickets = search_view.searchResults()
-    >>> for ticket in tickets.batch:
-    ...     print ticket.title, ticket.status.title
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title, question.status.title
     mailto: problem in webpage  Solved
 
 Specific views can provide a default filter by returning the default
@@ -705,13 +705,13 @@ search parameters to use in the getDefaultFilter() method:
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
     >>> search_view_harness.submit('', {})
 
-In this example, only the solved and invalid tickets are listed by
+In this example, only the solved and invalid questions are listed by
 default.
 
     >>> search_view = search_view_harness.view
-    >>> tickets = search_view.searchResults()
-    >>> for ticket in tickets.batch:
-    ...     print ticket.title
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title
     mailto: problem in webpage
     Better Title
 
@@ -730,9 +730,9 @@ criteria.
     ...     'field.search_text': 'firefox',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
-    >>> tickets = search_view.searchResults()
-    >>> for ticket in tickets.batch:
-    ...     print ticket.title
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title
     mailto: problem in webpage
     >>> for status in search_view.widgets['status']._getFormValue():
     ...     print status.title

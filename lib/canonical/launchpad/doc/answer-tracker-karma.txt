@@ -50,59 +50,59 @@ to order our messages.
 
 == Karma Actions ==
 
-- Creating a ticket
+- Creating a question
 
     >>> login('test@canonical.com')
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> firefox_ticket = firefox.newQuestion(
-    ...     title='New ticket', description='Question description.',
+    >>> firefox_question = firefox.newQuestion(
+    ...     title='New question', description='Question description.',
     ...     owner=sample_person, datecreated=now.next())
-    >>> notify(SQLObjectCreatedEvent(firefox_ticket))
+    >>> notify(SQLObjectCreatedEvent(firefox_question))
     Karma added: action=ticketcreated, product=firefox, person=name12
 
-- Expiring a ticket
+- Expiring a question
 
 The expireQuestion() workflow method doesn't grant any karma because it
 will usually be called by an automated script.
 
-    >>> msg = firefox_ticket.expireQuestion(
+    >>> msg = firefox_question.expireQuestion(
     ...     foo_bar, 'Expiring because of inactivity. Reopen if you are '
     ...     'still having the problem and provide additional information.',
     ...     datecreated=now.next())
 
-- Reopening a ticket
+- Reopening a question
 
-    >>> msg = firefox_ticket.reopen(
+    >>> msg = firefox_question.reopen(
     ...     "Firefox doesn't have any 'Quick Searches' in its bookmarks.",
     ...     datecreated=now.next())
     Karma added: action=ticketreopened, product=firefox, person=name12
 
 - Requesting for more information
 
-    >>> msg = firefox_ticket.requestInfo(
+    >>> msg = firefox_question.requestInfo(
     ...     foo_bar, 'What "Quick Searches" do you want?',
     ...     datecreated=now.next())
     Karma added: action=ticketrequestedinfo, product=firefox, person=name16
 
 - Giving back more information
 
-    >>> msg = firefox_ticket.giveInfo(
+    >>> msg = firefox_question.giveInfo(
     ...     'The same one than shipped upstreams.',
     ...     datecreated=now.next())
     Karma added: action=ticketgaveinfo, product=firefox, person=name12
 
-- Giving an answer to a ticket request
+- Giving an answer to a question request
 
-    >>> msg = firefox_ticket.giveAnswer(
+    >>> msg = firefox_question.giveAnswer(
     ...     foo_bar, "Ok, I see what you mean. You need to install them "
     ...     "manually for now.", datecreated=now.next())
     Karma added: action=ticketgaveanswer, product=firefox, person=name16
 
 - Adding a comment
 
-    >>> msg = firefox_ticket.addComment(
+    >>> msg = firefox_question.addComment(
     ...     foo_bar, 'You could also fill a bug about that, if you like.',
     ...     datecreated=now.next())
     Karma added: action=ticketcommentadded, product=firefox, person=name16
@@ -113,15 +113,15 @@ When the user confirms that his problem is solved, karma will be given
 for accepting an answer. The person whose answer was accepted will
 also receives karma.
 
-    >>> msg = firefox_ticket.confirmAnswer(
+    >>> msg = firefox_question.confirmAnswer(
     ...     "Ok, thanks. I'll open a bug about this then.",
     ...     answer=msg, datecreated=now.next())
     Karma added: action=ticketansweraccepted, product=firefox, person=name12
     Karma added: action=ticketanswered, product=firefox, person=name16
 
-- Rejecting a ticket
+- Rejecting a question
 
-    >>> msg = firefox_ticket.reject(
+    >>> msg = firefox_question.reject(
     ...     foo_bar, 'This should really be a bug report.')
     Karma added: action=ticketrejected, product=firefox, person=name16
 
@@ -131,52 +131,52 @@ We do not grant karma for status change made outside of workflow:
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.lp.dbschema import QuestionStatus
-    >>> msg = firefox_ticket.setStatus(
+    >>> msg = firefox_question.setStatus(
     ...     foo_bar, QuestionStatus.OPEN, 'That rejection was an error.',
     ...     datecreated=now.next())
 
 - Solving own problem
 
-There is a special karma action to cover the case when the ticket owner
+There is a special karma action to cover the case when the question owner
 comes back to provide an answer to his own problem. In that case, we
 do not want to grant the ticketanswered and ticketansweraccepted karma
 action to the same person.
 
     >>> login('test@canonical.com')
-    >>> msg = firefox_ticket.giveAnswer(
+    >>> msg = firefox_question.giveAnswer(
     ...     sample_person, "I was able to import some by following the "
     ...     "instructions on http://tinyurl.com/cyus4",
     ...     datecreated=now.next())
     Karma added: action=ticketownersolved, product=firefox, person=name12
 
-- Changing the Title of a ticket:
+- Changing the Title of a question:
 
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> old_ticket = Snapshot(
-    ...     firefox_ticket, providing=providedBy(firefox_ticket))
-    >>> firefox_ticket.title = ('Firefox 1.5.0.5 does not have any '
+    >>> old_question = Snapshot(
+    ...     firefox_question, providing=providedBy(firefox_question))
+    >>> firefox_question.title = ('Firefox 1.5.0.5 does not have any '
     ...                         '"Quick Searches" installed by default')
-    >>> notify(SQLObjectModifiedEvent(firefox_ticket, old_ticket, ['title']))
+    >>> notify(SQLObjectModifiedEvent(firefox_question, old_question, ['title']))
     Karma added: action=tickettitlechanged, product=firefox, person=name12
 
-- Changing the Description of a ticket:
+- Changing the Description of a question:
 
-    >>> old_ticket = Snapshot(
-    ...     firefox_ticket, providing=providedBy(firefox_ticket))
-    >>> firefox_ticket.description = (
+    >>> old_question = Snapshot(
+    ...     firefox_question, providing=providedBy(firefox_question))
+    >>> firefox_question.description = (
     ...     'Firefox 1.5.0.5 does not have any "Quick Searches" installed '
     ...     'in the bookmarks by default, like the official ones do.')
     >>> notify(SQLObjectModifiedEvent(
-    ...     firefox_ticket, old_ticket, ['description']))
+    ...     firefox_question, old_question, ['description']))
     Karma added: action=ticketdescriptionchanged, product=firefox,
         person=name12
 
 - Linking to a bug:
 
     >>> from canonical.launchpad.database import Bug
-    >>> ticketbug = firefox_ticket.linkBug(Bug.get(5))
+    >>> questionbug = firefox_question.linkBug(Bug.get(5))
     Karma added: action=ticketlinkedtobug, product=firefox, person=name12
     >>> logout()
 

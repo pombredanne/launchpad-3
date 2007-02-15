@@ -1,4 +1,4 @@
-<div id="ticket-subscribers" class="portlet">
+<div id="question-subscribers" class="portlet">
   <h2>Subscribers to question #<span tal:replace="context/id">4</span></h2>
 
   <div class="portletBody portletContent"

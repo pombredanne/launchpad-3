@@ -2493,7 +2493,7 @@ class PersonLatestQuestionsView(LaunchpadView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets in which an IPerson is
+    """View used to search and display questions in which an IPerson is
     involved.
     """
 
@@ -2514,7 +2514,7 @@ class PersonSearchQuestionsView(SearchQuestionsView):
 
 
 class SearchAnsweredQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets answered by an IPerson."""
+    """View used to search and display questions answered by an IPerson."""
 
     displayTargetColumn = True
 
@@ -2537,7 +2537,7 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
 
 
 class SearchAssignedQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets assigned to an IPerson."""
+    """View used to search and display questions assigned to an IPerson."""
 
     displayTargetColumn = True
 
@@ -2560,7 +2560,7 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
 
 
 class SearchCommentedQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets commented on by an IPerson."""
+    """View used to search and display questions commented on by an IPerson."""
 
     displayTargetColumn = True
 
@@ -2583,7 +2583,7 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
 
 
 class SearchCreatedQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets created by an IPerson."""
+    """View used to search and display questions created by an IPerson."""
 
     displayTargetColumn = True
 
@@ -2606,7 +2606,7 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
 
 
 class SearchNeedAttentionQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets needing an IPerson attention."""
+    """View used to search and display questions needing an IPerson attention."""
 
     displayTargetColumn = True
 
@@ -2628,7 +2628,7 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
 
 
 class SearchSubscribedQuestionsView(SearchQuestionsView):
-    """View used to search and display tickets subscribed to by an IPerson."""
+    """View used to search and display questions subscribed to by an IPerson."""
 
     displayTargetColumn = True
 
@@ -2659,29 +2659,29 @@ class PersonSupportMenu(ApplicationMenu):
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='ticket')
+        return Link('+answeredtickets', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
+        return Link('+assignedtickets', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
-        return Link('+createdtickets', 'Asked', summary, icon='ticket')
+        return Link('+createdtickets', 'Asked', summary, icon='question')
 
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='ticket')
+        return Link('+commentedtickets', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
         return Link('+needattentiontickets', 'Need Attention', summary,
-                    icon='ticket')
+                    icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='ticket')
+        return Link('+subscribedtickets', text, summary, icon='question')
