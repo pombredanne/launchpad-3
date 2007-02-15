@@ -283,23 +283,20 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
     def test_get_revisions_branched(self):
-        rev0 = self.bzr_tree.commit(u'common parent', committer=self.AUTHOR)
+        rev0 = self.bzr_tree.commit(u'common parent', committer=self.AUTHOR,
+                                    allow_pointless=True)
         new_bzrdir = self.bzr_tree.bzrdir.sprout('new-branch-2')
         new_tree = new_bzrdir.create_workingtree()
-        rev1 = self.bzr_tree.commit(u'commit one', committer=self.AUTHOR)
-        rev2 = new_tree.commit(u'commit two', committer=self.AUTHOR)
+        rev1 = self.bzr_tree.commit(u'commit one', committer=self.AUTHOR,
+                                    allow_pointless=True)
+        rev2 = new_tree.commit(u'commit two', committer=self.AUTHOR,
+                               allow_pointless=True)
         self.bzr_tree.merge_from_branch(new_tree.branch)
-        rev3 = self.bzr_tree.commit(u'merge', committer=self.AUTHOR)
+        rev3 = self.bzr_tree.commit(u'merge', committer=self.AUTHOR,
+                                    allow_pointless=True)
         bzrsync = self.makeBzrSync()
         self.assertEqual(set([(1, rev0), (2, rev1), (3, rev3), (None, rev2)]),
                          set(bzrsync.getRevisions()))
-        # XXX - this isn't important to this test, but other tests fail if we
-        # don't update the counts.
-        # -- jml, 2007-02-14
-        self.syncAndCount(new_revisions=4, new_numbers=4, new_parents=4)
-        # XXX - We get a warning if we remove this line. I don't know why.
-        # -- jml, 2007-02-14
-        bzrsync.close()
 
 
 class TestBzrSyncModified(BzrSyncTestCase):
