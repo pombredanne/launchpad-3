@@ -102,6 +102,26 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="script_errorreports">
+        <key name="errordir" datatype="string" required="no">
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
+        <key name="oops_prefix" datatype="string" required="yes">
+            <description>
+                A prefix for "OOPS" codes for this script.
+k            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
+    </sectiontype>
+
+
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
@@ -508,7 +528,7 @@
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
@@ -757,6 +777,10 @@
              default="noreply@launchpad.net"/>
     </sectiontype>
 
+    <sectiontype name="mirror_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="upload_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="import_puller_errorreports" extends="script_errorreports" />
+
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
@@ -775,6 +799,12 @@
                 URL prepended to branch ids to obtain internal branch URLs.
             </description>
         </key>
+        <section name="*" type="mirror_puller_errorreports"
+            attribute="mirror_errorreports" required="no" />
+        <section name="*" type="upload_puller_errorreports"
+            attribute="upload_errorreports" required="no" />
+        <section name="*" type="import_puller_errorreports"
+            attribute="import_errorreports" required="no" />
     </sectiontype>
 
     <sectiontype name="branchscanner">
@@ -783,6 +813,8 @@
                 The database user for the branch-scanner to update branches.
             </description>
         </key>
+        <section name="*" type="script_errorreports" attribute="errorreports"
+            required="no" />
     </sectiontype>
 
     <sectiontype name="supermirrorsftp">

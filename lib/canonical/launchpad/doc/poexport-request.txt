@@ -4,6 +4,9 @@ Rosetta PO Export Request Queue
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
@@ -40,8 +43,7 @@ Here's the stuff they're going to request.
 
 And here's them making the request.
 
-  >>> from canonical.launchpad.database import POExportRequestSet
-  >>> request_set = POExportRequestSet()
+  >>> request_set = getUtility(IPOExportRequestSet)
   >>> request_set.addRequest(person, None, [ca, cs])
 
 Now we request that the queue be processed.
@@ -52,7 +54,8 @@ Now we request that the queue be processed.
 
   >>> from canonical.launchpad.scripts.po_export_queue import process_queue
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template pmount in
+  Ubuntu Hoary package "pmount"
 
 We need to make sure the Librarian data has settled into place.
 
@@ -69,9 +72,7 @@ Let's read our mail.
   >>> from canonical.launchpad.mail.stub import test_emails
   >>> len(test_emails)
   1
-  >>> from_addr, to_addrs, body = test_emails[0]
-  >>> from_addr
-  'bounces@canonical.com'
+  >>> from_addr, to_addrs, body = test_emails.pop()
   >>> to_addrs
   ['mark@hbd.com']
   >>> print_mail_body(body)
@@ -104,84 +105,29 @@ Let's download it and make sure the contents look ok.
   rosetta-pmount/ca.po
   rosetta-pmount/cs.po
 
-Now let's see what happens if one of the PO files is broken.
-
-  >>> hr = potemplate.getPOFileByLang('hr')
-  >>> hr.header = 'Content-Type: text/plain; charset=broken\n'
-  >>> hr.sync()
-  >>> hr.export()
-  Traceback (most recent call last):
-  ...
-  POInvalidInputError: Unknown charset u'broken'
-
-  >>> test_emails[:] = []
-  >>> request_set.addRequest(person, None, [hr, ca])
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
-
-  >>> transaction.commit()
-
-We should have two extra emails, one to the error reports mailing list and
-another to the person who made the request.
-
-  >>> len(test_emails)
-  2
-  >>> from_addr, to_addrs1, body = test_emails[0]
-  >>> from_addr, to_addrs2, body = test_emails[1]
-  >>> sorted(to_addrs1 + to_addrs2)
-  ['launchpad-error-reports@lists.canonical.com', 'mark@hbd.com']
-  >>> print_mail_body(body)
-  > 
-  > Hello Mark Shuttleworth,
-  > 
-  > Rosetta has finished exporting your requested files.
-  > However, problems were encountered exporting the
-  > following files:
-  > 
-  >  * hr.po
-  > 
-  > The Rosetta team has been notified of this problem. Please
-  > reply to this email for further assistance.
-  > 
-  > Of the 2 files you requested, Rosetta successfully exported
-  > 1, which can be downloaded from the following location:
-  > 
-  >     http://localhost:58000/.../rosetta-pmount.tar.gz
-
-We should get a slightly different email if we didn't manage to export any
-files:
-
-  >>> test_emails[:] = []
-  >>> request_set.addRequest(person, None, [hr])
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
-
-  >>> transaction.commit()
-
-  >>> len(test_emails)
-  2
-  >>> from_addr, to_addrs, body = test_emails[0]
-  >>> print_mail_body(body)
-  > 
-  > Hello Mark Shuttleworth,
-  > 
-  > Rosetta encountered problems exporting the files you
-  > requested. The Rosetta team has been notified of this
-  > problem. Please reply to this email for further assistance.
-
 Let's try requesting an export in MO format:
 
   >>> from canonical.lp.dbschema import RosettaFileFormat
-  >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [ca], RosettaFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for person 1, PO template 2
+  log> Exporting objects for Mark Shuttleworth, related to template pmount in
+  Ubuntu Hoary package "pmount"
 
   >>> transaction.commit()
 
   >>> len(test_emails)
   1
-  >>> from_addr, to_addrs, body = test_emails[0]
+  >>> from_addr, to_addrs, body = test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+  >>> print_mail_body(body)
+  > 
+  > Hello Mark Shuttleworth,
+  > 
+  > The files you requested from Rosetta are ready for download
+  > from the following location:
+  > 
+  >     http://localhost:58000/.../ca.mo
   >>> url = extract_url(body)
 
 We will need to define a helper function.
@@ -222,12 +168,23 @@ Let's test the .mo compilation.
   ...
   MOCompilationError: ...
 
-Finally, test running the script directly to be sure the user has the correct
-rights.
-We need to request again some files:
+Finally, the code should work when executed from the script. This is a good
+way that the user used by the script has the needed rights to use the
+database.
 
-  >>> request_set = POExportRequestSet()
+To go thru all code paths, the export should have requests for distributions
+and products.
+
+  # We need to request again some files.
+  >>> ca.potemplate.distrorelease is None
+  False
+  >>> cs.potemplate.distrorelease is None
+  False
   >>> request_set.addRequest(person, None, [ca, cs])
+  >>> product_template = potemplate.get(1)
+  >>> product_template.productseries is None
+  False
+  >>> request_set.addRequest(person, product_template)
   >>> transaction.commit()
 
 And run the script.
@@ -242,7 +199,10 @@ And run the script.
   >>> (output, empty) = process.communicate()
   >>> print output
   INFO    creating lockfile
-  DEBUG   Exporting objects for person 1, PO template 2
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
+  in Ubuntu Hoary package "pmount"
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template
+  evolution-2.2 in Evolution trunk
   DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
 

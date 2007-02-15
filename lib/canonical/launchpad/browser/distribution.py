@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
@@ -38,6 +39,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.components.request_country import request_country
@@ -102,6 +104,21 @@ class DistributionSetNavigation(RedirectionNavigation):
         return RedirectionNavigation.traverse(self, name)
 
 
+class DistributionSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return self.context.releases[:num]
+
+    def listAltChildren(self, num):
+        return None
+
+
 class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
@@ -133,7 +150,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals for all releases'
         return Link('+driver', text, summary, icon='edit')
 
@@ -438,6 +455,7 @@ class DistributionAddView(LaunchpadFormView):
             members=data['members'],
             owner=self.user,
             gotchi=data['gotchi'],
+            gotchi_heading=None,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

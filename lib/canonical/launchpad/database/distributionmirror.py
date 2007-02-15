@@ -16,14 +16,17 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject.sqlbuilder import AND, STARTSWITH
 
 from canonical.config import config
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
+
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
-    EnumCol, PackagePublishingStatus, SourcePackageFileType,
+    PackagePublishingStatus, SourcePackageFileType,
     BinaryPackageFileType)
 
 from canonical.launchpad.interfaces import (

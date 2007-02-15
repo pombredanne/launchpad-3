@@ -399,25 +399,36 @@ And you can check which direct memberships a team has by using activememberships
     ...  for membership in t3.activememberships]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
-A team has a number of other methods that return what people are members
-of it, all based on Person._getMembersByStatus:
+A team has a number of other methods that return the people which are members
+of it, all based on Person.getMembersByStatus:
 
-    >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3.declinedmembers]
-    []
+    >>> [person.unique_displayname for person in t3.approvedmembers]
+    [u'Celso Providelo (cprov)']
 
 (which is the same as saying
 
-    # We want to use a private method here, so we'll remove the security
-    # proxy from t3
-    >>> naked_t3 = removeSecurityProxy(t3)
-    >>> declined = TeamMembershipStatus.DECLINED
-    >>> [(membership.person.name, membership.status.title)
-    ...  for membership in naked_t3._getMembersByStatus(declined)]
-    []
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(TeamMembershipStatus.APPROVED)]
+    [u'Celso Providelo (cprov)']
 
 except shorter)
 
+We can also change the sort order of the results of getMembersByStatus.
+
+    >>> cprov.leave(t3)
+    >>> flush_database_updates()
+
+    >>> deactivated = TeamMembershipStatus.DEACTIVATED
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated)]
+    [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
+
+    >>> orderBy = '-TeamMembership.datejoined'
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
+    [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
+
+    
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being

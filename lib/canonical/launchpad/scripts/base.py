@@ -8,7 +8,6 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
-from canonical.launchpad.ftests import login
 
 
 class LaunchpadScriptFailure(Exception):
@@ -130,7 +129,7 @@ class LaunchpadScript:
 
             self.parser.add_option("-f", "--foo", dest="foo",
                 default="foobar-makes-the-world-go-round",
-                help="You're joking right")
+                help="You are joking, right?")
         """
 
     #
@@ -139,6 +138,9 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
+        # This import is actually quite expensive, and causes us to
+        # import circularly in pathological cases.
+        from canonical.launchpad.ftests import login
         login(user)
 
     #

@@ -9,8 +9,10 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
-from canonical.lp.dbschema import EnumCol, GPGKeyAlgorithm
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+
+from canonical.lp.dbschema import GPGKeyAlgorithm
 from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IGPGKey
 
 
