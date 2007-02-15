@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """ITicketTarget browser views."""
 
@@ -30,8 +30,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageSupportContacts, ISearchableByTicketOwner,
-    ISearchTicketsForm, ITicketTarget, NotFoundError)
+    IDistribution, ILanguageSet, IManageSupportContacts, IProject,
+    ISearchableByTicketOwner, ISearchTicketsForm, ITicketTarget,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -99,8 +100,10 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
-    # Set to true to display a column showing the ticket's target
-    displayTargetColumn = False
+    # Set to true to display a column showing the ticket's target.
+    @property
+    def display_target_column(self):
+        return IProject.providedBy(self.context)
 
     # Will contain the parameters used by searchResults
     search_params = None
@@ -149,17 +152,17 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if status_set_title:
             replacements['status'] = status_set_title
             if self.search_text:
-                return _('${status} support requests matching "${search_text}" '
+                return _('${status} questions matching "${search_text}" '
                          'for ${context}', mapping=replacements)
             else:
-                return _('${status} support requests for ${context}',
+                return _('${status} questions for ${context}',
                          mapping=replacements)
         else:
             if self.search_text:
-                return _('Support requests matching "${search_text}" for '
+                return _('Questions matching "${search_text}" for '
                          '${context}', mapping=replacements)
             else:
-                return _('Support requests for ${context}',
+                return _('Questions for ${context}',
                          mapping=replacements)
 
     @property
@@ -174,19 +177,19 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if status_set_title:
             replacements['status'] = status_set_title.lower()
             if self.search_text:
-                return _('There are no ${status} support requests matching '
+                return _('There are no ${status} questions matching '
                          '"${search_text}" for ${context}.',
                          mapping=replacements)
             else:
-                return _('There are no ${status} support requests for '
+                return _('There are no ${status} questions for '
                          '${context}.', mapping=replacements)
         else:
             if self.search_text:
-                return _('There are no support requests matching '
-                         '"${search_text}" for ${context} with the requested '
-                         'statuses.', mapping=replacements)
+                return _('There are no questions matching "${search_text}" '
+                         'for ${context} with the requested statuses.',
+                          mapping=replacements)
             else:
-                return _('There are no support requests for ${context} with '
+                return _('There are no questions for ${context} with '
                          'the requested statuses.', mapping=replacements)
 
     def getDefaultFilter(self):
@@ -264,7 +267,8 @@ class SearchTicketsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return BatchNavigator(
             self.context.searchTickets(**self.search_params), self.request)
 
-    def displaySourcePackageColumn(self):
+    @property
+    def display_sourcepackage_column(self):
         """We display the source package column only on distribution."""
         return IDistribution.providedBy(self.context)
 
@@ -295,24 +299,24 @@ class TicketCollectionMyTicketsView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests you made matching "${search_text}" for '
+            return _('Questions you asked matching "${search_text}" for '
                      '${context}', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
         else:
-            return _('Support requests you made for ${context}',
+            return _('Questions you asked about ${context}',
                      mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _("You didn't make any support requests matching "
+            return _("You didn't ask any questions matching "
                      '"${search_text}" for ${context}.', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
         else:
-            return _("You didn't make any support requests for ${context}.",
+            return _("You didn't ask any questions about ${context}.",
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
@@ -332,24 +336,24 @@ class TicketCollectionNeedAttentionView(SearchTicketsView):
     def pageheading(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('Support requests matching "${search_text}" needing your '
+            return _('Questions matching "${search_text}" needing your '
                      'attention for ${context}', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
         else:
-            return _('Support requests needing your attention for ${context}',
+            return _('Questions needing your attention for ${context}',
                      mapping={'context': self.context.displayname})
 
     @property
     def empty_listing_message(self):
         """See SearchTicketsView."""
         if self.search_text:
-            return _('No support requests matching "${search_text}" need your '
+            return _('No questions matching "${search_text}" need your '
                      'attention for ${context}.', mapping=dict(
                         context=self.context.displayname,
                         search_text=self.search_text))
         else:
-            return _("No support requests need your attention for ${context}.",
+            return _("No questions need your attention for ${context}.",
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
@@ -361,7 +365,7 @@ class ManageSupportContactView(GeneralFormView):
     """View class for managing support contacts."""
 
     schema = IManageSupportContacts
-    label = "Manage support contacts"
+    label = "Manage answer contacts"
 
     @property
     def _keyword_arguments(self):
@@ -393,12 +397,12 @@ class ManageSupportContactView(GeneralFormView):
         if want_to_be_support_contact:
             if self.context.addSupportContact(self.user):
                 response.addNotification(
-                    _('You have been added as a support contact for '
+                    _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
             if self.context.removeSupportContact(self.user):
                 response.addNotification(
-                    _('You have been removed as a support contact for '
+                    _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
 
         for team in self.user.teams_participated_in:
@@ -406,12 +410,12 @@ class ManageSupportContactView(GeneralFormView):
             if team in support_contact_teams:
                 if self.context.addSupportContact(team):
                     response.addNotification(
-                        _('$teamname has been added as a support contact '
+                        _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
                 if self.context.removeSupportContact(team):
                     response.addNotification(
-                        _('$teamname has been removed as a support contact '
+                        _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
 
         self._nextURL = canonical_url(self.context) + '/+tickets'
@@ -422,8 +426,8 @@ class TicketTargetFacetMixin:
 
     def support(self):
         summary = (
-            'Technical support requests for %s' % self.context.displayname)
-        return Link('+tickets', 'Support', summary)
+            'Questions for %s' % self.context.displayname)
+        return Link('+tickets', 'Answers', summary)
 
 
 class TicketTargetTraversalMixin:
@@ -466,7 +470,7 @@ class TicketCollectionSupportMenu(ApplicationMenu):
             self.makeSearchLink(['Answered', 'Solved']), text, icon='ticket')
 
     def myrequests(self):
-        text = 'My Requests'
+        text = 'My Questions'
         return Link('+mytickets', text, icon='ticket')
 
     def need_attention(self):
@@ -482,10 +486,10 @@ class TicketTargetSupportMenu(TicketCollectionSupportMenu):
     links = TicketCollectionSupportMenu.links + ['new', 'support_contact']
 
     def new(self):
-        text = 'Request Support'
+        text = 'Ask Question'
         return Link('+addticket', text, icon='add')
 
     def support_contact(self):
-        text = 'Support Contact'
+        text = 'Answer Contact'
         return Link('+support-contact', text, icon='edit')
 

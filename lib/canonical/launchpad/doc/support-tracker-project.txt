@@ -1,0 +1,57 @@
+= Project and the Support Tracker =
+
+Although ticket cannot be filed directly against projects, IProject in
+Launchpad also provides the ITicketCollection and
+ISearchableByTicketOwner interfaces.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProjectSet, ISearchableByTicketOwner, ITicketCollection)
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> verifyObject(ITicketCollection, mozilla_project)
+    True
+    >>> verifyObject(ISearchableByTicketOwner, mozilla_project)
+    True
+
+== searchTickets() ==
+
+This means that it is possible to search for all tickets filed against
+products in a project using the project searchTickets() method.
+
+    # Add a ticket to thunderbird.
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
+    >>> login('test@canonical.com')
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> ticket = thunderbird.newTicket(
+    ...     sample_person, "SVG attachments aren't displayed",
+    ...     "It would be a nice feature if SVG attachments could be displayed"
+    ...     "inlined.")
+
+    >>> for ticket in mozilla_project.searchTickets(search_text='svg'):
+    ...     print ticket.title, ticket.target.displayname
+    SVG attachments aren't displayed            Mozilla Thunderbird
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+
+Tickets can be searched by all the standard searchTickets() parameters
+(consult tickettarget.txt for the full details.)
+
+    >>> from canonical.lp.dbschema import TicketStatus, TicketSort
+    >>> for ticket in mozilla_project.searchTickets(
+    ...     owner=sample_person, status=TicketStatus.OPEN,
+    ...     sort=TicketSort.OLDEST_FIRST):
+    ...     print ticket.title, ticket.target.displayname
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    SVG attachments aren't displayed            Mozilla Thunderbird
+
+== getTicketLanguages() ==
+
+The getTicketLanguages() returns the set of languages that is used by
+all the tickets in the project products.
+
+    >>> sorted(language.code
+    ...        for language in mozilla_project.getTicketLanguages())
+    [u'en', u'pt_BR']
+
+(The firefox product has one ticket created in Brazilian Portuguese.)

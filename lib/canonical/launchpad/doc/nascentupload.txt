@@ -30,6 +30,10 @@ managed archive.
   ...     def debug(self, s):
   ...         print "DEBUG:", s
 
+  >>> class MockMunchyLogger:
+  ...     def debug(self, s):
+  ...         pass
+
 The policy we feed to to the nascent upload needs to have its command
 line options passed in.
 
@@ -244,10 +248,9 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
+  DEBUG: Checking for ed/0.2-20 source ancestry
   DEBUG: ed: (source) NEW
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for ed
+  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
   DEBUG: ed: (binary) NEW
   DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
@@ -391,10 +394,6 @@ Roll back everything so that we can try again
   >>> transaction.abort()
 
 First up, construct an upload of just the ed source...
-
-  >>> class MockMunchyLogger:
-  ...     def debug(self, s):
-  ...         pass
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'),
   ...          datadir('split-upload-test'), "ed_0.2-20_source.changes",
@@ -577,117 +576,6 @@ content, it should have all the required fields except the
   True
 
 Chuck it all away again
-
-  >>> transaction.abort()
-
-== Announcements ==
-
-NascentUpload announces uploads according its final status (NEW,
-AUTO-APPROVED, UNAPPROVED) and its destination pocket:
-
- * NEW to RELEASE (via insecure): submitter set (changes signer,
-   Changed-by and maintainer) receives an 'new' warning message.
-
- * UNAPPROVED to frozen-RELEASE/UPDATES/BACKPORTS/PROPOSED (via insecure):
-   submitter set receives an 'unapproved' warning (announcement is
-   sent after the upload gets reviewed by archive-admin at queue time).
-
- * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
-   'acceptance' warning and the target distrorelease changeslist
-   address receives an 'announcement' message.
-
- * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
-   'acceptance' warning ('announcement' is skipped).
-
- * AUTO-APPROVED to SECURITY (via security): submitter set receives an
-   'acceptance' warning and the target distrorelease changeslist
-   address receives an 'announcement' message.
-
-
-Before the actual tests, let's adjust 'changeslist' address on related
-distroreleases:
-
-  >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
-  >>> warty = ubuntu['warty']
-  >>> warty.changeslist = "warty-announce@lists.ubuntu.com"
-
-
-AUTO-APPROVED upload to RELEASE pocket via sync policy (it presents
-the same behaviour than using insecure policy, apart of allowing
-unsigned changes):
-
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
-  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
-  >>> netapplet_src.policy.setOptions(MockOptions())
-  >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
-  DEBUG: Setting it to ACCEPTED
-
-  >>> len(msgs)
-  2
-
-  >>> import email
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
-
-
-AUTO-APPROVED upload to BACKPORTS pocket via sync policy:
-
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('netapplet_2.0-fake'),
-  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "warty-backports"
-  >>> netapplet_src.policy.setOptions(local_options)
-  >>> netapplet_src.process()
-  >>> netapplet_src.rejected
-  False
-
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Skipping announcement, it is a BACKPORT.
-
-  >>> len(msgs)
-  1
-
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
-
-
-AUTO-APPROVED upload to SECURITY pocket via security policy:
-
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('security'), datadir('netapplet_2.0-fake'),
-  ...     "netapplet_2.0-fake_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "warty-security"
-  >>> netapplet_src.policy.setOptions(local_options)
-
-  >>> netapplet_src.process()
-  >>> netapplet_src.rejected
-  False
-
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
-  DEBUG: Setting it to ACCEPTED
-
-  >>> len(msgs)
-  2
-
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'warty-announce@lists.ubuntu.com']
-
-
-Chuck it all away again.
 
   >>> transaction.abort()
 

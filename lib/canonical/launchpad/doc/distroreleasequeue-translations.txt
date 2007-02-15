@@ -91,8 +91,7 @@ queue:
   DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
   DEBUG: Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against amd64 for pmount
+  DEBUG: Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
   DEBUG: pmount: (binary) NEW
   DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
