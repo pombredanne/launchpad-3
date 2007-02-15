@@ -157,7 +157,7 @@ class DSCFile(PackageUploadFile, SignableTagFile):
             self._dict = parse_tagfile(self.full_filename,
                 dsc_whitespace_rules=1,
                 allow_unsigned=self.policy.unsigned_dsc_ok)
-        except TagFileParseError, e:
+        except (IOError, TagFileParseError), e:
             raise UploadError("Unable to parse the dsc %s: %s" % (self.filename, e))
 
         self.logger.debug("Performing DSC verification.")
