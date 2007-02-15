@@ -6,11 +6,11 @@ expire old questions on which there was no activity for the past two
 weeks.
 
 The expiration period is set using the
-config.tickettracker.days_before_expiration configuration variable. It
+config.answertracker.days_before_expiration configuration variable. It
 defaults to 15 days.
 
     >>> from canonical.config import config
-    >>> config.tickettracker.days_before_expiration
+    >>> config.answertracker.days_before_expiration
     15
 
 Only questions in the OPEN or NEEDSINFO state which aren't assigned to

@@ -428,7 +428,7 @@ class MailHandlers:
         self._handlers = {
             config.launchpad.bugs_domain: MaloneHandler(),
             config.launchpad.specs_domain: SpecificationHandler(),
-            config.tickettracker.email_domain: AnswerTrackerHandler()
+            config.answertracker.email_domain: AnswerTrackerHandler()
             }
 
     def get(self, domain):

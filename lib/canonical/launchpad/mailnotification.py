@@ -950,12 +950,12 @@ class QuestionNotification:
         """Return a formatted email address suitable for user in the From
         header of the question notification.
 
-        Default is Event Person Display Name <ticket#@tickettracker_domain>
+        Default is Event Person Display Name <ticket#@answertracker_domain>
         """
         return format_address(
             self.event.user.displayname,
             'ticket%s@%s' % (
-                self.question.id, config.tickettracker.email_domain))
+                self.question.id, config.answertracker.email_domain))
 
     def getSubject(self):
         """Return the subject of the notification.

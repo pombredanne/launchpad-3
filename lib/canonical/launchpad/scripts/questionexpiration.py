@@ -25,14 +25,14 @@ class QuestionJanitor:
         """Create a new QuestionJanitor.
 
         :days_before_expiration: Days of inactivity before a question is
-            expired. Defaults to config.tickettracker.days_before_expiration
+            expired. Defaults to config.answertracker.days_before_expiration
         :log: A logger instance to use for logging. Defaults to the default
             logger.
         """
 
         if days_before_expiration is None:
             days_before_expiration = (
-                config.tickettracker.days_before_expiration)
+                config.answertracker.days_before_expiration)
 
         if log is None:
             log = getLogger()

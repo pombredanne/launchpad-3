@@ -53,7 +53,7 @@ AnswerTrackerHandler.
 
 It only processes emails which are sent to an address of the form
 'ticket<ID>@support.launchpad.net', where <ID> is the question id. (The
-domain is configured through the config.tickettracker.email_domain
+domain is configured through the config.answertracker.email_domain
 configuration variable.)
 
 All other email addresses are ignored:
@@ -345,10 +345,10 @@ interpretation is that it is a comment.
 == AnswerTrackerHandler Integration ==
 
 The general mail processor delegates all emails to the
-config.tickettracker.email_domain to the AnswerTrackerHandler.
+config.answertracker.email_domain to the AnswerTrackerHandler.
 
     >>> from canonical.config import config
-    >>> to_addr = 'ticket1@%s' % config.tickettracker.email_domain
+    >>> to_addr = 'ticket1@%s' % config.answertracker.email_domain
     >>> raw_msg = """From: test@canonical.com
     ... X-Original-To: %(to_addr)s
     ... Subject: A new comment

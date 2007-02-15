@@ -6,7 +6,7 @@
 any activity in the last X days.
 
 The expiration period is configured through
-config.tickettracker.days_before_expiration
+config.answertracker.days_before_expiration
 """
 
 __metaclass__ = type
@@ -23,7 +23,7 @@ class ExpireQuestions(LaunchpadScript):
     description =  """
     This script expires questions in the OPEN and NEEDSINFO states that
     didn't have any activity in the last X days. The number of days is
-    configured through config.tickettracker.days_before_expiration.
+    configured through config.answertracker.days_before_expiration.
     """
 
     def main(self):
@@ -33,6 +33,6 @@ class ExpireQuestions(LaunchpadScript):
 
 if __name__ == '__main__':
     script = ExpireQuestions('expire-questions',
-        dbuser=config.tickettracker.dbuser)
+        dbuser=config.answertracker.dbuser)
     script.lock_and_run()
 
