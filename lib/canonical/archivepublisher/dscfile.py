@@ -53,7 +53,7 @@ class SignableTagFile:
         """
         filename = self.filename
         full_path = os.path.join(self.fsroot, filename)
-        self.logger.debug("Verifying signature on %s" % full_path)
+        self.logger.debug("Verifying signature on %s" % filename)
         assert os.path.exists(full_path)
 
         try:
