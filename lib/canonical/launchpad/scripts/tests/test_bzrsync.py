@@ -376,6 +376,7 @@ class TestBzrSync(BzrSyncTestCase):
 
         bzrsync.syncHistoryAndClose()
 
+        bzrsync = self.makeBzrSync()
         bzrsync.retrieveDatabaseAncestry()
         self.assertEqual(bzrsync.db_ancestry,
                          set([rev0, rev1, rev2, rev3]))
