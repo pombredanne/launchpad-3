@@ -376,6 +376,10 @@ class TestBzrSync(BzrSyncTestCase):
 
         bzrsync.syncHistoryAndClose()
 
+        bzrsync.retrieveDatabaseAncestry()
+        self.assertEqual(bzrsync.db_ancestry,
+                         set([rev0, rev1, rev2, rev3]))
+
         # XXX - get the revisions from the BranchRevision table and compare
         # them to the revisions we expect to see there. Maybe do this with
         # syncAndCount.
