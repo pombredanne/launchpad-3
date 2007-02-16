@@ -120,12 +120,11 @@ class ChangesFile(SignableTagFile):
                         priority, self.fsroot, self.policy, self.logger)
                 elif source_match:
                     package = source_match.group(1)
-                    type = source_match.group(3)
-                    if type == "dsc":
+                    if filename.endswith("dsc"):
                         file_instance = DSCFile(
                             filename, digest, size,
                             component_and_section, priority, package,
-                            self.version, type, self.fsroot, self.policy,
+                            self.version, self, self.fsroot, self.policy,
                             self.logger)
                         # Store the DSC because it is very convenient
                         self.dsc = file_instance
@@ -133,20 +132,20 @@ class ChangesFile(SignableTagFile):
                         file_instance = SourceUploadFile(
                             filename, digest, size,
                             component_and_section, priority, package,
-                            self.version, type, self, self.fsroot,
+                            self.version, self, self.fsroot,
                             self.policy, self.logger)
                 elif binary_match:
-                    type = source_match.group(4)
-                    if type == "udeb":
+                    package = binary_match.group(1)
+                    if filename.endswith("udeb"):
                         file_instance = UBinaryUploadFile(
                             filename, digest, size, component_and_section,
-                            priority, type, self, self.fsroot, self.policy,
-                            self.logger)
+                            priority, package, self.version, self,
+                            self.fsroot, self.policy, self.logger)
                     else:
                         file_instance = BinaryUploadFile(
                             filename, digest, size, component_and_section,
-                            priority, type, self, self.fsroot, self.policy,
-                            self.logger)
+                            priority, package, self.version, self,
+                            self.fsroot, self.policy, self.logger)
                 else:
                     # XXX: byhand will fall into this category now. is
                     # that right?
@@ -185,22 +184,34 @@ class ChangesFile(SignableTagFile):
     #
 
     @property
+    def binary_package_files(self):
+        binaries = []
+        for file in self.files:
+            if isinstance(UBinaryUploadFile):
+                binaries.append(file)
+        return binaries
+
+    @property
     def distrorelease_and_pocket(self):
-        """Returns a string like hoary or hoary-security"""
+        """Returns a string like hoary or hoary-security."""
         return self._dict['distribution']
 
     @property
     def architectures(self):
-        """XXX"""
+        """Return set of strings specifying architectures listed in file.
+
+        For instance ['source', 'all'] or ['source', 'i386', 'amd64']
+        or ['source'].
+        """
         return set(self._dict['architecture'].split())
 
     @property
     def binaries(self):
-        """Extract the list of binary package names XXX and return them as a set."""
+        """Return set of binary package names listed."""
         return set(self._dict['binary'].strip().split())
 
     @property
-    def urgency(self):
+    def converted_urgency(self):
         """Return the appropriate SourcePackageUrgency item."""
         return self.urgency_map[self._dict['urgency'].lower()]
 
@@ -211,16 +222,6 @@ class ChangesFile(SignableTagFile):
     @property
     def changes_text(self):
         return self._dict['changes']
-
-    @property
-    def simulated_changelog(self):
-        # rebuild the changes author line as specified in bug # 30621,
-        # new line containing:
-        # ' -- <CHANGED-BY>  <DATE>'
-        changes_author = (
-            '\n -- %s   %s' %
-            (self.changed_by['rfc822'], self.date))
-        return self.changes_text + changes_author
 
     @property
     def date(self):
@@ -237,5 +238,15 @@ class ChangesFile(SignableTagFile):
     @property
     def filecontents(self):
         return self._dict['filecontents']
+
+    @property
+    def simulated_changelog(self):
+        # rebuild the changes author line as specified in bug # 30621,
+        # new line containing:
+        # ' -- <CHANGED-BY>  <DATE>'
+        changes_author = (
+            '\n -- %s   %s' %
+            (self.changed_by['rfc822'], self.date))
+        return self.changes_text + changes_author
 
 

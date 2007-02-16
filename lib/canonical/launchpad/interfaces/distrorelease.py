@@ -197,12 +197,14 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        If version is not specified, return packages with any version.
 
         if exclude_pocket is specified we exclude results matching that pocket.
 
