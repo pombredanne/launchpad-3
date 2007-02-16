@@ -806,14 +806,14 @@ class NascentUpload:
 
         valid_recipients = []
         for person in recipients:
-            # We should only actually send mail to people that are
-            # registered Launchpad user with preferred email;
-            # this is a sanity check to avoid spamming the innocent.
-            # Not that we do that sort of thing.
             if person is None or person.preferredemail is None:
-                self.logger.debug("Could not find a person for <%r> or that "
-                                  "person has no preferred email address set "
-                                  "in launchpad" % recipients)
+                # We should only actually send mail to people that are
+                # registered Launchpad user with preferred email; this
+                # is a sanity check to avoid spamming the innocent.  Not
+                # that we do that sort of thing.
+                #
+                # In particular, people that were created because of
+                # policy.create_people won't get emailed. That's life.
                 continue
             recipient = format_address(person.displayname,
                                        person.preferredemail.email)
@@ -875,6 +875,10 @@ class NascentUpload:
                 for binary_package_file in self.changes.binary_package_files:
                     try:
                         if self.sourceful:
+                            # The reason we need to do this verification
+                            # so late in the game is that in the
+                            # mixed-upload case we only have a
+                            # sourcepackagerelease to verify here!
                             assert self.policy.can_upload_mixed
                             assert spr
                             binary_package_file.verify_sourcepackagerelease(spr)

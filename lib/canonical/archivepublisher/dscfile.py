@@ -95,7 +95,8 @@ class SignableTagFile:
         except ParseMaintError, e:
             raise UploadError(str(e))
 
-        if self.policy.create_people:
+        person = getUtility(IPersonSet).getByEmail(email)
+        if person is None and self.policy.create_people:
             package = self._dict['source']
             # XXX: The distrorelease property may raise an UploadError
             # in case there's no distrorelease with a name equal to
@@ -110,12 +111,10 @@ class SignableTagFile:
                 email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
                 comment=('when the %s package was uploaded to %s'
                          % (package, release)))
-        else:
-            person = getUtility(IPersonSet).getByEmail(email)
 
         if person is None:
-            raise UploadError("Unable to identify '%s':<%s> in launchpad" % (
-                name, email))
+            raise UploadError("Unable to identify '%s':<%s> in launchpad"
+                              % (name, email))
 
         return {
             "rfc822": rfc822,
