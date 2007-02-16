@@ -33,6 +33,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
+    'person_team_participations_vocabulary_factory',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -562,6 +563,17 @@ class PersonActiveMembershipVocabulary:
             raise LookupError(token)
 
 
+def person_team_participations_vocabulary_factory(context):
+    """Return a SimpleVocabulary containing the teams a person
+    participate in.
+    """
+    assert context is not None
+    person= IPerson(context)
+    return SimpleVocabulary([
+        SimpleTerm(team, team.name, title=team.displayname)
+        for team in person.teams_participated_in])
+
+
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -777,6 +789,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
             target = milestone_context.distrorelease
+        elif ISpecification.providedBy(milestone_context):
+            target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or

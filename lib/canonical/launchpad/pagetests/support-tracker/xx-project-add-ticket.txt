@@ -1,27 +1,23 @@
-= Creating a New Support Request from a Project =
+= Asking a New Quesiton from a Project =
 
 Even if projects are not TicketTargets, it is still possible to create a
-support request from a project.
+question from a project.
 
 The user must login to proceed:
 
-    # XXX flacoste 2006/12/13 Update this test to use the link that
-    # will be present on the 1.0 UI.
-    # >>> browser.open('http://launchpad.dev/mozilla')
-    # >>> browser.getLink('Request Support').click()
-    >>> browser.open('http://launchpad.dev/mozilla/+addticket')
+    >>> browser.open('http://answers.launchpad.dev/mozilla')
+    >>> browser.getLink('Ask Question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
-    # >>> user_browser.open('http://launchpad.dev/mozilla')
-    # >>> user_browser.getLink('Request Support').click()
-    >>> user_browser.open('http://launchpad.dev/mozilla/+addticket')
+    >>> user_browser.open('http://answers.launchpad.dev/mozilla')
+    >>> user_browser.getLink('Ask Question').click()
     >>> print user_browser.title
-    Request support with a product from the Mozilla Project
+    Ask a question about a product from the Mozilla Project
 
 The workflow is identical to the regular one, except that the user has
-to select the project's product for which support is requested.
+to select the project's product for which a quesiton is asked .
 
     >>> print user_browser.getControl('Product').displayValue
     ['Mozilla Firefox']
@@ -35,7 +31,7 @@ problem in the language of his choice:
     ...     'Problem displaying complex SVG')
     >>> user_browser.getControl('Continue').click()
 
-He's shown a list of similar support requests in the product selected:
+He's shown a list of similar questions in the product selected:
 
     >>> similar_tickets = find_tag_by_id(
     ...     user_browser.contents, 'similar-tickets')
@@ -43,8 +39,8 @@ He's shown a list of similar support requests in the product selected:
     ...     print row.a.renderContents()
     Problem showing the SVG demo on W3C site
 
-The user can still change the product against which he's filing the
-request.
+The user can still change the product against which he's asking the
+question.
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
 
@@ -61,8 +57,7 @@ An error will inform him that the summary is missing:
     You must enter a summary of your problem.
 
 The newly selected product is still selected, and when the user enters
-his problem again, similar support requests against that product will be
-shown.
+his problem again, similar questions against that product will be shown.
 
     >>> print user_browser.getControl('Product').displayValue
     ['Mozilla Thunderbird']
@@ -70,15 +65,15 @@ shown.
     ...     'Problem displaying complex SVG')
     >>> user_browser.getControl('Continue').click()
 
-Since there are no similar requests against Thunderbird, an appropriate
+Since there are no similar questions against Thunderbird, an appropriate
 message is displayed:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('p').renderContents()
-    There are no existing support requests similar to the summary you entered.
+    There are no existing questions similar to the summary you entered.
 
 Entering a description and clicking the 'Add' button will create the
-request.
+question.
 
     >>> user_browser.getControl('Description').value = (
     ... "I received an HTML message containing an inlined SVG\n"
@@ -88,4 +83,4 @@ request.
     >>> user_browser.url
     '.../thunderbird/+ticket/...'
     >>> print user_browser.title
-    Mozilla Thunderbird support request #...Problem displaying complex...
+    Mozilla Thunderbird question #...Problem displaying complex...

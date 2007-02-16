@@ -18,8 +18,8 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators.cve import valid_cve
+
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
 from canonical.launchpad.webapp.generalform import GeneralFormView

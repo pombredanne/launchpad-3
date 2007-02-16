@@ -202,6 +202,27 @@ All the teams the person is an active member of.
     ...
     LookupError:...
 
+== PersonTeamParticipations ==
+
+This vocabulary contains all the teams a person participates in. Either
+through direct or indirect participations.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> [membership.team.name
+    ...  for membership in sample_person.myactivememberships]
+    [u'landscape-developers', u'name20']
+    >>> [team.name for team in sample_person.teams_participated_in]
+    [u'landscape-developers', u'name18', u'name20']
+
+    >>> sample_person_teams_vocabulary = vocabulary_registry.get(
+    ...     sample_person, 'PersonTeamParticipations')
+
+    >>> for term in sample_person_teams_vocabulary:
+    ...     print "%s: %s (%s)" % (term.token, term.title, term.value.name)
+    landscape-developers: Landscape Developers (landscape-developers)
+    name18: Ubuntu Gnome Team (name18)
+    name20: Warty  Security Team (name20)
+
 Milestone
 ---------
 All the milestone in a context.
@@ -252,6 +273,18 @@ in the vocabulary.
     0
     >>> debian_woody.milestones.count()
     0
+
+If the context is a specification, only milestones from that specification
+target are in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> spec_target_milestones = vocabulary_registry.get(
+    ...     canvas_spec, 'Milestone')
+    >>> for term in spec_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
 
 The vocabulary contains only visible milestones.
 

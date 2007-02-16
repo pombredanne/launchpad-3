@@ -12,6 +12,7 @@ __all__ = [
 # Python standard library imports
 import cgi
 import re
+from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
@@ -27,7 +28,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship)
+    PackageRelationship, relationship_builder)
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetSupportMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -35,8 +36,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     structured, GetitemNavigation, stepto, redirection)
-
-from apt_pkg import ParseSrcDepends
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -226,33 +225,30 @@ class SourcePackageView(BuildRecordsView):
 
         return results
 
+    def _relationship_parser(self, content):
+        """Wrap the relationship_builder for SourcePackages.
+
+        Define apt_pkg.ParseSrcDep as a relationship 'parser' and
+        IDistroRelease.getSourcePackage as 'getter'.
+        """
+        getter = self.context.distrorelease.getSourcePackage
+        parser = ParseSrcDepends
+        return relationship_builder(content, parser=parser, getter=getter)
+
     def builddepends(self):
-        builddepends = self.context.currentrelease.builddepends
-
-        if not builddepends:
-            return []
-
-        relationships = [L[0] for L in ParseSrcDepends(builddepends)]
-        return [
-            PackageRelationship(name, signal, version)
-            for name, version, signal in relationships
-            ]
+        return self._relationship_parser(
+            self.context.currentrelease.builddepends)
 
     def builddependsindep(self):
-        builddependsindep = self.context.currentrelease.builddependsindep
-
-        if not builddependsindep:
-            return []
-
-        relationships = [L[0] for L in ParseSrcDepends(builddependsindep)]
-        return [
-            PackageRelationship(name, signal, version)
-            for name, version, signal in relationships
-            ]
+        return self._relationship_parser(
+            self.context.currentrelease.builddependsindep)
 
     def has_build_depends(self):
-        return self.context.currentrelease.builddependsindep or \
-            self.context.currentrelease.builddepends
+        depends_indep = self.context.currentrelease.builddependsindep
+        depends = self.context.currentrelease.builddepends
+        if depends or depends_indep:
+            return True
+        return False
 
     def linkified_changelog(self):
         return linkify_changelog(

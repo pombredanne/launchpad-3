@@ -285,8 +285,6 @@ class IBranchSet(Interface):
     def __iter__():
         """Return an iterator that will go through all branches."""
 
-    all = Attribute("All branches in the system.")
-
     def count():
         """Return the number of branches in the database."""
 
@@ -344,6 +342,9 @@ class IBranchSet(Interface):
 
     def getLastCommitForBranches(branches):
         """Return a map of branch to last commit time."""
+
+    def getBranchesForOwners(people):
+        """Return the branches that are owned by the people specified."""
 
 
 class IBranchLifecycleFilter(Interface):
