@@ -111,7 +111,6 @@ The branch in question is security proxied, and has 6 revisions:
   >>> branch.revision_count
   6
 
-
 We can get the last revision from the branch:
 
   >>> [revno_6] = branch.latest_revisions(1)
@@ -132,16 +131,6 @@ access attributes not exposed in its interface:
   Traceback (most recent call last):
     ...
   ForbiddenAttribute: ('forbidden_attribute', <BranchRevision at ...>)
-
-
-This revision can then be deleted in the same way the branch scanner
-does, leaving only 5 revisions in the branch:
-
-  >>> branch.truncateHistory(6)
-  True
-  >>> branch.revision_count
-  5
-
 
 Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it

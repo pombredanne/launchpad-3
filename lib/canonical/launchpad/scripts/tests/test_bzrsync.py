@@ -21,6 +21,8 @@ from canonical.launchpad.database import (
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+from canonical.launchpad.scripts.importd.tests.helpers import (
+    instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import ZopelessLayer
 
@@ -43,8 +45,11 @@ class BzrSyncTestCase(unittest.TestCase):
         self.setUpBzrBranch()
         self.setUpDBBranch()
         self.setUpAuthor()
+        self.bzrsync = None
 
     def tearDown(self):
+        if self.bzrsync is not None and self.bzrsync.db_branch is not None:
+            self.bzrsync.close()
         self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
 
@@ -119,6 +124,28 @@ class BzrSyncTestCase(unittest.TestCase):
                          "Wrong RevisionAuthor count (should be %d, not %d)"
                          % revisionauthor_pair)
 
+    def makeBzrSync(self):
+        """Create a BzrSync instance for the test branch.
+
+        This method allow subclasses to instrument the BzrSync instance used in
+        syncBranch.
+        """
+        self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        return self.bzrsync
+
+    def syncBranch(self):
+        """Run BzrSync on the test branch."""
+        self.makeBzrSync().syncHistoryAndClose()
+
+    def syncAndCount(self, new_revisions=0, new_numbers=0,
+                     new_parents=0, new_authors=0):
+        """Run BzrSync and assert the number of rows added to each table."""
+        counts = self.getCounts()
+        self.syncBranch()
+        self.assertCounts(
+            counts, new_revisions=new_revisions, new_numbers=new_numbers,
+            new_parents=new_parents, new_authors=new_authors)
+
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
                        timestamp=None, timezone=None):
@@ -156,6 +183,10 @@ class TestBzrSync(BzrSyncTestCase):
 
     def makeBzrSync(self):
         self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        # Load the ancestry as the database knows of it.
+        self.bzrsync.retrieveDatabaseAncestry()
+        # And get the history and ancestry from the branch.
+        self.bzrsync.retrieveBranchDetails()
         return self.bzrsync
 
     def syncAndCount(self, new_revisions=0, new_numbers=0,
@@ -236,8 +267,17 @@ class TestBzrSync(BzrSyncTestCase):
 
         counts = self.getCounts()
         bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync.retrieveDatabaseAncestry()
+        bzrsync.retrieveBranchDetails()
+        # now overwrite the bzr_history
         bzrsync.bzr_history = new_revision_history
-        bzrsync.syncHistoryAndClose()
+        bzrsync.bzr_ancestry.remove(old_revision_history[-2])
+        try:
+            bzrsync.syncInitialAncestry()
+            bzrsync.syncHistory()
+        finally:
+            bzrsync.close()
+
         # the new history is one revision shorter:
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
@@ -283,10 +323,11 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
     def test_get_revisions_branched(self):
+        # import pdb;pdb.set_trace()
         rev0 = self.bzr_tree.commit(u'common parent', committer=self.AUTHOR,
                                     allow_pointless=True)
         new_bzrdir = self.bzr_tree.bzrdir.sprout('new-branch-2')
-        new_tree = new_bzrdir.create_workingtree()
+        new_tree = new_bzrdir.open_workingtree()
         rev1 = self.bzr_tree.commit(u'commit one', committer=self.AUTHOR,
                                     allow_pointless=True)
         rev2 = new_tree.commit(u'commit two', committer=self.AUTHOR,
@@ -297,6 +338,38 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         self.assertEqual(set([(1, rev0), (2, rev1), (3, rev3), (None, rev2)]),
                          set(bzrsync.getRevisions()))
+
+
+class TestBzrSyncPerformance(BzrSyncTestCase):
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.syncrevision_calls = []
+
+    def makeBzrSync(self):
+        def syncRevision_called(name, args, kwargs):
+            syncRevision_called_with_params(*args, **kwargs)
+        def syncRevision_called_with_params(bzr_revision):
+            self.syncrevision_calls.append(bzr_revision.revision_id)
+        bzrsync = BzrSyncTestCase.makeBzrSync(self)
+        observer = InstrumentedMethodObserver(called=syncRevision_called)
+        instrument_method(observer, bzrsync, 'syncRevision')
+        return bzrsync
+
+    def test_one_more_commit(self):
+        # Scanning a branch which has already been scanned, and to which a
+        # single simple commit was added, only runs syncRevision once, for the
+        # new revision.
+        self.commitRevision(rev_id='rev-1')
+        # First scan checks the full ancestry, which is only one revision.
+        self.syncBranch()
+        self.assertEqual(self.syncrevision_calls, ['rev-1'])
+        # Add a single simple revision to the branch.
+        self.commitRevision(rev_id='rev-2')
+        # Second scan only checks the added revision.
+        self.syncrevision_calls = []
+        self.syncBranch()
+        self.assertEqual(self.syncrevision_calls, ['rev-2'])
 
 
 class TestBzrSyncModified(BzrSyncTestCase):

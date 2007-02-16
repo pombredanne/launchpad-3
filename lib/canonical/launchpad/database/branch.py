@@ -20,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBranchRevisionSet, NotFoundError)
-from canonical.launchpad.database.revision import BranchRevision
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -78,7 +78,10 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        return getUtility(IBranchRevisionSet).getRevisionHistoryForBranch(self)
+        branch_revision_set = getUtility(IBranchRevisionSet)
+        history = branch_revision_set.getRevisionHistoryForBranch(self)
+        history.prejoin('revision')
+        return history
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -200,21 +203,6 @@ class Branch(SQLBase):
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
         return BranchRevision(branch=self, sequence=sequence, revision=revision)
-
-    def truncateHistory(self, from_rev):
-        """See IBranch.truncateHistory()"""
-        revnos = BranchRevision.select(AND(
-            BranchRevision.q.branchID == self.id,
-            BranchRevision.q.sequence >= from_rev))
-        did_something = False
-        # Since in the future we may not be storing the entire
-        # revision history, a simple count against BranchRevision
-        # may not be sufficient to adjust the revision_count.
-        for revno in revnos:
-            revno.destroySelf()
-            self.revision_count -= 1
-            did_something = True
-        return did_something
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""

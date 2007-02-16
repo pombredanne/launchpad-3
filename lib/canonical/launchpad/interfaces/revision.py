@@ -3,8 +3,7 @@
 """Revision interfaces."""
 
 __metaclass__ = type
-__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent',
-           'IBranchRevision', 'IBranchRevisionSet', 'IRevisionSet']
+__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionSet']
 
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
@@ -47,16 +46,6 @@ class IRevisionParent(Interface):
     parent_id = Attribute("The revision_id of the parent revision.")
 
 
-class IBranchRevision(Interface):
-    """The association between a revision and a branch."""
-
-    sequence = Int(
-        title=_("Revision Number"), required=True,
-        description=_("The index of a revision within a branch's history."))
-    branch = Attribute("The branch this revision number belongs to.")
-    revision = Attribute("The revision with that index in this branch.")
-
-
 class IRevisionSet(Interface):
     """The set of all revisions."""
 
@@ -67,25 +56,3 @@ class IRevisionSet(Interface):
     def new(revision_id, log_body, revision_date, revision_author, owner,
             parent_ids):
         """Create a new Revision with the given revision ID."""
-
-
-class IBranchRevisionSet(Interface):
-    """The set of all branch revisions."""
-
-    def new(branch, sequence, revision):
-        """Create a new BranchRevision for the specified branch."""
-
-    def getAncestryForBranch(branch):
-        """Returns an unordered list of all BranchRevisions for a branch."""
-
-    def getRevisionHistoryForBranch(branch, limit=None):
-        """Returns an ordered list of at most limit BranchRevisions.
-
-        If limit is omitted, then all the BranchRevisions for the branch
-        are returned.
-        
-        There are ordered with the most recent revision first, and the list
-        only contains those in the "leftmost tree", or in other words
-        the revisions that match the revision history from bzrlib for this
-        branch.
-        """
