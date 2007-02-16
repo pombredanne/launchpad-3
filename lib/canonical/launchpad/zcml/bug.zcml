@@ -26,7 +26,7 @@
                         displayname activity initial_message bug_branches
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
-                        attachments tickets specifications followup_subject
+                        attachments questions specifications followup_subject
                         isSubscribed messages notificationRecipientAddresses
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
@@ -116,8 +116,8 @@
           name="+portlet-specs"
           template="../templates/bug-portlet-specs.pt" />
       <browser:page
-          name="+portlet-tickets"
-          template="../templates/bug-portlet-tickets.pt" />
+          name="+portlet-questions"
+          template="../templates/bug-portlet-questions.pt" />
       <browser:page
           name="+portlet-reference"
           template="../templates/bug-portlet-reference.pt" />

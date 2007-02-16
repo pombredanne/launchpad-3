@@ -501,7 +501,7 @@
   </table>
 
   <h3>Rosetta, the translation engine</h3>
-  
+
   <p>
     <img src="/@@/rosetta" align="left" />Rosetta is the Launchpad
     translation engine. It allows projects to invite translators to help make
@@ -557,7 +557,7 @@
   </table>
 
   <h3>Blueprint, the feature tracking application</h3>
-  
+
   <p>
     <img src="/@@/blueprint" align="left" />Blueprint is the Launchpad
     feature tracker. It is used to help projects plan their feature
@@ -576,12 +576,12 @@
   </table>
 
   <h3>Greenhouse, the code management system</h3>
-  
+
   <p>
     <img src="/@@/greenhouse" align="left" />"Greenhouse" is
     the Launchpad application that keeps track of software source code.
   </p>
-  
+
   <table class="listing">
     <tbody>
       <tr>
@@ -593,7 +593,7 @@
   </table>
 
   <h3>Soyuz, the distribution package management system</h3>
-  
+
   <p>
     <img src="/@@/soyuz" align="left" />Soyuz is the Launchpad subsystem
     that keeps track of the packages in a distribution. It handles uploads,
@@ -657,7 +657,7 @@
   </table>
 
   <h3>Cashpoint, the bounty tracking system.</h3>
-  
+
   <p>
     <img src="/@@/cashpoint" align="left" />Cashpoint is the bounty tracking
     system in Launchpad. It allows projects to manage the feature proposals
@@ -676,10 +676,10 @@
     </tbody>
   </table>
 
-  <h3>XXX, the question tracking system.</h3>
-  
+  <h3>Answer Tracker, the question tracking system.</h3>
+
   <p>
-    The "question tracker" is a system that allows users to request help of
+    The "Answer Tracker" is a system that allows users to request help of
     one form or another with the software. It forms a lightweight framework
     for community support.
   </p>
@@ -687,10 +687,9 @@
   <table class="listing">
     <tbody>
       <tr>
-        <td>ticket</td>
-        <td><img src="/@@/ticket" /></td>
-        <td>A question - or "ticket". This is used as a bullet in lists of
-        such tickets.</td>
+        <td>question</td>
+        <td><img src="/@@/question" /></td>
+        <td>A question. This is used as a bullet in lists of questions.</td>
       </tr>
     </tbody>
   </table>

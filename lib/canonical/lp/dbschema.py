@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 #
 """Database schemas
 
@@ -62,6 +62,11 @@ __all__ = (
 'PollSecrecy',
 'ProjectRelationship',
 'ProjectStatus',
+'QuestionAction',
+'QuestionParticipation',
+'QuestionPriority',
+'QuestionSort',
+'QuestionStatus',
 'RevisionControlSystems',
 'RosettaFileFormat',
 'RosettaImportStatus',
@@ -85,11 +90,6 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
-'TicketAction',
-'TicketParticipation',
-'TicketPriority',
-'TicketSort',
-'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -1382,155 +1382,152 @@ class SprintSpecificationStatus(DBSchema):
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketParticipation(DBSchema):
-    """The different ways a person can be involved in a ticket.
+class QuestionParticipation(DBSchema):
+    """The different ways a person can be involved in a question.
 
-    This enumeration is part of the ITicketActor.searchTickets() API.
+    This enumeration is part of the IPerson.searchTickets() API.
     """
 
     OWNER = Item(10, """
         Owner
 
-        The person created the ticket.
+        The person created the question.
         """)
 
     SUBSCRIBER = Item(15, """
         Subscriber
 
-        The person subscribed to the ticket.
+        The person subscribed to the question.
         """)
 
     ASSIGNEE = Item(20, """
         Assignee
 
-        The person is assigned to the ticket.
+        The person is assigned to the question.
         """)
 
     COMMENTER = Item(25, """
         Commenter
 
-        The person commented on the ticket.
+        The person commented on the question.
         """)
 
     ANSWERER = Item(30, """
         Answerer
 
-        The person answered the ticket.
+        The person answered the question.
         """)
 
 
-class TicketPriority(DBSchema):
-    """The Priority with a Support Request must be handled.
+class QuestionPriority(DBSchema):
+    """The Priority with a Question must be handled.
 
-    This enum is used to prioritise work done in the Launchpad support
-    request management system.
+    This enum is used to prioritise work done in the Launchpad Answert Tracker
+    management system.
     """
 
     WISHLIST = Item(0, """
         Wishlist
 
-        This support ticket is really a request for a new feature. We will
-        not take it further as a support ticket, it should be closed, and a
-        specification created and managed in the Launchpad Specification
-        Tracker.
+        This question is really a request for a new feature. We will not take
+        it further as a question, it should be closed, and a specification
+        created and managed in the Launchpad Specification tracker.
         """)
 
     NORMAL = Item(10, """
         Normal
 
-        This support ticket is of normal priority. We should respond to it
-        in due course.
+        This question is of normal priority. We should respond to it in due
+        course.
         """)
 
     HIGH = Item(70, """
         High
 
-        This support ticket has been flagged as being of higher than normal
-        priority. It should always be prioritised over a "normal" support
-        request.
+        This question has been flagged as being of higher than normal
+        priority. It should always be prioritised over a "normal" question.
         """)
 
     EMERGENCY = Item(90, """
         Emergency
 
-        This support ticket is classed as an emergency. No more than 5% of
-        requests should fall into this category. Support engineers should
+        This question is classed as an emergency. No more than 5% of
+        questions should fall into this category. Support engineers should
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
         """)
 
 
-class TicketAction(DBSchema):
-    """An enumeration of the possible actions done on a ticket.
+class QuestionAction(DBSchema):
+    """An enumeration of the possible actions done on a question.
 
     This enumeration is used to tag the action done by a user with
-    each TicketMessage. Most of these action indicates a status change
-    on the ticket.
+    each QuestionMessage. Most of these action indicates a status change
+    on the question.
     """
 
     REQUESTINFO = Item(10, """
         Request for more information
 
-        This message asks for more information about the support
-        request.
+        This message asks for more information about the question.
         """)
 
     GIVEINFO = Item(20, """
         Give more information
 
         In this message, the submitter provides more information about the
-        request.
+        question.
         """)
 
     COMMENT = Item(30, """
         Comment
 
         User commented on the message. This is use for example for messages
-        added to a ticket in the SOLVED state.
+        added to a question in the SOLVED state.
         """)
 
     ANSWER = Item(35, """
         Answer
 
-        This message provides an answer to the support request.
+        This message provides an answer to the question.
         """)
 
     CONFIRM = Item(40, """
         Confirm
 
-        This message confirms that an answer solved the problem.
+        This message confirms that an answer solved the question.
         """)
 
     REJECT = Item(50, """
         Reject
 
-        This message rejects a support request as invalid.
+        This message rejects a question as invalid.
         """)
 
     EXPIRE = Item(70, """
         Expire
 
-        Automatic message created when the ticket is expired.
+        Automatic message created when the question is expired.
         """)
 
     REOPEN = Item(80, """
         Reopen
 
-        Message from the submitter that reopens the ticket with more
-        information concerning the request.
+        Message from the submitter that reopens the question while providing
+        more information.
         """)
 
     SETSTATUS = Item(90, """
         Change status
 
-        Message from an administrator that explain why the ticket status
+        Message from an administrator that explain why the question status
         was changed.
         """)
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketSort(DBSchema):
-    """An enumeration of the valid ticket search sort order.
+class QuestionSort(DBSchema):
+    """An enumeration of the valid question search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
@@ -1539,13 +1536,13 @@ class TicketSort(DBSchema):
     RELEVANCY = Item(5, """
     by relevancy
 
-    Sort by relevancy of the ticket toward the search text.
+    Sort by relevancy of the question toward the search text.
     """)
 
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Sort questions by status: Open, Needs information, Answered, Solved,
     Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
@@ -1554,28 +1551,28 @@ class TicketSort(DBSchema):
     NEWEST_FIRST = Item(15, """
     newest first
 
-    Sort ticket from newest to oldest.
+    Sort questions from newest to oldest.
     """)
 
     OLDEST_FIRST = Item(20, """
     oldest first
 
-    Sort tickets from oldset to newest.
+    Sort questions from oldset to newest.
     """)
 
     RECENT_OWNER_ACTIVITY = Item(30, """
     recently updated first
 
-    Sort tickets that recently received new information from the owner first.
+    Sort questions that recently received new information from the owner first.
     """)
 
 
-class TicketStatus(DBSchema):
-    """The current status of a Support Request
+class QuestionStatus(DBSchema):
+    """The current status of a Question.
 
-    This enum tells us the current status of the support ticket.
+    This enum tells us the current status of the question.
 
-    The lifecycle of a support request is documented in
+    The lifecycle of a question is documented in
     https://help.launchpad.net/SupportRequestLifeCycle, so remember
     to update that document for any pertinent changes.
     """
@@ -1583,14 +1580,14 @@ class TicketStatus(DBSchema):
     OPEN = Item(10, """
         Open
 
-        The request is waiting for an answer. This could be a new request
-        or a request where the given answer was refused by the submitter.
+        The question is waiting for an answer. This could be a new question
+        or a question where the given answer was refused by the submitter.
         """)
 
     NEEDSINFO = Item(15, """
         Needs information
 
-        A user requested more information from the submitter. The request
+        A user requested more information from the submitter. The question
         will be moved back to the OPEN state once the submitter provides the
         answer.
         """)
@@ -1598,29 +1595,30 @@ class TicketStatus(DBSchema):
     ANSWERED = Item(18, """
         Answered
 
-        An answer was given on this request. We assume that the answer
-        is the correct one. The user will post back changing the ticket's
+        An answer was given on this question. We assume that the answer
+        is the correct one. The user will post back changing the question's
         status back to OPEN if that is not the case.
         """)
 
     SOLVED = Item(20, """
         Solved
 
-        The submitter confirmed that an answer solved his problem.
+        The submitter confirmed that an answer solved his question.
         """)
 
     EXPIRED = Item(25, """
         Expired
 
-        The ticket has been expired after 15 days without comments in the
+        The question has been expired after 15 days without comments in the
         OPEN or NEEDSINFO state.
         """)
 
     INVALID = Item(30, """
         Invalid
 
-        This ticket isn't a support request. It could be a duplicate request,
-        spam or anything that should not appear in the support tracker.
+        This question isn't a valid question. It could be a duplicate
+        question, spam or anything that should not appear in the
+        Answer Tracker.
         """)
 
 

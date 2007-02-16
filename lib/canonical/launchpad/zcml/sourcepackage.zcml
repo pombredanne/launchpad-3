@@ -9,13 +9,13 @@
     <content class="canonical.launchpad.database.SourcePackage">
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
+        <!-- IQuestionTarget -->
+        <allow attributes="getQuestion searchQuestions findSimilarQuestions
+            answer_contacts direct_answer_contacts getSupportedLanguages
+	    getQuestionLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
+            attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
 
     <browser:defaultView
@@ -55,7 +55,7 @@
         module="canonical.launchpad.browser.sourcepackage"
         classes="
             SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
-            SourcePackageSupportMenu SourcePackageTranslationsMenu"
+            SourcePackageAnswersMenu SourcePackageTranslationsMenu"
         />
 
     <browser:pages

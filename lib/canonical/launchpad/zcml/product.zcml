@@ -32,13 +32,13 @@
             permission="launchpad.Admin"
             set_attributes="name active reviewed autoupdate"
         />
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
+        <!-- IQuestionTarget -->
+        <allow attributes="getQuestion searchQuestions findSimilarQuestions
+            answer_contacts direct_answer_contacts getSupportedLanguages
+	    getQuestionLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
+            attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
 
     <browser:defaultView
