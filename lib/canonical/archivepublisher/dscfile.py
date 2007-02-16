@@ -137,11 +137,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "architecture",
         "files"])
 
-    fingerprint = None
-    signingkey = None
-
-    maintainer = None
-
     # Note that files is actually only set inside verify().
     files = None
     def __init__(self, *args, **kwargs):
