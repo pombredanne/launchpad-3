@@ -203,9 +203,6 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
         }
 
-    # These uploads are by definition, new.
-    new = True
-
     @property
     def custom_type(self):
         """The custom upload type for this file. (None if not custom)."""

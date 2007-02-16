@@ -193,6 +193,14 @@ class ChangesFile(SignableTagFile):
         return binaries
 
     @property
+    def custom_files(self):
+        custom = []
+        for file in self.files:
+            if isinstance(file, CustomUploadFile):
+                custom.append(file)
+        return custom
+
+    @property
     def distrorelease_and_pocket(self):
         """Returns a string like hoary or hoary-security."""
         return self._dict['distribution']

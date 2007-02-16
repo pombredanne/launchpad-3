@@ -141,37 +141,31 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
-            if (isinstance(uploaded_file, CustomUploadFile) and
-                not self.single_custom):
-                self.reject("Mixed custom upload detected.")
 
-        if self.single_custom:
-            if len(self.changes.files) > 1:
-                self.reject("More than one file detected in custom upload.")
+        if (len(self.changes.files) == 1 and 
+            isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
-            return
+        else:
+            if self.sourceful and not self.policy.can_upload_source:
+                self.reject(
+                    "Upload is sourceful, but policy refuses sourceful uploads.")
 
-        # Policy checks
-        if self.sourceful and not self.policy.can_upload_source:
-            self.reject(
-                "Upload is sourceful, but policy refuses sourceful uploads.")
+            if self.binaryful and not self.policy.can_upload_binaries:
+                self.reject(
+                    "Upload is binaryful, but policy refuses binaryful uploads.")
 
-        if self.binaryful and not self.policy.can_upload_binaries:
-            self.reject(
-                "Upload is binaryful, but policy refuses binaryful uploads.")
+            if (self.sourceful and self.binaryful and
+                not self.policy.can_upload_mixed):
+                self.reject(
+                    "Upload is source/binary but policy refuses mixed uploads.")
 
-        if (self.sourceful and self.binaryful and
-            not self.policy.can_upload_mixed):
-            self.reject(
-                "Upload is source/binary but policy refuses mixed uploads.")
+            if self.sourceful and not self.changes.dsc:
+                self.reject("Unable to find the dsc file in the sourceful upload?")
 
-        if self.sourceful and not self.changes.dsc:
-            self.reject("Unable to find the dsc file in the sourceful upload?")
-
-        # Apply the overrides from the database. This needs to be done
-        # before doing component verifications because the component
-        # actually comes from overrides for packages that are not NEW.
-        self.find_and_apply_overrides()
+            # Apply the overrides from the database. This needs to be done
+            # before doing component verifications because the component
+            # actually comes from overrides for packages that are not NEW.
+            self.find_and_apply_overrides()
 
         signer_components = self.process_signer_acl()
         if not self.is_new:
@@ -192,19 +186,6 @@ class NascentUpload:
     #
     # Minor helpers
     #
-
-    @property
-    def single_custom(self):
-        """Identify single custom uploads.
-
-        Return True if the current upload is a single custom file.
-        It is necessary to identify dist-upgrade section uploads.
-        """
-        # XXX: I'm not sure why single_custom is important. What if two
-        # custom files are uploaded at once? What should happen? I don't
-        # think that is handled correctly..
-        return (len(self.changes.files) == 1 and 
-                isinstance(self.changes.files[0], CustomUploadFile))
 
     @property
     def is_new(self):
@@ -861,45 +842,39 @@ class NascentUpload:
             queue_root.addSource(spr)
 
         if self.binaryful:
-            if self.single_custom:
-                # Finally, add any custom files.
-                uploaded_file = self.changes.files[0]
-                libraryfile = uploaded_file.store_in_database()
-                assert isinstance(uploaded_file, CustomUploadFile)
-                libraryfile = self.librarian.create(
-                    uploaded_file.filename, uploaded_file.size,
-                    open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type)
-                queue_root.addCustom(libraryfile, uploaded_file.custom_type)
-            else:
-                for binary_package_file in self.changes.binary_package_files:
-                    try:
-                        if self.sourceful:
-                            # The reason we need to do this verification
-                            # so late in the game is that in the
-                            # mixed-upload case we only have a
-                            # sourcepackagerelease to verify here!
-                            assert self.policy.can_upload_mixed
-                            assert spr
-                            binary_package_file.verify_sourcepackagerelease(spr)
-                        else:
-                            spr = binary_package_file.find_sourcepackagerelease()
-                        build = binary_package_file.find_build(spr)
-                        binary_package_file.store_in_database(build)
-                    except UploadError, e:
-                        self.reject("Error storing binaries: %s" % e)
-                        return
 
-                    # XXX: two questions: did we mean distrorelease or
-                    # pocket here, and can we assert build.pocket ==
-                    # self.policy.pocket?
-                    #
-                    # We cannot rely on the distrorelease coming in for a binary
-                    # release because it is always set to 'autobuild' by the builder.
-                    # We instead have to take it from the policy which gets instructed
-                    # by the buildd master during the upload.
-                    queue_root.pocket = build.pocket
-                    queue_root.addBuild(build)
+            for custom_file in self.changes.custom_files:
+                libraryfile = custom_file.store_in_database()
+                queue_root.addCustom(libraryfile, custom_file.custom_type)
+
+            for binary_package_file in self.changes.binary_package_files:
+                try:
+                    if self.sourceful:
+                        # The reason we need to do this verification
+                        # so late in the game is that in the
+                        # mixed-upload case we only have a
+                        # sourcepackagerelease to verify here!
+                        assert self.policy.can_upload_mixed
+                        assert spr
+                        binary_package_file.verify_sourcepackagerelease(spr)
+                    else:
+                        spr = binary_package_file.find_sourcepackagerelease()
+                    build = binary_package_file.find_build(spr)
+                    binary_package_file.store_in_database(build)
+                except UploadError, e:
+                    self.reject("Error storing binaries: %s" % e)
+                    return
+
+                # XXX: two questions: did we mean distrorelease or
+                # pocket here, and can we assert build.pocket ==
+                # self.policy.pocket?
+                #
+                # We cannot rely on the distrorelease coming in for a binary
+                # release because it is always set to 'autobuild' by the builder.
+                # We instead have to take it from the policy which gets instructed
+                # by the buildd master during the upload.
+                queue_root.pocket = build.pocket
+                queue_root.addBuild(build)
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to
