@@ -83,6 +83,9 @@ class NascentUpload:
     native = False
     hasorig = False
 
+    # Defined if we successfully do_accept() and store_objects_in_database()
+    queue_root = None
+
     def __init__(self, policy, fsroot, changes_filename, logger):
         """XXX
 
@@ -907,4 +910,6 @@ class NascentUpload:
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 queue_root.setUnapproved()
+
+        self.queue_root = queue_root
 
