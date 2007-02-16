@@ -1,0 +1,37 @@
+
+The nascent upload contains files (assuming it's sane) and as such we
+have a NascentUploadedFile type to represent them.
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUploadedFile
+  >>> from canonical.archivepublisher.tests import datadir
+
+To construct a nascentuploadedfile we need an fsroot and a line from a
+Files section of a changes file.
+
+  >>> nuf = NascentUploadedFile(
+  ...     datadir(''),
+  ...     ' 0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important '
+  ...     'ed_0.2-20_i386.deb')
+  >>> nuf.filename
+  'ed_0.2-20_i386.deb'
+  >>> nuf._size
+  44718
+  >>> nuf._digest
+  '0c466ce6a160c62fa558fbbb46a4ea45'
+  >>> nuf.section
+  'editors'
+  >>> nuf.priority
+  'important'
+
+When we ask the object for its size or digest through the properties,
+it will check them. If they're correct, no exception will be raised.
+
+  >>> nuf.size
+  44718
+  >>> nuf.digest
+  '0c466ce6a160c62fa558fbbb46a4ea45'
+  >>> nuf.sha_digest
+  'e5c467ca14ab67f73f8cbb9bb9016f670b14c8b7'
+  >>> nuf._values_checked
+  True
+
