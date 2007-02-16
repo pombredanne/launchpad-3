@@ -197,6 +197,8 @@ class Branch(SQLBase):
     # revision number manipulation
     def getBranchRevision(self, sequence):
         """See IBranch.getBranchRevision()"""
+        assert sequence is not None, \
+               "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(
             branch=self, sequence=sequence)
 
