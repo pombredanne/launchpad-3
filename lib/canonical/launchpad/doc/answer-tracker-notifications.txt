@@ -215,8 +215,8 @@ of changes to the bug status:
     http://.../ubuntu/+bug/...
     <BLANKLINE>
     --
-    You received this email because you are a subscriber of question #...
-    which is linked to this bug.
+    You received this email because you are a subscriber of
+    question #... which is linked to this bug.
     Installer doesn't work on a Mac
     http://.../ubuntu/+ticket/...
 
