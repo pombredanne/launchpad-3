@@ -395,6 +395,45 @@ class TestBzrSync(BzrSyncTestCase):
 
         self.assertEqual(set(ancestry1), set(ancestry2))
 
+    def test_retrieveBranchDetails(self):
+        # retrieveBranchDetails should set last_revision, bzr_ancestry and
+        # bzr_history on the BzrSync instance to match the information in the
+        # Bazaar branch.
+        revisions = self.makeBranchWithMerge()
+        bzrsync = self.makeBzrSync()
+        bzrsync.retrieveBranchDetails()
+
+        self.assertEqual(revisions[-1], bzrsync.last_revision)
+        self.assertEqual(set(revisions + [None]), set(bzrsync.bzr_ancestry))
+        del revisions[-2] # Not part of the history. See makeBranchWithMerge.
+        self.assertEqual(set(revisions), set(bzrsync.bzr_history))
+
+    def test_retrieveDatabaseAncestry(self):
+        # retrieveDatabaseAncestry should set db_ancestry and db_history to
+        # Launchpad's current understanding of the branch state.
+        # db_branch_revision_map should map Bazaar revision_ids to
+        # BranchRevision.ids.
+
+        # Put the database into a known state.
+        self.makeBranchWithMerge()
+        self.makeBzrSync().syncHistoryAndClose()
+
+        bzrsync = self.makeBzrSync()
+        bzrsync.retrieveDatabaseAncestry()
+
+        b_r_set = getUtility(IBranchRevisionSet)
+        ancestry = b_r_set.getAncestryForBranch(self.db_branch)
+        history = b_r_set.getRevisionHistoryForBranch(self.db_branch)
+
+        self.assertEqual(set([b.revision.revision_id for b in ancestry]),
+                         bzrsync.db_ancestry)
+        self.assertEqual(set([b.revision.revision_id for b in history]),
+                         set(bzrsync.db_history))
+        # We can't access BranchRevision.id, so just test that the keys are
+        # correct.
+        self.assertEqual(set([b.revision.revision_id for b in ancestry]),
+                         set(bzrsync.db_branch_revision_map.keys()))
+
 
 class TestBzrSyncPerformance(BzrSyncTestCase):
 
