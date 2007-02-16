@@ -271,7 +271,7 @@ class NascentUpload:
                 files_binaryful = files_binaryful or True
                 files_archindep = files_archindep or uploaded_file.is_archindep
                 files_archdep = files_archdep or not uploaded_file.is_archindep
-            elif isinstance(uploaded_file, (SourceUploadFile, DSCFile)):
+            elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
             else:
                 # This is already caught in ChangesFile.__init__
@@ -454,8 +454,10 @@ class NascentUpload:
             return
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, SourceUploadFile):
-                # We don't do overrides on diff/tar
+            if not isinstance(uploaded_file, (DSCFile, BinaryUploadFile)):
+                # The only things that matter here are sources and
+                # binaries, because they are the only objects that get
+                # overridden and created in the database.
                 continue
             if (uploaded_file.component not in signer_components and
                 uploaded_file.new == False):
@@ -608,11 +610,6 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, (CustomUploadFile, SourceUploadFile)):
-                # Source files are irrelevant, being represented by the
-                # DSC, and custom files don't have overrides.
-                continue
-
             if isinstance(uploaded_file, DSCFile):
                 # Look up the source package overrides in the distrorelease
                 # (any pocket would be enough)
@@ -686,8 +683,7 @@ class NascentUpload:
                 if self.policy.pocket != PackagePublishingPocket.BACKPORTS:
                     self._checkBinaryBackports(uploaded_file, archtag)
             else:
-                # XXX: really? pass?
-                pass
+                continue
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
