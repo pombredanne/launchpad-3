@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces for objects that can be linked to bugs."""
 
@@ -36,7 +36,7 @@ class IBugLink(IHasBug):
 class IBugLinkTarget(Interface):
     """An entity which can be linked to a bug.
 
-    Examples include an ITicket, and an ICve.
+    Examples include an IQuestion, and an ICve.
     """
 
     bugs = List(title=_("Bugs related to this object."),
