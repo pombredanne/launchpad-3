@@ -89,7 +89,7 @@ class BzrSync:
         # Synchronise Revision objects, but do not reprocess the ones which are
         # part of the previously recorded ancestry of the branch.
         self.trans_manager.begin()
-        # TODO: DavidAllouche 2007-02-15
+        # XXX: DavidAllouche 2007-02-15
         # Use complete-revisions to get complete database ancestry.
         previous_ancestry = [
             revisionnumber.revision.revision_id
