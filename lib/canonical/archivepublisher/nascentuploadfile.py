@@ -627,7 +627,7 @@ class UBinaryUploadFile(PackageUploadFile):
                 "control file"
                 % (sourcepackagerelease.name, self.filename, self.source_name))
 
-    def find_build(self):
+    def find_build(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
 
         To find the right build, we try these steps, in order, until we have
@@ -637,19 +637,18 @@ class UBinaryUploadFile(PackageUploadFile):
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
         """
-        assert self.sourcepackagerelease
         build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
             dar = self.policy.distrorelease[self.archtag]
 
             # Check if there's a suitable existing build.
-            build = self.sourcepackagerelease.getBuildByArch(dar)
+            build = sourcepackagerelease.getBuildByArch(dar)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
                 # XXX: how can this happen?! oh, security?
-                build = self.sourcepackagerelease.createBuild(
+                build = sourcepackagerelease.createBuild(
                     dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
@@ -658,7 +657,7 @@ class UBinaryUploadFile(PackageUploadFile):
             # Sanity check; raise an error if the build we've been
             # told to link to makes no sense (ie. is not for the right
             # source package).
-            if (build.sourcepackagerelease != self.sourcepackagerelease or
+            if (build.sourcepackagerelease != sourcepackagerelease or
                 build.pocket != self.policy.pocket):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)

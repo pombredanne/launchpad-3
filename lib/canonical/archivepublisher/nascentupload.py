@@ -877,10 +877,11 @@ class NascentUpload:
                     try:
                         if self.sourceful:
                             assert self.policy.can_upload_mixed
+                            assert spr
                             binary_package_file.verify_sourcepackagerelease(spr)
                         else:
                             spr = binary_package_file.find_sourcepackagerelease()
-                        build = binary_package_file.find_build()
+                        build = binary_package_file.find_build(spr)
                         binary_package_file.store_in_database(build)
                     except UploadError, e:
                         self.reject("Error storing binaries: %s" % e)
