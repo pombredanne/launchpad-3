@@ -251,8 +251,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             POSubmission.published
             """ % sqlvalues(self, pluralform))
 
-    def _updateReviewerInfo(self):
+    def _updateReviewerInfo(self, reviewer):
         """Update a couple of fields to note there was an update.
+
+        :arg reviewer: The person who just reviewed this IPOMsgSet.
 
         The updated fields are:
             - self.pofile.last_touched_pomsgset: To cache which message was
@@ -262,7 +264,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             - self.date_reviewed: To note when was done last review.
         """
             self.pofile.last_touched_pomsgset = self
-            self.reviewer = person
+            self.reviewer = reviewer
             self.date_reviewed = UTC_NOW
             self.sync()
 
@@ -328,7 +330,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # it's definitely not complete if it has too few translations
             complete = False
             # And we should reset the active or published submissions for the
-            # non updated plural forms.
+            # non updated plural forms. We have entries to reset when:
+            #     1. The number of plural forms is changed in current
+            #     language since the user loaded the translation form or
+            #     downloaded the .po file that he imported.
+            #     2. An imported .po file comming from upstream or package
+            #     translations has less plural forms than the ones defined in
+            #     Rosetta for that language.
             for pluralform in range(self.pluralforms)[new_translation_count:]:
                 if published:
                     self.setPublishedSubmission(pluralform, None)
@@ -365,7 +373,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 has_changed = True
 
         if has_changed and is_editor:
-            self._updateReviewerInfo()
+            self._updateReviewerInfo(person)
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
