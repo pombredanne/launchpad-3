@@ -206,7 +206,7 @@
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/bugtasks-index.pt"
-            lp:url="malone/tasks/index" />
+            />
     </browser:pages>
 
     <browser:page
@@ -215,7 +215,7 @@
         class="canonical.launchpad.browser.BugView"
         permission="launchpad.Edit"
         template="../templates/bug-comment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addcomment" />
+        />
 
     <browser:page
         name="+addcomment-form"
@@ -241,7 +241,7 @@
         keyword_arguments="branch whiteboard"
         permission="launchpad.AnyPerson"
         template="../templates/bug-branch-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addbranch" />
+        />
 
     <browser:page
         name="+index"
@@ -259,8 +259,7 @@
         arguments=""
         keyword_arguments="url title"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new">
+        template="../templates/bug-extref-add.pt">
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
@@ -292,7 +291,6 @@
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         permission="launchpad.AnyPerson"
         attribute="render_distrotask"
-        lp:url="malone/bugs/$Bug.id/+distrotask"
         />
 
     <browser:generalform
@@ -361,8 +359,7 @@
         class="canonical.launchpad.browser.BugTaskStatusView"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
-        lp:url="malone/tasks/$BugTask.id/+index">
-    </browser:page>
+        />
 
     <browser:page
         name="+listing-view"
@@ -384,8 +381,7 @@
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        template="../templates/bugtask-edit.pt">
         <browser:widget
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
@@ -404,8 +400,7 @@
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit-form.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        template="../templates/bugtask-edit-form.pt">
         <browser:widget
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
@@ -428,8 +423,7 @@
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        template="../templates/bugtask-edit.pt">
         <browser:widget
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
@@ -448,8 +442,7 @@
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit-form.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        template="../templates/bugtask-edit-form.pt">
         <browser:widget
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"

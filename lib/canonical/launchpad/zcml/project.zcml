@@ -61,17 +61,17 @@
             name="+index"
             facet="overview"
             template="../templates/project-index.pt"
-            lp:url="/projects/$Project.name/" />
+            />
         <browser:page
             name="+branches"
             facet="overview"
             template="../templates/project-branches.pt"
-            lp:url="/projects/$Project.name/+branches" />
+            />
         <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/projects/$Project.name/+bounties/" />
+            />
         <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt" />
@@ -79,7 +79,7 @@
             name="+translations"
             facet="translations"
             template="../templates/project-translations.pt"
-            lp:url="/$Project.name/+translations" />
+            />
 
        <!-- Projects portlets -->
        <browser:page
@@ -105,7 +105,6 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/projects/$Project.name/+rdf"
         attribute="__call__"
         />
 
@@ -136,7 +135,7 @@
           <browser:page
               name="+reassign"
               template="../templates/object-reassignment.pt"
-              lp:url="/project/$project.id/+reassign" />
+              />
     </browser:pages>
 
     <browser:page
@@ -146,7 +145,7 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/project-add.pt"
-        lp:url="/projects/+new" />
+        />
 
     <browser:page
         name="+edit"
@@ -155,7 +154,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
-        lp:url="/projects/$Project.name/+edit" />
+        />
 
     <browser:page
         name="+review"
@@ -164,7 +163,7 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/project-edit.pt"
-        lp:url="/projects/$Project.name/+review" />
+        />
 
     <browser:editform
         name="+changetranslators"
@@ -175,7 +174,7 @@
         permission="launchpad.Edit"
         label="Select a new translation group"
         template="../templates/project-translators.pt"
-        lp:url="/$Project.name/+changetranslators" />
+        />
 
     <browser:page
         name="+newproduct"
@@ -184,7 +183,7 @@
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
-        lp:url="/projects/$Project.name/+newproduct" />
+        />
 
     <browser:addform
       name="+linkbounty"
@@ -197,7 +196,7 @@
       keyword_arguments="project bounty"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-link.pt"
-      lp:url="/projects/$Project.name/+linkbounty">
+      >
       <browser:widget
         field="project"
         class="canonical.widgets.ContextWidget" />
@@ -275,15 +274,15 @@
         facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView"
-        lp:url="/projects/">
+        >
         <browser:page
             name="+all"
             template="../templates/projects-all.pt"
-            lp:url="/projects/+all" />
+            />
         <browser:page
             name="+index"
             template="../templates/projects-index.pt"
-            lp:url="/projects/+index" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -294,7 +293,7 @@
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"
-            lp:url="/projects/+review" />
+            />
     </browser:pages>
 
 </configure>

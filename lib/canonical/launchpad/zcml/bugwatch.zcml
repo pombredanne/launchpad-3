@@ -70,7 +70,7 @@
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/watches-index.pt"
-            lp:url="malone/bugs/$Bug.id/watches/index" />
+            />
     </browser:pages>
 </facet>
 </configure>

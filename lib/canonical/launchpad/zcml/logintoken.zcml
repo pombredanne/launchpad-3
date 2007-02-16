@@ -30,7 +30,7 @@
         permission="zope.Public" 
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
-        lp:url="token/$token/+index" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -38,7 +38,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validateemail.pt"
-        lp:url="token/$token/+validateemail" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -46,7 +46,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validateteamemail.pt"
-        lp:url="token/$token/+validateteamemail" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -54,7 +54,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validategpg.pt"
-        lp:url="token/$token/+validategpg" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -62,7 +62,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validatesignonlygpg.pt"
-        lp:url="token/$token/+validatesignonlygpg" />
+        />
 
     <browser:generalform
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -74,7 +74,7 @@
         keyword_arguments="email password"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
-        lp:url="token/$token/+resetpassword" >
+        >
         <browser:widget
             field="password"
             class="canonical.widgets.PasswordChangeWidget" />
@@ -86,7 +86,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
         template="../templates/logintoken-mergepeople.pt"
-        lp:url="token/$token/+accountmerge" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -105,7 +105,7 @@
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/logintoken-newaccount.pt"
-        lp:url="token/$token/+newaccount">
+        >
         <browser:widget
             field="password"
             class="canonical.widgets.PasswordChangeWidget" />

@@ -41,12 +41,12 @@
         <browser:page
             template="../templates/translationgroup-index.pt"
             name="+index"
-            lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
+            />
         <!-- TranslationGroup portlets -->
         <browser:page
             name="+portlet-relateds"
             template="../templates/translationgroup-portlet-relateds.pt"
-            lp:url="/rosetta/groups/$TranslationGroup.name/+portlet-relateds" />
+            />
     </browser:pages>
 
     <browser:page
@@ -66,7 +66,7 @@
         fields="name title summary"
         permission="launchpad.Edit"
         template="../templates/launchpad-editform.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/+edit" />
+        />
 
     <browser:addform
         name="+appoint"
@@ -79,7 +79,7 @@
         content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/+appoint">
+        >
         <browser:widget
             field="translationgroup"
             class="canonical.widgets.ContextWidget" />
@@ -113,7 +113,7 @@
         class="canonical.launchpad.browser.TranslationGroupSetAddView"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
-        lp:url="/rosetta/groups/+new">
+        >
     </browser:addform>
 
     <browser:pages
@@ -123,7 +123,7 @@
         <browser:page
             template="../templates/translationgroups-index.pt"
             name="+index"
-            lp:url="/rosetta/groups/+index" />
+            />
     </browser:pages>
 
 </configure>

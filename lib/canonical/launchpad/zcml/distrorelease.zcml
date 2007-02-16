@@ -85,7 +85,6 @@
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
       />
   </browser:pages>
 
@@ -129,7 +128,6 @@
       name="+builds"
       facet="overview"
       template="../templates/distrorelease-builds.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
       name="+search"
@@ -139,7 +137,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -172,11 +169,11 @@
     <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+      />
     <browser:page
       name="+last-uploads"
       template="../templates/distrorelease-last-uploads.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
+      />
   </browser:pages>
 
   <browser:page
@@ -195,7 +192,7 @@
       name="+queue"
       facet="overview"
       template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue" />
+      />
   </browser:pages>
 
   <browser:pages
@@ -206,7 +203,7 @@
     <browser:page
       name="+reassign"
       template="../templates/object-reassignment.pt"
-      lp:url="/distros/$distro.id/$release.id/+reassign" />
+      />
   </browser:pages>
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -222,7 +219,6 @@
     facet="overview"
     fields="displayname title summary description"
     template="../templates/distrorelease-edit.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -237,7 +233,6 @@
     facet="overview"
     fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />
 
   <browser:addform
@@ -250,7 +245,7 @@
     keyword_arguments="name dateexpected"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
-    lp:url="/distros/$Distribution.name/$Release.name/+addmilestone">
+    >
   </browser:addform>
 
   <browser:addform

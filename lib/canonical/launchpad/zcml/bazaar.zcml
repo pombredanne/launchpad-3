@@ -37,16 +37,15 @@
         for="canonical.launchpad.interfaces.IBazaarApplication"
         permission="zope.Public"
         class="canonical.launchpad.browser.BazaarApplicationView"
-        facet="branches"
-        lp:url="/+code">
+        facet="branches">
         <browser:page
             name="+index"
             template="../templates/bazaar-index.pt"
-            lp:url="/+code/+index" />
+            />
         <browser:page
             name="+portlet-importstats"
             template="../templates/bazaar-portlet-importstats.pt"
-            lp:url="/+code/+portlet-importstats" />
+            />
     </browser:pages>
 
 <xmlrpc:view

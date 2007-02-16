@@ -33,13 +33,13 @@
         for="canonical.launchpad.interfaces.IRegistryApplication"
         facet="overview"
         permission="zope.Public"
-        lp:url="registry">
+        >
         <browser:page name="+index"
             template="../templates/registry-index.pt"
-            lp:url="registry/+index" />
+            />
         <browser:page name="+about"
             template="../templates/registry-about.pt"
-            lp:url="registry/+about" />
+            />
     </browser:pages>
 
 </configure>

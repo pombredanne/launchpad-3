@@ -35,7 +35,6 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorEditView"
         template="../templates/launchpad-editform.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/$Language.name/+edit">
-    </browser:editform>
+        />
 
 </configure>

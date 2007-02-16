@@ -27,7 +27,7 @@
     keyword_arguments="productrelease infestationstatus"
     permission="launchpad.AnyPerson"
     template="../templates/launchpad-addform.pt"
-    lp:url="malone/bugs/$Bug.id/productinfestations/+new" />
+    />
 
   <browser:editform
     name="+edit"
@@ -38,7 +38,6 @@
     label="Edit infested product release"
     permission="launchpad.AnyPerson"
     template="../templates/default-editform.pt"
-    lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit"
     />
 
   <!-- BugProductInfestationSet -->
@@ -72,7 +71,7 @@
     permission="zope.Public">
     <browser:page name="+index"
       template="../templates/bugproductinfestations-index.pt"
-      lp:url="malone/bugs/$Bug.id/productinfestations/+index" />
+      />
   </browser:pages>
 </facet>
 </configure>

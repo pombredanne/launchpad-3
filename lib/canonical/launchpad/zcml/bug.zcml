@@ -60,7 +60,6 @@
         name="+index"
         class="canonical.launchpad.browser.BugWithoutContextView"
         permission="zope.Public"
-        lp:url="malone/bugs/$Bug.id"
         attribute="redirectToNewBugPage" />
 
     <browser:pages

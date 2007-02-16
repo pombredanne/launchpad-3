@@ -40,7 +40,7 @@
             template="../templates/builders-index.pt"
             name="+index"
             facet="overview"        
-            lp:url="+builds/+index" />
+            />
     </browser:pages>
 
     <browser:addform
@@ -54,7 +54,7 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         facet="overview"
-        lp:url="+builds/+new">
+        >
         <browser:widget 
             field="owner" 
             class="canonical.widgets.HiddenUserWidget" />
@@ -97,17 +97,17 @@
             template="../templates/builder-index.pt"
             facet="overview"
             name="+index"
-            lp:url="+builds/$name/+index" />
+            />
         <browser:page
             template="../templates/builder-history.pt"
             facet="overview"
             name="+history"
-            lp:url="+builds/$name/+history" />
+            />
         <browser:page
             template="../templates/builds-list.pt"
             name="+builds-list"
             facet="overview"
-            lp:url="/distros/$distribution/+builds-list" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -116,7 +116,7 @@
         <browser:page
             template="../templates/builder-portlet-details.pt"
             name="+portlet-details"
-            lp:url="+builds/$buildername/+portlet-details" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -127,7 +127,7 @@
             template="../templates/builder-cancel.pt"
             name="+cancel"
             facet="overview"
-            lp:url="+builds/$name/+cancel" />
+            />
     </browser:pages>
 
     <browser:editform
@@ -138,7 +138,7 @@
         fields="name title description processor url manual owner"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
-        lp:url="+builds/$name/+edit">
+        >
     </browser:editform>
 
     <browser:editform
@@ -149,8 +149,7 @@
         fields="manual"
         permission="launchpad.Edit"
         template="../templates/builder-mode.pt"
-        lp:url="+builds/$name/+mode">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+admin"
@@ -161,8 +160,7 @@
         fields="name title description processor url manual owner trusted builderok failnotes"
         permission="launchpad.Admin"
         template="../templates/builder-admin.pt"
-        lp:url="+builds/$name/+admin">
-    </browser:editform>
+        />
 
     <!-- BuildQueue -->
     <content class="canonical.launchpad.database.BuildQueue">

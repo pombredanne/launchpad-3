@@ -43,20 +43,20 @@
       <browser:page
           name="+index"
           template="../templates/distroarchrelease-index.pt"
-          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
+          />
       <browser:page
           name="+portlet-details"
           template="../templates/distroarchrelease-portlet-details.pt"
-          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlets-details"/>
+          />
       <browser:page
           name="+builds"
           facet="overview"
           template="../templates/distroarchrelease-builds.pt"
-          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds"/>
+          />
       <browser:page
           name="+builds-list"
           template="../templates/builds-list.pt"
-          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds-list"/>
+          />
     </browser:pages>
 
     <browser:page

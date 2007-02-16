@@ -58,8 +58,7 @@
         fields="name dateexpected visible"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+admin"
@@ -70,8 +69,7 @@
         fields="productseries distrorelease"
         permission="launchpad.Admin"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+admin">
-    </browser:editform>
+        />
 
     <!-- IMilestoneSet -->
     <securedutility

@@ -77,7 +77,6 @@
         permission="launchpad.Edit"
         template="../templates/potemplate-upload.pt"
         class="canonical.launchpad.browser.POTemplateView"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+upload"
         />
 
     <browser:editform

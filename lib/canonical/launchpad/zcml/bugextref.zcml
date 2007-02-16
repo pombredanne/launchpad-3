@@ -31,7 +31,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-extref-edit.pt"
         fields="url title"
-        lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
+        />
 
     <!-- BugExternalRefSet -->
     <browser:defaultView
@@ -60,7 +60,7 @@
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/references-index.pt"
-            lp:url="malone/bugs/$Bug.id/references" />
+            />
     </browser:pages>
 </facet>
 </configure>

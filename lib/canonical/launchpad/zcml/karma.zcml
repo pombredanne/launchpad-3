@@ -57,7 +57,7 @@
         label="Edit karma action information"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
-        lp:url="karmaaction/$action/+index">
+        >
     </browser:editform>
 
     <!-- KarmaCacheManager -->
@@ -102,7 +102,7 @@
         name="+index"
         permission="launchpad.Admin" 
         template="../templates/karmaaction-index.pt"
-        lp:url="karmaaction/$action/+index" />
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IKarmaContext"

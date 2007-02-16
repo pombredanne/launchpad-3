@@ -45,7 +45,7 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"
-        lp:url="bugs/+index" />
+        />
 
     <!-- pages for the malone application -->
     <browser:pages
@@ -56,7 +56,7 @@
         <browser:page
             name="+about"
             template="../templates/malone-about.pt"
-            lp:url="bugs/+about" />
+            />
         <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt" />
@@ -87,5 +87,5 @@
         class="canonical.launchpad.browser.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
-        lp:url="bugs/assigned" />
+        />
 </configure>

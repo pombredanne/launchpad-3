@@ -37,7 +37,6 @@
         permission="launchpad.AnyPerson"
         fields="title patch contenttype"
         template="../templates/bug-attachment-edit.pt"
-        lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
 
     <adapter

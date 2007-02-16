@@ -45,7 +45,6 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TeamMembershipEditView"
         template="../templates/teammembership-index.pt"
-        lp:url="/people/$team/+member/$member/+index">
-    </browser:page>
+        />
 
 </configure>
