@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISourcePackageNameSet)
 
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, PackageUploadFile,
+    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile,
     re_no_epoch, re_valid_pkg_name, re_valid_version, re_issource)
 
 from canonical.archivepublisher.utils import (
@@ -126,7 +126,7 @@ class SignableTagFile:
             }
 
 
-class DSCFile(PackageUploadFile, SignableTagFile):
+class DSCFile(SourceUploadFile, SignableTagFile):
     """XXX"""
 
     mandatory_fields = set([
@@ -152,7 +152,7 @@ class DSCFile(PackageUploadFile, SignableTagFile):
 
         Can raise UploadError.
         """
-        PackageUploadFile.__init__(self, *args, **kwargs)
+        SourceUploadFile.__init__(self, *args, **kwargs)
         try:
             self._dict = parse_tagfile(self.full_filename,
                 dsc_whitespace_rules=1,
@@ -163,9 +163,9 @@ class DSCFile(PackageUploadFile, SignableTagFile):
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
             if mandatory_field not in self._dict:
-                self.reject("Unable to find mandatory field %s in %s" % (
+                raise UploadError(
+                    "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
-                return False
 
         self.maintainer = self.parse_address(self._dict['maintainer'])
 
@@ -198,6 +198,9 @@ class DSCFile(PackageUploadFile, SignableTagFile):
         Should raise no exceptions unless unforseen issues occur. Errors will
         be accumulated in the rejection message.
         """
+        for error in SourceUploadFile.verify(self):
+            yield error
+
         files = []
         for fileline in self._dict['files'].strip().split("\n"):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME
