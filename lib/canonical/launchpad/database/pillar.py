@@ -29,7 +29,11 @@ class PillarNameSet:
     def __contains__(self, name):
         """See IPillarNameSet."""
         cur = cursor()
-        cur.execute("SELECT TRUE FROM PillarName WHERE name=%(name)s", vars())
+        cur.execute("""
+            SELECT TRUE
+            FROM PillarName
+            WHERE name=%(name)s AND active IS TRUE
+            """, {'name': name})
         if cur.fetchone() is None:
             return False
         else:
@@ -37,6 +41,18 @@ class PillarNameSet:
 
     def __getitem__(self, name):
         """See IPillarNameSet."""
+        pillar = self.getByName(name, ignore_inactive=True)
+        if pillar is None:
+            raise NotFoundError(name)
+        return pillar
+
+    def getByName(self, name, ignore_inactive=False):
+        """Return the pillar with the given name.
+
+        If ignore_inactive is True, then only active pillars are considered.
+
+        If no pillar is found, None is returned.
+        """
         # We could attempt to do this in a single database query, but I
         # expect that doing two queries will be faster that OUTER JOINing
         # the Project, Product and Distribution tables (and this approach
@@ -44,14 +60,17 @@ class PillarNameSet:
 
         # Retrieve information out of the PillarName table.
         cur = cursor()
-        cur.execute("""
+        query = """
             SELECT id, product, project, distribution
             FROM PillarName
             WHERE name=%(name)s
-            """, vars())
+            """
+        if ignore_inactive:
+            query += " AND active IS TRUE"
+        cur.execute(query, {'name': name})
         row = cur.fetchone()
         if row is None:
-            raise NotFoundError(name)
+            return None
 
         assert len([column for column in row[1:] if column is None]) == 2, """
                 One (and only one) of project, project or distribution may
@@ -87,6 +106,7 @@ class PillarNameSet:
             WHERE fti @@ ftq(%(text)s)
                 AND name != lower(%(text)s)
                 AND lower(title) != lower(%(text)s)
+                AND active IS TRUE
 
             UNION ALL
 
@@ -96,6 +116,7 @@ class PillarNameSet:
             WHERE fti @@ ftq(%(text)s)
                 AND name != lower(%(text)s)
                 AND lower(title) != lower(%(text)s)
+                AND active IS TRUE
 
             UNION ALL
 
@@ -109,14 +130,16 @@ class PillarNameSet:
             SELECT 'project' AS otype, id, name, title, description,
                 9999999 AS rank
             FROM project
-            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
+            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
+                AND active IS TRUE
 
             UNION ALL
 
             SELECT 'product' AS otype, id, name, title, description,
                 9999999 AS rank
             FROM product
-            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
+            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
+                AND active IS TRUE
 
             ORDER BY rank DESC
             """ % sqlvalues(text=text)
