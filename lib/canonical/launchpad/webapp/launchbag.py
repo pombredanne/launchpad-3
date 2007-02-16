@@ -12,17 +12,19 @@ from zope.interface import implements
 from zope.component import getUtility
 import zope.security.management
 import zope.thread
-from zope.app.session.interfaces import ISession
+
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication)
 
 from canonical.launchpad.interfaces import (
-        IOpenLaunchBag, ILaunchBag,
-        ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution,
+        IPerson, IProject, IProduct, IDistribution,
         IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
-        ISpecification, IBugTask)
-from canonical.launchpad.webapp.interfaces import ILoggedInEvent
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+        ISpecification, IBugTask, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interfaces import (
+    ILoggedInEvent, IOpenLaunchBag, ILaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
+
 
 class LaunchBag:
 

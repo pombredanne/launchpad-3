@@ -39,6 +39,13 @@
         classes="ProductSeriesNavigation"
         />
 
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.browser.ProductSeriesSOP"
+        permission="zope.Public"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
         path_expression="name"
@@ -135,18 +142,6 @@
         template="../templates/productseries-edit.pt"
         lp:url="/products/$Product.name/$ProductSeries.name/+edit"
       />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="driver"
-        class="canonical.launchpad.browser.ProductSeriesAppointDriverView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Product.name/$Series.name/+driver">
-    </browser:editform>
 
     <browser:addform
         name="+addrelease"
@@ -264,5 +259,13 @@
         lp:url="/bazaar/series/"
         />
   </browser:pages>
+
+<browser:page
+  for="canonical.launchpad.interfaces.IProductSeries"
+  name="+shortlink"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.ProductSeriesShortLink"
+  attribute="__call__"
+  />
 
 </configure>

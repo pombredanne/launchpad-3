@@ -15,11 +15,12 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-    DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
+    ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 from sqlobject.sqlbuilder import AND
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
@@ -45,7 +46,7 @@ class Karma(SQLBase):
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False)
-    datecreated = DateTimeCol(
+    datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
 
 

@@ -18,17 +18,29 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, SQLConstant
+
+from canonical.database import postgresql
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database import postgresql
+
+from canonical.foaf import nickname
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
+
+from canonical.lp.dbschema import (
+    BugTaskImportance, BugTaskStatus, SSHKeyType,
+    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
+    LoginTokenType, SpecificationSort, SpecificationFilter,
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -62,15 +74,7 @@ from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
 from canonical.launchpad.database.ticket import TicketPersonSearch
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, EnumCol, SSHKeyType,
-    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
-    LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
 from canonical.launchpad.searchbuilder import any
-
-from canonical.foaf import nickname
-from canonical.cachedproperty import cachedproperty
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -99,6 +103,8 @@ class Person(SQLBase):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -853,11 +859,15 @@ class Person(SQLBase):
 
         tm.syncUpdate()
 
-    def _getMembersByStatus(self, status):
+    def getMembersByStatus(self, status, orderBy=None):
+        """See IPerson."""
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
-        return Person.select(query, clauseTables=['TeamMembership'])
+        if orderBy is None:
+            orderBy = Person.sortingColumns
+        return Person.select(
+            query, clauseTables=['TeamMembership'], orderBy=orderBy)
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
@@ -898,32 +908,32 @@ class Person(SQLBase):
     @property
     def deactivatedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+        return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
 
     @property
     def expiredmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
+        return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
     def declinedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
+        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
 
     @property
     def proposedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
+        return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
     def administrators(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
+        return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
     @property
     def approvedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
+        return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
 
     @property
     def activemembers(self):
@@ -1689,6 +1699,35 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
+        # Update only the MentoringOffers that will not conflict
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET owner=%(to_id)d
+            WHERE owner=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE owner = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET team=%(to_id)d
+            WHERE team=%(from_id)d AND id NOT IN
+                (
+                SELECT id
+                FROM MentoringOffer
+                WHERE team = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM MentoringOffer
+            WHERE owner=%(from_id)d OR team=%(from_id)d
+            ''' % vars())
+        skip.append(('mentoringoffer', 'owner'))
+        skip.append(('mentoringoffer', 'team'))
+
         # Update PackageBugContact entries
         cur.execute('''
             UPDATE PackageBugContact SET bugcontact=%(to_id)s
@@ -1929,6 +1968,14 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
+
+
+class PersonLanguage(SQLBase):
+    _table = 'PersonLanguage'
+
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    language = ForeignKey(foreignKey='Language', dbName='language',
+                          notNull=True)
 
 
 class SSHKey(SQLBase):

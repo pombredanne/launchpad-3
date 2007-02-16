@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'ProductNavigation',
     'ProductSetNavigation',
+    'ProductShortLink',
+    'ProductSOP',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -38,29 +40,29 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     ILaunchpadRoot)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.tickettarget import (
     TicketTargetFacetMixin, TicketTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadView,
-    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    RedirectionNavigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough,
+    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, RedirectionNavigation,
+    sorted_version_numbers, StandardLaunchpadFacets, stepto, stepthrough, 
     structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.image import ImageAddWidget
@@ -116,6 +118,22 @@ class ProductSetNavigation(RedirectionNavigation):
         if self.context.getByName(name) is None:
             raise NotFoundError(name)
         return RedirectionNavigation.traverse(self, name)
+
+
+class ProductSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # product series, most recent first
+        return list(self.context.serieslist[:num])
+
+    def listAltChildren(self, num):
+        return None
 
 
 class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
@@ -820,3 +838,8 @@ class ProductReassignmentView(ObjectReassignmentView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+
+class ProductShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname

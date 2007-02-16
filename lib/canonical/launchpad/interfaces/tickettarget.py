@@ -125,7 +125,7 @@ class IManageSupportContacts(Interface):
         required=False)
     support_contact_teams = List(
         title=_("Team support contacts"),
-        value_type=Choice(vocabulary="PersonActiveMembership"),
+        value_type=Choice(vocabulary="PersonTeamParticipations"),
         required=False)
 
 

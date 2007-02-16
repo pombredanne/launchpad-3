@@ -127,7 +127,7 @@ It's not possible to vote on closed polls, even if we manually craft the URL.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004')
     >>> print find_tag_by_id(
-    ...     team_admin_browser.contents, 'region-content').renderContents()
+    ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
     ...
     <h2>Voting has closed</h2>
@@ -136,8 +136,9 @@ It's not possible to vote on closed polls, even if we manually craft the URL.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004/+vote-simple')
     >>> print find_tag_by_id(
-    ...     team_admin_browser.contents, 'region-content').renderContents()
+    ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
+    ...
     <div>
     <p class="informational message">
           This poll is already closed.
@@ -155,7 +156,7 @@ The same is true for condorcet polls too.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004')
     >>> print find_tag_by_id(
-    ...     team_admin_browser.contents, 'region-content').renderContents()
+    ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
     ...
     <h2>Voting has closed</h2>
@@ -169,8 +170,9 @@ The same is true for condorcet polls too.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+vote-condorcet')
     >>> print find_tag_by_id(
-    ...     team_admin_browser.contents, 'region-content').renderContents()
+    ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
+    ...
     <div>
     <p class="informational message">
           This poll is already closed.

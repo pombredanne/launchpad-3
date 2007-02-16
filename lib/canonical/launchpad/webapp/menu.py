@@ -9,16 +9,17 @@ __all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
 import cgi
 from zope.interface import implements
 from canonical.lp import decorates
-from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.interfaces import (
+
+from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
     IFacetLink, ILink, ILinkData, IStructuredString
     )
+
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
-from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -57,9 +58,9 @@ def nearest_menu(obj, menuinterface):
     menuinterface will typically be IFacetMenu.
     """
     for current_obj in canonical_url_iterator(obj):
-        facetmenu = menuinterface(current_obj, None)
-        if facetmenu is not None:
-            return facetmenu
+        menu = menuinterface(current_obj, None)
+        if menu is not None:
+            return menu
     return None
 
 
