@@ -19,19 +19,19 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 metal:fill-slot="heading"
-        i18n:translate="">Change support request status</h1>
+        i18n:translate="">Change question status</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      Normally, the support request status should be changed through the
-      comment workflow. But if a mistake was made, e.g. a request was wrongly
+      Normally, the question status should be changed through the
+      comment workflow. But if a mistake was made, e.g. a question was wrongly
       rejected, you can use this page to correct it.
     </p>
   </div>
 </div>
 
-<p metal:fill-slot="help">Select the correct new status for the request.
+<p metal:fill-slot="help">Select the correct new status for the question.
   You can find the meaning of each status in the
-  <a href="https://help.launchpad.net/SupportRequestLifeCycle">Support Request
+  <a href="https://help.launchpad.net/QuestionLifeCycle">Question
      Life-cycle</a> document.
 </p>
 </body>

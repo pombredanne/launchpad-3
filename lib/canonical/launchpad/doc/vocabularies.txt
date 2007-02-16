@@ -274,6 +274,18 @@ in the vocabulary.
     >>> debian_woody.milestones.count()
     0
 
+If the context is a specification, only milestones from that specification
+target are in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> spec_target_milestones = vocabulary_registry.get(
+    ...     canvas_spec, 'Milestone')
+    >>> for term in spec_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+
 The vocabulary contains only visible milestones.
 
     >>> one_dot_o = firefox.milestones[0]

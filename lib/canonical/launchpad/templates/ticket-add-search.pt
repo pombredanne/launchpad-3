@@ -22,7 +22,7 @@
       <p>
         Please enter a short description (at least 4 words) in the language
         of your choice, that describes your problem. We will use it to look
-        for similar support requests that may already exist.
+        for similar question that may already exist.
       </p>
 
       <tal:comment replace="nothing">
@@ -31,7 +31,7 @@
       </tal:comment>
       <p><a href="/+editmylanguages">Change your
         preferred languages</a> to modify the list of languages available
-        for writing the request.
+        for writing the question.
       </p>
     </div>
 
