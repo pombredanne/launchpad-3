@@ -61,9 +61,10 @@ class ChangesFile(SignableTagFile):
         self.filename = filename
         self.fsroot = fsroot
         self.policy = policy
+        self.full_filename = os.path.join(self.fsroot, filename)
 
         try:
-            self._dict = parse_tagfile(os.path.join(self.fsroot, filename),
+            self._dict = parse_tagfile(self.full_filename,
                 allow_unsigned=policy.unsigned_changes_ok)
         except (IOError, TagFileParseError), e:
             raise UploadError("Unable to parse the changes %s: %s" % (

@@ -324,11 +324,12 @@ class UBinaryUploadFile(PackageUploadFile):
 
     format = BinaryPackageFormat.UDEB
 
-    # control, sourcepackagerelease and architecture is divined when
-    # parsing the package file, and then used to locate or create the
-    # relevant build.
+    # These are divined when parsing the package file in verify(), and
+    # then used to locate or create the relevant sources and build.
     control = None
     sourcepackagerelease = None
+    source_name = None
+    source_version = None
 
     def __init__(self, *args, **kwargs):
         PackageUploadFile.__init__(self, *args, **kwargs)
@@ -495,57 +496,18 @@ class UBinaryUploadFile(PackageUploadFile):
                 "%s control file lists priority as %s but changes file has %s."
                 % (self.filename, control_priority, self.priority))
 
-
         #
-        # Check and locate Source
+        # Fish our Source details
         #
 
-        control_source = control_lines.Find("Source")
+        control_source = self.control.get("Source", None)
         if control_source is not None and "(" in control_source:
             src_match = re_extract_src_version.match(control_source)
-            source_name = src_match.group(1)
-            source_version = src_match.group(2)
+            self.source_name = src_match.group(1)
+            self.source_version = src_match.group(2)
         else:
-            source_name = control_package
-            source_version = control_version
-
-        # For mixed-mode uploads, check that the versions match up
-        if ('source' in self.changes.architectures and 
-            source_version != self.version):
-            yield UploadError(
-                "source version %r for %s does not match changes "
-                "version %r"
-                % (source_version, self.filename, self.version))
-
-        distrorelease = self.policy.distrorelease
-        spphs = distrorelease.getPublishedReleases(
-                        source_name, source_version, include_pending=True)
-        if spphs:
-            # We know there's only going to be one release because
-            # version is unique.
-            assert len(spphs) == 1
-            self.sourcepackagerelease = spphs[0].sourcepackagerelease
-        else:
-            # XXX cprov 20060809: Building from ACCEPTED is special
-            # condition, not really used in production. We should
-            # remove the support for this use case, see further
-            # info in bug #55774.
-            self.logger.debug("No source published, checking the ACCEPTED queue")
-            q = distrorelease.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
-                                            name=source_name,
-                                            version=source_version)
-            if q:
-                assert len(q) == 1
-                self.sourcepackagerelease = q[0].sourcepackagerelease
-
-        if self.sourcepackagerelease is None:
-            # At this point, we can't really do much more to try
-            # building this package. If we look in the NEW queue it is
-            # possible that multiple versions of the package exist there
-            # and we know how bad that can be. Time to give up!
-            yield UploadError(
-                "Unable to find source package %s/%s in %s" % (
-                source_name, source_version, distrorelease.name))
+            self.source_name = self.control.get("Package")
+            self.source_version = self.control.get("Version")
 
         # Debian packages are in fact 'ar' files. Thus we run '/usr/bin/ar'
         # to look at the contents of the deb files to confirm they make sense.
@@ -608,6 +570,62 @@ class UBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2" % (self.filename, data_tar))
 
         # That's all folks.
+
+    def find_sourcepackagerelease(self):
+        """XXX
+
+        Explain why this is separate from verify.
+        """
+        distrorelease = self.policy.distrorelease
+        spphs = distrorelease.getPublishedReleases(
+                        self.source_name, version=self.source_version, 
+                        include_pending=True)
+        if spphs:
+            # We know there's only going to be one release because
+            # version is unique.
+            assert len(spphs) == 1
+            sourcepackagerelease = spphs[0].sourcepackagerelease
+        else:
+            # XXX cprov 20060809: Building from ACCEPTED is special
+            # condition, not really used in production. We should
+            # remove the support for this use case, see further
+            # info in bug #55774.
+            self.logger.debug("No source published, checking the ACCEPTED queue")
+            q = distrorelease.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+                                            name=self.source_name,
+                                            version=self.source_version)
+            if q:
+                assert len(q) == 1
+                sourcepackagerelease = q[0].sourcepackagerelease
+
+        if sourcepackagerelease is None:
+            # At this point, we can't really do much more to try
+            # building this package. If we look in the NEW queue it is
+            # possible that multiple versions of the package exist there
+            # and we know how bad that can be. Time to give up!
+            raise UploadError(
+                "Unable to find source package %s/%s in %s" % (
+                self.source_name, self.source_version, distrorelease.name))
+
+        return sourcepackagerelease
+
+    def verify_sourcepackagerelease(self, sourcepackagerelease):
+        """XXX
+
+        Explain mixed-mode.
+        """
+        assert 'source' in self.changes.architectures
+        if self.source_version != sourcepackagerelease.version:
+            raise UploadError(
+                "source version %r for %s does not match version %r "
+                "from control file" % (sourcepackagerelease.version,
+                self.source_version, self.filename))
+
+        if self.source_name != sourcepackagerelease.name:
+            raise UploadError(
+                "source name %r for %s does not match name %r in "
+                "control file"
+                % (sourcepackagerelease.name, self.filename, self.source_name))
 
     def find_build(self):
         """Find and return a build for the given archtag, cached on policy.

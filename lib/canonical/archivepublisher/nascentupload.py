@@ -851,9 +851,14 @@ class NascentUpload:
         queue_root = distrorelease.createQueueEntry(self.policy.pocket,
             self.changes.filename, self.changes.filecontents)
 
+        # When binaryful and sourceful, we have a mixed-mode upload.
+        # Mixed-mode uploads need special handling, and the spr here is
+        # short-circuited into the binary. See the docstring in
+        # UBinaryUploadFile.verify_sourcepackagerelease() for details.
+        spr = None
         if self.sourceful:
             assert self.changes.dsc
-            sourcepackagerelease = self.changes.dsc.store_in_database()
+            spr = self.changes.dsc.store_in_database()
             queue_root.addSource(sourcepackagerelease)
 
         if self.binaryful:
@@ -870,6 +875,11 @@ class NascentUpload:
             else:
                 for binary_package_file in self.changes.binary_package_files:
                     try:
+                        if self.sourceful:
+                            assert self.policy.can_upload_mixed
+                            binary_package_file.verify_sourcepackagerelease(spr)
+                        else:
+                            spr = binary_package_file.find_sourcepackagerelease()
                         build = binary_package_file.find_build()
                         binary_package_file.store_in_database(build)
                     except UploadError, e:
