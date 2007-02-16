@@ -188,7 +188,7 @@ class ChangesFile(SignableTagFile):
     def binary_package_files(self):
         binaries = []
         for file in self.files:
-            if isinstance(UBinaryUploadFile):
+            if isinstance(file, UBinaryUploadFile):
                 binaries.append(file)
         return binaries
 
