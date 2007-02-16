@@ -12,6 +12,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
+from bzrlib.tests import TestCaseWithTransport
 import pytz
 from zope.component import getUtility
 
@@ -27,7 +28,7 @@ from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import ZopelessLayer
 
 
-class BzrSyncTestCase(unittest.TestCase):
+class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
     layer = ZopelessLayer
@@ -36,6 +37,7 @@ class BzrSyncTestCase(unittest.TestCase):
     LOG = "Log message"
 
     def setUp(self):
+        TestCaseWithTransport.setUp(self)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
         self.zopeless_helper = LaunchpadZopelessTestSetup(
@@ -52,6 +54,7 @@ class BzrSyncTestCase(unittest.TestCase):
             self.bzrsync.close()
         self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def join(self, name):
         return self.webserver_helper.join(name)
@@ -323,16 +326,17 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual([(1, u'rev-1')], list(bzrsync.getRevisions()))
 
     def test_get_revisions_branched(self):
-        # import pdb;pdb.set_trace()
         rev0 = self.bzr_tree.commit(u'common parent', committer=self.AUTHOR,
                                     allow_pointless=True)
-        new_bzrdir = self.bzr_tree.bzrdir.sprout('new-branch-2')
-        new_tree = new_bzrdir.open_workingtree()
+        new_tree = self.bzr_tree.bzrdir.sprout('y').open_workingtree()
+
         rev1 = self.bzr_tree.commit(u'commit one', committer=self.AUTHOR,
                                     allow_pointless=True)
         rev2 = new_tree.commit(u'commit two', committer=self.AUTHOR,
                                allow_pointless=True)
+
         self.bzr_tree.merge_from_branch(new_tree.branch)
+
         rev3 = self.bzr_tree.commit(u'merge', committer=self.AUTHOR,
                                     allow_pointless=True)
         bzrsync = self.makeBzrSync()
