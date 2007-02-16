@@ -332,7 +332,7 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
             url = context.gotchi.getURL()
         else:
             url = context.default_gotchi_resource
-        return '<img class="mugshot" src="%s" />' % url
+        return '<img alt="" class="mugshot" src="%s" />' % url
 
     def heading_icon(self):
         """Return the appropriate <img> tag for this object's heading img."""
@@ -341,7 +341,7 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
             url = context.gotchi_heading.getURL()
         else:
             url = context.default_gotchi_heading_resource
-        return '<img class="mugshot" src="%s" />' % url
+        return '<img alt="" class="mugshot" src="%s" />' % url
 
     def emblem(self):
         """Return the appropriate <img> tag for this object's emblem."""
@@ -350,7 +350,7 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
             url = context.emblem.getURL()
         else:
             url = context.default_emblem_resource
-        return '<img src="%s" />' % url
+        return '<img alt="" src="%s" />' % url
 
 
 # Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
@@ -364,15 +364,9 @@ class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
         followed by the person's name.
         """
         person = self._context
-        if person.isTeam():
-            icon = '/@@/team-mini'
-        else:
-            if person.is_valid_person:
-                icon = '/@@/person-mini'
-            else:
-                icon = '/@@/person-inactive-mini'
-        return ('<a href="%s"><img src="%s" />%s</a>'
-                % (canonical_url(person), icon, person.browsername))
+        resource = person.default_emblem_resource
+        return ('<a href="%s"><img alt="" src="%s" />%s</a>'
+                % (canonical_url(person), resource, person.browsername))
 
 
 class BugTaskFormatterAPI(ObjectFormatterAPI):

@@ -178,7 +178,7 @@ class Person(SQLBase):
     # IHasGotchiAndEmblem attributes
     @property
     def default_emblem_resource(self):
-        return self._getDefaultIconResource('')
+        return self._getDefaultIconResource()
 
     @property
     def default_gotchi_resource(self):
@@ -188,7 +188,7 @@ class Person(SQLBase):
     def default_gotchi_heading_resource(self):
         return self._getDefaultIconResource('heading')
 
-    def _getDefaultIconResource(self, suffix):
+    def _getDefaultIconResource(self, suffix=''):
         """Return the zope3 resource for the icon of this person with the
         given suffix.
 
