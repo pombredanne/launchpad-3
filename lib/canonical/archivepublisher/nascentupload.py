@@ -859,7 +859,7 @@ class NascentUpload:
         if self.sourceful:
             assert self.changes.dsc
             spr = self.changes.dsc.store_in_database()
-            queue_root.addSource(sourcepackagerelease)
+            queue_root.addSource(spr)
 
         if self.binaryful:
             if self.single_custom:
