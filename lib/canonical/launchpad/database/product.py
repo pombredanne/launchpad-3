@@ -46,15 +46,18 @@ from canonical.launchpad.database.ticket import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError, get_supported_languages)
+    ITicketTarget, NotFoundError, get_supported_languages, IHasGotchiAndEmblem)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, ITicketTarget)
+    implements(IProduct, ICalendarOwner, ITicketTarget, IHasGotchiAndEmblem)
 
     _table = 'Product'
+    default_gotchi_resource = '/@@/product-mugshot'
+    default_gotchi_heading_resource = '/@@/product-heading'
+    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)

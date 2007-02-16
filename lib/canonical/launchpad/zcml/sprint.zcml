@@ -8,6 +8,7 @@
   <!-- Sprint -->
   <content class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
+    <allow interface="canonical.launchpad.interfaces.IHasGotchiAndEmblem" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />

@@ -28,12 +28,9 @@
       <h1 tal:condition="not:context/isTeam"
       >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
       <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
-      <img
-        tal:condition="context/gotchi"
-        tal:attributes="src context/gotchi/getURL"
+      <div tal:condition="context/gotchi"
         style="float: right; margin: 0 0 0.5em 0.5em"
-        alt=""
-      />
+        tal:content="structure context/fmt:icon" />
       <tal:placeholder-shown-only-if-there-is-a-description
         condition="python: (not context.gotchi) and (context.homepage_content or context.teamdescription)"
       >

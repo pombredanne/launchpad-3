@@ -26,12 +26,9 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IBugSet, NotFoundError, IBug, IBugAttachment,
-    IBugExternalRef
-    )
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
-    )
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -323,6 +320,59 @@ class ObjectFormatterAPI:
     def url(self):
         request = get_current_browser_request()
         return canonical_url(self._context, request)
+
+
+class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+
+    def icon(self):
+        """Return the appropriate <img> tag for this object's gotchi."""
+        context = self._context
+        if context.gotchi is not None:
+            url = context.gotchi.getURL()
+        else:
+            url = context.default_gotchi_resource
+        return '<img class="mugshot" src="%s" />' % url
+
+    def heading_icon(self):
+        """Return the appropriate <img> tag for this object's heading img."""
+        context = self._context
+        if context.gotchi_heading is not None:
+            url = context.gotchi_heading.getURL()
+        else:
+            url = context.default_gotchi_heading_resource
+        return '<img class="mugshot" src="%s" />' % url
+
+    def emblem(self):
+        """Return the appropriate <img> tag for this object's emblem."""
+        context = self._context
+        if context.emblem is not None:
+            url = context.emblem.getURL()
+        else:
+            url = context.default_emblem_resource
+        return '<img src="%s" />' % url
+
+
+# Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
+# subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
+# when we're adapting a person object.
+class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    def link(self):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        person = self._context
+        if person.isTeam():
+            icon = '/@@/team-mini'
+        else:
+            if person.is_valid_person:
+                icon = '/@@/person-mini'
+            else:
+                icon = '/@@/person-inactive-mini'
+        return ('<a href="%s"><img src="%s" />%s</a>'
+                % (canonical_url(person), icon, person.browsername))
 
 
 class BugTaskFormatterAPI(ObjectFormatterAPI):

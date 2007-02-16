@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
-    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
+    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -89,7 +89,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner)
+    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -174,6 +174,36 @@ class Person(SQLBase):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
+
+    # IHasGotchiAndEmblem attributes
+    @property
+    def default_emblem_resource(self):
+        return self._getDefaultIconResource('')
+
+    @property
+    def default_gotchi_resource(self):
+        return self._getDefaultIconResource('mugshot')
+
+    @property
+    def default_gotchi_heading_resource(self):
+        return self._getDefaultIconResource('heading')
+
+    def _getDefaultIconResource(self, suffix):
+        """Return the zope3 resource for the icon of this person with the
+        given suffix.
+
+        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
+        """
+        assert suffix in ('', 'mini', 'heading', 'mugshot')
+        if suffix:
+            suffix = '-%s' % suffix
+        if self.isTeam():
+            return '/@@/team%s' % suffix
+        else:
+            if self.is_valid_person:
+                return '/@@/person%s' % suffix
+            else:
+                return '/@@/person-inactive%s' % suffix
 
     # specification-related joins
     @property

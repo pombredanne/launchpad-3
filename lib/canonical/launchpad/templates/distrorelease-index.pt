@@ -31,7 +31,7 @@
           </a>
         </li>
       </ul>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <span tal:replace="structure context/fmt:icon" />
       <div tal:replace="structure context/summary/fmt:text-to-html" />
       <div tal:replace="structure context/description/fmt:text-to-html" />
       <tal:packages condition="context/binarycount">

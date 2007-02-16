@@ -10,7 +10,7 @@ import zope.exceptions
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Int, Choice
+from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -38,7 +38,7 @@ __all__ = [
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
     'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
-    'IStructuralObjectPresentation',
+    'IStructuralObjectPresentation', 'IHasGotchiAndEmblem',
     ]
 
 
@@ -290,6 +290,23 @@ class IHasSecurityContact(Interface):
         description=_(
             "The person or team who handles security-related bug reports"),
         required=False, vocabulary='ValidPersonOrTeam')
+
+
+class IHasGotchiAndEmblem(Interface):
+    """An object that has a gotchi and an emblem."""
+
+    default_gotchi_resource = TextLine(
+        title=_("Default gotchi resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi."))
+    default_gotchi_heading_resource = TextLine(
+        title=_("Default heading resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi_heading."))
+    default_emblem_resource = TextLine(
+        title=_("Default emblem resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a emblem."))
 
 
 class IAging(Interface):

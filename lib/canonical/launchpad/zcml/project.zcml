@@ -10,6 +10,7 @@
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <allow interface="canonical.launchpad.interfaces.ITicketCollection" />
+        <allow interface="canonical.launchpad.interfaces.IHasGotchiAndEmblem" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"

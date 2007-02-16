@@ -60,7 +60,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages, IHasGotchiAndEmblem)
 
 from sourcerer.deb.version import Version
 
@@ -69,9 +69,13 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords, ITicketTarget)
+    implements(
+        IDistribution, IHasBuildRecords, ITicketTarget, IHasGotchiAndEmblem)
 
     _defaultOrder = 'name'
+    default_gotchi_resource = '/@@/distribution-mugshot'
+    default_gotchi_heading_resource = '/@@/distribution-heading'
+    default_emblem_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)

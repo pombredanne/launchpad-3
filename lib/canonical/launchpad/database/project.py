@@ -20,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, ISearchableByTicketOwner,
-    NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    NotFoundError, TICKET_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -42,9 +42,13 @@ from canonical.launchpad.database.ticket import TicketTargetSearch
 class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByTicketOwner)
+    implements(IProject, ICalendarOwner, ISearchableByTicketOwner,
+               IHasGotchiAndEmblem)
 
     _table = "Project"
+    default_gotchi_resource = '/@@/project-mugshot'
+    default_gotchi_heading_resource = '/@@/project-heading'
+    default_emblem_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
