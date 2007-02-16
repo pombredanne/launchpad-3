@@ -595,7 +595,7 @@ class UBinaryUploadFile(PackageUploadFile):
                                             name=self.source_name,
                                             version=self.source_version)
             if q:
-                assert len(q) == 1
+                assert q.count() == 1
                 sourcepackagerelease = q[0].sourcepackagerelease
 
         if sourcepackagerelease is None:
