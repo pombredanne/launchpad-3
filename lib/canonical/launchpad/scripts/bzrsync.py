@@ -117,6 +117,8 @@ class BzrSync:
             # Branch has only been appended to.
             return
 
+        self.trans_manager.begin()
+
         # Branch history has changed
         match_position = min(len(self.bzr_history), rev_count)
         while match_position > 0 and (
@@ -141,14 +143,17 @@ class BzrSync:
 
         # The database and db_history, and db_ancestry are now all
         # in sync with the common parts of the branch.
+        self.trans_manager.commit()
 
     def syncHistory(self):
         """Import all revisions in the branch."""
         # Keep track if something was actually loaded in the database.
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
-        
-        for revision_id in self.bzr_ancestry:
+
+        # Add new revisions to the database.
+        added_ancestry = set(self.bzr_ancestry) - self.db_ancestry
+        for revision_id in added_ancestry:
             if revision_id is None:
                 continue
             # If the revision is a ghost, it won't appear in the repository.
@@ -174,7 +179,7 @@ class BzrSync:
         # loaded into the database.
         did_something = False
 
-        # self.trans_manager.begin()
+        self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         if db_revision is not None:
@@ -219,10 +224,10 @@ class BzrSync:
                 parent_ids=bzr_revision.parent_ids)
             did_something = True
 
-        #if did_something:
-        #    self.trans_manager.commit()
-        #else:
-        #    self.trans_manager.abort()
+        if did_something:
+            self.trans_manager.commit()
+        else:
+            self.trans_manager.abort()
 
     def getRevisions(self):
         """Generate revision IDs that make up the branch's ancestry.
@@ -263,11 +268,12 @@ class BzrSync:
             self.bzr_branch.base)
 
         did_something = False
-        # self.trans_manager.begin()
+        self.trans_manager.begin()
 
         # now synchronise the BranchRevision objects
+        branch_revision_set = getUtility(IBranchRevisionSet)
         for (sequence, revision_id) in self.getRevisions():
-            self.syncBranchRevision(sequence, revision_id)
+            self.syncBranchRevision(branch_revision_set, sequence, revision_id)
 
         # record that the branch has been updated.
         if len(self.bzr_history) > 0:
@@ -281,12 +287,12 @@ class BzrSync:
             self.db_branch.updateScannedDetails(last_revision, revision_count)
             did_something = True
 
-        #if did_something:
-        #    self.trans_manager.commit()
-        #else:
-        #    self.trans_manager.abort()
+        if did_something:
+            self.trans_manager.commit()
+        else:
+            self.trans_manager.abort()
 
-    def syncBranchRevision(self, sequence, revision_id):
+    def syncBranchRevision(self, branch_revision_set, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
 
         :param sequence: the sequence number for this revision number
@@ -296,19 +302,22 @@ class BzrSync:
         """
         did_something = False
 
-        # self.trans_manager.begin()
+        # If the sequence number is <= the db_history, then we have it already
+        if sequence is not None and sequence <= len(self.db_history):
+            return False
+
+        # If sequence is None, and the revision_id is already in the
+        # ancestry, then we have it already
+        if sequence is None and revision_id in self.db_ancestry:
+            return False
+
+        # Otherwise we need to add it in.
+        self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
-        db_revno = self.db_branch.getBranchRevision(sequence)
 
-        if db_revno is None:
-            db_revno = self.db_branch.createBranchRevision(
-                sequence, db_revision)
-            did_something = True
+        branch_revision_set.new(self.db_branch, sequence, db_revision)
+        
+        self.trans_manager.commit()
 
-        #if did_something:
-        #    self.trans_manager.commit()
-        #else:
-        #    self.trans_manager.abort()
-
-        return did_something
+        return True
