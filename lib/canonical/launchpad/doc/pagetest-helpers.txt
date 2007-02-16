@@ -1,14 +1,82 @@
-= Helper Routines for Page Tests =
+= Page Tests Helpers =
+
+Page tests are used to test common use-cases about Launchpad. We use
+the zope.testbrowser component to write most of these tests. The
+pagetest doctest environement comes loaded with a bunch of predefined
+names that makes writing page test easy.
+
+  >>> from canonical.launchpad.ftests.test_pages import setUpGlobs
+  >>> from unittest import TestCase
+  >>> class MockTest(object):
+  ...     def __init__(self):
+  ...         self.globs = {}
+
+  >>> test = MockTest()
+  >>> setUpGlobs(test)
+
+== Preset Browsers ==
+
+We have a bunch of zope.testbrowser instances set-up with predefined
+authenticated user:
+
+A browser with an anonymous user is available under 'anon_browser'. This
+one should be use for all anonymous browsing tests.
+
+  # Shortcut to fetch the Authorization header from the testbrowser
+  >>> def getAuthorizationHeader(browser):
+  ...   return dict(browser.mech_browser.addheaders).get('Authorization','')
+
+  >>> anon_browser = test.globs['anon_browser']
+  >>> getAuthorizationHeader(anon_browser)
+  ''
+
+A browser with a logged in user without any privileges is available under
+'user_browser'. This one should be use all workflows involving logged in
+users, when it shouldn't require any special privileges.
+
+  >>> user_browser = test.globs['user_browser']
+  >>> getAuthorizationHeader(user_browser)
+  'Basic test@canonical.com:test'
+
+A browser with a logged in user with administrative privileges is
+available under 'admin_browser'. This one should be used for testing
+administrative workflows.
+
+  >>> admin_browser = test.globs['admin_browser']
+  >>> getAuthorizationHeader(admin_browser)
+  'Basic foo.bar@canonical.com:test'
+
+Finally, here is a 'browser' instance that simply contain a
+pre-initialized Browser instance. It doesn't have any authentication
+configured. It can be used when you need to configure another user.
+
+  >>> browser = test.globs['browser']
+  >>> getAuthorizationHeader(browser)
+  ''
+
+All these browser instances are configured with handleErrors set to
+False. This means that exception are raised instead of returning
+the standard error page.
+
+  >>> browser.handleErrors
+  False
+
+== Using Raw HTTP Requests ==
+
+Altough testbrowser is very convenient, sometimes more control over the
+request is needed. For these cases, there is a HTTPCaller instance
+available under 'http' that can be used to send raw HTTP request.
+
+  >>> test.globs['http']
+  <...HTTPCaller...>
+
+== Helper Routines for Testing Page Content ==
 
 When analysing the page content in a page test, it is often desirable
 to check for certain content in a subsection of the page.
 
 To help with this, a number of helper functions are made available to
 page tests in the starting namespace.
-
-  >>> from canonical.launchpad.ftests.test_pages import (
-  ...     find_tag_by_id, find_tags_by_class, find_portlet,
-  ...     find_main_content, extract_text, parse_relationship_section)
 
 Each of these functions returns a BeautifulSoup "Tag" instance (or a
 list of such instances in the case of find_tags_by_class).  Printing
@@ -25,6 +93,7 @@ test failures.
 
 This routine will return the tag with the given id:
 
+  >>> find_tag_by_id = test.globs['find_tag_by_id']
   >>> content = '''
   ... <html>
   ...   <head><title>Foo</title></head>
@@ -67,6 +136,7 @@ Sometimes it we want to find tags that match a particular class.  The
 find_tags_by_class() returns a list of Tag objects matching the given
 class:
 
+  >>> find_tags_by_class = test.globs['find_tags_by_class']
   >>> content = '''
   ... <html>
   ...   <head><title>Foo</title</head>
@@ -115,6 +185,7 @@ Many pages on Launchpad make use of portlets, so it is useful to be
 able to examine the contents of a portlet.  The find_portlet()
 function can find a portlet by its title and return it:
 
+  >>> find_portlet = test.globs['find_portlet']
   >>> content = '''
   ... <html>
   ...   <head><title>Foo</title</head>
@@ -185,6 +256,7 @@ Sometimes we want to check that a particular piece of content appears
 in the main content of the page.  The find_main_content() method can
 be used to do this:
 
+  >>> find_main_content = test.globs['find_main_content']
   >>> print find_main_content(content)
   <...
   Main content area
@@ -202,6 +274,7 @@ find_xxx helper methods to identify the text to display.  This is due
 to the function taking a BeautifulSoup instance as a parameter rather
 than a plain string.
 
+  >>> extract_text = test.globs['extract_text']
   >>> print extract_text(find_portlet(content, 'Portlet 2'))
   Portlet 2 Contents of portlet 2
 
@@ -215,6 +288,7 @@ also created.
 This method is able to parse a rendered relationship_section and print
 a list of isolated attributes for each mentioned item.
 
+  >>> parse_relationship_section = test.globs['parse_relationship_section']
   >>> content = '''
   ... <html>
   ...   <ul>
