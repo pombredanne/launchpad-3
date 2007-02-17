@@ -36,7 +36,7 @@ users, when it shouldn't require any special privileges.
 
   >>> user_browser = test.globs['user_browser']
   >>> getAuthorizationHeader(user_browser)
-  'Basic test@canonical.com:test'
+  'Basic no-priv@canonical.com:test'
 
 A browser with a logged in user with administrative privileges is
 available under 'admin_browser'. This one should be used for testing

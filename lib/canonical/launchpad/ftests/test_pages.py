@@ -182,7 +182,7 @@ def setUpGlobs(test):
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
-        auth="Basic test@canonical.com:test")
+        auth="Basic no-priv@canonical.com:test")
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
 
