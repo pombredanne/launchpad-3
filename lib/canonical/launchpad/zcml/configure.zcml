@@ -120,11 +120,11 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
-    <include file="ticket.zcml" />
-    <include file="ticket-events.zcml" />
-    <include file="ticketreopening.zcml" />
-    <include file="ticketsubscription.zcml" />
-    <include file="tickettarget.zcml" />
+    <include file="question.zcml" />
+    <include file="question-events.zcml" />
+    <include file="questionreopening.zcml" />
+    <include file="questionsubscription.zcml" />
+    <include file="questiontarget.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />

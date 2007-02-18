@@ -19,8 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, ISearchableByTicketOwner,
-    NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -37,13 +37,13 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import TicketTargetSearch
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByTicketOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -248,18 +248,18 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         raise NotImplementedError('Cannot file bugs against a project')
 
 
-    # ITicketCollection
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                      sort=None, owner=None, needs_attention_from=None):
-        """See ITicketCollection."""
-        return TicketTargetSearch(
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,
             sort=sort, owner=owner, needs_attention_from=needs_attention_from,
             product=self.products).getResults()
 
-    def getTicketLanguages(self):
-        """See ITicketCollection."""
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
         product_ids = sqlvalues(*self.products)
         return set(Language.select(
             'Language.id = language AND product IN (%s)' % ', '.join(

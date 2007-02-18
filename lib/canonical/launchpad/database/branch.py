@@ -79,7 +79,7 @@ class Branch(SQLBase):
     cache_url = StringCol(default=None)
 
     revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
+        orderBy='-sequence', prejoins=['revision'])
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -240,12 +240,7 @@ class BranchSet:
 
     def __iter__(self):
         """See IBranchSet."""
-        return iter(Branch.select())
-
-    @property
-    def all(self):
-        branches = Branch.select()
-        return branches.prejoin(['author', 'product'])
+        return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
         """See IBranchSet."""

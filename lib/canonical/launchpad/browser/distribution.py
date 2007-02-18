@@ -39,8 +39,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetTraversalMixin)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -52,7 +52,7 @@ from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, TicketTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -117,11 +117,11 @@ class DistributionSOP(StructuralObjectPresentation):
         return None
 
 
-class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations']
 
     def specifications(self):
