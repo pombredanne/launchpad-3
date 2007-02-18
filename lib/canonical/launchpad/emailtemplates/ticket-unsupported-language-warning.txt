@@ -1,4 +1,0 @@
-
-_______________________________________________________________________
-WARNING: This question is asked in a language (%(ticket_language)s)
-spoken by none of the registered %(target_name)s answer contacts.

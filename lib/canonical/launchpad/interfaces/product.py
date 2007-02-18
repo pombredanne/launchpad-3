@@ -20,8 +20,8 @@ from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.fields import LargeImageUpload, SmallImageUpload
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class ProductNameField(PillarNameField):
@@ -174,6 +174,15 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this product."))
+
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this product. It should be "
+            "no bigger than 50k in size."))
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
@@ -356,7 +365,8 @@ class IProductSet(Interface):
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, emblem=None):
+                      reviewed=False, gotchi=None, gotchi_heading=None,
+                      emblem=None):
         """Create and Return a brand new Product."""
 
     def forReview():

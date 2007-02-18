@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -18,7 +18,8 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
-    'DefaultShortLink'
+    'DefaultShortLink',
+    'BrowserWindowDimensions'
     ]
 
 import cgi
@@ -52,7 +53,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     IStructuralObjectPresentation, ITranslationImportQueue,
     ITranslationGroupSet, NotFoundError)
@@ -237,7 +238,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations', 'branches']
 
     def overview(self):
@@ -255,10 +256,10 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
-    def support(self):
+    def answers(self):
         target = ''
         text = 'Answers'
-        summary = 'Launchpad technical support tracker.'
+        summary = 'Launchpad Answer Tracker'
         return Link(target, text, summary)
 
     def specifications(self):
@@ -418,7 +419,7 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': ITicketSet,
+        'support': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
@@ -853,10 +854,7 @@ class SearchProjectsView(LaunchpadView):
         self.results = getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
-        if len(self.results) > self.max_results_to_display:
-            return True
-        else:
-            return False
+        return len(self.results) > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):
@@ -879,3 +877,9 @@ class DefaultShortLink(LaunchpadView):
         L.append('</a>')
         return u''.join(L)
 
+
+class BrowserWindowDimensions(LaunchpadView):
+    """Allow capture of browser window dimensions."""
+
+    def render(self):
+        return u'Thanks.'
