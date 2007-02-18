@@ -20,7 +20,7 @@
       </span>
       <span class="discreet">
         Registered by
-        <img src="/@@/user" />&nbsp;<a
+        <img src="/@@/person" />&nbsp;<a
            tal:attributes="href context/owner/fmt:url"
            tal:content="context/owner/browsername">Foo Bar</a>
         on <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>

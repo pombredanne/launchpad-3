@@ -5,7 +5,7 @@
   <div class="portletBody portletContent">
 
     <b>Registrant:</b>
-    <img src="/@@/user" />
+    <img src="/@@/person" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
 	

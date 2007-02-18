@@ -429,7 +429,7 @@ class PersonSpecsMenu(ApplicationMenu):
         return Link('+specfeedback', text, summary, icon='info')
 
     def mentoring(self):
-        text = 'Mentoring'
+        text = 'Mentoring offered'
         return Link('+mentoring', text, icon='info')
 
     def workload(self):

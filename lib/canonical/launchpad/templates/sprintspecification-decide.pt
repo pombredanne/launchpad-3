@@ -53,7 +53,7 @@
 
     <p>
       This topic was proposed by
-      <img src="/@@/user/">
+      <img src="/@@/person">
       <a tal:attributes="href context/registrant/fmt:url"
          tal:content="context/registrant/browsername">Foo Bar</a>
       on
@@ -61,7 +61,7 @@
       <tal:already_decided condition="context/decider">
         It was previously marked "<span tal:replace="context/status/title">
         Approved</span>" for the agenda by
-        <img src="/@@/user/">
+        <img src="/@@/person">
         <a tal:attributes="href context/decider/fmt:url"
            tal:content="context/decider/browsername">Foo Bar</a>
         on

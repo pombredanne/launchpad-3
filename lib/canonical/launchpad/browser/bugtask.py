@@ -293,7 +293,8 @@ class BugTaskView(LaunchpadView):
             if retract_mentoring is not None and \
                 self.context.bug.isMentor(self.user):
                 self.context.bug.retractMentoring(self.user)
-                self.notices.append('You are no longer offering mentoring.')
+                self.notices.append('You are no longer offering mentoring '
+                    'on this bug.')
 
 
     def initialize(self):

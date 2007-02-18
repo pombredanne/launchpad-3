@@ -12,12 +12,12 @@
       </a><br />
     </tal:has_home_page>
     <b>Registrant:</b><br />
-    <img src="/@@/user" />
+    <img src="/@@/person-mini" />
     <a tal:attributes="href context/owner/fmt:url" 
        tal:content="context/owner/browsername" /><br />
     <tal:has_driver condition="context/driver">
       <b>Driver:</b><br />
-      <img src="/@@/user" />
+      <img src="/@@/person-mini" />
       <a tal:attributes="href context/driver/fmt:url" 
          tal:content="context/driver/browsername" /><br />
     </tal:has_driver>

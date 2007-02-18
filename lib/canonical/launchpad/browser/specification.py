@@ -250,7 +250,8 @@ class SpecificationView(LaunchpadView):
             elif retract_mentoring is not None and \
                 self.context.isMentor(self.user):
                 self.context.retractMentoring(self.user)
-                self.notices.append('You are no longer offering mentoring.')
+                self.notices.append('You are no longer offering mentoring '
+                    'on this blueprint.')
 
         if self.user is not None:
             # establish if this user has a review queued on this spec

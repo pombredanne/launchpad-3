@@ -6,7 +6,7 @@
     Summary Goes Here
   </div>
   <div>
-    Registered by <img src="/@@/user" />&nbsp;<a
+    Registered by <img src="/@@/person" />&nbsp;<a
        tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">Foo Bar</a> on
        <span tal:replace="context/datecreated/fmt:date">2005-10-12</span>
