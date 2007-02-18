@@ -226,11 +226,11 @@ class Person(SQLBase):
                 MentoringOffer.specification = Specification.id
             WHERE
                 MentoringOffer.owner = %s
-                """ % sqlvalues(self.id) + """ AND NOT (
-                BugTask.id IS NOT NULL AND
-                """ + BugTask.completeness_clause +""") AND NOT (
-                Specification.id IS NOT NULL AND
-                """ + Specification.completeness_clause +"))",
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (""" + BugTask.completeness_clause +""")) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
             )
 
     @property
@@ -245,11 +245,11 @@ class Person(SQLBase):
                 MentoringOffer.specification = Specification.id
             WHERE
                 MentoringOffer.team = %s
-                """ % sqlvalues(self.id) + """ AND NOT (
-                BugTask.id IS NOT NULL AND
-                """ + BugTask.completeness_clause +""") AND NOT (
-                Specification.id IS NOT NULL AND
-                """ + Specification.completeness_clause +"))",
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (""" + BugTask.completeness_clause +""")) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
             )
 
     @property

@@ -34,6 +34,7 @@ class MentoringOfferView(GeneralFormView):
         self._nextURL = canonical_url(context)
         if IBugTask.providedBy(context):
             # in the case of seeing this on a bug task, we treat it as a Bug
+            self.current_bugtask = context
             context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
