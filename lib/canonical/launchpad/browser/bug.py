@@ -172,7 +172,9 @@ class BugContextMenu(ContextMenu):
     def offermentoring(self):
         text = 'Offer mentoring'
         user = getUtility(ILaunchBag).user
-        enabled = not self.context.bug.isMentor(user)
+        enabled = not (self.context.bug.isMentor(user) or
+                       self.context.bug.is_complete or
+                       self.context.bug.duplicateof is not None)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):

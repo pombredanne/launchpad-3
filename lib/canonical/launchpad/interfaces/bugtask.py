@@ -146,6 +146,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
+    is_complete = Attribute(
+        "True or False depending on whether or not there is more work "
+        "required on this bug task.")
+
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',

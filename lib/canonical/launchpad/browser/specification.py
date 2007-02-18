@@ -148,7 +148,8 @@ class SpecificationContextMenu(ContextMenu):
     def offermentoring(self):
         text = 'Offer mentoring'
         user = getUtility(ILaunchBag).user
-        enabled = not self.context.isMentor(user)
+        enabled = not (self.context.isMentor(user) or
+                       self.context.is_complete)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):

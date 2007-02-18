@@ -7,12 +7,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+<metal:heading fill-slot="pageheading">
+  <h1>Offer to mentor this blueprint</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
@@ -24,7 +21,9 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Select the team which would most benefit from this feature being
-      implemented.
+      implemented. People wishing to join this team will be able to see a
+      list of such offers, and thus be able to prove their capability more
+      efficiently.
     </div>
 
     <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">

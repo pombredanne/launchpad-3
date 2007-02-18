@@ -41,7 +41,7 @@
 
     <p>
       This goal was proposed by
-      <img src="/@@/user/">
+      <img src="/@@/person">
       <a tal:attributes="href context/goal_proposer/fmt:url"
          tal:content="context/goal_proposer/browsername">Foo Bar</a>
       on
@@ -49,7 +49,7 @@
       <tal:already_decided condition="context/goal_decider">
         It was previously marked "<span tal:replace="context/goalstatus/title">
         Approved</span>" as a goal by
-        <img src="/@@/user/">
+        <img src="/@@/person">
         <a tal:attributes="href context/goal_decider/fmt:url"
            tal:content="context/goal_decider/browsername">Foo Bar</a>
         on

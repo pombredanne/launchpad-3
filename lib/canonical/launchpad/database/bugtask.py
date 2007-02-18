@@ -163,12 +163,24 @@ class BugTask(SQLBase, BugTaskMixin):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
+    #
+    # Note that this definition and SQL should be kept in sync with the
+    # BugTask.is_complete property below.
     completeness_clause =  """
                 BugTask.status IN ( %d, %d )
                 """ % (
                     dbschema.BugTaskStatus.REJECTED.value,
                     dbschema.BugTaskStatus.FIXRELEASED.value,
                     )
+
+    @property
+    def is_complete(self):
+        """See IBugTask. Note that this should be kept in sync with the
+        completeness_clause above."""
+        return self.status in (
+            dbschema.BugTaskStatus.REJECTED,
+            dbschema.BugTaskStatus.FIXRELEASED,
+            )
 
     @property
     def conjoined_master(self):

@@ -17,7 +17,7 @@
         <allow attributes="id private bugtasks subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
-                           isMentor" />
+                           isMentor is_complete" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID

@@ -31,7 +31,7 @@
   <tr class="lesser" tal:repeat="fbreq view/feedbackrequests">
     <td>&nbsp;</td>
     <td colspan="2">
-      <img src="/@@/user" />
+      <img src="/@@/person-mini" />
       <a tal:content="fbreq/requester/browsername"
          tal:attributes="href fbreq/requester/fmt:url">Foo Bar</a>
       wants your feedback:<br />

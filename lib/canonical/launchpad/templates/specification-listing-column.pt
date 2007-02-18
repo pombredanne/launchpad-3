@@ -1,4 +1,4 @@
-<img src="/@@/spec" />
+<img src="/@@/blueprint" />
 <a tal:content="context/name"
    tal:attributes="href context/fmt:url; title context/title">
    spec-listing-name</a> for

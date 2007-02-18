@@ -25,8 +25,6 @@ class IMentoringOffer(IHasOwner):
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     team = Choice(title=_('Team'), required=True,
-        description=_("Working on this item would be good practise for "
-            "joining which team?"),
         vocabulary='UserTeamsParticipation')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)

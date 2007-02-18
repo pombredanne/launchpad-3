@@ -169,7 +169,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     def mentorship(self):
         text = 'Mentorship'
-        return Link('+onramp', text, icon='info')
+        return Link('+mentoring', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD Mirrors'

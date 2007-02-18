@@ -74,7 +74,7 @@
                 Proposed for
                 <span tal:replace="context/displayname">Edgy</span>
                 by
-                <img src="/@@/user" />
+                <img src="/@@/person-mini" />
                 <a tal:attributes="href spec/goal_proposer/fmt:url"
                    tal:content="spec/goal_proposer/browsername">Carlos</a>
                 on <span tal:replace="spec/date_goal_proposed/fmt:date" />.

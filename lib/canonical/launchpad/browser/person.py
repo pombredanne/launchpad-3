@@ -370,7 +370,7 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+subscribedbugs', text, icon='bugs')
 
     def mentoring(self):
-        text = 'Mentoring'
+        text = 'Mentoring offered'
         return Link('+mentoring', text, icon='info')
 
 
@@ -382,8 +382,8 @@ class TeamBugsMenu(PersonBugsMenu):
              'mentorships']
 
     def mentorships(self):
-        target = '+onramp'
-        text = 'Onramp'
+        target = '+mentoring'
+        text = 'Mentoring offered'
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, icon='info')
 
@@ -449,8 +449,8 @@ class TeamSpecsMenu(PersonSpecsMenu):
     facet = 'specifications'
 
     def mentoring(self):
-        target = '+onramp'
-        text = 'Onramp'
+        target = '+mentoring'
+        text = 'Mentoring offered'
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, icon='info')
 
@@ -532,8 +532,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def mentoringoffers(self):
         target = '+mentoring'
-        text = 'Offers of mentoring'
-        return Link(target, text, icon='info')
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
@@ -595,10 +596,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon='people')
 
     def mentorships(self):
-        target = '+onramp'
-        text = 'Onramp'
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        enabled = self.context.team_mentorships
         summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
+        return Link(target, text, summary=summary, enabled=enabled,
+                    icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):

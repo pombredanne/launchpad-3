@@ -1,19 +1,20 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/bug/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
-    </metal:heading>
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone">
+
+<body>
+  <metal:heading fill-slot="pageheading">
+    <div>
+      <img alt="" src="/@@/bug" />
+      <a tal:attributes="href context/bug/fmt:url"
+      >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+      <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+    </div>
+    <h1>Bug subscription</h1>
+  </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -26,7 +27,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bug subscriptions</h1>
 
   <p tal:condition="not: view/userIsSubscribed">
     If you subscribe to a bug it shows up on your

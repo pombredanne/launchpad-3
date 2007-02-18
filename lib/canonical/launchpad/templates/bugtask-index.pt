@@ -116,13 +116,17 @@
                condition="mentoring_offers">
     <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
-        <img src="/@@/user">
+        <img src="/@@/person-mini">
         <a tal:attributes="href mentoring_offer/owner/fmt:url"
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
   </tal:mentors>
   <tal:block condition="not: view/userIsMentor">
-    &raquo; <a href="+mentor">Offer mentoring to someone fixing this bug</a>
+    <tal:block condition="not: context/bug/duplicateof">
+      <tal:block condition="not: context/bug/is_complete">
+        &raquo; <a href="+mentor">Offer mentoring to someone fixing this bug</a>
+      </tal:block>
+    </tal:block>
   </tal:block>
 
   <tal:branches define="bug_branches context/bug/bug_branches"

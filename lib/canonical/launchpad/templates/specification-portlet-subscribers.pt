@@ -22,7 +22,7 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <img src="/@@/user" />
+        <img src="/@@/person" />
         <a href="#"
            tal:content="subscription/person/browsername"
            tal:attributes="

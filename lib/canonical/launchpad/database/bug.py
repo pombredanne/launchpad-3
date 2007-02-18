@@ -187,6 +187,14 @@ class Bug(SQLBase):
         return sorted(result, key=bugtask_sort_key)
 
     @property
+    def is_complete(self):
+        """See IBug."""
+        for task in self.bugtasks:
+            if task.is_complete:
+                return True
+        return False
+
+    @property
     def initial_message(self):
         """See IBug."""
         messages = sorted(self.messages, key=lambda ob: ob.id)

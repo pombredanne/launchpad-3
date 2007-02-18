@@ -51,7 +51,7 @@
              tal:attributes="href offer/team/fmt:url">foobar</a>
         </td>
         <td>
-          <img src="/@@/user" />
+          <img src="/@@/person-mini" />
           <a tal:content="offer/owner/browsername"
              tal:attributes="href offer/owner/fmt:url">foobar</a>
         </td>

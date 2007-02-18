@@ -356,8 +356,7 @@
       class="canonical.launchpad.browser.PersonView"
       name="+mentoring"
       template="../templates/person-mentoringoffers.pt"
-      lp:url="/~$Team.id/+mentoring">
-  </browser:page>
+      />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
@@ -407,9 +406,9 @@
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
       class="canonical.launchpad.browser.PersonView"
-      name="+onramp"
+      name="+mentoring"
       template="../templates/team-mentoringoffers.pt"
-      lp:url="/~$Team.id/+onramp">
+      >
   </browser:page>
 
   <browser:page

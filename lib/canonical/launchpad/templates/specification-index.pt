@@ -79,33 +79,39 @@
         <tr>
           <th>Assignee:</th>
           <td>
-            <a
-              tal:condition="context/assignee"
-              tal:content="context/assignee/browsername"
-              tal:attributes="href context/assignee/fmt:url"
-            >Foo Bar</a>
+            <tal:assignee condition="context/assignee">
+              <img src="/@@/person-mini" />
+              <a
+                tal:content="context/assignee/browsername"
+                tal:attributes="href context/assignee/fmt:url"
+              >Foo Bar</a>
+            </tal:assignee> 
             <tal:none condition="not: context/assignee">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Drafter:</th>
           <td>
-            <a
-              tal:condition="context/drafter"
-              tal:content="context/drafter/browsername"
-              tal:attributes="href context/drafter/fmt:url"
-            >Foo Bar</a>
+            <tal:drafter tal:condition="context/drafter">
+              <img src="/@@/person-mini" />
+              <a
+                tal:content="context/drafter/browsername"
+                tal:attributes="href context/drafter/fmt:url"
+              >Foo Bar</a>
+            </tal:drafter>
             <tal:none condition="not: context/drafter">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Approver:</th>
           <td>
-            <a
-              tal:condition="context/approver"
-              tal:content="context/approver/browsername"
-              tal:attributes="href context/approver/fmt:url"
-            >Foo Bar</a>
+            <tal:approver tal:condition="context/approver">
+              <img src="/@@/person-mini" />
+              <a
+                tal:content="context/approver/browsername"
+                tal:attributes="href context/approver/fmt:url"
+              >Foo Bar</a>
+            </tal:approver>
             <tal:none condition="not: context/approver">None</tal:none>
           </td>
         </tr>
@@ -159,13 +165,15 @@
                condition="mentoring_offers">
     <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
-        <img src="/@@/user">
+        <img src="/@@/person-mini">
         <a tal:attributes="href mentoring_offer/owner/fmt:url"
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
   </tal:mentors>
   <tal:block condition="not: view/userIsMentor">
-    &raquo; <a href="+mentor">Offer mentoring for this implementation</a>
+    <tal:block condition="not: context/is_complete">
+      &raquo; <a href="+mentor">Offer mentoring for this implementation</a>
+    </tal:block>
   </tal:block>
 
   <tal:whiteboard condition="context/whiteboard">

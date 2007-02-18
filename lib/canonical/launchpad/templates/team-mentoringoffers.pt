@@ -46,7 +46,7 @@
           </span>
         </td>
         <td>
-          <img src="/@@/user" />
+          <img src="/@@/person-mini" />
           <a tal:content="offer/owner/browsername"
              tal:attributes="href offer/owner/fmt:url">foobar</a>
         </td>
@@ -63,9 +63,9 @@
   <p>
     Nobody has yet offered to mentor bug fixes or feature implementations
     which are relevant to this team. You can learn more about this
-    capability in Launchpad, which allows you to create an "onramp" of
-    bite-sized chunks of work for new people who want to contribute or to
-    prove their worth.
+    capability in Launchpad, which allows you to create an "onramp to team
+    membership" consisting of bite-sized chunks of work for new people who
+    want to contribute or to prove their worth.
   </p>
 </tal:no_mentoring>
 
