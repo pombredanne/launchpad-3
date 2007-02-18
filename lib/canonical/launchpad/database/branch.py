@@ -381,6 +381,24 @@ class BranchSet:
         branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
         return branches.prejoin(['product'])
 
+    def getBranchesForPerson(self, person, lifecycle_status):
+        """See IBranchSet."""
+        return Branch.select('''
+            (Branch.owner = %d OR
+             Branch.author = %d OR
+             -- subscribed
+             -- or team)
+            AND Branch.lifecycle_status in %s
+            
+
+        
+            Branch.last_mirrored_id IS NOT NULL AND
+            (Branch.last_scanned_id IS NULL OR
+             Branch.last_scanned_id <> Branch.last_mirrored_id)
+            ''')
+        
+
+        
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
