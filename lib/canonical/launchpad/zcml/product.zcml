@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n:domain="launchpad">
 
     <!-- Product -->
@@ -32,13 +31,13 @@
             permission="launchpad.Admin"
             set_attributes="name active reviewed autoupdate"
         />
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
+        <!-- IQuestionTarget -->
+        <allow attributes="getQuestion searchQuestions findSimilarQuestions
+            answer_contacts direct_answer_contacts getSupportedLanguages
+	    getQuestionLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
+            attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
 
     <browser:defaultView
@@ -114,12 +113,12 @@
             name="+index"
             facet="overview"
             template="../templates/product-index.pt"
-            lp:url="/$Product.name/" />
+            />
         <browser:page
             name="+translations"
             facet="translations"
             template="../templates/product-translations.pt"
-            lp:url="/$Product.name/+translations" />
+            />
         <browser:page
             name="+packages"
             facet="overview"
@@ -139,52 +138,52 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/product-portlet-details.pt"
-            lp:url="/$Product.name/+portlet-details" />
+            />
         <browser:page
             name="+portlet-lifecycle"
             facet="overview"
             template="../templates/product-portlet-lifecycle.pt"
-            lp:url="/$Product.name/+portlet-lifecycle" />
+            />
         <browser:page
             name="+portlet-series"
             facet="overview"
             template="../templates/product-portlet-series.pt"
-            lp:url="/$Product.name/+portlet-series" />
+            />
         <browser:page
             name="+portlet-translations"
             facet="translations"
             template="../templates/product-portlet-translations.pt"
-            lp:url="/$Product.name/+portlet-translations" />
+            />
         <browser:page
             name="+portlet-milestones"
             facet="overview"
             template="../templates/object-portlet-milestones.pt"
-            lp:url="/$Product.name/+portlet-milestones" />
+            />
         <browser:page
             name="+portlet-bounties"
             facet="bounties"
             template="../templates/object-portlet-bounties.pt"
-            lp:url="/$Product.name/+portlet-bounties" />
+            />
         <browser:page
             name="+portlet-packages"
             facet="overview"
             template="../templates/product-portlet-packages.pt"
-            lp:url="/$Product.name/+portlet-packages" />
+            />
         <browser:page
             name="+portlet-releases"
             facet="overview"
             template="../templates/product-portlet-releases.pt"
-            lp:url="/$Product.name/+portlet-releases" />
+            />
         <browser:page
             name="+portlet-summary"
             facet="overview"
             template="../templates/object-portlet-summary.pt"
-            lp:url="/$Product.name/+portlet-summary" />
+            />
         <browser:page
             name="+portlet-translatables"
             facet="translations"
             template="../templates/product-portlet-translatables.pt"
-            lp:url="/$Product.name/+portlet-translatables" />
+            />
         <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt" />
@@ -216,7 +215,6 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
-        lp:url="/$Product.name/+rdf"
         attribute="__call__"
         />
 
@@ -236,7 +234,7 @@
         <browser:page
             name="+reassign"
             template="../templates/object-reassignment.pt"
-            lp:url="/$Product.name/+reassign" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -247,7 +245,7 @@
             name="+potemplatenames"
             facet="translations"
             template="../templates/object-potemplatenames.pt"
-            lp:url="/$Product.name/+potemplatenames" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -257,7 +255,7 @@
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/$Product.name/+bounties/" />
+            />
     </browser:pages>
 
     <browser:editform
@@ -272,7 +270,7 @@
                 screenshotsurl downloadurl programminglang development_focus"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
-        lp:url="/$Product.name/+edit">
+        >
         <browser:widget
            field="emblem"
            class="canonical.widgets.ImageChangeWidget" />
@@ -290,19 +288,7 @@
         fields="bugcontact"
         permission="launchpad.Edit"
         template="../templates/product-bugcontact.pt"
-        lp:url="/$Product.name/+bugcontact" />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        fields="driver"
-        class="canonical.launchpad.browser.ProductEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+review"
@@ -314,8 +300,7 @@
         fields="name owner active autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/product-admin.pt"
-        lp:url="/$Product.name/+review">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+changetranslators"
@@ -326,7 +311,7 @@
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         template="../templates/product-translators.pt"
-        lp:url="/$Product.name/+changetranslators" />
+        />
 
     <browser:page
         name="+launchpad"
@@ -348,7 +333,7 @@
       keyword_arguments="product bounty"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-link.pt"
-      lp:url="/$Product.name/+linkbounty">
+      >
       <browser:widget
         field="product"
         class="canonical.widgets.ContextWidget" />
@@ -373,7 +358,6 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productseries-new.pt"
-        lp:url="/$Product.name/+addseries"
       />
 
     <browser:page
@@ -449,7 +433,7 @@
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"
-            lp:url="/products/+review" />
+            />
     </browser:pages>
 
     <browser:page

@@ -19,7 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -27,19 +28,21 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -60,6 +63,8 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -221,6 +226,25 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         raise NotImplementedError('Cannot file bugs against a project')
 
 
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
+            product=self.products).getResults()
+
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
+        product_ids = sqlvalues(*self.products)
+        return set(Language.select(
+            'Language.id = language AND product IN (%s)' % ', '.join(
+                product_ids),
+            clauseTables=['Ticket'], distinct=True))
+
+
 class ProjectSet:
     implements(IProjectSet)
 
@@ -263,7 +287,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, emblem):
+            description, owner, gotchi, gotchi_heading, emblem):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -275,6 +299,7 @@ class ProjectSet:
             owner=owner,
             datecreated=UTC_NOW,
             gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=emblem)
 
     def count_all(self):
