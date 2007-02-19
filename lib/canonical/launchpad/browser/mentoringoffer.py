@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'MentorshipManagerFacets',
     'MentorshipManagerSOP',
     'MentoringOfferView',
     'RetractMentoringOfferView',
@@ -18,13 +19,22 @@ from canonical.launchpad.interfaces import (
     IBug,
     IBugTask,
     IMentoringOffer,
+    IMentorshipManager,
     ILaunchBag,
     )
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
+    canonical_url, ContextMenu, Link, GetitemNavigation,
+    StandardLaunchpadFacets)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+
+
+class MentorshipManagerFacets(StandardLaunchpadFacets):
+
+    usedfor = IMentorshipManager
+
+    enable_only = ['overview']
 
 
 class MentorshipManagerSOP(StructuralObjectPresentation):
