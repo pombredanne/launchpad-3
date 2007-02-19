@@ -21,6 +21,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 
+
 class MentoringOffer(SQLBase):
     """See IMentoringOffer."""
 
@@ -56,5 +57,7 @@ class MentorshipManager:
 
     @property
     def mentoring_offers(self):
+        """See IHasMentoringOffers."""
         return MentoringOffer.select()
+
 

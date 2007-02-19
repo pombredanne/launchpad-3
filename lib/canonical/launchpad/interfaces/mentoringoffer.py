@@ -47,4 +47,3 @@ class IMentorshipManager(IHasMentoringOffers):
     displayname = Attribute('Display name')
     title = Attribute('Title')
 
-

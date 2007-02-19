@@ -406,18 +406,6 @@ faq = 'Launchpad Frequently Asked Questions'
 
 hasmentoringoffers_mentoring = ContextTitle('Offers of mentoring in %s')
 
-people_adminrequestmerge = 'Merge Launchpad accounts'
-
-people_mergerequest_sent = 'Merge request sent'
-
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-people_requestmerge = 'Merge Launchpad accounts'
-
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -532,8 +520,20 @@ def package_bugs(context, view):
 
 people_index = 'People and teams in Launchpad'
 
+people_adminrequestmerge = 'Merge Launchpad accounts'
+
 def people_list(context, view):
     return view.header
+
+people_mergerequest_sent = 'Merge request sent'
+
+people_newperson = 'Create a new Launchpad profile'
+
+people_newteam = 'Register a new team in Launchpad'
+
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+people_requestmerge = 'Merge Launchpad accounts'
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
