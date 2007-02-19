@@ -35,7 +35,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.dispatch_linked_ticket_notifications"
+   handler="canonical.launchpad.mailnotification.dispatch_linked_question_notifications"
    />
 
 </configure>

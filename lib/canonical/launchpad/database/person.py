@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -72,7 +72,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketPersonSearch
+from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
 
@@ -371,9 +371,9 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, **search_criteria):
         """See IPerson."""
-        return TicketPersonSearch(person=self, **search_criteria).getResults()
+        return QuestionPersonSearch(person=self, **search_criteria).getResults()
 
     def getSupportedLanguages(self):
         """See IPerson."""
@@ -391,8 +391,8 @@ class Person(SQLBase):
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
-    def getTicketLanguages(self):
-        """See ITicketTarget."""
+    def getQuestionLanguages(self):
+        """See IQuestionTarget."""
         return set(Language.select(
             '''Language.id = language AND Ticket.id IN (
             SELECT id FROM Ticket
@@ -1656,7 +1656,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the SupportContacts that will not conflict
+        # Update only the AnswerContacts that will not conflict
         cur.execute('''
             UPDATE SupportContact
             SET person=%(to_id)d
@@ -1685,7 +1685,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('supportcontact', 'person'))
 
-        # Update only the TicketSubscriptions that will not conflict
+        # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
             UPDATE TicketSubscription
             SET person=%(to_id)d

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Security policies for using content objects.
 
 """
@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
@@ -866,35 +866,35 @@ class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
 
-class AdminTicket(AdminByAdminsTeam):
+class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow only admins and owners of the ticket pillar target."""
+        """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
                 user.inTeam(context.owner))
 
 
-class ModerateTicket(AdminTicket):
+class ModerateQuestion(AdminQuestion):
     permission = 'launchpad.Moderate'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow user who can administer the ticket and support contacts."""
-        if AdminTicket.checkAuthenticated(self, user):
+        """Allow user who can administer the question and answer contacts."""
+        if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for support_contact in self.obj.target.support_contacts:
-            if user.inTeam(support_contact):
+        for answer_contact in self.obj.target.answer_contacts:
+            if user.inTeam(answer_contact):
                 return True
         return False
 
 
-class TicketOwner(AuthorizationBase):
+class QuestionOwner(AuthorizationBase):
     permission = 'launchpad.Owner'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow the ticket's owner."""
+        """Allow the question's owner."""
         return user.inTeam(self.obj.owner)

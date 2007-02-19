@@ -89,7 +89,7 @@ class ISourcePackageRelease(Interface):
         "still needs to be built (on any architecture)")
 
     open_ticket_count = Attribute(
-        "The number of open support tickets on the distrorelease and "
+        "The number of open support questions on the distrorelease and "
         "sourcepackagename of this SourcePackageRelease")
 
     sourcepackage = Attribute(
