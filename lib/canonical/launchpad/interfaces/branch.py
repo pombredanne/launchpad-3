@@ -299,8 +299,6 @@ class IBranchSet(Interface):
     def __iter__():
         """Return an iterator that will go through all branches."""
 
-    all = Attribute("All branches in the system.")
-
     def count():
         """Return the number of branches in the database."""
 

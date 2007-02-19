@@ -81,7 +81,7 @@ class RevisionNumber(SQLBase):
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)
 
-    sequence = IntCol(notNull=True)
+    sequence = IntCol()
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
 
