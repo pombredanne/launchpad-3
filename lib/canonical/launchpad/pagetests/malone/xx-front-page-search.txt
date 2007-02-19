@@ -16,6 +16,10 @@ Either all projects, or a specific one can be searched.
 
 == Searching all projects ==
 
+When choosing to search all the projects, all open bug reports in
+Launchpad will be searched, and the bug target will be visible in the
+bug listing.
+
     >>> def print_bugtasks(soup):
     ...     """Print all the bugtasks in the text."""
     ...     table = soup.find('table', {'id': 'buglisting'})
@@ -46,6 +50,8 @@ Either all projects, or a specific one can be searched.
     10 another test bug
        linux-source-2.6.15 (Ubuntu) Medium Unconfirmed
 
+Even if a product is specified in the bug target widget, all bug reports
+will be searched.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
@@ -54,6 +60,9 @@ Either all projects, or a specific one can be searched.
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
     'Search all bug reports'
+
+The same is of course true if the target widget contains a non-existant
+project name.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
@@ -64,6 +73,10 @@ Either all projects, or a specific one can be searched.
     'Search all bug reports'
 
 == Searching one project ==
+
+If the user chooses to search only one project, he will be forwarded to
+the project's bug listing, and the search will be performed there. If no
+name is specified, an error message will be displayed.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
@@ -79,6 +92,10 @@ Either all projects, or a specific one can be searched.
     ...     print message.renderContents()
     Please specify a project to search in.
 
+
+An error message will be displayed also if the project isn't registered
+in the Launchpad.
+
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
     >>> anon_browser.getControl(name='field.target').value = 'invalid'
@@ -91,6 +108,9 @@ Either all projects, or a specific one can be searched.
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
     There's no project named 'invalid' registered in Launchpad.
+
+'Project' in this context means either a product, distribution or a
+project.
 
 === Searching a product ===
 
