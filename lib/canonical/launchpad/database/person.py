@@ -169,8 +169,7 @@ class Person(SQLBase):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
     personal_package_archives = SQLMultipleJoin(
-        'PersonalPackageArchive', joinColumn='person',
-        orderBy='-id', prejoins=['archive'])
+        'Archive', joinColumn='owner', orderBy='-id')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -1874,14 +1873,6 @@ class PersonSet:
             DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
-
-        # Update PersonalPackageArchives.
-        cur.execute('''
-            UPDATE PersonalPackageArchive
-            SET person = %(to_id)d
-            WHERE person = %(from_id)d
-            ''' % vars())
-        skip.append(('personalpackagearchive', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

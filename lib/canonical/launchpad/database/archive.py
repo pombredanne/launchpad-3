@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
-from sqlobject import StringCol
+from sqlobject import StringCol, ForeignKey
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
@@ -19,6 +19,8 @@ class Archive(SQLBase):
     _defaultOrder = 'id'
 
     name = StringCol(dbName='name', notNull=True)
+    owner = ForeignKey(
+        foreignKey='Person', dbName='owner', notNull=False)
 
 
 class ArchiveSet:
@@ -31,6 +33,6 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archiveid)
 
-    def new(self, tag):
-        return Archive(tag=tag)
+    def new(self, name, owner=None):
+        return Archive(name=name, owner=owner)
 

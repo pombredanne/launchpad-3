@@ -28,6 +28,8 @@ class IArchive(Interface):
         "A short unique name, beginning with a lower-case "
         "letter or number, and containing only letters, "
         "numbers, dots, hyphens, or plus signs."))
+    owner = Attribute("The owner of the archive, or None for the main "
+                      "archive of a distribution")
 
 
 class IArchiveSet(Interface):
@@ -35,7 +37,7 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(name):
+    def new(name, owner=None):
         """Create a new archive."""
 
     def get(archiveid):
