@@ -67,6 +67,15 @@
     membership" consisting of bite-sized chunks of work for new people who
     want to contribute or to prove their worth.
   </p>
+
+  <p>
+    Use this feature with large teams, or large communities, to help new
+    participants find their feet and make useful contributions to your
+    project. Just encourage members of your team to offer mentoring on bugs
+    or specs which they know how to fix or implement, but dn't have time to
+    get to just yet. Those will show up in a list here, and it then becomes
+    easy to point new people at the list when they offer to help out but
+    don't know where to get started.
 </tal:no_mentoring>
 
 </div>

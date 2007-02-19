@@ -67,7 +67,7 @@
 <tal:no_mentoring condition="not: offers">
   <p>
     Nobody has yet offered to mentor bug fixes or feature implementations
-    related to <span tal:replace="context/displayname">Mozilla</span>.
+    in <span tal:replace="context/displayname">Mozilla</span>.
   </p>
 
   <p>
@@ -75,6 +75,14 @@
     capability in Launchpad, which allows you to create an "onramp" of
     bite-sized chunks of work for new people who want to contribute or to
     prove their worth.
+  </p>
+
+  <p>
+    In summary, you can encourage members of your teams to offer mentoring
+    on bugs and blueprints that they know how to fix or implement, but which
+    they don't have time to get to personally. This list then makes a good
+    starting point for new community members who want to make a contribution
+    but don't know where to start.
   </p>
 </tal:no_mentoring>
 </tal:def_offers>

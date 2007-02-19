@@ -371,21 +371,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     def mentoring(self):
         text = 'Mentoring offered'
-        return Link('+mentoring', text, icon='info')
-
-
-class TeamBugsMenu(PersonBugsMenu):
-
-    usedfor = ITeam
-    facet = 'bugs'
-    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs',
-             'mentorships']
-
-    def mentorships(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -430,7 +417,8 @@ class PersonSpecsMenu(ApplicationMenu):
 
     def mentoring(self):
         text = 'Mentoring offered'
-        return Link('+mentoring', text, icon='info')
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
 
     def workload(self):
         text = 'Workload'
@@ -449,6 +437,20 @@ class TeamSpecsMenu(PersonSpecsMenu):
     facet = 'specifications'
 
     def mentoring(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
+
+
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs',
+             'mentorships']
+
+    def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring offered'
         summary = 'Offers of mentorship for prospective team members'

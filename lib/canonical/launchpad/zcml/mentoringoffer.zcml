@@ -18,6 +18,13 @@
     <allow interface="canonical.launchpad.interfaces.IMentorshipManager" />
   </securedutility>
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IMentorshipManager"
+    factory="canonical.launchpad.browser.MentorshipManagerSOP"
+    permission="zope.Public"
+    />
+
   <browser:url
     for="canonical.launchpad.interfaces.IMentorshipManager"
     path_expression="string:+mentorship"
@@ -29,6 +36,13 @@
     name="+mentoring"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IMentorshipManager"
+    permission="launchpad.Admin">
+    <browser:page
+      name="+mentoring"
+      template="../templates/hasmentoringoffers-mentoring.pt" />
+  </browser:pages>
 
   <!-- IHasMentoringOffers -->
   <browser:pages
@@ -36,7 +50,7 @@
     permission="zope.Public">
     <browser:page
       name="+mentoring"
-      template="../templates/hasmentoringoffers-onramp.pt" />
+      template="../templates/hasmentoringoffers-mentoring.pt" />
   </browser:pages>
 
 </configure>

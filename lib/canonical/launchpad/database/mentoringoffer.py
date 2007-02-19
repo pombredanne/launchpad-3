@@ -51,8 +51,8 @@ class MentorshipManager:
 
     implements(IMentorshipManager)
 
-    displayname = 'the Mentorship Manager'
-    title = 'Mentorship Manager'
+    displayname = 'the Launchpad Mentorship Manager'
+    title = 'Launchpad Mentorship Manager'
 
     @property
     def mentoring_offers(self):

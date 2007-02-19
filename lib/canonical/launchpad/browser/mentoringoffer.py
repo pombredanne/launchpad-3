@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'MentorshipManagerSOP',
     'MentoringOfferView',
     'RetractMentoringOfferView',
     ]
@@ -23,6 +24,22 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+
+
+class MentorshipManagerSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
 
 
 class MentoringOfferView(GeneralFormView):
@@ -49,7 +66,10 @@ class RetractMentoringOfferView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
-        context = IBug(context)
+        if IBugTask.providedBy(context):
+            # in the case of seeing this on a bug task, we treat it as a Bug
+            self.current_bugtask = context
+            context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
     def process(self, confirmation):

@@ -404,7 +404,7 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-hasmentoringoffers_onramp = ContextTitle('Offers of mentoring in %s')
+hasmentoringoffers_mentoring = ContextTitle('Offers of mentoring in %s')
 
 people_adminrequestmerge = 'Merge Launchpad accounts'
 

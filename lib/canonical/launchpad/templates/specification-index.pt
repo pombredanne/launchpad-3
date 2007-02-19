@@ -163,19 +163,23 @@
 
   <tal:mentors define="mentoring_offers context/mentoring_offers"
                condition="mentoring_offers">
-    <b>Mentors:</b>
+    <p>
+      <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
         <img src="/@@/person-mini">
         <a tal:attributes="href mentoring_offer/owner/fmt:url"
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
+    </p>
   </tal:mentors>
   <tal:block condition="view/user">
     <tal:block condition="not: view/userIsMentor">
       <tal:block condition="not: context/is_complete">
         <tal:block condition="view/user/myactivememberships">
-          &raquo; <a href="+mentor">Offer to mentor someone implementing
-          this blueprint</a>
+          <p>
+            &raquo; <a href="+mentor">Offer to mentor someone implementing
+            this blueprint</a>
+          </p>
         </tal:block>
       </tal:block>
     </tal:block>
