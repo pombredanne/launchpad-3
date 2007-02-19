@@ -1,0 +1,65 @@
+= Editing a Project =
+
+The owner of a project can edit its details.
+
+  >>> user_browser.open('http://launchpad.dev/gnome')
+  >>> user_browser.getLink('Edit Project Details').click()
+  >>> user_browser.title
+  'The GNOME Project project details'
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup.first('h1').renderContents()
+  Change project details
+
+  >>> user_browser.getControl(name='field.name').value = 'new-name'
+  >>> user_browser.getControl('Display Name').value = 'New Name'
+  >>> user_browser.getControl('Title').value = 'New Title'
+  >>> user_browser.getControl('Project Summary').value = 'New Summary.'
+  >>> user_browser.getControl('Description').value = 'New Description.'
+  >>> user_browser.getControl('Homepage URL').value = 'http://new-url.com/'
+  >>> user_browser.getControl(name='field.bugtracker').value = ['1']
+  >>> user_browser.getControl('Change Details').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/new-name'
+
+Regular users can't access the +review page.
+
+  >>> user_browser.getLink('Administer')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+But administrators can access the page:
+
+  >>> admin_browser.open('http://launchpad.dev/new-name')
+  >>> admin_browser.getLink('Administer').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/new-name/+review'
+
+  >>> admin_browser.title
+  'New Title project details'
+
+  >>> soup = BeautifulSoup(admin_browser.contents)
+  >>> print soup.first('h1').renderContents()
+  Review upstream project details
+
+Mark the project as reviewed.
+
+  >>> admin_browser.getControl('Reviewed').selected = True
+  >>> admin_browser.getControl('Change').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/new-name'
+
+The project summary shows the status as reviewed.
+
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'summary'):
+  ...     tag.find(text='Project status:').findParent('tr')
+  <...
+  <th>Project status:</th>
+  <td>Reviewed</td>
+  <td>Active</td>
+  ...

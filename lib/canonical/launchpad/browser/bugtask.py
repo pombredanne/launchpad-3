@@ -47,22 +47,23 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema
+from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugAttachmentSet, IBugExternalRefSet, IBugSet,
-    IBugTask, IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
-    IDistributionSourcePackage, IBug, IDistroBugTask, IDistroRelease,
-    IDistroReleaseBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INullBugTask, IPerson, IPersonBugTaskSearch, IProduct, IProject,
-    ISourcePackage, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    IProductSeriesBugTask, IBugNominationSet, IProductSeries)
+    IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
+    IProductSeries)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -1150,6 +1151,42 @@ def upstream_status_vocabulary_factory(context):
     return SimpleVocabulary(terms)
 
 
+class BugTaskListingItem:
+    """A decorated bug task.
+
+    Some attributes that we want to display are too convoluted or expensive
+    to get on the fly for each bug task in the listing.  These items are
+    prefetched by the view and decorate the bug task.
+    """
+    decorates(IBugTask, 'bugtask')
+
+    def __init__(self, bugtask, bugbranches):
+        self.bugtask = bugtask
+        self.bugbranches = bugbranches
+        
+
+class BugListingBatchNavigator(TableBatchNavigator):
+    """A specialised batch navigator to load smartly extra bug information."""
+    
+    def __init__(self, tasks, request, columns_to_show, size):
+        TableBatchNavigator.__init__(
+            self, tasks, request, columns_to_show=columns_to_show, size=size)
+        # Now load the bug-branch links for this batch
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+            self.currentBatch())
+        # Create a map from the bug id to the branches.
+        self.bug_id_mapping = {}
+        for bugbranch in bugbranches:
+            self.bug_id_mapping.setdefault(
+                bugbranch.bug.id, []).append(bugbranch)
+
+    def getBugListingItems(self):
+        """Return a decorated list of visible bug tasks."""
+        return [BugTaskListingItem(bugtask,
+                                   self.bug_id_mapping.get(bugtask.bug.id, None))
+                for bugtask in self.batch]
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -1334,7 +1371,7 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
 
-        return TableBatchNavigator(
+        return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
