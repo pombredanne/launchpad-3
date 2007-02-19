@@ -7,20 +7,11 @@ SET client_min_messages=ERROR;
 
 -- Remove the old PPA
 DROP TABLE PersonalSourcePackagePublication;
-DROP TABLE PersonalPackageArchive;
 
 -- Create the new tables...
 CREATE TABLE Archive (
 	id SERIAL NOT NULL PRIMARY KEY,
 	tag text NOT NULL
-	);
-
-CREATE TABLE PersonalPackageArchive (
-	id SERIAL NOT NULL PRIMARY KEY,
-	person INTEGER NOT NULL REFERENCES person(id),
-	archive INTEGER NOT NULL REFERENCES archive(id),
-	CONSTRAINT personalpackagearchive__unq UNIQUE
-		   (person, archive)
 	);
 
 -- Drop all the views associated with publishing
