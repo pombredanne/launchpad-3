@@ -12,15 +12,16 @@ DROP TABLE PersonalPackageArchive;
 -- Create the new tables...
 CREATE TABLE Archive (
 	id SERIAL NOT NULL PRIMARY KEY,
-	tag text NOT NULL
+	name text NOT NULL,
+        CONSTRAINT valid_name CHECK (valid_name(name))
 	);
 
 CREATE TABLE PersonalPackageArchive (
 	id SERIAL NOT NULL PRIMARY KEY,
-	person INTEGER NOT NULL REFERENCES person(id),
-	archive INTEGER NOT NULL REFERENCES archive(id),
-	CONSTRAINT personalpackagearchive__unq UNIQUE
-		   (person, archive)
+       	person INTEGER NOT NULL REFERENCES person(id),
+       	archive INTEGER NOT NULL REFERENCES archive(id),
+       	CONSTRAINT personalpackagearchive__unq UNIQUE
+        	   (person, archive)
 	);
 
 -- Drop all the views associated with publishing
@@ -239,11 +240,12 @@ SELECT binarypackagepublishing.id,
 
 -- Data migration for distribution and publishing tables
 --- Each distribution needs a main archive
-INSERT INTO ARCHIVE (tag) SELECT name || ' main archive' FROM Distribution;
+INSERT INTO ARCHIVE (name) SELECT name FROM Distribution;
+
 UPDATE Distribution SET main_archive = (
           SELECT id
             FROM archive
-           WHERE archive.tag = distribution.name || ' main archive'
+           WHERE archive.name = distribution.name
 	);
 
 --- Update the publishing tables to reference this archive
@@ -282,9 +284,10 @@ CREATE INDEX securebinarypackagepublishinghistory__archive__idx
  */
 
 
--- DRQ -> UQ
+-- DistroReleaseQueue -> PackageUpload
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_changesfile_fk;
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_distrorelease_fk;
+ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_signing_key_fkey;
 ALTER TABLE DistroReleaseQueue RENAME TO PackageUpload;
 ALTER TABLE distroreleasequeue_id_seq RENAME TO packageupload_id_seq;
 ALTER TABLE PackageUpload
@@ -309,10 +312,13 @@ ALTER TABLE PackageUpload
          ADD CONSTRAINT packageupload_distrorelease_fk
 	    FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
 ALTER TABLE PackageUpload
+         ADD CONSTRAINT packageupload_signing_key_fk
+	    FOREIGN KEY (signing_key) REFERENCES GPGKey(id);
+ALTER TABLE PackageUpload
          ADD CONSTRAINT packageupload_archive_fk
 	    FOREIGN KEY (archive) REFERENCES archive(id);
 
--- DRQS -> UQS
+-- DistroReleaseQueueSource -> UploadQueueSource
 ALTER TABLE DistroReleaseQueueSource
     DROP CONSTRAINT distroreleasequeuesource_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueSource
@@ -335,7 +341,7 @@ ALTER TABLE PackageUploadSource
 	          FOREIGN KEY (sourcepackagerelease)
 		   REFERENCES SourcePackageRelease(id);
 
--- DRQB -> UQB
+-- DistroReleaseQueueBuild -> UploadQueueBuild
 ALTER TABLE DistroReleaseQueueBuild
     DROP CONSTRAINT distroreleasequeuebuild_build_fk;
 ALTER TABLE DistroReleaseQueueBuild
@@ -358,7 +364,7 @@ ALTER TABLE PackageUploadBuild
        FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
 
 
--- DRQC -> UQC
+-- DistroReleaseQueueCustom -> UploadQueueCustom
 ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueCustom
@@ -401,4 +407,4 @@ ALTER TABLE Build
     ADD CONSTRAINT build_archive_fk
        FOREIGN KEY (archive) REFERENCES Archive(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);

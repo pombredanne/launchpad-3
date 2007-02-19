@@ -544,13 +544,14 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, tag) VALUES (1, 'ubuntu main archive');
-INSERT INTO archive (id, tag) VALUES (2, 'redhat main archive');
-INSERT INTO archive (id, tag) VALUES (3, 'debian main archive');
-INSERT INTO archive (id, tag) VALUES (4, 'gentoo main archive');
-INSERT INTO archive (id, tag) VALUES (5, 'kubuntu main archive');
-INSERT INTO archive (id, tag) VALUES (6, 'guadalinex main archive');
-INSERT INTO archive (id, tag) VALUES (7, 'ubuntutest main archive');
+INSERT INTO archive (id, name) VALUES (1, 'ubuntu');
+INSERT INTO archive (id, name) VALUES (2, 'redhat');
+INSERT INTO archive (id, name) VALUES (3, 'debian');
+INSERT INTO archive (id, name) VALUES (4, 'gentoo');
+INSERT INTO archive (id, name) VALUES (5, 'kubuntu');
+INSERT INTO archive (id, name) VALUES (6, 'guadalinex');
+INSERT INTO archive (id, name) VALUES (7, 'ubuntutest');
+INSERT INTO archive (id, name) VALUES (8, 'ubuntu-extra');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -3083,12 +3084,6 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 
 ALTER TABLE person ENABLE TRIGGER ALL;
 
-
-ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
@@ -8813,6 +8808,7 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 20, 8, 7, 1, 1, 40, '2006-09-13 00:00:00', '2006-09-13 00:00:01', NULL, NULL, NULL, '2006-09-13 00:00:02', '2006-09-13 00:00:03', 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 6, 1, 7, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, '2006-12-01 00:00:03', 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 21, 1, 2, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (25, 12, 1, 2, 1, 1, 10, '2007-01-19 00:00:00', '2007-02-19 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 8);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8840,6 +8836,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (21, 24, 11, 7, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, false, NULL, 7);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 32, 1, 7, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 33, 1, 2, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 14, 1, 2, 1, 2, '2006-02-19 11:57:13', '2007-02-19 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 8);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;

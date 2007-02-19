@@ -901,7 +901,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         AND packageuploadsource.packageupload=packageupload.id
         AND packageupload.status=%s
         AND packageupload.distrorelease=%s
-        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
+        """ % sqlvalues(PackageUploadStatus.DONE, self)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],

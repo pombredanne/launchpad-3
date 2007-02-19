@@ -334,9 +334,11 @@ DistroRelease can build meta objects for packages
    >>> from canonical.launchpad.database.binarypackagename import (
    ...                                       BinaryPackageName)
    >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
-   >>> pmount_binary = hoary.getBinaryPackage(pmount_bin_name)
-   >>> IDistroReleaseBinaryPackage.providedBy(pmount_binary)
+   >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
+   >>> IDistroReleaseBinaryPackage.providedBy(pmount_drbp)
    True
+   >>> len(pmount_drbp.current_publishings)
+   3
 
    >>> from canonical.launchpad.database.sourcepackagerelease import (
    ...                                           SourcePackageRelease)

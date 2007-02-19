@@ -18,7 +18,7 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    tag = StringCol(notNull=True)
+    name = StringCol(dbName='name', notNull=True)
 
 
 class ArchiveSet:

@@ -418,7 +418,8 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
-        # Exclude PPA builds
+        # Only pick builds from the distribution's main archive to
+        # exclude PPA builds
         clauseTables.extend(["DistroArchRelease",
                              "DistroRelease",
                              "Distribution"])

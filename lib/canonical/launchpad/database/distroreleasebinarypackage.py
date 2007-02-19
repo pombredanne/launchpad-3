@@ -76,10 +76,10 @@ class DistroReleaseBinaryPackage:
     def current_publishings(self):
         """See IDistroReleaseBinaryPackage."""
         ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = 
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            BinaryPackagePublishingHistory.archive = %s AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND

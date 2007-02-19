@@ -55,8 +55,8 @@ class QueueBuildAcceptError(Exception):
 class IPackageUploadQueue(Interface):
     """Used to establish permission to a group of package uploads.
 
-    Recieves an IDistroRelease and a DistroReleaseQueueStatus dbschema
-    on initiliazation.
+    Recieves an IDistroRelease and a PackageUploadStatus dbschema
+    on initialisation.
     No attributes exposed via interface, only used to check permissions.
     """
 
@@ -123,7 +123,7 @@ class IPackageUpload(Interface):
     def setAccepted():
         """Set queue state to ACCEPTED.
 
-        Preform the required checks on its content, so we garantee data
+        Perform the required checks on its content, so we guarantee data
         integrity by code.
         """
 
@@ -216,7 +216,7 @@ class IPackageUploadSource(Interface):
             title=_("The related source package release"), required=True,
             readonly=False,
             )
-    
+
     def checkComponentAndSection():
         """Verify the current Component and Section via Selection table.
 

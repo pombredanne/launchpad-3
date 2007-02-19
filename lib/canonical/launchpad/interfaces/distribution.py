@@ -9,11 +9,15 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Int, Text, TextLine, Bool
-from zope.interface import Interface, Attribute
+from zope.schema import (
+    Object, Choice, Int, Text, TextLine, Bool)
+from zope.interface import (
+    Interface, Attribute)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.fields import (
+    Title, Summary, Description)
+from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
@@ -195,9 +199,9 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
 
-    main_archive = Int(
-            title=_('Main Archive ID'), required=True, readonly=True,
-            )
+    main_archive = Object(
+        title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
+        )
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return

@@ -10,20 +10,32 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Text
 
 from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator
 
 
 class IArchive(Interface):
     """An Archive interface"""
+
     id = Attribute("The archive ID.")
+
+    name = Text(
+        title=_('Name'), required=True, readonly=False,
+        constraint=name_validator,
+        description=_(
+        "A short unique name, beginning with a lower-case "
+        "letter or number, and containing only letters, "
+        "numbers, dots, hyphens, or plus signs."))
+
 
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
 
-    def new():
+    def new(name):
         """Create a new archive."""
 
     def get(archiveid):

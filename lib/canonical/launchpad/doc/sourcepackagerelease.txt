@@ -186,8 +186,12 @@ Verify the 'meta_binary' attribute:
    >>> from canonical.launchpad.interfaces import (
    ...    IDistroReleaseBinaryPackage)
 
-   >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
+   >>> pmount_drbp = spr_test.meta_binaries[0]
+   >>> IDistroReleaseBinaryPackage.providedBy(pmount_drbp)
    True
+
+   >>> len(pmount_drbp.current_publishings)
+   3
 
 Counting bugs and questions
 -------------------------
