@@ -31,6 +31,12 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
+  <browser:menus
+      module="canonical.launchpad.browser.mentoringoffer"
+      classes="
+          MentorshipManagerFacets"
+          />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IMentorshipManager"
     name="+mentoring"
