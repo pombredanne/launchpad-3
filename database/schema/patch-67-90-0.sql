@@ -11,7 +11,10 @@ DROP TABLE PersonalSourcePackagePublication;
 -- Create the new tables...
 CREATE TABLE Archive (
 	id SERIAL NOT NULL PRIMARY KEY,
-	tag text NOT NULL
+	owner integer,
+	tag text NOT NULL,
+	CONSTRAINT archive__owner__fk
+	  FOREIGN KEY (owner) REFERENCES Person(id),
 	);
 
 -- Drop all the views associated with publishing
