@@ -273,11 +273,16 @@ class Dominator:
                                   'Build'])
                 if considered_binaries.count() > 0:
                     # There is at least one non-removed binary to consider
-                    self.debug("%s/%s (source) has at least %d non-removed "
-                               "binaries as yet" % (
-                        srcpkg_release.sourcepackagename.name,
-                        srcpkg_release.version,
-                        considered_binaries.count()))
+
+                    # XXX malcc 20061017: Want to change to running scripts
+                    # at info level, but for now just shut up this particularly
+                    # noisy debug statement. See bug 57488.
+                    #self.debug("%s/%s (source) has at least %d non-removed "
+                    #           "binaries as yet" % (
+                    #    srcpkg_release.sourcepackagename.name,
+                    #    srcpkg_release.version,
+                    #    considered_binaries.count()))
+                    
                     # However we can still remove *this* record if there's
                     # at least one other PUBLISHED for the spr. This happens
                     # when a package is moved between components.
