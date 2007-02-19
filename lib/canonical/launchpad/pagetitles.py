@@ -39,7 +39,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
 from canonical.launchpad.webapp import smartquote
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -191,22 +191,18 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
 
-bugtarget_filebug = ContextTitle('Report a bug about %s')
-
-bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
-
-bugtarget_filebug_search = ContextTitle('Report a bug about %s')
-
-def bugtarget_filebug_simple(context, view):
-    if hasattr(context, "title"):
-        # We're generating a title for a contextual bug filing page.
-        ContextTitle('Report a bug about %s')
-    else:
+def bugtarget_filebug_advanced(context, view):
+    if IMaloneApplication.providedBy(context):
         # We're generating a title for a top-level, contextless bug
         # filing page.
         return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
 
-bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+bugtarget_filebug_search = bugtarget_filebug_advanced
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
@@ -707,7 +703,7 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
-project_filebug_search = bugtarget_filebug_simple
+project_filebug_search = bugtarget_filebug_advanced
 
 project_interest = 'Rosetta: Project not translatable'
 
