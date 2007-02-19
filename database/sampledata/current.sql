@@ -2947,17 +2947,17 @@ ALTER TABLE packageselection ENABLE TRIGGER ALL;
 
 ALTER TABLE packageupload DISABLE TRIGGER ALL;
 
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
