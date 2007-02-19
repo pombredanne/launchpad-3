@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
@@ -23,7 +23,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus,
+    SourcePackageFileType, BuildStatus, QuestionStatus,
     PackagePublishingStatus)
 
 from canonical.librarian.interfaces import ILibrarianClient
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.question import Question
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
@@ -199,11 +199,11 @@ class SourcePackageRelease(SQLBase):
     @property
     def open_ticket_count(self):
         """See ISourcePackageRelease."""
-        results = Ticket.select("""
+        results = Question.select("""
             status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.OPEN,
+            """ % sqlvalues(QuestionStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()

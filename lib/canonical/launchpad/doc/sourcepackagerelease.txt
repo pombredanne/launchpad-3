@@ -189,7 +189,8 @@ Verify the 'meta_binary' attribute:
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
 
-= Creating Build records =
+
+== Creating Build records ==
 
 The SourcePackageRelease has the ability to create Build records,
 however it needs fully support to treat architecturehintlist and P-a-s
@@ -241,8 +242,8 @@ Optionally you can pass also status & archive:
    u'cprov ubuntu archive'
 
 
-Counting bugs and tickets
--------------------------
+Counting bugs and questions
+---------------------------
 
 The SourcePackageRelease offers a convenient way of checking how many
 bugs are open against this package in the distribution to which it was
@@ -256,7 +257,7 @@ uploaded. Because of bug privacy, this method needs a user supplied.
    >>> print spr.countOpenBugsInUploadedDistro(no_priv)
    1
 
-It also offers an easy way of checking the number of tickets open on the
+It also offers an easy way of checking the number of questions open on the
 package in the distribution:
 
    >>> print spr.open_ticket_count
