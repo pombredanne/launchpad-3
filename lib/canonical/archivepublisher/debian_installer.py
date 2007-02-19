@@ -91,10 +91,11 @@ def process_debian_installer(archive_root, tarfile_path, distrorelease):
         try:
             tar = tarfile.open(tarfile_path)
             for tarinfo in tar:
-                if (tarinfo.name.startswith('%s/' % expected_dir) and
-                    tarinfo.name != os.path.join(unpack_dir, 'current')):
+                name = os.path.normpath(tarinfo.name)
+                if (name.startswith('%s/' % expected_dir) and
+                    name != os.path.join(unpack_dir, 'current')):
                     tar.extract(tarinfo, target)
-                    newpath = os.path.join(target, tarinfo.name)
+                    newpath = os.path.join(target, name)
                     mode = stat.S_IMODE(os.stat(newpath).st_mode)
                     os.chmod(newpath, mode | stat.S_IWGRP)
                     extracted = True
