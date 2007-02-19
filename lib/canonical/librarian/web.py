@@ -80,7 +80,7 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             try:
                 alias = self.storage.getFileAlias(aliasID)
-                alias.update_last_accessed()
+                alias.updateLastAccessed()
                 return alias.contentID, alias.filename, alias.mimetype
             except LookupError:
                 raise NotFound

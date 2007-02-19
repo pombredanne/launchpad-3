@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """
 You probably don't want to import stuff from here. See __init__.py
@@ -35,6 +35,10 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
+    'QuestionActionVocabulary',
+    'QuestionPriorityVocabulary',
+    'QuestionSortVocabulary',
+    'QuestionStatusVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
@@ -45,10 +49,6 @@ __all__ = [
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
-    'TicketActionVocabulary',
-    'TicketPriorityVocabulary',
-    'TicketSortVocabulary',
-    'TicketStatusVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
     ]
@@ -96,6 +96,10 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
+QuestionActionVocabulary = vocab_factory(dbschema.QuestionAction)
+QuestionSortVocabulary =  vocab_factory(dbschema.QuestionSort)
+QuestionStatusVocabulary =  vocab_factory(dbschema.QuestionStatus)
+QuestionPriorityVocabulary = vocab_factory(dbschema.QuestionPriority)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
@@ -108,10 +112,6 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
-TicketActionVocabulary = vocab_factory(dbschema.TicketAction)
-TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
-TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
-TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)
 
