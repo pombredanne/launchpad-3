@@ -18,12 +18,15 @@ class IArchive(Interface):
     """An Archive interface"""
     id = Attribute("The archive ID.")
 
+    owner = Attribute("The owner of the archive, or None for the main "
+                      "archive of a distribution")
+
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
 
-    def new():
+    def new(tag, owner=None):
         """Create a new archive."""
 
     def get(archiveid):
