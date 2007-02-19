@@ -39,7 +39,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
 from canonical.launchpad.webapp import smartquote
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -191,22 +191,18 @@ bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
 
-bugtarget_filebug = ContextTitle('Report a bug about %s')
-
-bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
-
-bugtarget_filebug_search = ContextTitle('Report a bug about %s')
-
-def bugtarget_filebug_simple(context, view):
-    if hasattr(context, "title"):
-        # We're generating a title for a contextual bug filing page.
-        ContextTitle('Report a bug about %s')
-    else:
+def bugtarget_filebug_advanced(context, view):
+    if IMaloneApplication.providedBy(context):
         # We're generating a title for a top-level, contextless bug
         # filing page.
         return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
 
-bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+bugtarget_filebug_search = bugtarget_filebug_advanced
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
@@ -707,7 +703,7 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
-project_filebug_search = bugtarget_filebug_simple
+project_filebug_search = bugtarget_filebug_advanced
 
 project_interest = 'Rosetta: Project not translatable'
 
@@ -760,6 +756,44 @@ def productseries_edit(context, view):
     return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
+
+def question_add(context, view):
+    return view.pagetitle
+
+question_add_search = question_add
+
+question_bug = ContextId('Link question #%s to a bug report')
+
+question_change_status = ContextId('Change status of question #%s')
+
+question_confirm_answer = ContextId('Confirm an answer to question #%s')
+
+question_edit = ContextId('Edit question #%s details')
+
+question_history = ContextId('History of question #%s')
+
+def question_index(context, view):
+    text = (
+        smartquote('%s question #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+    return text
+
+question_linkbug = ContextId('Link question  #%s to a bug report')
+
+def question_listing(context, view):
+    return view.pagetitle
+
+question_makebug = ContextId('Create bug report based on question #%s')
+
+question_reject = ContextId('Reject question #%s')
+
+question_subscription = ContextId('Subscription to question #%s')
+
+question_unlinkbugs = ContextId('Remove bug links from question #%s')
+
+questions_index = 'Launchpad Answer Tracker'
+
+questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
@@ -932,39 +966,6 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad Answer Tracker'
-
-def ticket_add(context, view):
-    return view.pagetitle
-
-ticket_add_search = ticket_add
-
-ticket_bug = ContextId('Link question #%s to a bug report')
-
-ticket_change_status = ContextId('Change status of question #%s')
-
-ticket_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-ticket_edit = ContextId('Edit question #%s details')
-
-def ticket_index(context, view):
-    text = (
-        smartquote('%s question #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-    return text
-
-ticket_history = ContextId('History of question #%s')
-
-ticket_linkbug = ContextId('Link question  #%s to a bug report')
-
-ticket_makebug = ContextId('Create bug report based on question #%s')
-
-ticket_reject = ContextId('Reject question #%s')
-
-ticket_unlinkbugs = ContextId('Remove bug links from question #%s')
-
-ticket_subscription = ContextId('Subscription to question #%s')
-
 standardshipitrequests_index = 'Standard ShipIt options'
 
 standardshipitrequest_new = 'Create a new standard option'
@@ -1006,11 +1007,6 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
-
-def ticket_listing(context, view):
-    return view.pagetitle
-
-tickettarget_manage_supportcontacts = ContextTitle("Answer contact for %s")
 
 translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 

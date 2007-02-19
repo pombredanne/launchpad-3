@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -6,9 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'ProjectAddProductView',
-    'ProjectAddTicketView',
+    'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestTicketsView',
+    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
@@ -18,7 +18,7 @@ __all__ = [
     'ProjectOverviewMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
-    'ProjectSupportMenu',
+    'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
     'ProjectEditView',
@@ -42,9 +42,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.ticket import TicketAddView
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketCollectionSupportMenu)
+from canonical.launchpad.browser.question import QuestionAddView
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -112,13 +112,13 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
     enable_only = [
-        'overview', 'bugs', 'specifications', 'support', 'translations']
+        'overview', 'bugs', 'specifications', 'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -203,12 +203,12 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
-class ProjectSupportMenu(TicketCollectionSupportMenu):
-    """Menu for the support facet of projects."""
+class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
+    """Menu for the answers facet of projects."""
 
     usedfor = IProject
-    facet = 'support'
-    links = TicketCollectionSupportMenu.links + ['new']
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
         text = 'Ask Question'
@@ -405,14 +405,14 @@ class ProjectRdfView(object):
         return encodeddata
 
 
-class ProjectAddTicketView(TicketAddView):
-    """View that handles creation of a ticket from an IProject context."""
+class ProjectAddQuestionView(QuestionAddView):
+    """View that handles creation of a question from an IProject context."""
 
-    search_field_names = ['product'] + TicketAddView.search_field_names
+    search_field_names = ['product'] + QuestionAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        TicketAddView.setUpFields(self)
+        QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
@@ -433,8 +433,8 @@ class ProjectAddTicketView(TicketAddView):
                  mapping=dict(project=self.context.displayname))
 
     @property
-    def ticket_target(self):
-        """The ITicketTarget to use is the selected product."""
+    def question_target(self):
+        """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()
         else:
@@ -442,12 +442,12 @@ class ProjectAddTicketView(TicketAddView):
 
 
 # XXX flacoste 2006-12-13 This should be removed and the
-# TicketTargetLatestTicketsView used instead once we add a
-# searchTickets() method to IProject. This will happen when
+# QuestionTargetLatestQuestionsView used instead once we add a
+# searchQuestions() method to IProject. This will happen when
 # fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestTicketsView:
+class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by
-    TicketAddView.
+    QuestionAddView.
     """
 
     def __call__(self):

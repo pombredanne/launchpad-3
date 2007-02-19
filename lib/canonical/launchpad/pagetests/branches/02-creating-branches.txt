@@ -47,7 +47,7 @@ The branch author should default to the current user. We clear it away so we
 can test the context links on the new branch page.
 
   >>> user_browser.getControl('Author').value
-  'name12'
+  'no-priv'
   >>> user_browser.getControl('Author').value = ''
 
   >>> user_browser.getControl('Name').value = 'main'
@@ -61,7 +61,7 @@ registered branch. We check that the final slash of the URL was stripped by
 matching for the angle brackets of an enclosing tag.
 
   >>> user_browser.url
-  'http://code.launchpad.dev/~name12/applets/main'
+  'http://code.launchpad.dev/~no-priv/applets/main'
   >>> print user_browser.contents
   <!DOCTYPE...
   ...Gnome Panel Applets Mainline...
@@ -72,8 +72,8 @@ with that product, and a link to other branches maintained by that person.
 
   >>> user_browser.getLink('Other Gnome Applets branches').url
   'http://code.launchpad.dev/applets/+branches'
-  >>> user_browser.getLink('Other branches registered (and not authored) by Sample Person').url
-  'http://code.launchpad.dev/~name12/+registeredbranches'
+  >>> user_browser.getLink('Other branches registered (and not authored) by No Privileges Person').url
+  'http://code.launchpad.dev/~no-priv/+registeredbranches'
 
 
 == Finding person/+addbranch ==
@@ -111,7 +111,7 @@ junk branch. Because it has no product, it has no link to other product
 branches.
 
   >>> user_browser.url
-  'http://code.launchpad.dev/~name12/+junk/pyresources'
+  'http://code.launchpad.dev/~no-priv/+junk/pyresources'
   >>> user_browser.getLink('Other branches authored by Robert Collins').url
   'http://code.launchpad.dev/~lifeless/+authoredbranches'
 
@@ -130,48 +130,49 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-  >>> user_browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
 
 Try a adding a conflicting branch from the product/+addbranch form.
 
-  >>> user_browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
-  >>> user_browser.getControl('Branch URL').value = 'http://example.com/gnome-terminal/main-dup'
+  >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+  >>> browser.getControl('Branch URL').value = 'http://example.com/gnome-terminal/main-dup'
 
 Trying to post the form without filling a name at all should not cause an oops!
 
-  >>> user_browser.getControl('Add Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Add Branch').click()
+  >>> browser.url
   'http://launchpad.dev/gnome-terminal/+addbranch'
 
 Now, complete the form, but give a name that is alredy in use for that owner
 and product.
 
-  >>> user_browser.getControl('Name').value = 'main'
-  >>> user_browser.getControl('Add Branch').click()
+  >>> browser.getControl('Name').value = 'main'
+  >>> browser.getControl('Add Branch').click()
 
 That should give us the form back with an error message.
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/gnome-terminal/+addbranch'
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
 Trying to add a conflicting branch from person/+addbranch should produce the
 same error message.
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+addbranch')
-  >>> user_browser.getControl('Branch URL').value = 'http://example.com/gnome-terminal/main-dup'
-  >>> user_browser.getControl('Add Branch').click()
-  >>> user_browser.url
+  >>> browser.open('http://launchpad.dev/~name12/+addbranch')
+  >>> browser.getControl('Branch URL').value = 'http://example.com/gnome-terminal/main-dup'
+  >>> browser.getControl('Add Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
-  >>> user_browser.getControl('Name').value = 'main'
-  >>> user_browser.getControl('Product').value = 'gnome-terminal'
-  >>> user_browser.getControl('Add Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Name').value = 'main'
+  >>> browser.getControl('Product').value = 'gnome-terminal'
+  >>> browser.getControl('Add Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -180,10 +181,10 @@ If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't
 know if it conflicts or not:
 
-  >>> user_browser.getControl('Product').value = 'no-such-product'
-  >>> user_browser.getControl('Add Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Product').value = 'no-such-product'
+  >>> browser.getControl('Add Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Invalid value

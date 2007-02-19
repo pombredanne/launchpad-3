@@ -231,14 +231,14 @@ We are wanting to have badges for associated bugs and blueprints.
 
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> names_and_bugs(browser.contents)
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.dev
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.contrib
-  http://code.launchpad.dev/~name12/+branch/firefox/main
+  http://code.launchpad.dev/~name12/+junk/junk.dev
+  http://code.launchpad.dev/~name12/+junk/junk.contrib
+  http://code.launchpad.dev/~name12/firefox/main
     Bug: http://launchpad.dev/bugs/4
     Bug: http://launchpad.dev/bugs/5
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/pushed
-  http://code.launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad
+  http://code.launchpad.dev/~name12/gnome-terminal/2.6
+  http://code.launchpad.dev/~name12/gnome-terminal/main
+  http://code.launchpad.dev/~name12/gnome-terminal/klingon
+  http://code.launchpad.dev/~name12/gnome-terminal/pushed
+  http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
 
