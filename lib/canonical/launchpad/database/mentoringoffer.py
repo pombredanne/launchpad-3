@@ -6,6 +6,9 @@ __all__ = [
     'MentorshipManager',
     ]
 
+from datetime import datetime, timedelta
+import pytz
+
 from zope.interface import implements
 
 from sqlobject import (
@@ -16,10 +19,9 @@ from canonical.launchpad.interfaces import (
     IMentorshipManager,
     )
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
 
 
 class MentoringOffer(SQLBase):
@@ -58,6 +60,42 @@ class MentorshipManager:
     @property
     def mentoring_offers(self):
         """See IHasMentoringOffers."""
-        return MentoringOffer.select()
+        # import here to avoid circular imports
+        from canonical.launchpad.database.specification import Specification
+        from canonical.launchpad.database.bugtask import BugTask
+        via_specs = MentoringOffer.select("""
+            Specification.id = MentoringOffer.specification AND NOT
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select("""
+            BugTask.bug = MentoringOffer.bug AND NOT (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['BugTask'],
+            distinct=True)
+        return via_specs.union(via_bugs)
 
+    @property
+    def recent_completed_mentorships(self):
+        """See IHasMentoringOffers."""
+        # import here to avoid circular imports
+        from canonical.launchpad.database.specification import Specification
+        from canonical.launchpad.database.bugtask import BugTask
+        now = datetime.now(pytz.timezone('UTC'))
+        yearago = now - timedelta(365)
+        via_specs = MentoringOffer.select("""
+            MentoringOffer.date_created > %s AND
+            """ % sqlvalues(yearago) + """
+            Specification.id = MentoringOffer.specification AND 
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select("""
+            MentoringOffer.date_created > %s AND
+            """ % sqlvalues(yearago) + """
+            BugTask.bug = MentoringOffer.bug AND (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['BugTask'],
+            distinct=True)
+        return via_specs.union(via_bugs)
 

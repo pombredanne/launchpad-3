@@ -34,7 +34,7 @@
   <browser:menus
       module="canonical.launchpad.browser.mentoringoffer"
       classes="
-          MentorshipManagerFacets"
+          MentorshipManagerFacets MentorshipManagerOverviewMenu"
           />
 
   <browser:defaultView
@@ -48,6 +48,9 @@
     <browser:page
       name="+mentoring"
       template="../templates/hasmentoringoffers-mentoring.pt" />
+    <browser:page
+      name="+success"
+      template="../templates/mentorshipmanager-success.pt" />
   </browser:pages>
 
   <!-- IHasMentoringOffers -->

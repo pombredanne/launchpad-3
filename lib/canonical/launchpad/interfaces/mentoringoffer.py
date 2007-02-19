@@ -47,3 +47,7 @@ class IMentorshipManager(IHasMentoringOffers):
     displayname = Attribute('Display name')
     title = Attribute('Title')
 
+    recent_completed_mentorships = Attribute(
+        'Mentorships offered in the past year for which the task (bug or '
+        'blueprint) has since been completed.')
+

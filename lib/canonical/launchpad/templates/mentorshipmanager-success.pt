@@ -1,0 +1,72 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Successful mentorships</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+<tal:def_offers define="offers context/recent_completed_mentorships">
+<tal:mentoring_available condition="offers">
+
+  <p>
+    This list describes bugs and features in
+    <span tal:replace="context/displayname">Mozilla</span>
+    which have been completed with the help of mentorship.
+  </p>
+
+  <h2>Mentorships</h2>
+
+  <table class="listing sortable" id="mentorships">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>For</th>
+        <th>By</th>
+        <th>What</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="offer offers">
+        <td>
+          <span tal:content="offer/date_created/fmt:date"
+                tal:attributes="title offer/date_created/fmt:time">
+            2007-15-13
+          </span>
+        </td>
+        <td>
+          <img src="/@@/team-mini" />
+          <a tal:content="offer/team/browsername"
+             tal:attributes="href offer/team/fmt:url">foobar</a>
+        </td>
+        <td>
+          <img src="/@@/person-mini" />
+          <a tal:content="offer/owner/browsername"
+             tal:attributes="href offer/owner/fmt:url">foobar</a>
+        </td>
+        <td>
+          <div tal:replace="structure offer/target/@@+listing-column" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</tal:mentoring_available>
+
+<tal:no_mentoring condition="not: offers">
+  <p>
+    Nobody has yet completed any bug fixes or feature implementations
+    in <span tal:replace="context/displayname">Mozilla</span> with the help
+    of mentorship.
+  </p>
+</tal:no_mentoring>
+</tal:def_offers>
+
+</div>
+</body>
+</html>
