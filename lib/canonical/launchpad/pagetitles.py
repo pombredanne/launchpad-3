@@ -198,7 +198,7 @@ def bugtarget_filebug_advanced(context, view):
         return 'Report a bug'
     else:
         # We're generating a title for a contextual bug filing page.
-        ContextTitle('Report a bug about %s')
+        return 'Report a bug about %s' % context.title
 
 bugtarget_filebug_search = bugtarget_filebug_advanced
 
