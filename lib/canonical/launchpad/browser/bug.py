@@ -182,7 +182,9 @@ class BugContextMenu(ContextMenu):
     def retractmentoring(self):
         text = 'Retract mentoring'
         user = getUtility(ILaunchBag).user
-        enabled = self.context.bug.isMentor(user)
+        enabled = (self.context.bug.isMentor(user) and
+                   not self.context.bug.is_complete and
+                   user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def filebug(self):

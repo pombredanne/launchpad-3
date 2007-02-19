@@ -190,9 +190,9 @@ class Bug(SQLBase):
     def is_complete(self):
         """See IBug."""
         for task in self.bugtasks:
-            if task.is_complete:
-                return True
-        return False
+            if not task.is_complete:
+                return False
+        return True
 
     @property
     def initial_message(self):

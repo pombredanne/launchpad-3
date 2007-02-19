@@ -158,7 +158,9 @@ class SpecificationContextMenu(ContextMenu):
     def retractmentoring(self):
         text = 'Retract mentoring'
         user = getUtility(ILaunchBag).user
-        enabled = self.context.isMentor(user)
+        enabled = (self.context.isMentor(user) and
+                   not self.context.is_complete and
+                   user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
