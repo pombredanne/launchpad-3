@@ -13,7 +13,7 @@
     <div tal:replace="structure context/@@+portlet-bugcontacts" />
     <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-latesttickets" />
+    <div tal:replace="structure context/@@+portlet-latestquestions" />
   </metal:leftportlets>
 
 
