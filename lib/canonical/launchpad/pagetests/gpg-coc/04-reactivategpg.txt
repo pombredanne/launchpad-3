@@ -1,7 +1,7 @@
 
 Sample Person already has a deactivated key.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com')
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> browser.url
     'http://launchpad.dev/~name12/+editpgpkeys'
