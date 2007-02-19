@@ -424,6 +424,7 @@ class LaunchpadRootNavigation(Navigation):
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': IQuestionSet,
+        'token': ILoginTokenSet,
         'translations': IRosettaApplication,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.

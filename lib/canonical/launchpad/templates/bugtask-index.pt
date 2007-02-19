@@ -121,10 +121,15 @@
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
   </tal:mentors>
-  <tal:block condition="not: view/userIsMentor">
-    <tal:block condition="not: context/bug/duplicateof">
-      <tal:block condition="not: context/bug/is_complete">
-        &raquo; <a href="+mentor">Offer mentoring to someone fixing this bug</a>
+  <tal:block condition="view/user">
+    <tal:block condition="not: view/userIsMentor">
+      <tal:block condition="not: context/bug/duplicateof">
+        <tal:block condition="not: context/bug/is_complete">
+          <tal:block condition="view/user/myactivememberships">
+            &raquo;
+            <a href="+mentor">Offer to mentor someone fixing this bug</a>
+          </tal:block>
+        </tal:block>
       </tal:block>
     </tal:block>
   </tal:block>

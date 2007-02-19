@@ -145,11 +145,14 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change status'
         return Link('+status', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def offermentoring(self):
         text = 'Offer mentoring'
         user = getUtility(ILaunchBag).user
         enabled = not (self.context.isMentor(user) or
-                       self.context.is_complete)
+                       self.context.is_complete or
+                       not user or
+                       not user.teams_participated_in)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
