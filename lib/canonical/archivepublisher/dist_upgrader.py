@@ -11,7 +11,8 @@ import tarfile
 import stat
 import shutil
 
-from sourcerer.deb.version import Version as make_version
+from sourcerer.deb.version import (
+    BadUpstreamError, Version as make_version)
 
 
 class DistUpgraderError(Exception):
@@ -78,7 +79,10 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
         tar = tarfile.open(tarfile_path)
         try:
             for tarinfo in tar:
-                if tarinfo.name != os.path.join('current'):
+                path = os.path.normpath(tarinfo.name)
+                directory_name = path.split('/')[0]
+                if (make_version(directory_name) and not
+                    path.startswith('current')):
                     tar.extract(tarinfo, target)
                     newpath = os.path.join(target, tarinfo.name)
                     mode = stat.S_IMODE(os.stat(newpath).st_mode)
@@ -86,7 +90,7 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
                     extracted = True
         finally:
             tar.close()
-    except tarfile.TarError, e:
+    except (tarfile.TarError, BadUpstreamError), e:
         raise DistUpgraderTarError(tarfile_path, e)
 
     if not extracted:
