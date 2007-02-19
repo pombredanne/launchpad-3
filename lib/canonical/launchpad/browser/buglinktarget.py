@@ -38,7 +38,7 @@ class BugLinkView(LaunchpadFormView):
     @action(_('Link'))
     def linkBug(self, action, data):
         """Link to the requested bug. Publish an SQLObjectModifiedEvent and
-        display a notification on the ticket page.
+        display a notification.
         """
         response = self.request.response
         target_unmodified = Snapshot(
