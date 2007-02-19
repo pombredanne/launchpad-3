@@ -169,6 +169,9 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+def buglisting_embedded_advanced_search(context, view):
+    return view.getSearchPageHeading()
+
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetname)
@@ -530,9 +533,6 @@ person_bounties = ContextDisplayName('Bounties for %s')
 person_branches = ContextDisplayName('Bazaar branches for %s')
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
-
-def person_bugs(context, view):
-    return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
 
