@@ -84,7 +84,7 @@
         permission="zope.Public"
         name="+bugs"
         facet="bugs"
-        template="../templates/person-bugs.pt"/>
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
 
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"

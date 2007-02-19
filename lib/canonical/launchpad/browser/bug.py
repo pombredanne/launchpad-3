@@ -192,6 +192,7 @@ class MaloneView(LaunchpadFormView):
 
     @property
     def target_css_class(self):
+        """The CSS class for used in the target widget."""
         if self.target_error:
             return 'error'
         else:
@@ -199,6 +200,7 @@ class MaloneView(LaunchpadFormView):
 
     @property
     def target_error(self):
+        """The error message for the target widget."""
         return self.getWidgetError('target')
 
     def initialize(self):
@@ -210,6 +212,7 @@ class MaloneView(LaunchpadFormView):
             self._validateTargetWidget()
 
     def _validateTargetWidget(self):
+        """Check wether the target widget has valid input."""
         try:
             search_target = self.widgets['target'].getInputValue()
         except InputErrors:
@@ -222,7 +225,6 @@ class MaloneView(LaunchpadFormView):
             if search_target is None:
                 self.setFieldError(
                     'target', "Please specify a project to search in.")
-
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""

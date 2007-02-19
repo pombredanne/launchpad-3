@@ -1778,6 +1778,7 @@ class BugTaskTableRowView(LaunchpadView):
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
+    """Search all bug reports."""
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
     schema = IFrontPageBugTaskSearch
@@ -1788,6 +1789,14 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
+        """Check wether a target was given and redirect to it.
+
+        All the URL parameters will be passed on to the target's +bugs
+        page.
+
+        If the target widget contains errors, redirect to the front page
+        which will handle the error.
+        """
         try:
             search_target = self.target_widget.getInputValue()
         except InputErrors:
