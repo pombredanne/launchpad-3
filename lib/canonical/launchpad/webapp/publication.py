@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+from zope.publisher.publish import mapply
+
 from new import instancemethod
 import thread
 import traceback
@@ -218,6 +220,23 @@ class LaunchpadBrowserPublication(
         request.response.redirect(location, temporary_if_possible=True)
         # Quash further traversal.
         request.setTraversalStack([])
+
+    def callObject(self, request, ob):
+        from zope.security.proxy import getObject
+        usedfor = getattr(getObject(ob), '__used_for__', None)
+        if usedfor is not None:
+            name = getattr(getObject(ob), '__name__', '')
+            pageid = '%s:%s' % (usedfor.__name__, name)
+            print '====', pageid
+            import pdb; pdb.set_trace()
+            # XXX: need to also include either what 'site' is used, or what
+            # layer is used.  Probably layer.  But, leave this for now.
+            # So, stick this pageid in the request, and make the logging
+            # put the pageid in the request, ensuring we also have the
+            # referer and full URL.
+            #  - make log include the original host
+            #  - all lines say "anonymous" for the user.  not right.
+        return mapply(ob, request.getPositionalArguments(), request)
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does

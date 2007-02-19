@@ -425,24 +425,61 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
+import time
+class LaunchpadAccessLogger(CommonAccessLogger):
+
+    def log(self, task):
+        """Receives a completed task and logs it in the common log format."""
+        now = time.time()
+        request_data = task.request_data
+        req_headers = request_data.headers
+
+        user_name = task.auth_user_name or 'anonymous'
+        user_agent = req_headers.get('USER_AGENT', '')
+        referer = req_headers.get('REFERER', '')
+
+        host = req_headers.get('HOST', '')
+        # task.getCGIEnvironment()
+        remote_addr = task.cgi_env.get('REMOTE_ADDR', '')
+        # task.start_time
+        # env['SERVER_PORT']
+        channel_creation_time = task.cgi_env.get(
+            'CHANNEL_CREATION_TIME', '')
+
+
+        self.output.logRequest(
+            task.channel.addr[0],
+            ' - %s [%s] "%s" %s %d "%s" "%s"\n' % (
+                user_name,
+                self.log_date_string(now),
+                request_data.first_line,
+                task.status,
+                task.bytes_written,
+                referer,
+                user_agent
+                )
+            )
+
+
+
 http = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8080,
     True)
 
 pmhttp = wsgi.ServerType(
     PMDBWSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8081,
     True)
 
 debughttp = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8082,
     True,
     requestFactory=DebugLayerRequestFactory)
