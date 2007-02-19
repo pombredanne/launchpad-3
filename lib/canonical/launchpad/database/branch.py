@@ -75,11 +75,9 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
-
     @property
     def revision_history(self):
+        """See IBranch."""
         query = self._get_revision_history_query()
         return query.prejoin(['revision'])
 
