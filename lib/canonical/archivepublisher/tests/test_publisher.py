@@ -292,7 +292,7 @@ class TestPublisher(TestNativePublishingBase):
              'Binary: foo-bin',
              'Version: 666',
              'Maintainer: Foo Bar <foo@bar.com>',
-             'Architecture: all'
+             'Architecture: all',
              'Standards-Version: 3.6.2',
              'Format: 1.0',
              'Directory: pool/main/f/foo',
