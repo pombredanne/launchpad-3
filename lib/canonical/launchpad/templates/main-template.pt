@@ -6,11 +6,9 @@
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/+icing/global.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
     <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
+    <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
     <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style

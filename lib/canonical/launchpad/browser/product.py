@@ -40,31 +40,29 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     ILaunchpadRoot)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetTraversalMixin)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadView,
-    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    RedirectionNavigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough,
+    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, RedirectionNavigation,
+    sorted_version_numbers, StandardLaunchpadFacets, stepto, stepthrough, 
     structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.image import ImageAddWidget
@@ -74,7 +72,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    TicketTargetTraversalMixin):
+    QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -138,12 +136,12 @@ class ProductSOP(StructuralObjectPresentation):
         return None
 
 
-class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations', 'branches']
 
     links = StandardLaunchpadFacets.links

@@ -37,7 +37,7 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
     'IStructuralObjectPresentation',
     ]
 
@@ -70,7 +70,7 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
-    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
 
 
@@ -250,6 +250,13 @@ class IHasDrivers(Interface):
     distribution releases and product series.
     """
     drivers = Attribute("A list of drivers")
+
+
+class IHasAppointedDriver(Interface):
+    """An object that has an appointed driver."""
+
+    driver = Choice(
+        title=_("Driver"), required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IHasAssignee(Interface):

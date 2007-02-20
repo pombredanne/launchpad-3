@@ -1,0 +1,140 @@
+= Support Tracker Utility: IQuestionSet =
+
+There is an IQuestionSet utility that can be use to retrieve and search
+for question whatever the target they were created in.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> question_set = getUtility(IQuestionSet)
+    >>> verifyObject(IQuestionSet, question_set)
+    True
+
+== get() ==
+
+The get() method can be used to get a question with a specific id:
+
+    >>> question_one = question_set.get(1)
+    >>> question_one.title
+    u'Firefox cannot render Bank Site'
+
+If no question exists, a default value is returned:
+
+    >>> default = object()
+    >>> question_nonexistant = question_set.get(123456, default=default)
+    >>> question_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> question_set.get(123456) is None
+    True
+
+== searchQuestions() ==
+
+IQuestionSet also defines a searchQuestions() method that can be used to
+search for questions defined in any products or distributions (in fact,
+in any context that allows questions to be defined). Two search criteria
+are defined search_text and status.
+
+=== search_text ===
+
+The search_text parameter will limit the questions to those matching
+the query using the regular full text algorithm.
+
+    >>> for question in question_set.searchQuestions(search_text='firefox'):
+    ...     print repr(question.title), question.target.displayname
+    u'Problemas de Impress\xe3o no Firefox'        Mozilla Firefox
+    u'Firefox loses focus and gets stuck'          Mozilla Firefox
+    u'Firefox cannot render Bank Site'             Mozilla Firefox
+    u'mailto: problem in webpage'                  mozilla-firefox in ubuntu
+    u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site'    Mozilla Firefox
+
+=== status ===
+
+By default, expired and invalid support requests are not searched for.
+The status parameter can be used to select the questions in the status
+you are interested in.
+
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.INVALID):
+    ...     print question.title, question.status.title, (
+    ...         question.target.displayname)
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+The status parameter can also take a list of statuses.
+
+    >>> for question in question_set.searchQuestions(
+    ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
+    ...     print question.title, question.status.title, (
+    ...          question.target.displayname)
+    mailto: problem in webpage                Solved mozilla-firefox in ubuntu
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+=== language ===
+
+The language parameter can be used to select only questions written in a
+particular language.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> for t in question_set.searchQuestions(language=spanish):
+    ...     print t.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
+
+=== Combination ===
+
+The returned sets of questions is the intersection of the sets delimited
+by each criteria:
+
+    >>> for question in question_set.searchQuestions(
+    ...         search_text='firefox',
+    ...         status=[QuestionStatus.OPEN, QuestionStatus.INVALID]):
+    ...     print repr(question.title), question.status.title, (
+    ...           question.target.displayname)
+    u'Problemas de Impress\xe3o no Firefox'     Open    Mozilla Firefox
+    u'Firefox is slow and consumes too much RAM' Invalid mozilla-firefox in ubuntu
+    u'Firefox loses focus and gets stuck'       Open    Mozilla Firefox
+    u'Firefox cannot render Bank Site'          Open    Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site' Open    Mozilla Firefox
+
+=== Sort Order ===
+
+When using the search_text criteria, the default is to sort the results
+by relevancy. One can use the sort parameter to change that. It takes
+one of the constant defined in the QuestionSort enumeration.
+
+    >>> from canonical.lp.dbschema import QuestionSort
+    >>> for question in question_set.searchQuestions(
+    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
+    ...     print question.id, repr(question.title), (
+    ...          question.target.displayname)
+    1 u'Firefox cannot render Bank Site'           Mozilla Firefox
+    2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
+    4 u'Firefox loses focus and gets stuck'        Mozilla Firefox
+    6 u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    9 u'mailto: problem in webpage'                mozilla-firefox in ubuntu
+    13 u'Problemas de Impress\xe3o no Firefox'     Mozilla Firefox
+
+When no text search is done, the default sort order is
+QuestionSort.NEWEST_FIRST.
+
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.OPEN)[:5]:
+    ...     print question.id, repr(question.title), (
+    ...         question.target.displayname)
+    13 u'Problemas de Impress\xe3o no Firefox'   Mozilla Firefox
+    12 u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)' Ubuntu
+    11 u'Continue playing after shutdown'          Ubuntu
+     5 u'Installation failed'                      Ubuntu
+     4 u'Firefox loses focus and gets stuck'       Mozilla Firefox
+
+== getQuestionLanguages() ==
+
+The getQuestionLanguages() method returns the set of languages in which
+questions are written in Launchpad.
+
+    >>> sorted([language.code 
+    ...         for language in question_set.getQuestionLanguages()])
+    [u'en', u'es', u'pt_BR']

@@ -44,18 +44,26 @@ This informative message should also appear in the detailed branch listing.
   <!DOCTYPE...
   ...There are no branches related to Daniel Silverstone...
 
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site should be the 
+normal branch listing view for that person.
+
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...There are no branches related to Daniel Silverstone...
+
 == Team Branches ==
 
 Branches that are owned by a team that the user is a member of, they are
 shown as 'Team Branch'.
 
-## Disabled due to Bug #84855 -- StuartBishop 20070213
-##
-##   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-##   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-##   >>> for row in table.tbody.fetch('tr'):
-##   ...     print extract_text(row)
-##   main   ~vcs-imports/evolution/main   60 New   evolution   40 Team Branch
+   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main   60 New   evolution   40 Team Branch
   
   
 == Authored Branches ==
@@ -64,7 +72,7 @@ There should be a link in the branch context menu for person which points to
 the authored branches page.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Authored')
+  >>> link = browser.getLink('View Authored Branches')
   >>> print link.url
   http://launchpad.dev/~name12/+authoredbranches
 
@@ -79,7 +87,7 @@ And we can load the authored branches page.
 There should also be a link which points to the registered branches page.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Registered')
+  >>> link = browser.getLink('View Registered Branches')
   >>> print link.url
   http://launchpad.dev/~name12/+registeredbranches
 
@@ -92,7 +100,7 @@ And we can load the registered branches page.
 == Subscribed branches ==
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Subscribed')
+  >>> link = browser.getLink('View Subscribed Branches')
   >>> print link.url
   http://launchpad.dev/~name12/+subscribedbranches
 
@@ -206,4 +214,31 @@ helpful message supplied.
   >>> print cell.renderContents()
   <i>There are branches registered for launchpad but none of them match the
   current filter criteria for this page. Try filtering on "Any Status".</i>
+
+
+== Branch Badge Decoration ==
+
+We are wanting to have badges for associated bugs and blueprints.
+
+  >>> def names_and_bugs(contents):
+  ...     table = find_tag_by_id(contents, 'branchtable')
+  ...     for row in table.tbody.fetch('tr'):
+  ...         first_cell = row.fetch('td')[0]
+  ...         anchors = first_cell.fetch('a')
+  ...         print anchors[0].get('href')
+  ...         for anchor in anchors[1:]:
+  ...            print "  Bug:", anchor.get('href')
+
+  >>> browser.open('http://code.launchpad.dev/~name12')
+  >>> names_and_bugs(browser.contents)
+  http://code.launchpad.dev/~name12/+branch/+junk/junk.dev
+  http://code.launchpad.dev/~name12/+branch/+junk/junk.contrib
+  http://code.launchpad.dev/~name12/+branch/firefox/main
+    Bug: http://launchpad.dev/bugs/4
+    Bug: http://launchpad.dev/bugs/5
+  http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
+  http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
+  http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon
+  http://code.launchpad.dev/~name12/+branch/gnome-terminal/pushed
+  http://code.launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad
 

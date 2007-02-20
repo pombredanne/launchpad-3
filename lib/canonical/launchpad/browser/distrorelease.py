@@ -107,7 +107,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
@@ -116,7 +116,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals this release'
         return Link('+driver', text, summary, icon='edit')
 
@@ -138,8 +138,8 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     # A search link isn't needed because the distro release overview
     # has a search form.
 
-    def support(self):
-        text = 'Request Support'
+    def answers(self):
+        text = 'Ask Question'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 
