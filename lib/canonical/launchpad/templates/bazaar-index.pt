@@ -6,12 +6,11 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/code"
-      />
+      <h1 id="applications">
+        <span tal:content="structure context/@@+applicationbuttons/code" />
+        Code in branches
+      </h1>
       <div id="mainarea" class="tab-code">
-        <h1>Code</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,13 +19,6 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <p id="application-summary">
-                          Launchpad lets you track branches of any product that
-                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                          version control system &mdash; and imports many
-                          <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
-                          so you can use Bazaar with those too.
-                        </p>
                         <ul class="rollover buttons">
                           <li>
                             <a href="/+tour">
@@ -53,6 +45,13 @@
                             </a>
                           </li>
                         </ul>
+                        <p id="application-summary">
+                          Launchpad lets you track branches of any product that
+                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system &mdash; and imports many
+                          <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
+                          so you can use Bazaar with those too.
+                        </p>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>

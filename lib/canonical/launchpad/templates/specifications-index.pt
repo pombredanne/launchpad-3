@@ -5,12 +5,11 @@
       i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/blueprints"
-      ></div>
+      <h1 id="applications">
+        <span tal:content="structure context/@@+applicationbuttons/blueprints" />
+        Blueprint tracking
+      </h1>
       <div id="mainarea" class="tab-features">
-        <h1>Specifications</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -21,7 +20,25 @@
                       <div id="container">
 
                       <form class="central" name="spec_search" method="get">
-                        <table style="margin-left: 0;">
+                        <ul class="buttons">
+                          <li>
+                            <a href="+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                          <li>
+                            <a href="+addspec">
+                              <img
+                                alt="Register a specification"
+                                src="/+icing/but-lrg-registeraspec.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <table>
                           <tbody>
                             <tr>
                               <td style="text-align: right;">
@@ -100,24 +117,6 @@
                           from the drafting process through to
                           review, approval, scheduling, and implementation.
                         </p>
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+addspec">
-                              <img
-                                alt="Register a specification"
-                                src="/+icing/but-lrg-registeraspec.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recently registered</h2>
@@ -131,7 +130,7 @@
                               />
                             </ul>
                           </div>
-                          <div class="three column center">
+                          <div class="three column middle">
                             <h2>Recently implemented</h2>
                           </div>
                           <div

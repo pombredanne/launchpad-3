@@ -1221,27 +1221,17 @@ body {
 
 /* -- Front pages -- */
 
-#applications {
-  clear: both;
-  font-size: 1.2em;
-  margin: 2em auto;
-  padding: 1em;
-  text-align: center;
-}
-#applications a {
-  display: block;
-  float: left;
-  margin: 0 auto;
-  text-align: center;
-  width: 16%;
+#applications {clear: both; margin-right: 20px; padding: 1em 0;}
+#applications span {
+  display: inline-block;
+  float: right;
 }
 #applications a img {
-  display: block;
   margin: 0 auto;
 }
 .central {
-  clear: both;
-  font-size: 1.75em;
+  clear: left; /* Bugs FP */
+  font-size: 1.5em;
   margin: auto;
   padding: 2em 0;
   width: auto;
@@ -1249,22 +1239,20 @@ body {
 .central input {
   font-size: 1em;
 }
-.central table {
-  width: auto;
-  margin: 0 auto;
-}
 div.bordered {
   padding: 2em 4em;
 }
 #application-summary, #application-footer {
-  border-top: 1px dotted #999;
-  clear: both;
   font-size: 1.5em;
   line-height: 1.5em;
-  padding-top: 1em;
   width: 50%;
 }
-#application-footer {margin-top: 2em;}
+#application-footer {
+  border-top: 1px dotted #999;
+  clear: both;
+  margin-top: 2em;
+  padding-top: 1em;
+}
 
 /* -- Other pages -- */
 
@@ -1285,6 +1273,7 @@ img.mugshot {display: inline-table;}
 img.mugshot {display: block;}
 /* End hiding from MSIE for Mac */
 
+div.columns {clear: both;}
 div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
@@ -1298,10 +1287,12 @@ div.left div.portlet {
   border-width: 1px 1px 0 0;
   padding: 0.75em 0.75em 0.75em 0;
 }
-div.right div.portlet {
+div.right div.portlet { /* is this necessary? */
   border-width: 1px 0 0 1px;
   padding: 0.75em 0 0.75em 0.75em;
 }
+div.columns div.right div.portlet {border: none; padding: 0;} /* BlueprintsFP */
+
 div.three.column {width: 33%;}
 div.three.column.left, div.three.column.middle, div.three.column.right {
   clear: none;
@@ -1310,17 +1301,11 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {
-  margin: 2em 0 4em 0;
-  padding: 0;
-}
-ul.buttons li {
-  display: inline;
-  margin-right: 1em;
-}
-ul.cross-reference {
-  font-size: 1.25em;
-}
+ul.buttons {margin: 2em 0 4em 0; padding: 0;}
+ul.buttons li {display: inline; margin-right: 1em;}
+#singlecolumn ul.buttons {float: right;}
+#singlecolumn ul.buttons li {display: block;}
+ul.cross-reference {font-size: 1.25em;}
 /*
 li {
   margin-bottom: 0.75em;
