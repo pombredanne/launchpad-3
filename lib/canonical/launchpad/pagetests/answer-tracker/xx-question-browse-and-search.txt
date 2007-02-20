@@ -284,13 +284,18 @@ He needs to login to access that page:
       ...
     Unauthorized...
 
-    >>> user_browser.open(
+    >>> from zope.testbrowser.testing import Browser
+    >>> sample_person_browser = Browser()
+    >>> sample_person_browser.addHeader(
+    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> sample_person_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
-    >>> user_browser.getLink('My Questions').click()
-    >>> print user_browser.title
+    >>> sample_person_browser.getLink('My Questions').click()
+    >>> print sample_person_browser.title
     Questions you asked about mozilla-firefox in ubuntu
-    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> questions = find_tag_by_id(
+    ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
@@ -299,19 +304,20 @@ He needs to login to access that page:
 His problem was about integrating his email client in firefox, so he
 enters 'email client in firefox'
 
-    >>> user_browser.getControl(name='field.search_text').value = (
+    >>> sample_person_browser.getControl(name='field.search_text').value = (
     ...     'email client in firefox')
 
 He also remembers that his question was answered, so he unselects the
 other statuses and hits the search button.
 
-    >>> user_browser.getControl('Open').selected = False
-    >>> user_browser.getControl('Invalid').selected = False
-    >>> user_browser.getControl('Search').click()
+    >>> sample_person_browser.getControl('Open').selected = False
+    >>> sample_person_browser.getControl('Invalid').selected = False
+    >>> sample_person_browser.getControl('Search').click()
 
 The exact question he was searching for is displayed!
 
-    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> questions = find_tag_by_id(
+    ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
@@ -319,10 +325,10 @@ The exact question he was searching for is displayed!
 If the user didn't make any questions on the product, a message
 informing him of this fact is displayed.
 
-    >>> user_browser.open('http://launchpad.dev/gnomebaker/+tickets')
-    >>> user_browser.getLink('My Questions').click()
+    >>> sample_person_browser.open('http://launchpad.dev/gnomebaker/+tickets')
+    >>> sample_person_browser.getLink('My Questions').click()
     >>> print find_main_content(
-    ...     user_browser.contents).first('p').renderContents()
+    ...     sample_person_browser.contents).first('p').renderContents()
     You didn't ask any questions about gnomebaker.
 
 === Need Attention ===
@@ -341,11 +347,13 @@ He needs to login to access that page:
       ...
     Unauthorized...
 
-    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> user_browser.getLink('Need Attention').click()
-    >>> print user_browser.title
+    >>> sample_person_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> sample_person_browser.getLink('Need Attention').click()
+    >>> print sample_person_browser.title
     Questions needing your attention for Ubuntu
-    >>> questions = find_tag_by_id(user_browser.contents, 'question-listing')
+    >>> questions = find_tag_by_id(
+    ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Play DVDs in Totem
@@ -353,21 +361,23 @@ He needs to login to access that page:
 
 Like all other report, this one is searchable:
 
-    >>> user_browser.getControl(name='field.search_text').value = 'evolution'
-    >>> user_browser.getControl('Search').click()
-    >>> print user_browser.title
+    >>> sample_person_browser.getControl(
+    ...     name='field.search_text').value = 'evolution'
+    >>> sample_person_browser.getControl('Search').click()
+    >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
     >>> print find_main_content(
-    ...     user_browser.contents).first('p').renderContents()
+    ...     sample_person_browser.contents).first('p').renderContents()
     No questions matching "evolution" need your attention for Ubuntu.
 
 If there is no questions needing the user's attention, a message
 informing him of this fact is displayed.
 
-    >>> user_browser.open('http://launchpad.dev/products/gnomebaker/+tickets')
-    >>> user_browser.getLink('Need Attention').click()
+    >>> sample_person_browser.open(
+    ...    'http://launchpad.dev/products/gnomebaker/+tickets')
+    >>> sample_person_browser.getLink('Need Attention').click()
     >>> print find_main_content(
-    ...     user_browser.contents).first('p').renderContents()
+    ...     sample_person_browser.contents).first('p').renderContents()
     No questions need your attention for gnomebaker.
 
 == Person Reports ==

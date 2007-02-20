@@ -45,8 +45,11 @@ Package Removal (dry-run)
 And, if we mark some packages to be pending removal. Source publication
 15 refers to alsa-utils_1.0.9a-4.dsc:
 
-  >>> old_date = datetime.datetime(year=2006, month=1, day=1,
+  >>> this_year = datetime.datetime.now().year
+  >>> old_date = datetime.datetime(year=this_year - 2, month=1, day=1,
   ...                              tzinfo=pytz.timezone('UTC'))
+  >>> future_date = datetime.datetime(year=this_year + 2, month=1, day=1,
+  ...                                 tzinfo=pytz.timezone('UTC'))
 
   >>> pub = SSPPH.get(15)
   >>> print pub.dateremoved
@@ -64,8 +67,10 @@ Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
   >>> pub.scheduleddeletiondate = old_date
 
-But so does source publication 20, which will cause us to not attempt to
-delete the file on disk.
+But so does source publication 20, which we'll set to pending removal
+but with a scheduled deletion date in the future. Because not all of the
+references to the file are ready to be removed, the file will not be
+deleted yet. 
 
   >>> pub = SSPPH.get(20)
   >>> print pub.distrorelease.name
@@ -73,6 +78,8 @@ delete the file on disk.
   >>> print [f.libraryfile.filename 
   ...        for f in pub.sourcepackagerelease.files]
   [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
+  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.scheduleddeletiondate = future_date
 
 Knock off some binaries as well:
 
