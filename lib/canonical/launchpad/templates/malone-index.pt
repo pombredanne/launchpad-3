@@ -80,12 +80,12 @@
                           Launchpad&rsquo;s bug tracker allows collaboration
                           between software teams on bug reports and fixes.
                         </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>
@@ -93,7 +93,7 @@
                             <a href="+filebug">
                               <img
                                 alt="Report a bug"
-                                src="/+icing/but_lrg_reportabug.gif"
+                                src="/+icing/but-lrg-reportabug.gif"
                               />
                             </a>
                           </li>

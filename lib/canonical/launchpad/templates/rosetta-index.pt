@@ -24,12 +24,12 @@
                           With Launchpad you can translation Free Software
                           into your own language.
                         </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>

@@ -105,7 +105,7 @@
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>
@@ -113,7 +113,7 @@
                             <a href="+addspec">
                               <img
                                 alt="Register a specification"
-                                src="/+icing/but_lrg_registeraspec.gif"
+                                src="/+icing/but-lrg-registeraspec.gif"
                               />
                             </a>
                           </li>
