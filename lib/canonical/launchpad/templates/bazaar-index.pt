@@ -89,11 +89,6 @@
                           </div>
                         </div>
                         <form class="central" action="/products" method="get">
-                          <p
-                            xtal:condition="view/error_message"
-                            xtal:content="view/error_message"
-                            class="error message"
-                          ><!-- Error message. --></p>
                           <input
                             id="text"
                             type="text"
@@ -199,4 +194,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs lists of recent imports (bug 79036), registered branches (bug 79038), and changed branches (bug 79041). -->
+<!-- 1-0 done -->
