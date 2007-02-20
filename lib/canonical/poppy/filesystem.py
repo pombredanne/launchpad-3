@@ -59,7 +59,7 @@ class UploadFileSystem:
         files = []
         for filename in filenames:
             if not filter or filter(filename):
-                files.append([filename])
+                files.append(filename)
         return files
 
     def ls(self, path, filter=None):
@@ -68,7 +68,7 @@ class UploadFileSystem:
         It considers the names in the given path (returned self.name())
         and builds file information using self.lsinfo().
         """
-        return [self.lsinfo(name) for name[0] in self.names(path, filter)]
+        return [self.lsinfo(name) for name in self.names(path, filter)]
 
     def readfile(self, path, outstream, start=0, end=None):
         """Outputs the file at path to a stream.

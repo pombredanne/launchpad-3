@@ -21,7 +21,7 @@ First we need to setup our test environment.
     >>> full_testfile = os.path.join(rootpath, testfile)
     >>> testfile_contents = "contents of the file"
     >>> open(full_testfile, 'w').write(testfile_contents)
-    
+
     >>> testdir = "testdir"
     >>> full_testdir = os.path.join(rootpath, testdir)
     >>> os.mkdir(full_testdir)
