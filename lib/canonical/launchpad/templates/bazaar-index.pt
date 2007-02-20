@@ -103,10 +103,12 @@
                         <div class="clear"></div>
                         <div id="application-footer">
                           <div>
+                            <a href="/+code/+products-with-code">
                             <strong tal:content="view/branch_count">123</strong>
                             branches registered in
                             <strong tal:content="view/product_count">1234</strong>
                             products
+                            </a>
                           </div>
                           <div>
                             <strong tal:content="view/import_count">123</strong>

@@ -653,6 +653,8 @@ product_add = 'Register a product with Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
+product_bazaar = 'Products with Code'
+
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
