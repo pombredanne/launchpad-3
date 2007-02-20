@@ -1,0 +1,117 @@
+= The Mentoring System =
+
+== Offers of Mentoring ==
+
+Launchpad allows people to make an offer of mentoring for a bug or
+specification.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.ftests import login
+    >>> distroset = getUtility(IDistributionSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> lpteam = personset.getByName('launchpad')
+    >>> kubuntu = distroset.getByName('kubuntu')
+    >>> b2 = bugset.get(2)
+    >>> b2.is_complete
+    False
+    >>> s1 = kubuntu.getSpecification('cluster-installation')
+    >>> s1.is_complete
+    False
+    >>> login('foo.bar@canonical.com')
+    >>> offer1 = b2.offerMentoring(foo_bar, lpteam)
+    >>> offer2 = s1.offerMentoring(foo_bar, lpteam)
+
+Now, it should be possible to see those offers on a variety of lists.
+
+First, we look at foo_bar's offers:
+
+    >>> for o in foo_bar.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+    Facilitate mass installs  of Ubuntu using Netboot configuration
+
+Now, let's look at the list of offers associated with lpteam. For this we
+use the team_mentorships attribute, because mentoring_offers would imply
+offers made *by* the team, which we don't do. The team_memberships attribute
+is for mentorships made by people specifically in support of new members
+wanting to join that specific team:
+
+    >>> for o in lpteam.team_mentorships: print o.target.title
+    Blackhole Trash folder
+    Facilitate mass installs  of Ubuntu using Netboot configuration
+
+And at the offers related to Bug #2:
+
+    >>> for o in b2.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+
+And for the specification concerned:
+
+    >>> for o in s1.mentoring_offers: print o.target.title
+    Facilitate mass installs  of Ubuntu using Netboot configuration
+
+Now, Bug #2 is associated with both Ubuntu and Debian
+
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> for o in ubuntu.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+    >>> debian = distroset.getByName('debian')
+    >>> for o in debian.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+
+It is also associated with the ubuntu *upstream* (this is a weirdness in the
+Launchpad sample data, we have an upstream product called Ubuntu).
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> ubuntu_prod = productset.getByName('ubuntu-product')
+    >>> for o in ubuntu_prod.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+
+Now, it gets more interesting. There is a bugtask for Bug #2 on the Firefox
+product that has been rejected. So the offer of mentoring is NOT relevant to
+Firefox, and should not show up there.
+
+    >>> firefox = productset.getByName('firefox')
+    >>> print firefox.mentoring_offers.count()
+    0
+
+We also can get lists of offers of mentoring associated with groups of
+projects (Project classes :-)). The ubuntu-product is part of the
+ubuntu-project group, so:
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> projectset = getUtility(IProjectSet)
+    >>> uproj = projectset.getByName('ubuntu-project')
+    >>> for o in uproj.mentoring_offers: print o.target.title
+    Blackhole Trash folder
+
+
+== Checking if the person is a Mentor ==
+
+Once an offer has been made, you can test to see if a person is a mentor for
+a bug or a blueprint.
+
+    >>> stevea = personset.getByName('stevea')
+    >>> b2.isMentor(stevea)
+    False
+    >>> b2.isMentor(foo_bar)
+    True
+    >>> s1.isMentor(stevea)
+    False
+    >>> b2.isMentor(foo_bar)
+    True
+
+== Retracting mentorship offers ==
+
+We can also retract offers of mentoring.
+
+    >>> b2.retractMentoring(foo_bar)
+    >>> b2.isMentor(foo_bar)
+    False
+    >>> s1.retractMentoring(foo_bar)
+    >>> s1.isMentor(foo_bar)
+    False
+

@@ -29,6 +29,9 @@ class IMentoringOffer(IHasOwner):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
+    # other attributes we don't need to set through a form
+    bug = Attribute('A bug, if that is the target, or None')
+    specification = Attribute('A blueprint, if that is the target, or None')
     # properties
     target = Attribute("The bug or specification for which mentoring is"
         "offered.")

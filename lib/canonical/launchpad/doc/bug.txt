@@ -726,3 +726,40 @@ IBug.date_last_updated.
 
   >>> firefox_bug.date_last_updated == current_date_last_updated
   True
+
+
+Bug Completeness
+----------------
+
+A bug is considered "complete" iff all of its bugtasks are themselves
+complete. The definition of completeness for a bugtask is that the bug has
+been rejected or a fix has been released.
+
+  >>> b8 = bugset.get(8)
+  >>> b8.is_complete
+  True
+  >>> b9 = bugset.get(9)
+  >>> b9.is_complete
+  False
+
+Let's add a new task to b8 to see if that affects the completeness.
+
+  >>> from canonical.launchpad.database import BugTask
+  >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
+  >>> newtask.status.name
+  'UNCONFIRMED'
+  >>> b8.is_complete
+  False
+
+Now, let's find a bug that has many tasks, some complete and others
+incomplete, and show the status of each of the tasts:
+
+ >>> b2 = bugset.get(2)
+ >>> for task in b2.bugtasks: print task.id, task.is_complete
+ 30 True
+ 3 False
+ 26 False
+ 28 False
+ 5 False
+ 20 False
+
