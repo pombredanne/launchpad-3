@@ -41,7 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.archivepublisher.ftests import (
+  >>> from canonical.poppy.tests import (
   ...     PoppyTestSetup, SoyuzUploadError)
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
@@ -125,15 +125,8 @@ what we were expecting to have uploaded.
   >>> package_names
   ['drdsl', 'etherwake']
 
-We don't want to block forever reading data from the process, since
-it's a daemon and should not die until we ask it to. So, we first
-set the stdout to non-blocking...
-
-  >>> poppy.setNonBlocking()
-
-Then, we create a set of the filenames we expect to see in the
-FTP server process output, and wait until all of them have been
-shown.
+We create a set of the filenames we expect to see in the FTP server
+process output, and wait until all of them have been shown.
 
 This is a little bit tricky because we won't simply try to read
 the process output in a blocking way, since any failure in the
