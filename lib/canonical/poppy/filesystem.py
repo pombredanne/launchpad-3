@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 import datetime
-import glob
 import os
 import stat
 import shutil
@@ -56,31 +55,20 @@ class UploadFileSystem:
         full_path = self._full(path)
         if not os.path.exists(full_path):
             raise OSError("Not exists:", path)
-        glob_files = glob.glob(os.path.join(self.rootpath, path, "*"))
-        prefix = "%s/" % self.rootpath
+        filenames = os.listdir(os.path.join(self.rootpath, path))
         files = []
-        for filename in glob_files:
-            filename = filename.replace(prefix, "")
-            filename = filename.replace("./", "")
+        for filename in filenames:
             if not filter or filter(filename):
-                files += [filename]
+                files.append([filename])
         return files
 
     def ls(self, path, filter=None):
-        """Return a sequence of information objects."""
-        path = self._sanitize(path)
-        full_path = self._full(path)
-        if not os.path.exists(full_path):
-            raise OSError("Not exists:", path)
-        glob_files = glob.glob(os.path.join(self.rootpath, path, "*"))
-        prefix = "%s/" % self.rootpath
-        infos = []
-        for filename in glob_files:
-            filename = filename.replace(prefix, "")
-            filename = filename.replace("./", "")
-            if not filter or filter(filename):
-                infos.append(self.lsinfo(filename))
-        return infos
+        """Return a sequence of information objects.
+
+        It considers the names in the given path (returned self.name())
+        and builds file information using self.lsinfo().
+        """
+        return [self.lsinfo(name) for name[0] in self.names(path, filter)]
 
     def readfile(self, path, outstream, start=0, end=None):
         """Outputs the file at path to a stream.
@@ -106,19 +94,19 @@ class UploadFileSystem:
 
         s = os.stat(full_path)
 
-        info["owner_readable"] = bool(s[stat.ST_MODE] & stat.S_IRUSR)
-        info["owner_writable"] = bool(s[stat.ST_MODE] & stat.S_IWUSR)
-        info["owner_executable"] = bool(s[stat.ST_MODE] & stat.S_IXUSR)
-        info["group_readable"] = bool(s[stat.ST_MODE] & stat.S_IRGRP)
-        info["group_writable"] = bool(s[stat.ST_MODE] & stat.S_IWGRP)
-        info["group_executable"] = bool(s[stat.ST_MODE] & stat.S_IXGRP)
-        info["other_readable"] = bool(s[stat.ST_MODE] & stat.S_IROTH)
-        info["other_writable"] = bool(s[stat.ST_MODE] & stat.S_IWOTH)
-        info["other_executable"] = bool(s[stat.ST_MODE] & stat.S_IXOTH)
+        info["owner_readable"] = bool(s.st_mode & stat.S_IRUSR)
+        info["owner_writable"] = bool(s.st_mode & stat.S_IWUSR)
+        info["owner_executable"] = bool(s.st_mode & stat.S_IXUSR)
+        info["group_readable"] = bool(s.st_mode & stat.S_IRGRP)
+        info["group_writable"] = bool(s.st_mode & stat.S_IWGRP)
+        info["group_executable"] = bool(s.st_mode & stat.S_IXGRP)
+        info["other_readable"] = bool(s.st_mode & stat.S_IROTH)
+        info["other_writable"] = bool(s.st_mode & stat.S_IWOTH)
+        info["other_executable"] = bool(s.st_mode & stat.S_IXOTH)
         info["mtime"] = datetime.datetime.fromtimestamp(self.mtime(path))
         info["size"] = self.size(path)
         info["type"] = self.type(path)
-        info["nlinks"] = s[stat.ST_NLINK]
+        info["nlinks"] = s.st_nlink
         return info
 
     def mtime(self, path):
@@ -169,7 +157,7 @@ class UploadFileSystem:
         path = self._sanitize(path)
         full_path = self._full(path)
         if os.path.exists(full_path):
-            shutil.rmtree(full_path)
+            os.rmdir(full_path)
         else:
             raise OSError("Not exists:", path)
 

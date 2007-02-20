@@ -32,7 +32,7 @@ class TestPoppy(unittest.TestCase):
         self.poppy.killPoppy()
         shutil.rmtree(self.root_dir)
 
-    def getFTPConnection(self, login=1, user="annonymous", password=""):
+    def getFTPConnection(self, login=True, user="ubuntu", password=""):
         """Build and return a FTP connection to the current poppy.
 
         Optionally log in with as 'annonymous' & empty password, or passed
@@ -58,7 +58,8 @@ class TestPoppy(unittest.TestCase):
 
         Only works for a single upload (poppy transaction).
         """
-        upload_dir = os.listdir(self.root_dir)[1]
+        contents = os.listdir(self.root_dir)
+        upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
     def testLOGIN(self):
@@ -95,14 +96,16 @@ class TestPoppy(unittest.TestCase):
         self.assertTrue(os.path.exists(wanted_path))
 
     def testRMD(self):
-        """Check recursive RMD (aka rm -rf)"""
+        """Check recursive RMD (aka rmdir)"""
         conn = self.getFTPConnection()
         self.assertEqual(
             conn.mkd("foo/bar"), "")
         self.assertEqual(
+            conn.rmd("foo/bar"), "250 RMD command successful.")
+        self.assertEqual(
             conn.rmd("foo"), "250 RMD command successful.")
         conn.quit()
-        wanted_path = self._uploadPath('foo/')
+        wanted_path = self._uploadPath('foo')
         self.assertFalse(os.path.exists(wanted_path))
 
     def testSTOR(self):
