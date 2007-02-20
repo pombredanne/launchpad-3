@@ -57,6 +57,19 @@
     as long as accreditation and the Launchpad URL are given along with the
     data.</p>
 
+  <h2>Automated querying</h2>
+
+  <p>The use of scripts or robots to access the data contained on this
+  website is allowable subject to the following conditions:</p>
+  <ul>
+    <li>Contact information for the organization running the script must be
+  included in the user agent.</li> 
+    <li>The organization must coordinate with Canonical Ltd to ensure
+  their automated access does not occur during peak load hours for the
+  website nor cause undue stress on the website servers.</li>
+    <li>These conditions do not apply to search engine spiders.</li>
+  </ul>
+
 </div>
 
 </body>
