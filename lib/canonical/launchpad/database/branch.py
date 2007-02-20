@@ -32,8 +32,10 @@ class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch)
-
     _table = 'Branch'
+
+    sort_order = ['product', '-lifecycle_status', 'author', 'name']
+
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
     summary = StringCol(notNull=True)
@@ -383,22 +385,27 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_status):
         """See IBranchSet."""
-        return Branch.select('''
-            (Branch.owner = %d OR
-             Branch.author = %d OR
-             -- subscribed
-             -- or team)
+        owner_ids = [team.id for team in person.teams_participated_in]
+        owner_ids.append(person.id)
+        owner_ids = tuple(owner_ids)
+        lifecycles = tuple([item.value for item in lifecycle_status])
+
+        subscribed_branches = Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person in %s
             AND Branch.lifecycle_status in %s
-            
+            ''' % (owner_ids, lifecycles),
+            clauseTables=['BranchSubscription'])
 
+        owner_author_branches = Branch.select(
+            '''(Branch.owner in %s OR
+            Branch.author = %s)
+            AND Branch.lifecycle_status in %s
+            ''' % (owner_ids, person.id, lifecycles))
         
-            Branch.last_mirrored_id IS NOT NULL AND
-            (Branch.last_scanned_id IS NULL OR
-             Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''')
-        
+        return subscribed_branches.union(
+            owner_author_branches, orderBy=Branch.sort_order)
 
-        
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.

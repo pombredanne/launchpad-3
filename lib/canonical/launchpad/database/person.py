@@ -146,7 +146,7 @@ class Person(SQLBase):
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', prejoins=['product'],
-        orderBy='-id')
+        orderBy=Branch.sort_order)
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -161,7 +161,7 @@ class Person(SQLBase):
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
-        orderBy='-id', prejoins=['product'])
+        orderBy=Branch.sort_order, prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -417,7 +417,7 @@ class Person(SQLBase):
                    (Branch.author != %d OR Branch.author is NULL)"""
         return Branch.select(query % (self.id, self.id),
                              prejoins=["product"],
-                             orderBy='-Branch.id')
+                             orderBy=Branch.sort_order)
 
 
     def getBugContactPackages(self):

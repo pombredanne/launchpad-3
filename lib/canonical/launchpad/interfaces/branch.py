@@ -346,6 +346,9 @@ class IBranchSet(Interface):
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""
 
+    def getBranchesForPerson(person, lifecycle_status):
+        """Return all branches associated with person appropriate status."""
+
 
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
