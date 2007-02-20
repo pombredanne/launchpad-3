@@ -5,10 +5,14 @@
       i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <h1 id="applications">
-        <span tal:content="structure context/@@+applicationbuttons/blueprints" />
-        Blueprint tracking
-      </h1>
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Blueprint tracking</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/blueprints" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-features">
         <div class="t">
           <div class="u">

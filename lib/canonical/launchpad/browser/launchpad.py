@@ -834,7 +834,7 @@ class ApplicationButtons(LaunchpadView):
                 is_active = button.name == self.name
             else:
                 is_active = True
-            is_front_page = False # XXX Needs to be true on the front page
+            is_front_page = self.name == 'main'
             L.append(button.renderButton(is_active, is_front_page))
         return u'\n'.join(L)
 

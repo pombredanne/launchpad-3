@@ -1221,7 +1221,12 @@ body {
 
 /* -- Front pages -- */
 
-#applications {clear: both; margin-right: 20px; padding: 1em 0;}
+#applications {clear: both; padding: 1em 0; width: 100%;}
+div#applications {text-align: center;}
+table#applications {margin-bottom: -0.5em;}
+table#applications th, table#applications td {vertical-align: baseline;}
+table#applications th {text-align: left;}
+table#applications td {padding-right: 20px; text-align: right;}
 #applications span {
   display: inline-block;
   float: right;
