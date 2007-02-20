@@ -825,12 +825,12 @@ class ViewPackageUploadQueue(EditPackageUploadQueue):
         return True
 
 
-class EditDistroReleaseQueue(EditPackageUploadQueue):
+class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
 
 
-class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+class ViewPackageUpload(ViewPackageUploadQueue):
     permission = 'launchpad.View'
     usedfor = IPackageUpload
 

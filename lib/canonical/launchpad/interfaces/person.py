@@ -372,8 +372,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    personal_package_archives = Attribute(
-        "The personal package archives owned by this person.")
+    archives = Attribute(
+        "The Archives owned by this person.")
 
     @invariant
     def personCannotHaveEmblem(person):
@@ -664,8 +664,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         state.
         """
 
-    def archiveWithTag(tag):
-        """Return the archive owned by this person with the given tag."""
+    def getArchive(name):
+        """Return the archive owned by this person with the given name.
+
+        Return None if the Archive with a given name was not found.
+        """
 
 
 class ITeam(IPerson):

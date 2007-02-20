@@ -1772,12 +1772,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def getPendingPublications(self, pocket, is_careful):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
         queries = ['distrorelease = %s' % sqlvalues(self)]
 
         # Query main archive for this distrorelease
-        queries.append('archive=%s' % sqlvalues(self.main_archive))
+        queries.append('archive=%s' % sqlvalues(archive))
 
         # Careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
@@ -1806,7 +1806,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         log.debug("Attempting to publish pending sources.")
 
         dirty_pockets = set()
-        for spph in self.getPendingPublications(pocket, is_careful):
+        for spph in self.getPendingPublications(archive, pocket, is_careful):
             if not is_careful and self.checkLegalPocket(spph, log):
                 continue
             spph.publish(diskpool, log)

@@ -1,7 +1,7 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket',
-           'getPublisherForDistribution', 'getPublisherForPPA']
+           'getPublisherForDistribution', 'getPublisherForArchive']
 
 import logging
 import os
@@ -102,28 +102,27 @@ def getPublisherForDistribution(distribution, allowed_suites, log,
     return Publisher(log, pubconf, disk_pool, distribution, archive,
                      allowed_suites)
 
-def getPublisherForPPA(ppa, distribution, allowed_suites, log):
+def getPublisherForArchive(archive, distribution, allowed_suites, log):
     """Return an initialised Publisher instance for a given context.
 
-    Publisher is initialized according a given Distribution and PPA.
+    Publisher is initialized according a given Distribution and Archive.
     'allowed_suites' set are also considered as they are for main_archive
     procedure.
     """
     log.debug("Finding configuration for '%s/%s'."
-              % (ppa.person.name, ppa.archive.tag))
+              % (archive.owner.name, archive.name))
     try:
-        pubconf = ppa.getPubConfig(distribution)
+        pubconf = archive.getPubConfig(distribution)
     except LucilleConfigError, info:
         log.error(info)
         raise
 
     # XXX cprov 20070103: remove security proxy of the Config instance
-    # returned by PPA. This is kinda of a hack because Config doesn't have
-    # any interface yet.
+    # returned by IArchive. This is kinda of a hack because Config doesn't
+    # have any interface yet.
     pubconf = removeSecurityProxy(pubconf)
 
     disk_pool = _getDiskPool(pubconf, log)
-    archive = ppa.archive
 
     log.debug("Preparing publisher.")
     return Publisher(

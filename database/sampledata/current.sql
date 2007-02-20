@@ -544,14 +544,15 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, tag) VALUES (1, 'ubuntu main archive');
-INSERT INTO archive (id, tag) VALUES (2, 'redhat main archive');
-INSERT INTO archive (id, tag) VALUES (3, 'debian main archive');
-INSERT INTO archive (id, tag) VALUES (4, 'gentoo main archive');
-INSERT INTO archive (id, tag) VALUES (5, 'kubuntu main archive');
-INSERT INTO archive (id, tag) VALUES (6, 'guadalinex main archive');
-INSERT INTO archive (id, tag) VALUES (7, 'ubuntutest main archive');
-INSERT INTO archive (id, tag) VALUES (8, 'cprov ubuntu archive');
+INSERT INTO archive (id, name, owner) VALUES (1, 'ubuntu', NULL);
+INSERT INTO archive (id, name, owner) VALUES (2, 'redhat', NULL);
+INSERT INTO archive (id, name, owner) VALUES (3, 'debian', NULL);
+INSERT INTO archive (id, name, owner) VALUES (4, 'gentoo', NULL);
+INSERT INTO archive (id, name, owner) VALUES (5, 'kubuntu', NULL);
+INSERT INTO archive (id, name, owner) VALUES (6, 'guadalinex', NULL);
+INSERT INTO archive (id, name, owner) VALUES (7, 'ubuntutest', NULL);
+INSERT INTO archive (id, name, owner) VALUES (8, 'ubuntu-extra', NULL);
+INSERT INTO archive (id, name, owner) VALUES (9, 'ubuntu-fun', 28);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -2950,17 +2951,17 @@ ALTER TABLE packageselection ENABLE TRIGGER ALL;
 
 ALTER TABLE packageupload DISABLE TRIGGER ALL;
 
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signingkey, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -3085,13 +3086,6 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
-
-
-ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
-
-INSERT INTO personalpackagearchive (id, person, archive) VALUES (1, 28, 8);
-
-ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlanguage DISABLE TRIGGER ALL;
@@ -8816,6 +8810,7 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 20, 8, 7, 1, 1, 40, '2006-09-13 00:00:00', '2006-09-13 00:00:01', NULL, NULL, NULL, '2006-09-13 00:00:02', '2006-09-13 00:00:03', 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 6, 1, 7, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, '2006-12-01 00:00:03', 0, false, NULL, 1);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 21, 1, 2, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (25, 12, 1, 2, 1, 1, 10, '2007-01-19 00:00:00', '2007-02-19 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 8);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8843,6 +8838,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (21, 24, 11, 7, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, false, NULL, 7);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (22, 32, 1, 7, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (23, 33, 1, 2, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 1);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (24, 14, 1, 2, 1, 2, '2006-02-19 11:57:13', '2007-02-19 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 8);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;

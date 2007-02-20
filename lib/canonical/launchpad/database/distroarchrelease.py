@@ -233,9 +233,12 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def getPendingPublications(self, pocket, is_careful):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
-        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+        queries = [
+            "distroarchrelease=%s AND archive=%s"
+            % sqlvalues(self, archive)
+            ]
 
         target_status = [PackagePublishingStatus.PENDING]
         if is_careful:
@@ -263,7 +266,7 @@ class DistroArchRelease(SQLBase):
 
         dirty_pockets = set()
 
-        for bpph in self.getPendingPublications(pocket, is_careful):
+        for bpph in self.getPendingPublications(archive, pocket, is_careful):
             if not is_careful and self.distrorelease.checkLegalPocket(
                 bpph, log):
                 continue

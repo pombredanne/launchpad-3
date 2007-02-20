@@ -15,7 +15,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IPersonalPackageArchiveSet, IPersonSet)
+    IArchiveSet, IPersonSet)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
     DistributionReleaseStatus)
@@ -169,9 +169,9 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool, self.ubuntutest,
             self.ubuntutest.main_archive)
 
-        test_archive = getUtility(IArchiveSet).new(tag='test archive')
+        test_archive = getUtility(IArchiveSet).new(name='test-archive')
         pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -188,7 +188,7 @@ class TestPublisher(TestNativePublishingBase):
         """Publisher also works as expected for another archives."""
         from canonical.archivepublisher.publishing import Publisher
 
-        test_archive = getUtility(IArchiveSet).new(tag='test archive')
+        test_archive = getUtility(IArchiveSet).new(name='test-archive')
         test_pool_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, self.logger)
 
@@ -197,7 +197,8 @@ class TestPublisher(TestNativePublishingBase):
             test_archive)
 
         pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='I am supposed to be a PPA',
+            sourcename="foo", filename="foo.dsc",
+            filecontent='I am supposed to be a PPA',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -219,12 +220,12 @@ class TestPublisher(TestNativePublishingBase):
         """Publisher can be initialized via provided helper functions.
 
         In order to simplify the two distinct top-level publication scripts,
-        one for 'main_archive' publication and other for 'ppa', we have
+        one for 'main_archive' publication and other for 'PPA', we have
         two specific helper functions: 'getPublisherForDistribution' and
-        'getPublisherForPPA'.
+        'getPublisherForArchive'.
         """
         from canonical.archivepublisher.publishing import (
-            getPublisherForDistribution,  getPublisherForPPA)
+            getPublisherForDistribution,  getPublisherForArchive)
 
         # stub parameters
         allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
@@ -235,7 +236,7 @@ class TestPublisher(TestNativePublishingBase):
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
-            u'ubuntutest main archive', distro_publisher.archive.tag)
+            u'ubuntutest', distro_publisher.archive.name)
         self.assertEqual(
             '/var/tmp/archive/ubuntutest/dists',
             distro_publisher._config.distsroot)
@@ -243,49 +244,46 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             distro_publisher.allowed_suites)
 
-        # lets setup a PPA
+        # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_archive = getUtility(IArchiveSet).new(tag='cprov test')
-        cprov_ppa = getUtility(IPersonalPackageArchiveSet).new(
-            person=cprov, archive=cprov_archive)
+        cprov_archive = getUtility(IArchiveSet).new(
+            name='biscuit', owner=cprov)
 
-        ppa_publisher = getPublisherForPPA(
-            cprov_ppa, self.ubuntutest, allowed_suites, self.logger)
+        archive_publisher = getPublisherForArchive(
+            cprov_archive, self.ubuntutest, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the given PPA archive
         self.assertEqual(
-            u'cprov test', ppa_publisher.archive.tag)
+            u'biscuit', archive_publisher.archive.name)
         self.assertEqual(
-            u'/var/tmp/ppa/cprov/cprov-test/ubuntutest/dists',
-            ppa_publisher._config.distsroot)
+            u'/var/tmp/ppa/cprov/biscuit/ubuntutest/dists',
+            archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
-            ppa_publisher.allowed_suites)
+            archive_publisher.allowed_suites)
 
     def testPPAArchiveIndex(self):
         """Building Archive Indexes from PPA publications."""
-        from canonical.archivepublisher.publishing import getPublisherForPPA
+        from canonical.archivepublisher.publishing import getPublisherForArchive
 
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_archive = getUtility(IArchiveSet).new(tag='cprov test')
-        cprov_ppa = getUtility(IPersonalPackageArchiveSet).new(
-            person=cprov, archive=cprov_archive)
+        cprov_archive = getUtility(IArchiveSet).new(name='foobar', owner=cprov)
 
-        ppa_publisher = getPublisherForPPA(
-            cprov_ppa, self.ubuntutest, allowed_suites, self.logger)
+        archive_publisher = getPublisherForArchive(
+            cprov_archive, self.ubuntutest, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov_archive)
 
-        ppa_publisher.A_publish(False)
+        archive_publisher.A_publish(False)
         self.layer.txn.commit()
-        ppa_publisher.C_writeIndexes(False)
+        archive_publisher.C_writeIndexes(False)
 
         index_path = os.path.join(
-            ppa_publisher._config.distsroot, 'breezy-autotest', 'main',
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             'source', 'Sources')
         index_contents = open(index_path).read().splitlines()
 
@@ -294,6 +292,7 @@ class TestPublisher(TestNativePublishingBase):
              'Binary: foo-bin',
              'Version: 666',
              'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all'
              'Standards-Version: 3.6.2',
              'Format: 1.0',
              'Directory: pool/main/f/foo',
@@ -302,7 +301,7 @@ class TestPublisher(TestNativePublishingBase):
             index_contents)
 
         # remove PPA root
-        shutil.rmtree(config.personalpackagearchive.root)
+        #shutil.rmtree(config.personalpackagearchive.root)
 
     def testReleaseFile(self):
         """Test release file writing.

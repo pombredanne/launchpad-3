@@ -408,11 +408,9 @@ again:
 Then we can create new publication target to PPA archive present in
 the sample data:
 
-XXX cprov 20061101: use PPA/Archive lookup methods provided by
-IPerson, wait they get merged in archive-rework.
-
-  >>> from canonical.launchpad.database import Archive
-  >>> cprov_archive = Archive.get(8)
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> cprov_archive = cprov.getArchive('ubuntu-fun')
 
   >>> name6 = SourcePackageName(name="test-ppa")
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
@@ -457,6 +455,6 @@ suffice for the build being dispatched and collected correctly (see
 buildd-slavescanner.txt):
 
   >>> ppa_job = new_jobs[0]
-  >>> ppa_job.build.archive.tag
-  u'cprov ubuntu archive'
+  >>> ppa_job.build.archive.name
+  u'ubuntu-fun'
 

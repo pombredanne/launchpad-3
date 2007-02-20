@@ -18,9 +18,8 @@ from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database import (
-    Archive, PersonalPackageArchive)
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, IArchiveSet)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
@@ -233,13 +232,12 @@ class TestUploadProcessor(unittest.TestCase):
     def testFirstUploadToPPA(self):
         """Test a first upload to a PPA gets there."""
         # Make a PPA called foo for kinnison.
-        personset = getUtility(IPersonSet)
-        kinnison = personset.getByName("kinnison")
-        kinnison_ppa_archive = Archive(tag="foo")
-        kinnison_ppa = PersonalPackageArchive(
-            person=kinnison, archive=kinnison_ppa_archive)
+        person_set = getUtility(IPersonSet)
+        archive_set = getUtility(IArchiveSet)
+        kinnison = person_set.getByName("kinnison")
+        kinnison_archive = archive_set.new(name="foo", owner=kinnison)
 
-        # Extra setup for breezy 
+        # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
 
@@ -258,7 +256,7 @@ class TestUploadProcessor(unittest.TestCase):
         # Verify the queue item is attached to the right archive.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=kinnison_ppa_archive)
+            version="1.0-1", exact_match=True, archive=kinnison_archive)
         self.assertEqual(queue_items.count(), 1)
 
 

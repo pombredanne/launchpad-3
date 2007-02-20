@@ -16,14 +16,20 @@ which distributions.
 There are also some meta objects to combine information from the DB
 model in more intuitive ones:
 
- >>> from canonical.launchpad.interfaces import (
- ...     IDistroReleaseBinaryPackage)
-
  >>> from canonical.launchpad.database import SourcePackageRelease
  >>> src = SourcePackageRelease.get(20)
  >>> src.name
  u'pmount'
 
- >>> verifyObject(IDistroReleaseBinaryPackage, src.meta_binaries[0])
+Check the *meta* binary package in a distrorelease for 'pmount':
+
+ >>> drbp = src.meta_binaries[0]
+
+ >>> from canonical.launchpad.interfaces import (
+ ...     IDistroReleaseBinaryPackage)
+
+ >>> verifyObject(IDistroReleaseBinaryPackage, drbp)
  True
 
+ >>> len(drbp.current_publishings)
+ 3

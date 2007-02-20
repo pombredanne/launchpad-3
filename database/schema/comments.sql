@@ -1371,15 +1371,9 @@ COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the impor
 COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
 
--- PersonalPackageArchive
-COMMENT ON TABLE PersonalPackageArchive IS 'Provides a link from a person to an archive for a given distribution in which they place their personal source packages for building.';
-COMMENT ON COLUMN PersonalPackageArchive.person IS 'The person who owns this ppa.';
-COMMENT ON COLUMN PersonalPackageArchive.archive IS 'The archive this ppa is related to.';
-
-
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
-
+COMMENT ON COLUMN archive.name IS 'Unique valid name for this archive. It will be presented in the URL.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

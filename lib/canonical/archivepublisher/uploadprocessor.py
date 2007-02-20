@@ -386,7 +386,7 @@ class UploadProcessor:
             person_name = parts[1][1:] # Skip over ~
             person = person_set.getByName(person_name)
 
-            archive_tag = parts[2]
-            archive = person.archiveWithTag(archive_tag)
+            archive_name = parts[2]
+            archive = person.getArchive(archive_name)
 
             return (distro, archive)

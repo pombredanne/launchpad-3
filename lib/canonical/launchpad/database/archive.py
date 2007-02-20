@@ -6,9 +6,13 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
-from sqlobject import StringCol
+import os
+
+from sqlobject import StringCol, ForeignKey
 from zope.interface import implements
 
+from canonical.archivepublisher.config import Config as PubConfig
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IArchive, IArchiveSet
 
@@ -18,19 +22,47 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    tag = StringCol(notNull=True)
+    name = StringCol(dbName='name', notNull=True)
+    owner = ForeignKey(
+        foreignKey='Person', dbName='owner', notNull=False)
+
+    def getPubConfig(self, distribution):
+        """See IPersonPackageArchiveArchive."""
+        pubconf = PubConfig(distribution)
+        pubconf.distroroot = config.personalpackagearchive.root
+
+        pubconf.archiveroot = os.path.join(
+            pubconf.distroroot, self.owner.name, self.name,
+            distribution.name)
+
+        pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+        pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+
+        pubconf.overrideroot = None
+        pubconf.cacheroot = None
+        pubconf.miscroot = None
+
+        return pubconf
 
 
 class ArchiveSet:
     implements(IArchiveSet)
 
     def __init__(self):
-        self.title = "Archives registered in Launchpad"
-
-    def get(self, archiveid):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive.get(archiveid)
+        self.title = "Personal archives registered in Launchpad"
 
-    def new(self, tag):
-        return Archive(tag=tag)
+    def get(self, archive_id):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        return Archive.get(archive_id)
 
+    def new(self, name, owner=None):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        return Archive(name=name, owner=owner)
+
+    def __iter__(self):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        personal_archives = Archive.select("""
+        owner is not NULL
+        """)
+        return iter(personal_archives)

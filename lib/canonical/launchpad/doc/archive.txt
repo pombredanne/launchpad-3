@@ -1,59 +1,50 @@
-= Personal Package Archive =
+= Personal Package Archives =
 
-Personal Package Archive (PPA) are designed to relate a specific
-Archive with a Person.
-
-User will be able branch development packages and group and publish
-them together in a way APT will be able to install in remote systems.
+An Archive models a Debian Archive ...
 
   >>> from zope.interface.verify import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
-  ...     IPersonalPackageArchiveSet, IPersonalPackageArchive,
   ...     IDistributionSet)
 
-Let create a new PPA using a utility:
+Let create a new IArchiveSet using a utility:
 
-  >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
+  >>> archive_set = getUtility(IArchiveSet)
 
-A new PPA should be attached to a new archive:
+A new Archive can be created by passing a name and an owner
 
-  >>> archive = getUtility(IArchiveSet).new('sandbox')
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> sandbox_archive = archive_set.new(
+  ...     name='sandbox', owner=cprov)
 
-  >>> cprov_ppa = ppa_set.new(cprov, archive)
-
-  >>> verifyObject(IPersonalPackageArchive, cprov_ppa)
+  >>> verifyObject(IArchive, sandbox_archive)
   True
 
-  >>> verifyObject(IPerson, cprov_ppa.person)
+  >>> verifyObject(IPerson, sandbox_archive.owner)
   True
 
-  >>> verifyObject(IArchive, cprov_ppa.archive)
-  True
+An Archive can be retrieved via IPerson.archives MultipleJoin:
 
-PPAs can be retrieved via IPerson.personal_package_archives MultipleJoin:
-
-  >>> cprov.personal_package_archives.count()
+  >>> cprov.archives.count()
   2
 
-  >>> cprov_ppa in cprov.personal_package_archives
+  >>> sandbox_archive in cprov.archives
   True
 
-IPPA has a method to provide a modified Publisher Configuration (see
+IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
-  >>> proxied_pubconfig = cprov_ppa.getPubConfig(ubuntutest)
+  >>> proxied_pubconfig = sandbox_archive.getPubConfig(ubuntutest)
 
 XXX cprov 20061127: Publisher Config miss interface
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
 
-The base PPA publication location is set in the current Launchpad
+The base Archive publication location is set in the current Launchpad
 configuration file:
 
   >>> from canonical.config import config
@@ -73,8 +64,8 @@ Then, the archive topology will follow:
   >>> pubconfig.distsroot
   u'/var/tmp/ppa/cprov/sandbox/ubuntutest/dists'
 
-Path not used in PPA publication workflow are set to None, so they won't
-get created:
+Path not used in *personal* archives publication workflow are set to
+None, so they won't get created:
 
   >>> pubconfig.overrideroot is None
   True
@@ -95,10 +86,9 @@ Usual methods from Publisher Configuration are preserved:
   ['main', 'restricted', 'universe', 'multiverse']
 
 
-The utility IPersonalPackageArchiveSet also provides iteration over
-present PPAs:
+The utility IArchiveSet also provides iteration over present
+*personal* archive:
 
-  >>> ppa_set = getUtility(IPersonalPackageArchiveSet)
 
-  >>> [(ppa.person.name, ppa.archive.tag) for ppa in ppa_set]
-  [(u'cprov', u'cprov ubuntu archive'), (u'cprov', u'sandbox')]
+  >>> [(archive.owner.name, archive.name) for archive in archive_set]
+  [(u'cprov', u'ubuntu-fun'), (u'cprov', u'sandbox')]

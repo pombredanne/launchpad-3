@@ -168,12 +168,12 @@ Restart buildd-slave:
 
 Create new Build record of the same source targeted for a PPA archive:
 
-  XXX cprov 20061103: used IPerson PPA lookup API.
-  >>> from canonical.launchpad.database import Archive
-  >>> cprov_ppa = Archive.get(8)
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> cprov_archive = cprov.getArchive('ubuntu-fun')
 
   >>> ppa_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.RELEASE, archive=cprov_ppa)
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, archive=cprov_archive)
 
 Create BuildQueue record and inspect some parameters:
 

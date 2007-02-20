@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
     ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
@@ -168,9 +169,8 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
-    personal_package_archives = SQLMultipleJoin(
-        'PersonalPackageArchive', joinColumn='person',
-        orderBy='-id', prejoins=['archive'])
+    archives = SQLMultipleJoin(
+        'Archive', joinColumn='owner', orderBy='-id')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -1204,13 +1204,9 @@ class Person(SQLBase):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    def archiveWithTag(self, tag):
+    def getArchive(self, name):
         """See IPerson."""
-        ppas = self.personal_package_archives
-        for ppa in ppas:
-            if ppa.archive.tag == tag:
-                return ppa.archive
-        return None
+        return Archive.selectOneBy(name=name, owner=self)
 
 
 class PersonSet:
@@ -1883,21 +1879,13 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # Update PersonalPackageArchives.
+        # Just give all Archives to the new person
         cur.execute('''
-            UPDATE PersonalPackageArchive
-            SET person = %(to_id)d
-            WHERE person = %(from_id)d
+            UPDATE Archive
+            SET owner = %(to_id)d
+            WHERE owner = %(from_id)d
             ''' % vars())
-        skip.append(('personalpackagearchive', 'person'))
-
-        # Just give all PPAs to the new person
-        cur.execute('''
-            UPDATE PersonalPackageArchive
-            SET person = %(to_id)d
-            WHERE person = %(from_id)d
-            ''' % vars())
-        skip.append(('personalpackagearchive', 'person'))
+        skip.append(('archive', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

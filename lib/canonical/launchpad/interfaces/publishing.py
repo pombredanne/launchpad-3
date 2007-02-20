@@ -41,13 +41,14 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def getPendingPublications(self, pocket, is_careful):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """Return the specific group of records to be published.
 
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
 
-        'pocket' argument restrict the results to a given value.
+        'pocket' & 'archive' are mandatory arguments, they  restrict the
+        results to the given value.
 
         If the distroreleases is already released, it automatically refuses
         to publish records to RELEASE pocket.
