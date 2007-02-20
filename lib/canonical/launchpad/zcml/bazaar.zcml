@@ -51,7 +51,6 @@
 
   <browser:page
     name="+products-with-code"
-    lp:url="+code/+products-with-code"
     for="canonical.launchpad.interfaces.IBazaarApplication"
     permission="zope.Public"
     facet="branches"

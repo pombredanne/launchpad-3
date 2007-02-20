@@ -156,8 +156,7 @@ class BazaarProductBatch(BatchNavigator):
             branch, imported, last_commit, elapsed)
         
     def getViewableItems(self):
-        return [self._createItem(product)
-            for product in self.batch]
+        return [self._createItem(product) for product in self.batch]
     
 
 class BazaarProductView:
