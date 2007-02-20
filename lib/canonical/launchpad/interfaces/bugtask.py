@@ -242,6 +242,8 @@ class IBugTaskSearchBase(Interface):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
+    has_cve = Bool(
+        title=_('Show only bugs associated with a CVE'), required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):

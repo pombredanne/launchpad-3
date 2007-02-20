@@ -1295,7 +1295,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag",
+                "status_upstream", "tag", "has_cve"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1613,6 +1613,16 @@ class BugTaskSearchListingView(LaunchpadView):
             "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
+
+    def getOpenCVEBugsInfo(self):
+        """Return a dict with count and URL of open bugs linked to CVEs."""
+        open_cve_bugs = self.context.searchTasks(
+            BugTaskSearchParams(self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            has_cve=True, omit_dupes=True))
+        search_url = (
+            "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
+        return dict(count=open_cve_bugs.count(), url=search_url)
 
 
 class BugTargetView(LaunchpadView):
