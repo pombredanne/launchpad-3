@@ -1,4 +1,4 @@
-<!--tal:do-this-first tal:content="view/process_restricted_form" / -->
+<tal:do-this-first tal:content="view/process_restricted_form" />
 <html>
   <head>
     <title>Log in to Launchpad</title>
