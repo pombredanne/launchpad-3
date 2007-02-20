@@ -2,31 +2,32 @@
 
 The owner of a project can edit its details.
 
-  >>> user_browser.open('http://launchpad.dev/gnome')
-  >>> user_browser.getLink('Edit Project Details').click()
-  >>> user_browser.title
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> browser.getLink('Edit Project Details').click()
+  >>> browser.title
   'The GNOME Project project details'
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('h1').renderContents()
   Change project details
 
-  >>> user_browser.getControl(name='field.name').value = 'new-name'
-  >>> user_browser.getControl('Display Name').value = 'New Name'
-  >>> user_browser.getControl('Title').value = 'New Title'
-  >>> user_browser.getControl('Project Summary').value = 'New Summary.'
-  >>> user_browser.getControl('Description').value = 'New Description.'
-  >>> user_browser.getControl('Homepage URL').value = 'http://new-url.com/'
-  >>> user_browser.getControl(name='field.bugtracker').value = ['1']
-  >>> user_browser.getControl('Change Details').click()
+  >>> browser.getControl(name='field.name').value = 'new-name'
+  >>> browser.getControl('Display Name').value = 'New Name'
+  >>> browser.getControl('Title').value = 'New Title'
+  >>> browser.getControl('Project Summary').value = 'New Summary.'
+  >>> browser.getControl('Description').value = 'New Description.'
+  >>> browser.getControl('Homepage URL').value = 'http://new-url.com/'
+  >>> browser.getControl(name='field.bugtracker').value = ['1']
+  >>> browser.getControl('Change Details').click()
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/new-name'
 
 Regular users can't access the +review page.
 
-  >>> user_browser.getLink('Administer')
+  >>> browser.getLink('Administer')
   Traceback (most recent call last):
   ...
   LinkNotFoundError

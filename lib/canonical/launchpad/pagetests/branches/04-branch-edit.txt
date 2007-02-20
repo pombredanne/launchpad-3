@@ -10,37 +10,38 @@ an account on Launchpad.
 First, check that the edit link is visible on the branch page and click on
 that link to load the +edit form for the branch.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon')
-  >>> user_browser.getLink('Edit Branch Details').click()
-  >>> user_browser.url
+  >>> browser.getLink('Edit Branch Details').click()
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon/+edit'
 
 The form should have been filled with sample data values.
 
-  >>> user_browser.getControl('Title').value
+  >>> browser.getControl('Title').value
   'Klingon support in GNOME Terminal'
-  >>> user_browser.getControl('Branch URL').value
+  >>> browser.getControl('Branch URL').value
   'http://trekkies.example.com/gnome-terminal/klingon'
-  >>> user_browser.getControl('Author').value
+  >>> browser.getControl('Author').value
   'name12'
-  >>> user_browser.getControl('Summary').value
+  >>> browser.getControl('Summary').value
   'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
 
 Then, post the changes to the author and summary. Also add a trailing
 slash to the URL.
 
-  >>> user_browser.getControl('Author').value = 'name18'
-  >>> user_browser.getControl('Summary').value = (
+  >>> browser.getControl('Author').value = 'name18'
+  >>> browser.getControl('Summary').value = (
   ...     'Warriors\' branch for developping and testing Klingon support'
   ...     ' in GNOME Terminal.')
-  >>> user_browser.getControl('Branch URL').value += '/'
-  >>> user_browser.getControl('Change Branch').click()
+  >>> browser.getControl('Branch URL').value += '/'
+  >>> browser.getControl('Change Branch').click()
 
 We should be redirected to the branch page, check that our changes were taken
 into account. The trailing slash added to the URL must have been ignored.
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
   >>> print http(r"""
   ... GET /~name12/+branch/gnome-terminal/klingon HTTP/1.1
@@ -55,13 +56,13 @@ into account. The trailing slash added to the URL must have been ignored.
 
 Finally, set the author and summary back to their previous values.
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+branch'
+  >>> browser.open('http://launchpad.dev/~name12/+branch'
   ...     '/gnome-terminal/klingon/+edit')
-  >>> user_browser.getControl('Summary').value = ('Experimental feature branch'
+  >>> browser.getControl('Summary').value = ('Experimental feature branch'
   ...     ' for developping and testing Klingon support in GNOME Terminal.')
-  >>> user_browser.getControl('Author').value = 'test@canonical.com'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Author').value = 'test@canonical.com'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
 
 
@@ -69,29 +70,29 @@ Finally, set the author and summary back to their previous values.
 
 To change the branch status, the +edit page is also used:
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon/+edit')
 
 The form displays the branch current status.
 
-  >>> user_browser.getControl('Status').value
+  >>> browser.getControl('Status').value
   ['Experimental']
-  >>> user_browser.getControl('Whiteboard').value
+  >>> browser.getControl('Whiteboard').value
   ''
 
 The user selects the new status value and enters a more complete status message
 in the 'Whiteboard':
 
-  >>> user_browser.getControl('Status').value = ['Merged'];
-  >>> user_browser.getControl('Whiteboard').value = \
+  >>> browser.getControl('Status').value = ['Merged'];
+  >>> browser.getControl('Whiteboard').value = \
   ...     "The brave shall prevail. Ka'plah!"
-  >>> user_browser.getControl('Change Branch').click()
+  >>> browser.getControl('Change Branch').click()
 
 The branch page is displayed with the new status and the whiteboard content:
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
-  >>> contents = user_browser.contents
+  >>> contents = browser.contents
   >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
   >>> print status_tag.renderContents()
   Merged
@@ -101,47 +102,47 @@ The branch page is displayed with the new status and the whiteboard content:
 
 Set the branch status back to its initial state.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon/+edit')
-  >>> user_browser.getControl('Status').value = ['Experimental'];
-  >>> user_browser.getControl('Whiteboard').value = ''
-  >>> user_browser.getControl('Change Branch').click()
+  >>> browser.getControl('Status').value = ['Experimental'];
+  >>> browser.getControl('Whiteboard').value = ''
+  >>> browser.getControl('Change Branch').click()
 
 == Changing branch product and name ==
 
 The edit form allows changing the product of a branch.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/+junk/junk.dev')
-  >>> user_browser.getLink('Edit Branch Details').click()
-  >>> user_browser.getControl('Product').value = 'ubuntu-product'
-  >>> user_browser.getControl('Change Branch').click()
+  >>> browser.getLink('Edit Branch Details').click()
+  >>> browser.getControl('Product').value = 'ubuntu-product'
+  >>> browser.getControl('Change Branch').click()
 
 Posting this form should redirect us to the branch page, which is a new URL
 since changing the product associated to a branch changed the branch's
 canonical URL
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/ubuntu-product/junk.dev'
 
 In the same way, the edit form allows changing the name of a branch, and must
 correctly redirect to the new branch page.
 
-  >>> user_browser.getLink('Edit Branch Details').click()
-  >>> user_browser.getControl('Name').value = 'junk'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getLink('Edit Branch Details').click()
+  >>> browser.getControl('Name').value = 'junk'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/ubuntu-product/junk'
 
 We can also detach a branch from a product, making it a junk branch. While we
 are it, we also reset the branch name to its original value, and check that the
 branch was moved back to its original location.
 
-  >>> user_browser.getLink('Edit Branch Details').click()
-  >>> user_browser.getControl('Name').value = 'junk.dev'
-  >>> user_browser.getControl('Product').value = ''
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getLink('Edit Branch Details').click()
+  >>> browser.getControl('Name').value = 'junk.dev'
+  >>> browser.getControl('Product').value = ''
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/~name12/+branch/+junk/junk.dev'
 
 
@@ -153,7 +154,7 @@ validate the input and give a useful error message.
 
 There is an existing main branch in Firefox that is owned by Sample Person.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/firefox/main')
 
 If we try to move the main branch of GNOME Terminal there, that would cause a
@@ -163,17 +164,17 @@ name.
 Okay, trying to move a branch from GNOME Terminal to Firefox is a silly idea,
 but that is just for the needs of the demonstration.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/main/+edit')
-  >>> user_browser.getControl('Product').value = 'firefox'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Product').value = 'firefox'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
 
 This should have displayed an error message next to the name field.
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -184,17 +185,17 @@ junk branch.
 That tests two interesting corner cases: trying to turn a branch into a junk
 branch, and changing the product and the branch name at the same time.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/+junk/junk.dev')
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/main/+edit')
-  >>> user_browser.getControl('Product').value = ''
-  >>> user_browser.getControl('Name').value = 'junk.dev'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Product').value = ''
+  >>> browser.getControl('Name').value = 'junk.dev'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -202,16 +203,16 @@ Finally, let's try just to change the name of the branch to the name of some
 branch we already own in the same product. So we have tested all the
 combinations of changing name and product that can cause an error.
 
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/2.6')
-  >>> user_browser.open('http://launchpad.dev'
+  >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/main/+edit')
-  >>> user_browser.getControl('Name').value = '2.6'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Name').value = '2.6'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -219,10 +220,10 @@ If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't
 know if it conflicts or not:
 
-  >>> user_browser.getControl('Product').value = 'no-such-product'
-  >>> user_browser.getControl('Change Branch').click()
-  >>> user_browser.url
+  >>> browser.getControl('Product').value = 'no-such-product'
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
   'http://launchpad.dev/%7Ename12/+branch/gnome-terminal/main/+edit'
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Invalid value

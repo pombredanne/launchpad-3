@@ -93,7 +93,7 @@ def importdTearDown(test):
     tearDown(test)
     LaunchpadZopelessTestSetup().tearDown()
 
-def supportTrackerSetUp(test):
+def answerTrackerSetUp(test):
     setGlobs(test)
     # The Zopeless environment usually runs using the PermissivePolicy
     # but the process-mail.py script in which the tested code runs
@@ -101,7 +101,7 @@ def supportTrackerSetUp(test):
     test.old_security_policy = getSecurityPolicy()
     setSecurityPolicy(LaunchpadSecurityPolicy)
 
-def supportTrackerTearDown(test):
+def answerTrackerTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
@@ -215,9 +215,9 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown,
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
-    'support-tracker-emailinterface.txt': LayeredDocFileSuite(
-            '../doc/support-tracker-emailinterface.txt',
-            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
+    'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
+            '../doc/answer-tracker-emailinterface.txt',
+            setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(

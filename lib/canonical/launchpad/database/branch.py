@@ -78,8 +78,21 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
+    @property
+    def revision_history(self):
+        """See IBranch."""
+        query = self._get_revision_history_query()
+        return query.prejoin(['revision'])
+
+    def _get_revision_history_query(self):
+        # XXX: David Allouche 2007-02-09.
+        # Transitional helper for revision_history and latest_revisions.
+        # Will be moved to BranchRevisionSet by the full implementation of
+        # CompleteBranchRevisions.
+        return RevisionNumber.select('''
+            RevisionNumber.branch = %s AND
+            RevisionNumber.sequence IS NOT NULL
+            ''' % sqlvalues(self), orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -152,14 +165,15 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return RevisionNumber.selectBy(
-            branch=self, orderBy='-sequence').limit(quantity)
+        query = self._get_revision_history_query()
+        return query.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
         return RevisionNumber.select(
             'Revision.id=RevisionNumber.revision AND '
             'RevisionNumber.branch = %d AND '
+            'RevisionNumber.sequence IS NOT NULL AND '
             'Revision.revision_date > %s' %
             (self.id, quote(timestamp)),
             orderBy='-sequence',
@@ -196,6 +210,8 @@ class Branch(SQLBase):
     # revision number manipulation
     def getRevisionNumber(self, sequence):
         """See IBranch.getRevisionNumber()"""
+        assert sequence is not None, \
+               "Only use this to fetch revisions from mainline history."
         return RevisionNumber.selectOneBy(
             branch=self, sequence=sequence)
 
