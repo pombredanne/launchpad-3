@@ -166,13 +166,6 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:page
-        name="+package"
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.FileBugInPackageView"
-        facet="bugs"
-        permission="launchpad.AnyPerson" />
-
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />

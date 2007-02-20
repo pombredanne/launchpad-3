@@ -705,6 +705,10 @@ INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (12, 3, 21,
 INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
 INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
 INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (16, NULL, 20, 10);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (17, NULL, 20, 11);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (18, NULL, 21, 6);
+INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (19, NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;

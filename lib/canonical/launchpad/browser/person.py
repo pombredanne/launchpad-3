@@ -327,15 +327,15 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
-        text = 'Branches Authored'
+        text = 'View Authored Branches'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Branches Registered'
+        text = 'View Registered Branches'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Branches Subscribed'
+        text = 'View Subscribed Branches'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):

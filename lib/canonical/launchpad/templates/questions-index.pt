@@ -6,12 +6,15 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/answers"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Questions and answers</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/answers" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-translations">
-        <h1>Answers</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,8 +23,18 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
+                        <ul class="rollover buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
                         <form class="central" action="+tickets" method="get">
-                          <table style="margin-left: 0;">
+                          <table>
                             <tbody>
                               <tr>
                                 <td style="text-align: right;">
@@ -84,16 +97,6 @@
                           ask questions about products or distributions,
                           and lets anyone help answer those questions.
                         </p>
-                        <ul class="buttons">
-                          <li>
-                            <a href="/+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <div id="latest-questions-asked" class="left">
 
       <h2 i18n:translate="">Latest questions asked</h2>
