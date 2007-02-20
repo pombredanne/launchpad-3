@@ -577,6 +577,9 @@ class LaunchpadRootIndexView(LaunchpadView):
     
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
+        if config.launchpad.beta_testers_redirection_host is None:
+            return False
+
         return self.user is not None and self.user.inTeam(
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
         

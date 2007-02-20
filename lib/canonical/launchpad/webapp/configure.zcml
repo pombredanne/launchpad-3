@@ -371,28 +371,28 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
