@@ -5,6 +5,8 @@
   xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
+<facet facet="overview">
+
   <!-- MentoringOffer -->
   <content class="canonical.launchpad.database.MentoringOffer">
     <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
@@ -61,5 +63,5 @@
       name="+mentoring"
       template="../templates/hasmentoringoffers-mentoring.pt" />
   </browser:pages>
-
+</facet>
 </configure>
