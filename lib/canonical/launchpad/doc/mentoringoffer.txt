@@ -89,6 +89,15 @@ ubuntu-project group, so:
     Blackhole Trash folder
 
 
+== The Mentorship Manager ==
+
+There is a utility which we can use to see all current mentorship offers
+across the whole system.
+
+    >>> from canonical.launchpad.interfaces import IMentorshipManager
+    >>> mm = getUtility(IMentorshipManager)
+    >>> print mm.mentoring_offers.count()
+    2
 
 == Mentoring lists include only incomplete items ==
 
@@ -123,6 +132,33 @@ And lets see if we can eliminate the spec by making that complete too.
    True
    >>> print foo_bar.mentoring_offers.count()
    0
+
+And both offers should have disappeared from ALL the listings we looked at
+earlier:
+
+   >>> print lpteam.team_mentorships.count()
+   0
+   >>> print uproj.mentoring_offers.count()
+   0
+   >>> print ubuntu_prod.mentoring_offers.count()
+   0
+   >>> print debian.mentoring_offers.count()
+   0
+   >>> print ubuntu.mentoring_offers.count()
+   0
+
+The mentorship manager should also no longer show those items:
+
+   >>> print mm.mentoring_offers.count()
+   0
+
+However, the mentorship manager should show these as recent successful
+mentorings:
+
+   >>> for o in mm.recent_completed_mentorships: print o.target.title
+   Blackhole Trash folder
+   Facilitate mass installs  of Ubuntu using Netboot configuration
+
 
 == Checking if the person is a Mentor ==
 
