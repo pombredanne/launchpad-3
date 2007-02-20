@@ -7,7 +7,7 @@ specification.
 
     >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
     >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import login, syncUpdate
     >>> distroset = getUtility(IDistributionSet)
     >>> personset = getUtility(IPersonSet)
     >>> bugset = getUtility(IBugSet)
@@ -88,6 +88,41 @@ ubuntu-project group, so:
     >>> for o in uproj.mentoring_offers: print o.target.title
     Blackhole Trash folder
 
+
+
+== Mentoring lists include only incomplete items ==
+
+When a spec or a bug is completed, it drops off the mentoring lists.
+
+   >>> from canonical.lp.dbschema import BugTaskStatus
+   >>> from canonical.lp.dbschema import SpecificationDelivery
+   >>> b2.is_complete
+   False
+   >>> from canonical.database.sqlbase import flush_database_updates
+   >>> for task in b2.bugtasks:
+   ...   if task.conjoined_master is None:
+   ...     task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+   >>> flush_database_updates()
+   >>> b2.is_complete
+   True
+
+So, now that Bug #2 is "complete" it should no longer appear in the list of
+mentorships offered by foo_bar:
+
+   >>> for o in foo_bar.mentoring_offers: print o.target.title
+   Facilitate mass installs  of Ubuntu using Netboot configuration
+
+And lets see if we can eliminate the spec by making that complete too.
+
+   >>> s1.is_complete
+   False
+   >>> s1.delivery = SpecificationDelivery.IMPLEMENTED
+   >>> newstate = s1.updateLifecycleStatus(foo_bar)
+   >>> syncUpdate(s1)
+   >>> s1.is_complete
+   True
+   >>> print foo_bar.mentoring_offers.count()
+   0
 
 == Checking if the person is a Mentor ==
 
