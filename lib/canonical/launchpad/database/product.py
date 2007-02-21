@@ -14,6 +14,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -562,10 +563,10 @@ class ProductSet:
         return product
 
     def getProductsWithBranches(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product.select('Product.id = Branch.product',
-                              clauseTables=['Branch'],
-                              distinct=True)
+        """See IProductSet."""
+        return Product.select(
+            'Product.id in (select distinct(product) from Branch)',
+            orderBy=SQLConstant('lower(displayname)'))
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

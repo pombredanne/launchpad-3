@@ -6,12 +6,15 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/bugs"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Bug tracking</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/bugs" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-bugs">
-        <h1>Bugs</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,13 +23,31 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
+                        <ul class="rollover buttons">
+                          <li>
+                            <a href="+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                          <li>
+                            <a href="+filebug">
+                              <img
+                                alt="Report a bug"
+                                src="/+icing/but-lrg-reportabug.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
                         <p
                           tal:condition="view/error_message"
                           tal:content="view/error_message"
                           class="error message"
                         >Error message.</p>
                         <form class="central" action="/bugs/+bugs" method="get">
-                          <table style="margin-left: 0;">
+                          <table>
                             <tbody>
                               <tr>
                                 <td style="text-align: right;">
@@ -99,24 +120,6 @@
                           Launchpad&rsquo;s bug tracker allows collaboration
                           between software teams on bug reports and fixes.
                         </p>
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+filebug">
-                              <img
-                                alt="Report a bug"
-                                src="/+icing/but_lrg_reportabug.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <div class="columns">
                           <div class="two column left">
                             <h2>Recently reported</h2>

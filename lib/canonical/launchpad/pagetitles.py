@@ -113,7 +113,12 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
-branch_index = ContextDisplayName(smartquote('Bazaar branch "%s"'))
+def branch_index(context, view):
+    if context.author:
+        return smartquote('"%s" branch by %s in Launchpad') % (
+            context.title, context.author.title)
+    else:
+        return smartquote('"%s" branch in Launchpad') % (context.title)
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
@@ -201,7 +206,7 @@ def bugtarget_filebug_advanced(context, view):
         return 'Report a bug'
     else:
         # We're generating a title for a contextual bug filing page.
-        ContextTitle('Report a bug about %s')
+        return 'Report a bug about %s' % context.title
 
 bugtarget_filebug_search = bugtarget_filebug_advanced
 
@@ -647,6 +652,8 @@ potemplatenames_index = 'Template names in Launchpad'
 product_add = 'Register a product with Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
+
+product_bazaar = 'Products with Code'
 
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
