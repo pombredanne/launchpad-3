@@ -59,7 +59,7 @@ the server dies or the connection succeeds.
   ...            raise SoyuzUploadError('Server can not start.')
   ...    else:
   ...        break
-  >>> ftp.login("ubuntutest", "")
+  >>> ftp.login("anonymous", "")
   '230 Login Successful.'
   >>> ftp.cwd("/")
   '250 CWD command successful.'
@@ -94,7 +94,7 @@ session.
   ...
   ...     if not ftp.sock:
   ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-  ...         assert ftp.login("ubuntutest", "") == '230 Login Successful.'
+  ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
@@ -107,12 +107,14 @@ session.
   ...             [os.path.join(test_files_dir, line.split()[-1])
   ...              for line in tf["files"].splitlines() if line])
   ...
-  ...     sent_filenames.extend(os.path.basename(filepath)
-  ...                           for filepath in send_filepaths)
+  ...     sent_filenames.extend(
+  ...         os.path.basename(filepath) for filepath in send_filepaths)
+  ...
+  ...     ignore = ftp.cwd("ubuntutest")
   ...
   ...     for filepath in send_filepaths:
-  ...         reply = ftp.storbinary("STOR "+os.path.basename(filepath),
-  ...                                open(filepath))
+  ...         reply = ftp.storbinary(
+  ...              "STOR %s" % os.path.basename(filepath), open(filepath))
   ...         assert reply == '226 Transfer successful.'
   ...
   ...     uploads.append(send_filepaths)
@@ -134,7 +136,8 @@ FTP process would block automated tests. Instead, we define a
 timeout between output data. If the process doesn't provide new
 data in the given number seconds, we report a failure.
 
-  >>> poppy.verify_output(list(sent_filenames))
+  >>> poppy.verify_output(
+  ...     ['ubuntutest', 'ubuntutest', 'ubuntutest'])
 
 At that point we must have a bunch of directories in the upload
 base directory named <TIMESTAMP>-XXXXXX, each one as a result of
@@ -171,10 +174,11 @@ of these files match the uploaded ones.
   ...     return find_upload_dir(num)[1]
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = get_upload_dir(i+1)
-  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     upload_dir = get_upload_dir(i + 1)
+  ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
+  ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
-  ...         upload_filename = os.path.join(upload_dir,
+  ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
   ...         assert os.path.isfile(upload_filename)
   ...         assert get_md5(filename) == get_md5(upload_filename)
@@ -287,7 +291,7 @@ just upload number 1.
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", "-J", upload_dir_1_name,
   ...                             temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -296,33 +300,19 @@ just upload number 1.
 Check the four uploads are all where we expect - number 1 in failed,
 the other three still in incoming.
 
-  >>> for i in range(0, 4):
-  ...     find_upload_dir_result(i+1)
+  >>> for i in range(4):
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'incoming'
   'incoming'
   'incoming'
-
-XXX cprov 20061206: create a new directory, name as the target
- distribution, inside each upload and move the uploaded files into
- it. This way we can satisfy current upload processing procedure w/o
- having ppa-poppy in place.
-
-  >>> import shutil
-  >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir_path = find_upload_dir_path(i+1)
-  ...     files = os.listdir(upload_dir_path)
-  ...     os.mkdir(os.path.join(upload_dir_path, 'ubuntutest'))
-  ...     for file in files:
-  ...         shutil.move(os.path.join(upload_dir_path, file),
-  ...                     os.path.join(upload_dir_path, 'ubuntutest', file))
 
 
 Now continue with the real upload.
 
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
 
   >>> stdout, stderr = process.communicate()
@@ -396,8 +386,8 @@ Same thing for etherwake:
 
 Check the four uploads all ended up where we expected.
 
-  >>> for i in range(0, 4 ):
-  ...     find_upload_dir_result(i+1)
+  >>> for i in range(0, 4):
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'accepted'
   'accepted'
@@ -409,7 +399,7 @@ XXX cprov 20061206: hardcoded 'ubuntutest' directory is a hack see
 above around line 313.
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = find_upload_dir_path(i+1)
+  ...     upload_dir = find_upload_dir_path( i + 1)
   ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
   ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:

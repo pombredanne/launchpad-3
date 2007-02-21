@@ -92,8 +92,6 @@ convert it to an ACCEPTED item.
   ...      IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import PackageUploadStatus
 
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an

@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 import os
-from shutil import rmtree
-from tempfile import mkdtemp
+import shutil
+import tempfile
 import unittest
 
 from zope.component import getUtility
@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet)
+    IDistributionSet, IPersonSet, IArchiveSet, IDistroReleaseSet)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
@@ -40,12 +40,12 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessor(unittest.TestCase):
-    """Functional tests for uploadprocessor.py."""
+class TestUploadProcessorBase(unittest.TestCase):
+    """Functional tests base for uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.queue_dir = mkdtemp()
+        self.queue_dir = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_dir, "incoming"))
 
         self.test_files_dir = os.path.join(config.root,
@@ -64,23 +64,21 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        rmtree(self.queue_dir)
+        shutil.rmtree(self.queue_dir)
 
     def setupBreezy(self):
         """Set up the breezy distro for uploads."""
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = ubuntu['breezy-autotest']
-        from canonical.launchpad.database import DistroReleaseSet
-        drs = DistroReleaseSet()
-        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger',
-                         'The Breezy Badger', 'Black and White', 'Someone',
-                         '5.10', bat, bat.owner)
-        breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
-                                     True, breezy.owner)
-        breezy.nominatedarchindep = breezy_i386
-        breezy.changeslist = 'breezy-changes@ubuntu.com'
-        breezy.initialiseFromParent()
-        self.breezy = breezy
+        drs = getUtility(IDistroReleaseSet)
+        self.breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger',
+                              'The Breezy Badger', 'Black and White', 'Someone',
+                              '5.10', bat, bat.owner)
+        breezy_i386 = self.breezy.newArch('i386', bat['i386'].processorfamily,
+                                          True, self.breezy.owner)
+        self.breezy.nominatedarchindep = breezy_i386
+        self.breezy.changeslist = 'breezy-changes@ubuntu.com'
+        self.breezy.initialiseFromParent()
 
     def queueUpload(self, upload_name, relative_path=""):
         """Queue one of our test uploads.
@@ -92,12 +90,12 @@ class TestUploadProcessor(unittest.TestCase):
 
         Return the path to the upload queue entry directory created.
         """
-        path = os.path.join(
+        target_path = os.path.join(
             self.queue_dir, "incoming", upload_name, relative_path)
-        os.makedirs(path)
-        os.system("cp -a %s/* %s" %
-            (os.path.join(self.test_files_dir, upload_name),
-             path))
+        upload_dir = os.path.join(self.test_files_dir, upload_name)
+        if relative_path:
+            os.makedirs(os.path.dirname(target_path))
+        shutil.copytree(upload_dir, target_path)
         return os.path.join(self.queue_dir, "incoming", upload_name)
 
     def processUpload(self, processor, upload_dir):
@@ -113,6 +111,10 @@ class TestUploadProcessor(unittest.TestCase):
             result = processor.processChangesFile(upload_dir, changes_file)
             results.append(result)
         return results
+
+
+class TestUploadProcessor(TestUploadProcessorBase):
+    """Functional tests for uploadprocessor.py in normal operation."""
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -226,36 +228,112 @@ class TestUploadProcessor(unittest.TestCase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
-    def testFirstUploadToPPA(self):
-        """Test a first upload to a PPA gets there."""
+
+class TestUploadProcessorPPA(TestUploadProcessorBase):
+    """Functional tests for uploadprocessor.py in PPA operation."""
+
+    def setUp(self):
+        """Setup infrastructure for PPA tests.
+
+        Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
+        distrorelease, kinninson_archive and an new uploadprocessor instance.
+        """
+        TestUploadProcessorBase.setUp(self)
+
         # Make a PPA called foo for kinnison.
-        person_set = getUtility(IPersonSet)
-        archive_set = getUtility(IArchiveSet)
-        kinnison = person_set.getByName("kinnison")
-        kinnison_archive = archive_set.new(name="foo", owner=kinnison)
+        self.kinnison_archive = getUtility(IArchiveSet).new(
+            name="foo", owner=getUtility(IPersonSet).getByName("kinnison"))
 
         # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
 
+        # common recipients
+        self.daniel_recipient = (
+            "Daniel Silverstone <daniel.silverstone@canonical.com>")
+        self.foobar_recipient = "Foo Bar <foo.bar@canonical.com>"
+        self.default_recipients = [
+            self.foobar_recipient, self.daniel_recipient]
+
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'ppa'
-        uploadprocessor = UploadProcessor(
+        self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-        # Upload a package to our PPA.
+    def assertEmail(self, contents=[], recipients=[]):
+        """Check email last email content and recipients."""
+        if not recipients:
+            recipients = self.default_recipients
+
+        self.assertTrue(len(stub.test_emails) == 1)
+
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+
+        clean_recipients = [r.strip() for r in to_addrs]
+        for recipient in list(recipients):
+            self.assertTrue(recipient in clean_recipients)
+
+        for content in list(contents):
+            self.assertTrue(content in raw_msg)
+
+    def testUploadToPPA(self):
+        """Upload to a known PPA gets there.
+
+        Email annonce is sent and package is on queue ACCEPTED even if
+        the source is NEW (PPA Auto-Accept everything).
+        """
         upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/foo")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(self.uploadprocessor, upload_dir)
 
-        flush_database_updates()
-        self.layer.txn.commit()
+        contents = "Subject: bar_1.0-1_source.changes is NEW"
+        self.assertEmail(contents)
 
-        # Verify the queue item is attached to the right archive.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=kinnison_archive)
+            version="1.0-1", exact_match=True, archive=self.kinnison_archive)
         self.assertEqual(queue_items.count(), 1)
 
+    def testUploadToUnknownDistribution(self):
+        """Upload to unknown distribution gets proper rejection email."""
+        upload_dir = self.queueUpload("bar_1.0-1", "biscuit")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "Could not find distribution 'biscuit'"]
+        self.assertEmail(contents)
+
+    def testUploadToUnknownPPA(self):
+        """Upload to unknown PPA gets proper rejection email."""
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/fooix")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "Could not find PPA 'kinnison/fooix'"]
+        self.assertEmail(contents)
+
+    def testUploadToUnknownPerson(self):
+        """Upload to unknown person gets proper rejection email."""
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~orange/lemon")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "Could not find person 'orange'"]
+        self.assertEmail(contents)
+
+    def testUploadWithMismatchingPath(self):
+        """Upload with mismating path gets proper rejection email."""
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/one/two/three/four")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "Path mismatch 'ubuntu/one/two/three/four'. "
+            "Use <distro>/~<person>/<archive>/[files] for PPAs "
+            "and <distro>/[files] for normal uploads."]
+        self.assertEmail(contents)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

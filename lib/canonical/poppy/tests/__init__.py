@@ -21,7 +21,7 @@ class PoppyTestSetup:
     """
 
     def __init__(self, fsroot,
-                 user='ubuntutest',
+                 user='anonymous',
                  cmd='echo @distro@; ls @fsroot@',
                  port=3421):
         self.fsroot = fsroot
@@ -68,16 +68,16 @@ class PoppyTestSetup:
         timelimit = time.time() + 60
         buffer = ""
         while True:
-            rlist, wlist, xlist = select.select([self.process.stdout.fileno()],
-                                                [], [],
-                                                timelimit - time.time())
+            rlist, wlist, xlist = select.select(
+                [self.process.stdout.fileno()], [], [], timelimit - time.time())
             if len(rlist) == 0:
                 if self.process.poll() is not None:
                     raise SoyuzUploadError("Poppy died unexpectedly")
                 # Try and kill poppy too?
-                raise SoyuzUploadError("FTP server timed out. The following "
-                                       "was expected but not yet received: %r"
-                                       % expected)
+                raise SoyuzUploadError(
+                    "FTP server timed out. The following was expected:\n%r\n"
+                    "But the following was received:\n%r\n"
+                    % (expected, buffer))
             else:
                 # reset the time limit
                 timelimit = time.time() + 60
@@ -104,7 +104,9 @@ class PoppyTestSetup:
                                            "expected data was received: %r"
                                            % expected)
         else:
-            raise SoyuzUploadError("FTP server timed out. The following "
-                                   "was expected but not yet received: %r"
-                                   % expected)
+            raise SoyuzUploadError(
+                "FTP server timed out.\n"
+                "The following was expected:\n%r\n"
+                "But the following was received:\n%r\n"
+                % (expected, buffer))
 
