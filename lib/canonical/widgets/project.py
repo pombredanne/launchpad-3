@@ -79,20 +79,20 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         if scope == 'all':
             return None
         elif scope == 'project':
-            try:
-                return self.target_widget.getInputValue()
-            except MissingInputError:
+            if not self.request.form.get(self.target_widget.name):
                 self._error = LaunchpadValidationError(
                     'Please enter a project name')
+                raise self._error
+            try:
+                return self.target_widget.getInputValue()
             except ConversionError:
                 entered_name = self.request.form.get("%s.target" % self.name)
                 self._error = LaunchpadValidationError(
                     "There is no project named '%s' registered in"
                     " Launchpad", entered_name)
+                raise self._error
         else:
             raise UnexpectedFormData("No valid option was selected.")
-        if self._error:
-            raise(self._error)
 
     def setRenderedValue(self, value):
         """See IWidget."""

@@ -116,6 +116,20 @@ The same error text is returned by error():
 
 If no project name is given at all, a widget error is also raised:
 
+    >>> form['field.scope.target'] = ''
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> widget.hasInput()
+    True
+    >>> selected_scope = widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Please enter a project name
+
+    >>> print widget.error()
+    Please enter a project name
+
     >>> del form['field.scope.target']
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary,
