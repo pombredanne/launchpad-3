@@ -1,0 +1,4 @@
+From the Code homepage, register a branch.
+
+  >>> browser.open('http://code.launchpad.dev/')
+  >>> browser.getLink('Register a branch').click()
