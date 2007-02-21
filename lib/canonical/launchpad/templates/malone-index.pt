@@ -73,6 +73,7 @@
                                  <div>
                                   <label>
                                     <input
+                                      tal:replace="structure view/widgets/scope/options/all"
                                       name="scope"
                                       type="radio"
                                       value="all"
@@ -82,6 +83,7 @@
                                   </label>
                                   <label>
                                     <input
+                                      tal:replace="structure view/widgets/scope/options/project"
                                       name="scope"
                                       id="scope.project"
                                       type="radio"
@@ -90,12 +92,12 @@
                                     />
                                     One project:
                                     <input
-                                      tal:define="widget_name view/widgets/target/name"
+                                      tal:define="widget_name view/widgets/scope/target_widget/name"
                                       tal:attributes="
                                         value view/request/form/?widget_name|nothing;
                                         id widget_name;
-                                        name widget_name;"
-                                      onkeypress="selectWidget('scope.project', event)"
+                                        name widget_name;
+                                        onkeypress view/widgets/scope/target_widget/onKeyPress"
                                       type="text"
                                     />
                                   </label>
@@ -106,7 +108,7 @@
                                     Error message
                                   </div>
                                 </td>
-                                <td>(<a tal:attributes="href view/widgets/target/popupHref">Choose&hellip;</a>)</td>
+                                <td>(<a tal:attributes="href view/widgets/scope/target_widget/popupHref">Choose&hellip;</a>)</td>
                               </tr>
                             </tbody>
                           </table>

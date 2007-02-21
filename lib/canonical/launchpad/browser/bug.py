@@ -49,6 +49,7 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -184,8 +185,9 @@ class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
 
     custom_widget('searchtext', TextWidget, displayWidth=50)
+    custom_widget('scope', ProjectScopeWidget)
     schema = IFrontPageBugTaskSearch
-    field_names = ['searchtext', 'target']
+    field_names = ['searchtext', 'scope']
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
@@ -201,30 +203,15 @@ class MaloneView(LaunchpadFormView):
     @property
     def target_error(self):
         """The error message for the target widget."""
-        return self.getWidgetError('target')
+        return self.getWidgetError('scope')
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
         if bug_id:
             self._redirectToBug(bug_id)
-        elif self.request.form.get('scope') == 'project':
-            self._validateTargetWidget()
-
-    def _validateTargetWidget(self):
-        """Check wether the target widget has valid input."""
-        try:
-            search_target = self.widgets['target'].getInputValue()
-        except InputErrors:
-            entered_name = self.request.form[self.widgets['target'].name]
-            self.setFieldError(
-                'target',
-                "There's no project named '%s' registered in Launchpad." %
-                    cgi.escape(entered_name))
-        else:
-            if search_target is None:
-                self.setFieldError(
-                    'target', "Please specify a project to search in.")
+        elif self.widgets['scope'].hasInput():
+            self._validate(action=None, data={})
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""

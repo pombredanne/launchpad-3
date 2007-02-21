@@ -83,6 +83,7 @@ from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
+from canonical.widgets.project import ProjectScopeWidget
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
@@ -1782,11 +1783,11 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
     schema = IFrontPageBugTaskSearch
+    scope_widget = CustomWidgetFactory(ProjectScopeWidget)
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        if self.request.form.get('scope') == 'project':
-            self._redirectToSearchContext()
+        self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
         """Check wether a target was given and redirect to it.
@@ -1798,19 +1799,13 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         which will handle the error.
         """
         try:
-            search_target = self.target_widget.getInputValue()
+            search_target = self.scope_widget.getInputValue()
         except InputErrors:
             query_string = self.request['QUERY_STRING']
             bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
             self.request.response.redirect(bugs_url)
-            # XXX: Should redirect to the front page again, and handle
-            # the error there.
         else:
-            if search_target is None:
-                query_string = self.request['QUERY_STRING']
-                bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
-                self.request.response.redirect(bugs_url)
-            else:
+            if search_target is not None:
                 query_string = self.request['QUERY_STRING']
                 search_url = "%s/+bugs?%s" % (
                     canonical_url(search_target), query_string)

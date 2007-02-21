@@ -275,8 +275,8 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 class IFrontPageBugTaskSearch(IBugTaskSearchBase):
 
-    target = Choice(
-        title=u"Bug Target", required=False,
+    scope = Choice(
+        title=u"Search Scope", required=True,
         vocabulary="DistributionOrProductOrProject")
 
 

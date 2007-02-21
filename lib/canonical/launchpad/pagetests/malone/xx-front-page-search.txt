@@ -56,7 +56,7 @@ will be searched.
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
-    >>> anon_browser.getControl(name='field.target').value = 'evolution'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
     'Search all bug reports'
@@ -67,7 +67,7 @@ project name.
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
-    >>> anon_browser.getControl(name='field.target').value = 'invalid'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
     'Search all bug reports'
@@ -80,7 +80,7 @@ name is specified, an error message will be displayed.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl(name='field.target').value = ''
+    >>> anon_browser.getControl(name='field.scope.target').value = ''
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.url
@@ -90,7 +90,7 @@ name is specified, an error message will be displayed.
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    Please specify a project to search in.
+    Please enter a project name
 
 
 An error message will be displayed also if the project isn't registered
@@ -98,16 +98,16 @@ in the Launchpad.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl(name='field.target').value = 'invalid'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.url
-    'http://bugs.launchpad.dev/bugs?...&field.target=invalid...'
+    'http://bugs.launchpad.dev/bugs?...&field.scope.target=invalid...'
     >>> anon_browser.getControl(name='field.searchtext').value
     'test bug'
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no project named 'invalid' registered in Launchpad.
+    There is no project named 'invalid' registered in Launchpad
 
 'Project' in this context means either a product, distribution or a
 project.
@@ -116,7 +116,7 @@ project.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl(name='field.target').value = 'evolution'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
@@ -131,7 +131,7 @@ project.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl(name='field.target').value = 'gnome'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'gnome'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
@@ -146,7 +146,7 @@ project.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('One project').selected = True
-    >>> anon_browser.getControl(name='field.target').value = 'ubuntu'
+    >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
