@@ -140,38 +140,58 @@ class TestPoppy(unittest.TestCase):
         """Check if poppy isolates the uploads properly.
 
         Upload should be done atomically, i.e., poppy should isolate the
-        context according each connection.
+        context according each connection/session.
         """
-        conn = self.getFTPConnection()
+        # Perform a pair of sessions with distinct connections in time.
+        conn_one = self.getFTPConnection()
         fake_file = StringIO.StringIO("ONE")
         self.assertEqual(
-            conn.storbinary("STOR test", fake_file),
+            conn_one.storbinary("STOR test", fake_file),
             "226 Transfer successful.")
-        conn.quit()
+        conn_one.quit()
         self.waitForClose()
 
-        conn = self.getFTPConnection()
+        conn_two = self.getFTPConnection()
         fake_file = StringIO.StringIO("TWO")
         self.assertEqual(
-            conn.storbinary("STOR test", fake_file),
+            conn_two.storbinary("STOR test", fake_file),
             "226 Transfer successful.")
-        conn.quit()
+        conn_two.quit()
         self.waitForClose()
 
-        uploads = [leaf for leaf in os.listdir(self.root_dir)
-                   if not leaf.startswith(".") and
-                   not leaf.endswith(".distro")]
-        uploads.sort()
+        # Perform a pair of sessions with simultaneous connections.
+        conn_three = self.getFTPConnection()
+        conn_four = self.getFTPConnection()
 
-        content_one = open(os.path.join(
-            self.root_dir, uploads[0], "test")).read()
-        self.assertEqual(content_one, "ONE")
+        fake_file = StringIO.StringIO("THREE")
+        self.assertEqual(
+            conn_three.storbinary("STOR test", fake_file),
+            "226 Transfer successful.")
 
-        content_two = open(os.path.join(
-            self.root_dir, uploads[1], "test")).read()
-        self.assertEqual(content_two, "TWO")
+        fake_file = StringIO.StringIO("FOUR")
+        self.assertEqual(
+            conn_four.storbinary("STOR test", fake_file),
+            "226 Transfer successful.")
 
+        conn_three.quit()
+        self.waitForClose()
 
+        conn_four.quit()
+        self.waitForClose()
+
+        # Build a list of directories representing the 4 sessions.
+        upload_dirs = [leaf for leaf in os.listdir(self.root_dir)
+                       if not leaf.startswith(".") and
+                       not leaf.endswith(".distro")]
+        upload_dirs.sort()
+        self.assertEqual(len(upload_dirs), 4)
+
+        # Check the contents of files on each session.
+        expected_contents = ['ONE', 'TWO', 'THREE', 'FOUR']
+        for index in range(4):
+            content = open(os.path.join(
+                self.root_dir, upload_dirs[index], "test")).read()
+            self.assertEqual(content, expected_contents[index])
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
