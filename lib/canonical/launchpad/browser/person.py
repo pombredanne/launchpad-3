@@ -599,7 +599,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def mentorships(self):
         target = '+mentoring'
-        text = 'Mentoring offered'
+        text = 'Mentoring available'
         enabled = self.context.team_mentorships
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,

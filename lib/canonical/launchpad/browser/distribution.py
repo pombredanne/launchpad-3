@@ -168,7 +168,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
-        text = 'Mentorship'
+        text = 'Mentoring available'
         return Link('+mentoring', text, icon='info')
 
     def release_mirrors(self):

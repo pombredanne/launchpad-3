@@ -170,7 +170,7 @@ class BugContextMenu(ContextMenu):
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def offermentoring(self):
-        text = 'Offer mentoring'
+        text = 'Offer mentorship'
         user = getUtility(ILaunchBag).user
         enabled = not (self.context.bug.isMentor(user) or
                        self.context.bug.is_complete or
@@ -180,7 +180,7 @@ class BugContextMenu(ContextMenu):
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
-        text = 'Retract mentoring'
+        text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
         enabled = (self.context.bug.isMentor(user) and
                    not self.context.bug.is_complete and

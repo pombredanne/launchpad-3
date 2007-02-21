@@ -157,7 +157,7 @@ def bug_nominate_for_release(context, view):
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
-bug_retractmentoring = 'Retract offer of mentoring'
+bug_retractmentoring = 'Retract offer of mentorship'
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
@@ -405,7 +405,7 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-hasmentoringoffers_mentoring = ContextTitle('Offers of mentoring in %s')
+hasmentoringoffers_mentoring = ContextDisplayName('Mentoring available in %s')
 
 karmaaction_index = 'Karma actions'
 
@@ -899,7 +899,7 @@ specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 
-specification_retractmentoring = 'Retract offer of mentoring'
+specification_retractmentoring = 'Retract offer of mentorship'
 
 specification_superseding = 'Mark specification as superseded by another'
 
@@ -909,7 +909,7 @@ specification_dependency = 'Create a specification dependency'
 
 specification_deptree = 'Complete dependency tree'
 
-specification_mentoringoffer = 'Offer to mentor the feature implemention.'
+specification_mentoringoffer = 'Offer to mentor someone implementing this blueprint.'
 
 specification_milestone = 'Target feature to milestone'
 
@@ -1013,7 +1013,7 @@ def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)
 
-team_mentoringoffers = ContextTitle('Mentoring available for %s')
+team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
 

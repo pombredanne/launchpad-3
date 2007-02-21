@@ -122,6 +122,12 @@
            tal:content="mentoring_offer/owner/browsername">foobar</a>
       </tal:block>
     </p>
+    <tal:block condition="not: context/bug/is_complete">
+      <p condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
   </tal:mentors>
   <tal:block condition="view/user">
     <tal:block condition="not: view/userIsMentor">

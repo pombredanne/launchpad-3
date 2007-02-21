@@ -157,7 +157,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
-        text = 'Mentoring'
+        text = 'Mentoring available'
         return Link('+mentoring', text, icon='info')
 
     def rdf(self):

@@ -225,7 +225,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+distributions', text, icon='info')
 
     def mentorship(self):
-        text = 'Mentoring'
+        text = 'Mentoring available'
         return Link('+mentoring', text, icon='info')
 
     def packages(self):
