@@ -505,7 +505,7 @@ the attention of that person.
 
     >>> browser.getLink('Need Attention').click()
     >>> print browser.title
-    Questions needing Foo Bar attention
+    Questions needing Foo Bar's attention
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
