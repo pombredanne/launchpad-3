@@ -543,6 +543,41 @@ right, but we still want to test the corner cases.
   >>> branchset.getLastCommitForBranches([branch, another])
   {<Branch ...>: None, <Branch ...>: None}
 
+== Getting the development focus branches for products ==
+
+One of the primary initial code pages will be the "products with code" page.
+In order to entice the user to click through, one of the links for each
+product will be the development focus branch if there is one.
+
+Lets make gnome terminal have a user branch as the dev focus.
+
+  >>> login('test@canonical.com')
+  >>> gterm_main = branchset.getByUniqueName('~name12/gnome-terminal/main')
+  >>> gterm_product.development_focus.user_branch = gterm_main
+  >>> syncUpdate(gterm_product.development_focus)
+  
+  >>> products = productset.getProductsWithBranches()
+  >>> branches = branchset.getProductDevelopmentBranches(products)
+  >>> import operator
+  >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+  ...     print branch.unique_name
+  ~name12/gnome-terminal/main
+  ~vcs-imports/evolution/main
+
+== Getting the branch count and last commit for products ==
+
+  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> for product in products:
+  ...     print "%s %s %s" % (
+  ...         product.displayname,
+  ...         summary[product]['branch_count'],
+  ...         summary[product]['last_commit'])
+  Evolution             2 None
+  GNOME Terminal        8 None
+  iso-codes             1 None
+  Mozilla Firefox       5 None
+  Mozilla Thunderbird   1 None
+
 == Getting branches by owner ==
 
 In order to facilitate getting the branches for all the teams that a 

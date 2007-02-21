@@ -20,8 +20,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-        IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError,
-        )
+    IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
@@ -345,6 +344,37 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getProductDevelopmentBranches(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        query = Branch.select('''
+            (Branch.id = ProductSeries.import_branch OR
+            Branch.id = ProductSeries.user_branch) AND
+            ProductSeries.id = Product.development_focus AND
+            Branch.product IN %s''' % sqlvalues(product_ids),
+            clauseTables = ['Product', 'ProductSeries'])
+        return query.prejoin(['author'])
+            
+    def getBranchSummaryForProducts(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        cur = cursor()
+        cur.execute("""
+            SELECT Product, COUNT(Branch.id), MAX(Revision.revision_date)
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Product IN %s
+            GROUP BY Product
+            """ % sqlvalues(product_ids))
+        result = {}
+        product_map = dict([(product.id, product) for product in products])
+        for product_id, branch_count, last_commit in cur.fetchall():
+            product = product_map[product_id]
+            result[product] = {'branch_count' : branch_count,
+                               'last_commit' : last_commit}
+        return result
+
     def getRecentlyChangedBranches(self, branch_count):
         """See IBranchSet."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -381,11 +411,11 @@ class BranchSet:
             return {}
         cur = cursor()
         cur.execute("""
-            SELECT branch.id, revision.revision_date
-            FROM branch
-            LEFT OUTER JOIN revision
-            ON branch.last_scanned_id = revision.revision_id
-            WHERE branch.id IN %s
+            SELECT Branch.id, Revision.revision_date
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.id IN %s
             """ % sqlvalues(branch_ids))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))
