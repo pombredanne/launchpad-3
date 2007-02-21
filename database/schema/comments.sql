@@ -860,7 +860,7 @@ Launchpad / Ubuntu for the first time. In general, this will be the
 development Ubuntu release into which this package was uploaded. For a
 package which was unchanged between warty and hoary, this would show Warty.
 For a package which was uploaded into Hoary, this would show Hoary.';
-
+COMMENT ON COLUMN SourcePackageRelease.upload_archive IS 'The archive into which this sourcepackagerelese was originally uploaded.';
 
 
 -- SourcePackageName
