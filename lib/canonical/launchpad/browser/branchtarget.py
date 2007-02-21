@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchTargetView',
     'PersonBranchesView',
     'PersonAuthoredBranchesView',
     'PersonRegisteredBranchesView',
