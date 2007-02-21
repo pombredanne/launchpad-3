@@ -53,7 +53,7 @@
                           Launchpad lets you track branches of any product that
                           uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
                           version control system &mdash; and imports many
-                          <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
+                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
                         </p>
                         <div class="columns">
