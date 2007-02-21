@@ -243,7 +243,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, archive):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -271,6 +271,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * dsc_standards_version: string, DSC standards version field
          * dsc_format: string, DSC format version field
          * dsc_binaries:  string, DSC binaries field
+         * archive: IArchive to where the upload was targeted
 
         """
 

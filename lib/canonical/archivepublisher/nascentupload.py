@@ -1922,6 +1922,7 @@ class NascentUpload:
             dsc_standards_version=arg_dsc_standards_version,
             dsc_format=arg_dsc_format,
             dsc_binaries=arg_dsc_binaries,
+            archive=self.archive,
             ))
 
         for uploaded_file in self.dsc_files:

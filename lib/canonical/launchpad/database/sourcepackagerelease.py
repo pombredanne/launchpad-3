@@ -70,8 +70,8 @@ class SourcePackageRelease(SQLBase):
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
-    uploadarchive = ForeignKey(foreignKey='Archive', dbName='uploadarchive',
-        notNull=True)
+    upload_archive = ForeignKey(
+        foreignKey='Archive', dbName='upload_archive', notNull=True)
 
     # XXX cprov 20060926: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old

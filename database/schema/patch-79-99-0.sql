@@ -240,29 +240,26 @@ SELECT binarypackagepublishing.id,
 --- Each distribution needs a main archive
 INSERT INTO ARCHIVE (name) SELECT name FROM Distribution;
 
-UPDATE Distribution SET main_archive = (
-          SELECT id
-            FROM archive
-           WHERE archive.name = distribution.name
-	);
+UPDATE Distribution
+   SET main_archive = archive.id
+  	FROM Archive
+       WHERE archive.name = distribution.name;
 
 --- Update the publishing tables to reference this archive
 UPDATE SecureSourcePackagePublishingHistory
-   SET archive = (
-       SELECT distribution.main_archive
+   SET archive = distribution.main_archive
         FROM Distribution, DistroRelease
        WHERE distribution.id = distrorelease.distribution
          AND distrorelease.id =
-             securesourcepackagepublishinghistory.distrorelease);
+             securesourcepackagepublishinghistory.distrorelease;
 
 UPDATE SecureBinaryPackagePublishingHistory
-   SET archive = (
-       SELECT distribution.main_archive
+   SET archive = distribution.main_archive
         FROM Distribution, DistroRelease, DistroArchRelease
        WHERE distribution.id = distrorelease.distribution
          AND distrorelease.id = distroarchrelease.distrorelease
          AND distroarchrelease.id =
-             securebinarypackagepublishinghistory.distroarchrelease);
+             securebinarypackagepublishinghistory.distroarchrelease;
 
 -- Render the archive columns NOT NULL in the publishing tables
 ALTER TABLE SecureSourcePackagePublishingHistory
@@ -294,12 +291,11 @@ ALTER INDEX distroreleasequeue_pkey RENAME TO packageupload_pkey;
 ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO packageupload_distrorelease_key;
 ALTER TABLE PackageUpload ADD COLUMN Archive INTEGER;
 
-UPDATE PackageUpload SET archive=(
-       SELECT main_archive
+UPDATE PackageUpload
+   SET archive = distribution.main_archive
          FROM Distribution, DistroRelease
         WHERE DistroRelease.id = PackageUpload.distrorelease
-          AND Distribution.id = DistroRelease.distribution
-          );
+          AND Distribution.id = DistroRelease.distribution;
 
 
 ALTER TABLE PackageUpload ALTER COLUMN Archive SET NOT NULL;
@@ -368,7 +364,7 @@ ALTER TABLE DistroReleaseQueueCustom
 ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_libraryfilealias_fk;
 ALTER TABLE DistroReleaseQueueCustom RENAME TO PackageUploadCustom;
-ALTER TABLE PackageUploadCustom RENAME COLUMN DistroReleaseQueue TO PackageUpload;
+ALTER TABLE PackageUploadCustom RENAME COLUMN DistroReleaseQueue TO packageupload;
 ALTER TABLE distroreleasequeuecustom_id_seq RENAME TO packageuploadcustom_id_seq;
 ALTER TABLE PackageUploadCustom
     ALTER COLUMN id SET DEFAULT nextval('packageuploadcustom_id_seq');
@@ -381,26 +377,28 @@ ALTER TABLE PackageUploadCustom
        FOREIGN KEY (libraryfilealias) REFERENCES LibraryFileAlias(id);
 
 /* Miscellaneous extra archive columns */
-ALTER TABLE SourcePackageRelease ADD COLUMN UploadArchive INTEGER;
-UPDATE SourcePackageRelease SET UploadArchive=(
-       SELECT main_archive
+ALTER TABLE SourcePackageRelease ADD COLUMN upload_archive INTEGER;
+
+UPDATE SourcePackageRelease
+   SET upload_archive = distribution.main_archive
          FROM Distribution, DistroRelease
         WHERE DistroRelease.id = SourcePackageRelease.uploaddistrorelease
-          AND Distribution.id = DistroRelease.distribution
-          );
-ALTER TABLE SourcePackageRelease ALTER COLUMN UploadArchive SET NOT NULL;
+          AND Distribution.id = DistroRelease.distribution;
+
+ALTER TABLE SourcePackageRelease ALTER COLUMN upload_archive SET NOT NULL;
 ALTER TABLE SourcePackageRelease
-    ADD CONSTRAINT sourcepackagerelease_uploadarchive_fk
-       FOREIGN KEY (uploadarchive) REFERENCES Archive(id);
+    ADD CONSTRAINT sourcepackagerelease_upload_archive_fk
+       FOREIGN KEY (upload_archive) REFERENCES Archive(id);
 
 ALTER TABLE Build ADD COLUMN archive INTEGER;
-UPDATE Build SET archive=(
-       SELECT main_archive
+
+UPDATE Build
+   SET archive = distribution.main_archive
          FROM Distribution, DistroRelease, DistroArchRelease
         WHERE distribution.id = DistroRelease.distribution
           AND DistroRelease.id = DistroArchRelease.DistroRelease
-	  AND DistroArchRelease.id = Build.distroarchrelease
-	);
+	  AND DistroArchRelease.id = Build.distroarchrelease;
+
 ALTER TABLE Build
     ADD CONSTRAINT build_archive_fk
        FOREIGN KEY (archive) REFERENCES Archive(id);

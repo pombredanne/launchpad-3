@@ -155,6 +155,7 @@ The other argurments are strings:
   >>> dsc_standards_version = '2.6.1'
   >>> dsc_format = '1.0'
   >>> dsc_binaries = 'pmount'
+  >>> archive = hoary.main_archive
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
@@ -165,12 +166,14 @@ ISourcePackageRelease, it will automatically set the
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-  ...     dsc_binaries)
+  ...     dsc_binaries, archive)
 
   >>> new_spr.uploaddistrorelease.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
+  >>> new_spr.upload_archive.name
+  u'ubuntu'
 
 Throw away the DB changes:
 
