@@ -601,3 +601,41 @@ return all branches associated with that person:
   Experimental ~name12/+junk/junk.dev
   New ~name12/+junk/junk.contrib
 
+
+== Getting branches for a product ==
+
+In order to have batched branch listings the database needs to do as much
+of the work as possible.  This way there are optimal database queries for
+extra display information.
+
+  >>> gnome_terminal = productset.getByName('gnome-terminal')
+  >>> branches = branchset.getBranchesForProduct(
+  ...     gnome_terminal, default_lifecycle)
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  Experimental ~name12/gnome-terminal/klingon
+  New ~launchpad/gnome-terminal/launchpad
+  New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/pushed
+
+  >>> branches = branchset.getBranchesForProduct(gnome_terminal)
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Abandoned ~name12/gnome-terminal/2.4
+  Merged ~name12/gnome-terminal/slowness
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  Experimental ~name12/gnome-terminal/klingon
+  New ~launchpad/gnome-terminal/launchpad
+  New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/pushed
+
+  >>> branches = branchset.getBranchesForProduct(
+  ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Development ~name12/gnome-terminal/main
+
+

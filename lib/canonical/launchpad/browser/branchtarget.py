@@ -7,8 +7,13 @@ __metaclass__ = type
 __all__ = [
     'BranchTargetView',
     'PersonBranchesView',
+    'PersonAuthoredBranchesView',
+    'PersonRegisteredBranchesView',
+    'PersonSubscribedBranchesView',
+    'ProductBranchesView',
     ]
 
+from datetime import datetime
 import operator
 
 from zope.component import getUtility
@@ -29,15 +34,6 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 
-class BranchListingBatchNavigator(TableBatchNavigator):
-    """Batch up the branch listings."""
-
-    def __init__(self, branches, request, extra_columns):
-        TableBatchNavigator.__init__(
-            self, branches, request, columns_to_show=extra_columns)
-        
-
-
 class BranchListingItem:
     """A decorated branch.
 
@@ -47,60 +43,88 @@ class BranchListingItem:
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, bugbranches, role=None):
+    def __init__(self, branch, last_commit, elapsed, bugbranches, role=None):
         self.branch = branch
         self.last_commit = last_commit
+        self.elapsed_time = elapsed
         self.bugbranches = bugbranches
         self.role = role
         
 
-class BranchTargetView(LaunchpadFormView):
-    schema = IBranchLifecycleFilter
-    field_names = ['lifecycle']
-    custom_widget('lifecycle', LaunchpadDropdownWidget)
+class BranchListingBatchNavigator(TableBatchNavigator):
+    """Batch up the branch listings."""
 
-    # The default set of statuses to show.
-    CURRENT_SET = set([BranchLifecycleStatus.NEW,
-                       BranchLifecycleStatus.EXPERIMENTAL,
-                       BranchLifecycleStatus.DEVELOPMENT,
-                       BranchLifecycleStatus.MATURE])
-                  
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT
-            }
-
-    def initialize(self):
-        LaunchpadFormView.initialize(self)
-        self.last_commit = getUtility(IBranchSet).getLastCommitForBranches(
-            self.visible_branches)
+    def __init__(self, view):
+        TableBatchNavigator.__init__(
+            self, view._branches(), view.request,
+            columns_to_show=view.extra_columns)
+        self.view = view
+        self.column_count = 4 + len(view.extra_columns)
+        self._now = datetime.now()
 
     @cachedproperty
-    def branches(self):
-        """All branches related to this target, sorted for display."""
-        # Separate the public property from the underlying virtual method.
-        return self._branches()
-
-    def _branches(self):
-        branches = self.context.branches
-        items = shortlist(branches, 1000, hardlimit=1500)
-        return sorted(items, key=operator.attrgetter('sort_key'))
+    def last_commit(self):
+        """Get the last commit times for the current batch."""
+        return getUtility(IBranchSet).getLastCommitForBranches(
+            self.currentBatch())
 
     @cachedproperty
     def branch_bug_links(self):
-        """Get all bugs associated the with visible branches."""
+        """Get all bugs associated the with current batch."""
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.visible_branches)
+            self.batch)
         result = {}
         for bugbranch in bugbranches:
             result.setdefault(
                 bugbranch.branch.id, []).append(bugbranch)
         return result
 
+    def _createItem(self, branch):
+        last_commit = self.last_commit[branch]
+        elapsed = last_commit and (self._now - last_commit)
+        bug_branches = self.branch_bug_links.get(branch.id)
+        role = self.view.roleForBranch(branch)
+        return BranchListingItem(
+            branch, last_commit, elapsed, bug_branches, role)
+
+    def branches(self):
+        "Return a list of BranchListingItems"
+        return [self._createItem(branch) for branch in self.currentBatch()] 
+
     @cachedproperty
-    def visible_branches(self):
-        """The branches that should be visible to the user."""
+    def multiple_pages(self):
+        return self.batch.total() > self.batch.size
+
+    @property
+    def table_class(self):
+        if self.multiple_pages:
+            return "listing"
+        else:
+            return "listing sortable"
+        
+
+class BranchListingView(LaunchpadFormView):
+    """A base class for views of branch listings."""
+    schema = IBranchLifecycleFilter
+    field_names = ['lifecycle']
+    custom_widget('lifecycle', LaunchpadDropdownWidget)
+    extra_columns = []
+    
+    # The default set of statuses to show.
+    CURRENT_SET = (BranchLifecycleStatus.NEW,
+                   BranchLifecycleStatus.EXPERIMENTAL,
+                   BranchLifecycleStatus.DEVELOPMENT,
+                   BranchLifecycleStatus.MATURE)
+
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT
+            }
+
+    @cachedproperty
+    def selected_lifecycle_status(self):
         widget = self.widgets['lifecycle']
 
         if widget.hasValidInput():
@@ -109,179 +133,106 @@ class BranchTargetView(LaunchpadFormView):
             lifecycle_filter = BranchLifecycleStatusFilter.CURRENT
 
         if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
-            branches = self.branches
+            return None
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
-            branches = [branch for branch in self.branches
-                        if branch.lifecycle_status in self.CURRENT_SET]
+            return self.CURRENT_SET
         else:
-            # BranchLifecycleStatus and BranchLifecycleStatusFilter
-            # share values for common elements, so to get the correct
-            # status to compare against, we know that we can just
-            # index into the enumeration with the value.
-            show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
-            branches = [branch for branch in self.branches
-                        if branch.lifecycle_status == show_status]
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
 
-    def getListingItems(self):
-        """Return a list of decorated branches for easy TAL access."""
-        return [
-            BranchListingItem(
-                branch,
-                self.last_commit[branch],
-                self.branch_bug_links.get(branch.id))
-            for branch in self.visible_branches]
+    def branches(self):
+        """All branches related to this target, sorted for display."""
+        # Separate the public property from the underlying virtual method.
+        return BranchListingBatchNavigator(self)
 
-    def context_relationship(self):
-        """The relationship text used for display.
+    def roleForBranch(self, branch):
+        return None
 
-        Explains how the this branch listing relates to the context object. 
-        """
-        if self.in_product_context():
-            return "registered for"
-        url = self.request.getURL()
-        if '+authoredbranches' in url:
-            return "authored by"
-        elif '+registeredbranches' in url:
-            return "registered but not authored by"
-        elif '+subscribedbranches' in url:
-            return "subscribed to by"
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status:
+            message = (
+                'There may be branches related to %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
         else:
-            return "related to"
-
-    def in_person_context(self):
-        """Whether the context object is a person."""
-        return IPerson.providedBy(self.context)
-
-    def in_product_context(self):
-        """Whether the context object is a product."""
-        return IProduct.providedBy(self.context)
-
-    def categories(self):
-        """This organises the branches related to this target by
-        "category", where a category corresponds to a particular branch
-        status. It also determines the order of those categories, and the
-        order of the branches inside each category. This is used for the
-        +branches view.
-
-        It is also used in IPerson, which is not an IBranchTarget but
-        which does have a IPerson.branches. In this case, it will also
-        detect which set of branches you want to see. The options are:
-
-         - all branches (self.branches)
-         - authored by this person (self.context.authored_branches)
-         - registered by this person (self.context.registered_branches)
-         - subscribed by this person (self.context.subscribed_branches)
-        """
-        categories = {}
-        if not IPerson.providedBy(self.context):
-            branches = self.context.branches
-        else:
-            url = self.request.getURL()
-            if '+authoredbranches' in url:
-                branches = self.context.authored_branches
-            elif '+registeredbranches' in url:
-                branches = self.context.registered_branches
-            elif '+subscribedbranches' in url:
-                branches = self.context.subscribed_branches
-            else:
-                branches = self.context.branches
-
-        # Currently 500 branches is causing a timeout in the rendering of
-        # the page template, and since we don't want it taking too long,
-        # we are going to limit it here to 250 until we add batching.
-        # This method is only called for the detailed listing pages,
-        # which include more embedded queries, and hence take longer.
-        # This is the reason for the different numbers above and here.
-        # We don't want to make them configurable as this might show
-        # intent that the solution will hang around when really it
-        # is a temporary fix.
-        #    -- Tim Penhey 2006-10-10
-        for branch in shortlist(branches, 200, hardlimit=250):
-            if categories.has_key(branch.lifecycle_status):
-                category = categories[branch.lifecycle_status]
-            else:
-                category = {}
-                category['status'] = branch.lifecycle_status
-                category['branches'] = []
-                categories[branch.lifecycle_status] = category
-            category['branches'].append(branch)
-        categories = categories.values()
-        for category in categories:
-            category['branches'].sort(key=operator.attrgetter('sort_key'))
-        return sorted(categories, key=self.category_sortkey)
-
-    @staticmethod
-    def category_sortkey(category):
-        return category['status'].sortkey
+            message = (
+                'There are no branches related to %s '
+                'in Launchpad today. You can use Launchpad as a registry for '
+                'Bazaar branches, and encourage broader community '
+                'participation in your project using '
+                'distributed version control.')
+        return message % self.context.displayname
 
 
-class PersonBranchesView(BranchTargetView):
-    """View used for the tabular listing of branches related to a person.
-
-    The context must provide IPerson.
-    """
+class ProductBranchesView(BranchListingView):
 
     def _branches(self):
-        """All branches related to this target, sorted for display."""
-        branches = set(self.context.branches)
-        branches.update(self._team_branches_set)
-        items = shortlist(branches, 1000, hardlimit=1500)
-        return sorted(items, key=operator.attrgetter('sort_key'))
+        return getUtility(IBranchSet).getBranchesForProduct(
+            self.context, self.selected_lifecycle_status)
+
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status:
+            message = (
+                'There may be branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>'
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this product.')
+        return message % self.context.displayname
+
+class PersonBranchesView(BranchListingView):
+
+    extra_columns = ('product', 'role')
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForPerson(
+            self.context, self.selected_lifecycle_status)
 
     @cachedproperty
-    def _team_branches_set(self):
-        """Return a set for efficient membership checks in branch_role."""
-        teams = self.context.teams_participated_in
-        branches = shortlist(
-            getUtility(IBranchSet).getBranchesForOwners(teams),
-            1000, hardlimit=1500)
-        return set(branches)
-
-    @cachedproperty
-    def _authored_branch_set(self):
-        """Set of branches authored by the person."""
-        # must be cached because it is used by branch_role
-        return set(self.context.authored_branches)
-
-    @cachedproperty
-    def _registered_branch_set(self):
-        """Set of branches registered but not authored by the person."""
-        # must be cached because it is used by branch_role
-        return set(self.context.registered_branches)
-
-    @cachedproperty
-    def _subscribed_branch_set(self):
-        """Set of branches this person is subscribed to."""
-        # must be cached because it is used by branch_role
+    def _subscribed_branches(self):
         return set(self.context.subscribed_branches)
 
-    def branch_role(self, branch):
-        """Primary role of this person for this branch.
+    def roleForBranch(self, branch):
+        person = self.context
+        if branch.author == person:
+            return 'Author'
+        elif branch.owner == person:
+            return 'Registrant'
+        elif branch in self._subscribed_branches:
+            return 'Subscriber'
+        else:
+            return 'Team Branch'
 
-        This explains why a branch appears on the person's page. The person may
-        be 'Author', 'Registrant' or 'Subscriber'.
 
-        :precondition: the branch must be part of the list provided by
-            PersonBranchesView.branches.
-        :return: dictionary of two items: 'title' and 'sortkey' describing the
-            role of this person for this branch.
-        """
-        if branch in self._authored_branch_set:
-            return {'title': 'Author', 'sortkey': 10}
-        if branch in self._registered_branch_set:
-            return {'title': 'Registrant', 'sortkey': 20}
-        if branch in self._team_branches_set:
-            return {'title': 'Team Branch', 'sortkey': 40}
-        assert branch in self._subscribed_branch_set, (
-            "Unable determine role of person %r for branch %r" % (
-            self.context.name, branch.unique_name))
-        return {'title': 'Subscriber', 'sortkey': 30}
-        
-    def getListingItems(self):
-        """Return a list of decorated branches for easy TAL access."""
-        return [BranchListingItem(branch,
-                                  self.last_commit[branch],
-                                  self.branch_bug_links.get(branch.id, None),
-                                  self.branch_role(branch))
-                for branch in self.visible_branches]
+class PersonAuthoredBranchesView(BranchListingView):
+
+    extra_columns = ('product',)
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonRegisteredBranchesView(BranchListingView):
+
+    extra_columns = ('product',)
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonSubscribedBranchesView(BranchListingView):
+
+    extra_columns = ('product',)
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, self.selected_lifecycle_status)

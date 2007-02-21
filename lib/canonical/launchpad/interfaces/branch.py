@@ -346,8 +346,18 @@ class IBranchSet(Interface):
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""
 
-    def getBranchesForPerson(person, lifecycle_status):
-        """Return all branches associated with person appropriate status."""
+    def getBranchesForPerson(person, lifecycle_status=None):
+        """Branches associated with person with appropriate statuses."""
+        
+    def getBranchesAuthoredByPerson(person, lifecycle_status=None):
+        ""
+    def getBranchesRegisteredByPerson(person, lifecycle_status=None):
+        ""
+    def getBranchesSubscribedByPerson(person, lifecycle_status=None):
+        ""
+        
+    def getBranchesForProduct(product, lifecycle_status=None):
+        """Branches associated with product with appropriate statuses."""
 
 
 class IBranchLifecycleFilter(Interface):

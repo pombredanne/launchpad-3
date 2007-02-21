@@ -399,28 +399,78 @@ class BranchSet:
         branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
         return branches.prejoin(['product'])
 
-    def getBranchesForPerson(self, person, lifecycle_status):
+    def _lifecycleClause(self, lifecycle_status):
+        lifecycle_clause = ''
+        if lifecycle_status:
+            lifecycles = [str(item.value) for item in lifecycle_status]
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in (%s)' %
+                ','.join(lifecycles))
+        return lifecycle_clause
+
+    def getBranchesForPerson(self, person, lifecycle_status=None):
         """See IBranchSet."""
-        owner_ids = [team.id for team in person.teams_participated_in]
-        owner_ids.append(person.id)
-        owner_ids = tuple(owner_ids)
-        lifecycles = tuple([item.value for item in lifecycle_status])
+        owner_ids = [str(team.id) for team in person.teams_participated_in]
+        owner_ids.append(str(person.id))
+        owner_ids = ','.join(owner_ids)
+
+        lifecycle_clause = self._lifecycleClause(lifecycle_status)
 
         subscribed_branches = Branch.select(
             '''Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person in %s
-            AND Branch.lifecycle_status in %s
-            ''' % (owner_ids, lifecycles),
+            AND BranchSubscription.person in (%s) %s
+            ''' % (owner_ids, lifecycle_clause),
             clauseTables=['BranchSubscription'])
 
         owner_author_branches = Branch.select(
-            '''(Branch.owner in %s OR
-            Branch.author = %s)
-            AND Branch.lifecycle_status in %s
-            ''' % (owner_ids, person.id, lifecycles))
+            '''(Branch.owner in (%s) OR
+            Branch.author = %s) %s
+            ''' % (owner_ids, person.id, lifecycle_clause))
         
         return subscribed_branches.union(
             owner_author_branches, orderBy=Branch.sort_order)
+
+    def getBranchesAuthoredByPerson(self, person, lifecycle_status=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_status)
+
+        return Branch.select(
+            'Branch.author = %s %s' % (person.id, lifecycle_clause),
+            orderBy=Branch.sort_order)
+
+    def getBranchesRegisteredByPerson(self, person, lifecycle_status=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_status)
+
+        return Branch.select(
+            'Branch.owner = %s and Branch.author != %s %s' %
+            (person.id, person.id, lifecycle_clause),
+            orderBy=Branch.sort_order)
+
+    def getBranchesSubscribedByPerson(self, person, lifecycle_status=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_status)
+
+        return Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
+            clauseTables=['BranchSubscription'],
+            orderBy=Branch.sort_order)
+
+    def getBranchesForProduct(self, product, lifecycle_status=None):
+        """See IBranchSet."""
+        lifecycle_clause = ''
+        if lifecycle_status:
+            lifecycles = [str(item.value) for item in lifecycle_status]
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in (%s)' %
+                ','.join(lifecycles))
+
+        return Branch.select(
+            'Branch.product = %s %s' % (product.id, lifecycle_clause),
+            orderBy=Branch.sort_order)
+
 
 
 class BranchRelationship(SQLBase):
