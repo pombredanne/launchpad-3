@@ -84,7 +84,7 @@ class QuestionSetView(LaunchpadFormView):
         scope = data['scope']
         if scope is None:
             # Use 'All projects' scope.
-            scope = getUtility(IQuestionSet)
+            scope = self.context
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 
