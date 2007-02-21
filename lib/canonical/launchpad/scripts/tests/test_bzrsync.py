@@ -443,8 +443,8 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
 
     def makeBzrSync(self):
         def syncRevision_called(name, args, kwargs):
-            syncRevision_called_with_params(*args, **kwargs)
-        def syncRevision_called_with_params(bzr_revision):
+            (bzr_revision,) = args
+            self.assertEqual(kwargs, {})
             self.syncrevision_calls.append(bzr_revision.revision_id)
         bzrsync = BzrSyncTestCase.makeBzrSync(self)
         observer = InstrumentedMethodObserver(called=syncRevision_called)
