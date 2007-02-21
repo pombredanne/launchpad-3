@@ -229,12 +229,11 @@ the default distribution.main_archive.
 
 Optionally you can pass also status & archive:
 
+   >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> cprov = getUtility(IPersonSet).getByName('cprov')
+   >>> cprov_ppa = cprov.getArchive('ubuntu-fun')
+
    >>> from canonical.lp.dbschema import BuildStatus
-
-   # XXX cprov 20061101: use ppa lookup provided by IPerson.
-   >>> from canonical.launchpad.database import Archive
-   >>> cprov_ppa = Archive.get(8)
-
    >>> ppa_build = spr_test.createBuild(
    ...    dar, pocket, status=BuildStatus.SUPERSEDED, archive=cprov_ppa)
 

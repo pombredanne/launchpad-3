@@ -108,7 +108,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
-            dsc_binaries=dsc_binaries
+            dsc_binaries=dsc_binaries,
+            archive=archive,
             )
 
         if filename is None:
@@ -319,17 +320,22 @@ class TestNativePublishing(TestNativePublishingBase):
         Basically test if publishing records target to other archive
         than Distribution.main_archive work as expected
         """
-        test_archive = getUtility(IArchiveSet).new(tag='test archive')
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        test_archive = getUtility(IArchiveSet).new(
+            name='test-archive', owner=cprov)
         test_pool_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, self.logger)
 
         pub_source = self.getPubSource(
-            "foo", "main", "foo.dsc", filecontent='Am I a PPA Record ?',
+            sourcename="foo", filename="foo.dsc",
+            filecontent='Am I a PPA Record ?',
             archive=test_archive)
         pub_source.publish(test_disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.sourcepackagerelease.upload_archive.name,
+                         'test-archive')
         foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
 
