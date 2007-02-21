@@ -15,7 +15,9 @@ selected.
     >>> empty_request = LaunchpadTestRequest()
     >>> scope_field = Choice(
     ...     __name__='scope', vocabulary='Project', required=False)
-    >>> widget = ProjectScopeWidget(scope_field, empty_request)
+    >>> scope_field = scope_field.bind(object())
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary, empty_request)
 
 The widget complies to both IInputWidget and IBrowserWidget.
 
@@ -66,7 +68,8 @@ When the 'All projects' option is selected, the widget returns None.
     >>> form = {'field.scope': 'all',
     ...         'field.scope.target': ''}
     >>> widget = ProjectScopeWidget(
-    ...     scope_field, LaunchpadTestRequest(form=form))
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> widget.getInputValue() is None
@@ -81,7 +84,8 @@ by getInputValue().
     ...         'field.scope.target': 'mozilla'}
     >>> from canonical.launchpad.interfaces import IProject
     >>> widget = ProjectScopeWidget(
-    ...     scope_field, LaunchpadTestRequest(form=form))
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_scope = widget.getInputValue()
@@ -95,7 +99,8 @@ raised:
 
     >>> form['field.scope.target'] = 'invalid'
     >>> widget = ProjectScopeWidget(
-    ...     scope_field, LaunchpadTestRequest(form=form))
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_scope = widget.getInputValue()
@@ -104,17 +109,40 @@ raised:
     LaunchpadValidationError: There is no project named 'invalid'
                               registered in Launchpad
 
+The same error text is returned by error():
+
+    >>> print widget.error()
+    There is no project named 'invalid' registered in Launchpad
+
 If no project name is given at all, a widget error is also raised:
 
-    >>> del form['field.scope.target']
+    >>> form['field.scope.target'] = ''
     >>> widget = ProjectScopeWidget(
-    ...     scope_field, LaunchpadTestRequest(form=form))
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: Please enter a project name
+
+    >>> print widget.error()
+    Please enter a project name
+
+    >>> del form['field.scope.target']
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> widget.hasInput()
+    True
+    >>> selected_scope = widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Please enter a project name
+
+    >>> print widget.error()
+    Please enter a project name
 
 == setRenderedValue() ==
 
@@ -123,7 +151,8 @@ used. Passing a product to it will select the 'One project' radio
 button, as well as displaying the product name in the project widget.
 
     >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> widget = ProjectScopeWidget(scope_field, empty_request)
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary, empty_request)
     >>> widget.setRenderedValue(getUtility(IProjectSet).getByName('mozilla'))
     >>> print widget()
     <label>

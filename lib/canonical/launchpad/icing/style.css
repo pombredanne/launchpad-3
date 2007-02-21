@@ -906,6 +906,7 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
 
 /* --- Code --- */
 
+body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
 }
@@ -962,6 +963,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 /* --- Bugs --- */
 
+body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
 body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
 }
@@ -1025,6 +1027,9 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* --- Blueprints --- */
 
+body.tab-specifications #applications {
+  background: url(app-blueprints-wm.gif) no-repeat;
+}
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
 }
@@ -1099,6 +1104,9 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 
 /* --- Translations --- */
 
+body.tab-translations #applications {
+  background: url(app-translations-wm.gif) no-repeat;
+}
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
@@ -1157,6 +1165,7 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 
 /* --- Answers --- */
 
+body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
 body.tab-answers #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
 }

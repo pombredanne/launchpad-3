@@ -7,12 +7,16 @@ __metaclass__ = type
 from textwrap import dedent
 
 from zope.app.form import InputWidget
+from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError)
+    ConversionError, IInputWidget, InputErrors, MissingInputError,
+    WidgetInputError)
 from zope.app.form.utility import setUpWidget
+from zope.component import getMultiAdapter, getViewProviding
 from zope.interface import implements
 from zope.schema import Choice
+from zope.schema._bootstrapinterfaces import RequiredMissing
 
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -25,19 +29,21 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
     implements(IAlwaysSubmittedWidget, IInputWidget)
 
     default_option = "all"
+    _error = None
 
-    def __init__(self, field, request):
+    def __init__(self, field, vocabulary, request):
         super(ProjectScopeWidget, self).__init__(field, request)
 
         # We copy the title, description and vocabulary from the main
         # field since it determines the valid target types.
         target_field = Choice(
             __name__='target', title=field.title,
-            description=field.description, vocabulary=field.vocabularyName,
+            description=field.description, vocabulary=vocabulary,
             required=True)
         setUpWidget(
             self, target_field.__name__, target_field, IInputWidget,
             prefix=self.name)
+        self.setUpOptions()
 
     def setUpOptions(self):
         """Set up options to be rendered."""
@@ -73,15 +79,18 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         if scope == 'all':
             return None
         elif scope == 'project':
+            if not self.request.form.get(self.target_widget.name):
+                self._error = LaunchpadValidationError(
+                    'Please enter a project name')
+                raise self._error
             try:
                 return self.target_widget.getInputValue()
-            except MissingInputError:
-                raise LaunchpadValidationError('Please enter a project name')
             except ConversionError:
                 entered_name = self.request.form.get("%s.target" % self.name)
-                raise LaunchpadValidationError(
+                self._error = LaunchpadValidationError(
                     "There is no project named '%s' registered in"
                     " Launchpad", entered_name)
+                raise self._error
         else:
             raise UnexpectedFormData("No valid option was selected.")
 
@@ -93,10 +102,10 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         else:
             self.default_option = 'project'
             self.target_widget.setRenderedValue(value)
+        self.setUpOptions()
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
-        self.setUpOptions()
         return "\n".join([
             self.renderScopeOptions(),
             self.target_widget()])
@@ -111,3 +120,10 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
           %(project)s One project:
         </label>
         ''' % self.options)
+
+    def error(self):
+        """See zope.app.form.browser.interfaces.IBrowserWidget"""
+        if self._error:
+            return self._error.doc()
+        else:
+            return u""
