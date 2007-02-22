@@ -548,9 +548,16 @@ class PackageUploadCustom(SQLBase):
         sourcepackagerelease = (
             self.packageupload.builds[0].build.sourcepackagerelease)
 
-        valid_pockets = (PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.SECURITY, PackagePublishingPocket.UPDATES,
-            PackagePublishingPocket.PROPOSED)
+        # Ignore translation coming from PPA.
+        target_archive = self.packageupload.archive
+        main_archive = self.packageupload.distrorelease.main_archive
+        if target_archive.id != main_archive.id:
+            debug(logger, "Skipping translations since it is a PPA.")
+            return
+
+        valid_pockets = (
+            PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
+            PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
         if (self.packageupload.pocket not in valid_pockets or
             sourcepackagerelease.component.name != 'main'):
             # XXX: CarlosPerelloMarin 20060216 This should be implemented

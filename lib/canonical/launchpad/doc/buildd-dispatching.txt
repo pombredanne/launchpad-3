@@ -169,7 +169,7 @@ Create new Build record of the same source targeted for a PPA archive:
   >>> cprov_archive = cprov.getArchive('ubuntu-fun')
 
   >>> ppa_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.RELEASE, archive=cprov_archive)
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov_archive)
 
 Create BuildQueue record and inspect some parameters:
 

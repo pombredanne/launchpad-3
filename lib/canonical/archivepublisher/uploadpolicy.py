@@ -155,8 +155,8 @@ class AbstractUploadPolicy:
     def rejectPPAUploads(self, upload):
         """Reject uploads targeted to PPA.
 
-        We will only allow it on 'insecure' policy because we ensure the
-        uploads are signed.
+        We will only allow it on 'insecure' and 'buildd' policy because we
+        ensure the uploads are signed.
         """
         if upload.is_ppa:
             upload.reject(
@@ -288,6 +288,11 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # XXX: dsilvers: 20051014: Implement this to check the buildid etc.
         # bug 3135
         pass
+
+    def rejectPPAUploads(self, upload):
+        """Buildd policy allows PPA upload."""
+        pass
+
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 

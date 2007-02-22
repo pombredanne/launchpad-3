@@ -284,8 +284,8 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-    def createBuild(self, distroarchrelease, pocket, processor=None,
-                    status=BuildStatus.NEEDSBUILD, archive=None):
+    def createBuild(self, distroarchrelease, pocket, archive, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
@@ -297,8 +297,6 @@ class SourcePackageRelease(SQLBase):
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
-        if archive is None:
-            archive = distroarchrelease.main_archive
 
         return Build(distroarchrelease=distroarchrelease,
                      sourcepackagerelease=self,
@@ -308,7 +306,7 @@ class SourcePackageRelease(SQLBase):
                      pocket=pocket,
                      archive=archive)
 
-    def getBuildByArch(self, distroarchrelease):
+    def getBuildByArch(self, distroarchrelease, archive):
         """See ISourcePackageRelease."""
 	# Look for a published build
         query = """
@@ -318,9 +316,7 @@ class SourcePackageRelease(SQLBase):
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchrelease,
-                         distroarchrelease.main_archive,
-                         self)
+        """  % sqlvalues(distroarchrelease, archive, self)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 
@@ -336,7 +332,7 @@ class SourcePackageRelease(SQLBase):
         if build is None:
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
-                archive=distroarchrelease.main_archive,
+                archive=archive,
                 sourcepackagerelease=self)
 
         return build

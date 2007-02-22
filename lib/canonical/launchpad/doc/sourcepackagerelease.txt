@@ -213,7 +213,8 @@ the default distribution.main_archive.
 
    >>> dar = spr_test.uploaddistrorelease['i386']
 
-   >>> test_build = spr_test.createBuild(dar, pocket)
+   >>> test_build = spr_test.createBuild(
+   ...     dar, pocket, dar.distrorelease.main_archive)
 
    >>> test_build.buildstate.name
    'NEEDSBUILD'
@@ -232,7 +233,7 @@ Optionally you can pass also status & archive:
 
    >>> from canonical.lp.dbschema import BuildStatus
    >>> ppa_build = spr_test.createBuild(
-   ...    dar, pocket, status=BuildStatus.SUPERSEDED, archive=cprov_ppa)
+   ...    dar, pocket, cprov_ppa, status=BuildStatus.SUPERSEDED)
 
    >>> ppa_build.buildstate.name
    'SUPERSEDED'

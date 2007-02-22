@@ -564,7 +564,7 @@ published inside the target pocket should be rejected:
   >>> expect_okays('foo_1.0-3', upload_policy='sync')
   Traceback (most recent call last):
   ...
-  AssertionError: Rejected should be empty: ['foo_1.0-3', 'foo_1.0-3.distro']
+  AssertionError: Rejected should be empty: ['foo_1.0-3']
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile
@@ -582,7 +582,6 @@ we expect.
 Remove rejected upload:
 
   >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'foo_1.0-3.distro'))
 
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
@@ -628,8 +627,9 @@ can see it. This simulates the buildd-queuebuilder having run inbetween
 the source and binary uploads.
 
   >>> warty_i386 = ubuntu['warty']['i386']
+  >>> main_archive = ubuntu.main_archive
   >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
-  ...                         status=BuildStatus.NEEDSBUILD)
+  ...                         main_archive, status=BuildStatus.NEEDSBUILD)
   >>> transaction.commit()
 
 Check build created

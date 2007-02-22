@@ -1663,6 +1663,10 @@ class NascentUpload:
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
         """
+        if self.is_ppa:
+            self.logger.debug("Do not apply overrides for PPA")
+            return
+
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.files:
@@ -1723,6 +1727,10 @@ class NascentUpload:
         """Verify that the uploaded files are okay for their named components
         by the provided signer.
         """
+        if self.is_ppa:
+            self.logger.debug("Do verify signer ACL for PPA")
+            return
+
         if self.signer is None:
             self.logger.debug("No signer, therefore no point verifying signer "
                               "against ACL")
@@ -1774,7 +1782,7 @@ class NascentUpload:
 
         # check rights for OLD packages, the NEW ones goes straight to queue
         self.process_signer_acl()
-        if not self.is_new() and not self.is_ppa:
+        if not self.is_new():
             self.verify_acl()
 
         # And finally, check that the policy is happy overall
@@ -1972,13 +1980,14 @@ class NascentUpload:
             dar = self.distrorelease[archtag]
 
             # Check if there's a suitable existing build.
-            build = spr.getBuildByArch(dar)
+            build = spr.getBuildByArch(dar, self.archive)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
                 build = spr.createBuild(
-                    dar, self.pocket, status=BuildStatus.FULLYBUILT)
+                    dar, self.pocket, self.archive,
+                    status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
@@ -1988,7 +1997,8 @@ class NascentUpload:
             # told to link to makes no sense (ie. is not for the right
             # source package).
             if (build.sourcepackagerelease != spr or
-                build.pocket != self.pocket):
+                build.pocket != self.pocket or
+                build.archive.id != self.archive.id):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
             self.policy.build = build

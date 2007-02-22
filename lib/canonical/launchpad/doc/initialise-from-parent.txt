@@ -118,7 +118,12 @@ Now we obtain the sourcepackagerelease from the build:
 and check it the ISPR.getBuildByArch() would find out the same build
 record for foobuntu and it's parent release (hoary):
 
-  >>> pmount_srcrel.getBuildByArch(foobuntu['i386']).id == pmount_srcrel.getBuildByArch(hoary['i386']).id
+  >>> foobuntu_pmount = pmount_srcrel.getBuildByArch(
+  ...     foobuntu['i386'], foobuntu.main_archive)
+  >>> hoary_pmount = pmount_srcrel.getBuildByArch(
+  ...     hoary['i386'], hoary.main_archive)
+
+  >>> foobuntu_pmount.id == hoary_pmount.id
   True
 
 It means that queuebuilder doesn't need to create a new build record
@@ -148,7 +153,7 @@ Since pmount_0.1-2 source is published we can safely look up for the
 respective build record:
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['i386']) is None
+  ...    foobuntu['i386'], ubuntu.main_archive) is None
   True
 
 It's not present, Let's create it to check if getBuildByArch responds
@@ -157,14 +162,15 @@ this test, see more details in buildd-queuebuilder)
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> created_build = pmount_source.sourcepackagerelease.createBuild(
-  ...    foobuntu['i386'], PackagePublishingPocket.RELEASE)
+  ...     foobuntu['i386'], PackagePublishingPocket.RELEASE,
+  ...     ubuntu.main_archive)
 
   >>> retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['i386'])
+  ...    foobuntu['i386'], ubuntu.main_archive)
 
   >>> retrieved_build.id == created_build.id
   True
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['hppa']) is None
+  ...    foobuntu['hppa'], ubuntu.main_archive) is None
   True

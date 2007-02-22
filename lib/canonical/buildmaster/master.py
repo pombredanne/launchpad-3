@@ -266,7 +266,8 @@ class BuilddMaster:
                 self._logger.warn("No processors defined for %s: skipping %s"
                                   % (archrelease.title, header))
                 return
-            if pubrec.sourcepackagerelease.getBuildByArch(archrelease):
+            if pubrec.sourcepackagerelease.getBuildByArch(
+                archrelease, pubrec.archive):
                 # verify this build isn't already present for this
                 # distroarchrelease
                 continue
