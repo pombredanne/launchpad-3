@@ -14,24 +14,24 @@ applications. Many components use other components, so it is important
 for each of them to clearly define the interface it supports and make
 sure that it respects its contract.
 
-This is especially important as newcomers join the team will often look
+This is especially important as newcomers joining the team will often look
 at the interface of a component in another part of Launchpad to know
-what properties/method are available on the object.
+what properties/methods are available on the object.
 
-Ideally, all components should have a test of the form as part of their
+Ideally, all components should have a test of this form as part of their
 system documentation.
 
     > > > verifyObject(IContentInterface, object)
     True
 
 This is a fall back test that makes sure that all content classes
-really do implement the interface it declares to do.
+really do implement the interfaces it declares to.
 
 It's not because a class implements correctly an interface that
 verifyObject on its instances would also pass. verifyClass only checks
 the methods of the interface (since it is possible that some attributes
 will be provided at construction time). Also additional constraints will
-be checked on instance attribuets that are part of a schema.
+be checked on instance attributes that are part of a schema.
 
 """
 
@@ -65,7 +65,7 @@ def check_content_classes():
                 classes_with_failures += 1
                 print "%s fails to implement %s: invalid method %s: %s" % (
                     class_name, interface_name, e.method, e.mess)
-    print "Checked %d content classes. Found %d with broken implementation." % (
+    print "** Checked %d content classes. Found %d with broken implementation." % (
         classes_checked, classes_with_failures)
 
 
