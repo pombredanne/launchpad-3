@@ -117,7 +117,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON parentrelease = pt.distrorelease
@@ -146,7 +146,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON parentrelease = pt1.distrorelease
@@ -173,7 +173,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON pt1.distrorelease = dr.parentrelease
@@ -221,7 +221,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON pt1.distrorelease = dr.parentrelease
@@ -253,7 +253,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON pt1.distrorelease = dr.parentrelease
@@ -296,7 +296,7 @@ FROM
             DistroRelease.parentrelease
         FROM DistroRelease, Distribution
         WHERE
-            DistroRelease.name = 'breezy-autotest' AND
+            DistroRelease.name = 'feisty' AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.name = 'ubuntu'
         ) AS dr ON pt1.distrorelease = dr.parentrelease
