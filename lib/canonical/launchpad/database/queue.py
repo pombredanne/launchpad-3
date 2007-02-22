@@ -344,7 +344,7 @@ class PackageUploadBuild(SQLBase):
 
     def publish(self, logger=None):
         """See IPackageUploadBuild."""
-        # Determine the build's architecturetag.
+        # Determine the build's architecturetag
         build_archtag = self.build.distroarchrelease.architecturetag
         # Determine the target arch release.
         # This will raise NotFoundError if anything odd happens.
@@ -382,7 +382,7 @@ class PackageUploadBuild(SQLBase):
                     datecreated=UTC_NOW,
                     pocket=self.packageupload.pocket,
                     embargo=False,
-                    archive=each_target_dar.main_archive
+                    archive=self.packageupload.archive
                     )
                 published_binaries.append(sbpph)
 
@@ -439,7 +439,7 @@ class PackageUploadSource(SQLBase):
             datecreated=UTC_NOW,
             pocket=self.packageupload.pocket,
             embargo=False,
-            archive=self.packageupload.distrorelease.main_archive)
+            archive=self.packageupload.archive)
 
 
 class PackageUploadCustom(SQLBase):

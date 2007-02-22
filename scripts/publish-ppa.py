@@ -34,6 +34,10 @@ def parse_options():
                       dest="careful_domination", metavar="", default=False,
                       help="Make the domination process careful.")
 
+    parser.add_option("-A", "--careful-apt", action="store_true",
+                      dest="careful_apt", metavar="", default=False,
+                      help="Make the apt-ftparchive run careful.")
+
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO", default="ubuntu",
                       help="The distribution to publish.")
@@ -107,7 +111,7 @@ def main():
 
     for archive in modified_ppa_archives:
         log.info("Processing PPA: %s/%s" % (archive.owner.name,
-                                            archive.archive.name))
+                                            archive.name))
 
         publisher = getPublisher(archive, distribution, allowed_suites, log)
 
