@@ -14,7 +14,8 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IArchiveSet)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import (
@@ -28,9 +29,14 @@ def main():
     parser = OptionParser()
     logger_options(parser)
 
-    parser.add_option("-N", "--dry-run", action="store_true",
+    parser.add_option("-n", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
+
+    parser.add_option("-P", "--ppa", action="store_true",
+                      dest="ppa", metavar="PPA", default=False,
+                      help="Run only over PPA archives.")
+
     (options, args) = parser.parse_args()
 
     log = logger(options, "process-accepted")
@@ -54,18 +60,25 @@ def main():
 
     try:
         log.debug("Finding distribution %s." % distro_name)
-        distro = getUtility(IDistributionSet).getByName(distro_name)
-        for release in distro.releases:
-            log.debug("Processing queue for %s" % release.name)
-            queue_items = release.getQueueItems(
-                PackageUploadStatus.ACCEPTED)
-            for queue_item in queue_items:
-                try:
-                    queue_item.realiseUpload(log)
-                except:
-                    log.error("Failure processing queue_item %d"
-                              % (queue_item.id), exc_info=True)
-                    raise
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+
+        if options.ppa:
+            target_archives = getUtility(IArchiveSet).getAllPPAs()
+        else:
+            target_archives = [distribution.main_archive]
+
+        for archive in target_archives:
+            for distrorelease in distribution.releases:
+                log.debug("Processing queue for %s" % distrorelease.name)
+                queue_items = distrorelease.getQueueItems(
+                    PackageUploadStatus.ACCEPTED, archive=archive)
+                for queue_item in queue_items:
+                    try:
+                        queue_item.realiseUpload(log)
+                    except:
+                        log.error("Failure processing queue_item %d"
+                                  % (queue_item.id), exc_info=True)
+                        raise
 
         if not options.dryrun:
             ztm.commit()

@@ -52,5 +52,8 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
+    def getAllPPAs():
+        """Return all existent personal archives."""
+
     def __iter__():
-        """Iterates over existent personal archives."""
+        """Iterates over existent archives, including the main_archives."""

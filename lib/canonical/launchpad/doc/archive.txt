@@ -86,9 +86,17 @@ Usual methods from Publisher Configuration are preserved:
   ['main', 'restricted', 'universe', 'multiverse']
 
 
-The utility IArchiveSet also provides iteration over present
-*personal* archive:
+IArchiveSet.getAllPPAs provides all present *personal* archive:
 
-
-  >>> [(archive.owner.name, archive.name) for archive in archive_set]
+  >>> [(archive.owner.name, archive.name)
+  ...  for archive in archive_set.getAllPPAs()]
   [(u'cprov', u'ubuntu-fun'), (u'cprov', u'sandbox')]
+
+
+Iteration over the own utility is performed against all archives,
+including the *main_archives*:
+
+  >>> for archive in archive_set:
+  ...     if archive.name == 'ubuntu':
+  ...          print "I do know about '%s'" % archive.name
+  I do know about 'ubuntu'

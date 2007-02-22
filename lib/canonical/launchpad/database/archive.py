@@ -64,9 +64,10 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive(name=name, owner=owner)
 
+    def getAllPPAs(self):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        return Archive.select("owner is not NULL")
+
     def __iter__(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        personal_archives = Archive.select("""
-        owner is not NULL
-        """)
-        return iter(personal_archives)
+        return iter(Archive.select())

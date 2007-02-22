@@ -105,7 +105,7 @@ def main():
     # XXX cprov 20070103: we can optimize the loop by quering only the
     # PPA with modifications pending publication. For now just iterating
     # over all of them should do.
-    modified_ppa_archives = getUtility(IArchiveSet)
+    modified_ppa_archives = getUtility(IArchiveSet).getAllPPAs()
 
     for archive in modified_ppa_archives:
         log.info("Processing PPA: %s/%s" % (archive.owner.name,
