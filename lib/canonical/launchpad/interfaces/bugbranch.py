@@ -24,7 +24,6 @@ class IBugBranch(IHasDateCreated, IHasBug):
     branch = Choice(
         title=_("Branch"), vocabulary="Branch",
         constraint=non_duplicate_branch)
-    revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
         title=_("State"), vocabulary="BugBranchStatus",
         default=BugBranchStatus.INPROGRESS)

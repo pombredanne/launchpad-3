@@ -124,7 +124,6 @@
         <tr>
           <th>Related Branch</th>
           <th>Developer</th>
-          <th>Revision Hint</th>
         </tr>
       </thead>
       <tbody>
@@ -135,7 +134,6 @@
                tal:content="bug_branch/status/title">Under Development</a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/revision_hint"></td>
         </tr>
       </tbody>
     </table>
