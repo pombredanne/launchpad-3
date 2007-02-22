@@ -20,6 +20,7 @@ class IBranchRevision(Interface):
     branch = Attribute("The branch this revision number belongs to.")
     revision = Attribute("The revision with that index in this branch.")
 
+    # NOMERGE: Rephrase this to account for merged revisions.
 
 class IBranchRevisionSet(Interface):
     """The set of all branch revisions."""
@@ -30,6 +31,8 @@ class IBranchRevisionSet(Interface):
     def delete(branch_revision_id):
         """Delete the BranchRevision."""
 
+    # NOMERGE: remove that from the interface, we do not want non-test code
+    # to use it ever! Move the docstring into the content class.
     def getAncestryForBranch(branch):
         """Returns an unordered list of all BranchRevisions for a branch."""
 
@@ -39,7 +42,7 @@ class IBranchRevisionSet(Interface):
         If limit is omitted, then all the BranchRevisions for the branch
         are returned.
         
-        There are ordered with the most recent revision first, and the list
+        They are ordered with the most recent revision first, and the list
         only contains those in the "leftmost tree", or in other words
         the revisions that match the revision history from bzrlib for this
         branch.

@@ -70,6 +70,9 @@ class BzrSync:
         common case of calling `syncHistory` and immediately `close`.
         """
         try:
+            # NOMERGE: move initialization into syncHistory and rename,
+            # or update the docstring.
+
             # Load the ancestry as the database knows of it.
             self.retrieveDatabaseAncestry()
             # And get the history and ancestry from the branch.
@@ -83,6 +86,7 @@ class BzrSync:
         """Since the ancestry of some branches is into the tens of thousands
         we don't want to materialise BranchRevision instances for each of these
         in the SQLObject cache, so keep a simple map here."""
+        # NOMERGE: move that into the content class, add interface.
         cur = cursor()
         cur.execute("""
             SELECT BranchRevision.id, BranchRevision.sequence, Revision.revision_id
@@ -102,12 +106,16 @@ class BzrSync:
                 self.db_history.append(revision_id)
 
     def retrieveBranchDetails(self):
+        # NOMERGE: docstring!
         self.last_revision = self.bzr_branch.last_revision()
         self.bzr_ancestry = self.bzr_branch.repository.get_ancestry(
             self.last_revision)
         self.bzr_history = self.bzr_branch.revision_history()
 
     def syncInitialAncestry(self):
+        # NOMERGE: doctsring!
+        # NOMERGE: method too long and hard to read
+
         # If the database history is the same as the start of
         # the bzr history, then this branch has only been appended to.
         # If not then we need to clean out the db ancestry before
@@ -116,14 +124,21 @@ class BzrSync:
         if self.bzr_history[:rev_count] == self.db_history:
             # Branch has only been appended to.
             return
+        # NOMERGE: This should not be needed. If the rest of the logic is correct
+        # in the method, it should be fast and make no change.
 
         self.trans_manager.begin()
 
         # Branch history has changed
+
+        # NOMERGE: match_position is ill-named, this is the position of the
+        # first non-match in the history
         match_position = min(len(self.bzr_history), rev_count)
         while match_position > 0 and (
             self.db_history[:match_position] != self.bzr_history[:match_position]):
             match_position -= 1
+        # NOMERGE: This is (history length) x (removed history revisions).
+        # Bad! Remove (history length) factor!
 
         # Remove the revisions from the db history that don't match
         branch_revision_set = getUtility(IBranchRevisionSet)
@@ -131,18 +146,25 @@ class BzrSync:
         for rev_id in self.db_history[match_position:]:
             removed.add(rev_id)
             branch_revision_set.delete(self.db_branch_revision_map[rev_id])
+            # NOMERGE BUG: should update db_ancestry as well.
+        # NOMERGE: While we're optimising, can we do the equivalent of
+        # "delete from branchrevision where id in (...)", postpone deletion.
 
         # Now realign our db_history.
         self.db_history = self.db_history[:match_position]
+        # NOMERGE: this looks bogus, the last non-matching revision is not removed.
 
         # Now remove everything in the ancestry that shouldn't be there.
         to_remove = self.db_ancestry - set(self.bzr_ancestry) - removed
         for rev_id in to_remove:
             self.db_ancestry.remove(rev_id)
             branch_revision_set.delete(self.db_branch_revision_map[rev_id])
+        # NOMERGE: While we're optimising, can we do the equivalent of
+        # "delete from branchrevision where id in (...)".
 
         # The database and db_history, and db_ancestry are now all
         # in sync with the common parts of the branch.
+        # NOMERGE BUG: do not commit until ancestry sync is complete!
         self.trans_manager.commit()
 
     def syncHistory(self):
@@ -161,6 +183,8 @@ class BzrSync:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
                 continue
+            # TODO: Sync revisions in batch for improved performance.
+            # -- DavidAllouche 2007-02-22
             self.syncRevision(revision)
 
         # now synchronise the BranchRevision objects
@@ -305,11 +329,18 @@ class BzrSync:
         # If the sequence number is <= the db_history, then we have it already
         if sequence is not None and sequence <= len(self.db_history):
             return False
+        # NOMERGE: this should not be needed if db_ancestry was updated correctly.
 
         # If sequence is None, and the revision_id is already in the
         # ancestry, then we have it already
         if sequence is None and revision_id in self.db_ancestry:
             return False
+
+        # NOMORGE: We should not have to do this. Instead we can know directly
+        # which are the RevisionNumbers we need to add to the database.
+
+        # NOMERGE BUG: update the ancestry in a single transaction!
+        # Probably call syncInitialAncestry from this method.
 
         # Otherwise we need to add it in.
         self.trans_manager.begin()

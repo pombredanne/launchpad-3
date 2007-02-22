@@ -176,15 +176,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
 class TestBzrSync(BzrSyncTestCase):
 
-    def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        self.bzrsync = None
-
-    def tearDown(self):
-        if self.bzrsync is not None and self.bzrsync.db_branch is not None:
-            self.bzrsync.close()
-        BzrSyncTestCase.tearDown(self)
-
     def makeBzrSync(self):
         self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
         # Load the ancestry as the database knows of it.
@@ -192,14 +183,6 @@ class TestBzrSync(BzrSyncTestCase):
         # And get the history and ancestry from the branch.
         self.bzrsync.retrieveBranchDetails()
         return self.bzrsync
-
-    def syncAndCount(self, new_revisions=0, new_numbers=0,
-                     new_parents=0, new_authors=0):
-        counts = self.getCounts()
-        self.makeBzrSync().syncHistoryAndClose()
-        self.assertCounts(
-            counts, new_revisions=new_revisions, new_numbers=new_numbers,
-            new_parents=new_parents, new_authors=new_authors)
 
     def test_empty_branch(self):
         # Importing an empty branch does nothing.
@@ -333,15 +316,19 @@ class TestBzrSync(BzrSyncTestCase):
         :return: A list of the revisions that have been committed, as returned
         by WorkingTree.commit().
         """
+        # NOMERGE: use fixed revisions ids for simpler tests, use bzrlib test helper
+        # (TestCaseWithRepository?) so we do not risk leaking test data outside.
         revisions = []
 
         # Make the base revision.
         revisions.append(self.bzr_tree.commit(u'common parent',
                                               committer=self.AUTHOR,
                                               allow_pointless=True))
+        # NOMERGE: Ugly layout.
 
         # Branch from the base revision.
         new_tree = self.bzr_tree.bzrdir.sprout('y').open_workingtree()
+        # NOMERGE: One-letter names are bad.
 
         # Commit to both branches
         revisions.append(self.bzr_tree.commit(u'commit one',
@@ -363,6 +350,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         self.assertEqual(set([(1, rev0), (2, rev1), (3, rev3), (None, rev2)]),
                          set(bzrsync.getRevisions()))
+        # NOMERGE: Use constant revision-ids for simpler code.
 
     def test_sync_with_merged_branches(self):
         # Confirm that when we syncHistory, all of the revisions are included
@@ -374,12 +362,15 @@ class TestBzrSync(BzrSyncTestCase):
         # Make a new BzrSync object, because close() renders the first one
         # unusable.
         bzrsync = self.makeBzrSync()
+        # NOMERGE: use database.BranchRevision instead.
         bzrsync.retrieveDatabaseAncestry()
         self.assertEqual(bzrsync.db_ancestry, set(revisions))
 
     def test_sync_is_idempotent(self):
         # Nothing should be changed if we sync a branch that hasn't been
         # changed since the last sync
+
+        # NOMERGE: make that a performance test and check that we DO nothing.
         branch_revision_set = getUtility(IBranchRevisionSet)
         revisions = self.makeBranchWithMerge()
 
@@ -406,6 +397,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(revisions[-1], bzrsync.last_revision)
         self.assertEqual(set(revisions + [None]), set(bzrsync.bzr_ancestry))
         del revisions[-2] # Not part of the history. See makeBranchWithMerge.
+        # NOMERGE: constant revision-ids are easier.
         self.assertEqual(set(revisions), set(bzrsync.bzr_history))
 
     def test_retrieveDatabaseAncestry(self):
@@ -416,6 +408,9 @@ class TestBzrSync(BzrSyncTestCase):
 
         # Put the database into a known state.
         self.makeBranchWithMerge()
+        # NOMERGE: dependency inversion, tests for retrieveDatabaseAncestry should
+        # not depend on syncHistoryAndClose, because it uses
+        # retrieveDatabaseAncestry.
         self.makeBzrSync().syncHistoryAndClose()
 
         bzrsync = self.makeBzrSync()
@@ -431,6 +426,7 @@ class TestBzrSync(BzrSyncTestCase):
                          set(bzrsync.db_history))
         # We can't access BranchRevision.id, so just test that the keys are
         # correct.
+        # NOMERGE: no reason we cannot, we can use the content class directly here.
         self.assertEqual(set([b.revision.revision_id for b in ancestry]),
                          set(bzrsync.db_branch_revision_map.keys()))
 
