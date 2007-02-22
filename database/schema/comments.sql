@@ -34,9 +34,15 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
-COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+
+/* BugBranchRevision */
+COMMENT ON TABLE BugBranchRevision IS 'A revision in a branch which is related to a bug.';
+COMMENT ON COLUMN BugBranchRevision.bug IS 'The bug associated with the revision.';
+COMMENT ON COLUMN BugBranchRevision.branch IS 'The branch the revision was found in.';
+COMMENT ON COLUMN BugBranchRevision.revision IS 'The revision associated with the bug.';
+COMMENT ON COLUMN BugBranchRevision.status IS 'The nature of the relationship between the bug and the revision.';
 
 /* BugNomination */
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
