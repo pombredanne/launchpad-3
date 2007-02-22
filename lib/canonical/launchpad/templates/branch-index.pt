@@ -162,25 +162,21 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <table class="listing">
-    <thead>
-      <tr>
-        <th colspan="2">Revision</th>
-        <th tal:condition="view/user">Author</th>
-        <th>Message</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="rev_no context/latest_revisions">
-        <td tal:content="rev_no/sequence">1</td>
-        <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:condition="view/user"
-            tal:content="rev_no/revision/revision_author/name"
-            >John Doe &lt;jdoe@example.com&gt;</td>
-        <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="listing">
+    <div tal:repeat="rev_no context/latest_revisions">
+      <h3>
+        Revision <span tal:replace="rev_no/sequence">1</span>
+        <span tal:condition="view/user"
+              tal:replace="string:by ${rev_no/revision/revision_author/name}">
+          John Doe &lt;john.doe@doe-a-deer.com&gt;
+        </span>
+        <span tal:replace="string:(${rev_no/revision/revision_date/fmt:date})">(2005-10-05)</span>
+      </h3>
+      <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
+        The revision commit message.
+      </p>
+    </div>
+  </div>
   </tal:history-available>
 
   <tal:related-bugs condition="context/related_bugs">
