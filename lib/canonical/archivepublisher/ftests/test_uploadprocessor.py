@@ -184,7 +184,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue(
-            "NEW" in raw_msg, "Expected email containing NEW: %s" % raw_msg)
+            "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
+            % raw_msg)
 
         # Accept and publish the upload.
         # This is required so that the next upload of a later version of
@@ -240,23 +241,26 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """
         TestUploadProcessorBase.setUp(self)
 
-        # Make a PPA called foo for kinnison.
+        # Make a PPA called foo for kinnison and another called bar for
+        # name16 (Foo Bar)
         self.kinnison_archive = getUtility(IArchiveSet).new(
             name="foo", owner=getUtility(IPersonSet).getByName("kinnison"))
+        self.name16_archive = getUtility(IArchiveSet).new(
+            name="bar", owner=getUtility(IPersonSet).getByName("name16"))
 
         # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
 
         # common recipients
-        self.daniel_recipient = (
+        self.kinnison_recipient = (
             "Daniel Silverstone <daniel.silverstone@canonical.com>")
-        self.foobar_recipient = "Foo Bar <foo.bar@canonical.com>"
+        self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
         self.default_recipients = [
-            self.foobar_recipient, self.daniel_recipient]
+            self.name16_recipient, self.kinnison_recipient]
 
         # Set up the uploadprocessor with appropriate options and logger
-        self.options.context = 'ppa'
+        self.options.context = 'insecure'
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
@@ -274,15 +278,17 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             self.assertTrue(recipient in clean_recipients)
 
         for content in list(contents):
-            self.assertTrue(content in raw_msg)
+            self.assertTrue(
+                content in raw_msg,
+                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
 
     def testUploadToPPA(self):
         """Upload to a known PPA gets there.
 
-        Email annonce is sent and package is on queue ACCEPTED even if
+        Email announcement is sent and package is on queue ACCEPTED even if
         the source is NEW (PPA Auto-Accept everything).
         """
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/foo")
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~name16/bar")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = "Subject: bar_1.0-1_source.changes is NEW"
@@ -290,8 +296,18 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.kinnison_archive)
+            version="1.0-1", exact_match=True, archive=self.name16_archive)
         self.assertEqual(queue_items.count(), 1)
+
+    def testUploadToSomeoneElsePPA(self):
+        """Upload to a someone else's PPA gets rejected with proper message."""
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/foo")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "Signer has no upload rights to this PPA"]
+        self.assertEmail(contents)
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
@@ -305,12 +321,12 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
     def testUploadToUnknownPPA(self):
         """Upload to unknown PPA gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/fooix")
+        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~name16/fooix")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
             "Subject: bar_1.0-1_source.changes Rejected",
-            "Could not find PPA 'kinnison/fooix'"]
+            "Could not find PPA 'name16/fooix'"]
         self.assertEmail(contents)
 
     def testUploadToUnknownPerson(self):

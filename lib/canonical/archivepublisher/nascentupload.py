@@ -525,6 +525,13 @@ class NascentUpload:
         self._check_native()
         return self._has_orig
 
+    @property
+    def is_ppa(self):
+        """Whether or not the current upload is target for a PPA."""
+        if self.archive.id != self.distrorelease.main_archive.id:
+            return True
+        return False
+
     def _check_native(self):
         """Check if this sourceful upload is native or not, remembering if
         we have an orig.tar.gz or not.
@@ -1495,14 +1502,24 @@ class NascentUpload:
         return in_keyring
 
     def process_signer_acl(self):
-        """Work out what components the signer is permitted to upload to and
-        verify that all files are either NEW or are targetted at those
-        components only.
-        """
+        """Check rights of the current upload submmiter.
 
+        Work out what components the signer is permitted to upload to and
+        verify that all files are either NEW or are targetted at those
+        components only for normal distribution uploads.
+
+        Ensure the signer is the onwer of the targeted archive for PPA
+        uploads.
+        """
         # If we have no signer, there's no ACL we can apply
         if self.signer is None:
             self.logger.debug("No signer, therefore ACL not processed")
+            return
+
+        # verify PPA uploads
+        if self.is_ppa:
+            if not self.signer.inTeam(self.archive.owner):
+                self.reject("Signer has no upload rights to this PPA")
             return
 
         possible_components = self._components_valid_for(self.signer)
@@ -1757,7 +1774,7 @@ class NascentUpload:
 
         # check rights for OLD packages, the NEW ones goes straight to queue
         self.process_signer_acl()
-        if not self.is_new():
+        if not self.is_new() and not self.is_ppa:
             self.verify_acl()
 
         # And finally, check that the policy is happy overall
@@ -2069,6 +2086,12 @@ class NascentUpload:
 
         # Stuff the queue item away in case we want it later
         self.queue_root = queue_root
+
+        # PPA uploads are Auto-Accepted by default
+        if self.is_ppa:
+            self.logger.debug("Setting it to ACCEPTED")
+            queue_root.setAccepted()
+            return
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically

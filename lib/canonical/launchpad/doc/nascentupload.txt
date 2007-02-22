@@ -123,6 +123,8 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   False
   >>> ed_upload.archdep
   True
+  >>> ed_upload.is_ppa
+  False
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
@@ -142,6 +144,8 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_binary_upload.archdep
   True
   >>> ed_binary_upload.archindep
+  False
+  >>> ed_binary_upload.is_ppa
   False
 
 
@@ -168,6 +172,8 @@ We can distinguish between the arch-indep and arch-dep binary uploads.
   True
   >>> quodlibet.archindep
   True
+  >>> quodlibet.is_ppa
+  False
 
 We can ask sourceful uploads if they are native or not. If they are
 not native we can find out if they have an orig.tar.gz or not.

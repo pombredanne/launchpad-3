@@ -108,16 +108,22 @@ class AbstractUploadPolicy:
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
-        if not self.distrorelease.canUploadToPocket(self.pocket):
-            upload.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.pocket.name, self.distrorelease.releasestatus.name))
+        if upload.is_ppa:
+            if self.pocket != PackagePublishingPocket.RELEASE:
+                upload.reject(
+                    "PPA uploads must be for the RELEASE pocket.")
+        else:
+            if not self.distrorelease.canUploadToPocket(self.pocket):
+                upload.reject(
+                    "Not permitted to upload to the %s pocket in a "
+                    "release in the '%s' state." % (
+                    self.pocket.name, self.distrorelease.releasestatus.name))
 
         # all policies permit upload of a single custom
         if upload.single_custom:
             # refuses any further checks
             return
+
         # Currently the only check we make is that if the upload is binaryful
         # we don't allow more than one build.
         # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
@@ -140,8 +146,21 @@ class AbstractUploadPolicy:
             if len(considered_archs) > max:
                 upload.reject("Policy permits only one build per upload.")
 
+        # reject PPA uploads by default
+        self.rejectPPAUploads(upload)
+
         # execute policy specific checks
         self.policySpecificChecks(upload)
+
+    def rejectPPAUploads(self, upload):
+        """Reject uploads targeted to PPA.
+
+        We will only allow it on 'insecure' policy because we ensure the
+        uploads are signed.
+        """
+        if upload.is_ppa:
+            upload.reject(
+                "PPA upload are not allowed in '%s' policy" % self.name)
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks in child."""
@@ -221,6 +240,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
+    def rejectPPAUploads(self, upload):
+        """Insecure policy allows PPA upload."""
+        pass
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
@@ -239,40 +261,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 return True
         return False
 
+
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
-
-
-class PPAUploadPolicy(AbstractUploadPolicy):
-    """The insecure upload policy is used by the poppy interface."""
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.name = 'ppa'
-        self.can_upload_binaries = False
-        self.can_upload_mixed = False
-
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
-
-    def policySpecificChecks(self, upload):
-        """Allow the upload only if it is for the RELEASE pocket."""
-        if self.pocket != PackagePublishingPocket.RELEASE:
-            upload.reject(
-                "PPA uploads must be for the RELEASE pocket.")
-
-    def autoApprove(self, upload):
-        """For now we'll approve everything."""
-        return True
-
-    def autoApproveNew(self, upload):
-        """For now we'll approve of everything."""
-        return True
-
-
-# Register this as the 'insecure' policy
-AbstractUploadPolicy._registerPolicy(PPAUploadPolicy)
 
 
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
