@@ -238,6 +238,9 @@ Remove the directory to keep the test working.
 
 == Dist Upgrader to PPA ==
 
+Custom uploads for PPAs should works as expected, i.e, publish its
+files in the respective PPA location.
+
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, IArchiveSet)
 
