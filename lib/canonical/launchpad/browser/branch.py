@@ -251,8 +251,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         self.branch = getUtility(IBranchSet).new(
             name=data['name'],
             owner=self.user,
-            author=data['author'],
-            product=data['product'],
+            author=self.getAuthor(data),
+            product=self.getProduct(data),
             url=data['url'],
             title=data['title'],
             summary=data['summary'],
@@ -260,6 +260,14 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             home_page=data['home_page'],
             whiteboard=data['whiteboard'])
         notify(SQLObjectCreatedEvent(self.branch))
+
+    def getAuthor(self, data):
+        # A method that is overridden in the derived classes. 
+        return data['author']
+
+    def getProduct(self, data):
+        # A method that is overridden in the derived classes. 
+        return data['product']
 
     @property
     def next_url(self):
@@ -289,14 +297,21 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
 class PersonBranchAddView(BranchAddView):
 
-    custom_widget('author', ContextWidget)
+    field_names = ['product', 'url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page']
 
+    def getAuthor(self, data):
+        return self.context
 
 class ProductBranchAddView(BranchAddView):
 
-    custom_widget('product', ContextWidget)
+    field_names = ['url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
     initial_focus_widget = 'url'
+
+    def getProduct(self, data):
+        return self.context
 
     def validate(self, data):
         if 'name' in data:
