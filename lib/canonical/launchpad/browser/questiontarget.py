@@ -11,6 +11,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
+    'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
     'QuestionTargetTraversalMixin',
@@ -84,6 +85,16 @@ class QuestionCollectionLatestQuestionsView:
         is used by the +portlet-latestquestions view.
         """
         return self.context.searchQuestions()[:quantity]
+
+
+class QuestionCollectionOpenCountView:
+    """View used to render the number of open questions."""
+
+    def __call__(self):
+        questiontarget = IQuestionTarget(self.context)
+        open_questions = questiontarget.searchQuestions(
+            status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
+        return unicode(open_questions.count())
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
