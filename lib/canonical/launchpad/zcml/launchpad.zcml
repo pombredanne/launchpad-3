@@ -298,12 +298,6 @@ these URLs in Apache.
     template="../templates/launchpad-structuralfooter.pt"
   />
 </browser:pages>
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+applications"
-  permission="zope.Public"
-  template="../templates/app-buttons.pt"
-  />
 
 <browser:page
   for="*"
@@ -318,6 +312,14 @@ these URLs in Apache.
   name="+shortlink"
   permission="zope.Public"
   class="canonical.launchpad.browser.DefaultShortLink"
+  attribute="__call__"
+  />
+
+<browser:page
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  name="+dims"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
 

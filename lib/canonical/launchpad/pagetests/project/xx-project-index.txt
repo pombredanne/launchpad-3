@@ -1,22 +1,52 @@
-Test that the project page for the mozilla project loads, accessing it through
-a facet that's not available for projects.
+= Project Overview Page =
 
-  >>> browser.open('http://answers.launchpad.dev/mozilla')
-  >>> browser.title
-  'The Mozilla Project in Launchpad'
+The overview page for a project contain a link to the products in the
+project:
 
-  >>> browser.getLink('Mozilla Firefox').url
-  'http://answers.launchpad.dev/firefox'
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> browser.title
+    'The Mozilla Project in Launchpad'
 
-  >>> browser.open('http://answers.launchpad.dev/mozilla')
-  >>> browser.getLink('Mozilla Thunderbird').url
-  'http://answers.launchpad.dev/thunderbird'
+    >>> browser.getLink('Mozilla Firefox').url
+    'http://launchpad.dev/firefox'
+    >>> browser.getLink('Mozilla Thunderbird').url
+    'http://launchpad.dev/thunderbird'
 
-  >>> admin_browser.open('http://answers.launchpad.dev/mozilla')
-  >>> admin_browser.getLink('Register another product').url
-  'http://answers.launchpad.dev/mozilla/+newproduct'
+That page contain a link to register new products with the project. It
+is only available to users which have 'Admin' privileges on the project.
 
-Test that a product page for the firefox product in the mozilla project loads.
+    >>> browser.getLink('Register another product')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
+
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.getLink('Register another product')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
+
+    >>> admin_browser.open('http://launchpad.dev/mozilla')
+    >>> admin_browser.getLink('Register another product').url
+    'http://launchpad.dev/mozilla/+newproduct'
+
+== Overview Fallback ==
+
+When a project is accessed through a facet not usually available on
+the project, the overview page is also displayed:
+
+    >>> browser.open('http://code.launchpad.dev/mozilla')
+    >>> browser.title
+    'The Mozilla Project in Launchpad'
+    >>> browser.url
+    'http://code.launchpad.dev/mozilla'
+
+== URL Shortut to Access the Project's Products ==
+
+It is possible to access the project's product through the project URL.
+
+XXX flacoste 2007/02/14 Explain where this is used and why it is
+needed.
 
   >>> browser.open('http://launchpad.dev/mozilla/firefox')
   >>> browser.title
