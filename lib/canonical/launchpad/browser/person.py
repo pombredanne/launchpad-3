@@ -2617,13 +2617,13 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     @property
     def pageheading(self):
         """See SearchQuestionsView."""
-        return _('Questions needing $name attention',
+        return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchQuestionsView."""
-        return _('No questions need $name attention.',
+        return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
 

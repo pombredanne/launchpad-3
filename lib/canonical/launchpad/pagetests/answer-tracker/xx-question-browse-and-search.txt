@@ -505,7 +505,7 @@ the attention of that person.
 
     >>> browser.getLink('Need Attention').click()
     >>> print browser.title
-    Questions needing Foo Bar attention
+    Questions needing Foo Bar's attention
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
@@ -560,7 +560,7 @@ That listing is searchable:
     ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
-The same standard reports than on regular TicketTarget are available:
+The same standard reports than on regular QuestionTarget are available:
 
     >>> browser.getLink('Open').click()
     >>> print browser.title
