@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-      <div id="applications" tal:content="structure context/@@+applicationbuttons" />
+      <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
         class="central"
         style="text-align: center;"

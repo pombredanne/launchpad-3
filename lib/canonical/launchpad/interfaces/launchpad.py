@@ -70,7 +70,7 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
-    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
 
 

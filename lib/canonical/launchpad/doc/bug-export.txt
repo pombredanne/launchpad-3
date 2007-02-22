@@ -10,8 +10,7 @@ export information about all bug tasks -- only those for the product
 in question.
 
 The export is also limited to bug information -- it does not include
-links to other Launchpad features such as specifications or support
-tickets.
+links to other Launchpad features such as specifications or questions.
 
 
 Exporting one bug

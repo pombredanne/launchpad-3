@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     IStructuralObjectPresentation, ITranslationImportQueue,
     ITranslationGroupSet, NotFoundError)
@@ -238,7 +238,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations', 'branches']
 
     def overview(self):
@@ -256,10 +256,10 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
-    def support(self):
+    def answers(self):
         target = ''
         text = 'Answers'
-        summary = 'Launchpad technical support tracker.'
+        summary = 'Launchpad Answer Tracker'
         return Link(target, text, summary)
 
     def specifications(self):
@@ -419,7 +419,7 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': ITicketSet,
+        'support': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
@@ -763,7 +763,7 @@ class Button:
             '<a href="%(url)s">\n'
             '  <img'
             '    alt=""'
-            '    src="/+icing/app-%(buttonname)s.large.gif"'
+            '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
             '  />\n'
             '</a>\n' % self.replacement_dict)
@@ -773,13 +773,25 @@ class Button:
             '<a href="%(url)s">\n'
             '  <img'
             '    alt=""'
-            '    src="/+icing/app-%(buttonname)s.mono.gif"'
+            '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
             '  />\n'
             '</a>\n' % self.replacement_dict)
 
-    def renderButton(self, is_active):
-        if is_active:
+    def renderFrontPage(self):
+        return (
+            '<a href="%(url)s">\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.gif"'
+            '    title="%(text)s"'
+            '  />\n'
+            '</a>\n' % self.replacement_dict)
+
+    def renderButton(self, is_active, is_front_page):
+        if (is_front_page):
+            return self.renderFrontPage()
+        elif is_active:
             return self.renderActive()
         else:
             return self.renderInactive()
@@ -822,7 +834,8 @@ class ApplicationButtons(LaunchpadView):
                 is_active = button.name == self.name
             else:
                 is_active = True
-            L.append(button.renderButton(is_active))
+            is_front_page = self.name == 'main'
+            L.append(button.renderButton(is_active, is_front_page))
         return u'\n'.join(L)
 
     def traverse(self, name, furtherPath):

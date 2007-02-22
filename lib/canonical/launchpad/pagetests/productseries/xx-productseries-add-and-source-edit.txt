@@ -41,7 +41,7 @@ We check if the info we just entered on the form is displayed correctly
   >>> print find_main_content(browser.contents)
   <...
   <tr>
-  <td>Root:</td>
+  <th>Root:</th>
   <td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>
   </tr>
   ...
@@ -74,7 +74,7 @@ Now we test if we can edit again changing the RCS to Subversion:
   >>> print find_main_content(browser.contents)
   <...
   <tr>
-  <td><b>Subversion:</b></td>
+  <th>Subversion:</th>
   <td>svn://svn.mozilla.org/firefox/trunk</td>
   </tr>
   ...

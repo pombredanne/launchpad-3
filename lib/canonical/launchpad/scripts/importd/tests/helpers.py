@@ -88,6 +88,14 @@ class _InstrumentedMethod:
 class InstrumentedMethodObserver:
     """Observer for InstrumentedMethod."""
 
+    def __init__(self, called=None, returned=None, raised=None):
+        if called is not None:
+            self.called = called
+        if returned is not None:
+            self.returned = returned
+        if raised is not None:
+            self.raised = raised
+
     def called(self, name, args, kwargs):
         """Called before an instrumented method."""
         pass
