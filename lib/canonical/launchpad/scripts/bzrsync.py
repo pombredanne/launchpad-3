@@ -95,9 +95,12 @@ class BzrSync:
         * Branch: the branch-scanner status information must be updated when
           the sync is complete.
         """
-        self.syncInitialAncestry()
+        self.logger.info("Synchronizing branch: %s", self.bzr_branch.base)
+        self.planDatabaseChanges()
         self.syncRevisions()
+        self.trans_manager.begin()
         self.syncBranchRevisions()
+        self.trans_manager.commit()
         self.trans_manager.begin()
         self.updateBranchStatus()
         self.trans_manager.commit()
@@ -107,6 +110,7 @@ class BzrSync:
         we don't want to materialise BranchRevision instances for each of these
         in the SQLObject cache, so keep a simple map here."""
         # NOMERGE: move that into the content class, add interface.
+        self.logger.info("Retrieving ancestry from database.")
         cur = cursor()
         cur.execute("""
             SELECT BranchRevision.id, BranchRevision.sequence, Revision.revision_id
@@ -127,75 +131,67 @@ class BzrSync:
 
     def retrieveBranchDetails(self):
         # NOMERGE: docstring!
+        self.logger.info("Retrieving ancestry from bzrlib.")
         self.last_revision = self.bzr_branch.last_revision()
-        self.bzr_ancestry = self.bzr_branch.repository.get_ancestry(
-            self.last_revision)
+        # Make bzr_ancestry a set for consistency with db_ancestry, but keep
+        # the ordered ancestry around for database insertions.
+        bzr_ancestry_ordered = \
+            self.bzr_branch.repository.get_ancestry(self.last_revision)
+        first_ancestor = bzr_ancestry_ordered.pop(0)
+        assert first_ancestor is None, 'history horizons are not supported'
+        self.bzr_ancestry = set(bzr_ancestry_ordered)
         self.bzr_history = self.bzr_branch.revision_history()
 
-    def syncInitialAncestry(self):
-        # NOMERGE: doctsring!
-        # NOMERGE: method too long and hard to read
+    def planDatabaseChanges(self):
+        """Plan database changes to synchronize with bzrlib data.
 
-        # If the database history is the same as the start of
-        # the bzr history, then this branch has only been appended to.
-        # If not then we need to clean out the db ancestry before
-        # we get started adding stuff.
-        rev_count = len(self.db_history)
-        if self.bzr_history[:rev_count] == self.db_history:
-            # Branch has only been appended to.
-            return
-        # NOMERGE: This should not be needed. If the rest of the logic is correct
-        # in the method, it should be fast and make no change.
+        Use the data retrieved by `retrieveDatabaseAncestry` and
+        `retrieveBranchDetails` to plan the changes to apply to the database.
+        """
+        self.logger.info("Planning changes.")
+        bzr_ancestry = self.bzr_ancestry
+        bzr_history = self.bzr_history
+        db_ancestry = self.db_ancestry
+        db_history = self.db_history
+        db_branch_revision_map = self.db_branch_revision_map
 
-        self.trans_manager.begin()
+        # Find the length of the common history.
+        common_len = min(len(bzr_history), len(db_history))
+        while common_len > 0:
+            if db_history[common_len - 1] == bzr_history[common_len - 1]:
+                if db_history[:common_len] == bzr_history[:common_len]:
+                    break
+            common_len -= 1
 
-        # Branch history has changed
+        # Revision added or removed from the branch's history.
+        removed_history = db_history[common_len:]
+        added_history = bzr_history[common_len:]
 
-        # NOMERGE: match_position is ill-named, this is the position of the
-        # first non-match in the history
-        match_position = min(len(self.bzr_history), rev_count)
-        while match_position > 0 and (
-            self.db_history[:match_position] != self.bzr_history[:match_position]):
-            match_position -= 1
-        # NOMERGE: This is (history length) x (removed history revisions).
-        # Bad! Remove (history length) factor!
+        # Revisions added or removed from the branch's ancestry.
+        added_ancestry = bzr_ancestry.difference(db_ancestry)
+        removed_ancestry = db_ancestry.difference(bzr_ancestry)
 
-        # Remove the revisions from the db history that don't match
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        removed = set()
-        for rev_id in self.db_history[match_position:]:
-            self.db_ancestry.remove(rev_id)
-            removed.add(rev_id)
-            branch_revision_set.delete(self.db_branch_revision_map[rev_id])
-        # NOMERGE: While we're optimising, can we do the equivalent of
-        # "delete from branchrevision where id in (...)", postpone deletion.
+        # We must delete BranchRevision rows for all revisions which were
+        # removed from the ancestry or from the history.
+        self.branchrevisions_to_delete = set(
+            db_branch_revision_map[revid]
+            for revid in set(removed_history).union(removed_ancestry))
 
-        # Now realign our db_history.
-        self.db_history = self.db_history[:match_position]
-        # NOMERGE: this looks bogus, the last non-matching revision is not removed.
+        # We must insert BranchRevision rows for all revisions which were added
+        # to the ancestry or to the history.
+        self.branchrevisions_to_insert = list(
+            self.getRevisions(added_ancestry.union(added_history)))
 
-        # Now remove everything in the ancestry that shouldn't be there.
-        to_remove = self.db_ancestry - set(self.bzr_ancestry) - removed
-        for rev_id in to_remove:
-            self.db_ancestry.remove(rev_id)
-            branch_revision_set.delete(self.db_branch_revision_map[rev_id])
-        # NOMERGE: While we're optimising, can we do the equivalent of
-        # "delete from branchrevision where id in (...)".
-
-        # The database and db_history, and db_ancestry are now all
-        # in sync with the common parts of the branch.
-        # NOMERGE BUG: do not commit until ancestry sync is complete!
-        self.trans_manager.commit()
+        # We must insert, or check for consistency, all revisions which were
+        # added to the ancestry.
+        self.revisions_to_insert_or_check = added_ancestry
 
     def syncRevisions(self):
         """Import all the revisions added to the ancestry of the branch."""
-        self.logger.info(
-            "synchronizing revisions for branch: %s", self.bzr_branch.base)
+        self.logger.info("Inserting or checking %d revisions.",
+            len(self.revisions_to_insert_or_check))
         # Add new revisions to the database.
-        added_ancestry = set(self.bzr_ancestry) - self.db_ancestry
-        for revision_id in added_ancestry:
-            if revision_id is None:
-                continue
+        for revision_id in self.revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
@@ -203,7 +199,9 @@ class BzrSync:
                 continue
             # TODO: Sync revisions in batch for improved performance.
             # -- DavidAllouche 2007-02-22
+            self.trans_manager.begin()
             self.syncOneRevision(revision)
+            self.trans_manager.commit()
 
     def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -212,19 +210,13 @@ class BzrSync:
         :type bzr_revision: bzrlib.revision.Revision
         """
         revision_id = bzr_revision.revision_id
-        self.logger.debug("synchronizing revision: %s", revision_id)
-
-        # If did_something is True, new information was found and
-        # loaded into the database.
-        did_something = False
-
-        self.trans_manager.begin()
-
-        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
+        revision_set = getUtility(IRevisionSet)
+        db_revision = revision_set.getByRevisionId(revision_id)
         if db_revision is not None:
             # Verify that the revision in the database matches the
             # revision from the branch.  Currently we just check that
             # the parent revision list matches.
+            self.logger.debug("Checking revision: %s", revision_id)
             db_parents = db_revision.parents
             bzr_parents = bzr_revision.parent_ids
 
@@ -254,33 +246,33 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
-            db_revision = getUtility(IRevisionSet).new(
+            self.logger.debug("Inserting revision: %s", revision_id)
+            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+            db_revision = revision_set.new(
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
-                revision_date=self._timestampToDatetime(bzr_revision.timestamp),
+                revision_date=revision_date,
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
                 parent_ids=bzr_revision.parent_ids)
-            did_something = True
 
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
-
-    def getRevisions(self):
+    def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.
 
-        Generate a sequence of (sequence, revisionID) pairs to be inserted into
-        the branchrevision (nee revisionnumber) table.
+        Generate a sequence of (sequence, revision-id) pairs to be inserted
+        into the branchrevision (nee revisionnumber) table.
+
+        :param limit: set of revision ids, only yield tuples whose revision-id
+            is in this set. Defaults to the full ancestry of the branch.
         """
+        if limit is None:
+            limit = self.bzr_ancestry
         for (index, revision_id) in enumerate(self.bzr_history):
-            # sequence numbers start from 1
-            yield index + 1, revision_id
-        history = set(self.bzr_history)
-        for revision_id in self.bzr_ancestry:
-            if revision_id is not None and revision_id not in history:
-                yield None, revision_id
+            if revision_id in limit:
+                # sequence numbers start from 1
+                yield index + 1, revision_id
+        for revision_id in limit.difference(set(self.bzr_history)):
+            yield None, revision_id
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -302,18 +294,26 @@ class BzrSync:
 
     def syncBranchRevisions(self):
         """Synchronise the revision numbers for the branch."""
-        self.logger.info(
-            "synchronizing revision numbers for branch: %s",
-            self.bzr_branch.base)
-
-        # now synchronise the BranchRevision objects
         branch_revision_set = getUtility(IBranchRevisionSet)
-        for (sequence, revision_id) in self.getRevisions():
-            self.syncBranchRevision(branch_revision_set, sequence, revision_id)
+        revision_set = getUtility(IRevisionSet)
+
+        # Delete BranchRevision records.
+        self.logger.info("Deleting %d branchrevision records.",
+            len(self.branchrevisions_to_delete))
+        for branchrevision in sorted(self.branchrevisions_to_delete):
+            branch_revision_set.delete(branchrevision)
+
+        # Insert BranchRevision records.
+        self.logger.info("Inserting %d branchrevision records.",
+            len(self.branchrevisions_to_insert))
+        for sequence, revision_id in self.branchrevisions_to_insert:
+            db_revision = revision_set.getByRevisionId(revision_id)
+            branch_revision_set.new(self.db_branch, sequence, db_revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
-        # record that the branch has been updated.
+        # Record that the branch has been updated.
+        self.logger.info("Updating branch scanner status.")
         if len(self.bzr_history) > 0:
             last_revision = self.bzr_history[-1]
         else:
@@ -325,34 +325,3 @@ class BzrSync:
         if (last_revision != self.db_branch.last_scanned_id) or \
                (revision_count != self.db_branch.revision_count):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
-
-    def syncBranchRevision(self, branch_revision_set, sequence, revision_id):
-        """Import the revision number with the given sequence and revision_id
-
-        :param sequence: the sequence number for this revision number
-        :type sequence: int
-        :param revision_id: GUID of the revision
-        :type revision_id: str
-        """
-        did_something = False
-
-        # If the revision_id is already in the database ancestry, do nothing.
-        if revision_id in self.db_ancestry:
-            return False
-
-        # NOMORGE: We should not have to do this. Instead we can know directly
-        # which are the RevisionNumbers we need to add to the database.
-
-        # NOMERGE BUG: update the ancestry in a single transaction!
-        # Probably call syncInitialAncestry from this method.
-
-        # Otherwise we need to add it in.
-        self.trans_manager.begin()
-
-        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
-
-        branch_revision_set.new(self.db_branch, sequence, db_revision)
-        
-        self.trans_manager.commit()
-
-        return True

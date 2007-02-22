@@ -394,7 +394,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync.retrieveBranchDetails()
 
         self.assertEqual(revisions[-1], bzrsync.last_revision)
-        self.assertEqual(set(revisions + [None]), set(bzrsync.bzr_ancestry))
+        self.assertEqual(set(revisions), set(bzrsync.bzr_ancestry))
         del revisions[-2] # Not part of the history. See makeBranchWithMerge.
         # NOMERGE: constant revision-ids are easier.
         self.assertEqual(set(revisions), set(bzrsync.bzr_history))
