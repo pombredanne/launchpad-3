@@ -235,3 +235,44 @@ Remove the directory to keep the test working.
   >>> import shutil
   >>> shutil.rmtree(target_dir)
 
+
+== Dist Upgrader to PPA ==
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IArchiveSet)
+
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     name='biscuit', owner=getUtility(IPersonSet).getByName('name16'))
+
+  >>> ppa_upload = NascentUpload(findPolicyByName('insecure'),
+  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
+  ...     MockLogger(), archive=foobar_archive)
+
+  >>> mock_options = MockOptions()
+  >>> ppa_upload.policy.setOptions(mock_options)
+  >>> ppa_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Checking signature on changes file.
+  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Single Custom Upload detected.
+  DEBUG: Finding and applying overrides.
+  DEBUG: Finished checking upload.
+
+  >>> success, msgs = ppa_upload.do_accept()
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Creating a New queue entry
+  DEBUG: Setting it to ACCEPTED
+
+  >>> transaction.commit()
+  >>> ppa_upload.queue_root.realiseUpload(MockLogger())
+  DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
+
+  >>> ppa_dir = '/var/tmp/ppa/name16/biscuit'
+  >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
+  >>> content = sorted(os.listdir(target_dir))
+  >>> content
+  ['20060302.0120', 'current']
+

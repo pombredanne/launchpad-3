@@ -493,11 +493,9 @@ class PackageUploadCustom(SQLBase):
     @property
     def archive_config(self):
         """See IPackageUploadCustom."""
-        # XXX cprov 20050303: use the Zope Component Lookup to instantiate
-        # the object in question and avoid circular imports
-        from canonical.archivepublisher.config import Config as ArchiveConfig
-        distrorelease = self.packageupload.distrorelease
-        return ArchiveConfig(distrorelease.distribution)
+        distribution = self.packageupload.distrorelease.distribution
+        archive = self.packageupload.archive
+        return archive.getPubConfig(distribution)
 
     def _publishCustom(self, action_method):
         """Publish custom formats.

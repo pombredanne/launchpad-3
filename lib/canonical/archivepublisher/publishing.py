@@ -83,9 +83,12 @@ def getPublisherForDistribution(distribution, allowed_suites, log,
     Optionally the user override the resulting indexes location via 'distroot'
     option.
     """
-    log.debug("Finding configuration.")
+    log.debug("Finding configuration for main_archive.")
+
+    archive = distribution.main_archive
+
     try:
-        pubconf = Config(distribution)
+        pubconf = archive.getPubConfig(distribution)
     except LucilleConfigError, info:
         log.error(info)
         raise
@@ -94,8 +97,11 @@ def getPublisherForDistribution(distribution, allowed_suites, log,
         log.debug("Overriding dists root with %s." % distsroot)
         pubconf.distsroot = distsroot
 
+    # XXX cprov 20070103: remove security proxy of the Config instance
+    # returned by IArchive. This is kinda of a hack because Config doesn't
+    # have any interface yet.
+    pubconf = removeSecurityProxy(pubconf)
     disk_pool = _getDiskPool(pubconf, log)
-    archive = distribution.main_archive
 
     log.debug("Preparing publisher.")
 
@@ -117,11 +123,8 @@ def getPublisherForArchive(archive, distribution, allowed_suites, log):
         log.error(info)
         raise
 
-    # XXX cprov 20070103: remove security proxy of the Config instance
-    # returned by IArchive. This is kinda of a hack because Config doesn't
-    # have any interface yet.
+    # XXX cprov 20070103: see above !
     pubconf = removeSecurityProxy(pubconf)
-
     disk_pool = _getDiskPool(pubconf, log)
 
     log.debug("Preparing publisher.")

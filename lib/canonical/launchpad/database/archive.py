@@ -29,6 +29,10 @@ class Archive(SQLBase):
     def getPubConfig(self, distribution):
         """See IPersonPackageArchiveArchive."""
         pubconf = PubConfig(distribution)
+
+        if self.id == distribution.main_archive.id:
+            return pubconf
+
         pubconf.distroroot = config.personalpackagearchive.root
 
         pubconf.archiveroot = os.path.join(
