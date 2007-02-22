@@ -164,9 +164,9 @@ class BzrSync:
         branch_revision_set = getUtility(IBranchRevisionSet)
         removed = set()
         for rev_id in self.db_history[match_position:]:
+            self.db_ancestry.remove(rev_id)
             removed.add(rev_id)
             branch_revision_set.delete(self.db_branch_revision_map[rev_id])
-            # NOMERGE BUG: should update db_ancestry as well.
         # NOMERGE: While we're optimising, can we do the equivalent of
         # "delete from branchrevision where id in (...)", postpone deletion.
 
@@ -336,14 +336,8 @@ class BzrSync:
         """
         did_something = False
 
-        # If the sequence number is <= the db_history, then we have it already
-        if sequence is not None and sequence <= len(self.db_history):
-            return False
-        # NOMERGE: this should not be needed if db_ancestry was updated correctly.
-
-        # If sequence is None, and the revision_id is already in the
-        # ancestry, then we have it already
-        if sequence is None and revision_id in self.db_ancestry:
+        # If the revision_id is already in the database ancestry, do nothing.
+        if revision_id in self.db_ancestry:
             return False
 
         # NOMORGE: We should not have to do this. Instead we can know directly
