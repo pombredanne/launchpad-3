@@ -34,6 +34,13 @@
         />
     </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
+    name="+open_questions_count"
+    permission="zope.Public"
+    />
+
    <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
