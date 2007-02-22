@@ -36,7 +36,7 @@ class RevisionModifiedError(Exception):
 
 
 class BzrSync:
-    """Import version control metadata from Bazaar2 branches into the database.
+    """Import version control metadata from a Bazaar branch into the database.
 
     If the contructor succeeds, a read-lock for the underlying bzrlib branch is
     held, and must be released by calling the `close` method.
@@ -63,24 +63,44 @@ class BzrSync:
         self.db_branch = None
         self.bzr_history = None
 
-    def syncHistoryAndClose(self):
-        """Import all revisions in the branch and release resources.
+    def syncBranchAndClose(self):
+        """Synchronize the database with a Bazaar branch and release resources.
 
-        Convenience method that implements the proper try/finally idiom for the
-        common case of calling `syncHistory` and immediately `close`.
+        Convenience method that implements the proper for the common case of
+        retrieving information from the database, Bazaar branch, calling
+        `syncBranch` and `close`.
         """
         try:
-            # NOMERGE: move initialization into syncHistory and rename,
-            # or update the docstring.
-
             # Load the ancestry as the database knows of it.
             self.retrieveDatabaseAncestry()
             # And get the history and ancestry from the branch.
             self.retrieveBranchDetails()
-            self.syncInitialAncestry()
-            self.syncHistory()
+            self.syncBranch()
         finally:
             self.close()
+
+    def syncBranch(self):
+        """Synchronize the database view of a branch with Bazaar data.
+
+        Several tables must be updated:
+
+        * Revision: there must be one Revision row for each revision in the
+          branch ancestry. If the row for a revision that has just been added
+          to the branch is already present, it must be checked for consistency.
+
+        * BranchRevision: there must be one BrancheRevision row for each
+          revision in the branch ancestry. If history revisions became merged
+          revision, the corresponding rows must be changed.
+
+        * Branch: the branch-scanner status information must be updated when
+          the sync is complete.
+        """
+        self.syncInitialAncestry()
+        self.syncRevisions()
+        self.syncBranchRevisions()
+        self.trans_manager.begin()
+        self.updateBranchStatus()
+        self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):
         """Since the ancestry of some branches is into the tens of thousands
@@ -167,12 +187,10 @@ class BzrSync:
         # NOMERGE BUG: do not commit until ancestry sync is complete!
         self.trans_manager.commit()
 
-    def syncHistory(self):
-        """Import all revisions in the branch."""
-        # Keep track if something was actually loaded in the database.
+    def syncRevisions(self):
+        """Import all the revisions added to the ancestry of the branch."""
         self.logger.info(
-            "synchronizing ancestry for branch: %s", self.bzr_branch.base)
-
+            "synchronizing revisions for branch: %s", self.bzr_branch.base)
         # Add new revisions to the database.
         added_ancestry = set(self.bzr_ancestry) - self.db_ancestry
         for revision_id in added_ancestry:
@@ -186,9 +204,6 @@ class BzrSync:
             # TODO: Sync revisions in batch for improved performance.
             # -- DavidAllouche 2007-02-22
             self.syncRevision(revision)
-
-        # now synchronise the BranchRevision objects
-        self.syncBranchRevisions()
 
     def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -291,30 +306,25 @@ class BzrSync:
             "synchronizing revision numbers for branch: %s",
             self.bzr_branch.base)
 
-        did_something = False
-        self.trans_manager.begin()
-
         # now synchronise the BranchRevision objects
         branch_revision_set = getUtility(IBranchRevisionSet)
         for (sequence, revision_id) in self.getRevisions():
             self.syncBranchRevision(branch_revision_set, sequence, revision_id)
 
+    def updateBranchStatus(self):
+        """Update the branch-scanner status in the database Branch table."""
         # record that the branch has been updated.
         if len(self.bzr_history) > 0:
             last_revision = self.bzr_history[-1]
         else:
             last_revision = NULL_REVISION
 
+        # FIXME: move that conditional logic down to updateScannedDetails.
+        # -- DavidAllouche 2007-02-22
         revision_count = len(self.bzr_history)
         if (last_revision != self.db_branch.last_scanned_id) or \
-           (revision_count != self.db_branch.revision_count):
+               (revision_count != self.db_branch.revision_count):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
-            did_something = True
-
-        if did_something:
-            self.trans_manager.commit()
-        else:
-            self.trans_manager.abort()
 
     def syncBranchRevision(self, branch_revision_set, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id

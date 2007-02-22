@@ -211,7 +211,6 @@ class Branch(SQLBase):
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
-        
 
 
 class BranchSet:

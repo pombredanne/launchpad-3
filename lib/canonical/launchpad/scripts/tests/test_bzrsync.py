@@ -139,7 +139,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def syncBranch(self):
         """Run BzrSync on the test branch."""
-        self.makeBzrSync().syncHistoryAndClose()
+        self.makeBzrSync().syncBranchAndClose()
 
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -220,7 +220,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision()
         counts = self.getCounts()
         bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
-        bzrsync.syncHistoryAndClose()
+        bzrsync.syncBranchAndClose()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
     def test_new_author(self):
@@ -260,8 +260,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync.bzr_history = new_revision_history
         bzrsync.bzr_ancestry.remove(old_revision_history[-2])
         try:
-            bzrsync.syncInitialAncestry()
-            bzrsync.syncHistory()
+            bzrsync.syncBranch()
         finally:
             bzrsync.close()
 
@@ -357,7 +356,7 @@ class TestBzrSync(BzrSyncTestCase):
         # in the BranchRevision table.
         revisions = self.makeBranchWithMerge()
         bzrsync = self.makeBzrSync()
-        bzrsync.syncHistoryAndClose()
+        bzrsync.syncBranchAndClose()
 
         # Make a new BzrSync object, because close() renders the first one
         # unusable.
@@ -375,12 +374,12 @@ class TestBzrSync(BzrSyncTestCase):
         revisions = self.makeBranchWithMerge()
 
         bzrsync = self.makeBzrSync()
-        bzrsync.syncHistoryAndClose()
+        bzrsync.syncBranchAndClose()
         ancestry = branch_revision_set.getAncestryForBranch(self.db_branch)
         ancestry1 = [(b.sequence, b.revision.revision_id) for b in ancestry]
 
         bzrsync = self.makeBzrSync()
-        bzrsync.syncHistoryAndClose()
+        bzrsync.syncBranchAndClose()
         ancestry = branch_revision_set.getAncestryForBranch(self.db_branch)
         ancestry2 = [(b.sequence, b.revision.revision_id) for b in ancestry]
 
@@ -409,9 +408,9 @@ class TestBzrSync(BzrSyncTestCase):
         # Put the database into a known state.
         self.makeBranchWithMerge()
         # NOMERGE: dependency inversion, tests for retrieveDatabaseAncestry should
-        # not depend on syncHistoryAndClose, because it uses
+        # not depend on syncBranchAndClose, because it uses
         # retrieveDatabaseAncestry.
-        self.makeBzrSync().syncHistoryAndClose()
+        self.makeBzrSync().syncBranchAndClose()
 
         bzrsync = self.makeBzrSync()
         bzrsync.retrieveDatabaseAncestry()
