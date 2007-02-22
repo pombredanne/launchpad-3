@@ -1879,6 +1879,8 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
+        # XXX cprov 20070222: It will fail if the two merged users have
+        # archives with the same name. See more information in #87098
         # Just give all Archives to the new person
         cur.execute('''
             UPDATE Archive

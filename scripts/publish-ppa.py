@@ -85,12 +85,10 @@ def main():
 
     log.debug("Finding distribution object.")
 
-    try:
-        distribution = getUtility(IDistributionSet).getByName(
-            options.distribution)
-    except NotFoundError, info:
+    distribution = getUtility(IDistributionSet).getByName(options.distribution)
+    if distribution is None:
         log.error(info)
-        raise
+        return
 
     allowed_suites = set()
     for suite in options.suite:

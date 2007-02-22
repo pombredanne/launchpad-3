@@ -155,7 +155,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
   ...         dsc_standards_version="3.6.9",
   ...         dsc_binaries="%s" % name.name,
-  ...         uploadarchive=1)
+  ...         upload_archive=archive)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,

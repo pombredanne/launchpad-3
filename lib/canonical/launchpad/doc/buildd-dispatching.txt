@@ -54,20 +54,16 @@ Set IBuilder.builderok of all present builders:
   >>> builder_set.count()
   2
 
+  >>> from canonical.launchpad.ftests import syncUpdate
   >>> for b in builder_set:
   ...     b.builderok = True
+  ...     syncUpdate(b)
 
-Flush database changes, otherwise they won't be seem inside
-BuildMaster context:
 
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
-
-Clean up previous BuildQueue results:
+Clean up previous BuildQueue results from sampledata:
 
   >>> from canonical.launchpad.interfaces import IBuildQueueSet
-  >>> bq_set = getUtility(IBuildQueueSet)
-  >>> lost_job = bq_set[1]
+  >>> lost_job = getUtility(IBuildQueueSet).get(1)
   >>> lost_job.builder.name
   u'bob'
   >>> lost_job.destroySelf()

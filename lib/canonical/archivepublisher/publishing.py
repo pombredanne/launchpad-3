@@ -4,11 +4,11 @@ __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
 import logging
 import os
-from Crypto.Hash.SHA256 import new as sha256
 from datetime import datetime
 from md5 import md5
 from sha import sha
 
+from Crypto.Hash.SHA256 import new as sha256
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -69,7 +69,7 @@ def _getDiskPool(pubconf, log):
     log.debug("Preparing on-disk pool representation.")
     dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
+    dp.logger.setLevel(logging.INFO)
 
     return dp
 

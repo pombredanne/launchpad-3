@@ -255,7 +255,7 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             u'biscuit', archive_publisher.archive.name)
         self.assertEqual(
-            u'/var/tmp/ppa/cprov/biscuit/ubuntutest/dists',
+            u'/var/tmp/ppa.test/cprov/biscuit/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],

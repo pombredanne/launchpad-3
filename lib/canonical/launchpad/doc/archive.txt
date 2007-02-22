@@ -7,7 +7,7 @@ An Archive models a Debian Archive ...
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
 
-Let create a new IArchiveSet using a utility:
+Let get the IArchiveSet utility:
 
   >>> archive_set = getUtility(IArchiveSet)
 
@@ -20,7 +20,7 @@ A new Archive can be created by passing a name and an owner
   >>> verifyObject(IArchive, sandbox_archive)
   True
 
-  >>> verifyObject(IPerson, sandbox_archive.owner)
+  >>> sandbox_archive.owner == cprov
   True
 
 An Archive can be retrieved via IPerson.archives MultipleJoin:
@@ -53,7 +53,7 @@ configuration file:
 
 Then, the archive topology will follow:
 
-<PPA>/<PERSONNAME>/<ARCHIVETAG>/<DISTRIBUTION>
+<PPA>/<PERSONNAME>/<ARCHIVENAME>/<DISTRIBUTION>
 
   >>> pubconfig.archiveroot
   u'/var/tmp/ppa/cprov/sandbox/ubuntutest'

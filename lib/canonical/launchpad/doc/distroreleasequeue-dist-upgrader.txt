@@ -273,9 +273,14 @@ files in the respective PPA location.
   >>> ppa_upload.queue_root.realiseUpload(MockLogger())
   DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
 
-  >>> ppa_dir = '/var/tmp/ppa/name16/biscuit'
+  >>> ppa_root = config.personalpackagearchive.root
+  >>> ppa_dir = os.path.join(ppa_root, 'name16/biscuit')
   >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
   >>> content = sorted(os.listdir(target_dir))
   >>> content
   ['20060302.0120', 'current']
 
+Remove the directory to keep the test working.
+
+  >>> import shutil
+  >>> shutil.rmtree(target_dir)

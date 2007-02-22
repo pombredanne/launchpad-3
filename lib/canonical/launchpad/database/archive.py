@@ -27,7 +27,7 @@ class Archive(SQLBase):
         foreignKey='Person', dbName='owner', notNull=False)
 
     def getPubConfig(self, distribution):
-        """See IPersonPackageArchiveArchive."""
+        """See IArchive."""
         pubconf = PubConfig(distribution)
 
         if self.id == distribution.main_archive.id:
@@ -51,10 +51,7 @@ class Archive(SQLBase):
 
 class ArchiveSet:
     implements(IArchiveSet)
-
-    def __init__(self):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        self.title = "Personal archives registered in Launchpad"
+    title = "Archives registered in Launchpad"
 
     def get(self, archive_id):
         """See canonical.launchpad.interfaces.IArchiveSet."""
