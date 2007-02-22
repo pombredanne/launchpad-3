@@ -437,19 +437,19 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
         self.syncrevision_calls = []
 
     def makeBzrSync(self):
-        def syncRevision_called(name, args, kwargs):
+        def syncOneRevision_called(name, args, kwargs):
             (bzr_revision,) = args
             self.assertEqual(kwargs, {})
             self.syncrevision_calls.append(bzr_revision.revision_id)
         bzrsync = BzrSyncTestCase.makeBzrSync(self)
-        observer = InstrumentedMethodObserver(called=syncRevision_called)
-        instrument_method(observer, bzrsync, 'syncRevision')
+        observer = InstrumentedMethodObserver(called=syncOneRevision_called)
+        instrument_method(observer, bzrsync, 'syncOneRevision')
         return bzrsync
 
     def test_one_more_commit(self):
         # Scanning a branch which has already been scanned, and to which a
-        # single simple commit was added, only runs syncRevision once, for the
-        # new revision.
+        # single simple commit was added, only runs syncOneRevision once, for
+        # the new revision.
         self.commitRevision(rev_id='rev-1')
         # First scan checks the full ancestry, which is only one revision.
         self.syncBranch()
@@ -508,7 +508,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             timezone = 0
 
         # sync the revision
-        self.bzrsync.syncRevision(FakeRevision)
+        self.bzrsync.syncOneRevision(FakeRevision)
 
         # Find the revision we just synced and check that it has the correct
         # date.
@@ -527,7 +527,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             timezone = 0
         # synchronise the fake revision:
         counts = self.getCounts()
-        self.bzrsync.syncRevision(FakeRevision)
+        self.bzrsync.syncOneRevision(FakeRevision)
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
             new_parents=2, new_authors=0)
@@ -535,7 +535,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
         # verify that synchronising the revision twice passes and does
         # not create a second revision object:
         counts = self.getCounts()
-        self.bzrsync.syncRevision(FakeRevision)
+        self.bzrsync.syncOneRevision(FakeRevision)
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
@@ -543,17 +543,17 @@ class TestBzrSyncModified(BzrSyncTestCase):
         # verify that adding a parent gets caught:
         FakeRevision.parent_ids.append('rev3')
         self.assertRaises(RevisionModifiedError,
-                          self.bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncOneRevision, FakeRevision)
 
         # verify that removing a parent gets caught:
         FakeRevision.parent_ids = ['rev1']
         self.assertRaises(RevisionModifiedError,
-                          self.bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncOneRevision, FakeRevision)
 
         # verify that reordering the parents gets caught:
         FakeRevision.parent_ids = ['rev2', 'rev1']
         self.assertRaises(RevisionModifiedError,
-                          self.bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncOneRevision, FakeRevision)
 
 
 def test_suite():

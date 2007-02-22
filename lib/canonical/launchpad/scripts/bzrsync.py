@@ -203,9 +203,9 @@ class BzrSync:
                 continue
             # TODO: Sync revisions in batch for improved performance.
             # -- DavidAllouche 2007-02-22
-            self.syncRevision(revision)
+            self.syncOneRevision(revision)
 
-    def syncRevision(self, bzr_revision):
+    def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
