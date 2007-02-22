@@ -107,7 +107,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging',
+    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
@@ -138,7 +138,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     # A search link isn't needed because the distro release overview
     # has a search form.
 
-    def support(self):
+    def answers(self):
         text = 'Ask Question'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')

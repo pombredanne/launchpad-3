@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -19,13 +18,13 @@
                             security_contact upload_admin upload_sender
                             mirror_admin homepage_content emblem gotchi"
             />
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
+        <!-- IQuestionTarget -->
+        <allow attributes="getQuestion searchQuestions findSimilarQuestions
+            answer_contacts direct_answer_contacts getSupportedLanguages
+	    getQuestionLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
+            attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
 
     <browser:defaultView
@@ -67,7 +66,7 @@
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
+            />
     </browser:pages>
 
     <browser:page
@@ -145,25 +144,21 @@
             name="+index"
             facet="overview"
             template="../templates/distribution-index.pt"
-            lp:url="/distros/$Distribution.name/"
             />
         <browser:page
             name="+search"
             facet="overview"
             template="../templates/distribution-search.pt"
-            lp:url="/distros/$Distribution.name/+search"
             />
         <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/distros/$Distribution.name/+bounties"
             />
         <browser:page
             name="+members"
             facet="overview"
             template="../templates/distribution-members.pt"
-            lp:url="/distros/$Distribution.name/+members"
             />
         <browser:page
             name="+translations"
@@ -174,12 +169,10 @@
             name="+builds"
             facet="overview"
             template="../templates/distribution-builds.pt"
-            lp:url="/distros/$distribution/+builds"
             />
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"
-            lp:url="/distros/$distribution/+builds-list"
             />
     </browser:pages>
 
@@ -199,7 +192,6 @@
         name="+allpackages"
         facet="overview"
         template="../templates/distribution-allpackages.pt"
-        lp:url="/distros/$Distribution.name/+allpackages"
         />
 
     <browser:page
@@ -216,31 +208,31 @@
         <browser:page
             name="+portlet-details"
             template="../templates/distribution-portlet-details.pt"
-            lp:url="/distros/$Distribution.name/+portlet-details" />
+            />
         <browser:page
             name="+portlet-lifecycle"
             template="../templates/distribution-portlet-lifecycle.pt"
-            lp:url="/distros/$Distribution.name/+portlet-lifecycle" />
+            />
         <browser:page
             name="+portlet-releases"
             template="../templates/distribution-portlet-releases.pt"
-            lp:url="/distros/$Distribution.name/+portlet-releases" />
+            />
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"
-            lp:url="/distros/$Distribution.name/+portlet-milestones" />
+            />
         <browser:page
             name="+portlet-translations"
             template="../templates/distribution-portlet-translations.pt"
-            lp:url="/distros/$Distribution.name/+portlet-translations" />
+            />
         <browser:page
             name="+portlet-uploaders"
             template="../templates/distribution-portlet-uploaders.pt"
-            lp:url="/distros/$Distribution.name/+portlet-uploaders" />
+            />
         <browser:page
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bounties" />
+            />
         <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt" />
@@ -254,7 +246,7 @@
           <browser:page
               name="+reassign"
               template="../templates/object-reassignment.pt"
-              lp:url="/distros/$distro.id/+reassign" />
+              />
     </browser:pages>
 
     <browser:addform
@@ -269,7 +261,7 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
-        lp:url="/distros/Distro.name/+add">
+	>
         <browser:widget
             field="owner"
             class="canonical.widgets.HiddenUserWidget" />
@@ -301,7 +293,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/distribution-uploadadmin.pt"
-        lp:url="/$Project.name/+uploadadmin">
+        >
     </browser:editform>
 
     <browser:editform
@@ -312,7 +304,7 @@
         fields="members"
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
-        lp:url="/distros/$Distribution.name/+selectmemberteam" />
+        />
 
     <browser:editform
         name="+selectmirroradmins"
@@ -332,7 +324,7 @@
         fields="bugcontact"
         permission="launchpad.Edit"
         template="../templates/distribution-bugcontact.pt"
-        lp:url="/distros/$Distribution.name/+bugcontact" />
+        />
 
     <browser:editform
         name="+changetranslators"
@@ -342,7 +334,7 @@
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         template="../templates/distribution-translators.pt"
-        lp:url="/distros/$Distribution.name/+changetranslators" />
+        />
 
     <browser:addform
       name="+linkbounty"
@@ -354,7 +346,7 @@
       keyword_arguments="distribution bounty"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-link.pt"
-      lp:url="/distributions/$Distribution.name/+linkbounty">
+      >
       <browser:widget
         field="distribution"
         class="canonical.widgets.ContextWidget" />
@@ -406,7 +398,7 @@
         <browser:page
             name="+index"
             template="../templates/distros-index.pt"
-            lp:url="/distros/" />
+            />
     </browser:pages>
 
     <browser:pages
