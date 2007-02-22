@@ -217,22 +217,21 @@ class TestPublisher(TestNativePublishingBase):
         shutil.rmtree(test_pool_dir)
 
     def testPublisherBuilderFunctions(self):
-        """Publisher can be initialized via provided helper functions.
+        """Publisher can be initialized via provided helper function.
 
-        In order to simplify the two distinct top-level publication scripts,
-        one for 'main_archive' publication and other for 'PPA', we have
-        two specific helper functions: 'getPublisherForDistribution' and
-        'getPublisherForArchive'.
+        In order to simplify the top-level publication scripts, one for
+        'main_archive' publication and other for 'PPA', we have a specific
+        helper function: 'getPublisher'
         """
-        from canonical.archivepublisher.publishing import (
-            getPublisherForDistribution,  getPublisherForArchive)
+        from canonical.archivepublisher.publishing import getPublisher
 
         # stub parameters
         allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
         distsroot = None
 
-        distro_publisher = getPublisherForDistribution(
-            self.ubuntutest, allowed_suites, self.logger, distsroot)
+        archive = self.ubuntutest.main_archive
+        distro_publisher = getPublisher(
+            archive, self.ubuntutest, allowed_suites, self.logger, distsroot)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -249,7 +248,7 @@ class TestPublisher(TestNativePublishingBase):
         cprov_archive = getUtility(IArchiveSet).new(
             name='biscuit', owner=cprov)
 
-        archive_publisher = getPublisherForArchive(
+        archive_publisher = getPublisher(
             cprov_archive, self.ubuntutest, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the given PPA archive
@@ -264,14 +263,14 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPPAArchiveIndex(self):
         """Building Archive Indexes from PPA publications."""
-        from canonical.archivepublisher.publishing import getPublisherForArchive
+        from canonical.archivepublisher.publishing import getPublisher
 
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
         cprov_archive = getUtility(IArchiveSet).new(name='foobar', owner=cprov)
 
-        archive_publisher = getPublisherForArchive(
+        archive_publisher = getPublisher(
             cprov_archive, self.ubuntutest, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(

@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.publishing import getPublisherForDistribution
+from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
@@ -110,8 +110,9 @@ def main():
             raise
         allowed_suites.add((distrorelease.name, pocket))
 
-    publisher = getPublisherForDistribution(
-        distribution, allowed_suites, log, options.distsroot)
+    archive = distribution.main_archive
+    publisher = getPublisher(
+        archive, distribution, allowed_suites, log, options.distsroot)
 
     try_and_commit("publishing", publisher.A_publish,
                    options.careful or options.careful_publishing)

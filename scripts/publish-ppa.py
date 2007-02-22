@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.publishing import getPublisherForPPA
+from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
@@ -105,12 +105,13 @@ def main():
     # XXX cprov 20070103: we can optimize the loop by quering only the
     # PPA with modifications pending publication. For now just iterating
     # over all of them should do.
-    for ppa in getUtility(IPersonalPackageArchiveSet):
+    modified_ppa_archives = getUtility(IArchiveSet)
 
-        log.info("Processing PPA: %s/%s" % (ppa.person.name,
-                                            ppa.archive.archive.tag))
+    for archive in modified_ppa_archives:
+        log.info("Processing PPA: %s/%s" % (archive.owner.name,
+                                            archive.archive.name))
 
-        publisher = getPublisherForPPA(ppa, distribution, allowed_suites, log)
+        publisher = getPublisher(archive, distribution, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)

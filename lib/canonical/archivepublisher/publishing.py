@@ -1,7 +1,6 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
-__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket',
-           'getPublisherForDistribution', 'getPublisherForArchive']
+__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
 import logging
 import os
@@ -74,28 +73,23 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-def getPublisherForDistribution(distribution, allowed_suites, log,
-                                distsroot=None):
+def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance according given context.
 
-    Consider the given Distribution and its 'main_archive' associated with
-    the 'allowed_suites' set.
     Optionally the user override the resulting indexes location via 'distroot'
     option.
     """
-    log.debug("Finding configuration for main_archive.")
-
-    archive = distribution.main_archive
-
+    if distribution.main_archive.id == archive.id:
+        log.debug("Finding configuration for %s main_archive."
+                  % distribution.name)
+    else:
+        log.debug("Finding configuration for '%s/%s'."
+                  % (archive.owner.name, archive.name))
     try:
         pubconf = archive.getPubConfig(distribution)
     except LucilleConfigError, info:
         log.error(info)
         raise
-
-    if distsroot is not None:
-        log.debug("Overriding dists root with %s." % distsroot)
-        pubconf.distsroot = distsroot
 
     # XXX cprov 20070103: remove security proxy of the Config instance
     # returned by IArchive. This is kinda of a hack because Config doesn't
@@ -103,33 +97,14 @@ def getPublisherForDistribution(distribution, allowed_suites, log,
     pubconf = removeSecurityProxy(pubconf)
     disk_pool = _getDiskPool(pubconf, log)
 
+    if distsroot is not None:
+        log.debug("Overriding dists root with %s." % distsroot)
+        pubconf.distsroot = distsroot
+
     log.debug("Preparing publisher.")
 
     return Publisher(log, pubconf, disk_pool, distribution, archive,
                      allowed_suites)
-
-def getPublisherForArchive(archive, distribution, allowed_suites, log):
-    """Return an initialised Publisher instance for a given context.
-
-    Publisher is initialized according a given Distribution and Archive.
-    'allowed_suites' set are also considered as they are for main_archive
-    procedure.
-    """
-    log.debug("Finding configuration for '%s/%s'."
-              % (archive.owner.name, archive.name))
-    try:
-        pubconf = archive.getPubConfig(distribution)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
-
-    # XXX cprov 20070103: see above !
-    pubconf = removeSecurityProxy(pubconf)
-    disk_pool = _getDiskPool(pubconf, log)
-
-    log.debug("Preparing publisher.")
-    return Publisher(
-        log, pubconf, disk_pool, distribution, archive, allowed_suites)
 
 
 class Publisher(object):
