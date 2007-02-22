@@ -262,11 +262,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         notify(SQLObjectCreatedEvent(self.branch))
 
     def getAuthor(self, data):
-        # A method that is overridden in the derived classes. 
+        """A method that is overridden in the derived classes."""
         return data['author']
 
     def getProduct(self, data):
-        # A method that is overridden in the derived classes. 
+        """A method that is overridden in the derived classes."""
         return data['product']
 
     @property
@@ -296,19 +296,27 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
 
 class PersonBranchAddView(BranchAddView):
+    """See BranchAddView."""
 
-    field_names = ['product', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page']
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('author')
+        return fields
 
     def getAuthor(self, data):
         return self.context
 
 class ProductBranchAddView(BranchAddView):
-
-    field_names = ['url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+    """See BranchAddView."""
 
     initial_focus_widget = 'url'
+    
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('product')
+        return fields
 
     def getProduct(self, data):
         return self.context
