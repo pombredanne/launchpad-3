@@ -34,4 +34,10 @@
         />
     </browser:pages>
 
+   <adapter
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
+    factory="canonical.launchpad.components.question.sourcepackagerelease_to_questiontarget"
+    />
+
 </configure>

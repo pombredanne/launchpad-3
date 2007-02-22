@@ -34,6 +34,16 @@ the distrorelease's distribution.)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
+Similarly, it is possible to adapt an ISourcePackageRelease into an
+IQuestionTarget.
+
+    >>> firefox_in_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_release_in_warty = firefox_in_warty.currentrelease
+
+    >>> questiontarget = IQuestionTarget(firefox_release_in_warty)
+    >>> verifyObject(IQuestionTarget, questiontarget)
+    True
+
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
