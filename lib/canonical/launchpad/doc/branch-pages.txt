@@ -51,67 +51,6 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has neither title nor summary)'
 
-== PersonBranchesView ==
-
-PersonBranchesView is the view used to produce the branch table in a person.
-Its distinguishing feature is the branch_role method, which explains why the
-branch appears in the table.
-
->>> from canonical.launchpad.interfaces import IPersonSet
->>> sampleperson = getUtility(IPersonSet).get(12)
->>> sampleperson_branches_view = getView(
-...     sampleperson, '+branches', TestRequest())
-
-Roles are dictionaries of two items: 'title', used for display, and 'sortkey',
-used for sorting.
-
-The role can be "Author", if the person is pointed to by the 'author' attribute
-of the branch.
-
->>> gterm_klingon = branchset[18]
->>> gterm_klingon.author == sampleperson
-True
->>> sampleperson_branches_view.branch_role(gterm_klingon)['title']
-'Author'
-
-If the person is not the branch's author, the role is "Registrant" if the
-person is pointed to by the 'owner' attribute of the branch.
-
->>> gterm_dev.author == sampleperson
-False
->>> gterm_dev.owner == sampleperson
-True
->>> sampleperson_branches_view.branch_role(gterm_dev)['title']
-'Registrant'
-
-If the person is neither author nor registrant of a branch, role is
-"Subscriber" if the person is indeed subscribed to the branch.
-
->>> gterm_launchpad = branchset[24]
->>> gterm_launchpad.author == sampleperson
-False
->>> gterm_launchpad.owner == sampleperson
-False
->>> sampleperson in gterm_launchpad.subscribers
-True
->>> sampleperson_branches_view.branch_role(gterm_launchpad)['title']
-'Subscriber'
-
-Finally, if the branch is not related to the person at all, role is undefined
-and the branch_role method raises an exception.
-
->>> thunderbird_main = branchset[2]
->>> thunderbird_main.author == sampleperson
-False
->>> thunderbird_main.owner == sampleperson
-False
->>> sampleperson in thunderbird_main.subscribers
-False
->>> try:
-...     sampleperson_branches_view.branch_role(thunderbird_main)
-... except Exception, exception:
-...     print exception
-Unable determine role of person u'name12' for branch u'~stevea/thunderbird/main'
 
 == Contextual branch views ==
 
@@ -119,39 +58,6 @@ BranchInPersonView and BranchInProductView are used to display branch listing
 items in person and product context. They provide a couple of extra attributes
 and properties to know whether to display links to the person or product
 associated to the branch.
-
-The view used to render list items is chosen using the in_person_context and
-in_product_context methods on BranchTargetView.
-
->>> gterm_branches_view = getView(
-...     gterm_product, '+branchlisting', TestRequest())
->>> gterm_branches_view.in_person_context()
-False
->>> gterm_branches_view.in_product_context()
-True
-
->>> from canonical.launchpad.interfaces import IPersonSet
->>> sampleperson = getUtility(IPersonSet).get(12)
->>> sampleperson_branches_view = getView(
-...     sampleperson, '+branchlisting', TestRequest())
->>> sampleperson_branches_view.in_person_context()
-True
->>> sampleperson_branches_view.in_product_context()
-False
-
-These methods behave the same in a Team context as in a normal person context.
-
->>> from canonical.launchpad.interfaces import IPersonSet
->>> ubuntuteam = getUtility(IPersonSet).get(17)
->>> ubuntuteam_branches_view = getView(ubuntuteam, '+branchlisting', TestRequest())
->>> ubuntuteam_branches_view.in_person_context()
-True
->>> ubuntuteam_branches_view.in_product_context()
-False
-
-These methods are used to decide whether to display the
-+product-summary-listing or +person-summary listing view to generate branch
-list items.
 
 When viewing a branch listing in product context, we should display the link to
 a corresponding person.
@@ -207,6 +113,51 @@ False
 Thus, a branch cannot change between being a pull branch and a push branch
 through the web interface.
 
+
+== PersonBranchesView ==
+
+PersonBranchesView is the view used to produce the branch table for a person.
+Its distinguishing feature is the roleForBranch method, which explains why the
+branch appears in the table.
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> sampleperson = getUtility(IPersonSet).getByName('name12')
+>>> sampleperson_branches_view = getView(
+...     sampleperson, '+branches', TestRequest())
+
+The role can be "Author", if the person is pointed to by the 'author' attribute
+of the branch.
+
+>>> gterm_klingon = branchset[18]
+>>> gterm_klingon.author == sampleperson
+True
+>>> sampleperson_branches_view.roleForBranch(gterm_klingon)
+'Author'
+
+If the person is not the branch's author, the role is "Registrant" if the
+person is pointed to by the 'owner' attribute of the branch.
+
+>>> gterm_dev.author == sampleperson
+False
+>>> gterm_dev.owner == sampleperson
+True
+>>> sampleperson_branches_view.roleForBranch(gterm_dev)
+'Registrant'
+
+If the person is neither author nor registrant of a branch, role is
+"Subscriber" if the person is indeed subscribed to the branch.
+
+>>> gterm_launchpad = branchset[24]
+>>> gterm_launchpad.author == sampleperson
+False
+>>> gterm_launchpad.owner == sampleperson
+False
+>>> sampleperson in gterm_launchpad.subscribers
+True
+>>> sampleperson_branches_view.roleForBranch(gterm_launchpad)
+'Subscriber'
+
+
 == BranchTargetView ==
 
 When listing the branches for a product we use the BranchTargetView.
@@ -218,14 +169,22 @@ don't issue many queries to the database.
 >>> firefox_product = getUtility(IProductSet).getByName('firefox')
 >>> view = getView(firefox_product, '+branches', TestRequest())
 >>> view.initialize()
->>> for branch in view.getListingItems():
+
+The view batches the results.  The method that returns the batch is 'branches'.
+
+>>> from canonical.launchpad.webapp.batching import BatchNavigator
+>>> branches = view.branches()
+>>> isinstance(branches, BatchNavigator)
+True
+
+>>> for branch in branches.branches():
 ...     bugs = []
 ...     if branch.bugbranches:
 ...         bugs = [bugbranch.bug.id for bugbranch in branch.bugbranches]
 ...     print branch.unique_name, bugs
 ...                              
+~name12/firefox/main [4, 5]
 ~sabdfl/firefox/release--0.9.1 []
 ~sabdfl/firefox/release-0.8 []
 ~sabdfl/firefox/release-0.9 []
 ~sabdfl/firefox/release-0.9.2 [4]
-~name12/firefox/main [4, 5]

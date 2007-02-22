@@ -15,34 +15,26 @@ First, check that the condensed branch listing page works:
   ...Sample Person...
   ...Bazaar branches...
 
-
-Then get the detailed branch listing (related branches) for an user which has
-branches in each lifecycle.
-
-  >>> browser.open('http://launchpad.dev/~name12/+branchlisting')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...<h2>Mature</h2>...
-  ...<h2>Development</h2>...
-  ...<h2>Experimental</h2>...
-  ...<h2>Merged</h2>...
-  ...<h2>Abandoned</h2>...
-  ...<h2>New</h2>...
-
 If a person does not have any related branches, we should print an informative
 message.
 
   >>> browser.open('http://launchpad.dev/~kinnison/+branches')
   >>> print browser.contents
   <!DOCTYPE...
-  ...There are no branches related to Daniel Silverstone...
+  ...There may be branches related to Daniel Silverstone but none 
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status"...
 
-This informative message should also appear in the detailed branch listing.
+OK, lets follow the advice.
 
-  >>> browser.open('http://launchpad.dev/~kinnison/+branchlisting')
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
   >>> print browser.contents
   <!DOCTYPE...
-  ...There are no branches related to Daniel Silverstone...
+  ...There are no branches related to Daniel Silverstone in Launchpad today.
+  You can use Launchpad as a registry for Bazaar branches, and encourage
+  broader community participation in your project using
+  distributed version control...
 
 == Default view for a person on code root site ==
 
@@ -52,7 +44,10 @@ normal branch listing view for that person.
   >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print browser.contents
   <!DOCTYPE...
-  ...There are no branches related to Daniel Silverstone...
+  ...There may be branches related to Daniel Silverstone but none 
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status"...
+
 
 == Team Branches ==
 
@@ -63,7 +58,7 @@ shown as 'Team Branch'.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   main   60 New   evolution   40 Team Branch
+   main   60 New   evolution   Team Branch
   
   
 == Authored Branches ==
@@ -71,135 +66,184 @@ shown as 'Team Branch'.
 There should be a link in the branch context menu for person which points to
 the authored branches page.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Authored Branches')
-  >>> print link.url
-  http://launchpad.dev/~name12/+authoredbranches
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('View Authored Branches').click()
+   >>> print browser.title
+   Authored branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main         60 New           firefox
+   klingon      30 Experimental  gnome-terminal
+   junk.contrib 60 New
 
-And we can load the authored branches page.
-
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+authoredbranches'
 
 == Registered Branches ==
 
 There should also be a link which points to the registered branches page.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Registered Branches')
-  >>> print link.url
-  http://launchpad.dev/~name12/+registeredbranches
-
-And we can load the registered branches page.
-
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+registeredbranches'
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('View Registered Branches').click()
+   >>> print browser.title
+   Registered branches for Sample Person 
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   2.6                   10 Mature       gnome-terminal
+   main                  20 Development  gnome-terminal
+   pushed                60 New          gnome-terminal
+   junk.dev Ubuntu Team  30 Experimental
 
 == Subscribed branches ==
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Subscribed Branches')
-  >>> print link.url
-  http://launchpad.dev/~name12/+subscribedbranches
+From the persons main listing page, there is also a link to subscribed
+branches.
 
-And we can load the subscribed branches page.
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('View Subscribed Branches').click()
+   >>> print browser.title
+   Subscribed branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   launchpad   Launchpad Developers 60 New gnome-terminal
+   junk.dev    Ubuntu Team          30 Experimental
 
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+subscribedbranches'
+== Batched branch listing ==
 
+Batching is applied to branch listings where there are many items.
+Luckily for us, many is 5 in the tests.
+
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+   >>> print links.renderContents()
+   <BLANKLINE>
+   ...1...&rarr;...5...of 8 results...
+
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main      Sample Person        New          firefox         Author
+   2.6                            Mature       gnome-terminal  Registrant
+   main                           Development  gnome-terminal  Registrant
+   klingon   Sample Person        Experimental gnome-terminal  Author
+   launchpad Launchpad Developers New          gnome-terminal  Subscriber
+
+   >>> browser.getLink('Next').click()
+   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+   >>> print links.renderContents()
+   <BLANKLINE>
+   ...6...&rarr;...8...of 8 results...
+
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   pushed                     New          gnome-terminal Registrant
+   junk.dev     Ubuntu Team   Experimental                Registrant
+   junk.contrib Sample Person New                         Author
+
+If the branch listing has few enough entries that batching isn't
+needed, then the table is sortable and no batching navigation links are shown.
+
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('View Subscribed Branches').click()
+   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+   >>> links is None
+   True
+   
 == Branch filtering ==
-
-This is a helper function to print out the branches that
-are visible to the user.
-
-  >>> def visible_branches(contents):
-  ...   table = find_tag_by_id(contents, 'branchtable')
-  ...   for row in table.tbody.fetch('tr'):
-  ...     cells = row.fetch('td')
-  ...     name = cells[0].a.renderContents()
-  ...     status = cells[2].fetch('span')[-1].renderContents()
-  ...     print name, status
-
 
 When the branches for a person is first loaded, only the 'Current'
 branches are shown.  Current branches are those that have a 
 lifecycle status of New, Development, Experimental or Mature.
 Merged or Abandoned branches are not shown.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  pushed       New
-  launchpad    New
-
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main      Sample Person        New          firefox         Author
+   2.6                            Mature       gnome-terminal  Registrant
+   main                           Development  gnome-terminal  Registrant
+   klingon   Sample Person        Experimental gnome-terminal  Author
+   launchpad Launchpad Developers New          gnome-terminal  Subscriber
 
 There is a select control that is used to define which
 subset of the branches are shown.
   
-  >>> filter_control = browser.getControl(name='field.lifecycle')
-  >>> filter_control
-  <ListControl name='field.lifecycle' type='select'>
-  >>> filter_control.value
-  ['New, Experimental, Development or Mature']
-  >>> filter_control.displayOptions
-  ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+   >>> filter_control = browser.getControl(name='field.lifecycle')
+   >>> filter_control
+   <ListControl name='field.lifecycle' type='select'>
+   >>> filter_control.value
+   ['New, Experimental, Development or Mature']
+   >>> filter_control.displayOptions
+   ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
     
 Changing the value of the select control will (in a javascript
 enabled browser) cause the form to be submitted automatically.
 For browsers with javascript disabled, there is a form submit
 button.
 
-  >>> filter_control.displayValue = ['Any Status']
-  >>> browser.getControl('Filter').click()
+   >>> filter_control.displayValue = ['Any Status']
+   >>> browser.getControl('Filter').click()
 
 Now all types of branches should be shown.
 
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  slowness     Merged
-  2.4          Abandoned
-  pushed       New
-  launchpad    New
+   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+   >>> print links.renderContents()
+   <BLANKLINE>
+   ...1...&rarr;...5...of 10 results...
+
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main      Sample Person        New          firefox         Author
+   2.4                            Abandoned    gnome-terminal  Registrant
+   slowness  Sample Person        Merged       gnome-terminal  Author
+   2.6                            Mature       gnome-terminal  Registrant
+   main                           Development  gnome-terminal  Registrant
+
+   >>> browser.getLink('Next').click()
+   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+   >>> print links.renderContents()
+   <BLANKLINE>
+   ...6...&rarr;...10...of 10 results...
+
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   klingon      Sample Person        Experimental gnome-terminal Author
+   launchpad    Launchpad Developers New          gnome-terminal Subscriber
+   pushed                            New          gnome-terminal Registrant
+   junk.dev     Ubuntu Team          Experimental                Registrant
+   junk.contrib Sample Person        New                         Author
 
 
 Selecting an individual lifecycle status from the select control 
 will cause only branches with that status to be listed.
 
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
-  >>> browser.getControl('Filter').click()
-  >>> visible_branches(browser.contents)
-  2.4     Abandoned
+   >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+   >>> browser.getControl('Filter').click()
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   2.4  50 Abandoned    gnome-terminal  Registrant
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
 
-  >>> browser.open(
-  ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
-  >>> browser.getControl(name='field.lifecycle').displayValue
-  ['New, Experimental, Development or Mature']
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  pushed       New
-  launchpad    New
-
+   >>> browser.open(
+   ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
+   >>> browser.getControl(name='field.lifecycle').displayValue
+   ['New, Experimental, Development or Mature']
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main      Sample Person        New          firefox         Author
+   2.6                            Mature       gnome-terminal  Registrant
+   main                           Development  gnome-terminal  Registrant
+   klingon   Sample Person        Experimental gnome-terminal  Author
+   launchpad Launchpad Developers New          gnome-terminal  Subscriber
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
@@ -212,8 +256,9 @@ helpful message supplied.
   >>> table = find_tag_by_id(browser.contents, 'branchtable')
   >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
   >>> print cell.renderContents()
-  <i>There are branches registered for launchpad but none of them match the
-  current filter criteria for this page. Try filtering on "Any Status".</i>
+  There may be branches related to Launchpad Developers but none of
+  them match the current filter criteria for this page.
+  Try filtering on "Any Status".
 
 
 == Branch Badge Decoration ==
@@ -231,14 +276,11 @@ We are wanting to have badges for associated bugs and blueprints.
 
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> names_and_bugs(browser.contents)
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.dev
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.contrib
   http://code.launchpad.dev/~name12/+branch/firefox/main
     Bug: http://launchpad.dev/bugs/4
     Bug: http://launchpad.dev/bugs/5
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
   http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/pushed
   http://code.launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad
 

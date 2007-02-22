@@ -108,6 +108,7 @@ class BranchListingView(LaunchpadFormView):
     field_names = ['lifecycle']
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     extra_columns = []
+    title_prefix = 'Bazaar'
     
     # The default set of statuses to show.
     CURRENT_SET = (BranchLifecycleStatus.NEW,
@@ -164,6 +165,9 @@ class BranchListingView(LaunchpadFormView):
 
 
 class ProductBranchesView(BranchListingView):
+    """View for branch listing for a product."""
+    
+    extra_columns = ('author',)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
@@ -186,9 +190,11 @@ class ProductBranchesView(BranchListingView):
                 'in this product.')
         return message % self.context.displayname
 
-class PersonBranchesView(BranchListingView):
 
-    extra_columns = ('product', 'role')
+class PersonBranchesView(BranchListingView):
+    """View for branch listing for a person."""
+
+    extra_columns = ('author', 'product', 'role')
     
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
@@ -211,8 +217,10 @@ class PersonBranchesView(BranchListingView):
 
 
 class PersonAuthoredBranchesView(BranchListingView):
+    """View for branch listing for a person's authored branches."""
 
     extra_columns = ('product',)
+    title_prefix = 'Authored'
     
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
@@ -220,8 +228,10 @@ class PersonAuthoredBranchesView(BranchListingView):
 
 
 class PersonRegisteredBranchesView(BranchListingView):
+    """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('product',)
+    extra_columns = ('author', 'product')
+    title_prefix = 'Registered'
     
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
@@ -229,8 +239,10 @@ class PersonRegisteredBranchesView(BranchListingView):
 
 
 class PersonSubscribedBranchesView(BranchListingView):
+    """View for branch listing for a subscribed's authored branches."""
 
-    extra_columns = ('product',)
+    extra_columns = ('author', 'product')
+    title_prefix = 'Subscribed'
     
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
