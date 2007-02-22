@@ -71,10 +71,12 @@ class BzrSync:
         `syncBranch` and `close`.
         """
         try:
+            # Get the history and ancestry from the branch first, to fail early
+            # if something is wrong with the branch.
+            self.retrieveBranchDetails()
             # Load the ancestry as the database knows of it.
             self.retrieveDatabaseAncestry()
-            # And get the history and ancestry from the branch.
-            self.retrieveBranchDetails()
+            # Synchronize the database with the branch.
             self.syncBranch()
         finally:
             self.close()
