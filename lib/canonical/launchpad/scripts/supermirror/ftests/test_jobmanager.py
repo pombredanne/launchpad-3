@@ -40,7 +40,7 @@ class TestJobManager(unittest.TestCase):
             'managersingle', config.supermirror.branchesdest + '/00/00/00/00',
             None, None)
         fakeclient = FakeBranchStatusClient([
-            (0, 'managersingle'),
+            (0, 'managersingle', u'name//trunk'),
             ])
         manager = jobmanager.JobManager()
         manager.addBranches(fakeclient)
@@ -85,9 +85,13 @@ class TestJobManagerSubclasses(unittest.TestCase):
 
     def setUp(self):
         sample_branches = [
-            (14, 'http://escudero.ubuntu.com:680/0000000e'), # import branch
-            (15, 'http://example.com/gnome-terminal/main'), # mirror branch
-            (25, '/tmp/sftp-test/branches/00/00/00/19'), # upload branch
+            # import branch
+            (14, 'http://escudero.ubuntu.com:680/0000000e',
+             'vcs-imports//main'),
+            # mirror branch
+            (15, 'http://example.com/gnome-terminal/main', u'name12//main'),
+            # upload branch
+            (25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed'),
             ]
         self.client = FakeBranchStatusClient(sample_branches)
 

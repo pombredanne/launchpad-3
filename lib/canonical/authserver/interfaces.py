@@ -166,7 +166,7 @@ class IBranchDetailsStorage(Interface):
     def getBranchPullQueue():
         """Get the list of branches to be pulled by the supermirror.
 
-        :returns: a list of (branch_id, pull_url) pairs.
+        :returns: a list of (branch_id, pull_url, unique_name) triples.
         """
 
     def startMirroring(branchID):

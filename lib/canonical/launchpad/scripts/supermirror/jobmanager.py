@@ -43,7 +43,7 @@ class JobManager:
         """
         branches_to_pull = branch_status_client.getBranchPullQueue()
         destination = config.supermirror.branchesdest
-        for branch_id, branch_src in branches_to_pull:
+        for branch_id, branch_src, unique_name in branches_to_pull:
             branch_src = branch_src.strip()
             path = branchtarget(branch_id)
             branch_dest = os.path.join(destination, path)
