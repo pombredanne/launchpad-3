@@ -12,10 +12,12 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'LaunchpadRootIndexView',
     'SearchProjectsView',
     ]
 
 import cgi
+from cookielib import domain_match
 import urllib
 import os.path
 import time
@@ -42,6 +44,8 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
     stepto, canonical_url)
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.uri import URI
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -445,6 +449,54 @@ class LaunchpadRootNavigation(Navigation):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
 
+    def _getBetaRedirectionView(self):
+        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
+            return None
+
+        # If we are looking at the front page, don't redirect:
+        if self.request['PATH_INFO'] == '/':
+            return None
+        
+        # If no redirection host is set, don't redirect.
+        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        redirection_host = config.launchpad.beta_testers_redirection_host
+        if redirection_host is None:
+            return None
+        # If the hostname for our URL isn't under the main site
+        # (e.g. shipit.ubuntu.com), don't redirect.
+        uri = URI(self.request.getURL())
+        if not uri.host.endswith(mainsite_host):
+            return None
+
+        # Only redirect if the user is a member of beta testers team,
+        # don't redirect.
+        user = getUtility(ILaunchBag).user
+        if user is None or not user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
+            return None
+
+        # Alter the host name to point at the redirection target:
+        new_host = uri.host[:-len(mainsite_host)] + redirection_host
+        uri = uri.replace(host=new_host)
+        # Complete the URL from the environment:
+        uri = uri.replace(path=self.request['PATH_INFO'])
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            uri = uri.replace(query=query_string)
+
+        # Empty the traversal stack, since we're redirecting.
+        self.request.setTraversalStack([])
+        
+        # And perform a temporary redirect.
+        return RedirectionView(str(uri), self.request, status=303)
+
+    def publishTraverse(self, request, name):
+        beta_redirection_view = self._getBetaRedirectionView()
+        if beta_redirection_view is not None:
+            return beta_redirection_view
+        return Navigation.publishTraverse(self, request, name)
+
 
 class SoftTimeoutView(LaunchpadView):
 
@@ -472,6 +524,65 @@ class SoftTimeoutView(LaunchpadView):
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
+
+class LaunchpadRootIndexView(LaunchpadView):
+    """An view for the default view of the LaunchpadRoot."""
+
+    def _getCookieParams(self):
+        """Return a string containing the 'domain' and 'secure' parameters."""
+        params = '; Path=/'
+        # XXX: 20070206 jamesh
+        # This code to select the cookie domain comes from webapp/session.py
+        # It should probably be factored out.
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        for domain in config.launchpad.cookie_domains:
+            assert not domain.startswith('.'), \
+                   "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(uri.host, domain) or
+                domain_match(uri.host, dotted_domain)):
+                params += '; Domain=%s' % dotted_domain
+                break
+        return params
+
+    def getInhibitRedirectScript(self):
+        """Returns a Javascript function that inhibits redirection."""
+        return '''
+        function inhibit_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
+            document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
+                               expire.toGMTString())
+            alert('You will not be redirected to the beta site for 2 hours');
+            return false;
+        }''' % self._getCookieParams()
+
+    def getEnableRedirectScript(self):
+        """Returns a Javascript function that enables beta redireciton."""
+        return '''
+        function enable_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 1000)
+            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
+                               expire.toGMTString())
+            alert('Redirection to the beta site has been enabled');
+            return false;
+        }''' % self._getCookieParams()
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+    
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if config.launchpad.beta_testers_redirection_host is None:
+            return False
+
+        return self.user is not None and self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+        
 
 class SearchProjectsView(LaunchpadView):
     """The page where people can search for Projects/Products/Distros."""
