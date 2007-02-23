@@ -28,6 +28,7 @@ class BugAttachmentSetNavigation(GetitemNavigation):
 
 
 class BugAttachmentEditView(LaunchpadFormView):
+    """Edit a bug attachment."""
 
     schema = IBugAttachmentEditForm
     field_names = ['title', 'patch', 'contenttype']
@@ -72,6 +73,7 @@ class BugAttachmentEditView(LaunchpadFormView):
         self.next_url = canonical_url(self.current_bugtask)
 
     def updateContentType(self, new_content_type):
+        """Update the attachment content type."""
         filealiasset = getUtility(ILibraryFileAliasSet)
         old_filealias = self.context.libraryfile
         # Download the file and upload it again with the new content
