@@ -39,5 +39,9 @@ arent' any other attachments, the portlet won't show up at all.
     >>> user_browser.getControl('Delete attachment').click()
     >>> user_browser.url
     'http://.../+bug/2'
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    Attachment "<a href="...">Great deal</a>" has been deleted.
+
     >>> print find_portlet(user_browser.contents, 'Bug attachments')
     None
