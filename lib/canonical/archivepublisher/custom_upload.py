@@ -43,7 +43,8 @@ class CustomUploadTarballInvalidTarfile(CustomUploadError):
 
 class CustomUpload:
 
-    # The following should be overriden by subclasses, probably in their __init__
+    # The following should be overriden by subclasses, probably in
+    # their __init__
     targetdir = None
     version = None
 
