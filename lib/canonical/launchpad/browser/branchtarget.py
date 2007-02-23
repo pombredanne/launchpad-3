@@ -184,7 +184,7 @@ class ProductBranchesView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>'
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this product.')
