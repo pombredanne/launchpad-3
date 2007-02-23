@@ -176,7 +176,8 @@ class BranchAPITestCase(LaunchpadTestCase):
         results = self.server.getBranchPullQueue()
         # Check whether one of the expected branches is in the results:
         self.assertTrue(
-            [15, 'http://example.com/gnome-terminal/main', u'name12//main']
+            [15, 'http://example.com/gnome-terminal/main',
+             u'name12/gnome-terminal/main']
             in results)
 
     def testStartMirroring(self):

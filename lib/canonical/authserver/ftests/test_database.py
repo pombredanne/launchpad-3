@@ -511,15 +511,30 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         #   a vcs-imports branch:
         self.assertEqual(results_dict[14],
                          (14, 'http://escudero.ubuntu.com:680/0000000e',
-                          u'vcs-imports//main'))
+                          u'vcs-imports/evolution/main'))
         #   a pull branch:
         self.assertEqual(results_dict[15],
                          (15, 'http://example.com/gnome-terminal/main',
-                          u'name12//main'))
+                          u'name12/gnome-terminal/main'))
         #   a hosted SFTP push branch:
         self.assertEqual(results_dict[25],
                          (25, '/tmp/sftp-test/branches/00/00/00/19',
-                          u'name12//pushed'))
+                          u'name12/gnome-terminal/pushed'))
+
+    def test_getBranchPullQueueNoLinkedProduct(self):
+        # If a branch doesn't have an associated product the unique name
+        # returned should have +junk in the product segment. See
+        # Branch.unique_name for precedent.
+        self.setSeriesDateLastSynced(3, now_minus='1 second')
+        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.connection.commit()
+
+        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results_dict = dict((row[0], row) for row in results)
+
+        # branch 3 is a branch without a product.
+        branch_id, url, unique_name = results_dict[3]
+        self.assertEqual(unique_name, 'spiv/+junk/trunk')
 
     def test_getBranchPullQueueOrdering(self):
         # Test that rows where last_mirror_attempt IS NULL are listed first, and
