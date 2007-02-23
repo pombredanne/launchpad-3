@@ -42,14 +42,7 @@
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li>
-          <a href="+addticket">
-            <img
-              alt="Ask a question"
-              src="/+icing/but-sml-askaquestion.gif"
-            />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
         <li>
           <a href="+translations">
             <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
