@@ -189,3 +189,20 @@ know if it conflicts or not:
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Invalid value
+
+== Checking URLs ==
+
+URL validation should check also that the entered URL is not the
+root of a site.
+
+  >>> user_browser.open('http://code.launchpad.dev/firefox')
+  >>> user_browser.getLink('Register Bazaar Branch').click()
+  >>> user_browser.getControl('Branch URL').value = 'http://example.com'
+  >>> user_browser.getControl('Name').value = 'unique-name'
+  >>> user_browser.getControl('Add Branch').click()
+  >>> messages = find_tags_by_class(user_browser.contents, 'message')
+  >>> for element in messages:
+  ...     print element.renderContents()
+  There is 1 error.
+  URLs for branches cannot point to the root of a site.
+  
