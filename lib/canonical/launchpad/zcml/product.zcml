@@ -9,7 +9,6 @@
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-        <allow interface="canonical.launchpad.interfaces.IHasGotchiAndEmblem" />
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
@@ -35,7 +34,8 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
+            getQuestionLanguages default_gotchi_heading_resource
+            default_emblem_resource default_gotchi_resource"
 	    />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />

@@ -14,6 +14,8 @@ from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    BaseImageUpload, LargeImageUpload, SmallImageUpload)
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX These import shims are actually necessary if we don't go over the
@@ -307,6 +309,25 @@ class IHasGotchiAndEmblem(Interface):
         title=_("Default emblem resource"), required=True, readonly=True,
         description=_("The zope3 resource to be used in case this object "
                       "doesn't have a emblem."))
+
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this object."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this object. It should be "
+            "no bigger than 50k in size.")) 
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on this "
+            "object's home page. It should be no bigger than 100k in size. "))
 
 
 class IAging(Interface):

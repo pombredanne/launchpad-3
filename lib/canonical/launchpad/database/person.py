@@ -195,15 +195,17 @@ class Person(SQLBase):
         The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
         """
         assert suffix in ('', 'mini', 'heading', 'mugshot')
-        if suffix:
-            suffix = '-%s' % suffix
         if self.isTeam():
-            return '/@@/team%s' % suffix
+            img = '/@@/team'
         else:
             if self.is_valid_person:
-                return '/@@/person%s' % suffix
+                img = '/@@/person'
             else:
-                return '/@@/person-inactive%s' % suffix
+                img = '/@@/person-inactive'
+        if suffix:
+            return "%s-%s" % (img, suffix)
+        else:
+            return img
 
     # specification-related joins
     @property
