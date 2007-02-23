@@ -2,11 +2,14 @@
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
-import logging
-import os
+
 from datetime import datetime
+import logging
 from md5 import md5
+import os
 from sha import sha
+import stat
+import tempfile
 
 from Crypto.Hash.SHA256 import new as sha256
 from zope.security.proxy import removeSecurityProxy
@@ -259,45 +262,58 @@ class Publisher(object):
         self.log.debug("Generate Indexes for %s/%s"
                        % (full_name, component.name))
 
-        source_index_basepath = os.path.join(
-            self._config.distsroot, full_name, component.name, 'source')
-
-        if not os.path.exists(source_index_basepath):
-            os.makedirs(source_index_basepath)
-
-        source_index_path = os.path.join(source_index_basepath, "Sources")
-        source_index = open(source_index_path, "w")
-
         self.log.debug("Generating Sources")
+        temp_index = tempfile.mktemp(prefix='source-index_')
+        source_index = open(temp_index, 'wb')
+
         for spp in distrorelease.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
             source_index.write(spp.getIndexStanza().encode('utf8'))
             source_index.write('\n\n')
-
         source_index.close()
+
+        source_index_basepath = os.path.join(
+            self._config.distsroot, full_name, component.name, 'source')
+        os.makedirs(source_index_basepath)
+        source_index_path = os.path.join(source_index_basepath, "Sources")
+
+        # move the the archive index file to the right place.
+        os.rename(temp_index, source_index_path)
+
+        # make the files group writable
+        mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
+        os.chmod(source_index_path, mode | stat.S_IWGRP)
+
 
         for arch in distrorelease.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
 
-            package_index_basepath = os.path.join(
-                self._config.distsroot, full_name, component.name, arch_path)
-
-            if not os.path.exists(package_index_basepath):
-                os.makedirs(package_index_basepath)
-
-            package_index_path = os.path.join(
-                package_index_basepath, "Packages")
-            package_index = open(package_index_path, "w")
+            temp_prefix = '%s-index_' % arch_path
+            temp_index = tempfile.mktemp(prefix=temp_prefix)
+            package_index = open(temp_index, "w")
 
             for bpp in distrorelease.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 package_index.write(bpp.getIndexStanza().encode('utf-8'))
                 package_index.write('\n\n')
-
             package_index.close()
+
+            package_index_basepath = os.path.join(
+                self._config.distsroot, full_name, component.name, arch_path)
+            os.makedirs(package_index_basepath)
+            package_index_path = os.path.join(
+                package_index_basepath, "Packages")
+
+            # move the the archive index file to the right place.
+            os.rename(temp_index, package_index_path)
+
+            # make the files group writable
+            mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
+            os.chmod(package_index_path, mode | stat.S_IWGRP)
+
 
     def _writeDistroRelease(self, distrorelease, pocket):
         """Write out the Release files for the provided distrorelease."""

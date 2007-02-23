@@ -296,11 +296,12 @@ class TestPublisher(TestNativePublishingBase):
              'Format: 1.0',
              'Directory: pool/main/f/foo',
              'Files:',
-             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc'],
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc',
+             ''],
             index_contents)
 
         # remove PPA root
-        #shutil.rmtree(config.personalpackagearchive.root)
+        shutil.rmtree(config.personalpackagearchive.root)
 
     def testReleaseFile(self):
         """Test release file writing.
