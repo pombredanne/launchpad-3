@@ -273,6 +273,7 @@ class Publisher(object):
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
             source_index.write(spp.getIndexStanza().encode('utf8'))
+            source_index.write('\n\n')
 
         source_index.close()
 
@@ -294,6 +295,7 @@ class Publisher(object):
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 package_index.write(bpp.getIndexStanza().encode('utf-8'))
+                package_index.write('\n\n')
 
             package_index.close()
 
