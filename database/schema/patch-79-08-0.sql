@@ -1,5 +1,4 @@
 SET client_min_messages=ERROR;
-
 DROP VIEW POExport;
 ALTER TABLE POFile DROP COLUMN latestsubmission;
 ALTER TABLE POSubmission DISABLE TRIGGER mv_pofiletranslator_posubmission;
@@ -87,6 +86,12 @@ FROM
         psel.pluralform = ps.pluralform;
 
 SELECT setval('posubmissionnew_id_seq', (SELECT last_value FROM posubmission_id_seq), TRUE);
+
+DROP TABLE POSelection;
+DROP TABLE POSubmission;
+DROP TABLE POMsgSet;
+ALTER TABLE POSubmissionNew RENAME TO POSubmission;
+ALTER TABLE POMsgSetNew RENAME TO POMsgSet;
 
 -- Feisty opening.
 INSERT INTO POTemplate (
@@ -231,9 +236,13 @@ FROM
         pt2.sourcepackagename = pt1.sourcepackagename AND
         pt2.distrorelease = dr.id;
 
-INSERT INTO POMsgSetNew (
+ALTER TABLE ONLY POMsgSet
+    ADD CONSTRAINT pomsgset__potmsgset__pofile__key UNIQUE (potmsgset, pofile);
+
+INSERT INTO POMsgSet (
     sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
-    potmsgset, publishedfuzzy, publishedcomplete, isupdated)
+    potmsgset, publishedfuzzy, publishedcomplete, isupdated, reviewer,
+    date_reviewed)
 SELECT
     pms1.sequence AS sequence,
     pf2.id AS pofile,
@@ -244,7 +253,9 @@ SELECT
     ptms2.id AS potmsgset,
     pms1.publishedfuzzy AS publishedfuzzy,
     pms1.publishedcomplete AS publishedcomplete,
-    pms1.isupdated AS isupdated
+    pms1.isupdated AS isupdated,
+    pms1.reviewer AS reviewer,
+    pms1.date_reviewed AS date_reviewed
 FROM
     POTemplate AS pt1
     JOIN (
@@ -268,14 +279,19 @@ FROM
         (pf2.variant = pf1.variant OR
          (pf2.variant IS NULL AND pf1.variant IS NULL))
     JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-    JOIN POMsgSetNew AS pms1 ON
+    JOIN POMsgSet AS pms1 ON
         pms1.potmsgset = ptms1.id AND
         pms1.pofile = pf1.id
     JOIN POTMsgSet AS ptms2 ON
         ptms2.potemplate = pt2.id AND
         ptms2.primemsgid = ptms1.primemsgid;
 
-INSERT INTO POSubmissionNew (
+CREATE INDEX posubmission__pomsgset__pluralform__active__idx
+    ON POSubmission (pomsgset, pluralform, active);
+CREATE INDEX posubmission__pomsgset__pluralform__published__idx
+    ON POSubmission (pomsgset, pluralform, published);
+
+INSERT INTO POSubmission (
     pomsgset, pluralform, potranslation, origin, datecreated,
     person, validationstatus, active, published)
 SELECT
@@ -311,30 +327,22 @@ FROM
         (pf2.variant = pf1.variant OR
          (pf2.variant IS NULL AND pf1.variant IS NULL))
     JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-    JOIN POMsgSetNew AS pms1 ON
+    JOIN POMsgSet AS pms1 ON
         pms1.potmsgset = ptms1.id AND
         pms1.pofile = pf1.id
     JOIN POTMsgSet AS ptms2 ON
         ptms2.potemplate = pt2.id AND
         ptms2.primemsgid = ptms1.primemsgid
-    JOIN POMsgSetNew AS pms2 ON
+    JOIN POMsgSet AS pms2 ON
         pms2.potmsgset = ptms2.id AND
         pms2.pofile = pf2.id
-    JOIN POSubmissionNew AS ps1 ON
+    JOIN POSubmission AS ps1 ON
         ps1.pomsgset = pms1.id AND
         (ps1.active OR ps1.published);
-
-DROP TABLE POSelection;
-DROP TABLE POSubmission;
-DROP TABLE POMsgSet;
-ALTER TABLE POSubmissionNew RENAME TO POSubmission;
-ALTER TABLE POMsgSetNew RENAME TO POMsgSet;
 
 -- pomsgset constraints:
 ALTER TABLE ONLY pomsgset
     ADD CONSTRAINT pomsgset_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset__potmsgset__pofile__key UNIQUE (potmsgset, pofile);
 ALTER TABLE ONLY pomsgset
     ADD CONSTRAINT pomsgset__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
 ALTER TABLE ONLY pomsgset
@@ -377,10 +385,6 @@ CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__active__unique_idx
     ON POSubmission (pomsgset, pluralform) WHERE active IS TRUE;
 CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__published__unique_idx
     ON POSubmission (pomsgset, pluralform) WHERE published IS TRUE;
-CREATE INDEX posubmission__pomsgset__pluralform__active__idx
-    ON POSubmission (pomsgset, pluralform, active);
-CREATE INDEX posubmission__pomsgset__pluralform__published__idx
-    ON POSubmission (pomsgset, pluralform, published);
 
 CREATE TRIGGER mv_pofiletranslator_posubmission
     AFTER INSERT OR DELETE OR UPDATE ON posubmission
