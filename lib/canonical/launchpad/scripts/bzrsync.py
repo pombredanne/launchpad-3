@@ -92,12 +92,13 @@ class BzrSync:
 
         * BranchRevision: there must be one BrancheRevision row for each
           revision in the branch ancestry. If history revisions became merged
-          revision, the corresponding rows must be changed.
+          revisions, the corresponding rows must be changed.
 
         * Branch: the branch-scanner status information must be updated when
           the sync is complete.
         """
-        self.logger.info("Synchronizing branch: %s", self.bzr_branch.base)
+        self.logger.info("Scanning branch: %s",self.db_branch.unique_name)
+        self.logger.info("    from %s", self.bzr_branch.base)
         self.planDatabaseChanges()
         self.syncRevisions()
         self.trans_manager.begin()
@@ -135,8 +136,7 @@ class BzrSync:
         # NOMERGE: docstring!
         self.logger.info("Retrieving ancestry from bzrlib.")
         self.last_revision = self.bzr_branch.last_revision()
-        # Make bzr_ancestry a set for consistency with db_ancestry, but keep
-        # the ordered ancestry around for database insertions.
+        # Make bzr_ancestry a set for consistency with db_ancestry.
         bzr_ancestry_ordered = \
             self.bzr_branch.repository.get_ancestry(self.last_revision)
         first_ancestor = bzr_ancestry_ordered.pop(0)
@@ -160,6 +160,12 @@ class BzrSync:
         # Find the length of the common history.
         common_len = min(len(bzr_history), len(db_history))
         while common_len > 0:
+            # The outer conditional improves efficiency. Without it, the
+            # algorithm is O(history-size * change-size), which can be
+            # excessive if a long branch is replaced by another long branch
+            # with a distant (or no) common mainline parent. The inner
+            # conditional is needed for correctness with branches where the
+            # history does not follow the line of leftmost parents.
             if db_history[common_len - 1] == bzr_history[common_len - 1]:
                 if db_history[:common_len] == bzr_history[:common_len]:
                     break
@@ -183,6 +189,10 @@ class BzrSync:
         # to the ancestry or to the history.
         self.branchrevisions_to_insert = list(
             self.getRevisions(added_ancestry.union(added_history)))
+        # NOMERGE: make it more obvious that added_history may include
+        # revisions that were previously part of the ancestry, but that need to
+        # be added because their relation to the branch has changed and they
+        # are in branchrevisions_to_delete.
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
