@@ -474,27 +474,34 @@ class BuilderGroup:
                build.pocket.name))
 
         # ensure we have the correct build root as:
-        # <BUILDMASTER_ROOT>/incoming/<BUILD_ID>/files/
+        # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
-        if not os.path.isdir(root):
-            self.logger.debug("Creating BuilddMaster root '%s'"
-                              % root)
-            os.mkdir(root)
-
         incoming = os.path.join(root, 'incoming')
-        if not os.path.isdir(incoming):
-            self.logger.debug("Creating Incoming directory '%s'"
-                              % incoming)
-            os.mkdir(incoming)
+
         # create a single directory to store build result files
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
         upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
         upload_dir = os.path.join(incoming, upload_leaf)
-        os.mkdir(upload_dir)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
+
+        # build the right UPLOAD_PATH so the distribution and archive
+        # can be correctly found during the upload:
+        #  * For trusted:        <distribution>/[FILES]
+        #  * For PPA(untrusted): <distribution>/<person>/<archive>/[FILES]
+        distribution_name = queueItem.build.distribution.name
+        if queueItem.is_trusted:
+            target_path = "%s" % distribution_name
+        else:
+            archive = queueItem.build.archive
+            target_path = (
+                "%s/%s/%s"% (distribution_name, archive.owner.name,
+                             archive.name))
+        upload_path = os.path.join(upload_dir, target_path)
+        os.makedirs(upload_path)
 
         for filename in filemap:
             slave_file = slave.getFile(filemap[filename])
-            out_file_name = os.path.join(upload_dir, filename)
+            out_file_name = os.path.join(upload_path, filename)
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
@@ -518,8 +525,9 @@ class BuilderGroup:
 
         self.logger.debug("Invoking uploader on %s" % root)
         self.logger.debug("%s" % uploader_argv)
-        uploader_process = subprocess.Popen(uploader_argv,
-                                            stdout=subprocess.PIPE)
+        uploader_process = subprocess.Popen(
+            uploader_argv, stdout=subprocess.PIPE)
+
         # nothing would be written to the stdout/stderr, but it's safe
         stdout, stderr = uploader_process.communicate()
         result_code = uploader_process.returncode
@@ -527,10 +535,9 @@ class BuilderGroup:
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
             failed_dir = os.path.join(root, "failed-to-move")
-            if not os.path.exists(failed_dir):
-                os.mkdir(failed_dir)
-            os.rename(upload_dir, os.path.join(failed_dir,
-                                               upload_leaf))
+            os.makedirs(failed_dir)
+            os.rename(
+                upload_dir, os.path.join(failed_dir, upload_leaf))
 
         self.logger.debug("Uploader returned %d" % result_code)
 
