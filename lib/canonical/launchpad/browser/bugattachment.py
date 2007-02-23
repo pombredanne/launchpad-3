@@ -66,6 +66,11 @@ class BugAttachmentEditView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.current_bugtask)
 
+    @action('Delete attachment', name='delete')
+    def delete_action(self, action, data):
+        self.context.removeFromBug()
+        self.next_url = canonical_url(self.current_bugtask)
+
     def updateContentType(self, new_content_type):
         filealiasset = getUtility(ILibraryFileAliasSet)
         old_filealias = self.context.libraryfile
