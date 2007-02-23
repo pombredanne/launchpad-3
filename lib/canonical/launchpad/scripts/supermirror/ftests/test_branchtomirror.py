@@ -67,7 +67,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
@@ -91,7 +92,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -184,7 +186,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
-        to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
+        to_mirror = BranchToMirror(
+            'src-branch', 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
@@ -237,7 +240,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         dest_dir = "dest-dir"
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1)
+            non_existant_branch, dest_dir, client, 1, None)
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
@@ -247,7 +250,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1)
+            non_existant_branch, "anothernonsensedir", client, 1, None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -271,7 +274,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            'missingrevision', "missingrevisiontarget", client, 1)
+            'missingrevision', "missingrevisiontarget", client, 1, None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -282,7 +285,8 @@ class TestErrorHandling(unittest.TestCase):
 
     def setUp(self):
         client = BranchStatusClient()
-        self.branch = BranchToMirror('foo', 'bar', client, 1)
+        self.branch = BranchToMirror(
+            'foo', 'bar', client, 1, 'owner/product/foo')
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
         self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
@@ -366,6 +370,9 @@ class TestErrorHandling(unittest.TestCase):
         observed_msg = self._runMirrorAndCheckError('Not a branch:')
         self.failIf(split_id in observed_msg,
                     "%r in %r" % (split_id, observed_msg))
+        url = ('sftp://bazaar.launchpad.net/~%s'
+               % self.branch.branch_unique_name)
+        self.assertEqual('Not a branch: %s' % url, observed_msg)
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():
