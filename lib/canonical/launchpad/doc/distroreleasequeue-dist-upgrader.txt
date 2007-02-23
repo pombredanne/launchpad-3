@@ -263,7 +263,7 @@ Publish the custom upload:
   >>> upload.queue_root.realiseUpload()
   Traceback (most recent call last):
   ...
-  DistUpgraderTarError: Problem reading tarfile .../dist-upgrader_20070219.1234_all.tar.gz: ('Bad upstream version format', 'foobar')
+  DistUpgraderBadVersion: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
 
 Check the results.
 

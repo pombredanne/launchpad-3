@@ -11,7 +11,7 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['CustomUpload', 'CustomUploadTarballError']
+__all__ = ['CustomUpload', 'CustomUploadError']
 
 import os
 import shutil
@@ -22,23 +22,23 @@ import tempfile
 from sourcerer.deb.version import Version as make_version
 
 
-class CustomUploadTarballError(Exception):
+class CustomUploadError(Exception):
     """Base class for all errors associated with publishing custom uploads."""
 
 
-class CustomUploadTarballTarError(CustomUploadTarballError):
+class CustomUploadTarballTarError(CustomUploadError):
     """The tarfile module raised an exception."""
     def __init__(self, tarfile_path, tar_error):
         message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
-        CustomUploadTarballError.__init__(self, message)
+        CustomUploadError.__init__(self, message)
 
 
-class CustomUploadTarballInvalidTarfile(CustomUploadTarballError):
+class CustomUploadTarballInvalidTarfile(CustomUploadError):
     """The supplied tarfile did not contain the expected elements."""
     def __init__(self, tarfile_path, expected_dir):
         message = ('Tarfile %s did not contain expected file %s' %
                    (tarfile_path, expected_dir))
-        CustomUploadTarballError.__init__(self, message)
+        CustomUploadError.__init__(self, message)
 
 
 class CustomUpload:
@@ -121,7 +121,7 @@ class CustomUpload:
 
         # Make sure the 'current' symlink points to the most recent version
         # The most recent version is in versions[0]
-        current = os.path.join(target, 'current')
+        current = os.path.join(self.targetdir, 'current')
         os.symlink(versions[0], '%s.new' % current)
         os.rename('%s.new' % current, current)
 
@@ -131,7 +131,7 @@ class CustomUpload:
         # it's lower).
         for oldversion in versions[3:]:
             if oldversion != self.version:
-                shutil.rmtree(os.path.join(target, oldversion))
+                shutil.rmtree(os.path.join(self.targetdir, oldversion))
 
     def cleanup(self):
         """Clean up the temporary directory"""

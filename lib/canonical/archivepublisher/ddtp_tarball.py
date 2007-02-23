@@ -11,7 +11,7 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['process_ddtp_tarball', 'DddtpTarballError']
+__all__ = ['process_ddtp_tarball']
 
 import os
 import tarfile
