@@ -100,10 +100,21 @@ class BzrSync:
         self.logger.info("Scanning branch: %s",self.db_branch.unique_name)
         self.logger.info("    from %s", self.bzr_branch.base)
         self.planDatabaseChanges()
-        self.syncRevisions()
+        # The BranchRevision, Revision and RevisionParent tables are only
+        # written to by the branch-scanner, so they are not subject to
+        # write-lock contention. Update them all in a single transaction to
+        # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
+        self.syncRevisions()
         self.syncBranchRevisions()
         self.trans_manager.commit()
+        # The Branch table is written to by other systems, including the web
+        # UI, so we need to update it in a short transaction to avoid causing
+        # timeouts in the webapp. This opens a small race window where the
+        # revision data is updated in the database, but the Branch table has
+        # not been updated. Since this has no ill-effect, and can only err on
+        # the pessimistic side (tell the user the data has not yet been updated
+        # althought it has), the race is accetpable.
         self.trans_manager.begin()
         self.updateBranchStatus()
         self.trans_manager.commit()
@@ -209,11 +220,7 @@ class BzrSync:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
                 continue
-            # TODO: Sync revisions in batch for improved performance.
-            # -- DavidAllouche 2007-02-22
-            self.trans_manager.begin()
             self.syncOneRevision(revision)
-            self.trans_manager.commit()
 
     def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
