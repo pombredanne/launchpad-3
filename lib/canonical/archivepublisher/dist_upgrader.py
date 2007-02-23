@@ -11,11 +11,10 @@ import tarfile
 import stat
 import shutil
 
-from sourcerer.deb.version import (
-    BadUpstreamError, Version as make_version)
-
 from canonical.archivepublisher.custom_upload import (
     CustomUpload, CustomUploadError)
+from sourcerer.deb.version import (
+    BadUpstreamError, Version as make_version)
 
 
 class DistUpgraderAlreadyExists(CustomUploadError):
