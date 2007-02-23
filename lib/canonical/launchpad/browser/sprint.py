@@ -133,7 +133,7 @@ class SprintSetFacets(StandardLaunchpadFacets):
 class SprintSetSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
-        return 'Launchpad meeting manager:'
+        return None
 
     def getMainHeading(self):
         return 'Meetings and Sprints'
