@@ -43,7 +43,7 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
     """Process a raw-ddtp-tarball tarfile.
 
     Unpacking it into the given archive for the given distrorelease.
-    Raises CustomUploadTarballError (or some subclass thereof) if
+    Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
     upload = DdtpTarballUpload(archive_root, tarfile_path, distrorelease)
