@@ -28,6 +28,7 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
@@ -357,13 +358,14 @@ class TestErrorHandling(unittest.TestCase):
         # The not-a-branch error message should *not* include the Branch id
         # from the database. Instead, the path should be translated to a
         # user-visible location.
+        split_id = split_branch_id(self.branch.branch_id)
         def stubOpenSourceBranch():
-            raise NotBranchError(
-                '/srv/sm-ng/push-branches/00/00/04/e5/.bzr/branch/')
+            raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
+                                 % split_id)
         self.branch._openSourceBranch = stubOpenSourceBranch
         observed_msg = self._runMirrorAndCheckError('Not a branch:')
-        self.assertEqual('Not a branch: %s' % self.branch.source,
-                         observed_msg)
+        self.failIf(split_id in observed_msg,
+                    "%r in %r" % (split_id, observed_msg))
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():

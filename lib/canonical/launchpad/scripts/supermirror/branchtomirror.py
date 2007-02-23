@@ -168,8 +168,7 @@ class BranchToMirror:
 
         except bzrlib.errors.NotBranchError, e:
             self._record_oops(logger)
-            msg = 'Not a branch: %s' % (self.source,)
-            self._mirrorFailed(logger, msg)
+            self._mirrorFailed(logger, e)
 
         except bzrlib.errors.BzrError, e:
             self._record_oops(logger)
