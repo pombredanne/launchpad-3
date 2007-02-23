@@ -11,7 +11,7 @@ from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IArchiveSet, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
@@ -49,6 +49,10 @@ def parse_options():
                       dest="distsroot", metavar="SUFFIX", default=None,
                       help="Override the dists path for generation")
 
+    parser.add_option("--ppa", action="store_true",
+                      dest="ppa", metavar="PPA", default=False,
+                      help="Run only over PPA archives.")
+
     return parser.parse_args()
 
 
@@ -83,7 +87,11 @@ def main():
     log.info("  Distribution: %s" % options.distribution)
     log.info("    Publishing: %s" % careful_msg(options.careful_publishing))
     log.info("    Domination: %s" % careful_msg(options.careful_domination))
-    log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+
+    if not options.ppa:
+        log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+    else:
+        log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
     log.debug("Initialising zopeless.")
     # Change this when we fix up db security
@@ -110,18 +118,41 @@ def main():
             raise
         allowed_suites.add((distrorelease.name, pocket))
 
-    archive = distribution.main_archive
-    publisher = getPublisher(
-        archive, distribution, allowed_suites, log, options.distsroot)
+    if not options.ppa:
+        archives = [distribution.main_archive]
+    else:
+        # XXX cprov 20070103: we can optimize the loop by quering only the
+        # PPA with modifications pending publication. For now just iterating
+        # over all of them should do.
+        archives = getUtility(IArchiveSet).getAllPPAs()
+        if options.distsroot is not None:
+            log.error("We should not define 'distsroot' in PPA mode !")
+            return
 
-    try_and_commit("publishing", publisher.A_publish,
-                   options.careful or options.careful_publishing)
-    try_and_commit("dominating", publisher.B_dominate,
-                   options.careful or options.careful_domination)
-    try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                   options.careful or options.careful_apt)
-    try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                   options.careful)
+    for archive in archives:
+        if not options.ppa:
+            log.info("Processing %s main_archive" % distribution.name)
+        else:
+            log.info("Processing PPA: %s/%s" % (archive.owner.name,
+                                                archive.name))
+
+        publisher = getPublisher(
+            archive, distribution, allowed_suites, log, options.distsroot)
+
+        try_and_commit("publishing", publisher.A_publish,
+                       options.careful or options.careful_publishing)
+        try_and_commit("dominating", publisher.B_dominate,
+                       options.careful or options.careful_domination)
+
+        if not options.ppa:
+            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+                           options.careful or options.careful_apt)
+        else:
+            try_and_commit("building indexes", publisher.C_writeIndexes,
+                           options.careful or options.careful_apt)
+
+        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
+                       options.careful)
 
     log.debug("Ciao")
 

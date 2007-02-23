@@ -148,9 +148,11 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket)
 
+        archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
         build = spr.createBuild(
-            self.breezy_autotest_i386, pocket=PackagePublishingPocket.RELEASE)
+            self.breezy_autotest_i386, archive=archive,
+            pocket=PackagePublishingPocket.RELEASE)
 
         bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
 
@@ -191,7 +193,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False,
-            archive=self.breezy_autotest.main_archive
+            archive=archive
             )
 
         return BinaryPackagePublishingHistory.get(sbpph.id)

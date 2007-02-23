@@ -33,7 +33,7 @@ def main():
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
 
-    parser.add_option("-P", "--ppa", action="store_true",
+    parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
                       help="Run only over PPA archives.")
 
