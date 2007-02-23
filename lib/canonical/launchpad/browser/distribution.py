@@ -499,6 +499,9 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
     """
 
     def render(self):
+        if not self.context.full_functionality:
+            self.request.response.setStatus(404)
+            return u''
         country = request_country(self.request)
         mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
             country, MirrorContent.ARCHIVE)

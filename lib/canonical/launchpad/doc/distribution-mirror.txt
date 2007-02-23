@@ -229,6 +229,15 @@ probably closer to the requester and thus may be a better choice.
      (u'unreachable-mirror', u'France', '512 Kbps'),
      (u'canonical-releases', u'United Kingdom', '100 Mbps')]
 
+In France we also have some unofficial mirrors, but these are not included on
+the above list.
+
+    >>> unofficial_mirror = mirrorset.getByName('invalid-mirror')
+    >>> unofficial_mirror.country == france
+    True
+    >>> unofficial_mirror.isOfficial()
+    False
+
 
 == Probing the mirrors ==
 

@@ -380,12 +380,17 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         return prober
 
     def test_connect_depends_on_localhost_only_config(self):
+        # If localhost_only is True and the host to which we would connect is
+        # not localhost, the connect() method is not called.
         orig_config = config.distributionmirrorprober.localhost_only
         config.distributionmirrorprober.localhost_only = True
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        self.failUnless(prober.connect_host != 'localhost')
         prober.probe()
         self.failIf(prober.connectCalled)
 
+        # If localhost_only is False, then it doesn't matter the host to which
+        # we'll connect to --the connect() method will be called.
         config.distributionmirrorprober.localhost_only = False
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.probe()

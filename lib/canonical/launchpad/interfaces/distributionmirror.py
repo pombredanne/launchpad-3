@@ -5,14 +5,12 @@ __metaclass__ = type
 __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IMirrorDistroReleaseSource', 'IMirrorProbeRecord',
            'IDistributionMirrorSet', 'IMirrorCDImageDistroRelease',
-           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList',
-           'main_ubuntu_mirrors_http_urls']
+           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.fields import ContentNameField, URIField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -21,13 +19,6 @@ from canonical.launchpad import _
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
-
-# XXX: Although one day this will probably have to become a per-distribution
-# setting, we don't need to worry about it now.
-# -- Guilherme Salgado, 2007-02-12
-main_ubuntu_mirrors_http_urls = {
-    MirrorContent.ARCHIVE: 'http://archive.ubuntu.com',
-    MirrorContent.RELEASE: 'http://releases.ubuntu.com'}
 
 
 class DistributionMirrorNameField(ContentNameField):
@@ -299,12 +290,12 @@ class IDistributionMirrorSet(Interface):
         PROBE_INTERVAL hours.
         """
 
-    def getBestMirrorsForCountry(country, content_type):
+    def getBestMirrorsForCountry(country, mirror_type):
         """Return the best mirrors to be used by someone in the given country.
 
         The list of mirrors is composed by the official mirrors located in
         the given country (or in the country's continent if the country
-        doesn't have any) plus the main mirror of that content type.
+        doesn't have any) plus the main mirror of that type.
         """
 
     def getByName(name):

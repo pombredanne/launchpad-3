@@ -71,11 +71,10 @@ class DistroMirrorProber(LaunchpadScript):
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
 
-        # XXX: Using a script argument to control a config variable is not a
-        # great idea, but to me this seems better than passing the
-        # no_remote_hosts value through a lot of method/function calls, until
-        # it reaches the probe() method.
-        # -- Guilherme Salgado, 2007-02-12
+        # Using a script argument to control a config variable is not a great
+        # idea, but to me this seems better than passing the no_remote_hosts
+        # value through a lot of method/function calls, until it reaches the
+        # probe() method.
         if self.options.no_remote_hosts:
             config.distributionmirrorprober.localhost_only = True
 
