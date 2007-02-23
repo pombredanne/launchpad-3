@@ -2159,9 +2159,13 @@ class NascentUpload:
 
             self.insert_into_queue()
 
-            # Unknown uploads
+            # Unknown uploads receives *NEW* message.
             if self.is_new():
                 return True, [new_msg % interpolations]
+
+            # PPA uploads receive acceptance message.
+            if self.is_ppa:
+                return True, [accept_msg % interpolations]
 
             # Known uploads
 

@@ -291,7 +291,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~name16/bar")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = "Subject: bar_1.0-1_source.changes is NEW"
+        contents = ["Subject: Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
