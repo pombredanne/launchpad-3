@@ -568,7 +568,34 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                    summary=summary)
 
 
-class SpecificationSet:
+class HasSpecificationsMixin:
+    """A mixin class that implements many of the common shortcut properties
+    for other classes that have specifications.
+    """
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+        # this should be implemented by the actual context class
+        raise NotImplementedError
+
+    @property
+    def latest_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(sort=SpecificationSort.DATE, quantity=5)
+
+    @property
+    def latest_completed_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(sort=SpecificationSort.DATE, quantity=5,
+            filter=[SpecificationFilter.COMPLETE,])
+
+    @property
+    def specification_count(self):
+        """See IHasSpecifications."""
+        return self.specifications(filter=[SpecificationFilter.ALL]).count()
+
+
+class SpecificationSet(HasSpecificationsMixin):
     """The set of feature specifications."""
 
     implements(ISpecificationSet)
@@ -616,7 +643,13 @@ class SpecificationSet:
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+            if SpecificationFilter.COMPLETE in filter:
+                # if we are showing completed, we care about date completed
+                order = ['-Specification.date_completed', 'Specification.id']
+            else:
+                # if not specially looking for complete, we care about date
+                # registered
+                order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -676,14 +709,9 @@ class SpecificationSet:
         return specification
 
     @property
-    def latest_specs(self):
-        """See ISpecificationSet."""
-        return Specification.select(orderBy='-datecreated')[:10]
-
-    @property
     def upcoming_sprints(self):
         """See ISpecificationSet."""
-        return Sprint.select("time_starts > 'NOW'", orderBy='-time_starts',
+        return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 
     def new(self, name, title, specurl, summary, status,

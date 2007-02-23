@@ -14,27 +14,28 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Feature specifications</h1>
+  <h1>Blueprints for discussion</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <form name="spec_search" method="GET">
+  <div>
+    <form name="spec_search" method="GET">
 
-    Show specifications containing:
+      Show only blueprints containing:
 
-    <input type="text" name="searchtext"
-           tal:attributes="value view/searchtext" />
-    <input tal:condition="view/searchrequested"
-      type="submit"
-      value="Search Again"
-      />
-    <input tal:condition="not: view/searchrequested"
-      type="submit"
-      value="Search Specifications"
-      />
-  </form>
+      <input type="text" name="searchtext"
+             tal:attributes="value view/searchtext" />
+      <input tal:condition="view/searchrequested"
+        type="submit"
+        value="Search again"
+        />
+      <input tal:condition="not: view/searchrequested"
+        type="submit"
+        value="Search blueprints"
+        />
+    </form>
+  </div>
 
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">

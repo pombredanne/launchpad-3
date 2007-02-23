@@ -4,14 +4,13 @@
 
     <ul class="sprint">
       <li tal:repeat="sprint context/upcoming_sprints">
+        <span tal:replace="sprint/time_starts/fmt:date">2005-10-12</span>:
         <a tal:attributes="href sprint/fmt:url"
            tal:content="sprint/title">ubuntu Below Zero</a>
         <br />
-        <span class="discreet"
-              tal:content="sprint/time_starts/fmt:date">2005-10-12</span>
       </li>
     </ul>
-    <div><a href="/sprints">Show all</a></div>
+    <div><a href="/sprints">&raquo; Show all sprints and meetings</a></div>
   </div>
 
 </div>

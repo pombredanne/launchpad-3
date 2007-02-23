@@ -330,10 +330,10 @@ class ISpecificationSet(IHasSpecifications):
 
     title = Attribute('Title')
 
-    latest_specs = Attribute(
-        "The latest 10 specifications registered in Launchpad.")
-
     upcoming_sprints = Attribute("The next 5 sprints in the system.")
+
+    specification_count = Attribute(
+        "The total number of blueprints in Launchpad")
 
     def __iter__():
         """Iterate over all specifications."""

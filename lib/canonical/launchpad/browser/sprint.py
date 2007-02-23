@@ -8,8 +8,10 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
+    'SprintSetFacets',
     'SprintSetContextMenu',
     'SprintSetNavigation',
+    'SprintSetSOP',
     'SprintView',
     'SprintAddView',
     'SprintEditView',
@@ -33,6 +35,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
@@ -117,6 +121,28 @@ class SprintSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Meetings'
+
+
+class SprintSetFacets(StandardLaunchpadFacets):
+    """The facet menu for an ISprintSet."""
+
+    usedfor = ISprintSet
+    enable_only = ['overview', ]
+
+
+class SprintSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return 'Launchpad meeting manager:'
+
+    def getMainHeading(self):
+        return 'Meetings and Sprints'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
 
 
 class SprintSetContextMenu(ContextMenu):

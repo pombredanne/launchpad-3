@@ -15,7 +15,8 @@
   <browser:menus
       module="canonical.launchpad.browser.sprint"
       classes="SprintFacets SprintOverviewMenu 
-               SprintSpecificationsMenu SprintSetContextMenu"
+               SprintSpecificationsMenu SprintSetContextMenu
+               SprintSetFacets"
       />
 
   <browser:navigation
@@ -142,6 +143,13 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetSOP"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
@@ -153,6 +161,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -163,10 +172,11 @@
   </browser:pages>
 
   <browser:page
-      name="+new"
-      for="canonical.launchpad.interfaces.ISprintSet"
-      class="canonical.launchpad.browser.SprintAddView"
-      permission="launchpad.AnyPerson"
-      template="../templates/sprint-new.pt" />
+    name="+new"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
+    class="canonical.launchpad.browser.SprintAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-new.pt" />
 
 </configure>
