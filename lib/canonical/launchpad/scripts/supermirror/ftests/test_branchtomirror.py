@@ -280,7 +280,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class TestErrorHandling(unittest.TestCase):
 
     def setUp(self):
-        self.errors = []
         client = BranchStatusClient()
         self.branch = BranchToMirror('foo', 'bar', client, 1)
         # Stub out everything that we don't need to test
@@ -291,19 +290,23 @@ class TestErrorHandling(unittest.TestCase):
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
+        self.errors = []
 
     def tearDown(self):
         reset_logging()
 
     def _runMirrorAndCheckError(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
         self.branch.mirror(logging.getLogger())
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
         if not error.startswith(expected_error):
             self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+        return error
 
     def testHTTPError(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED, 
@@ -314,7 +317,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testSocketErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -322,7 +324,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnsupportedFormatErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -330,7 +331,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnknownFormatError(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -338,7 +338,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testParamikoNotPresent(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -346,15 +345,27 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testNotBranchError(self):
-        self.errors = []
+        # Should receive a user-friendly message we are asked to mirror a
+        # non-branch.
         def stubOpenSourceBranch():
             raise NotBranchError('/foo/baz/')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Not a branch:'
         self._runMirrorAndCheckError(expected_msg)
 
+    def testNotBranchErrorGivesURL(self):
+        # The not-a-branch error message should *not* include the Branch id
+        # from the database. Instead, the path should be translated to a
+        # user-visible location.
+        def stubOpenSourceBranch():
+            raise NotBranchError(
+                '/srv/sm-ng/push-branches/00/00/04/e5/.bzr/branch/')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        observed_msg = self._runMirrorAndCheckError('Not a branch:')
+        self.assertEqual('Not a branch: %s' % self.branch.source,
+                         observed_msg)
+
     def testBzrErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch
