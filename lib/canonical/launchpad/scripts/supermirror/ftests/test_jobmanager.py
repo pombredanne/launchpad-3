@@ -38,7 +38,7 @@ class TestJobManager(unittest.TestCase):
         # Get a list of branches and ensure that it can add a branch object.
         expected_branch = BranchToMirror(
             'managersingle', config.supermirror.branchesdest + '/00/00/00/00',
-            None, None)
+            None, None, None)
         fakeclient = FakeBranchStatusClient([
             (0, 'managersingle', u'name//trunk'),
             ])
@@ -48,8 +48,8 @@ class TestJobManager(unittest.TestCase):
 
     def testAddJobManager(self):
         manager = jobmanager.JobManager()
-        manager.add(BranchToMirror(None, None, None, None))
-        manager.add(BranchToMirror(None, None, None, None))
+        manager.add(BranchToMirror(None, None, None, None, None))
+        manager.add(BranchToMirror(None, None, None, None, None))
         self.assertEqual(len(manager.branches_to_mirror), 2)
 
     def testManagerCreatesLocks(self):
@@ -102,7 +102,7 @@ class TestJobManagerSubclasses(unittest.TestCase):
         expected_branch = BranchToMirror(
             'http://escudero.ubuntu.com:680/0000000e',
             config.supermirror.branchesdest + '/00/00/00/0e',
-            None, None)
+            None, None, None)
         self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
 
     def testUploadAddBranches(self):
@@ -112,7 +112,7 @@ class TestJobManagerSubclasses(unittest.TestCase):
         expected_branch = BranchToMirror(
             '/tmp/sftp-test/branches/00/00/00/19',
             config.supermirror.branchesdest + '/00/00/00/19',
-            None, None)
+            None, None, None)
         self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
 
     def testMirrorAddBranches(self):
@@ -122,7 +122,7 @@ class TestJobManagerSubclasses(unittest.TestCase):
         expected_branch = BranchToMirror(
             'http://example.com/gnome-terminal/main',
             config.supermirror.branchesdest + '/00/00/00/0f',
-            None, None)
+            None, None, None)
         self.assertEqual(mirror_manager.branches_to_mirror, [expected_branch])
 
 
@@ -188,7 +188,8 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         self.assertMirrored(branchd)
         self.assertMirrored(branche)
 
-    def _makeBranch(self, relativedir, target, branch_status_client):
+    def _makeBranch(self, relativedir, target, branch_status_client,
+                    unique_name=None):
         """Given a relative directory, make a strawman branch and return it.
 
         @param relativedir - The directory to make the branch
@@ -202,8 +203,8 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         else:
             targetdir = os.path.join(self.testdir, branchtarget(target))
         return BranchToMirror(
-                branchdir, targetdir, branch_status_client, target
-                )
+                branchdir, targetdir, branch_status_client, target,
+                unique_name)
 
 
 class FakeBranchStatusClient:
