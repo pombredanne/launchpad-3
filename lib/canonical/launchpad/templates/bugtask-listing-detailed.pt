@@ -2,9 +2,9 @@
   <td class="icon left" tal:content="structure context/fmt:icon" />
   <td>
     <div>
-      <a tal:attributes="href context/fmt:url">
-        <span tal:replace="context/bug/id">4</span>.
-        <strong tal:content="context/bug/title">Bug Title Here</strong>
+      #<span tal:replace="context/bug/id">4</span>
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/bug/title">Bug Title Here
       </a>
     </div>
     <div class="lesser">
