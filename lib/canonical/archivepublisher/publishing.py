@@ -275,7 +275,8 @@ class Publisher(object):
 
         source_index_basepath = os.path.join(
             self._config.distsroot, full_name, component.name, 'source')
-        os.makedirs(source_index_basepath)
+        if not os.path.exists(source_index_basepath):
+            os.makedirs(source_index_basepath)
         source_index_path = os.path.join(source_index_basepath, "Sources")
 
         # move the the archive index file to the right place.
@@ -303,7 +304,8 @@ class Publisher(object):
 
             package_index_basepath = os.path.join(
                 self._config.distsroot, full_name, component.name, arch_path)
-            os.makedirs(package_index_basepath)
+            if not os.path.exists(package_index_basepath):
+                os.makedirs(package_index_basepath)
             package_index_path = os.path.join(
                 package_index_basepath, "Packages")
 
