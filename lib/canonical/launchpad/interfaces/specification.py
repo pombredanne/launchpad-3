@@ -330,7 +330,7 @@ class ISpecificationSet(IHasSpecifications):
 
     title = Attribute('Title')
 
-    upcoming_sprints = Attribute("The next 5 sprints in the system.")
+    coming_sprints = Attribute("The next 5 sprints in the system.")
 
     specification_count = Attribute(
         "The total number of blueprints in Launchpad")

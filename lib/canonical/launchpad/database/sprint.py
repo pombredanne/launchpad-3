@@ -63,6 +63,13 @@ class Sprint(SQLBase):
     def displayname(self):
         return self.title
 
+    @property
+    def drivers(self):
+        """See IHasDrivers."""
+        if self.driver is not None:
+            return [self.driver, self.owner]
+        return [self.owner,]
+
     # useful joins
     attendees = SQLRelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',

@@ -709,7 +709,7 @@ class SpecificationSet(HasSpecificationsMixin):
         return specification
 
     @property
-    def upcoming_sprints(self):
+    def coming_sprints(self):
         """See ISpecificationSet."""
         return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)

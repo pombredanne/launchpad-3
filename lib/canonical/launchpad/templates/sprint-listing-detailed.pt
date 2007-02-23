@@ -16,11 +16,11 @@
       <span tal:replace="context/summary">summary here</span>
       <span tal:condition="not:context/summary"
             tal:replace="context/description/fmt:shorten/320">
-        Description if there is no summary
+        Partial description if there is no summary
       </span>
       <div>
         Registered by
-        <img src="/@@/person-mini" />&nbsp;<a
+        <a
            tal:attributes="href context/owner/fmt:url"
            tal:content="context/owner/browsername">Foo Bar</a>
         on <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>

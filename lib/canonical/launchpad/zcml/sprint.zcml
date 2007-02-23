@@ -50,6 +50,9 @@
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
+      name="+listing-simple"
+      template="../templates/sprint-listing-simple.pt" />
+    <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
     <browser:page
@@ -125,6 +128,18 @@
     permission="zope.Public"
     template="../templates/sprint-meeting-export.pt"
     />
+
+
+  <!-- IHasSprints -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSprints"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-coming-sprints"
+      template="../templates/hassprints-portlet-coming-sprints.pt" />
+  </browser:pages>
+
 
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
