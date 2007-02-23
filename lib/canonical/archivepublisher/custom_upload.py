@@ -1,12 +1,13 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""The processing of translated packages descriptions (ddtp) tarballs.
+"""Infrastructure for handling custom uploads.
 
-DDTP (Debian Descripton Translation Project) aims to offer the description
-of all supported packages translated in several languages.
+Custom uploads are uploaded to Soyuz as special tarballs that must be
+extracted to a particular location in the archive.  This module
+contains code common to the different custom upload types.
 
-DDTP-TARBALL is a custom format upload supported by Launchpad infrastructure
-to enable developers to publish indexes of DDTP contents.
+Custom uploads include Debian installer packages, dist upgraders and
+DDTP (Debian Description Translation Project) tarballs.
 """
 
 __metaclass__ = type
@@ -42,6 +43,7 @@ class CustomUploadTarballInvalidTarfile(CustomUploadError):
 
 
 class CustomUpload:
+    """Base class for custom upload handlers"""
 
     # The following should be overriden by subclasses, probably in
     # their __init__
@@ -56,6 +58,7 @@ class CustomUpload:
         self.tmpdir = None
 
     def process(self):
+        """Process the upload and install it into the archive."""
         try:
             self.extract()
             self.installFiles()
@@ -82,6 +85,7 @@ class CustomUpload:
         raise NotImplementedError
 
     def installFiles(self):
+        """Install the files from the custom upload to the archive."""
         assert self.tmpdir is not None, "Must extract tarfile first"
         extracted = False
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
