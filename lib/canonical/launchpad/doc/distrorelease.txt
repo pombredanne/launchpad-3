@@ -358,10 +358,8 @@ Entire publishing history:
 
 Most recent published history row:
 
-   >>> spph = pmount_srcrel.current_published
-   Traceback (most recent call last):
-   ...
-   NotFoundError: u'Source package pmount not published in hoary'
+   >>> pmount_srcrel.current_published is None
+   True
 
    >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
    >>> spph = netapplet_srcrel.current_published
