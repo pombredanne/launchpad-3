@@ -284,7 +284,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+assignedbugs', text, summary)
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)

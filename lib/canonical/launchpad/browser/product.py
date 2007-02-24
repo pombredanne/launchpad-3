@@ -172,7 +172,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
