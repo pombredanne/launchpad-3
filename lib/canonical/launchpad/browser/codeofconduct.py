@@ -70,7 +70,7 @@ class CodeOfConductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('console', text, icon='edit')
 
 
@@ -98,7 +98,7 @@ class SignedCodeOfConductContextMenu(ContextMenu):
             return Link('+activate', text, icon='edit')
 
     def adminconsole(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('../', text, icon='info')
 
 
