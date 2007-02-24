@@ -108,7 +108,7 @@ class BugContextMenu(ContextMenu):
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
-        text = 'Also Affects Distribution'
+        text = 'Also affects distribution'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):
@@ -134,25 +134,25 @@ class BugContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
-        text = 'Subscribe Someone Else'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to Release"
+            text = "Target to release"
         else:
-            text = 'Nominate for Release'
+            text = 'Nominate for release'
 
         return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
-        text = 'Comment/Attach File'
+        text = 'Comment or attach file'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
-        text = 'Add Branch'
+        text = 'Add branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -165,17 +165,17 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
-        text = 'Remove CVE Link'
+        text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target
         linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a Bug in %s' % bugtarget.displayname
+        text = 'Report a bug in %s' % bugtarget.displayname
         return Link(linktarget, text, icon='add')
 
     def activitylog(self):
-        text = 'Activity Log'
+        text = 'View activity log'
         return Link('+activity', text, icon='list')
 
 

@@ -363,11 +363,11 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
-        text = 'View Authored Branches'
+        text = 'Show authored branches'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'View Registered Branches'
+        text = 'Show registered branches'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
@@ -490,37 +490,37 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Personal Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
         target = '+editlanguages'
-        text = 'Preferred Languages'
+        text = 'Set preferred languages'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'E-mail Addresses'
+        text = 'Update e-mail addresses'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
-        text = 'Wiki Names'
+        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
-        text = 'IRC Nicknames'
+        text = 'Update IRC nicknames'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Jabber IDs'
+        text = 'Update jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -540,7 +540,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'Update SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)
@@ -549,7 +549,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
         target = '+editpgpkeys'
-        text = 'OpenPGP Keys'
+        text = 'Update OpenPGP keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
@@ -579,43 +579,43 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Change Team Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
         target = '+reassign'
-        text = 'Change Owner'
+        text = 'Change owner'
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
     def members(self):
         target = '+members'
-        text = 'All Members'
+        text = 'Show all members'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
         target = '+addmember'
-        text = 'Add New Member'
+        text = 'Add member'
         return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
-        text = 'Polls'
+        text = 'Show polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_poll(self):
         target = '+newpoll'
-        text = 'Create a New Poll'
+        text = 'Create a poll'
         return Link(target, text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+editemail'
-        text = 'Edit Contact Address'
+        text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
@@ -628,7 +628,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             icon = 'remove'
         else:
             target = '+join'
-            text = 'Join the Team' # &#8230;
+            text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon)
 
@@ -2722,3 +2722,5 @@ class PersonAnswersMenu(ApplicationMenu):
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
         return Link('+subscribedtickets', text, summary, icon='question')
+
+

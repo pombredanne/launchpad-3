@@ -18,7 +18,7 @@ True
 Try renaming a project to a blacklisted name:
 
 >>> admin_browser.open('http://launchpad.dev/mozilla')
->>> admin_browser.getLink('Edit Project Details').click()
+>>> admin_browser.getLink('Change details').click()
 >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
 >>> admin_browser.getControl('Change Details').click()
 >>> "The name 'blacklisted' has been blocked by the Launchpad administrators" \
