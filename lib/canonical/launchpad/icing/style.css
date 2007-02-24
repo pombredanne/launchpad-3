@@ -830,7 +830,7 @@ ul.languages, li.languages           {list-style-image: url(/@@/languages);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
-ul.news, li.news /* XXX /@@/news */  {list-style-image: url(/@@/blueprint);}
+ul.news, li.news                     {list-style-image: url(/@@/news);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}

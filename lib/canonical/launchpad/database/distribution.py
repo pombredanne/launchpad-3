@@ -818,7 +818,7 @@ class DistributionSet:
     implements(IDistributionSet)
 
     def __init__(self):
-        self.title = "Distributions registered in Launchpad"
+        self.title = "Registered Distributions"
 
     def __iter__(self):
         """Return all distributions sorted with Ubuntu preferentially

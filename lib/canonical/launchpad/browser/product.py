@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'ProductNavigation',
-    'ProductSetNavigation',
     'ProductShortLink',
     'ProductSOP',
     'ProductFacets',
@@ -16,16 +15,19 @@ __all__ = [
     'ProductBountiesMenu',
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
-    'ProductSetContextMenu',
     'ProductView',
+    'ProductAddView',
     'ProductEditView',
     'ProductAddSeriesView',
-    'ProductRdfView',
-    'ProductSetView',
-    'ProductAddView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductLaunchpadUsageEditView',
+    'ProductRdfView',
+    'ProductSetFacets',
+    'ProductSetSOP',
+    'ProductSetNavigation',
+    'ProductSetContextMenu',
+    'ProductSetView',
     ]
 
 from operator import attrgetter
@@ -364,27 +366,55 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
+class ProductSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class ProductSetFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for the IProductSet."""
+
+    usedfor = IProductSet
+
+    enable_only = ['overview',]
+
+
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall', 'distributions', 'people', 'meetings']
+
+    links = ['products', 'distributions', 'people', 'meetings',
+             'register', 'listall']
 
     def register(self):
-        text = 'Register a Product'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Products'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
     
+    def products(self):
+        return Link('/products/', 'View projects')
+
     def distributions(self):
-        return Link('/distros', 'View Registered Distributions')
+        return Link('/distros/', 'View distributions')
 
     def people(self):
-        return Link('/people', 'View People')
+        return Link('/people/', 'View people')
 
     def meetings(self):
-        return Link('/sprints', 'View Registered Meetings')
+        return Link('/sprints/', 'View meetings')
 
 
 class ProductView:

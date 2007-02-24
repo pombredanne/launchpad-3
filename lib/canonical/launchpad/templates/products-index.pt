@@ -1,4 +1,3 @@
-<tal:layout define="contextless default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -9,7 +8,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h2>Product statistics in Launchpad</h2>
+    <h2>Projects in Launchpad</h2>
     <div class="portletBody portletContent">
       <img src="/@@/info" />
       There are <span tal:replace="context/count_all">5</span>
@@ -27,7 +26,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Registered products</h1>
+  <h1>Is your project in Launchpad?</h1>
 
   <tal:notsearching condition="not:view/searchrequested">
     <p id="application-summary">
@@ -84,6 +83,7 @@
 
         <ul tal:condition="context/latest" class="product">
           <li tal:repeat="product context/latest">
+            <tal:date replace="product/datecreated/fmt:date" />:
             <a
               tal:attributes="href product/fmt:url"
               tal:content="product/displayname"
@@ -94,4 +94,3 @@
     </div>
   </body>
 </html>
-</tal:layout>

@@ -4,8 +4,6 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
-    'DistributionSetNavigation',
-    'DistributionSetContextMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -22,6 +20,10 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
+    'DistributionSetFacets',
+    'DistributionSetNavigation',
+    'DistributionSetContextMenu',
+    'DistributionSetSOP',
     ]
 
 from datetime import datetime
@@ -133,19 +135,44 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
 
+class DistributionSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'Distributions in Launchpad'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class DistributionSetFacets(StandardLaunchpadFacets):
+
+    usedfor = IDistributionSet
+
+    enable_only = ['overview', ]
+
+
 class DistributionSetContextMenu(ContextMenu):
 
     usedfor = IDistributionSet
-    links = ['products', 'people', 'meetings']
+    links = ['products', 'distributions', 'people', 'meetings']
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
 
     def products(self):
-        return Link('/products', 'View Registered Products')
+        return Link('/products/', 'View projects')
 
     def people(self):
-        return Link('/people', 'View People')
+        return Link('/people/', 'View people')
 
     def meetings(self):
-        return Link('/sprints', 'View Registered Meetings')
+        return Link('/sprints/', 'View meetings')
 
 
 class DistributionOverviewMenu(ApplicationMenu):

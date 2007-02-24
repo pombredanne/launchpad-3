@@ -1,4 +1,3 @@
-<tal:layout define="contextless default">
 <html
     xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="en"
@@ -6,17 +5,19 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad"
 >
-  <body>
+<body>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h2>About Soyuz</h2>
+    <h2>Distribution management</h2>
 
     <div class="portletBody portletContent">
       <img src="/@@/info" />
-      "Soyuz" is the part of Launchpad that keeps track of the applications
-      published in different distributions. It allows you to track, for
-      example, the bugs in a distribution.
+      Launchpad can manage the source packages, builds, archive publishing
+      and historical record-keeping necessary to create a distribution.
+      Some of the distributions described here are fully managed in
+      Launchpad, others are managed elsewhere but Launchpad keeps track of
+      their progress.
     </div>
   </div>
 </metal:rightportlets>
@@ -26,8 +27,9 @@
       <h1>Registered distributions</h1>
 
     <p class="documentDescription">
-      Launchpad can keep track of the software packages in a GNU/Linux or
-      GNU/Solaris distribution.
+      Launchpad can keep track of the software packages in a distribution,
+      and provide information about the bugs, translations and code
+      associated with each of them.
     </p>
 
     <table class="listing">
@@ -65,4 +67,3 @@
 
 </body>
 </html>
-</tal:layout>

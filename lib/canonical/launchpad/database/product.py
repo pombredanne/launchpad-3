@@ -538,7 +538,7 @@ class ProductSet:
     implements(IProductSet)
 
     def __init__(self):
-        self.title = "Products registered in Launchpad"
+        self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""

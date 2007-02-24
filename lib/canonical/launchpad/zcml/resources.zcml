@@ -84,6 +84,7 @@
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="milestone" file="../images/milestone.png" />
+    <resource name="news" file="../images/news.png" />
     <resource name="pkg-binary" file="../images/package-binary.png" />
     <resource name="pkg-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
@@ -114,6 +115,8 @@
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/meeting.png" />
+    <resource name="favourite-yes" file="../images/fav-yes.png" />
+    <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/team.png" />

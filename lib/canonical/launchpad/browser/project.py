@@ -107,11 +107,11 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a Project'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Projects'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
 
 

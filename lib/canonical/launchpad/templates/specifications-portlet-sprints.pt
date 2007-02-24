@@ -1,12 +1,9 @@
-<div class="portlet">
+<div>
   <h2>Upcoming meetings</h2>
-  <div class="portletBody portletContent">
 
     <table>
       <tal:per_sprint repeat="sprint context/coming_sprints"
                       replace="structure sprint/@@+listing-simple" />
     </table>
     <div><a href="/sprints">&raquo; Show all sprints and meetings</a></div>
-  </div>
-
 </div>

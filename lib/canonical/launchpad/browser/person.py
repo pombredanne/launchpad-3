@@ -5,9 +5,7 @@ __metaclass__ = type
 __all__ = [
     'PersonNavigation',
     'TeamNavigation',
-    'PersonSetNavigation',
     'PersonSOP',
-    'PeopleContextMenu',
     'PersonFacets',
     'PersonBranchesMenu',
     'PersonBugsMenu',
@@ -60,6 +58,10 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSetFacets',
+    'PersonSetContextMenu',
     ]
 
 import cgi
@@ -205,6 +207,70 @@ class PersonSetNavigation(RedirectionNavigation):
             self.redirection_status = 301
 
 
+class PersonSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'People and Teams'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class PersonSetFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for the IPersonSet."""
+
+    usedfor = IPersonSet
+
+    enable_only = ['overview',]
+
+
+class PersonSetContextMenu(ContextMenu):
+
+    usedfor = IPersonSet
+
+    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
+             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def meetings(self):
+        return Link('/sprints/', 'View meetings')
+
+    def peoplelist(self):
+        text = 'List all people'
+        return Link('+peoplelist', text, icon='people')
+
+    def teamlist(self):
+        text = 'List all teams'
+        return Link('+teamlist', text, icon='people')
+
+    def ubunterolist(self):
+        text = 'List all Ubunteros'
+        return Link('+ubunterolist', text, icon='people')
+
+    def newteam(self):
+        text = 'Register a team'
+        return Link('+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminrequestmerge(self):
+        text = 'Admin merge accounts'
+        return Link('+adminrequestmerge', text, icon='edit')
+
+
 class PersonSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -224,44 +290,6 @@ class PersonSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
-
-
-class PeopleContextMenu(ContextMenu):
-
-    usedfor = IPersonSet
-
-    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
-             'adminrequestmerge', 'products', 'distributions', 'meetings']
-
-    def peoplelist(self):
-        text = 'All People'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'All Teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'All Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
-
-    def newteam(self):
-        text = 'Register a Team'
-        return Link('+newteam', text, icon='add')
-
-    @enabled_with_permission('launchpad.Admin')
-    def adminrequestmerge(self):
-        text = 'Admin Merge Accounts'
-        return Link('+adminrequestmerge', text, icon='edit')
-
-    def products(self):
-        return Link('/products', 'View Registered Products')
-
-    def distributions(self):
-        return Link('/distros', 'View Registered Distributions')
-
-    def meetings(self):
-        return Link('/sprints', 'View Registered Meetings')
 
 
 class PersonFacets(StandardLaunchpadFacets):

@@ -32,32 +32,21 @@
           <h2>What is Launchpad?</h2>
           <p>
             Launchpad is a new software project hosting service.
+            We make it very easy for you to <strong>collaborate seamlessly 
+            across multiple projects</strong>, both upstream and
+            distributions, in the free software world.
+            <a href="/+tour">Learn more&#8230;</a>
           </p>
-          <p>
-            We make it easy to collaborate with developers and other users
-            of your own project.
-          </p>
-          <p>
-            But we also let you share bug reports, translations, and other
-            work across multiple related projects.
-          </p>
-          <p><a href="/+tour">Learn more&#8230;</a></p>
         </div>
         <div class="three column middle">
-          <h2>Featured projects</h2>
-          <ul>
-            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-          </ul>
-        </div>
-        <div class="three column right">
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
               <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001049.html">Surprised to be seeing the Launchpad beta?</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/BugTrackingHighlights"
+                >Intro to Launchpad bug tracking</a>
             </li>
             <li>
               <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
@@ -70,6 +59,16 @@
               <a href="https://help.launchpad.net/KarmaReductionJan07"
               >Wondering why your karma dropped in January?</a>
             </li>
+          </ul>
+        </div>
+        <div class="three column right">
+          <h2>Featured projects</h2>
+          <ul>
+            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
+            <li class="product"><a href="/jokosher">Jokosher</a></li>
           </ul>
         </div>
       </div>
