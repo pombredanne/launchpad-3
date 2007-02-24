@@ -85,3 +85,5 @@ Guacamole agenda.
 
   >>> cprov_browser.url
   'http://blueprints.launchpad.dev/sprints/uds-guacamole/+specs'
+
+

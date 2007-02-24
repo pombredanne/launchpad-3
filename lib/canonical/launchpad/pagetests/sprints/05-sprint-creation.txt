@@ -88,7 +88,7 @@ that time zone:
 Because this is a brand new sprint, it will have no specs, and we should see
 a warning to that effect on the page.
 
-  >>> message = 'No specifications are yet registered for discussion'
+  >>> message = 'Nobody has yet proposed any blueprints for discussion'
   >>> message in user_browser.contents
   True
 
