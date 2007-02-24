@@ -230,7 +230,9 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="globalfooter">
-      <div id="applications-footer" tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+      <div id="applications-footer"
+        tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+        tal:replace="nothing">
         <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
         <a tal:attributes="href vhosts/code/rooturl">Code</a> |
       

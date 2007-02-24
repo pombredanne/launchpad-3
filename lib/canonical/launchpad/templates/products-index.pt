@@ -29,9 +29,9 @@
   <h1>Is your project in Launchpad?</h1>
 
   <tal:notsearching condition="not:view/searchrequested">
-    <p id="application-summary">
-      In Launchpad, <dfn>products</dfn> are individual computer programs,
-      applications, libraries, and documents that are developed as software.
+    <p>
+      If a project is registered in Launchpad, people can keep track of the
+      status of that project much more easily.
     </p>
   </tal:notsearching>
 
