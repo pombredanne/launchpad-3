@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSetContextMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -42,7 +43,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    action, ApplicationMenu, canonical_url, ContextMenu,
+    enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, RedirectionNavigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
@@ -129,6 +131,21 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
+
+
+class DistributionSetContextMenu(ContextMenu):
+
+    usedfor = IDistributionSet
+    links = ['products', 'people', 'meetings']
+
+    def products(self):
+        return Link('/products', 'View Registered Products')
+
+    def people(self):
+        return Link('/people', 'View People')
+
+    def meetings(self):
+        return Link('/sprints', 'View Registered Meetings')
 
 
 class DistributionOverviewMenu(ApplicationMenu):

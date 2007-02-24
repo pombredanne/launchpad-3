@@ -28,7 +28,22 @@
         <input type="submit" value="Search" />
       </form>
       <div class="bordered">
-        <div class="left">
+        <div class="three column left">
+          <h2>What is Launchpad?</h2>
+          <p>
+            Launchpad is a new software project hosting service.
+          </p>
+          <p>
+            We make it easy to collaborate with developers and other users
+            of your own project.
+          </p>
+          <p>
+            But we also let you share bug reports, translations, and other
+            work across multiple related projects.
+          </p>
+          <p><a href="/+tour">Learn more&#8230;</a></p>
+        </div>
+        <div class="three column middle">
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
@@ -38,17 +53,26 @@
             <li class="product"><a href="/jokosher">Jokosher</a></li>
           </ul>
         </div>
-        <div class="right">
-          <h2>More about Launchpad</h2>
-          <p>
-            Launchpad is a software project hosting service,
-            designed to make it easy for you to collaborate with
-            developers and other users.
-            <a href="/+tour">Learn more&#8230;</a>
-          </p>
+        <div class="three column right">
+          <h2>What&#8217;s new</h2>
+          <ul class="news">
+            <li>
+              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001049.html">Surprised to be seeing the Launchpad beta?</a>
+            </li>
+            <li>
+              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/ReportingABug"
+              >Learn about reporting bugs</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/KarmaReductionJan07"
+              >Wondering why your karma dropped in January?</a>
+            </li>
+          </ul>
         </div>
       </div>
-      <div style="clear: both;">&nbsp;</div>
     </div>
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
