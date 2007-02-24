@@ -1355,7 +1355,8 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 }
 ul.buttons {margin: 2em 0 4em 0; padding: 0;}
 ul.buttons li {display: inline; margin-right: 1em;}
-#singlecolumn ul.buttons {float: right;}
+#singlecolumn ul.buttons {float: right; margin: 0;}
+#singlecolumn ul.buttons li {margin: 0;}
 #singlecolumn ul.buttons li {display: block;}
 ul.cross-reference {font-size: 1.25em;}
 /*

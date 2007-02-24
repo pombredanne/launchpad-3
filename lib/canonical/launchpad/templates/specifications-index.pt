@@ -22,26 +22,25 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but-lrg-takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addspec">
+                            <img
+                              alt="Register a specification"
+                              src="/+icing/but-lrg-registeraspec.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <form class="central" name="spec_search" method="get">
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+addspec">
-                              <img
-                                alt="Register a specification"
-                                src="/+icing/but-lrg-registeraspec.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <table>
                           <tbody>
                             <tr>
