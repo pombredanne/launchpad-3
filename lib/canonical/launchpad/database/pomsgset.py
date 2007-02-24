@@ -263,10 +263,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             - self.reviewer: To note who did last review for this message.
             - self.date_reviewed: To note when was done last review.
         """
-            self.pofile.last_touched_pomsgset = self
-            self.reviewer = reviewer
-            self.date_reviewed = UTC_NOW
-            self.sync()
+        self.pofile.last_touched_pomsgset = self
+        self.reviewer = reviewer
+        self.date_reviewed = UTC_NOW
+        self.sync()
 
     def updateTranslationSet(self, person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):
