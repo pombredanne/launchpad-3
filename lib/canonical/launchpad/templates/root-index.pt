@@ -29,17 +29,7 @@
       </form>
       <div class="bordered">
         <div class="three column left">
-          <h2>Featured projects</h2>
-          <ul>
-            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-          </ul>
-        </div>
-        <div class="three column middle">
-          <h2>More about Launchpad</h2>
+          <h2>What is Launchpad?</h2>
           <p>
             Launchpad is a new software project hosting service.
           </p>
@@ -52,6 +42,16 @@
             work across multiple related projects.
           </p>
           <p><a href="/+tour">Learn more&#8230;</a></p>
+        </div>
+        <div class="three column middle">
+          <h2>Featured projects</h2>
+          <ul>
+            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
+            <li class="product"><a href="/jokosher">Jokosher</a></li>
+          </ul>
         </div>
         <div class="three column right">
           <h2>What&#8217;s new</h2>
@@ -73,7 +73,6 @@
           </ul>
         </div>
       </div>
-      <div style="clear: both;">&nbsp;</div>
     </div>
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.

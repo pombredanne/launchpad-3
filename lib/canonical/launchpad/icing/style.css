@@ -75,7 +75,7 @@ body {margin: 0; padding: 0;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
 h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
+h2 {font-size: 1.75em; margin: 0 0 0.75em;     padding: 0;} /* FP */
 h3 {font-size: 1.25em; margin: 0.5em 0 0 0;    padding: 0;}
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
@@ -283,7 +283,7 @@ hr, #globalheader label {
   float: left;
   margin-top: 0.5em;
   border-top: 1px solid #ccc;
-  padding: 0.5em 0 2em;
+  padding: 0.5em 0 1em;
   width: auto;
 }
 .clear {
@@ -1284,7 +1284,7 @@ table#applications td {padding-right: 20px; text-align: right;}
   clear: left; /* Bugs FP */
   font-size: 1.5em;
   margin: auto;
-  padding: 1em 0; /* FP should fit in ~750px */
+  padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
 .tab-unknown .central {font-size: 1.75em;}
