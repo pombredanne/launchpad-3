@@ -268,10 +268,10 @@ he enters 'Evolution' as a keyword and hits the search button.
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no answered questions matching "Evolution" for Ubuntu.
 
-=== My Questions ===
+=== My questions ===
 
 Sample Person remembers posting a question on mozilla-firefox. He uses
-the 'My Questions' link on the distribution source package Answers facet
+the 'My questions' link on the distribution source package Answers facet
 to list all the questions he ever made about that package.
 
 He needs to login to access that page:
@@ -279,7 +279,7 @@ He needs to login to access that page:
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
-    >>> anon_browser.getLink('My Questions').click()
+    >>> anon_browser.getLink('My questions').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -291,7 +291,7 @@ He needs to login to access that page:
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+tickets')
-    >>> sample_person_browser.getLink('My Questions').click()
+    >>> sample_person_browser.getLink('My questions').click()
     >>> print sample_person_browser.title
     Questions you asked about mozilla-firefox in ubuntu
     >>> questions = find_tag_by_id(
@@ -326,15 +326,15 @@ If the user didn't make any questions on the product, a message
 informing him of this fact is displayed.
 
     >>> sample_person_browser.open('http://launchpad.dev/gnomebaker/+tickets')
-    >>> sample_person_browser.getLink('My Questions').click()
+    >>> sample_person_browser.getLink('My questions').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     You didn't ask any questions about gnomebaker.
 
-=== Need Attention ===
+=== Need attention ===
 
 A user can often forget which questions need his attention. For
-this purpose, there is a 'Need Attention' report which displays the
+this purpose, there is a 'Need attention' report which displays the
 questions made by the user which require a reply. It also lists
 the questions on which he provided an answer or requested for more
 information and that are now back in the 'Open' state.
@@ -342,14 +342,14 @@ information and that are now back in the 'Open' state.
 He needs to login to access that page:
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> anon_browser.getLink('Need Attention').click()
+    >>> anon_browser.getLink('Need attention').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> sample_person_browser.getLink('Need Attention').click()
+    >>> sample_person_browser.getLink('Need attention').click()
     >>> print sample_person_browser.title
     Questions needing your attention for Ubuntu
     >>> questions = find_tag_by_id(
@@ -375,7 +375,7 @@ informing him of this fact is displayed.
 
     >>> sample_person_browser.open(
     ...    'http://launchpad.dev/products/gnomebaker/+tickets')
-    >>> sample_person_browser.getLink('Need Attention').click()
+    >>> sample_person_browser.getLink('Need attention').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     No questions need your attention for gnomebaker.
@@ -498,12 +498,12 @@ asked by the person.
     Slow system
     Firefox loses focus and gets stuck
 
-=== Need Attention ===
+=== Need attention ===
 
-The 'Need Attention' link displays all the questions that need
+The 'Need attention' link displays all the questions that need
 the attention of that person.
 
-    >>> browser.getLink('Need Attention').click()
+    >>> browser.getLink('Need attention').click()
     >>> print browser.title
     Questions needing Foo Bar's attention
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
@@ -572,11 +572,11 @@ The same standard reports than on regular QuestionTarget are available:
 
     # The next two reports are only available to a logged-in user.
     >>> user_browser.open('http://launchpad.dev/mozilla/+tickets')
-    >>> user_browser.getLink('My Questions').click()
+    >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
     Questions you asked about the Mozilla Project
 
-    >>> user_browser.getLink('Need Attention').click()
+    >>> user_browser.getLink('Need attention').click()
     >>> print user_browser.title
     Questions needing your attention for the Mozilla Project
 

@@ -2714,7 +2714,7 @@ class PersonAnswersMenu(ApplicationMenu):
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need Attention', summary,
+        return Link('+needattentiontickets', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):

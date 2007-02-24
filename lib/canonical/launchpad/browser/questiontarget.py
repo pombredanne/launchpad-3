@@ -296,7 +296,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
-    """SearchQuestionsView specialization for the 'My Questions' report.
+    """SearchQuestionsView specialization for the 'My questions' report.
 
     It displays and searches the questions made by the logged
     in user in a questiontarget context.
@@ -333,7 +333,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
-    """SearchQuestionsView specialization for the 'Need Attention' report.
+    """SearchQuestionsView specialization for the 'Need attention' report.
 
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
@@ -477,11 +477,11 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
             self.makeSearchLink(['Answered', 'Solved']), text, icon='question')
 
     def myrequests(self):
-        text = 'My Questions'
+        text = 'My questions'
         return Link('+mytickets', text, icon='question')
 
     def need_attention(self):
-        text = 'Need Attention'
+        text = 'Need attention'
         return Link('+need-attention', text, icon='question')
 
 
