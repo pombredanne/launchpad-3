@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -32,8 +33,8 @@ class DistributionNameField(PillarNameField):
 
 
 class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-                    IHasMentoringOffers):
+                    ISpecificationTarget, IHasSecurityContact,
+                    IKarmaContext, IHasMentoringOffers, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")

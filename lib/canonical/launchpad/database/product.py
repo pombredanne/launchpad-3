@@ -46,6 +46,7 @@ from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
@@ -148,6 +149,20 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Specification.product = %s AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     def getOrCreateCalendar(self):
         if not self.calendar:

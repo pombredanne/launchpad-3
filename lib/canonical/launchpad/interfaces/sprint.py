@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISprint',
+    'IHasSprints',
     'ISprintSet',
     ]
 
@@ -20,7 +21,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, LargeImageUpload, BaseImageUpload, SmallImageUpload)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasSpecifications, IHasDrivers)
 
 
 class SprintNameField(ContentNameField):
@@ -35,7 +37,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasSpecifications):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
 
     name = SprintNameField(
@@ -142,7 +144,18 @@ class ISprint(IHasOwner, IHasSpecifications):
         """Remove this specification from the sprint spec list."""
 
 
-# Interfaces for containers
+class IHasSprints(Interface):
+    """An interface for things that have lists of sprints associated with
+    them. This is used for projects, products and distributions, for
+    example, where we can generate a list of upcoming events relevant to
+    them.
+    """
+
+    coming_sprints = Attribute(
+        "A list of up to 5 events currently on, or soon to be on, that are "
+        "relevant to this context.")
+
+
 class ISprintSet(Interface):
     """A container for sprints."""
 

@@ -246,7 +246,7 @@
         <a href="/faq">FAQ</a>
       </div>
       <div id="copyright">
-        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+        Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
         <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
             | build
             <tal:block condition="revno" replace="revno" />

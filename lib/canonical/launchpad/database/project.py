@@ -37,6 +37,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.question import QuestionTargetSearch
 
 
@@ -144,6 +145,21 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Product.project= %s AND
+            Specification.product = Product.id AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def has_any_specifications(self):

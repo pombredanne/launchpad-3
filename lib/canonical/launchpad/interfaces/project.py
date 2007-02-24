@@ -17,6 +17,7 @@ from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
     IKarmaContext, IHasMentoringOffers, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -30,7 +31,7 @@ class ProjectNameField(PillarNameField):
 
 
 class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
-               IKarmaContext, IHasMentoringOffers):
+               IKarmaContext, IHasMentoringOffers, IHasSprints):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

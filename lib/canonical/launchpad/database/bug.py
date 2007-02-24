@@ -195,6 +195,17 @@ class Bug(SQLBase):
         return True
 
     @property
+    def pillar_bugtasks(self):
+        """See IBug."""
+        result = BugTask.select(
+            """BugTask.bug = %d AND (
+                 BugTask.product IS NOT NULL OR
+                 BugTask.distribution IS NOT NULL)
+            """ % self.id)
+        result.prejoin(["assignee"])
+        return sorted(result, key=bugtask_sort_key)
+
+    @property
     def initial_message(self):
         """See IBug."""
         messages = sorted(self.messages, key=lambda ob: ob.id)

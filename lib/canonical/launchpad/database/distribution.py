@@ -28,6 +28,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -155,6 +156,20 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                    DistributionMirror.q.official_approved==False)
         return DistributionMirror.select(
             AND(DistributionMirror.q.distributionID==self.id, query))
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Specification.distribution = %s AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def full_functionality(self):

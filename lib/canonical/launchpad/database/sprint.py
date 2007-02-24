@@ -63,6 +63,13 @@ class Sprint(SQLBase):
     def displayname(self):
         return self.title
 
+    @property
+    def drivers(self):
+        """See IHasDrivers."""
+        if self.driver is not None:
+            return [self.driver, self.owner]
+        return [self.owner,]
+
     # useful joins
     attendees = SQLRelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
@@ -298,7 +305,7 @@ class SprintSet:
 
     def __iter__(self):
         """See ISprintSet."""
-        return iter(Sprint.select(orderBy='-time_starts'))
+        return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
             summary=None, driver=None, home_page=None, gotchi=None,

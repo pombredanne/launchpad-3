@@ -763,3 +763,29 @@ incomplete, and show the status of each of the tasts:
  5 False
  20 False
 
+
+
+Enumerating Bug Tasks
+=====================
+
+There are two methods you can use to get a set of tasks for a given bug. The
+first gives ALL tasks, the second gives just the tasks for the major
+projects (products or distros) in Launchpad, not the
+distrorelease/productseries tasks.
+
+  >>> b2 = bugset.get(2)
+  >>> for task in b2.bugtasks: print task.target.displayname
+  Mozilla Firefox
+  Ubuntu
+  Ubuntu
+  Hoary
+  mozilla-firefox in debian
+  Woody mozilla-firefox
+  >>> for task in b2.pillar_bugtasks: print task.target.displayname
+  Mozilla Firefox
+  Ubuntu
+  Ubuntu
+  mozilla-firefox in debian
+
+Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
+
