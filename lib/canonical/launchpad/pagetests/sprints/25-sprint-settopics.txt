@@ -6,22 +6,18 @@ Any logged in user can propose specs to be discussed in a sprint.
 
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
-
-  >>> spec_portlet = find_portlet(
-  ...     user_browser.contents, 'Specification details')
-  >>> spec_portlet.find(text='Sprints:').findNext('a').string
-  u'uds-guacamole'
+  >>> meeting_link = user_browser.getLink('uds-guacamole')
+  >>> meeting_link is not None
+  True
 
   >>> user_browser.open(
   ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/kde-desktopfile-langpacks/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
-
-  >>> spec_portlet = find_portlet(
-  ...     user_browser.contents, 'Specification details')
-  >>> spec_portlet.find(text='Sprints:').findNext('a').string
-  u'uds-guacamole'
+  >>> meeting_link = user_browser.getLink('uds-guacamole')
+  >>> meeting_link is not None
+  True
 
 Regular users can't approve items to be discussed in a sprint.
 

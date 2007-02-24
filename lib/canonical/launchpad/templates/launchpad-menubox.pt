@@ -1,4 +1,4 @@
-  <ul class="facets">
+  <ul>
     <tal:block repeat="link view/contextmenuitems">
       <li metal:define-macro="renderlink"
           tal:attributes="class link/icon">

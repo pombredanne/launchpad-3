@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseNavigation',
     'ProductReleaseContextMenu',
     'ProductReleaseEditView',
     'ProductReleaseAddView',
@@ -27,14 +26,6 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     Navigation, canonical_url, ContextMenu, Link, enabled_with_permission)
-
-
-class ProductReleaseNavigation(Navigation):
-
-    usedfor = IProductRelease
-
-    def breadcrumb(self):
-        return 'Release ' + self.context.version
 
 
 class ProductReleaseContextMenu(ContextMenu):

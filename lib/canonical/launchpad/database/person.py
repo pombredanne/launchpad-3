@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -72,7 +72,7 @@ from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketPersonSearch
+from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
 
@@ -103,6 +103,8 @@ class Person(SQLBase):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -366,9 +368,9 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, **search_criteria):
         """See IPerson."""
-        return TicketPersonSearch(person=self, **search_criteria).getResults()
+        return QuestionPersonSearch(person=self, **search_criteria).getResults()
 
     def getSupportedLanguages(self):
         """See IPerson."""
@@ -386,8 +388,8 @@ class Person(SQLBase):
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
-    def getTicketLanguages(self):
-        """See ITicketTarget."""
+    def getQuestionLanguages(self):
+        """See IQuestionTarget."""
         return set(Language.select(
             '''Language.id = language AND Ticket.id IN (
             SELECT id FROM Ticket
@@ -857,11 +859,15 @@ class Person(SQLBase):
 
         tm.syncUpdate()
 
-    def _getMembersByStatus(self, status):
+    def getMembersByStatus(self, status, orderBy=None):
+        """See IPerson."""
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
-        return Person.select(query, clauseTables=['TeamMembership'])
+        if orderBy is None:
+            orderBy = Person.sortingColumns
+        return Person.select(
+            query, clauseTables=['TeamMembership'], orderBy=orderBy)
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
@@ -902,32 +908,32 @@ class Person(SQLBase):
     @property
     def deactivatedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+        return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
 
     @property
     def expiredmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
+        return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
     def declinedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
+        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
 
     @property
     def proposedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
+        return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
     def administrators(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
+        return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
     @property
     def approvedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
+        return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
 
     @property
     def activemembers(self):
@@ -1647,7 +1653,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the SupportContacts that will not conflict
+        # Update only the AnswerContacts that will not conflict
         cur.execute('''
             UPDATE SupportContact
             SET person=%(to_id)d
@@ -1676,7 +1682,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('supportcontact', 'person'))
 
-        # Update only the TicketSubscriptions that will not conflict
+        # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
             UPDATE TicketSubscription
             SET person=%(to_id)d

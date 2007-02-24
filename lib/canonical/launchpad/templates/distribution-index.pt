@@ -3,63 +3,106 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet replace="structure context/@@+portlet-translations" />
+      <tal:portlet replace="structure context/@@+portlet-lifecycle" />
 
-<body>
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
-  <h1>Distribution overview</h1>
-</metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="view/translation_focus"
-       tal:replace="structure view/translation_focus/@@+portlet-langstats"
-       />
-</metal:leftportlets>
-
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <!-- XXX: Removed pending performance refactoring - StuartBishop 20061206 -->
-  <div tal:condition="nothing" tal:replace="structure context/@@+portlet-top-contributors" />
   <div tal:replace="structure context/@@+portlet-milestones" />
-</metal:rightportlets>
 
-<div metal:fill-slot="main">
-
-  <p class="documentDescription" tal:content="context/summary">
-      Distribution Summary
-  </p>
-
-  <h3>Search packages in <span tal:replace="context/title"/></h3>
+    </metal:portlets>
+    <div metal:fill-slot="main">
+      <h1 tal:content="context/title">Ubuntu Linux</h1>
+      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <div tal:replace="structure context/summary/fmt:text-to-html" />
+      <div tal:replace="structure context/description/fmt:text-to-html" />
+      <ul class="buttons">
+        <li>
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+          </a>
+        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
+        <li>
+          <a href="+translations">
+            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
+          </a>
+        </li>
+      </ul>
 
   <form name="search" action="+search" method="get">
-  
+
     <input type="text"
       name="text"
       size="35"
       tal:attributes="value request/name|nothing" />
 
-    <input type="submit" value="Search"/>
+        <input type="submit" value="Find a Package"/>
 
   </form>
 
-  <p class="discreet lesser">
-    Search for a package in
-    <span tal:replace="context/displayname">Ubuntu</span> using the form.
-    Enter any word in the package title or description.
-  </p>
-
-  <tal:description replace="structure context/description/fmt:text-to-html">
-    Distribution description
-  </tal:description>
-
-  <div tal:replace="structure context/@@+portlet-latesttickets" />
-
-  <div tal:replace="structure context/@@+portlet-latestbugs" />
-
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-
-</div>
-
-</body>
+      <div class="left">
+        <div class="portlet">
+          <h2>Releases</h2>
+          <p tal:condition="not:context/releases">
+            <tal:name replace="context/displayname" /> has no releases
+            registered yet.
+          </p>
+          <ul tal:condition="context/releases" class="distrorelease">
+            <li tal:repeat="release context/releases">
+              <a tal:attributes="href release/fmt:url">
+                <tal:version replace="release/version" />
+                (<tal:codename replace="release/displayname" />)
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div class="portlet" tal:condition="context/currentrelease">
+          <h2>
+            Architectures for
+            <tal:latestrelease replace="context/currentrelease/displayname" />
+          </h2>
+          <p tal:condition="not:context/currentrelease/architectures">
+            <tal:name replace="context/currentrelease/displayname" />
+            has no architectures managed in Launchpad.
+          </p>
+          <ul
+            tal:condition="context/currentrelease/architectures"
+            class="architecture"
+          >
+            <li tal:repeat="architecture context/currentrelease/architectures">
+              <a
+                tal:attributes="href architecture/fmt:url"
+                tal:content="architecture/displayname"
+              />
+            </li>
+          </ul>
+        </div>
+        <div
+          class="portlet"
+          tal:condition="nothing"
+          tal:content="structure context/currentrelease/@@+last-uploads"
+        >After bug 74342, change tal:condition="context/currentrelease"</div>
+      </div>
+      <div class="right">
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-details"
+        />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-top-contributors"
+        />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-latestbugs"
+        />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-latestspecs"
+        />
+      </div>
+    </div>
+  </body>
 </html>
+<!-- 1-0 in-progress Needs list of latest uploads (bug 74342). -->

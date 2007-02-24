@@ -277,6 +277,9 @@ class CustomDropdownWidget(DropdownWidget):
 #
 
 class POMsgSetFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
+    # inherit all navigation from its product or distro release.
+
     usedfor = IPOMsgSet
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']

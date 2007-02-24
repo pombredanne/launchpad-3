@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -22,13 +21,13 @@
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug " />
 
-    <!-- ITicketTarget -->
-    <allow attributes="getTicket searchTickets findSimilarTickets
-        support_contacts direct_support_contacts getSupportedLanguages
-	getTicketLanguages"
+    <!-- IQuestionTarget -->
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+        answer_contacts direct_answer_contacts getSupportedLanguages
+	getQuestionLanguages"
 	/>
     <require permission="launchpad.AnyPerson"
-      attributes="newTicket addSupportContact removeSupportContact" />
+      attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>
 
   <browser:defaultView
@@ -49,6 +48,13 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistributionSourcePackageNavigation"
+    />
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.browser.DistributionSourcePackageSOP"
+    permission="zope.Public"
     />
 
   <browser:menus

@@ -1,34 +1,35 @@
 <div class="portlet"
      tal:define="recently_updated_bugtasks view/getMostRecentlyUpdatedBugTasks"
      tal:condition="recently_updated_bugtasks">
+  <h2>Latest bugs touched</h2>
+  <div class="portletBody portletContent">
 
-  <h2>Recently touched bugs in <span tal:replace="context/displayname" /></h2>
-
-  <div class="portletBody">
-
-    <div class="portletContent">
-
-      <table>
+      <table class="latest">
         <tbody>
           <tr tal:repeat="bugtask recently_updated_bugtasks">
             <td class="icon left" tal:content="structure bugtask/fmt:icon" />
             <td>
 
-          <a tal:attributes="href bugtask/fmt:url"
-             tal:content="string: #${bugtask/bug/id}" />:
+            <div class="title">
+              <a tal:attributes="href bugtask/fmt:url">
+                <tal:bugnumber content="string: #${bugtask/bug/id}" />.
+
              <span tal:replace="bugtask/bug/title">bug
              title</span>
 
-              (<span
-                tal:attributes="class string:status${bugtask/status/name}"
-                tal:content="bugtask/status/title"
-              />)
+              </a>
+            </div>
+            <div tal:condition="not:context/product|nothing">
+              <tal:product condition="bugtask/product">
+                <tal:productname replace="bugtask/product/name" />,
+              </tal:product>
+              reported by <tal:reporter replace="bugtask/bug/owner/displayname" />
+            </div>
+
             </td>
           </tr>
         </tbody>
       </table>
-
-    </div>
 
   </div>
 

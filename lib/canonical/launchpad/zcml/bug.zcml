@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -26,7 +25,7 @@
                         displayname activity initial_message bug_branches
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
-                        attachments tickets specifications followup_subject
+                        attachments questions specifications followup_subject
                         isSubscribed messages notificationRecipientAddresses
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
@@ -60,7 +59,6 @@
         name="+index"
         class="canonical.launchpad.browser.BugWithoutContextView"
         permission="zope.Public"
-        lp:url="malone/bugs/$Bug.id"
         attribute="redirectToNewBugPage" />
 
     <browser:pages
@@ -116,8 +114,8 @@
           name="+portlet-specs"
           template="../templates/bug-portlet-specs.pt" />
       <browser:page
-          name="+portlet-tickets"
-          template="../templates/bug-portlet-tickets.pt" />
+          name="+portlet-questions"
+          template="../templates/bug-portlet-questions.pt" />
       <browser:page
           name="+portlet-reference"
           template="../templates/bug-portlet-reference.pt" />
@@ -156,13 +154,6 @@
         path_expression="string:bugs"
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
-
-    <browser:page
-        name="+package"
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.FileBugInPackageView"
-        facet="bugs"
-        permission="launchpad.AnyPerson" />
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

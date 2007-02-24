@@ -26,10 +26,17 @@ We are at "Distribution Overview" page, let's check the stored values:
   >>> admin_browser.getControl(name="field.upload_admin").value
   'carlos'
 
-Authentication is required for queue page.
+Even if the link "View Uploads" is presented also for anonymous
+requests in Distrorelease page, authentication is required to access
+queue page itself:
 
-  >>> anon_browser.open(
-  ...     "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> anon_browser.open("http://localhost/ubuntu/breezy-autotest")
+  >>> queue_link = anon_browser.getLink("View Uploads")
+
+  >>> queue_link.url
+  'http://localhost/ubuntu/breezy-autotest/+queue'
+
+  >>> queue_link.click()
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -68,9 +75,18 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...     "+queue?queue_state=1")
   Traceback (most recent call last):
   ...
-  Unauthorized: ...
+  Unauthorized: User don't have permission to see this queue.
 
-And allowed for upload manager and admins as well:
+Page access denied also for empty queues (bug #74965):
+
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/warty/"
+  ...     "+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: User don't have permission to see this queue.
+
+Allow access from upload managers and admins:
 
   >>> upload_manager_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/+queue")

@@ -29,7 +29,7 @@
           <tal:visible_emails condition="not: context/hide_email_addresses">
             <b>Preferred address:</b><br />
 
-            &nbsp;&nbsp;&nbsp;<img src="/@@/email" alt="">
+            &nbsp;&nbsp;&nbsp;<img src="/@@/mail" alt="">
               <span tal:replace="context/preferredemail/email">foo@bar.com</span>
             <br />
 
@@ -58,15 +58,6 @@
     </tal:is_person>
 
     <tal:is_team condition="context/teamowner">
-
-      <b>Team:</b>
-      <img tal:condition="context/emblem"
-            tal:attributes="src context/emblem/getURL" />
-      <a tal:attributes="href context/fmt:url"
-         tal:content="context/name">sabdfl</a><br />
-      <b>Team Owner:</b><br />
-      <a tal:attributes="href context/teamowner/fmt:url"
-         tal:content="context/teamowner/browsername">sabdfl</a><br />
 
       <b>Membership policy:</b>
       <span tal:replace="context/subscriptionpolicy/title">Open team</span>.

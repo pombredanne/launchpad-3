@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -34,6 +33,18 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    factory="canonical.launchpad.browser.DistroReleaseSOP"
+    permission="zope.Public"
+    />
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
+    factory="canonical.launchpad.components.question.distrorelease_to_questiontarget"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroReleaseNavigation"
@@ -63,7 +74,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     layer="canonical.launchpad.layers.BugsLayer"
-    name="+bugs" />
+    name="+bugs-index" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -73,9 +84,17 @@
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -108,7 +127,6 @@
       name="+builds"
       facet="overview"
       template="../templates/distrorelease-builds.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
       name="+search"
@@ -118,7 +136,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -128,6 +145,11 @@
       name="+portlet-details"
       facet="overview"
       template="../templates/distrorelease-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-lifecycle"
+      facet="overview"
+      template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
       name="+portlet-translations"
@@ -146,11 +168,11 @@
     <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+      />
     <browser:page
       name="+last-uploads"
       template="../templates/distrorelease-last-uploads.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
+      />
   </browser:pages>
 
   <browser:page
@@ -169,7 +191,7 @@
       name="+queue"
       facet="overview"
       template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue" />
+      />
   </browser:pages>
 
   <browser:pages
@@ -180,7 +202,7 @@
     <browser:page
       name="+reassign"
       template="../templates/object-reassignment.pt"
-      lp:url="/distros/$distro.id/$release.id/+reassign" />
+      />
   </browser:pages>
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -196,7 +218,6 @@
     facet="overview"
     fields="displayname title summary description"
     template="../templates/distrorelease-edit.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -211,20 +232,7 @@
     facet="overview"
     fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />
-
-  <browser:editform
-    name="+driver"
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseEditView"
-    fields="driver"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-driver.pt"
-    lp:url="/$Distribution.name/$DistroRelease.name/+driver">
-  </browser:editform>
 
   <browser:addform
     name="+addmilestone"
@@ -236,7 +244,7 @@
     keyword_arguments="name dateexpected"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
-    lp:url="/distros/$Distribution.name/$Release.name/+addmilestone">
+    >
   </browser:addform>
 
   <browser:addform
@@ -262,4 +270,12 @@
     name="+mdz-specs.csv"
     attribute="mdzCsv"
     />
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
+
 </configure>
