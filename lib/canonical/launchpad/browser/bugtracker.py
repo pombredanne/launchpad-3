@@ -42,7 +42,7 @@ class BugTrackerContextMenu(ContextMenu):
     links = ['edit']
 
     def edit(self):
-        text = 'Change Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
 

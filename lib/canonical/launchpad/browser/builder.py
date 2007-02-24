@@ -88,7 +88,7 @@ class BuilderSetOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def add(self):
-        text = 'Add New Builder'
+        text = 'Add new builder'
         return Link('+new', text, icon='add')
 
 
@@ -99,27 +99,27 @@ class BuilderOverviewMenu(ApplicationMenu):
     links = ['history', 'edit', 'mode', 'cancel', 'admin']
 
     def history(self):
-        text = 'Build History'
+        text = 'Show build history'
         return Link('+history', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def mode(self):
-        text = 'Change Mode'
+        text = 'Change mode'
         return Link('+mode', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        text = 'Cancel Current Job'
+        text = 'Cancel current job'
         return Link('+cancel', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administer Builder'
+        text = 'Administer builder'
         return Link('+admin', text, icon='edit')
 
 

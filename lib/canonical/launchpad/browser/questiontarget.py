@@ -493,10 +493,10 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
-        text = 'Ask Question'
+        text = 'Ask question'
         return Link('+addticket', text, icon='add')
 
     def answer_contact(self):
-        text = 'Answer Contact'
+        text = 'Answer contact'
         return Link('+support-contact', text, icon='edit')
 

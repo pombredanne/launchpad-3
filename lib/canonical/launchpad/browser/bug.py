@@ -92,19 +92,19 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Edit Description/Tags'
+        text = 'Edit description/tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Visibility/Security'
+        text = 'Visibility/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
-        text = 'Mark as Duplicate'
+        text = 'Mark as duplicate'
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
-        text = 'Also Affects Upstream'
+        text = 'Also affects upstream'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
