@@ -122,11 +122,20 @@ class SprintSetNavigation(GetitemNavigation):
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['new']
+    links = ['new', 'products', 'distributions', 'people']
 
     def new(self):
         text = 'Register New Meeting'
         return Link('+new', text, icon='add')
+
+    def products(self):
+        return Link('/products', 'View Registered Products')
+
+    def distributions(self):
+        return Link('/distros', 'View Registered Distributions')
+
+    def people(self):
+        return Link('/people', 'View People')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):

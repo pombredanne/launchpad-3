@@ -420,7 +420,7 @@
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
             DistributionBountiesMenu DistributionSpecificationsMenu
-            DistributionTranslationsMenu
+            DistributionTranslationsMenu DistributionSetContextMenu
             "
             />
 

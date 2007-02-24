@@ -231,7 +231,7 @@ class PeopleContextMenu(ContextMenu):
     usedfor = IPersonSet
 
     links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
-             'adminrequestmerge']
+             'adminrequestmerge', 'products', 'distributions', 'meetings']
 
     def peoplelist(self):
         text = 'All People'
@@ -253,6 +253,15 @@ class PeopleContextMenu(ContextMenu):
     def adminrequestmerge(self):
         text = 'Admin Merge Accounts'
         return Link('+adminrequestmerge', text, icon='edit')
+
+    def products(self):
+        return Link('/products', 'View Registered Products')
+
+    def distributions(self):
+        return Link('/distros', 'View Registered Distributions')
+
+    def meetings(self):
+        return Link('/sprints', 'View Registered Meetings')
 
 
 class PersonFacets(StandardLaunchpadFacets):
