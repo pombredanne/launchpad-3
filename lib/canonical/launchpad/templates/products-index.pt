@@ -8,7 +8,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h2>Projects in Launchpad</h2>
+    <h2>About these projects</h2>
     <div class="portletBody portletContent">
       <img src="/@@/info" />
       There are <span tal:replace="context/count_all">5</span>

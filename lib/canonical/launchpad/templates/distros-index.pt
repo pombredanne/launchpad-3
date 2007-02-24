@@ -9,7 +9,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h2>Distribution management</h2>
+    <h2>About these distributions</h2>
 
     <div class="portletBody portletContent">
       <img src="/@@/info" />
@@ -36,12 +36,13 @@
       <thead>
         <tr>
           <th>Distribution</th>
-          <th>Domain Name</th>
+          <th>Domain</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="distribution context">
           <td>
+            <img src="/@@/distribution" />
             <a tal:content="distribution/title" 
                tal:attributes="href distribution/fmt:url">
                   distribution title
