@@ -88,7 +88,7 @@ class BuilderSetOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def add(self):
-        text = 'Add new builder'
+        text = 'Add builder'
         return Link('+new', text, icon='add')
 
 

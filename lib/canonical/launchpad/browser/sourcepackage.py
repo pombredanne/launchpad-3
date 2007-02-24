@@ -116,13 +116,13 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+hctstatus', text, icon='info')
 
     def changelog(self):
-        return Link('+changelog', 'View Changelog', icon='list')
+        return Link('+changelog', 'View changelog', icon='list')
 
     def upstream(self):
         return Link('+packaging', 'Edit upstream link', icon='edit')
 
     def builds(self):
-        text = 'View builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
 

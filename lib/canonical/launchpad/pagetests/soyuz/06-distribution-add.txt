@@ -33,7 +33,7 @@ Create a Test distribution:
 
 The uploaded icon and emblem can now be seen on the distribution's edit page:
 
-  >>> admin_browser.getLink('Edit Details').click()
+  >>> admin_browser.getLink('Change details').click()
   >>> admin_browser.url
   'http://launchpad.dev/test/+edit'
 

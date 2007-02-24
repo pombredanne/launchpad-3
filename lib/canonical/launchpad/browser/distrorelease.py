@@ -145,7 +145,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def add_port(self):
-        text = 'Add new architecture'
+        text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
@@ -154,11 +154,11 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         return Link('+admin', text, icon='edit')
 
     def builds(self):
-        text = 'View builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
     def queue(self):
-        text = 'View uploads'
+        text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
 

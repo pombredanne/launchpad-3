@@ -249,7 +249,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def upload_admin(self):
-        text = 'Change uploader manager'
+        text = 'Change upload manager'
         summary = 'Someone with permission to manage uploads'
         return Link('+uploadadmin', text, summary, icon='edit')
 

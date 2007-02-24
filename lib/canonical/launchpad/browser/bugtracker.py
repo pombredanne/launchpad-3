@@ -53,7 +53,7 @@ class BugTrackerSetContextMenu(ContextMenu):
     links = ['newbugtracker']
 
     def newbugtracker(self):
-        text = 'Register Bug Tracker'
+        text = 'Register bug tracker'
         return Link('+newbugtracker', text, icon='add')
 
 
