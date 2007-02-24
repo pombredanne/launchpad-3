@@ -371,11 +371,11 @@ class PersonBranchesMenu(ApplicationMenu):
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'View Subscribed Branches'
+        text = 'Show subscribed branches'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
-        text = 'Register Branch'
+        text = 'Register branch'
         return Link('+addbranch', text, icon='add')
 
 
