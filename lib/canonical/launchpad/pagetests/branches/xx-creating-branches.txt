@@ -196,7 +196,7 @@ URL validation should check also that the entered URL is not the
 root of a site.
 
   >>> user_browser.open('http://code.launchpad.dev/firefox')
-  >>> user_browser.getLink('Register Bazaar Branch').click()
+  >>> user_browser.getLink('Register branch').click()
   >>> user_browser.getControl('Branch URL').value = 'http://example.com'
   >>> user_browser.getControl('Name').value = 'unique-name'
   >>> user_browser.getControl('Add Branch').click()
