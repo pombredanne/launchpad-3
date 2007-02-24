@@ -898,7 +898,7 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-overview #actions, body.tab-overview .results {
-  background-color: #e6eed3;
+ /* background-color: #e6eed3; */
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
@@ -1295,8 +1295,8 @@ div.bordered {
 }
 #application-summary, #application-footer {
   font-size: 1.5em;
-  line-height: 1.5em;
-  width: 50%;
+  line-height: 1.35em;
+ /* width: 50%; */
 }
 #application-footer {
   border-top: 1px dotted #999;

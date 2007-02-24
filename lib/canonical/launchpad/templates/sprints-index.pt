@@ -13,7 +13,7 @@
 
   <h1>Coming events</h1>
 
-  <p class="documentDescription">
+  <p id="application-summary">
     Launchpad can help you organise your developer sprints, summits and
     gatherings! Register the meeting here, then you can invite people to
     nominate blueprints for discussion at the event. The meeting drivers
@@ -21,7 +21,7 @@
     been accepted.
   </p>
 
-  <table class="listing">
+  <table>
     <tbody>
       <tal:sprint
         repeat="sprint context"

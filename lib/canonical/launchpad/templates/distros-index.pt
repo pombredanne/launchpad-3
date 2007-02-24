@@ -26,11 +26,11 @@
 
       <h1>Registered distributions</h1>
 
-    <p class="documentDescription">
+    <div id="application-summary">
       Launchpad can keep track of the software packages in a distribution,
       and provide information about the bugs, translations and code
       associated with each of them.
-    </p>
+    </div>
 
     <table class="listing">
       <thead>
@@ -57,8 +57,8 @@
       </tbody>
     </table>    
 
-    <p class="discreet">
-      * Read-only distribution.
+    <p>
+      <sup>*</sup> Read-only distribution.
       Can be browsed in Launchpad, but not altered or managed,
       and its information might be out of date.
     </p>

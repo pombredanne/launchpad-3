@@ -134,6 +134,10 @@
             name="+listing-detailed"
             template="../templates/product-listing-detailed.pt"
             />
+        <browser:page
+            name="+listing-simple"
+            template="../templates/product-listing-simple.pt"
+            />
         <!-- Products Portlets -->
         <browser:page
             name="+portlet-details"

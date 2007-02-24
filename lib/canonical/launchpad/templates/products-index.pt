@@ -12,7 +12,7 @@
     <div class="portletBody portletContent">
       <img src="/@@/info" />
       There are <span tal:replace="context/count_all">5</span>
-      products registered in Launchpad, of which
+      projects registered in Launchpad, of which
       <span tal:replace="context/count_buggy">5</span> have bugs reported,
       <span tal:replace="context/count_translatable">5</span> 
       have translations,
@@ -28,69 +28,112 @@
 
   <h1>Is your project in Launchpad?</h1>
 
-  <tal:notsearching condition="not:view/searchrequested">
-    <p>
-      If a project is registered in Launchpad, people can keep track of the
-      status of that project much more easily.
-    </p>
-  </tal:notsearching>
-
-  <form method="get">
+  <div align="center">
+    <form class="central" method="get">
   
-          <input name="text" tal:attributes="value view/text" />
-          <input tal:condition="view/searchrequested"
-            type="submit"
-            value="Search Again"
-            />
-          <input tal:condition="not: view/searchrequested"
-            type="submit"
-            value="Search Products"
-            />
+      <input size="30" name="text" tal:attributes="value view/text" />
+      <input tal:condition="view/searchrequested"
+        type="submit"
+        value="Search again"
+        />
+      <input tal:condition="not: view/searchrequested"
+        type="submit"
+        value="Search projects"
+        />
 
-  </form>
+    </form>
+  </div>
 
   <tal:searching condition="view/searchrequested">
 
-    <table
-      tal:condition="view/matches"
-      tal:define="results view/searchresults"
-    >
-      <thead>
-        <tr class="results">
-          <td>
-            <span tal:replace="view/matches">3</span>
-            <span tal:condition="python: view.matches == 1">result</span>
-            <span tal:condition="python: view.matches != 1">results</span>
-          </td>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="product results">
-          <td tal:content="structure product/@@+listing-detailed" />
-        </tr>
-      </tbody>
-    </table>
-        <p tal:condition="not: view/matches">
-          No products matching
-          &#8220;<span tal:replace="view/text">moz</span>&#8221;
-          were found.
-        </p>
+    <p></p>
+
+    <div class="left">
+      <table
+        tal:condition="view/matches"
+        tal:define="results view/searchresults"
+        class="listing"
+        >
+        <thead>
+          <tr class="results">
+            <td colspan="2">
+              <span tal:replace="view/matches">3</span>
+              <span tal:condition="python: view.matches == 1">project found</span>
+              <span tal:condition="python: view.matches != 1">projects found</span>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="product results"
+              tal:replace="structure product/@@+listing-simple">
+            <td>Product simple listing</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p tal:condition="not: view/matches">
+        No projects matching
+        &#8220;<span tal:replace="view/text">moz</span>&#8221;
+        were found.
+      </p>
+
+    </div>
+
+    <div class="right">
+
+      <h2>No luck?</h2>
+
+      <p id="application-summary">
+        If the project you are looking for isn't here, go ahead and register
+        it yourself!
+      </p>
+
+      <p>
+        <a href="+new">&raquo;
+          Register a project</a>
+      </p>
+
+      <p>
+        <a href="+all">&raquo;
+          Browse the listing of all (!) projects</a>
+      </p>
+
+
+    </div>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
 
-    <h2>Most recently registered</h2>
+    <p></p>
 
-        <ul tal:condition="context/latest" class="product">
-          <li tal:repeat="product context/latest">
-            <tal:date replace="product/datecreated/fmt:date" />:
-            <a
-              tal:attributes="href product/fmt:url"
-              tal:content="product/displayname"
-            />
-          </li>
-        </ul>
-      </tal:no_search>
+    <div class="left">
+
+      <h2>Why register?</h2>
+
+      <div id="application-summary">
+        If a project is registered in Launchpad, people can keep track of the
+        status of that project much more easily. You can link a Launchpad
+        project to your own bug tracker and improve collaboration with other
+        projects.
+      </div>
+
     </div>
-  </body>
+
+    <div class="right">
+
+      <h2>Latest registrations</h2>
+          <ul tal:condition="context/latest" class="product">
+            <li tal:repeat="product context/latest">
+              <tal:date replace="product/datecreated/fmt:date" />:
+              <a
+                tal:attributes="href product/fmt:url"
+                tal:content="product/displayname"
+              />
+            </li>
+          </ul>
+    </div>
+  </tal:no_search>
+
+</div>
+</body>
 </html>

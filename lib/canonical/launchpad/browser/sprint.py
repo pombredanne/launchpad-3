@@ -148,7 +148,7 @@ class SprintSetSOP(StructuralObjectPresentation):
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['products', 'distributions', 'people', 'new']
+    links = ['products', 'distributions', 'people', 'sprints', 'new']
 
     def new(self):
         text = 'Register a meeting'
@@ -162,6 +162,9 @@ class SprintSetContextMenu(ContextMenu):
 
     def people(self):
         return Link('/people/', 'View people')
+
+    def sprints(self):
+        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
