@@ -49,7 +49,7 @@
                                   <input
                                     name="field.actions.search"
                                     type="submit"
-                                    value="Search Questions"
+                                    value="Find Answers"
                                   />
                                 </td>
                               </tr>
