@@ -56,6 +56,7 @@
                           version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <form class="central" action="/products" method="get">
                           <input
