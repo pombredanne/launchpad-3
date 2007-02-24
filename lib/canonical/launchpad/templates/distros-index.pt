@@ -7,9 +7,6 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Distributions</h1>
-    </metal:heading>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -25,6 +22,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <h1>Registered distributions</h1>
 
     <p class="documentDescription">
       Launchpad can keep track of the software packages in a GNU/Linux or

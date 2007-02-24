@@ -75,11 +75,12 @@ body {margin: 0; padding: 0;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
 h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 0 0 0.75em;     padding: 0;} /* FP */
-h3 {font-size: 1.25em; margin: 0.5em 0 0 0;    padding: 0;}
+h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
+h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: smaller;}

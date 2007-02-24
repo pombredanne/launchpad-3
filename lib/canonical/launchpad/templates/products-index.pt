@@ -7,10 +7,6 @@
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Products registered in Launchpad</h1>
-</metal:heading>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
     <h2>Product statistics in Launchpad</h2>
@@ -30,8 +26,11 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <h1>Registered products</h1>
+
   <tal:notsearching condition="not:view/searchrequested">
-    <p>
+    <p id="application-summary">
       In Launchpad, <dfn>products</dfn> are individual computer programs,
       applications, libraries, and documents that are developed as software.
     </p>
