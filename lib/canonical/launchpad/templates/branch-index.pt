@@ -166,11 +166,13 @@
     <div tal:repeat="rev_no context/latest_revisions">
       <h3>
         Revision <span tal:replace="rev_no/sequence">1</span>
-        <span tal:condition="view/user"
-              tal:replace="string:by ${rev_no/revision/revision_author/name}">
-          John Doe &lt;john.doe@doe-a-deer.com&gt;
-        </span>
-        <span tal:replace="string:(${rev_no/revision/revision_date/fmt:date})">(2005-10-05)</span>
+        <tal:valid-user tal:condition="rev_no/revision/revision_author">
+          by <span tal:replace="rev_no/revision/revision_author/displayname">John Doe
+            &lt;john.doe@example.com&gt;</span>
+        </tal:valid-user>
+        <tal:date>
+          (<span tal:replace="rev_no/revision/revision_date/fmt:date">2005-10-05</span>)
+        </tal:date>
       </h3>
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
