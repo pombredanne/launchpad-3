@@ -7,7 +7,7 @@ expected value.
   >>> browser.addHeader('Authorization',
   ...                   'Basic david.allouche@canonical.com:test')
   >>> browser.open('http://launchpad.dev/a52dec/failedbranch')
-  >>> browser.getLink('Edit Source').click()
+  >>> browser.getLink('Edit source').click()
   >>> print browser.url
   http://launchpad.dev/a52dec/failedbranch/+source
 

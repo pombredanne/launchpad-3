@@ -357,7 +357,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
     def initial_values(self):
         return {'status': self.context.status}
 
-    @action(_('Change Status'), name='change-status')
+    @action(_('Change status'), name='change-status')
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
@@ -564,7 +564,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                 self.user != self.context.owner and
                 self.context.can_request_info)
 
-    @action(_('Add Information Request'), name='requestinfo',
+    @action(_('Add information request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
         """Add a request for more information to the question."""
@@ -756,16 +756,16 @@ class QuestionContextMenu(ContextMenu):
         self.has_bugs = bool(self.context.bugs)
 
     def edit(self):
-        text = 'Edit Question'
+        text = 'Edit question'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def changestatus(self):
-        return Link('+change-status', _('Change Status'), icon='edit')
+        return Link('+change-status', _('Change status'), icon='edit')
 
     def reject(self):
         enabled = self.user is not None and self.context.canReject(self.user)
-        text = 'Reject Question'
+        text = 'Reject question'
         return Link('+reject', text, icon='edit', enabled=enabled)
 
     def history(self):
@@ -783,15 +783,15 @@ class QuestionContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def linkbug(self):
-        text = 'Link Existing Bug'
+        text = 'Link existing bug'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
 
     def makebug(self):
-        text = 'Create Bug Report'
+        text = 'Create bug report'
         summary = 'Create a bug report from this question.'
         return Link('+makebug', text, summary, icon='add',
                     enabled=not self.has_bugs)
@@ -803,11 +803,11 @@ class QuestionSetContextMenu(ContextMenu):
     links = ['findproduct', 'finddistro']
 
     def findproduct(self):
-        text = 'Find Upstream Product'
+        text = 'Find upstream project'
         return Link('/products', text, icon='search')
 
     def finddistro(self):
-        text = 'Find Distribution'
+        text = 'Find distribution'
         return Link('/distros', text, icon='search')
 
 

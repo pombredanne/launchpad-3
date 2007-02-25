@@ -775,14 +775,12 @@ distrorelease/productseries tasks.
 
   >>> b2 = bugset.get(2)
   >>> for task in b2.bugtasks: print task.target.displayname
-  Mozilla Firefox
   Ubuntu
   Ubuntu
   Hoary
   mozilla-firefox in debian
   Woody mozilla-firefox
   >>> for task in b2.pillar_bugtasks: print task.target.displayname
-  Mozilla Firefox
   Ubuntu
   Ubuntu
   mozilla-firefox in debian

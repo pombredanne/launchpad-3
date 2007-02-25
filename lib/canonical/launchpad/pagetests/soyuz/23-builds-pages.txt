@@ -42,21 +42,21 @@ For Distribution, it's possible to filter build results by state and name:
 For Distrorelease, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For DistroArchRelease, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary/i386")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For Builder, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/+builds/bob")
-  >>> browser.getLink("Build History").click()
+  >>> browser.getLink("Show build history").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
@@ -64,7 +64,7 @@ For SourcePackage, it's only possible to filter by state.
 
   >>> browser.open(
   ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State present, Name not present
 

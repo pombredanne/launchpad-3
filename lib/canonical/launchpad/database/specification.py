@@ -1,7 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Specification', 'SpecificationSet']
+__all__ = [
+    'HasSpecificationsMixin',
+    'Specification',
+    'SpecificationSet',
+    ]
 
 from zope.interface import implements
 from zope.event import notify
@@ -612,6 +616,11 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
         raise NotImplementedError
+
+    @property
+    def valid_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(filter=[SpecificationFilter.VALID])
 
     @property
     def latest_specifications(self):

@@ -133,11 +133,11 @@ class POFileAppMenus(ApplicationMenu):
         return Link('+translate', text, icon='languages')
 
     def switchlanguages(self):
-        text = 'Switch Languages'
+        text = 'Switch languages'
         return Link('../', text, icon='languages')
 
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('+upload', text, icon='edit')
 
     def download(self):
@@ -145,7 +145,7 @@ class POFileAppMenus(ApplicationMenu):
         return Link('+export', text, icon='download')
 
     def viewtemplate(self):
-        text = 'View Template'
+        text = 'View template'
         return Link('../', text, icon='languages')
 
 

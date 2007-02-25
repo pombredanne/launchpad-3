@@ -107,11 +107,11 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a Project'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Projects'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
 
 
@@ -140,11 +140,11 @@ class ProjectOverviewMenu(ApplicationMenu):
         'rdf', 'administer']
 
     def edit(self):
-        text = 'Edit Project Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
     def driver(self):
@@ -153,7 +153,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
-        text = 'Top Contributors'
+        text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
@@ -163,7 +163,7 @@ class ProjectOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
-            'RDF</abbr> Metadata')
+            'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
@@ -179,11 +179,11 @@ class ProjectBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'Register a bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -194,11 +194,11 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'doc', 'roadmap', 'assignments',]
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def doc(self):
-        text = 'Documentation'
+        text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
 
@@ -219,7 +219,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
-        text = 'Ask Question'
+        text = 'Ask question'
         return Link('+addticket', text, icon='add')
 
 
@@ -230,7 +230,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
     links = ['changetranslators']
 
     def changetranslators(self):
-        text = 'Change Translators'
+        text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
 
