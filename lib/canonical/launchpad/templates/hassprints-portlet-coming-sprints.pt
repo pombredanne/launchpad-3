@@ -1,0 +1,17 @@
+<div
+  tal:define="coming_sprints context/coming_sprints"
+  tal:condition="coming_sprints"
+  class="portlet">
+
+  <h2>Coming events</h2>
+
+  <div class="portletBody portletContent">
+
+    <table>
+      <tal:per_sprint repeat="sprint coming_sprints"
+                      replace="structure sprint/@@+listing-simple" />
+    </table>
+
+  </div>
+
+</div>
