@@ -61,7 +61,7 @@ Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Visibility/Security').click()
+  >>> browser.getLink('Visibility/security').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('Keep bug confidential').selected = True
@@ -122,7 +122,7 @@ telling the user they are unauthorised to view the bug):
 Set the bug back to public:
 
   >>> browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Visibility/Security').click()
+  >>> browser.getLink('Visibility/security').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('Keep bug confidential').selected = False

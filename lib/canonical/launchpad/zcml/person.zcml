@@ -55,7 +55,8 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PeopleContextMenu TeamBugsMenu PersonBranchesMenu"
+          PersonSpecsMenu TeamBugsMenu PersonBranchesMenu
+          PersonSetFacets PersonSetContextMenu"
       />
 
   <browser:url
@@ -498,6 +499,13 @@
       provides="canonical.launchpad.interfaces.IPersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </securedutility>
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      factory="canonical.launchpad.browser.PersonSetSOP"
+      permission="zope.Public"
+      />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPersonSet"

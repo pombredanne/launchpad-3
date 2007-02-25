@@ -7,21 +7,21 @@ The overview-menu does not appear in public access.
 Check if the only public link is "Build History"
 
   >>> anon_browser.open("http://localhost/+builds/bob")
-  >>> links = ["Build History",
-  ...          "Change Details",
-  ...          "Change Mode",
-  ...          "Cancel Current Job",
-  ...          "Administer Builder"]
+  >>> links = ["Show build history",
+  ...          "Change details",
+  ...          "Change mode",
+  ...          "Cancel current job",
+  ...          "Administer builder"]
   >>> for link in links:
   ...     try:
   ...         anon_browser.getLink(link)
   ...     except LinkNotFoundError:
   ...         print "Link not found: %s" % link
-  <Link text='Build History' url='http://localhost/+builds/bob/+history'>
-  Link not found: Change Details
-  Link not found: Change Mode
-  Link not found: Cancel Current Job
-  Link not found: Administer Builder
+  <Link text='Show build history' url='http://localhost/+builds/bob/+history'>
+  Link not found: Change details
+  Link not found: Change mode
+  Link not found: Cancel current job
+  Link not found: Administer builder
 
 Check page content, builder index page should present information
 about the current job (mozilla-firefox) and the builder details in a
@@ -52,7 +52,7 @@ job processed by this builder, things like:
  * FAILEDTOBUILD builds are similar to MANUALDEPWAIT, but they don't
    contain dependencies-line.
 
-  >>> anon_browser.getLink("Build History").click()
+  >>> anon_browser.getLink("Show build history").click()
   >>> print find_tags_by_class(anon_browser.contents, 'builds_list')[0].renderContents()
   <...
   ...SUPERSEDED...

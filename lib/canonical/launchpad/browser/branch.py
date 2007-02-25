@@ -68,7 +68,7 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Branch Details'
+        text = 'Edit branch details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

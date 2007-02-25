@@ -131,6 +131,9 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
+    related_pillar_bugtasks = Attribute(
+        "IBugTasks related to this one, namely other IBugTasks on the same "
+        "IBug, but only those tasks on pillars (product or distributions).")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
