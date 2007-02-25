@@ -43,7 +43,8 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
@@ -51,7 +52,8 @@ from canonical.launchpad.interfaces import (
     IQuestionTarget, NotFoundError, get_supported_languages)
 
 
-class Product(SQLBase, BugTargetBase, KarmaContextMixin):
+class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget)

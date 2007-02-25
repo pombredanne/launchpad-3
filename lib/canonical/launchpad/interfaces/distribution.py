@@ -197,10 +197,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
 
-    def traverse(name):
-        """Traverse the distribution. Check for special names, and return
-        appropriately, otherwise use __getitem__"""
-
     def __getitem__(name):
         """Returns a DistroRelease that matches name, or raises and
         exception if none exists."""

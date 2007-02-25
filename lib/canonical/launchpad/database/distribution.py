@@ -26,7 +26,8 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
@@ -68,7 +69,8 @@ from sourcerer.deb.version import Version
 from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
-class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
+class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                   KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution, IHasBuildRecords, IQuestionTarget)
 
@@ -305,24 +307,24 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def __iter__(self):
         return iter(self.releases)
 
+    @property
     def bugCounter(self):
         counts = []
 
-        severities = [BugTaskStatus.NEW,
-                      BugTaskStatus.ACCEPTED,
+        severities = [BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.CONFIRMED,
                       BugTaskStatus.REJECTED,
-                      BugTaskStatus.FIXED]
+                      BugTaskStatus.FIXRELEASED]
 
-        query = ("BugTask.distribution = %s AND "
-                 "BugTask.bugstatus = %i")
+        querystr = ("BugTask.distribution = %s AND "
+                 "BugTask.status = %s")
 
         for severity in severities:
-            query = query % (quote(self.id), severity)
+            query = querystr % sqlvalues(self.id, severity.value)
             count = BugTask.select(query).count()
             counts.append(count)
 
         return counts
-    bugCounter = property(bugCounter)
 
     def getRelease(self, name_or_version):
         """See IDistribution."""
@@ -371,10 +373,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     @property
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
