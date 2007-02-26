@@ -82,9 +82,7 @@
             </li>
           </ul>
         </div>
-        <div
-          tal:content="structure context/@@+portlet-latestbugs"
-        />
+        <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
           tal:condition="context/currentrelease"
           tal:content="structure context/currentrelease/@@+last-uploads"

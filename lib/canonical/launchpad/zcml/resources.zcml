@@ -83,8 +83,10 @@
     <resource name="locked" file="../images/locked.png" />
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
+    <resource name="maybe" file="../images/maybe.png" />
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
+    <resource name="no" file="../images/no.png" />
     <resource name="pkg-binary" file="../images/package-binary.png" />
     <resource name="pkg-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
@@ -133,6 +135,7 @@
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
     <resource name="warning" file="../images/warning.png" />
     <resource name="warning-large" file="../images/warning-large.png" />
+    <resource name="yes" file="../images/yes.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
     <resource name="zoom-out" file="../images/zoom-out.png" />
 
