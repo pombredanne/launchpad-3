@@ -566,7 +566,7 @@ class ProductSet:
         """See IProductSet."""
         return Product.select(
             'Product.id in (select distinct(product) from Branch)',
-            orderBy=SQLConstant('lower(displayname)'))
+            orderBy=SQLConstant('name'))
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

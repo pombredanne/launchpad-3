@@ -199,3 +199,8 @@ ul.menuroot {
 #menuroot li {
   list-style-image: none;
 }
+
+
+.few { font-size: 0.7em }
+.many { font-size: 1em }
+.lots { font-size: 1.3em }

@@ -1,0 +1,21 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Products with Code</h1>
+    </metal:heading>
+
+<div metal:fill-slot="main">
+
+  <a tal:repeat="product view/products"
+     tal:attributes="href product/fmt:url;
+                     style product/style"
+     tal:content="product/name">product</a>
+
+</div>
+
+  </body>
+</html>

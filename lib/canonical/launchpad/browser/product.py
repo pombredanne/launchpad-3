@@ -367,7 +367,7 @@ def _sort_distros(a, b):
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall']
+    links = ['register', 'listall', 'withcode']
 
     def register(self):
         text = 'Register a Product'
@@ -376,6 +376,12 @@ class ProductSetContextMenu(ContextMenu):
     def listall(self):
         text = 'List All Products'
         return Link('+all', text, icon='list')
+
+    def withcode(self):
+        text = 'Show Products with Code'
+        productset = getUtility(IProductSet)
+        return Link(canonical_url(
+            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:
