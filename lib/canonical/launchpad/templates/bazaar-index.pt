@@ -50,12 +50,26 @@
                           </li>
                         </ul>
                         <p id="application-summary">
-                          Launchpad lets you track branches of any product that
+                          Launchpad lets you track branches of any
+                          <a href="/+code/+products-with-code">product</a> that
                           uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                          version control system &mdash; and imports many
+                          version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
+                        <form class="central" action="/products" method="get">
+                          <input
+                            id="text"
+                            type="text"
+                            name="text"
+                            size="50"
+                          />
+                          <input
+                            type="submit"
+                            value="Find a Project"
+                          />
+                        </form>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>
@@ -88,24 +102,12 @@
                             </ul>
                           </div>
                         </div>
-                        <form class="central" action="/products" method="get">
-                          <input
-                            id="text"
-                            type="text"
-                            name="text"
-                            size="50"
-                          />
-                          <input
-                            type="submit"
-                            value="Find a Project"
-                          />
-                        </form>
                         <div class="clear"></div>
                         <div id="application-footer">
                           <div>
-                            <a href="/+code/+products-with-code">
                             <strong tal:content="view/branch_count">123</strong>
                             branches registered in
+                            <a href="/+code/+products-with-code">
                             <strong tal:content="view/product_count">1234</strong>
                             products
                             </a>
