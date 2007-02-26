@@ -109,7 +109,7 @@ class LaunchpadCelebrities:
             'http://archive.ubuntu.com/ubuntu/')
         if mirror is None:
             raise MissingCelebrityError('http://archive.ubuntu.com/ubuntu/')
-        assert mirror.isOfficial()
+        assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
 
     @property
@@ -118,5 +118,5 @@ class LaunchpadCelebrities:
             'http://releases.ubuntu.com/')
         if mirror is None:
             raise MissingCelebrityError('http://releases.ubuntu.com/')
-        assert mirror.isOfficial()
+        assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
