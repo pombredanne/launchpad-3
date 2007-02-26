@@ -21,3 +21,24 @@ The link takes you to the list of the bugs fixed elsewhere.
     <...
     <p>There are currently no open bugs.</p>
     ...
+
+It also displays the number of open bugs associated with a CVE.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> cve_bugs_link = anon_browser.getLink('open CVE bugs')
+    >>> cve_bugs_link.text
+    '2 open CVE bugs'
+
+The link takes you to the list of bugs with CVEs linked to them.
+
+    >>> cve_bugs_link.click()
+    >>> buglisting = find_tag_by_id(anon_browser.contents, 'buglisting')
+    >>> for tr in buglisting('tr'):
+    ...     if tr.td:
+    ...         print extract_text(tr)
+    1 Firefox does not support SVG
+      mozilla-firefox
+      Medium Unconfirmed
+    2 Blackhole Trash folder
+      &mdash;
+      Medium Unconfirmed

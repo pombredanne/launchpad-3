@@ -14,7 +14,7 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
-      <h1>Profiles of people in Launchpad</h1>
+      <h1>People and teams</h1>
       <tal:block define="bn view/searchPeopleBatchNavigator">
         <div align="center">
           <form class="central" name="search" action="." method="GET">
