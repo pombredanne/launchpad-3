@@ -594,7 +594,7 @@ person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
-person_specworkload = ContextDisplayName('Specification workload for %s')
+person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
@@ -726,7 +726,7 @@ project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-project_specs = ContextTitle('Specifications for %s')
+project_specs = ContextTitle('Blueprints for %s')
 
 project_translations = ContextTitle('Translatable projects for %s')
 
@@ -887,25 +887,25 @@ sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
 sourcesource_index = 'Upstream source import'
 
-specification_add = 'Register a feature specification in Launchpad'
+specification_add = 'Register a blueprint in Launchpad'
 
-specification_addsubscriber = 'Subscribe someone else to this spec'
+specification_addsubscriber = 'Subscribe someone else to this blueprint'
 
 specification_linkbug = ContextTitle(
-  u'Link specification \N{left double quotation mark}%s'
+  u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach spec to a different project or distribution'
+specification_retargeting = 'Attach blueprint to a different project'
 
 specification_retractmentoring = 'Retract offer of mentorship'
 
-specification_superseding = 'Mark specification as superseded by another'
+specification_superseding = 'Mark blueprint as superseded by another'
 
-specification_goaldecide = 'Approve or decline specification goal'
+specification_goaldecide = 'Approve or decline blueprint goal'
 
-specification_dependency = 'Create a specification dependency'
+specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
@@ -913,37 +913,37 @@ specification_mentoringoffer = 'Offer to mentor someone implementing this bluepr
 
 specification_milestone = 'Target feature to milestone'
 
-specification_people = 'Change specification assignee, drafter, and reviewer'
+specification_people = 'Change blueprint assignee, drafter, and reviewer'
 
-specification_priority = 'Change specification priority'
+specification_priority = 'Change blueprint priority'
 
-specification_distrorelease = ('Target specification at a distribution release')
+specification_distrorelease = ('Target blueprint to a distribution release')
 
-specification_productseries = 'Target specification at a series'
+specification_productseries = 'Target blueprint to a series'
 
 specification_removedep = 'Remove a dependency'
 
 specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request feedback on this specification'
+specification_requestfeedback = 'Request feedback on this blueprint'
 
-specification_edit = 'Edit specification details'
+specification_edit = 'Edit blueprint details'
 
-specification_linksprint = 'Put specification on sprint agenda'
+specification_linksprint = 'Put blueprint on sprint agenda'
 
-specification_status = 'Edit specification status'
+specification_status = 'Edit blueprint status'
 
-specification_index = ContextTitle(smartquote('Feature specification: "%s"'))
+specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 
-specification_subscription = 'Subscribe to specification'
+specification_subscription = 'Subscribe to blueprint'
 
-specification_queue = 'Queue specification for review'
+specification_queue = 'Queue blueprint for review'
 
-specification_linkbranch = 'Link branch to specification'
+specification_linkbranch = 'Link branch to blueprint'
 
-specifications_index = ContextTitle('%s')
+specifications_index = 'Launchpad Blueprints'
 
-specificationbranch_status = 'Edit specification branch status'
+specificationbranch_status = 'Edit blueprint branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -954,16 +954,16 @@ def specificationsubscription_edit(context, view):
 
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
-specificationtarget_index = ContextTitle('Specification Listing for %s')
+specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
 def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
-specificationtarget_assignments = ContextTitle('Specification assignments for %s')
+specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 
-specificationtarget_workload = ContextTitle('Feature workload in %s')
+specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 
 sprint_attend = ContextTitle('Register your attendance at %s')
 
@@ -975,7 +975,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_specs = ContextTitle('Specifications for %s')
+sprint_specs = ContextTitle('Blueprints for %s')
 
 sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
@@ -985,7 +985,7 @@ sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
-sprintspecification_admin = 'Approve specification for sprint agenda'
+sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
