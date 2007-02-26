@@ -1157,10 +1157,12 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """
         prefix = '[Question #%s]: ' % self.question.id
         if self.new_message:
-            subject = self.new_message.subject
-            if prefix in self.new_message.subject:
+            # Migrate old prefix.
+            subject = self.new_message.subject.replace(
+                '[Support #%s]: ' % self.question.id, prefix)
+            if prefix in subject:
                 return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're']:
+            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
                 # Place prefix after possible reply prefix.
                 return subject[0:4] + prefix + subject[4:]
             else:
