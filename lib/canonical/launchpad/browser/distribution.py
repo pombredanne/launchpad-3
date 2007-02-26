@@ -14,6 +14,7 @@ __all__ = [
     'DistributionAddView',
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
+    'DistributionCountryArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
     'DistributionReleaseMirrorsRSSView',
     'DistributionArchiveMirrorsRSSView',
@@ -37,11 +38,12 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError)
+    ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -51,7 +53,7 @@ from canonical.launchpad.webapp import (
     redirection, RedirectionNavigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistributionReleaseStatus
+from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
 from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
@@ -531,6 +533,26 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionCountryArchiveMirrorsView(LaunchpadView):
+    """A text/plain page which lists the mirrors in the country of the request.
+
+    If there are no mirrors located in the country of the request, we fallback
+    to the main Ubuntu repositories.
+    """
+
+    def render(self):
+        if not self.context.full_functionality:
+            self.request.response.setStatus(404)
+            return u''
+        country = request_country(self.request)
+        mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+            country, MirrorContent.ARCHIVE)
+        body = "\n".join(mirror.base_url for mirror in mirrors)
+        self.request.response.setHeader(
+            'content-type', 'text/plain;charset=utf-8')
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsView(LaunchpadView):
