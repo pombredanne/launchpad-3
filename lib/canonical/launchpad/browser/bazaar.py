@@ -156,7 +156,7 @@ class BazaarProductView:
     def products(self):
         # XXX: TimPenhey 2007-02-26
         # sabdfl really wants a page that has all the products with code
-        # on it.  I feel that at some stage it will just look too combersome,
+        # on it.  I feel that at some stage it will just look too cumbersome,
         # and we'll want to optimise the view somehow, either by taking
         # a random sample of the products with code, or some other method
         # of reducing the full set of products.
