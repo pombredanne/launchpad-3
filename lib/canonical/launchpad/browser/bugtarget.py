@@ -547,7 +547,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment']
+    field_names = ['product', 'title', 'comment', 'tags']
 
     @cachedproperty
     def most_common_bugs(self):
@@ -568,7 +568,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'security_related']
+    field_names = ['product', 'title', 'comment', 'security_related', 'tags']
 
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
@@ -585,7 +585,7 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
 
     @property
     def field_names(self):
-        return ['title', 'comment', 'bugtarget']
+        return ['title', 'comment', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
@@ -616,7 +616,7 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
 
     @property
     def field_names(self):
-        return ['title', 'comment', 'security_related', 'bugtarget']
+        return ['title', 'comment', 'security_related', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
