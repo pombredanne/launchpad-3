@@ -546,8 +546,8 @@ ul#applicationchooser li#applicationchooser_selected {
 #actions ul {
   width: 192px;
   overflow: hidden;
-  margin: 3px 0px 0px 0px;
-  padding: 4px 4px 0 4px;
+  margin: 0;
+  padding: 4px;
   list-style: none;
 }
 #actions li {
@@ -555,9 +555,8 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #actions li a {
   width: 180px;
-  height: auto !important;
   display: block;
-  padding: 6px !important;
+  padding: 4px;
 }
 #actions li a:hover {
   background-color: #fff;
@@ -662,6 +661,7 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading {
   background: none;
+  border: 1px solid red;
   color: black;
   float: left;
   margin: 10px 0px 0px 38px;
@@ -685,6 +685,8 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #applicationchooser {
   clear: both;
+  position: relative; /* needed to make z-index work */
+  z-index: 1; /* ensures tabs appear above structural object heading */
 }
 #mainarea {
   clear: both;
