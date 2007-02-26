@@ -6,12 +6,15 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/translations"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Software translations</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/translations" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-translations">
-        <h1>Translations</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,20 +23,20 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <p id="application-summary">
-                          With Launchpad you can translation Free Software
-                          into your own language.
-                        </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>
                         </ul>
+                        <p id="application-summary">
+                          With Launchpad you can translate Free Software
+                          into your own language.
+                        </p>
                         <div class="three column left">
 
                             <h2>Translatable operating systems</h2>

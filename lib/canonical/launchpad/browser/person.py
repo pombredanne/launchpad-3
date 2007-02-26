@@ -326,15 +326,15 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
-        text = 'Branches Authored'
+        text = 'View Authored Branches'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Branches Registered'
+        text = 'View Registered Branches'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Branches Subscribed'
+        text = 'View Subscribed Branches'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
@@ -2617,13 +2617,13 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     @property
     def pageheading(self):
         """See SearchQuestionsView."""
-        return _('Questions needing $name attention',
+        return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchQuestionsView."""
-        return _('No questions need $name attention.',
+        return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
 

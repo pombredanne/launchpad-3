@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source package releases in a distribution release."""
 
@@ -10,7 +10,6 @@ __all__ = [
 
 from zope.interface import implements
 
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
@@ -21,9 +20,11 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
-    IDistroReleaseSourcePackageRelease, NotFoundError)
+    IDistroReleaseSourcePackageRelease, ISourcePackageRelease)
+from canonical.lp import decorates
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
+
 
 class DistroReleaseSourcePackageRelease:
     """This is a "Magic SourcePackageRelease in Distro Release". It is not
@@ -32,19 +33,11 @@ class DistroReleaseSourcePackageRelease:
 
     implements(IDistroReleaseSourcePackageRelease)
 
+    decorates(ISourcePackageRelease, context='sourcepackagerelease')
+
     def __init__(self, distrorelease, sourcepackagerelease):
         self.distrorelease = distrorelease
         self.sourcepackagerelease = sourcepackagerelease
-
-    @property
-    def name(self):
-        """See IDistroReleaseSourcePackageRelease."""
-        return self.sourcepackagerelease.sourcepackagename.name
-
-    @property
-    def version(self):
-        """See IDistroReleaseSourcePackageRelease."""
-        return self.sourcepackagerelease.version
 
     @property
     def distribution(self):
@@ -178,71 +171,6 @@ class DistroReleaseSourcePackageRelease:
         return queue_record.changesfile
 
     @property
-    def age(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.age
-
-    @property
-    def builddepends(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.builddepends
-
-    @property
-    def builddependsindep(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.builddependsindep
-
-    @property
-    def architecturehintlist(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.architecturehintlist
-
-    @property
-    def dsc(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.dsc
-
-    @property
-    def format(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.format
-
-    @property
-    def urgency(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.urgency
-
-    @property
-    def changelog(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.changelog
-
-    @property
-    def uploaddistrorelease(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.uploaddistrorelease
-
-    @property
-    def dscsigningkey(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.dscsigningkey
-
-    @property
-    def dateuploaded(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.dateuploaded
-
-    @property
-    def sourcepackagename(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.sourcepackagename
-
-    @property
-    def manifest(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.manifest
-
-    @property
     def current_published(self):
         """See IDistroArchReleaseSourcePackage."""
         # Retrieve current publishing info
@@ -256,11 +184,6 @@ class DistroReleaseSourcePackageRelease:
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')
-
-        if current is None:
-            raise NotFoundError("Source package %s not published in %s"
-                                % (self.sourcepackagename.name,
-                                   self.distrorelease.name))
 
         return current
 

@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source package releases in a distribution."""
 
@@ -9,9 +9,9 @@ __all__ = [
     ]
 
 from zope.interface import implements
-from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IDistributionSourcePackageRelease
+from canonical.launchpad.interfaces import(
+    IDistributionSourcePackageRelease, ISourcePackageRelease)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -24,6 +24,8 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
 
+from canonical.lp import decorates
+
 
 class DistributionSourcePackageRelease:
     """This is a "Magic Distribution Source Package Release". It is not an
@@ -33,6 +35,7 @@ class DistributionSourcePackageRelease:
     """
 
     implements(IDistributionSourcePackageRelease)
+    decorates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
@@ -43,11 +46,6 @@ class DistributionSourcePackageRelease:
         """See IDistributionSourcePackageRelease"""
         return self.distribution.getSourcePackage(
             self.sourcepackagerelease.sourcepackagename)
-
-    @property
-    def name(self):
-        """See IDistributionSourcePackageRelease."""
-        return '%s' % self.sourcepackagerelease.sourcepackagename.name
 
     @property
     def displayname(self):
@@ -61,16 +59,11 @@ class DistributionSourcePackageRelease:
             self.name, self.version, self.distribution.displayname)
 
     @property
-    def version(self):
-        """See IDistributionSourcePackageRelease."""
-        return self.sourcepackagerelease.version
-
-    @property
     def publishing_history(self):
         """See IDistributionSourcePackageRelease."""
         return SourcePackagePublishingHistory.select("""
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.distrorelease = 
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease = %s
@@ -102,7 +95,7 @@ class DistributionSourcePackageRelease:
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTable=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'Build'],
             orderBy='name',
             distinct=True)
 
@@ -115,7 +108,7 @@ class DistributionSourcePackageRelease:
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = 
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
@@ -124,7 +117,7 @@ class DistributionSourcePackageRelease:
                             self.sourcepackagerelease),
             distinct=True,
             orderBy=['-datecreated'],
-            clauseTables=['DistroArchRelease', 'DistroRelease', 
+            clauseTables=['DistroArchRelease', 'DistroRelease',
                           'BinaryPackageRelease', 'Build'])
         samples = []
         names = set()

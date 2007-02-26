@@ -8,9 +8,10 @@ The list of answer contacts is displayed in the 'Answer Contact'
 portlet which is available on the 'Answers' facet of the product or
 distro.
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
     >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='portlet-answer-contacts')
     >>> portlet.first('h2')
     <h2>Answer contacts for Ubuntu</h2>
@@ -22,8 +23,8 @@ distro.
 Anybody can become an answer contact. To register as an answer contact,
 the user clicks on the 'Answer Contact' link:
 
-    >>> user_browser.getLink('Answer Contact').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> browser.getLink('Answer Contact').click()
+    >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('h1')
     <h1>Manage answer contacts</h1>
 
@@ -31,7 +32,7 @@ That page displays a series of checkboxes. One for the user and one for
 each team that user is a member of. Both direct and implicit team
 memberships are listed.
 
-    >>> user_browser.getControl(
+    >>> browser.getControl(
     ...     name='field.answer_contact_teams').options
     ['landscape-developers', 'name18', 'name20']
 
@@ -40,16 +41,16 @@ of his team as an answer contact. In our case, the user decides to
 register himself, the Landscape Developers team and the Ubuntu Gnome Team
 (which he is only implicitely subscribed).
 
-    >>> user_browser.getControl(
+    >>> browser.getControl(
     ...     "I want to be an answer contact for Ubuntu").selected = True
-    >>> user_browser.getControl("Landscape Developers").selected = True
-    >>> user_browser.getControl("Ubuntu Gnome Team").selected = True
-    >>> user_browser.getControl('Continue').click()
+    >>> browser.getControl("Landscape Developers").selected = True
+    >>> browser.getControl("Ubuntu Gnome Team").selected = True
+    >>> browser.getControl('Continue').click()
 
 Confirmation of the answer contact registrations are displayed and the
 new answer contacts appear in the 'Answer Contacts' portlet:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup.fetch('div', 'informational message'):
     ...     print tag.renderContents()
     You have been added as an answer contact for Ubuntu.
@@ -73,21 +74,21 @@ To remove oneself from the answer contacts, the user uses the same
 'Answer Contact' link and uncheck himself or the team he want to remove
 from the answer contact list.
 
-    >>> user_browser.getLink('Answer Contact').click()
-    >>> user_browser.getControl(
+    >>> browser.getLink('Answer Contact').click()
+    >>> browser.getControl(
     ...     "I want to be an answer contact for Ubuntu").selected
     True
-    >>> user_browser.getControl("Landscape Developers").selected
+    >>> browser.getControl("Landscape Developers").selected
     True
-    >>> user_browser.getControl("Landscape Developers").selected = False
-    >>> user_browser.getControl("Ubuntu Gnome Team").selected
+    >>> browser.getControl("Landscape Developers").selected = False
+    >>> browser.getControl("Ubuntu Gnome Team").selected
     True
-    >>> user_browser.getControl("Ubuntu Gnome Team").selected = False
-    >>> user_browser.getControl('Continue').click()
+    >>> browser.getControl("Ubuntu Gnome Team").selected = False
+    >>> browser.getControl('Continue').click()
 
 A confirmation message is displayed:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup.fetch('div', 'informational message'):
     ...     print tag.renderContents()
     Landscape Developers has been removed as an answer contact for Ubuntu.
@@ -97,9 +98,9 @@ Since answer contacts are notified of changes to questions, they are also
 listed in the 'Also notified' list in the 'Subscribers' portlet on a
 question.
 
-    >>> user_browser.open(
+    >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+ticket/7')
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='question-subscribers')
     >>> also_notified = portlet.first('b')
     >>> also_notified

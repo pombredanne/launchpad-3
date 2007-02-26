@@ -24,7 +24,7 @@ from urllib import urlencode
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
-from zope.component import getUtility
+from zope.component import getUtility, queryMultiAdapter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -45,14 +45,21 @@ class AskAQuestionButtonView:
     """View that renders a clickable button to ask a question on its context."""
 
     def __call__(self):
+        # Check if the context has an +addticket view available...
+        if queryMultiAdapter((self.context, self.request), name='+addticket'):
+            target = self.context
+        else:
+            # otherwise find an adapter to IQuestionTarget which will.
+            target = IQuestionTarget(self.context)
+
         return """
               <a href="%s/+addticket">
                 <img
                   alt="Ask a question"
-                  src="/+icing/but_sml_askaquestion.gif"
+                  src="/+icing/but-sml-askaquestion.gif"
                 />
               </a>
-        """ % canonical_url(IQuestionTarget(self.context), rootsite='answers')
+        """ % canonical_url(target, rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
