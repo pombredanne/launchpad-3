@@ -1,6 +1,9 @@
 <div class="portlet">
   <h2>Latest uploads</h2>
   <div class="portletBody">
+    <p tal:condition="not:context/getLastUploads">
+      There have been no uploads yet.
+    </p>
     <ul id="last-uploads" class="binary package">
 
   <li tal:repeat="source context/getLastUploads">
