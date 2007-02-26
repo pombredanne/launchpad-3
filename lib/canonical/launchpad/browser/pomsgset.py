@@ -977,7 +977,7 @@ class POMsgSetView(LaunchpadView):
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
-                'selection': self.context.getSelection(index),
+                'active_submission': self.context.getActiveSubmission(index),
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line
