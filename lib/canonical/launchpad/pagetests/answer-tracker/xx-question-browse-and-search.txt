@@ -587,7 +587,7 @@ questions ever filed on Launchpad.
 
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'firefox'
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Find Answers').click()
 
     >>> print browser.title
     Questions matching "firefox"
