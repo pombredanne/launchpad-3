@@ -39,6 +39,22 @@ from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer
 
 
+def deferToThread(f):
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        t = threading.Thread(
+            target=lambda: threads._putResultInDeferred(d, f, args, kwargs))
+
+        def joinThread(passedThrough):
+            t.join()
+            return passedThrough
+
+        d.addBoth(joinThread)
+        t.start()
+        return d
+    return decorated
+
+
 class SFTPSetup(TacTestSetup):
     root = '/tmp/sftp-test'
     pidfile = os.path.join(root, 'twistd.pid')
@@ -168,7 +184,7 @@ class AcceptanceTests(SFTPTestCase):
         user has permission to read or write to those URLs.
         """
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        d = self.deferToThread(self._push, remote_url)
+        d = self._push(remote_url)
 
         def check(ignored):
             remote_branch = bzrlib.branch.Branch.open(remote_url)
@@ -178,15 +194,7 @@ class AcceptanceTests(SFTPTestCase):
 
         return d.addCallback(check)
 
-    def deferToThread(self, f, *args, **kwargs):
-        d = defer.Deferred()
-        def inThread():
-            return threads._putResultInDeferred(d, f, args, kwargs)
-        t = threading.Thread(target=inThread)
-        d.addCallback(lambda _: t.join())
-        t.start()
-        return d
-
+    @deferToThread
     def _push(self, remote_url):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
