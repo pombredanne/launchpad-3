@@ -395,6 +395,11 @@
         for="canonical.launchpad.interfaces.IProductSet"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSet"
+        name="+code-index"
+        layer="canonical.launchpad.layers.CodeLayer" />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProductSetNavigation"
@@ -411,6 +416,15 @@
         class="canonical.launchpad.browser.product.ProductSetDynMenu"
         attribute="__call__"
         name="+menudata"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BazaarProductView"
+        name="+code-index"
+        facet="branches"
+        template="../templates/product-code-index.pt"
         />
 
     <browser:page
