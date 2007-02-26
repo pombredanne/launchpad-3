@@ -14,7 +14,7 @@ for the IProductSet.
 
     >>> browser.open('http://code.launchpad.dev/products')
     >>> print browser.title
-    Products with Code
+    Projects with Code
 
     >>> contents = find_tag_by_id(browser.contents, 'maincontent')
     >>> for anchor in contents.fetch('a'):
