@@ -32,14 +32,17 @@ import canonical
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
+from canonical.launchpad.daemons.authserver import AuthserverSetup
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer
 
 
 def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
     def decorated(*args, **kwargs):
         d = defer.Deferred()
         t = threading.Thread(
@@ -114,8 +117,8 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         ssh._ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
+        self.authserver = AuthserverSetup().makeService()
+        self.authserver.startService()
 
         # Start the SFTP server
         self.server = SFTPSetup()
@@ -140,7 +143,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         gc.collect()
 
         os.environ['HOME'] = self.realHome
-        self.authserver.tearDown()
+        self.authserver.stopService()
         # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
@@ -184,17 +187,17 @@ class AcceptanceTests(SFTPTestCase):
         user has permission to read or write to those URLs.
         """
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        d = self._push(remote_url)
-
-        def check(ignored):
-            remote_branch = bzrlib.branch.Branch.open(remote_url)
-            # Check that the pushed branch looks right
-            self.assertEqual(self.local_branch.last_revision(),
-                             remote_branch.last_revision())
-
-        return d.addCallback(check)
+        d = self._pushThenOpen(remote_url)
+        d.addCallback(lambda remote_branch:
+                      self.assertEqual(self.local_branch.last_revision(),
+                                       remote_branch.last_revision()))
+        return d
 
     @deferToThread
+    def _pushThenOpen(self, remote_url):
+        self._push(remote_url)
+        return bzrlib.branch.Branch.open(remote_url)
+
     def _push(self, remote_url):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
@@ -393,6 +396,9 @@ def test_suite():
 # Be paranoid since we trash directories as part of this.
 assert config.default_section == 'testrunner', \
         'Imported dangerous test harness outside of the test runner'
-AuthserverTacTestSetup().killTac()
 SFTPSetup().killTac()
+
+# NOMERGE - figure out what to do with this, we aren't using
+# AuthserverTacTestSetup anymore.
+#AuthserverTacTestSetup().killTac()
 
