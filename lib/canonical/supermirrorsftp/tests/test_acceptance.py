@@ -8,8 +8,10 @@ __metaclass__ = type
 import unittest
 import tempfile
 import os
+import signal
 import shutil
 import gc
+import threading
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
@@ -22,7 +24,9 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 from bzrlib.builtins import cmd_push
 
+from twisted.internet import defer, threads
 from twisted.python.util import sibpath
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 import canonical
 from canonical.config import config
@@ -54,10 +58,11 @@ class SFTPSetup(TacTestSetup):
             ))
 
 
-class SFTPTestCase(TestCaseWithRepository):
+class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
@@ -162,14 +167,25 @@ class AcceptanceTests(SFTPTestCase):
         (and/or their bzrlib equivalents) and so on should work, so long as the
         user has permission to read or write to those URLs.
         """
-
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        self._push(remote_url)
-        remote_branch = bzrlib.branch.Branch.open(remote_url)
+        d = self.deferToThread(self._push, remote_url)
 
-        # Check that the pushed branch looks right
-        self.assertEqual(
-            self.local_branch.last_revision(), remote_branch.last_revision())
+        def check(ignored):
+            remote_branch = bzrlib.branch.Branch.open(remote_url)
+            # Check that the pushed branch looks right
+            self.assertEqual(self.local_branch.last_revision(),
+                             remote_branch.last_revision())
+
+        return d.addCallback(check)
+
+    def deferToThread(self, f, *args, **kwargs):
+        d = defer.Deferred()
+        def inThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+        t = threading.Thread(target=inThread)
+        d.addCallback(lambda _: t.join())
+        t.start()
+        return d
 
     def _push(self, remote_url):
         old_dir = os.getcwdu()
