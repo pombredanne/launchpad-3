@@ -459,54 +459,6 @@ class LaunchpadRootNavigation(Navigation):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
 
-    def _getBetaRedirectionView(self):
-        # If the inhibit_beta_redirect cookie is set, don't redirect:
-        if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
-            return None
-
-        # If we are looking at the front page, don't redirect:
-        if self.request['PATH_INFO'] == '/':
-            return None
-        
-        # If no redirection host is set, don't redirect.
-        mainsite_host = config.launchpad.vhosts.mainsite.hostname
-        redirection_host = config.launchpad.beta_testers_redirection_host
-        if redirection_host is None:
-            return None
-        # If the hostname for our URL isn't under the main site
-        # (e.g. shipit.ubuntu.com), don't redirect.
-        uri = URI(self.request.getURL())
-        if not uri.host.endswith(mainsite_host):
-            return None
-
-        # Only redirect if the user is a member of beta testers team,
-        # don't redirect.
-        user = getUtility(ILaunchBag).user
-        if user is None or not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return None
-
-        # Alter the host name to point at the redirection target:
-        new_host = uri.host[:-len(mainsite_host)] + redirection_host
-        uri = uri.replace(host=new_host)
-        # Complete the URL from the environment:
-        uri = uri.replace(path=self.request['PATH_INFO'])
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            uri = uri.replace(query=query_string)
-
-        # Empty the traversal stack, since we're redirecting.
-        self.request.setTraversalStack([])
-        
-        # And perform a temporary redirect.
-        return RedirectionView(str(uri), self.request, status=303)
-
-    def publishTraverse(self, request, name):
-        beta_redirection_view = self._getBetaRedirectionView()
-        if beta_redirection_view is not None:
-            return beta_redirection_view
-        return Navigation.publishTraverse(self, request, name)
-
 
 class SoftTimeoutView(LaunchpadView):
 

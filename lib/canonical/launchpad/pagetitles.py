@@ -510,8 +510,6 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
-notification_test = 'Notification test'
-
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')

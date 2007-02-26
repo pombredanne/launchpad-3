@@ -72,7 +72,6 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad product.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
-    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
 
 
 class ICrowd(Interface):

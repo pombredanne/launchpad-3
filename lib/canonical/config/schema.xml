@@ -217,13 +217,6 @@ k            </description>
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
-        <key name="beta_testers_redirection_host" datatype="string"
-             required="no">
-            <description>
-                If set, the host name to redirect beta testers to.
-            </description>
-            <example>beta.launchpad.net</example>
-        </key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>

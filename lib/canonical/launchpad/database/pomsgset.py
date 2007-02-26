@@ -251,18 +251,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             POSubmission.published
             """ % sqlvalues(self, pluralform))
 
-    def _updateReviewerInfo(self, reviewer):
-        """Update a couple of fields to note there was an update.
-
-        :arg reviewer: The person who just reviewed this IPOMsgSet.
-
-        The updated fields are:
-            - self.pofile.last_touched_pomsgset: To cache which message was
-              the last one updated so we can know when was an IPOFile last
-               updated.
-            - self.reviewer: To note who did last review for this message.
-            - self.date_reviewed: To note when was done last review.
-        """
+    def updateReviewerInfo(self, reviewer):
+        """See IPOMsgSet."""
         self.pofile.last_touched_pomsgset = self
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -373,7 +363,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 has_changed = True
 
         if has_changed and is_editor:
-            self._updateReviewerInfo(person)
+            self.updateReviewerInfo(person)
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
