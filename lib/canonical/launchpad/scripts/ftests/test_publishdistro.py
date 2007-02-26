@@ -44,6 +44,14 @@ class TestPublishDistro(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'foo')
 
+    def assertExists(self, path):
+        """Assert if the given path exists."""
+        self.assertTrue(os.path.exists(path), "Not Found: '%s'" % path)
+
+    def assertNotExists(self, path):
+        """Assert if the given path does not exist."""
+        self.assertFalse(os.path.exists(path), "Found: '%s'" % path)
+
     def testRunWithSuite(self):
         """Try to run publish-distro with restricted suite option.
 
@@ -65,7 +73,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
-        self.assertEqual(False, os.path.exists(foo_path))
+        self.assertNotExists(foo_path)
 
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
@@ -83,28 +91,28 @@ class TestPublishDistro(TestNativePublishingBase):
 
         # Check "Release" files
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
-        self.assertTrue(os.path.exists(release_path))
+        self.assertExists(release_path)
 
         release_path = "%s/hoary-test-backports/Release" % self.config.distsroot
-        self.assertTrue(os.path.exists(release_path))
+        self.assertExists(release_path)
 
         release_path = "%s/hoary-test/Release" % self.config.distsroot
-        self.assertFalse(os.path.exists(release_path))
+        self.assertNotExists(release_path)
 
         # Check some index files
         index_path = (
             "%s/hoary-test-updates/main/binary-i386/Packages"
             % self.config.distsroot)
-        self.assertTrue(os.path.exists(index_path))
+        self.assertExists(index_path)
 
         index_path = (
             "%s/hoary-test-backports/main/binary-i386/Packages"
             % self.config.distsroot)
-        self.assertTrue(os.path.exists(index_path))
+        self.assertExists(index_path)
 
         index_path = (
             "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
-        self.assertFalse(os.path.exists(index_path))
+        self.assertNotExists(index_path)
 
 
 def test_suite():

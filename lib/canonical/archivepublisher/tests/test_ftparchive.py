@@ -183,6 +183,12 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         we can publish only a specific group of the suites even if they
         are still empty. It makes APT clients happier during development
         cycle.
+
+        This test should check:
+
+          * if apt.conf was generated correctly.
+          * a-f runs based on this config without any errors
+          * a-f *only* creates the wanted archive indexes.
         """
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         from canonical.archivepublisher.publishing import Publisher
@@ -197,15 +203,10 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
         fa.createEmptyPocketRequests(fullpublish=True)
 
-        fa.publishOverrides([], [])
-
-        fa.publishFileLists([], [])
-
         apt_conf = fa.generateConfig(fullpublish=True)
         self.assertTrue(os.path.exists(apt_conf))
 
         apt_conf_content = file(apt_conf).read()
-        self.assertTrue(apt_conf_content)
 
         sample_content = file(
             os.path.join(

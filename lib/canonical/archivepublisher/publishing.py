@@ -171,6 +171,19 @@ class Publisher(object):
             return False
         return True
 
+    def isAllowed(self, distrorelease, pocket):
+        """Whether or not the given suite should be considered.
+
+        Return True either if the self.allowed_suite is empty (was not
+        specified in command line) or if the given suite is included in it.
+
+        Otherwise, return False.
+        """
+        if (self.allowed_suites and not
+            (distrorelease.name, pocket) in self.allowed_suites):
+            return False
+        return True
+
     def _writeDistroRelease(self, distrorelease, pocket):
         """Write out the Release files for the provided distrorelease."""
         # XXX: untested method -- kiko, 2006-08-24

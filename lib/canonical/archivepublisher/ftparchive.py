@@ -187,9 +187,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isDirty(distrorelease, pocket):
                         continue
                 else:
-                    if (self.publisher.allowed_suites and not
-                        (distrorelease.name, pocket) in
-                        self.publisher.allowed_suites):
+                    if not self.publisher.isAllowed(distrorelease, pocket):
                         continue
 
                 for comp in components:
@@ -251,9 +249,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isDirty(distrorelease, pocket):
                         continue
                 else:
-                    if (self.publisher.allowed_suites and not
-                        (distrorelease.name, pocket) in
-                        self.publisher.allowed_suites):
+                    if not self.publisher.isAllowed(distrorelease, pocket):
                         continue
 
                 spphs = SourcePackagePublishingHistory.select(
@@ -466,9 +462,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isDirty(distrorelease, pocket):
                         continue
                 else:
-                    if (self.publisher.allowed_suites and not
-                        (distrorelease.name, pocket) in
-                        self.publisher.allowed_suites):
+                    if not self.publisher.isAllowed(distrorelease, pocket):
                         continue
 
                 spps = SourcePackageFilePublishing.select(
@@ -618,9 +612,7 @@ class FTPArchiveHandler:
                         # See similar condition in Publisher.B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE
                 else:
-                    if (self.publisher.allowed_suites and not
-                        (distrorelease.name, pocket) in
-                        self.publisher.allowed_suites):
+                    if not self.publisher.isAllowed(distrorelease, pocket):
                         continue
 
                 subtext = self.generateConfigForPocket(apt_config,
