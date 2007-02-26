@@ -112,7 +112,6 @@
                               </tr>
                             </tbody>
                           </table>
-                          <div>
                           <script type="text/javascript"
                                   tal:define="script view/focusedElementScript"
                                   tal:condition="script"
