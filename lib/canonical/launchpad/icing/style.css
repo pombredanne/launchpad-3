@@ -698,7 +698,7 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-left: 0;
   margin-right: 0;
 }
-#mainarea {position: relative; top: -10px;} /* reduces pillargotchi~tab gap */
+#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
 * html #mainarea {top: 0;}
 #singlecolumn #mainarea {top: -20px;}
 * html #singlecolumn #mainarea {top: 0;}
