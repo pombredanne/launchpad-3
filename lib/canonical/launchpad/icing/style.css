@@ -1497,3 +1497,21 @@ th.descending {
 #locationbar {
   overflow: visible;
 }
+.cloud-size-small { 
+  font-size: 1em;
+}
+.cloud-size-medium {
+  font-size: 1.35em;
+}
+.cloud-size-large {
+  font-size: 1.7em;
+}
+.cloud-shade-dark { 
+  color: #00f;
+}
+.cloud-shade-medium { 
+  color: #99f;
+}
+.cloud-shade-light {
+  color: #ccf;
+}
