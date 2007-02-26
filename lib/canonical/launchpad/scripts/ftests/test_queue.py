@@ -273,7 +273,7 @@ class TestQueueTool(TestQueueBase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertEqual([queue_action.default_recipient], to_addrs)
 
-    def testQueueDoesSendAnyEmailsForTranslations(self):
+    def testQueueDoesNotSendAnyEmailsForTranslations(self):
         """Check if no emails are sent when accepting translations.
 
         Queue tool should not send any emails to source uploads targeted to

@@ -637,19 +637,30 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.http_url))
 
-                self.sendAcceptEmail(queue_item, "\n".join(summary))
+                self.sendAnnouncement(queue_item, "\n".join(summary))
 
         self.displayRule()
         self.displayBottom()
 
-    def sendAcceptEmail(self, queue_item, summary):
-        """Send an accept email.
+    def sendAnnouncement(self, queue_item, summary):
+        """Build and send oppropriate annoncement email if allowed.
 
         Take the summary given, and derive the rest of the information
         for the email from the queue_item.
+
+        This method only sends email for sourceful or single custom uploads,
+        i.e., it skips binary uploads.
+
+        Usually uploaders and 'announcelist' will recieve acceptance message.
+
+        It does not include 'announcelist' as recipient for uploads to pocket
+        BACKPORTS.
+
+        It also do not send messages for source uploads targeted to section
+        'translations' ('laguage-pack-*' & 'language-support-*').
         """
-        # We send acceptance email only if the upload is sourceful,
-        # or had exactly one customfile and no binaries.
+        # We do not send notifications for binary uploads. Only sourceful
+        # and single-custom uploads should be considered.
         if (queue_item.sources.count() == 0 and
             (queue_item.builds.count() > 0 and
              queue_item.customfiles.count() != 1)):
