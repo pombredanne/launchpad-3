@@ -165,6 +165,19 @@ class IPOMsgSet(Interface):
         The new values will reflect current status of this entry.
         """
 
+    def updateReviewerInfo(reviewer):
+        """Update a couple of fields to note there was an update.
+
+        :arg reviewer: The person who just reviewed this IPOMsgSet.
+
+        The updated fields are:
+            - self.pofile.last_touched_pomsgset: To cache which message was
+              the last one updated so we can know when was an IPOFile last
+               updated.
+            - self.reviewer: To note who did last review for this message.
+            - self.date_reviewed: To note when was done last review.
+        """
+
 
 class IPOMsgSetSuggestions(Interface):
     """Holds data of a specific kind of POSubmission for a POMsgSet's
