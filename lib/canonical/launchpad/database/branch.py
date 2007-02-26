@@ -355,6 +355,9 @@ class BranchSet:
             
     def getBranchSummaryForProducts(self, products):
         """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        if not product_ids:
+            return []
         cur = cursor()
         cur.execute("""
             SELECT
@@ -362,15 +365,15 @@ class BranchSet:
             FROM Branch
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.product in %s
             GROUP BY Product
-            """)
+            """ % sqlvalues(product_ids))
         result = {}
         product_map = dict([(product.id, product) for product in products])
         for product_id, branch_count, last_commit in cur.fetchall():
-            product = product_map.get(product_id)
-            if product:
-                result[product] = {'branch_count' : branch_count,
-                                   'last_commit' : last_commit}
+            product = product_map[product_id]
+            result[product] = {'branch_count' : branch_count,
+                               'last_commit' : last_commit}
         return result
 
     def getRecentlyChangedBranches(self, branch_count):

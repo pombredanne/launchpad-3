@@ -7,7 +7,7 @@ through to get lists of branches of products that interest them.
     >>> browser.open('http://code.launchpad.dev')
     >>> browser.getLink('branches registered in').click()
     >>> print browser.title
-    Products with Code
+    Projects with Code
 
 You can also get to this page as the default view on the code rootsite
 for the IProductSet.

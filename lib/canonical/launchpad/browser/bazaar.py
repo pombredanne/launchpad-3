@@ -38,7 +38,7 @@ class BazaarBranchesMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def importer(self):
         target = 'series/'
-        text = 'Branch Importer'
+        text = 'Branch importer'
         summary = 'Manage CVS and SVN Trunk Imports'
         return Link(target, text, summary, icon='branch')
 
@@ -130,24 +130,24 @@ class ProductInfo:
     @property
     def branch_class(self):
         if self.branch_count < 20:
-            return "font-size:1em"
+            return "cloud-size-small"
         if self.branch_count < 100:
-            return "font-size:1.35em"
-        return "font-size:1.7em"
+            return "cloud-size-medium"
+        return "cloud-size-large"
 
     @property
     def time_class(self):
         if self.elapsed_since_commit is None:
-            return "color:#ccf"
+            return "cloud-shade-light"
         if self.elapsed_since_commit.days < 7:
-            return "color:#00f"
+            return "cloud-shade-dark"
         if self.elapsed_since_commit.days < 31:
-            return "color:#99f"
-        return "color:#ccf"
+            return "cloud-shade-medium"
+        return "cloud-shade-light"
 
     @property
-    def style(self):
-        return "%s; %s" % (self.branch_class, self.time_class)
+    def html_class(self):
+        return "%s %s" % (self.branch_class, self.time_class)
 
 
 class BazaarProductView:
@@ -174,7 +174,10 @@ class BazaarProductView:
         for product in products:
             summary = branch_summaries[product]
             last_commit = summary['last_commit']
-            elapsed = last_commit and (now - last_commit)
+            if last_commit is None:
+                elapsed = None
+            else:
+                elapsed = now - last_commit
             items.append(ProductInfo(
                 product, summary['branch_count'], elapsed))
 

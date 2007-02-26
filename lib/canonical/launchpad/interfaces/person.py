@@ -641,9 +641,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchQuestions(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                        language=None, sort=None, participation=None,
-                        needs_attention=False):
+    def searchQuestions(**search_criteria):
         """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
