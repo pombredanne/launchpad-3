@@ -1,52 +1,46 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:portlets fill-slot="portlets">
 
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
+    </metal:portlets>
 
 <div metal:fill-slot="main"
     tal:define="specs view/specs;
                 has_any_specs view/has_any_specifications">
 
-      <h1>Feature specifications</h1>
+      <h1 tal:condition="context/karma|nothing"
+      >Blueprints involving <tal:person replace="context/title" /></h1>
+      <h1 tal:condition="not:context/karma|nothing"
+      >Blueprints for <tal:software replace="context/title" /></h1>
 
   <tal:no_specs condition="not: has_any_specs">
 
     <p>
       Launchpad lets projects track the features they intend to implement over
       the next few releases. It can generate reports of the project roadmap, as
-      well as notifying developers of specification status changes.
+      well as notifying developers of status changes in those blueprints.
       Examples:
-      <a href="/ubuntu/+specs">Ubuntu specifications</a>,
-      <a href="/bzr/+specs">Bazaar specifications</a>.
+      <a href="/ubuntu/">Ubuntu</a>,
+      <a href="/bzr/">Bazaar</a>.
     </p>
 
     <tal:not_person condition="not: view/is_person">
       <ul class="menu">
         <li class="add">
-          <a href="+addspec">Register the first specification</a>
-          for <span tal:replace="context/displayname">Firefox</span>
+          <a href="+addspec">Register the first blueprint
+          for <span tal:replace="context/displayname">Firefox</span></a>
         </li>
       </ul>
     </tal:not_person>
 
     <p>
-      Launchpad lets you plan releases, and keep track of who is responsible
-      for what. You can approve
-      feature specifications as goals for a particular release, and then
+      Once you have a few blueprints in the system you can plan releases,
+      and keep track of who is responsible for what. You can approve
+      blueprints as goals for a particular release, and then
       generate a simple report of progress towards feature
       completion for that release.
     </p>
@@ -54,7 +48,7 @@
       <ul class="menu">
         <li class="info">
           <a href="https://help.launchpad.net/BlueprintDocumentation"
-          >More about tracking features</a>
+          >Read more about tracking blueprints</a>
         </li>
       </ul>
 
@@ -62,21 +56,23 @@
 
   <tal:has_any_specs condition="has_any_specs">
 
-    <form name="spec_search" method="GET">
+    <div>
+      <form name="spec_search" method="GET">
 
-      Show specifications containing:
+        Show only blueprints containing:
 
-      <input type="text" name="searchtext"
-             tal:attributes="value view/searchtext" />
-      <input tal:condition="view/searchrequested"
-        type="submit"
-        value="Search Again"
-        />
-      <input tal:condition="not: view/searchrequested"
-        type="submit"
-        value="Search Specifications"
-        />
-    </form>
+        <input type="text" name="searchtext"
+               tal:attributes="value view/searchtext" />
+        <input tal:condition="view/searchrequested"
+          type="submit"
+          value="Search again"
+          />
+        <input tal:condition="not: view/searchrequested"
+          type="submit"
+          value="Search blueprints"
+          />
+      </form>
+    </div>
 
     <table class="listing sortable" id="speclisting"
           tal:condition="specs">
@@ -106,13 +102,13 @@
                    title="Informational specification"
                    tal:condition="spec/informational" />
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/status/sortkey" />
             <span tal:content="spec/status/title"
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td>
+          <td class="nowrap">
             <span class="sortkey" tal:content="spec/delivery/sortkey" />
             <span
               tal:attributes="class string:specdelivery${spec/delivery/name}"
@@ -139,14 +135,13 @@
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
 
-    <p class="discreet">
+    <p>
       <span tal:replace="specs/count:len">7</span> specification(s) listed.
     </p>
-
-    <div tal:replace="structure context/@@+blueprint-legend" />
 
   </tal:has_any_specs>
 
 </div>
 </body>
 </html>
+<!-- 1-0 in-progress Person needs latest-touched list (bug 82090) -->

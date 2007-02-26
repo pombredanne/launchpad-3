@@ -2,7 +2,7 @@
 
   >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
   >>> browser.open('http://launchpad.dev/people/')
-  >>> browser.getLink('Register a Team').click()
+  >>> browser.getLink('Register a team').click()
 
   >>> browser.url
   'http://launchpad.dev/people/+newteam'
@@ -13,9 +13,8 @@
   >>> browser.getControl(name='field.name').value = 'myemail'
   >>> browser.getControl('Display Name').value = 'my own team'
   >>> browser.getControl('Team Description').value = 'my own team description'
-  >>> browser.getControl('Number of days a subscription lasts').value = '365'
-  >>> browser.getControl(
-  ...     'Number of days a renewed subscription lasts').value = '365'
+  >>> browser.getControl('Subscription period').value = '365'
+  >>> browser.getControl('Renewal period').value = '365'
   >>> browser.getControl('Subscription Policy').value = ['Open Team']
   >>> browser.getControl('Add').click()
 
@@ -25,9 +24,10 @@
   >>> browser.title
   'my own team in Launchpad'
 
-  >>> team_portlet = find_portlet(browser.contents, 'my own team')
-  >>> team_portlet.find(text='Team Owner:').findNext('a').string
-  u'foobar'
+  >>> print browser.contents
+  <!...
+  ...Team owner:...foobar...
+  ...
 
 The owner of a team is always added as an administrator of his team. Let's
 make sure that's true.

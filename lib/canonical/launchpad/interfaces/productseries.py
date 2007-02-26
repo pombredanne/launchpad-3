@@ -12,15 +12,15 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
-    validate_url)
+    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
+    IHasDrivers, validate_url)
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -83,7 +83,8 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

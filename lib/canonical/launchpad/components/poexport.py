@@ -22,6 +22,7 @@ See IPOTemplateExporter and IDistroReleasePOExporter.
 
 __metaclass__ = type
 
+import codecs
 import datetime
 import gettextpo
 import logging
@@ -174,14 +175,6 @@ class OutputPOFile:
         except UnicodeEncodeError:
             # Got any message that cannot be represented by its default
             # encoding, need to force a UTF-8 export.
-            # We log it.
-            export_logger = logging.getLogger('poexport-user-warnings')
-            export_logger.warn(
-                'Had to recode the file as UTF-8 as it has characters that'
-                ' cannot be represented using the %s charset' % 
-                    self.header.charset
-                )
-            # Export the file as UTF-8 as a workaround to this problem.
             self.header['Content-Type'] = 'text/plain; charset=UTF-8'
             self.header.updateDict()
             return self.export_string()
@@ -459,6 +452,15 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 # We are exporting an IPOTemplate.
                 header = pot_header
 
+            try:
+                codecs.getdecoder(header.charset)
+            except LookupError:
+                # The codec we are using to do the export is not valid,
+                # we default to UTF-8 for the export.
+                header.charset = u'UTF-8'
+                header['Content-Type'] = 'text/plain; charset=UTF-8'
+                header.updateDict()
+
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
@@ -496,7 +498,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header[EXPORT_DATE_HEADER] = dt.strftime('%F %R%z')
+            header[EXPORT_DATE_HEADER] = dt.strftime('%F %T%z')
 
             # Create the new PO file.
 

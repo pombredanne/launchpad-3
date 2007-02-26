@@ -87,7 +87,7 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> firefox_svg_bug.private = True
     >>> syncUpdate(firefox_svg_bug)
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', firefox_svg_bug)
     False

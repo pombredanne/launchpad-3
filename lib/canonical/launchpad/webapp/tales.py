@@ -26,15 +26,18 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
+    IPerson, ILaunchBag, IBugSet, NotFoundError, IBug, IBugAttachment,
+    IBugExternalRef
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
     )
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class TraversalError(NotFoundError):
@@ -73,17 +76,20 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturl(self):
+    def _requesturi(self):
         request = self._request
         if request is None:
             return None
-        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturlobj.pathnoslash.endswith(defaultviewname):
-            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
-        return requesturlobj
+        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
+            requesturiobj = URI(request.getURL(1))
+        query = request.get('QUERY_STRING')
+        if query:
+            requesturiobj = requesturiobj.replace(query=query)
+        return requesturiobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -92,8 +98,14 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturl=self._requesturl(),
+                requesturi=self._requesturi(),
                 selectedfacetname=self._selectedfacetname))
+
+    def selectedfacetname(self):
+        if self._selectedfacetname is None:
+            return 'unknown'
+        else:
+            return self._selectedfacetname
 
     def application(self):
         selectedfacetname = self._selectedfacetname
@@ -105,7 +117,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
     def context(self):
         menu = IContextMenu(self._context, None)
@@ -113,7 +125,7 @@ class MenuAPI:
             return  []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
 
 class CountAPI:
@@ -1088,4 +1100,30 @@ class PermissionRequiredQuery:
                     "There should be no further path segments after "
                     "required:permission")
         return check_permission(name, self.context)
+
+
+class GotoStructuralObject:
+    """lp:structuralobject
+
+    Returns None when there is no structural object.
+    """
+
+    def __init__(self, context_dict):
+        self.context = context_dict['context']
+        self.view = context_dict['view']
+
+    @property
+    def structuralobject(self):
+        if (IBug.providedBy(self.context) or
+            IBugAttachment.providedBy(self.context) or
+            IBugExternalRef.providedBy(self.context)):
+            use_context = self.view.current_bugtask
+        else:
+            use_context = self.context
+        # The structural object is the nearest object with a facet menu.
+        try:
+            facetmenu = nearest_menu(use_context, IFacetMenu)
+        except NoCanonicalUrl:
+            return None
+        return facetmenu.context
 

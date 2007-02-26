@@ -18,7 +18,7 @@ In summary, we write a web application by
    - SQL statements
 2. Design the web application's user interface
    - Table of URLs (see later)
-   - Page tempate mock-ups
+   - Page template mock-ups
 3. Write the Interfaces that the application will use to access the database
    - interfaces.py files
 4. Write the code and templates of the application
@@ -224,7 +224,7 @@ Guidelines for URLs
 * Where possible, use self-posting forms.  So, you would go to the URL
   "./projects/+" to get a form asking you for the information needed to
   add a new project.  When you submit the form, it POSTs to the same
-  URL.  If the provided informaiton is invalid, you'll get the form back
+  URL.  If the provided information is invalid, you'll get the form back
   with an error message.  Otherwise, you'll get a "success" message, or be
   redirected to the next page in the workflow.
 

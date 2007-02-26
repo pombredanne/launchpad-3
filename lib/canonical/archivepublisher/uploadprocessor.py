@@ -174,7 +174,7 @@ class UploadProcessor:
         # PoppyInterface for the other locking place.
         fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
         try:
-            fsroot_lock.acquire()
+            fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
             fsroot_lock.release()
@@ -291,7 +291,6 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        
         if self.options.keep or self.options.dryrun:
             self.log.debug("Keeping contents untouched")
             return
@@ -311,15 +310,17 @@ class UploadProcessor:
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             os.rename(distro_filename, target_path)
-                
+
     def sendMails(self, mails):
         """Send the mails provided using the launchpad mail infrastructure."""
         for mail_text in mails:
             mail_message = message_from_string(ascii_smash(mail_text))
+
             if mail_message['To'] is None:
-                self.log.debug("Unable to parse message for rejection!")
-                self.log.debug("This will cause the sendmail() to assert.")
+                self.log.debug("Missing recipient: empty 'To' header")
                 print repr(mail_text)
+                continue
+
             mail_message['X-Katie'] = "Launchpad actually"
 
             logger = self.log.debug
@@ -329,7 +330,7 @@ class UploadProcessor:
             else:
                 sendmail(mail_message)
                 logger("Sent a mail:")
-                
+
             logger("   Subject: %s" % mail_message['Subject'])
             logger("   Recipients: %s" % mail_message['To'])
             logger("   Body:")

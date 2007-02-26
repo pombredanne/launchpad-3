@@ -10,14 +10,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_emblem, valid_gotchi, valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -27,7 +30,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext, IHasSprints):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -86,16 +90,16 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
@@ -125,20 +129,27 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = Bytes(
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this project."),
-        constraint=valid_emblem)
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this project."))
 
-    gotchi = Bytes(
-        title=_("Gotchi"), required=False,
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "this project's home page. It should be no bigger than 50k in "
-            "size. "),
-        constraint=valid_gotchi)
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this project. It should be "
+            "no bigger than 50k in size."))
+
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this project's home page. It should be no bigger than 100k in "
+            "size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -183,6 +194,12 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         """Ensure that the bounty is linked to this project. Return None.
         """
 
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
+        """
+
 
 # Interfaces for set
 
@@ -210,7 +227,8 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    def new(name, displayname, title, homepageurl, summary, description, owner):
+    def new(name, displayname, title, homepageurl, summary, description,
+            owner, gotchi, gotchi_heading, emblem):
         """Create and return a project with the given arguments."""
 
     def count_all():

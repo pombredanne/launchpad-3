@@ -11,15 +11,38 @@ __all__ = [
 
 import operator
 
+from zope.component import getUtility
+
+from canonical.lp import decorates
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (IPerson, IProduct,
-                                            IBranchLifecycleFilter)
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchLifecycleFilter, IBranchSet, IBugBranchSet,
+    IPerson, IProduct)
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    IBranchLifecycleFilter, IBranchSet, IPerson, IProduct)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.widgets import LaunchpadDropdownWidget
 
+
+class BranchListingItem:
+    """A decorated branch.
+
+    Some attributes that we want to display are too convoluted or expensive
+    to get on the fly for each branch in the listing.  These items are
+    prefetched by the view and decorate the branch.
+    """
+    decorates(IBranch, 'branch')
+
+    def __init__(self, branch, last_commit, bugbranches, role=None):
+        self.branch = branch
+        self.last_commit = last_commit
+        self.bugbranches = bugbranches
+        self.role = role
+        
 
 class BranchTargetView(LaunchpadFormView):
     schema = IBranchLifecycleFilter
@@ -32,20 +55,38 @@ class BranchTargetView(LaunchpadFormView):
                        BranchLifecycleStatus.DEVELOPMENT,
                        BranchLifecycleStatus.MATURE])
                   
-
     @property
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT
             }
 
+    def initialize(self):
+        LaunchpadFormView.initialize(self)
+        self.last_commit = getUtility(IBranchSet).getLastCommitForBranches(
+            self.visible_branches)
+
     @cachedproperty
     def branches(self):
         """All branches related to this target, sorted for display."""
-        # A cache to avoid repulling data from the database, which can be
-        # particularly expensive
+        # Separate the public property from the underlying virtual method.
+        return self._branches()
+
+    def _branches(self):
         branches = self.context.branches
-        return sorted(branches, key=operator.attrgetter('sort_key'))
+        items = shortlist(branches, 1000, hardlimit=1500)
+        return sorted(items, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def branch_bug_links(self):
+        """Get all bugs associated the with visible branches."""
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.visible_branches)
+        result = {}
+        for bugbranch in bugbranches:
+            result.setdefault(
+                bugbranch.branch.id, []).append(bugbranch)
+        return result
 
     @cachedproperty
     def visible_branches(self):
@@ -60,7 +101,7 @@ class BranchTargetView(LaunchpadFormView):
         if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
             branches = self.branches
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
-            branches = [branch for branch in self.context.branches
+            branches = [branch for branch in self.branches
                         if branch.lifecycle_status in self.CURRENT_SET]
         else:
             # BranchLifecycleStatus and BranchLifecycleStatusFilter
@@ -68,9 +109,18 @@ class BranchTargetView(LaunchpadFormView):
             # status to compare against, we know that we can just
             # index into the enumeration with the value.
             show_status = BranchLifecycleStatus.items[lifecycle_filter.value]
-            branches = [branch for branch in self.context.branches
+            branches = [branch for branch in self.branches
                         if branch.lifecycle_status == show_status]
         return sorted(branches, key=operator.attrgetter('sort_key'))
+
+    def getListingItems(self):
+        """Return a list of decorated branches for easy TAL access."""
+        return [
+            BranchListingItem(
+                branch,
+                self.last_commit[branch],
+                self.branch_bug_links.get(branch.id))
+            for branch in self.visible_branches]
 
     def context_relationship(self):
         """The relationship text used for display.
@@ -115,7 +165,7 @@ class BranchTargetView(LaunchpadFormView):
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            branches = self.branches
+            branches = self.context.branches
         else:
             url = self.request.getURL()
             if '+authoredbranches' in url:
@@ -125,8 +175,19 @@ class BranchTargetView(LaunchpadFormView):
             elif '+subscribedbranches' in url:
                 branches = self.context.subscribed_branches
             else:
-                branches = self.branches
-        for branch in branches:
+                branches = self.context.branches
+
+        # Currently 500 branches is causing a timeout in the rendering of
+        # the page template, and since we don't want it taking too long,
+        # we are going to limit it here to 250 until we add batching.
+        # This method is only called for the detailed listing pages,
+        # which include more embedded queries, and hence take longer.
+        # This is the reason for the different numbers above and here.
+        # We don't want to make them configurable as this might show
+        # intent that the solution will hang around when really it
+        # is a temporary fix.
+        #    -- Tim Penhey 2006-10-10
+        for branch in shortlist(branches, 200, hardlimit=250):
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
             else:
@@ -150,6 +211,22 @@ class PersonBranchesView(BranchTargetView):
 
     The context must provide IPerson.
     """
+
+    def _branches(self):
+        """All branches related to this target, sorted for display."""
+        branches = set(self.context.branches)
+        branches.update(self._team_branches_set)
+        items = shortlist(branches, 1000, hardlimit=1500)
+        return sorted(items, key=operator.attrgetter('sort_key'))
+
+    @cachedproperty
+    def _team_branches_set(self):
+        """Return a set for efficient membership checks in branch_role."""
+        teams = self.context.teams_participated_in
+        branches = shortlist(
+            getUtility(IBranchSet).getBranchesForOwners(teams),
+            1000, hardlimit=1500)
+        return set(branches)
 
     @cachedproperty
     def _authored_branch_set(self):
@@ -184,8 +261,17 @@ class PersonBranchesView(BranchTargetView):
             return {'title': 'Author', 'sortkey': 10}
         if branch in self._registered_branch_set:
             return {'title': 'Registrant', 'sortkey': 20}
+        if branch in self._team_branches_set:
+            return {'title': 'Team Branch', 'sortkey': 40}
         assert branch in self._subscribed_branch_set, (
             "Unable determine role of person %r for branch %r" % (
             self.context.name, branch.unique_name))
         return {'title': 'Subscriber', 'sortkey': 30}
         
+    def getListingItems(self):
+        """Return a list of decorated branches for easy TAL access."""
+        return [BranchListingItem(branch,
+                                  self.last_commit[branch],
+                                  self.branch_bug_links.get(branch.id, None),
+                                  self.branch_role(branch))
+                for branch in self.visible_branches]

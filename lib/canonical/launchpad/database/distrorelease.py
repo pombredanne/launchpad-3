@@ -24,9 +24,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (quote_like, quote, SQLBase,
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter)
 
@@ -67,13 +68,15 @@ from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.queue import (
+    DistroReleaseQueue, PackageUploadQueue)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase, BugTargetBase):
+class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
 
@@ -450,7 +453,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distrorelease = %s
+                POTemplate.distrorelease = %s AND
+                POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -470,7 +474,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
-        for potemplate in self.potemplates:
+        for potemplate in self.currentpotemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()
@@ -510,9 +514,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.iscurrent = TRUE AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
+            orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
@@ -886,7 +891,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
         AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
         AND distroreleasequeue.status=%s
-        """ % sqlvalues(DistroReleaseQueueStatus.DONE)
+        AND distroreleasequeue.distrorelease=%s
+        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],
@@ -917,6 +923,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
                                   changesfile=changes_file)
+
+    def getPackageUploadQueue(self, state):
+        """See IDistroRelease."""
+        return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
@@ -1254,8 +1264,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 FROM
                     POTemplate AS pt
                 WHERE
-                    pt.distrorelease = %s''' % sqlvalues(
-                    self, self.parentrelease))
+                    pt.distrorelease = %s AND pt.iscurrent = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
 
             logger_object.info('Filling POTMsgSet table...')
             cur.execute('''

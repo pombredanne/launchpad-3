@@ -355,6 +355,38 @@ class ErrorReportRequest:
     oopsid = None
 
 
+class ScriptRequest(ErrorReportRequest):
+    """Fake request that can be passed to ErrorReportingUtility.raising.
+
+    It can be used by scripts to enrich error reports with context information
+    and a representation of the resource on which the error occured. It also
+    gives access to the generated OOPS id.
+
+    The resource for which the error occured MAY be identified by an URL. This
+    URL should point to a human-readable representation of the model object,
+    such as a page on launchpad.net, even if this URL does not occur as part of
+    the normal operation of the script.
+
+    :param data: context information relevant to diagnosing the error. It is
+        recorded as request-variables in the OOPS.
+    :type data: iterable of (key, value) tuples. Keys need not be unique.
+    :param URL: initial value of the URL instance variable.
+
+    :ivar URL: pointer to a representation of the resource for which the error
+        occured. Defaults to None.
+    :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
+        set to None.
+    """
+
+    def __init__(self, data, URL=None):
+        self._data = list(data)
+        self.oopsid = None
+        self.URL = URL
+
+    def items(self):
+        return self._data
+
+
 class SoftRequestTimeout(RequestExpired):
     """Soft request timeout expired"""
 

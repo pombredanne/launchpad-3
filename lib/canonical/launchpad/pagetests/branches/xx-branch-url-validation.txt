@@ -16,7 +16,7 @@ Try to create a branch with an invalid URL.
 >>> user_browser.url == add_branch_form
 True
 >>> user_browser.contents
-'...Not a valid URL. Please enter the full URL...'
+'...&quot;example.com/~lifeless/pyresources/&quot; is not a valid URI...'
 
 
 Try to create branches with URLs in bazaar.launchpad.net.
@@ -50,6 +50,14 @@ Try to create a branch without URL
 True
 >>> user_browser.contents
 '...Required input is missing...'
+
+Try to create a branch using the bzr+ssh URL scheme. Bug 76854 (see also 5573)
+
+>>> add_branch('bzr+ssh://example.com/code/branch')
+>>> print user_browser.url
+http://launchpad.dev/~no-priv/+branch/+junk/pyresources
+>>> user_browser.contents
+'...These URLs are intended for use with the...'
 
 
 = The other forms =

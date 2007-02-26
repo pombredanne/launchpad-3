@@ -13,7 +13,6 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
-    'BranchUrlWidget',
     'BranchView',
     ]
 
@@ -36,7 +35,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
 from canonical.widgets import ContextWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 def quote(text):
@@ -70,7 +68,7 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Branch Details'
+        text = 'Edit branch details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -148,7 +146,7 @@ class BranchView(LaunchpadView):
 
     def upload_url(self):
         """The URL the logged in user can use to upload to this branch."""
-        return 'sftp://%s@bazaar.canonical.com/%s' % (
+        return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
 
     def missing_title_or_summary_text(self):
@@ -177,28 +175,6 @@ class BranchInProductView(BranchView):
 
     show_person_link = True
     show_product_link = False
-
-
-class BranchUrlWidget(StrippedTextWidget):
-    """A widget to capture the URL of a remote branch.
-
-    Wider than a normal TextLine widget and ignores trailing slashes.
-    """
-    displayWidth = 44
-    cssClass = 'urlTextType'
-
-    def _toFieldValue(self, input):
-        if input == self._missing:
-            return self.context.missing_value
-        else:
-            value = StrippedTextWidget._toFieldValue(self, input)
-            return value.rstrip('/')
-
-
-class BranchHomePageWidget(StrippedTextWidget):
-    """A widget to capture a web page URL, wider than a normal TextLine."""
-    displayWidth = 44
-    cssClass = 'urlTextType'
 
 
 class BranchNameValidationMixin:
@@ -247,9 +223,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
-
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
@@ -270,9 +243,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
-
     branch = None
 
     @action('Add Branch', name='add')
@@ -281,8 +251,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         self.branch = getUtility(IBranchSet).new(
             name=data['name'],
             owner=self.user,
-            author=data['author'],
-            product=data['product'],
+            author=self.getAuthor(data),
+            product=self.getProduct(data),
             url=data['url'],
             title=data['title'],
             summary=data['summary'],
@@ -290,6 +260,14 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             home_page=data['home_page'],
             whiteboard=data['whiteboard'])
         notify(SQLObjectCreatedEvent(self.branch))
+
+    def getAuthor(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['author']
+
+    def getProduct(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['product']
 
     @property
     def next_url(self):
@@ -301,18 +279,47 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.user,
                                       data['product'],
                                       data['name'])
+    def script_hook(self):
+        return '''<script type="text/javascript">
+
+        function populate_name() {
+          populate_branch_name_from_url('%(name)s', '%(url)s')
+        }
+        var url_field = document.getElementById('%(url)s');
+        // Since it is possible that the form could be submitted without
+        // the onblur getting called, and onblur can be called without
+        // onchange being fired, set them both, and handle it in the function.
+        url_field.onchange = populate_name;
+        url_field.onblur = populate_name;
+        </script>''' % { 'name' : self.widgets['name'].name,
+                         'url' : self.widgets['url'].name } 
 
 
 class PersonBranchAddView(BranchAddView):
+    """See BranchAddView."""
 
-    custom_widget('author', ContextWidget)
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('author')
+        return fields
 
+    def getAuthor(self, data):
+        return self.context
 
 class ProductBranchAddView(BranchAddView):
-
-    custom_widget('product', ContextWidget)
+    """See BranchAddView."""
 
     initial_focus_widget = 'url'
+    
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('product')
+        return fields
+
+    def getProduct(self, data):
+        return self.context
 
     def validate(self, data):
         if 'name' in data:

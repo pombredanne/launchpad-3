@@ -309,6 +309,12 @@ class ZopelessTransactionManager(object):
         if self.implicitBegin:
             self.begin()
 
+    def set_isolation_level(self, level):
+        return self.sqlClass._connection._connection.set_isolation_level(level)
+
+    def conn(self):
+        return self.sqlClass._connection._connection
+
     def uninstall(self):
         _ZopelessConnectionDescriptor.uninstall()
         # We delete self.sqlClass to make sure this instance isn't still
@@ -327,9 +333,7 @@ class ZopelessTransactionManager(object):
         clear_current_connection_cache()
         txn = self.manager.begin()
         txn.join(self._dm())
-        self.sqlClass._connection._connection.set_isolation_level(
-                self.desc.isolation
-                )
+        self.set_isolation_level(self.desc.isolation)
 
     def commit(self):
         self.manager.get().commit()
