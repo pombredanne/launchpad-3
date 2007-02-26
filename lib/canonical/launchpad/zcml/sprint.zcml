@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -16,7 +15,8 @@
   <browser:menus
       module="canonical.launchpad.browser.sprint"
       classes="SprintFacets SprintOverviewMenu 
-               SprintSpecificationsMenu SprintSetContextMenu"
+               SprintSpecificationsMenu SprintSetContextMenu
+               SprintSetFacets"
       />
 
   <browser:navigation
@@ -49,6 +49,9 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
+    <browser:page
+      name="+listing-simple"
+      template="../templates/sprint-listing-simple.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
@@ -126,6 +129,18 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+
+  <!-- IHasSprints -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSprints"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-coming-sprints"
+      template="../templates/hassprints-portlet-coming-sprints.pt" />
+  </browser:pages>
+
+
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
@@ -143,6 +158,13 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetSOP"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
@@ -154,6 +176,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -164,10 +187,11 @@
   </browser:pages>
 
   <browser:page
-      name="+new"
-      for="canonical.launchpad.interfaces.ISprintSet"
-      class="canonical.launchpad.browser.SprintAddView"
-      permission="launchpad.AnyPerson"
-      template="../templates/sprint-new.pt" />
+    name="+new"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
+    class="canonical.launchpad.browser.SprintAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-new.pt" />
 
 </configure>

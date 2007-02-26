@@ -18,13 +18,13 @@ top contributors by category (Bugs, Specs, Translation, etc).
 
     >>> print anon_browser.contents
     <div class="portlet">...
-    ...Top five contributors...
+    ...Top contributors...
     ...Mark Shuttleworth...
     ...Foo Bar...
     ...Sample Person...
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/')
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+topcontributors'
     >>> print anon_browser.contents
@@ -45,14 +45,14 @@ top contributors by category (Bugs, Specs, Translation, etc).
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print find_portlet(
-    ...     anon_browser.contents, 'Top five contributors').renderContents()
+    ...     anon_browser.contents, 'Top contributors').renderContents()
     <BLANKLINE>
-    <h2>Top five contributors</h2>
+    <h2>Top contributors</h2>
     ...Sample Person...
     ...Mark Shuttleworth...
     ...Foo Bar...
 
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+topcontributors'
 
@@ -81,14 +81,14 @@ contributor of that project.
 
     >>> anon_browser.open('http://launchpad.dev/mozilla')
     >>> print find_portlet(
-    ...     anon_browser.contents, 'Top five contributors').renderContents()
+    ...     anon_browser.contents, 'Top contributors').renderContents()
     <BLANKLINE>
-    <h2>Top five contributors</h2>
+    <h2>Top contributors</h2>
     ...Sample Person...
     ...Mark Shuttleworth...
     ...Foo Bar...
 
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/mozilla/+topcontributors'
 

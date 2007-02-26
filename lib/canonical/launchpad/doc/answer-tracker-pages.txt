@@ -1,0 +1,778 @@
+= Support Tracker Pages =
+
+Several views are used to handle the various operations on a question.
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProductSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> question_three = ubuntu.getQuestion(3)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_question = firefox.getQuestion(2)
+
+    # The firefox_question doesn't have any subscribers, let's subscribe
+    # the owner.
+    >>> login('test@canonical.com')
+    >>> firefox_question.subscribe(firefox_question.owner)
+    <QuestionSubscription...>
+
+    # Let's define a helper function which commits the transaction, so
+    # that the notifications are queued in stub.test_emails and pops these
+    # notifications from the queue.
+    >>> from canonical.launchpad.mail import stub
+    >>> import email
+    >>> import transaction
+    >>> def pop_notifications():
+    ...     transaction.commit()
+    ...     notifications = [
+    ...         email.message_from_string(raw_message)
+    ...         for fromaddr, toaddrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    ...     stub.test_emails = []
+    ...     return notifications
+
+== QuestionSubscriptionView ==
+
+This view is used to subscribe and unsubscribe from a question.
+Subscription is done when the user click on the 'Subscribe' button.
+
+    >>> request = LaunchpadTestRequest(form={'subscribe': 'Subscribe'})
+    >>> request.method = 'POST'
+    >>> view = getView(question_three, '+subscribe', request)
+    >>> view.initialize()
+    >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
+    True
+
+A notification message is displayed and the view redirect to the question
+view page.
+
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    You have subscribed to this question.
+    >>> request.response.getHeader('Location')
+    '.../+ticket/3'
+
+Unsubscription works in a similar manner.
+
+    >>> request = LaunchpadTestRequest(form={'subscribe': 'Unsubscribe'})
+    >>> request.method = 'POST'
+    >>> view = getView(question_three, '+subscribe', request)
+    >>> view.initialize()
+    >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
+    False
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    You have unsubscribed from this question.
+    >>> request.response.getHeader('Location')
+    '.../+ticket/3'
+
+These two actions didn't generate any notification mails:
+
+    >>> len(pop_notifications())
+    0
+
+== QuestionWorkflowView ==
+
+QuestionWorkflowView is the view used to handle the comments submitted by
+users on the question. The actions available on it always depends on the
+current state of the question and the identify of the user viewing the
+form.
+
+    # Setup a harness to easily test the view.
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from canonical.launchpad.browser import QuestionWorkflowView
+    >>> workflow_harness = LaunchpadFormHarness(
+    ...     firefox_question, QuestionWorkflowView)
+
+    # Let's define a helper method that will return the names of the
+    # available actions.
+    >>> def getAvailableActionNames(view):
+    ...     names = [action.__name__.split('.')[-1]
+    ...              for action in view.actions
+    ...              if action.available()]
+    ...     return sorted(names)
+
+Unlogged users cannot post any comments on the question:
+
+    >>> login(ANONYMOUS)
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    []
+
+When question is in the OPEN state, the owner can either answer his own
+question or provide more information.
+
+    >>> login('test@canonical.com')
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['giveinfo', 'selfanswer']
+
+But when another user sees the question, he can provide an answer or
+request for more information.
+
+    >>> login('no-priv@canonical.com')
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['answer', 'requestinfo']
+
+When the other user requests for more information, a confirmation is
+displayed, the question status is changed to NEEDSINFO and the user is
+redirected back to the question page.
+
+    >>> workflow_harness.submit(
+    ...     'requestinfo', {
+    ...         'field.message': 'Can you provide an example of an URL'
+    ...             'displaying the problem?'})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your information request.
+    >>> print firefox_question.status.name
+    NEEDSINFO
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+Workflow actions like these will send out notifications to subscribers.
+(Complete notifications testing will be found in
+support-tracker-notifications.txt)
+
+    >>> len(pop_notifications())
+    1
+
+The available actions for that other user are still between giving an
+answer or requesting for more information:
+
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['answer', 'requestinfo']
+
+And the question owner still has the same possibilities then initially:
+
+    >>> login('test@canonical.com')
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['giveinfo', 'selfanswer']
+
+If he replies with the requested information, the question is moved back
+to the OPEN state.
+
+    >>> workflow_harness.submit(
+    ...     'giveinfo', {
+    ...         'field.message': "The following SVG doesn't display properly:"
+    ...             "\nhttp://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg"})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for adding more information to your question.
+    >>> print firefox_question.status.name
+    OPEN
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+The other user can come back and gives an answer:
+
+    >>> login('no-priv@canonical.com')
+    >>> workflow_harness.submit(
+    ...     'answer', {
+    ...         'field.message': "New version of the firefox package are "
+    ...             "available with SVG support enabled. Using apt-get or "
+    ...             "adept you should be able to upgrade."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your answer.
+    >>> print firefox_question.status.name
+    ANSWERED
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+Once the question is answered, the set of possible actions for the question
+owner changes. He can now either confirm the answer, answer the problem
+himself, or reopen the request because that answer isn't working.
+
+    >>> login('test@canonical.com')
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['confirm', 'reopen', 'selfanswer']
+
+Let's say he confirms the previous answer, in this case, the question will
+move to the 'SOLVED' state. Note that the UI doesn't enable the user to
+enter a confirmation message at that stage.
+
+    >>> workflow_harness.submit(
+    ...     'confirm', {'answer_id': firefox_question.messages.count()-1,
+    ...                 'field.message': ''})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your feedback.
+    >>> print firefox_question.status.name
+    SOLVED
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+Since no confirmation message was given, a default one was used.
+
+    >>> print firefox_question.messages[-1].text_contents
+    User confirmed that the question is solved.
+
+Once in the SOLVED state, the owner can now only either add a comment
+or reopen the request:
+
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['comment', 'reopen']
+
+Adding a comment doesn't change the status:
+
+    >>> workflow_harness.submit(
+    ...     'comment', {
+    ...         'field.message': "The example now displays "
+    ...         "correctly. Thanks."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for your comment.
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+    >>> print firefox_question.status.name
+    SOLVED
+
+And the other user can only comment on the question:
+
+    >>> login('no-priv@canonical.com')
+    >>> workflow_harness.submit('', {})
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['comment']
+
+If the question owner reopens the request, its status is changed back to
+'OPEN'.
+
+    >>> login('test@canonical.com')
+    >>> workflow_harness.submit(
+    ...     'reopen', {
+    ...         'field.message': "Actually, there are still SVG "
+    ...         "that do not display correctly. For example, the following "
+    ...         "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't "
+    ...         "display correctly."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Your question was reopened.
+    >>> print firefox_question.status.name
+    OPEN
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+When the question owner answers his own request, it is moved straight to
+the SOLVED state.
+
+    >>> workflow_harness.submit(
+    ...     'selfanswer', {
+    ...         'field.message': "OK, this example requires some "
+    ...         "SVG features that will only be available in Firefox 2.0."})
+    >>> for notification in workflow_harness.request.response.notifications:
+    ...     print notification.message
+    Thanks for sharing your solution.
+    >>> print firefox_question.status.name
+    SOLVED
+    >>> workflow_harness.redirectionTarget()
+    '.../+ticket/2'
+
+    # Clear all notifications.
+    >>> notifications = pop_notifications()
+
+== QuestionMakeBugView ==
+
+The QuestionMakeBugView is used to handle the creation of a bug from a
+question. In addition to creating a bug, this operation will also link
+the bug to the question.
+
+If the user cancels a bug creation request, the user is redirected back
+the question page.
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
+    >>> request.method = 'POST'
+    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> makebug.process_form()
+    ''
+    >>> list(question_three.bugs)
+    []
+
+If the user creates a bug, a "Linked to bug" notification is sent and
+the user is subscribed to the bug.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'create': 'create',
+    ...           'field.title': 'Bug title',
+    ...           'field.description': 'Bug description.'})
+    >>> request.method = 'POST'
+    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> makebug.process_form()
+    >>> sorted(bug.id for bug in question_three.bugs)
+    [11L]
+    >>> print question_three.bugs[0].title
+    Bug title
+    >>> print question_three.bugs[0].description
+    Bug description.
+    >>> print makebug.user.name
+    name16
+    >>> question_three.bugs[0].isSubscribed(makebug.user)
+    True
+    >>> [n.message for n in request.notifications]
+    [u'Thank you! Bug #11 created.']
+
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    >>> print notifications[0].get_payload(decode=True)
+    Your question #3...
+    ...
+        Linked to bug: #11
+    ...
+
+If the question already has bugs linked to it, no new bug can be created.
+
+    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request.method = 'POST'
+    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> for n in request.notifications:
+    ...     print n.message
+    You cannot create a bug report...
+
+== BugLinkView and BugsUnlinkView ==
+
+Linking bug (+linkbug) to the question is managed through the BugLinkView.
+Unlinking bugs from the question is managed through the BugsUnlinkView.
+See 'buglinktarget-pages.txt' for their documentation. The notifications
+sent along linking and unlinking bugs can be found in
+'support-tracker-notifications.txt'.
+
+== QuestionRejectView ==
+
+That view is used by administrator and support contacts to reject a
+support request.
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.reject': 'Reject',
+    ...           'field.message': 'Rejecting for the fun of it.'})
+    >>> request.method = 'POST'
+    >>> view = getView(firefox_question, '+reject', request)
+    >>> view.initialize()
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    You have rejected this question.
+    >>> print firefox_question.status.title
+    Invalid
+
+== QuestionChangeStatusView ==
+
+QuestionChangeStatusView is used by administrator to change the status
+outside of the comment workflow.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.change-status': 'Change Status',
+    ...           'field.status': 'Solved',
+    ...           'field.message': 'Previous rejection was an error.'})
+    >>> request.method = 'POST'
+    >>> view = getView(firefox_question, '+change-status', request)
+    >>> view.initialize()
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    Question status updated.
+    >>> print firefox_question.status.title
+    Solved
+
+    # Clear the notification.
+    >>> notifications = pop_notifications()
+
+== QuestionEditView ==
+
+QuestionEditView available through '+edit' is used to edit most question
+fields. It can be used to edit the question title and description and also
+its metadata like language, priority, assignee, source package and
+whiteboard.
+
+    >>> login('test@canonical.com')
+    >>> question_three.sourcepackagename = None
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.actions.change': 'Continue',
+    ...     'field.title': 'Better Title',
+    ...     'field.language': 'en',
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': 'name16',
+    ...     'field.whiteboard': 'Some note',
+    ...     'field.priority': 'Wishlist'})
+    >>> request.method = 'POST'
+
+    >>> view = getView(question_three, '+edit', request)
+    >>> view.initialize()
+    >>> question_three.title
+    u'Better Title'
+    >>> question_three.description
+    u'A better description.'
+    >>> print question_three.sourcepackagename.name
+    mozilla-firefox
+
+Since only a user with launchpad.Admin privilege can change the
+priority, assignee and status whiteboard, the values won't have been
+changed:
+
+    >>> print question_three.priority.title
+    Normal
+    >>> question_three.assignee is None
+    True
+    >>> question_three.whiteboard is None
+    True
+
+This View send the event appropriate to send out a notification:
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+
+    >>> print notifications[0].get_payload(decode=True)
+    Your question #3...
+    ...
+    Summary changed to:
+    Better Title
+    <BLANKLINE>
+    Description changed to:
+    A better description.
+    <BLANKLINE>
+
+If the user has the required permission, the assignee, whiteboard and
+priority fields will be updated:
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
+    ...     'field.title': 'Better Title',
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': 'name16',
+    ...     'field.whiteboard': 'Some note',
+    ...     'field.priority': 'Wishlist'})
+    >>> request.method = 'POST'
+    >>> view = getView(question_three, '+edit', request)
+    >>> view.initialize()
+    >>> print question_three.priority.title
+    Wishlist
+    >>> print question_three.assignee.displayname
+    Foo Bar
+    >>> print question_three.whiteboard
+    Some note
+
+In a similar manner, the sourcepackagename field can only be updated on
+a distribution question:
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.actions.change': 'Continue',
+    ...     'field.language': 'en',
+    ...     'field.title': 'Better Title',
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': '',
+    ...     'field.whiteboard': '',
+    ...     'field.priority': 'Normal'})
+    >>> request.method = 'POST'
+    >>> view = getView(firefox_question, '+edit', request)
+    >>> view.initialize()
+    >>> view.errors
+    []
+    >>> firefox_question.sourcepackagename is None
+    True
+
+    # Clear out the pending notifications.
+    >>> notifications = pop_notifications()
+
+== The QuestionLanguage vocabulary ==
+
+The QuestionLanguageVocabularyFactory is an IContextSourceBinder which
+is used in browser forms to create a vocabulary containing only the
+languages that are likely to interest the user.
+
+When the user has not configured his preferred languages, the vocabulary
+will contain 'English' (the default choice) and the most likely
+interesting languages based on GeoIP information and the request's
+languages.
+
+For example, if the user doesn't log in and his browser is configured
+to accept brazilian Portuguese, the vocabulary will contain 'English'
+plus the languages spoken in South Africa (because the 127.0.0.1 IP
+address is mapped to South Africa in the tests).
+.
+    >>> login(ANONYMOUS)
+    >>> request = LaunchpadTestRequest(
+    ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
+    >>> from canonical.launchpad.browser.question import (
+    ...     QuestionLanguageVocabularyFactory)
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted([lang.code for lang in languages[1:]])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+If the user logs in but didn't configure his preferred languages, the
+same logic is used to find the languages:
+
+    >>> login('foo.bar@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.languages.count()
+    0
+
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+
+But if the user configured his preferred languages, only these
+are used (plus English):
+
+    >>> login('carlos@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> sorted(lang.code for lang in user.languages)
+    [u'ca', u'es']
+
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'ca', u'es']
+
+Note that all variants of English are always excluded from the
+vocabulary (since we don't want to confuse people by providing multiple
+English options).
+
+    >>> login('daf@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+    >>> sorted(lang.code for lang in user.languages)
+    [u'cy', u'en_GB', u'ja']
+
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> languages = [term.value for term in vocab]
+    >>> languages[0].code
+    u'en'
+    >>> sorted(lang.code for lang in languages[1:])
+    [u'cy', u'ja']
+
+Note also that the vocabulary will always contain the current question's
+language in the vocabulary, even if this language would not be selected
+by the previous rules.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> afar = getUtility(ILanguageSet)['aa_DJ']
+    >>> question_three.language = afar
+    >>> vocab = QuestionLanguageVocabularyFactory(request)(question_three)
+    >>> afar in vocab
+    True
+
+    # Clean up.
+    >>> question_three.language = getUtility(ILanguageSet)['en']
+
+== UserSupportLanguagesMixin ==
+
+The UserSupportLanguagesMixin can be used by views that needs to
+retrieve the set of languages in which the user is assumed to be
+interested.
+
+    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from canonical.launchpad.browser import UserSupportLanguagesMixin
+
+    >>> class UserSupportLanguagesView(UserSupportLanguagesMixin,
+    ...                                LaunchpadView):
+    ...     """View to test UserSupportLanguagesMixin."""
+
+The set of languages to use for support is defined in the
+'user_support_languages' attribute.
+
+Like all operations involving languages in the support tracker, we
+assume that the user is always interested in English and we ignore
+all other English variants.
+
+When the user is not logged in, or didn't define his preferred
+languages, the set will be initialized from the request. That's the
+languages configured in the browswer, plus other inferred from the
+GeoIP database.
+
+    >>> request = LaunchpadTestRequest(
+    ...     HTTP_ACCEPT_LANGUAGE='fr, en_CA')
+
+    >>> login(ANONYMOUS)
+    >>> view = UserSupportLanguagesView(None, request)
+
+For this request, the set of support languages contain English
+(default), French (from the request), and the languages spoken
+in South Africa (inferred from the GeoIP location of the request).
+
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'af', u'en', u'fr', u'st', u'xh', u'zu']
+
+Same thing if the logged in user didn't have any preferred languages
+set:
+
+    >>> login('test@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'af', u'en', u'fr', u'st', u'xh', u'zu']
+
+But when the user has some preferred languages set, these will be used
+instead of the ones inferred from the request:
+
+    >>> login('carlos@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'ca', u'en', u'es']
+
+English variants included in the user's preferred languages are
+excluded:
+
+    >>> login('daf@canonical.com')
+    >>> view = UserSupportLanguagesView(None, request)
+    >>> sorted(language.code for language in view.user_support_languages)
+    [u'cy', u'en', u'ja']
+
+== SearchQuestionsView ==
+
+This view is used as a base class to search for questions. It is intended
+to be easily customizable to offer more specific reports, while
+keeping those searchable.
+
+    # Define a subclass to demonstrate the customizability of the base
+    # view.
+    >>> from canonical.launchpad.browser import SearchQuestionsView
+    >>> class MyCustomSearchQuestionsView(SearchQuestionsView):
+    ...
+    ...     default_filter = {}
+    ...
+    ...     def getDefaultFilter(self):
+    ...         return dict(**self.default_filter)
+
+    # Set up a harness for easier testing.
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> search_view_harness = LaunchpadFormHarness(
+    ...     ubuntu, MyCustomSearchQuestionsView)
+
+By default, that class provides widgets to search by text and by status.
+
+    >>> search_view = search_view_harness.view
+    >>> search_view.widgets.get('search_text') is not None
+    True
+    >>> search_view.widgets.get('status') is not None
+    True
+
+It also includes a widget to select the sort order.
+
+    >>> search_view.widgets.get('sort') is not None
+    True
+
+The questions matching the search are available by using the
+searchResults() method. The returned results are batched.
+
+    >>> questions = search_view.searchResults()
+    >>> questions
+    <canonical.launchpad.webapp.batching.BatchNavigator ...>
+    >>> print "\n".join([question.title for question in questions.batch])
+    Continue playing after shutdown
+    Play DVDs in Totem
+    mailto: problem in webpage
+    Installation of Java Runtime Environment for Mozilla
+    Slow system
+
+These were the default results when no search is entered. The user
+can tweak the search and filter the results:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Solved', 'Open'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy'})
+    >>> search_view = search_view_harness.view
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title, question.status.title
+    mailto: problem in webpage  Solved
+
+Specific views can provide a default filter by returning the default
+search parameters to use in the getDefaultFilter() method:
+
+    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> MyCustomSearchQuestionsView.default_filter = {
+    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
+    >>> search_view_harness.submit('', {})
+
+In this example, only the solved and invalid questions are listed by
+default.
+
+    >>> search_view = search_view_harness.view
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title
+    mailto: problem in webpage
+    Better Title
+
+The status widget displays the default criteria used:
+
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Solved
+    Invalid
+
+The user selected search parameters will override these default
+criteria.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Solved'],
+    ...     'field.search_text': 'firefox',
+    ...     'field.sort': 'by relevancy'})
+    >>> search_view = search_view_harness.view
+    >>> questions = search_view.searchResults()
+    >>> for question in questions.batch:
+    ...     print question.title
+    mailto: problem in webpage
+    >>> for status in search_view.widgets['status']._getFormValue():
+    ...     print status.title
+    Solved
+
+The base view computes the page heading and the message displayed when
+no results are found based on the selected search filter:
+
+    >>> from zope.i18n import translate
+    >>> search_view_harness.submit('', {})
+    >>> print translate(search_view_harness.view.pageheading)
+    Questions for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no questions for Ubuntu with the requested statuses.
+
+    >>> MyCustomSearchQuestionsView.default_filter = dict(
+    ...     status=[QuestionStatus.OPEN], search_text='Firefox')
+    >>> search_view_harness.submit('', {})
+    >>> print translate(search_view_harness.view.pageheading)
+    Open questions matching "Firefox" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no open questions matching "Firefox" for Ubuntu.
+
+It works also with user submitted values:
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Expired'],
+    ...     'field.search_text': '',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Expired questions for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no expired questions for Ubuntu.
+
+    >>> search_view_harness.submit('search', {
+    ...     'field.status': ['Open', 'Answered'],
+    ...     'field.search_text': 'evolution',
+    ...     'field.sort': 'by relevancy'})
+    >>> print translate(search_view_harness.view.pageheading)
+    Questions matching "evolution" for Ubuntu
+    >>> print translate(search_view_harness.view.empty_listing_message)
+    There are no questions matching "evolution" for Ubuntu with the
+    requested statuses.

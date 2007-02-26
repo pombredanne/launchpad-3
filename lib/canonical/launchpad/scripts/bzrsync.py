@@ -86,10 +86,19 @@ class BzrSync:
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
 
-        # synchronise Revision objects
-        ancestry = self.bzr_branch.repository.get_ancestry(
-            self.bzr_branch.last_revision())
-        for revision_id in ancestry:
+        # Synchronise Revision objects, but do not reprocess the ones which are
+        # part of the previously recorded ancestry of the branch.
+        self.trans_manager.begin()
+        # XXX: DavidAllouche 2007-02-15
+        # Use complete-revisions to get complete database ancestry.
+        previous_ancestry = [
+            revisionnumber.revision.revision_id
+            for revisionnumber in self.db_branch.revision_history]
+        self.trans_manager.abort()
+        branch_tip = self.bzr_branch.last_revision()
+        new_ancestry = set(self.bzr_branch.repository.get_ancestry(branch_tip))
+        added_ancestry = new_ancestry.difference(previous_ancestry)
+        for revision_id in added_ancestry:
             if revision_id is None:
                 continue
             # If the revision is a ghost, it won't appear in the repository.
