@@ -24,7 +24,7 @@ top contributors by category (Bugs, Specs, Translation, etc).
     ...Sample Person...
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/')
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+topcontributors'
     >>> print anon_browser.contents
@@ -52,7 +52,7 @@ top contributors by category (Bugs, Specs, Translation, etc).
     ...Mark Shuttleworth...
     ...Foo Bar...
 
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+topcontributors'
 
@@ -88,7 +88,7 @@ contributor of that project.
     ...Mark Shuttleworth...
     ...Foo Bar...
 
-    >>> anon_browser.getLink('Top Contributors').click()
+    >>> anon_browser.getLink('List top contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/mozilla/+topcontributors'
 

@@ -26,6 +26,16 @@
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser.distribution"
+        classes="
+            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
+            DistributionBountiesMenu DistributionSpecificationsMenu
+            DistributionTranslationsMenu DistributionSetFacets 
+            DistributionSetContextMenu
+            "
+            />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
@@ -374,6 +384,13 @@
         <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
     </securedutility>
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IDistributionSet"
+      factory="canonical.launchpad.browser.DistributionSetSOP"
+      permission="zope.Public"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
@@ -414,14 +431,5 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/distribution-add.pt" />
-
-    <browser:menus
-        module="canonical.launchpad.browser.distribution"
-        classes="
-            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionBountiesMenu DistributionSpecificationsMenu
-            DistributionTranslationsMenu DistributionSetContextMenu
-            "
-            />
 
 </configure>

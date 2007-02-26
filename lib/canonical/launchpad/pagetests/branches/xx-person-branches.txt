@@ -72,7 +72,7 @@ There should be a link in the branch context menu for person which points to
 the authored branches page.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Authored Branches')
+  >>> link = browser.getLink('Show authored branches')
   >>> print link.url
   http://launchpad.dev/~name12/+authoredbranches
 
@@ -87,7 +87,7 @@ And we can load the authored branches page.
 There should also be a link which points to the registered branches page.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Registered Branches')
+  >>> link = browser.getLink('Show registered branches')
   >>> print link.url
   http://launchpad.dev/~name12/+registeredbranches
 
@@ -100,7 +100,7 @@ And we can load the registered branches page.
 == Subscribed branches ==
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('View Subscribed Branches')
+  >>> link = browser.getLink('Show subscribed branches')
   >>> print link.url
   http://launchpad.dev/~name12/+subscribedbranches
 

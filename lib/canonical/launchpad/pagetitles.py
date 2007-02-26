@@ -649,11 +649,11 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-product_add = 'Register a product with Launchpad'
+product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
-product_bazaar = 'Products with Code'
+product_bazaar = 'Projects with Code'
 
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
@@ -670,7 +670,7 @@ product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
 
-product_new = 'Register a product in the Launchpad'
+product_new = 'Register a project in Launchpad'
 
 product_translators = ContextTitle('Set translation group for %s')
 
@@ -686,13 +686,13 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_index = 'Products registered in Launchpad'
+products_index = 'Projects registered in Launchpad'
 
 productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import product series'
+productseries_source = 'Import a stable or development branch to Bazaar'
 
 productseries_translations = ContextTitle('Translation templates for %s')
 
@@ -718,7 +718,7 @@ project_rosetta_index = ContextTitle('Rosetta: %s')
 
 project_specs = ContextTitle('Blueprints for %s')
 
-project_translations = ContextTitle('Translatable products for %s')
+project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
@@ -739,9 +739,9 @@ def reference_index(context, view):
 
 registry_about = 'About the Launchpad Registry'
 
-registry_index = 'Product and group registration in Launchpad'
+registry_index = 'Project and group registration in Launchpad'
 
-products_all = 'Upstream products registered in Launchpad'
+products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Projects registered in Launchpad'
 
@@ -887,7 +887,7 @@ specification_linkbug = ContextTitle(
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach blueprint to a different product or distribution'
+specification_retargeting = 'Attach blueprint to a different project or distribution'
 
 specification_superseding = 'Mark blueprint as superseded by another'
 

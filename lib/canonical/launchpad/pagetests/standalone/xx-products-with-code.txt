@@ -7,7 +7,7 @@ through to get lists of branches of products that interest them.
     >>> browser.open('http://code.launchpad.dev')
     >>> browser.getLink('5 products').click()
     >>> print browser.title
-    Products with Code
+    Projects with Code
 
     >>> table = find_tag_by_id(browser.contents, 'products')
     >>> for row in table.tbody.fetch('tr'):

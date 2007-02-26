@@ -117,36 +117,52 @@
                       <tal:nosearchresults condition="not:view/searchrequested">
                         <p id="application-summary">
                           With Launchpad you can track blueprints
-                          (feature specifications)
-                          from the drafting process through to
-                          review, approval, scheduling, and implementation.
+                          (feature specifications) from discussion through to
+                          review, approval, and implementation.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recently registered</h2>
                             <ul
-                              tal:condition="context/latest_specs"
+                              tal:define="speclist context/latest_specifications"
+                              tal:condition="speclist"
                               class="blueprint"
                             >
                               <li
-                                tal:repeat="spec context/latest_specs"
+                                tal:repeat="spec speclist"
                                 tal:replace="structure spec/@@+listing-compact"
                               />
                             </ul>
                           </div>
                           <div class="three column middle">
-                            <h2>Recently implemented</h2>
+                            <h2>Recently completed</h2>
+                            <ul
+                              tal:define="speclist context/latest_completed_specifications"
+                              tal:condition="speclist"
+                              class="blueprint"
+                            >
+                              <li
+                                tal:repeat="spec speclist"
+                                tal:replace="structure spec/@@+listing-compact"
+                              />
+                            </ul>
                           </div>
                           <div
                             class="three column right"
                             tal:content="structure context/@@+portlet-sprints"
                           />
                         </div>
+<<<<<<< TREE
                         <p id="application-footer">
                           <strong>XXX</strong>
                           blueprints registered
                         </p>
+=======
+                        <div id="application-footer">
+                          <tal:stats replace="structure context/@@+portlet-stats" />
+                        </div>
+>>>>>>> MERGE-SOURCE
                       </tal:nosearchresults>
 
                       </div><!--container-->

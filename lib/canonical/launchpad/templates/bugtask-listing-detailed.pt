@@ -1,10 +1,28 @@
-<img src="/@@/bug" />
-<span tal:replace="context/status/title">High</span>:
-<a tal:attributes="href context/bug/fmt:url"
-   tal:content="context/bug/title">Bug Title Here</a>
-<tal:block condition="context/assignee">
-  (<img src="/@@/user" />&nbsp;<a
-      tal:attributes="href context/assignee/fmt:url"
-      tal:content="context/assignee/browsername">Foo Bar</a>)
-</tal:block>
-<hr />
+<tr>
+  <td class="icon left" tal:content="structure context/fmt:icon" />
+  <td>
+    <div>
+      #<span tal:replace="context/bug/id">4</span>
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/bug/title">Bug Title Here
+      </a>
+    </div>
+    <div class="lesser">
+      <tal:related_pillars define="also_in context/related_pillar_bugtasks"
+                           condition="also_in">
+        also in 
+          <tal:per_task repeat="task also_in">
+            <b tal:condition="task/distribution"
+               tal:content="task/distribution/displayname"
+          /><b tal:condition="task/product"
+               tal:content="task/product/displayname" />,
+          </tal:per_task>
+        </tal:related_pillars>
+      reported by
+      <a tal:attributes="href context/owner/fmt:url"
+         tal:content="context/owner/browsername">Foo Bar</a>
+      on
+      <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
+    </div>
+  </td>
+</tr>

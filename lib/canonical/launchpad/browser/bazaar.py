@@ -36,7 +36,7 @@ class BazaarBranchesMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def importer(self):
         target = 'series/'
-        text = 'Branch Importer'
+        text = 'Branch importer'
         summary = 'Manage CVS and SVN Trunk Imports'
         return Link(target, text, summary, icon='branch')
 
