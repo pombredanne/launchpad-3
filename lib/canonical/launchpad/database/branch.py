@@ -193,7 +193,6 @@ class Branch(SQLBase):
             person=person, branch=self)
         return subscription is not None
 
-    # revision number manipulation
     def getBranchRevision(self, sequence):
         """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
@@ -203,7 +202,8 @@ class Branch(SQLBase):
 
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
-        return BranchRevision(branch=self, sequence=sequence, revision=revision)
+        return BranchRevisionSet().new(
+            branch=self, sequence=sequence, revision=revision)
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""

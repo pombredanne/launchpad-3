@@ -312,7 +312,7 @@ class BzrSync:
         return revision_date
 
     def syncBranchRevisions(self):
-        """Synchronise the revision numbers for the branch."""
+        """Synchronize the ancestry of the branch."""
         branch_revision_set = getUtility(IBranchRevisionSet)
         revision_set = getUtility(IRevisionSet)
 

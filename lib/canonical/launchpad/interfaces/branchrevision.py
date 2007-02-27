@@ -12,18 +12,25 @@ from canonical.launchpad import _
 
 
 class IBranchRevision(Interface):
-    """The association between a revision and a branch."""
+    """The association between a revision and a branch.
+
+    BranchRevision records the relation of all revisions that are part of the
+    ancestry of a branch. History revisions have an integer sequence, merged
+    revisions have sequence set to None.
+    """
+
+    id = Int(title=_('The database revision ID'))
 
     sequence = Int(
-        title=_("Revision Number"), required=True,
-        description=_("The index of a revision within a branch's history."))
-    branch = Attribute("The branch this revision number belongs to.")
-    revision = Attribute("The revision with that index in this branch.")
+        title=_("Revision number"), required=True,
+        description=_("The index of the revision within the branch's history."
+            " None for merged revisions which are not part of the history."))
+    branch = Attribute("The branch this revision is included in.")
+    revision = Attribute("A revision that is included in the branch.")
 
-    # NOMERGE: Rephrase this to account for merged revisions.
 
 class IBranchRevisionSet(Interface):
-    """The set of all branch revisions."""
+    """The set of all branch-revision associations."""
 
     def new(branch, sequence, revision):
         """Create a new BranchRevision for the specified branch."""
@@ -41,7 +48,7 @@ class IBranchRevisionSet(Interface):
 
         If limit is omitted, then all the BranchRevisions for the branch
         are returned.
-        
+
         They are ordered with the most recent revision first, and the list
         only contains those in the "leftmost tree", or in other words
         the revisions that match the revision history from bzrlib for this

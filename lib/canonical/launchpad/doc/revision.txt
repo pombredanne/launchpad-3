@@ -44,14 +44,14 @@ while the date_created is the time when the database record was created.
 >>> revision_1 = Revision(owner=admins, log_body=log_body_1,
 ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
 
-== Ancestors ==
+== Parents ==
 
-Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
-revision that was used as a base when committing, other ancestors are used to
-record merges. All revisions except initial imports have at least one ancestor.
+Bazaar revisions can have multiple parents, the "leftmost" parent is the
+revision that was used as a base when committing, other parents are used to
+record merges. All revisions except initial imports have at least one parent.
 
-Ancestors are accessed through their revision_id without using a foreign key so
-we can represent revision whose at least one ancestor is a ghost revision.
+Parents are accessed through their revision_id without using a foreign key so
+we can represent revisions whose at least one parent is a ghost revision.
 
 >>> revision_2 = Revision(owner=admins, log_body=log_body_2,
 ...     revision_author=author, revision_id=revision_id_2, revision_date=date)
@@ -60,41 +60,81 @@ we can represent revision whose at least one ancestor is a ghost revision.
 >>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
 ...                              parent_id=revision_1.revision_id)
 
-== Revision numbers ==
+== Branch ancestry ==
 
 Revisions are associated to branches through the BranchRevision table. A given
 revision may appear in different positions in different branches thanks to
-Bazaar2 converge-on-pull logic.
+Bazaar converge-on-pull logic.
 
->>> from canonical.launchpad.database import Branch
->>> branch = Branch.get(1)
+>>> from canonical.launchpad.interfaces import IBranchSet
+>>> branch = getUtility(IBranchSet).get(1)
 >>> branch.revision_history.count()
 0
 
-BranchRevision does not have a creation interface, like for Revision, new
-records are only created by a non-zope batch job.
+BranchRevision rows are created using `BranchRevisionSet.new`, or using the
+convenience method `Branch.createBranchRevision`.
 
->>> from canonical.launchpad.database import BranchRevision
->>> junkcode_sql = Branch.selectOneBy(name='junkcode')
->>> rev_no_1 = BranchRevision(sequence=1, branch=branch, revision=revision_1)
->>> rev_no_2 = BranchRevision(sequence=2, branch=branch, revision=revision_2)
+>>> from canonical.launchpad.interfaces import IBranchRevisionSet
+>>> rev_no_1 = getUtility(IBranchRevisionSet).new(
+...     branch=branch, sequence=1, revision=revision_1)
+>>> rev_no_2 = branch.createBranchRevision(sequence=2, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
 
-=== Deleting Revision Numbers ===
+The Branch.revision_history property (covered in doc/branch.txt) is a
+convenience that calls the BranchRevisionSet.getRevisionHistoryForBranch
+method.
+
+  >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
+  >>> branch = getUtility(IBranchSet).getByUniqueName(
+  ...     '~name12/+junk/junk.contrib')
+
+  >>> branch_revision_set = getUtility(IBranchRevisionSet)
+  >>> history = branch_revision_set.getRevisionHistoryForBranch(branch)
+  >>> for branch_revision in history:
+  ...     print branch_revision.sequence, branch_revision.revision.id
+  6 9
+  5 8
+  4 11
+  3 10
+  2 5
+  1 4
+
+The full ancestry of a branch is recorded. That includes the history commits on
+this branch, but also revisions that were merged into this branch. Such merged
+revisions are associated to the branch using BranchRevision whose sequence
+attribute is None.
+
+  >>> ancestry = branch_revision_set.getAncestryForBranch(branch)
+  >>> for branch_revision in sorted(ancestry,
+  ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
+  ...     print branch_revision.sequence, branch_revision.revision.id
+  6 9
+  5 8
+  4 11
+  3 10
+  2 5
+  1 4
+  None 7
+  None 6
+
+Note that IBranchRevisionSet.getAncestryForBranch is mainly useful for testing.
+If you need to operate on the ancestry of a branch, you should write a more
+focused query to avoid creating the tens of thousands of objects necessary to
+represent the ancestry of a large branch.
+
+
+=== Deleting BranchRevisions ===
 
 If a branch gets overwritten or some revisions get uncommitted,
-Launchpad's view of the branch will differ from the actual state of
-the branch.
+Launchpad's view of the branch will differ from the actual state of the
+branch. If the bzr branch now has fewer revisions than Launchpad's view
+of the branch, then some of BranchRevision records will need to be
+removed.
 
-If the bzr branch now has fewer revisions than Launchpad's view of the
-branch, then some of BranchRevision records will need to be removed.
-The branch scanner does this by calling destroySelf() on the excess
-records.
+BranchRevision records are deleted using the `BranchRevisionSet.delete`
+method.
 
-As the branch scanner manipulates branch information through the zope
-interfaces, the BranchRevision objects in question will be security
-wrapped.  It is important that they be deletable in this state.
 
 First, get a branch via the IPersonSet utility:
 
@@ -103,15 +143,7 @@ First, get a branch via the IPersonSet utility:
   >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
   >>> branch = person.getBranch(None, 'junk.dev')
 
-
-The branch in question is security proxied, and has 6 revisions:
-
-  >>> type(branch)
-  <type 'zope.security._proxy._Proxy'>
-  >>> branch.revision_count
-  6
-
-We can get the last revision from the branch:
+The last commit on this branch has the revision number 6.
 
   >>> [revno_6] = branch.latest_revisions(1)
   >>> revno_6.sequence
@@ -121,16 +153,16 @@ We can get the last revision from the branch:
   >>> print revno_6.revision.revision_id
   foo@localhost-20051031170357-1301ad6d387feb23
 
+We remove the last revision from the branch. This is similar to what
+"bzr uncommit" does.
 
-The revision number object is security proxied, so that you can't
-access attributes not exposed in its interface:
+  >>> from canonical.launchpad.interfaces import IBranchRevisionSet
+  >>> getUtility(IBranchRevisionSet).delete(revno_6.id)
 
-  >>> type(revno_6)
-  <type 'zope.security._proxy._Proxy'>
-  >>> revno_6.forbidden_attribute
-  Traceback (most recent call last):
-    ...
-  ForbiddenAttribute: ('forbidden_attribute', <BranchRevision at ...>)
+Afterwards, the last commit on the branch has revision number 5.
+
+  >>> branch.latest_revisions(1)[0].sequence
+  5
 
 Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
@@ -168,31 +200,3 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
-
-= Branch Revisions =
-
-  >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
-  >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.contrib')
-
-  >>> branch_revision_set = getUtility(IBranchRevisionSet)
-  >>> for branch_revision in branch_revision_set.getRevisionHistoryForBranch(branch):
-  ...     print branch_revision.sequence, branch_revision.revision.id
-  6 9
-  5 8
-  4 11
-  3 10
-  2 5
-  1 4
-
-  >>> ancestry = branch_revision_set.getAncestryForBranch(branch)
-  >>> for branch_revision in sorted(ancestry,
-  ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
-  ...     print branch_revision.sequence, branch_revision.revision.id
-  6 9
-  5 8
-  4 11
-  3 10
-  2 5
-  1 4
-  None 7
-  None 6

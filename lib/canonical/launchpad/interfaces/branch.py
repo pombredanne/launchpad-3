@@ -244,7 +244,6 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
-    # revision number manipulation
     def getBranchRevision(sequence):
         """Gets the BranchRevision for the given sequence number.
 
