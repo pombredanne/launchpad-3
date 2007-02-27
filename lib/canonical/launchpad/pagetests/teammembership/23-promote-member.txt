@@ -4,7 +4,7 @@
 
   >>> print http(r"""
   ... GET /~myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -16,11 +16,11 @@
 
   >>> print http(r"""
   ... POST /~myemail/+member/name16 HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... admin=yes&day=14&month=4&year=2050&comment=&editactive=Change""")
+  ... editactive=1&admin=yes&day=14&month=4&year=2050&comment=&change=Change""")
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -29,7 +29,7 @@
 
   >>> print http(r"""
   ... GET /~myemail/+members/ HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

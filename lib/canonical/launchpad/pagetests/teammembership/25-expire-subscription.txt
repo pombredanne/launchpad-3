@@ -7,7 +7,7 @@ value for the year 2000 is not available in HTML, but we can encode the
 variables:
 
   >>> import urllib
-  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
   >>> browser.open("http://launchpad.dev/~myemail/+member/name16",
   ...              urllib.urlencode(dict(
   ...                   admin="no",
@@ -15,7 +15,8 @@ variables:
   ...                   month=1,
   ...                   year=2000,
   ...                   comment="",
-  ...                   editactive="Change")))
+  ...                   change="Change",
+  ...                   editactive=1)))
   >>> browser.contents
   <BLANKLINE>
   ...

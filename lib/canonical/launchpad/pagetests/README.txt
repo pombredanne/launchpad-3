@@ -77,8 +77,7 @@ You can use the following authorization lines:
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
   for Salgado: (launchpad admin)
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic guilherme.salgado@canonical.com:zeca')
+    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
 
   for Daf: (launchpad admin, rosetta admin)
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')

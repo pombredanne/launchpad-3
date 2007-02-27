@@ -1307,11 +1307,6 @@ class PersonView(LaunchpadView):
 
         return self.user.inTeam(self.context.teamowner)
 
-    def userHasMembershipEntry(self):
-        """Return True if the logged in user has a TeamMembership entry for
-        this Team."""
-        return bool(self._getMembershipForUser())
-
     def findUserPathToTeam(self):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
@@ -1330,18 +1325,11 @@ class PersonView(LaunchpadView):
         """Return True if the user is an active member of this team."""
         return userIsActiveTeamMember(self.context)
 
-    def membershipStatusDesc(self):
-        tm = self._getMembershipForUser()
-        assert tm is not None, (
-            'This method is not meant to be called for users which are not '
-            'members of this team.')
-
-        description = tm.status.description
-        if (tm.status == TeamMembershipStatus.DEACTIVATED and
-            tm.reviewercomment):
-            description += ("The reason for the deactivation is: '%s'"
-                            % tm.reviewercomment)
-        return description
+    def userIsProposedMember(self):
+        """Return True if the user is a proposed member of this team."""
+        if self.user is None:
+            return False
+        return self.user in self.context.proposedmembers
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
@@ -1353,32 +1341,12 @@ class PersonView(LaunchpadView):
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
 
-        The user can request if this is not a RESTRICTED team or if he never
-        asked to join this team, if he already asked and the subscription
-        status is DECLINED.
+        The user can request if this is not a RESTRICTED team and if he's
+        not an active member of this team.
         """
-        if (self.context.subscriptionpolicy ==
-            TeamSubscriptionPolicy.RESTRICTED):
+        if not self.joinAllowed():
             return False
-
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return True
-
-        adminOrApproved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
-        if (tm.status == TeamMembershipStatus.DECLINED or
-            (tm.status not in adminOrApproved and
-             tm.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN)):
-            return True
-        else:
-            return False
-
-    def _getMembershipForUser(self):
-        if self.user is None:
-            return None
-        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            self.user, self.context)
+        return not (self.userIsActiveMember() or self.userIsProposedMember())
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1944,16 +1912,16 @@ class TeamJoinView(PersonView):
             return
 
         user = self.user
+        context = self.context
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
-            user.join(self.context)
-            if (self.context.subscriptionpolicy ==
-                TeamSubscriptionPolicy.MODERATED):
+            user.join(context)
+            if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
                 self.request.response.addInfoNotification(
                     _('Subscription request pending approval.'))
             else:
                 self.request.response.addInfoNotification(_(
-                    'Successfully joined %s.' % self.context.displayname))
+                    'Successfully joined %s.' % context.displayname))
         self.request.response.redirect('./')
 
 

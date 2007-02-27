@@ -4,7 +4,7 @@ We want to test concurrency here, so keep two browsers around:
 
   >>> from zope.testbrowser.testing import Browser
   >>> browser2 = Browser()
-  >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser2.addHeader("Authorization", "Basic test@canonical.com:test")
   >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
 XXX: As per bug 68655, it would be nice to be able to clone the browser
@@ -12,7 +12,7 @@ and not do the manual copy.
 
 Deactivate the member:
 
-  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
   >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
   >>> browser.getControl('Deactivate').click()
   >>> browser.url

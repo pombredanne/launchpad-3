@@ -3,7 +3,7 @@ just deactivated.
 
 Go to the member's page.
 
-  >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
   >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
   >>> print browser.contents
   <...
@@ -16,7 +16,7 @@ Open a second Browser on the same page:
 
   >>> from zope.testbrowser.testing import Browser
   >>> browser2 = Browser()
-  >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
+  >>> browser2.addHeader("Authorization", "Basic test@canonical.com:test")
   >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
 XXX: See test 27's comment on bug 68655.

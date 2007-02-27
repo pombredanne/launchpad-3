@@ -23,8 +23,9 @@ because of that, nobody can ask to join.
   ...
 
 
+  >>> from itertools import chain
   >>> from canonical.launchpad.database import Person
   >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> salgado.hasMembershipEntryFor(team)
+  >>> salgado in chain(team.activemembers, team.inactivemembers)
   False
