@@ -1,0 +1,40 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <p>
+            A site identifying as <strong>XXXXXX</strong>
+            has asked us for confirmation that <strong>XXXXX</strong>
+            is your identity URL.
+        </p>
+
+        <p>If you click the <strong>Allow Once</strong> button, we will
+            confirm to XXXXX that XXXX belongs to you.
+        </p>
+
+        <p>If you click the <strong>Deny</strong> button, we will send you
+            back to XXXX without confirming your identity.
+        </p>
+
+        <form method="post">
+            <p tal:condition="not:view/authenticated">
+                <i>You are currently not logged into Launchpad, so you will
+                    need to enter your password. Before doing so, please
+                    confirm that the URL you are viewing is XXXX and that
+                    the 'padlock' icon is visible in your browsers status
+                    bar.</i>
+            </p>
+            <input
+                tal:condition="not:view/authenticated"
+                type="hidden" name="loginpage_email" id="email"
+                tal:attributes="value view/login"
+                />
+            <input
+                tal:condition="not:view/authenticated"
+                type="password" name="loginpage_password" id="password"
+                /><br />
+            <input type="submit" value="Allow Once" /><br />
+            <input type="submit" value="Deny" /><br />
+        </form>
+    </body>
+</html>
