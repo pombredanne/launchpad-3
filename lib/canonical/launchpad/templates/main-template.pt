@@ -186,20 +186,7 @@
                       />
                     </div>
                     <div id="portlets">
-                      <tal:actionsmenu
-                        tal:condition="python: '+login' not in request.getURL()"
-                      >
-                        <div
-                          tal:condition="not:exists:body"
-                          id="actions"
-                          class="portlet"
-                        >
-                          <h2>Actions</h2>
-                          <tal:menu
-                            replace="structure CONTEXTS/@@+menubox"
-                          />
-                        </div>
-                      </tal:actionsmenu>
+                      <tal:menu replace="structure CONTEXTS/@@+menubox" />
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
