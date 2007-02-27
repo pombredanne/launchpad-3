@@ -5,7 +5,6 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import re
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -19,8 +18,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBranchRevisionSet, NotFoundError)
-from canonical.launchpad.database.branchrevision import BranchRevision
+    IBranch, IBranchSet, NotFoundError)
+from canonical.launchpad.database.branchrevision import (
+    BranchRevision, BranchRevisionSet)
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -78,8 +78,7 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        history = branch_revision_set.getRevisionHistoryForBranch(self)
+        history = BranchRevisionSet().getRevisionHistoryForBranch(self)
         history.prejoin('revision')
         return history
 
@@ -152,7 +151,7 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return getUtility(IBranchRevisionSet).getRevisionHistoryForBranch(
+        return BranchRevisionSet().getRevisionHistoryForBranch(
             self, limit=quantity)
 
     def revisions_since(self, timestamp):
