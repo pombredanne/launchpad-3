@@ -76,7 +76,7 @@ class Branch(SQLBase):
     cache_url = StringCol(default=None)
 
     revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
+        orderBy='-sequence', prejoins=['revision'])
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
