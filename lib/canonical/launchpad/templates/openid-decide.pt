@@ -1,26 +1,33 @@
 <html>
     <head>
     </head>
-    <body>
+    <body tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
         <p>
-            A site identifying as <strong>XXXXXX</strong>
-            has asked us for confirmation that <strong>XXXXX</strong>
+            A site identifying as
+            <strong tal:content="view/openid_request/trust_root" />
+            has asked us for confirmation that
+            <strong tal:content="view/openid_request/identity" />
             is your identity URL.
         </p>
 
         <p>If you click the <strong>Allow Once</strong> button, we will
-            confirm to XXXXX that XXXX belongs to you.
+            confirm to <tal:x content="view/openid_request/trust_root" />
+            that <tal:x content="view/openid_request/identity" />
+            belongs to you.
         </p>
 
         <p>If you click the <strong>Deny</strong> button, we will send you
-            back to XXXX without confirming your identity.
+            back to <tal:x content="view/openid_request/trust_root" />
+            without confirming your identity.
         </p>
 
         <form method="post">
             <p tal:condition="not:view/authenticated">
                 <i>You are currently not logged into Launchpad, so you will
                     need to enter your password. Before doing so, please
-                    confirm that the URL you are viewing is XXXX and that
+                    confirm that the URL you are viewing is <strong
+                        tal:content="vhosts/openid/rooturl" /> and that
                     the 'padlock' icon is visible in your browsers status
                     bar.</i>
             </p>

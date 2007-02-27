@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class IOpenIdView(Interface):
-    foo = Attribute('Foo')
+    openid_request = Attribute("OpenIDRequest")
 
 
 class OpenIdView(LaunchpadView):
@@ -35,6 +35,9 @@ class OpenIdView(LaunchpadView):
         except ProtocolError, exception:
             return self.renderProtocolError(exception)
 
+        # Store as an attribute so our templates can access it.
+        self.openid_request = openid_request
+
         # Not an OpenID request, so display a message explaining what this
         # is to nosy users.
         if openid_request is None:
@@ -49,7 +52,7 @@ class OpenIdView(LaunchpadView):
                         False, allvhosts.configs['openid'].rooturl
                         )
             else:
-                return self.showDecidePage(openid_request)
+                return self.showDecidePage()
         else:
             openid_response = self.openid_server.handleRequest(openid_request)
 
@@ -61,7 +64,7 @@ class OpenIdView(LaunchpadView):
             response.setHeader(header, value)
         return webresponse.body
 
-    def showDecidePage(self, openid_request):
+    def showDecidePage(self):
         """Render the 'do you want to authenticate' page.
 
         An OpenID consumer has redirected the user here to be authenticated.
