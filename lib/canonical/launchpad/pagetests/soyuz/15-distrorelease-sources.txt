@@ -29,7 +29,7 @@ Starting from distribution page:
 
 We get a list of all published packages:
 
-  >>> browser.getLink("List All Packages").click()
+  >>> browser.getLink("List all packages").click()
 
 Click on the respective name to get in the DistributionSourcePackage:
 Let's have a look at the firefox DistributionSourcePackage.
@@ -176,7 +176,7 @@ The text is generated automatically by appending:
 
 for each published version.
 
-  >>> browser.getLink("Change Log").click()
+  >>> browser.getLink("View changelog").click()
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 

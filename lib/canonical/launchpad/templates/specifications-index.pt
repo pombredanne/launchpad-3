@@ -22,26 +22,25 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but-lrg-takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addspec">
+                            <img
+                              alt="Register a specification"
+                              src="/+icing/but-lrg-registeraspec.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <form class="central" name="spec_search" method="get">
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+addspec">
-                              <img
-                                alt="Register a specification"
-                                src="/+icing/but-lrg-registeraspec.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <table>
                           <tbody>
                             <tr>
@@ -58,7 +57,7 @@
                                 <input
                                   tal:condition="not:view/searchrequested"
                                   type="submit"
-                                  value="Search Specifications"
+                                  value="Search Blueprints"
                                 />
                                 <input
                                   tal:condition="view/searchrequested"
@@ -117,35 +116,53 @@
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">
                         <p id="application-summary">
-                          With Launchpad you can track specifications
-                          from the drafting process through to
-                          review, approval, scheduling, and implementation.
+                          With Launchpad you can track blueprints
+                          (feature specifications) from discussion through to
+                          review, approval, and implementation.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recently registered</h2>
                             <ul
-                              tal:condition="context/latest_specs"
+                              tal:define="speclist context/latest_specifications"
+                              tal:condition="speclist"
                               class="blueprint"
                             >
                               <li
-                                tal:repeat="spec context/latest_specs"
+                                tal:repeat="spec speclist"
                                 tal:replace="structure spec/@@+listing-compact"
                               />
                             </ul>
                           </div>
                           <div class="three column middle">
-                            <h2>Recently implemented</h2>
+                            <h2>Recently completed</h2>
+                            <ul
+                              tal:define="speclist context/latest_completed_specifications"
+                              tal:condition="speclist"
+                              class="blueprint"
+                            >
+                              <li
+                                tal:repeat="spec speclist"
+                                tal:replace="structure spec/@@+listing-compact"
+                              />
+                            </ul>
                           </div>
                           <div
                             class="three column right"
                             tal:content="structure context/@@+portlet-sprints"
                           />
                         </div>
+<<<<<<< TREE
                         <p id="application-footer">
                           <strong>XXX</strong>
-                          specifications registered
+                          blueprints registered
                         </p>
+=======
+                        <div id="application-footer">
+                          <tal:stats replace="structure context/@@+portlet-stats" />
+                        </div>
+>>>>>>> MERGE-SOURCE
                       </tal:nosearchresults>
 
                       </div><!--container-->
@@ -161,4 +178,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs "Recently implemented" list, specifications count -->
+<!-- 1-0 inprogress Needs "Recently implemented" list, blueprints count -->

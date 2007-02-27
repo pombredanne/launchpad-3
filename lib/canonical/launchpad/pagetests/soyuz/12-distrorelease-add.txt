@@ -4,7 +4,7 @@ First, we test that the link to add distro releases is not there
 when we are not logged in.
 
   >>> anon_browser.open("http://localhost/ubuntu")
-  >>> anon_browser.getLink("Add Release")
+  >>> anon_browser.getLink("Add release")
   Traceback (most recent call last):
   ...
   LinkNotFoundError 
@@ -22,14 +22,14 @@ This time we expect to be able to see the link and the page.
   >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
   >>> browser.open("http://localhost/debian")
-  >>> browser.getLink("Add Release").click()
+  >>> browser.getLink("Add release").click()
   >>> browser.url
   'http://localhost/debian/+addrelease'  
 
 OK, let's test as Foo Bar, who is an administrator.
 
   >>> admin_browser.open("http://localhost/ubuntu")
-  >>> admin_browser.getLink("Add Release").click()
+  >>> admin_browser.getLink("Add release").click()
   >>> admin_browser.url
   'http://localhost/ubuntu/+addrelease'  
 
