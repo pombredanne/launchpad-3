@@ -3,7 +3,7 @@
 The question page shows a link to make the question into a bug.
 
   >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-  >>> createLink = browser.getLink('Create Bug Report')
+  >>> createLink = browser.getLink('Create bug report')
   >>> createLink is not None
   True
 
@@ -27,7 +27,7 @@ Cancelling the request brings you back to the question page.
   '.../firefox/+ticket/2'
   >>> browser.title
   '...question #2...'
-  >>> createLink = browser.getLink('Create Bug Report')
+  >>> createLink = browser.getLink('Create bug report')
   >>> createLink is not None
   True
 
@@ -77,7 +77,7 @@ to it.
   >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
   >>> browser.contents
   '...<h2>Related bugs</h2>...'
-  >>> browser.getLink('Create Bug Report')
+  >>> browser.getLink('Create bug report')
   Traceback (most recent call last):
     ..
   LinkNotFoundError...

@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -35,7 +36,8 @@ class DistributionNameField(PillarNameField):
 
 
 class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                    ISpecificationTarget, IHasSecurityContact, IKarmaContext):
+                    ISpecificationTarget, IHasSecurityContact,
+                    IKarmaContext, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -202,10 +204,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     main_archive = Object(
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
-
-    def traverse(name):
-        """Traverse the distribution. Check for special names, and return
-        appropriately, otherwise use __getitem__"""
 
     def __getitem__(name):
         """Returns a DistroRelease that matches name, or raises and

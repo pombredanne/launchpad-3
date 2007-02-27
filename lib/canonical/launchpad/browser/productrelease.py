@@ -35,7 +35,7 @@ class ProductReleaseContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -44,7 +44,7 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link('+review', text, icon='edit')
 
     def download(self):
-        text = 'Download RDF Metadata'
+        text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
 

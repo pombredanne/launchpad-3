@@ -38,6 +38,12 @@ We can get a project using IProjectSet, by supplying the project's name.
     >>> verifyObject(IProject, gnome)
     True
 
+Make sure that a project provides the IProject interface.
+
+    >>> IProject.providedBy(gnome)
+    True
+
+
 If there is no project with the specified name, a NotFoundError will be
 raised.
 

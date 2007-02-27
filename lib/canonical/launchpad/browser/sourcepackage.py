@@ -116,13 +116,13 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+hctstatus', text, icon='info')
 
     def changelog(self):
-        return Link('+changelog', 'Change Log', icon='list')
+        return Link('+changelog', 'View changelog', icon='list')
 
     def upstream(self):
-        return Link('+packaging', 'Edit Upstream Link', icon='edit')
+        return Link('+packaging', 'Edit upstream link', icon='edit')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
 
@@ -133,7 +133,7 @@ class SourcePackageBugsMenu(ApplicationMenu):
     links = ['reportbug']
 
     def reportbug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
 
@@ -145,7 +145,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
     links = QuestionTargetAnswersMenu.links + ['gethelp']
 
     def gethelp(self):
-        return Link('+gethelp', 'Help and Support Options', icon='info')
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):
@@ -155,11 +155,11 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     links = ['help', 'templates']
 
     def help(self):
-        return Link('+translate', 'How You Can Help', icon='info')
+        return Link('+translate', 'How you can help', icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        return Link('+potemplatenames', 'Edit Template Names', icon='edit')
+        return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
 class SourcePackageView(BuildRecordsView):

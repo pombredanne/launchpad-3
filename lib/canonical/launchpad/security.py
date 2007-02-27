@@ -323,15 +323,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj, user)
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -339,15 +331,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.team.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj.team, user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -389,15 +373,7 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = IPollOption
 
     def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.poll.team.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.poll.team.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -898,3 +874,15 @@ class QuestionOwner(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+def can_admin_team(team, user):
+    """Return True if the given user has admin rights for the given team."""
+    if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        return True
+    else:
+        for person in team.getEffectiveAdministrators():
+            if user.inTeam(person):
+                return True
+    return False
+

@@ -5,7 +5,6 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-import itertools
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -66,7 +65,8 @@ from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.specificationfeedback import (
     SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
@@ -87,7 +87,7 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class Person(SQLBase):
+class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
     implements(IPerson, ICalendarOwner)
@@ -815,7 +815,7 @@ class Person(SQLBase):
         """See IPerson."""
         assert self.teamowner is not None
         to_addrs = set()
-        for person in itertools.chain(self.administrators, [self.teamowner]):
+        for person in self.getEffectiveAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -861,6 +861,16 @@ class Person(SQLBase):
             tm.comment = comment
 
         tm.syncUpdate()
+
+    def getEffectiveAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam()
+        owner = Person.select("id = %s" % sqlvalues(self.teamowner))
+        # We can't use Person.sortingColumns with union() queries
+        # because the table name Person is not available in that
+        # context.
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.adminmembers.union(owner, orderBy=orderBy)
 
     def getMembersByStatus(self, status, orderBy=None):
         """See IPerson."""
@@ -929,7 +939,7 @@ class Person(SQLBase):
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
-    def administrators(self):
+    def adminmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
@@ -945,8 +955,7 @@ class Person(SQLBase):
         # because the table name Person is not available in that
         # context.
         orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.approvedmembers.union(self.administrators,
-                                          orderBy=orderBy)
+        return self.approvedmembers.union(self.adminmembers, orderBy=orderBy)
 
     @property
     def active_member_count(self):

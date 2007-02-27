@@ -73,7 +73,6 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Changeslist"), required=True,
         description=_("The changes list address for the distrorelease."),
         constraint=valid_email)
-    state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
@@ -146,26 +145,17 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         IDistroReleaseSourcePackageRelease instances
         """
 
-    def traverse(name):
-        """Traverse across a distrorelease in Launchpad. This looks for
-        special URL items, like +sources or +packages, then goes on to
-        traverse using __getitem__."""
-
     def __getitem__(archtag):
         """Return the distroarchrelease for this distrorelease with the
         given architecturetag.
         """
 
-    def updateStatistics():
+    def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro release."""
 
     def updatePackageCount():
         """Update the binary and source package counts for this distro
         release."""
-
-    def findSourcesByName(name):
-        """Return an iterator over source packages with a name that matches
-        this one."""
 
     def getSourcePackage(name):
         """Return a source package in this distro release by name.
@@ -195,10 +185,6 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
         sourcepackagerelease is an ISourcePackageRelease.
         """
-
-    def findBinariesByName(name):
-        """Return an iterator over binary packages with a name that matches
-        this one."""
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None,
                              include_pending=False, exclude_pocket=None):
@@ -398,7 +384,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm=None):
+    def copyMissingTranslationsFromParent():
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore
