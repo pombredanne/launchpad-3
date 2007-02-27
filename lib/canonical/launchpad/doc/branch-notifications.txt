@@ -1,5 +1,4 @@
-Email Notifications for Branches
-================================
+= Email Notifications for Branches =
 
 Only subscribers get email notifications.  If the owner/author
 of the branch want to receive emails, then they need to subscribe
@@ -7,13 +6,297 @@ to the branch.
 
 There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
- - when the branch scanner notices a change in the tip revision
+ - when the branch scanner scans new revisions in the branches history
 
 Firstly lets just make sure that the emails that'll be sent out
 have the appropriate information.
 
-Email Format
-------------
+
+== Email Format ==
+
+All branch notification emails use a standard email template.
+The branch object provides a method that gets the email template and
+populates it with the branch details.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.launchpad.mail import stub
+    >>> from canonical.launchpad.mailnotification import (
+    ...     email_branch_notifications)
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> email_branch_notifications(
+    ...     branch, ['test@canonical.com'], 'foo@canonical.com', 'The contents.')
+    >>> import transaction
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_address, recipients, body = stub.test_emails.pop()
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    X-Launchpad-Branch: ~name12/firefox/main
+    To: test@canonical.com
+    From: foo@canonical.com
+    Subject: [Branch ~name12/firefox/main] Mozilla Firefox Mainline
+    ...
+    Reply-To: foo@canonical.com
+    Sender: bounces@canonical.com
+    Errors-To: bounces@canonical.com
+    Return-Path: bounces@canonical.com
+    X-Generated-By: Launchpad (canonical.com)
+    <BLANKLINE>
+    The contents.
+    <BLANKLINE>
+    --
+    Mozilla Firefox Mainline
+    http://launchpad.dev/~name12/+branch/firefox/main
+    <BLANKLINE>
+    You received this email because you are subscribed to this branch.
+    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
+    nch/firefox/main/+edit-subscription.
+    <BLANKLINE>
+
+== Subscriptions ==
+
+In order to fully test the subscriptions, we need to subscribe
+seven people to cover the different options:
+
+  * No email
+  * Attribute notifications only
+  * Revision notifications only
+  * All notifications
+
+That makes four, but we need another three to cover the four levels
+of diff size, so...
+
+    >>> from canonical.launchpad.interfaces import IBranch, IPersonSet
+    >>> from canonical.lp.dbschema import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
+    >>> personset = getUtility(IPersonSet)
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('no-priv@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('test@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('carlos@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('jeff.waugh@ubuntulinux.com'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.HALFKLINES)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('celso.providelo@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.ONEKLINES)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('daf@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('mark@hbd.com'),
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
+    <BranchSubscription ...> 
+
+And to make sure we have them:
+
+    >>> for subscription in branch.subscriptions:
+    ...     print subscription.person.name
+    no-priv
+    name12
+    carlos
+    jdub
+    cprov
+    daf
+    sabdfl
+
+Now make sure that they get returned appropriately for the
+correct notifications.
+
+    >>> addresses = branch.attributeNotificationAddresses()
+    >>> for address in addresses:
+    ...     print address
+    mark@hbd.com
+    test@canonical.com
+
+    >>> details = branch.revisionNotificationDetails()
+    >>> for max_diff in sorted(details.keys()):
+    ...     for address in details[max_diff]:
+    ...         print address, max_diff.title
+    carlos@canonical.com          Don't send diffs
+    jeff.waugh@ubuntulinux.com    500 lines
+    celso.providelo@canonical.com 1000 lines
+    daf@canonical.com             5000 lines
+    mark@hbd.com                  Send entire diff
+    
+== Testing the size limit on the emails ==
+
+We need to create some sufficiently large diffs to compare against.
+
+    >>> diff = '\n'.join([str(value) for value in xrange(6000)])
+    >>> message = 'Test message.\n'
+
+    >>> from canonical.launchpad.mailnotification import notify_branch_revisions
+    >>> notify_branch_revisions(branch, 'no-reply@canonical.com', message, diff)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    5
+    >>> import operator
+    >>> emails = sorted(stub.test_emails, key = operator.itemgetter(1))
+    >>> stub.test_emails = []
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: carlos@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    <BLANKLINE>
+    --...
+    
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: celso.providelo@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    The size of the diff (6000 lines) is larger than your specified limit of 10=
+    00 lines...
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: daf@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    The size of the diff (6000 lines) is larger than your specified limit of 50=
+    00 lines...
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: jeff.waugh@ubuntulinux.com
+    ...
+    Test message.
+    <BLANKLINE>
+    The size of the diff (6000 lines) is larger than your specified limit of 50=
+    0 lines...
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: mark@hbd.com
+    ...
+    Test message.
+    <BLANKLINE>
+    0 1 ... 5999...
+
+And just to be sure, lets create one with 800 lines.
+
+    >>> diff = '\n'.join([str(value) for value in xrange(800)])
+    >>> notify_branch_revisions(branch, 'no-reply@canonical.com', message, diff)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    5
+    >>> emails = sorted(stub.test_emails, key = operator.itemgetter(1))
+    >>> stub.test_emails = []
+
+Still just the log message for carlos:
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: carlos@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    <BLANKLINE>
+    --...
+
+Diff for celso:
+    
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: celso.providelo@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    0 1 ... 799...
+
+Diff for daf:
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: daf@canonical.com
+    ...
+    Test message.
+    <BLANKLINE>
+    0 1 ... 799...
+
+Limit hit for jeff:
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: jeff.waugh@ubuntulinux.com
+    ...
+    Test message.
+    <BLANKLINE>
+    The size of the diff (800 lines) is larger than your specified limit of 500=
+     lines...
+
+And everything for mark:
+
+    >>> from_address, recipients, body = emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: mark@hbd.com
+    ...
+    Test message.
+    <BLANKLINE>
+    0 1 ... 799...
+
+Unsubscribe everybody except for Sample Person (name12).
+
+    >>> for subscription in branch.subscriptions:
+    ...     if subscription.person.name != 'name12':
+    ...         branch.unsubscribe(subscription.person)
+    >>> for subscription in branch.subscriptions:
+    ...     print subscription.person.name
+    name12
+
 
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
@@ -21,19 +304,9 @@ sent.
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IBranch, IBranchSet, IPersonSet
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> from canonical.lp.dbschema import (
-    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
 
     >>> login('test@canonical.com')
-    >>> test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
-    >>> branch.subscribe(
-    ...     test_user,
-    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-    ...     BranchSubscriptionDiffSize.NODIFF)
-    <BranchSubscription ...> 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
     >>> branch.whiteboard = 'This is the new whiteboard'
@@ -46,7 +319,6 @@ names just now, we'll pass them through anyway
     ...                               ['whiteboard']))
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1

@@ -19,11 +19,14 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, get_email_template)
 from canonical.launchpad.interfaces import (
         IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus)
 
 
@@ -250,7 +253,38 @@ class Branch(SQLBase):
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
-        
+
+    def attributeNotificationAddresses(self):
+        """See IBranch."""
+        addresses = set()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses.update(contactEmailAddresses(subscription.person))
+        return sorted(addresses)
+
+    def revisionNotificationDetails(self):
+        """See IBranch."""
+        email_details = {}
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses = contactEmailAddresses(subscription.person)
+                for address in addresses:
+                    curr = email_details.get(
+                        address, BranchSubscriptionDiffSize.NODIFF)
+                    email_details[address] = max(
+                        curr, subscription.max_diff_lines)
+        # Now that we have determined the maximum size to send
+        # to any individual, switch the map around.
+        result = {}
+        for address, max_diff in email_details.iteritems():
+            result.setdefault(max_diff, []).append(address)
+        return result
 
 class BranchSet:
     """The set of all branches."""

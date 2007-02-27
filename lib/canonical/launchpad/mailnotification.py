@@ -30,7 +30,8 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel, TeamMembershipStatus, QuestionAction)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    TeamMembershipStatus, QuestionAction)
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
@@ -1432,14 +1433,55 @@ def notify_specification_modified(spec, event):
         simple_sendmail_from_person(event.user, address, subject, body)
 
 
+def email_branch_notifications(branch, to_addresses, from_address, contents):
+    """Send notification emails using the branch email template.
+
+    Emails are sent one at a time to the listed addresses.
+    """
+    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    headers = {'X-Launchpad-Branch': branch.unique_name}
+    body = get_email_template('branch-modified.txt') % {
+        'contents': contents,
+        'branch_title': branch.title,
+        'branch_url': canonical_url(branch),
+        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+    for address in to_addresses:
+        simple_sendmail(from_address, address, subject, body, headers)
+        
+
+def notify_branch_revisions(branch, from_address, message, diff):
+    """Notify subscribers that a revision has been added (or removed)."""
+    diff_size = diff.count('\n') + 1
+    details = branch.revisionNotificationDetails()
+    for max_diff in sorted(details.keys()):
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = message
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (message, diff_msg)
+            else:
+                contents = "%s\n%s" % (message, diff)
+        else:
+            contents = "%s\n%s" % (message, diff)
+        addresses = details[max_diff]
+        email_branch_notifications(branch, addresses, from_address, contents)
+
+
 def notify_branch_modified(branch, event):
     """Notify the related people that a branch has been modifed."""
     branch_delta = BranchDelta.construct(
         event.object_before_modification, branch, event.user)
     if branch_delta is None:
         return
+    # If there is no one interested, then bail out early.
+    to_addresses = branch.attributeNotificationAddresses()
+    if not to_addresses:
+        return
 
-    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
     indent = ' '*4
     info_lines = []
 
@@ -1475,22 +1517,8 @@ def notify_branch_modified(branch, event):
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
-    
-    body = get_email_template('branch-modified.txt') % {
-        'contents': '\n'.join(info_lines),
-        'branch_title': branch.title,
-        'branch_url': canonical_url(branch),
-        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
 
-    # Only send email to those subscribers that asked for it.
-    addresses = set()
-    for subscription in branch.subscriptions:
-        if subscription.notification_level in (
-                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-                BranchSubscriptionNotificationLevel.FULL):
-            addresses.update(contactEmailAddresses(subscription.person))
-
-    # Sort for a reliable ordering
-    for address in sorted(addresses):
-        simple_sendmail_from_person(event.user, address, subject, body)
-
+    from_address = format_address(
+        event.user.displayname, event.user.preferredemail.email)
+    contents = '\n'.join(info_lines)
+    email_branch_notifications(branch, to_addresses, from_address, contents)

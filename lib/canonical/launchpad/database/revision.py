@@ -121,11 +121,12 @@ class RevisionSet:
         """See IRevsionSet."""
         cur = cursor()
         cur.execute("""
-            SELECT rn.sequence, r.revision_id
-            FROM revision r
-            JOIN revisionnumber rn on r.id = rn.revision
-            WHERE rn.branch=%s
-            ORDER BY rn.sequence
+            SELECT BranchRevision.sequence, Revision.revision_id
+            FROM Revision
+            JOIN BranchRevision ON Revision.id = BranchRevision.revision
+            WHERE BranchRevision.branch=%s
+              AND BranchRevision.sequence IS NOT NULL
+            ORDER BY BranchRevision.sequence
             """ % sqlvalues(branch))
         history = [rev_id for seq, rev_id in cur.fetchall()]
         return history

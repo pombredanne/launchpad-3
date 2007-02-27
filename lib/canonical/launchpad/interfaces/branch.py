@@ -287,6 +287,21 @@ class IBranch(IHasOwner):
         script.
         """
 
+    def attributeNotificationAddresses():
+        """Return a list of email addresses of interested subscribers.
+
+        Only branch subscriptions that specified an interest in
+        attribute notifications will have specified email addresses added.
+        """
+
+    def revisionNotificationDetails():
+        """Return a map of max diff size to a list of emal addresses.
+        
+        Only branch subscriptions that specified an interest in
+        revision notifications will have specified email addresses added.
+        """
+        
+
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
