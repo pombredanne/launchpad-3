@@ -687,12 +687,12 @@ class BugTargetBugsView(BugTaskSearchListingView):
     status_color = {
         BugTaskStatus.UNCONFIRMED: '#993300',
         BugTaskStatus.NEEDSINFO: 'red',
-        BugTaskStatus.CONFIRMED: 'red',
-        BugTaskStatus.INPROGRESS: 'black',
-        BugTaskStatus.FIXRELEASED: 'black',
-        BugTaskStatus.FIXCOMMITTED: 'black',
-        BugTaskStatus.REJECTED: 'gray',
-        BugTaskStatus.UNKNOWN: 'black',
+        BugTaskStatus.CONFIRMED: 'orange',
+        BugTaskStatus.INPROGRESS: 'blue',
+        BugTaskStatus.FIXCOMMITTED: 'green',
+        BugTaskStatus.FIXRELEASED: 'magenta',
+        BugTaskStatus.REJECTED: 'yellow',
+        BugTaskStatus.UNKNOWN: 'purple',
     }
 
     def initialize(self):
@@ -729,8 +729,12 @@ class BugTargetBugsView(BugTaskSearchListingView):
             }
             MochiKit.DOM.addLoadEvent(drawGraph);
             """
+        # The color list should inlude only colors for slices that will
+        # be drawn in the pie chart, so colors that don't have any bugs
+        # associated with them.
         color_list = ', '.join(
-            data_item.color for data_item in self.bug_count_items)
+            data_item.color for data_item in self.bug_count_items
+            if data_item.count > 0)
         label_list = ', '.join([
             '{v:%i, label:"%s"}' % (index, data_item.label)
             for index, data_item in enumerate(self.bug_count_items)])
