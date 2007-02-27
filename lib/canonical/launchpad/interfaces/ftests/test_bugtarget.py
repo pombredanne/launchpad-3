@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = []
 
+import random
 import unittest
 
 from zope.component import getUtility
@@ -38,7 +39,8 @@ def project_filebug(project, summary, status=None):
     will be filed on one of its products.
     """
     # It doesn't matter which product the bug is filed on.
-    bug = bugtarget_filebug(project.products[0], summary, status=status)
+    product = random.choice(list(project.products))
+    bug = bugtarget_filebug(product, summary, status=status)
     return bug
 
 

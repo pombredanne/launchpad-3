@@ -1,7 +1,10 @@
 = Bug Counts for IBugTarget =
 
 A IBugTarget has a method for getting the number of bugs in different
-statuses.
+statuses, getBugCounts. The method has one required parameter; the user
+used when searching for bugs (to ensure that private bugs the user
+doesn't have permission to view are excluded). None acts as the
+anonymous user, i.e. no private bugs will be included in the counts.
 
     >>> bug_counts = bugtarget.getBugCounts(None)
     >>> for status in sorted(bug_counts.keys()):
