@@ -214,7 +214,7 @@
               checked="true"
               tal:attributes="
                 name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton
+                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
                 value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}
             " />
           </tal:user-is-official-translator>
