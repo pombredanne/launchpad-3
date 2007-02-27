@@ -33,7 +33,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
 from canonical.launchpad.daemons.authserver import AuthserverSetup
-from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.launchpad.daemons.sftp import SFTPSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.testing import LaunchpadZopelessLayer
@@ -45,8 +45,10 @@ def deferToThread(f):
     """
     def decorated(*args, **kwargs):
         d = defer.Deferred()
-        t = threading.Thread(
-            target=lambda: threads._putResultInDeferred(d, f, args, kwargs))
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
 
         def joinThread(passedThrough):
             t.join()
@@ -56,25 +58,6 @@ def deferToThread(f):
         t.start()
         return d
     return decorated
-
-
-class SFTPSetup(TacTestSetup):
-    root = '/tmp/sftp-test'
-    pidfile = os.path.join(root, 'twistd.pid')
-    logfile = os.path.join(root, 'twistd.log')
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'),
-                        os.path.join(self.root, 'keys'))
-
-    @property
-    def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/sftp.tac'
-            ))
 
 
 class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
@@ -121,13 +104,14 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         self.authserver.startService()
 
         # Start the SFTP server
-        self.server = SFTPSetup()
-        self.server.setUp()
+        keydir = sibpath(__file__, 'keys')
+        self.server = SFTPSetup().makeService(keydir)
+        self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
 
     def tearDown(self):
         # Undo setUp.
-        self.server.tearDown()
+        self.server.stopService()
 
         # XXX: spiv 2006-02-09: manually break cycles in uncollectable garbage
         # caused by the server shutting down while paramiko clients still have
@@ -187,11 +171,17 @@ class AcceptanceTests(SFTPTestCase):
         user has permission to read or write to those URLs.
         """
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        d = self._pushThenOpen(remote_url)
-        d.addCallback(lambda remote_branch:
-                      self.assertEqual(self.local_branch.last_revision(),
-                                       remote_branch.last_revision()))
-        return d
+        d = self._pushThenGetLastRevision(remote_url)
+
+        def check(remote_revision):
+            self.assertEqual(self.local_branch.last_revision(),
+                             remote_revision)
+        return d.addCallback(check)
+
+    @deferToThread
+    def _pushThenGetLastRevision(self, remote_url):
+        self._push(remote_url)
+        return bzrlib.branch.Branch.open(remote_url).last_revision()
 
     @deferToThread
     def _pushThenOpen(self, remote_url):
@@ -396,9 +386,9 @@ def test_suite():
 # Be paranoid since we trash directories as part of this.
 assert config.default_section == 'testrunner', \
         'Imported dangerous test harness outside of the test runner'
-SFTPSetup().killTac()
 
 # NOMERGE - figure out what to do with this, we aren't using
+#SFTPSetup().killTac()
 # AuthserverTacTestSetup anymore.
 #AuthserverTacTestSetup().killTac()
 
