@@ -167,9 +167,10 @@ class BazaarProductView:
         # Choose appropriate branch counts so we have an evenish distribution.
         counts = sorted([
             summary['branch_count'] for summary in branch_summaries.values()])
-        index = len(counts) / 3
-        small_count = counts[index]
-        large_count = counts[-index]
+        # Lowest half are small.
+        small_count = counts[len(counts)/2]
+        # Top 20% are big.
+        large_count = counts[-(len(counts)/5)]
         
         items = []
         now = datetime.today()
