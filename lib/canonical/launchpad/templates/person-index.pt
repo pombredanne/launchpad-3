@@ -108,35 +108,31 @@
     </p>
 
           </div>
-          <div tal:condition="context/isTeam">
-            <h2>Recently approved</h2>
-              <ul tal:condition="view/recently_approved_members">
+          <tal:recent-members condition="context/isTeam">
+            <div tal:condition="view/recently_approved_members">
+              <h2>Recently approved</h2>
+              <ul>
                 <li class="person"
                     tal:repeat="person view/recently_approved_members">
                   <a tal:attributes="href person/fmt:url"
                      tal:content="person/unique_displayname"
                   >Foo Bar (name16)</a>
                 </li>
-                <p tal:condition="not: view/recently_approved_members">
-                  This team has no approved members.
-                </p>
               </ul>
-          </div>
-          <div tal:condition="context/isTeam">
-            <h2>Recently applied</h2>
-              <ul tal:condition="view/recently_proposed_members">
+            </div>
+            <div tal:condition="view/recently_proposed_members">
+              <h2>Recently applied</h2>
+              <ul>
                 <li class="person"
                     tal:repeat="person view/recently_proposed_members">
                   <a tal:attributes="href person/fmt:url"
                      tal:content="person/unique_displayname"
                   >Foo Bar (name16)</a>
                 </li>
-                <p tal:condition="not: view/recently_proposed_members">
-                  This team has no applicants.
-                </p>
               </ul>
+            </div>
           </div>
-        </div>
+        </tal:recent-members>
         <div class="right">
           <div class="section">
             <h2>Contact details</h2>
