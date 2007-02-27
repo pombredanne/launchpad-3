@@ -12,6 +12,7 @@ import signal
 import shutil
 import gc
 import threading
+import sys
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
@@ -189,6 +190,8 @@ class AcceptanceTests(SFTPTestCase):
         return bzrlib.branch.Branch.open(remote_url)
 
     def _push(self, remote_url):
+        # Do not run this in the main thread! It does a blocking read from the
+        # SFTP server, which is running in the Twisted reactor in this process.
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
@@ -204,17 +207,18 @@ class AcceptanceTests(SFTPTestCase):
         """
         # Initial push.
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        self._push(remote_url)
-        self.assertEqual(
-            bzrlib.branch.Branch.open(remote_url).last_revision(), 'rev1')
-        # Add a single revision to the local branch.
-        tree = WorkingTree.open(self.local_branch.base)
-        tree.commit('Empty commit', rev_id='rev2')
-        # Push the new revision.
-        self._push(remote_url)
-        # Check that the new revision was pushed successfully
-        self.assertEqual(
-            bzrlib.branch.Branch.open(remote_url).last_revision(), 'rev2')
+        d = self._pushThenGetLastRevision(remote_url)
+        d.addCallback(self.assertEqual, 'rev1')
+
+        def pushNewRevision(ignored):
+            # Add a single revision to the local branch.
+            tree = WorkingTree.open(self.local_branch.base)
+            tree.commit('Empty commit', rev_id='rev2')
+            # Push the new revision.
+            return self._pushThenGetLastRevision(remote_url)
+
+        d.addCallback(pushNewRevision)
+        return d.addCallback(self.assertEqual, 'rev2')
 
     def test_2_namespace_restrictions(self):
         """
@@ -226,94 +230,128 @@ class AcceptanceTests(SFTPTestCase):
             * `bzr push sftp://testinstance/~team/+junk/anything`
         should fail.
         """
-
-        # Cannot push branches to products that don't exist
-        self._test_missing_parent_directory(
+        d = self._test_missing_parent_directory(
             '~testuser/product-that-does-not-exist/hello')
 
+        # Cannot push branches to products that don't exist
+        d = self._test_missing_parent_directory(
+            '~testuser/product-that-does-not-exist/hello')
+        return d
         # Teams do not have +junk products
-        self._test_missing_parent_directory(
-            '~testteam/+junk/hello')
+        d.addCallback(
+            lambda ignored:
+            self._test_missing_parent_directory('~testteam/+junk/hello'))
 
         # Cannot push to team directories that the user isn't a member of --
         # they cannot see them at all.
-        self._test_missing_parent_directory(
-            '~not-my-team/real-product/hello')
+        d.addCallback(
+            lambda ignored:
+            self._test_missing_parent_directory(
+            '~not-my-team/real-product/hello'))
 
         # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
         # capital Letters) -- Are they disallowed or accepted?  If accepted,
         # what will that branch's Branch.name be in the database?  Probably just
         # disallow, and try to have a tolerable error.
+        return d
 
     def _test_missing_parent_directory(self, relpath):
-        transport = get_transport(self.server_base + relpath).clone('..')
-        self.assertRaises(
-            (NoSuchFile, PermissionDenied),
-            transport.mkdir, 'hello')
-        return transport
+        @deferToThread
+        def getTransport():
+            return get_transport(self.server_base + relpath).clone('..')
 
-    # Test disable because it prevents PQM landing.
-    ## see Bug #87231
-    def disabled_test_3_db_rename_branch(self):
+        @deferToThread
+        def makeDirectory(transport):
+            transport.mkdir('hello')
+
+        d = getTransport()
+        d.addCallback(lambda transport:
+                      self.assertFailure(makeDirectory(transport),
+                                         NoSuchFile, PermissionDenied))
+        return d
+
+    def test_3_db_rename_branch(self):
         """
-        Branches should be able to be renamed in the Launchpad webapp, and those
-        renames should be immediately reflected in subsequent SFTP connections.
+        Branches should be able to be renamed in the Launchpad webapp, and
+        those renames should be immediately reflected in subsequent SFTP
+        connections.
 
         Also, the renames may happen in the database for other reasons, e.g. if
         the DBA running a one-off script.
         """
 
         # Push the local branch to the server
-        self._push(self.server_base + '~testuser/+junk/test-branch')
+        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        d = deferToThread(self._push)(remote_url)
 
-        # Rename branch in the database
-        LaunchpadZopelessTestSetup().txn.begin()
-        testuser = database.Person.byName('testuser')
-        branch = database.Branch.selectOneBy(
-            ownerID=testuser.id, name='test-branch')
-        branch_id = branch.id
-        branch.name = 'renamed-branch'
-        LaunchpadZopelessTestSetup().txn.commit()
+        def renameBranchInDatabase(ignored):
+            # Rename branch in the database
+            LaunchpadZopelessTestSetup().txn.begin()
+            testuser = database.Person.byName('testuser')
+            branch = database.Branch.selectOneBy(
+                ownerID=testuser.id, name='test-branch')
+            self.branch_id = branch.id
+            branch.name = 'renamed-branch'
+            LaunchpadZopelessTestSetup().txn.commit()
 
-        # XXX Andrew Bennetts 2006-04-20: Force bzrlib to make a new SFTP
-        # connection.  We use getattr to protect against this private attr going
-        # away in a later version of bzrlib.
-        getattr(sftp, '_connected_hosts', {}).clear()
+        def forceNewConnection(ignored):
+            # XXX Andrew Bennetts 2006-04-20: Force bzrlib to make a new SFTP
+            # connection. We use getattr to protect against this private attr
+            # going away in a later version of bzrlib.
+            getattr(sftp, '_connected_hosts', {}).clear()
 
-        remote_branch = bzrlib.branch.Branch.open(
-            self.server_base + '~testuser/+junk/renamed-branch')
-        self.assertEqual(
-            self.local_branch.last_revision(), remote_branch.last_revision())
-        del remote_branch
+        d.addCallback(renameBranchInDatabase)
+        d.addCallback(forceNewConnection)
+        d.addCallback(lambda ignored:
+                      self._pushThenGetLastRevision(remote_url))
+        d.addCallback(self.assertEqual, self.local_branch.last_revision())
 
-        # Assign to a different product in the database.  This is effectively a
-        # Rename as far as bzr is concerned: the URL changes.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(branch_id)
-        branch.product = database.Product.byName('firefox')
-        LaunchpadZopelessTestSetup().txn.commit()
-        getattr(sftp, '_connected_hosts', {}).clear()
-        self.assertRaises(
-            NotBranchError,
-            bzrlib.branch.Branch.open,
-            self.server_base + '~testuser/+junk/renamed-branch')
-        remote_branch = bzrlib.branch.Branch.open(
-            self.server_base + '~testuser/firefox/renamed-branch')
-        self.assertEqual(
-            self.local_branch.last_revision(), remote_branch.last_revision())
-        del remote_branch
+        def assignToDifferentProductInDatabase(ignored):
+            # Assign to a different product in the database. This is
+            # effectively a Rename as far as bzr is concerned: the URL changes.
+            LaunchpadZopelessTestSetup().txn.begin()
+            branch = database.Branch.get(self.branch_id)
+            branch.product = database.Product.byName('firefox')
+            LaunchpadZopelessTestSetup().txn.commit()
 
-        # Rename person in the database.  Again, the URL changes (and so does
-        # the username we have to connect as!).
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(branch_id)
-        branch.owner.name = 'renamed-user'
-        LaunchpadZopelessTestSetup().txn.commit()
+        d.addCallback(assignToDifferentProductInDatabase)
+        d.addCallback(forceNewConnection)
+
+        def checkNotABranch(ignored):
+            deferred_open = deferToThread(bzrlib.branch.Branch.open)(
+                self.server_base + '~testuser/+junk/renamed-branch')
+            return self.assertFailure(deferred_open, NotBranchError)
+
+        d.addCallback(checkNotABranch)
+
+        @deferToThread
+        def openRenamedBranch(remote_url):
+            remote_branch = bzrlib.branch.Branch.open(remote_url)
+            return remote_branch.last_revision()
+
+        d.addCallback(lambda ignored:
+                      openRenamedBranch(self.server_base
+                                        + '~testuser/firefox/renamed-branch'))
+
+        d.addCallback(self.assertEqual, self.local_branch.last_revision())
+
+        def renamePersonInDatabase(ignored):
+            # Rename person in the database. Again, the URL changes (and so
+            # does the username we have to connect as!).
+            LaunchpadZopelessTestSetup().txn.begin()
+            branch = database.Branch.get(self.branch_id)
+            branch.owner.name = 'renamed-user'
+            LaunchpadZopelessTestSetup().txn.commit()
+
+        d.addCallback(renamePersonInDatabase)
+
         server_base = self.server_base.replace('testuser', 'renamed-user')
-        remote_branch = bzrlib.branch.Branch.open(
-            server_base + '~renamed-user/firefox/renamed-branch')
-        self.assertEqual(
-            self.local_branch.last_revision(), remote_branch.last_revision())
+        d.addCallback(
+            lambda ignored:
+            openRenamedBranch(server_base
+                              + '~renamed-user/firefox/renamed-branch'))
+        d.addCallback(self.assertEqual, self.local_branch.last_revision())
+        return d
 
 
     # Test 4: URL for mirroring
@@ -337,26 +375,28 @@ class AcceptanceTests(SFTPTestCase):
         # values in the database.
 
         # Push branch to sftp server
-        self._push(self.server_base + '~testuser/+junk/test-branch')
+        d = deferToThread(self._push)(
+            self.server_base + '~testuser/+junk/test-branch')
 
-        # Retrieve the branch from the database.  selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
+        def check(ignored):
+            # Retrieve the branch from the database.  selectOne will fail if the
+            # branch does not exist (or if somehow multiple branches match!).
+            branch = database.Branch.selectOne(
+                "owner = %s AND product IS NULL AND name = %s"
+                % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
 
-        self.assertEqual(None, branch.url)
-        # If we get this far, the branch has been correctly inserted into the
-        # database.
+            self.assertEqual(None, branch.url)
+            # If we get this far, the branch has been correctly inserted into the
+            # database.
+
+        return d.addCallback(check)
 
     def test_push_team_branch(self):
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
-        self._push(remote_url)
-        remote_branch = bzrlib.branch.Branch.open(remote_url)
-
+        d = self._pushThenGetLastRevision(remote_url)
         # Check that the pushed branch looks right
-        self.assertEqual(
-            self.local_branch.last_revision(), remote_branch.last_revision())
+        return d.addCallback(self.assertEqual,
+                             self.local_branch.last_revision())
 
 
 def test_suite():
