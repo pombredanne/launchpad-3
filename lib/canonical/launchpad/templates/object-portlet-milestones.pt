@@ -1,9 +1,6 @@
 <div class="portlet" tal:condition="context/milestones">
-  <h2><span tal:replace="context/displayname"
-           >Ubuntu</span> milestones</h2>
-
+  <h2>Milestones</h2>
   <div class="portletBody portletContent">
-
     <ul tal:condition="context/milestones">
       <li class="milestone" tal:repeat="milestone context/milestones">
         <a tal:content="milestone/name"

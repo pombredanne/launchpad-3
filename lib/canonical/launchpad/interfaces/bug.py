@@ -11,14 +11,18 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IFrontPageBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -156,7 +160,7 @@ class IBug(IMessageTarget):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
-    tickets = Attribute("List of support tickets related to this bug.")
+    questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
@@ -380,6 +384,21 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
+        required=True)
+
+
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Product"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
+
+
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 
 

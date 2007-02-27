@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -6,12 +6,23 @@ __metaclass__ = type
 
 __all__ = [
     'ProjectAddProductView',
-    'ProjectAddTicketView',
+    'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestTicketsView',
+    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
+    'ProjectReviewView',
     'ProjectSetNavigation',
+    'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectAnswersMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
+    'ProjectEditView',
+    'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
     ]
@@ -30,7 +41,10 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.ticket import TicketAddView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.question import QuestionAddView
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -70,6 +84,22 @@ class ProjectSetNavigation(RedirectionNavigation):
         return RedirectionNavigation.traverse(self, name)
 
 
+class ProjectSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Products, alphabetically
+        return list(self.context.products[:num])
+
+    def listAltChildren(self, num):
+        return None
+
+
 class ProjectSetContextMenu(ContextMenu):
 
     usedfor = IProjectSet
@@ -85,12 +115,13 @@ class ProjectSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(StandardLaunchpadFacets):
+class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -104,8 +135,8 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'top_contributors', 'rdf',
-             'changetranslators']
+    links = [
+        'edit', 'driver', 'reassign', 'administer', 'top_contributors', 'rdf']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -130,9 +161,10 @@ class ProjectOverviewMenu(ApplicationMenu):
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
 
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -174,9 +206,33 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
+class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
+    """Menu for the answers facet of projects."""
+
+    usedfor = IProject
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new']
+
+    def new(self):
+        text = 'Ask Question'
+        return Link('+addticket', text, icon='add')
+
+
+class ProjectTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
+    label = "Change project details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -198,6 +254,13 @@ class ProjectEditView(LaunchpadEditFormView):
             # If the project is inactive, we can't traverse to it
             # anymore.
             return canonical_url(getUtility(IProjectSet))
+
+
+
+class ProjectReviewView(ProjectEditView):
+
+    label = "Review upstream project details"
+    field_names = ['name', 'owner', 'active', 'reviewed']
 
 
 class ProjectAddProductView(LaunchpadFormView):
@@ -308,6 +371,7 @@ class ProjectAddView(LaunchpadFormView):
             description=data['description'],
             owner=self.user,
             gotchi=data['gotchi'],
+            gotchi_heading=None,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
@@ -344,14 +408,14 @@ class ProjectRdfView(object):
         return encodeddata
 
 
-class ProjectAddTicketView(TicketAddView):
-    """View that handles creation of a ticket from an IProject context."""
+class ProjectAddQuestionView(QuestionAddView):
+    """View that handles creation of a question from an IProject context."""
 
-    search_field_names = ['product'] + TicketAddView.search_field_names
+    search_field_names = ['product'] + QuestionAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        TicketAddView.setUpFields(self)
+        QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
@@ -361,19 +425,19 @@ class ProjectAddTicketView(TicketAddView):
                 __name__='product', vocabulary='ProjectProducts',
                 title=_('Product'),
                 description=_(
-                    'Choose the product for which you need support.'),
+                    'Choose the product for which you have a question.'),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with a product from ${project}',
+        return _('Ask a question about a product from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
-    def ticket_target(self):
-        """The ITicketTarget to use is the selected product."""
+    def question_target(self):
+        """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()
         else:
@@ -381,12 +445,12 @@ class ProjectAddTicketView(TicketAddView):
 
 
 # XXX flacoste 2006-12-13 This should be removed and the
-# TicketTargetLatestTicketsView used instead once we add a
-# searchTickets() method to IProject. This will happen when
+# QuestionTargetLatestQuestionsView used instead once we add a
+# searchQuestions() method to IProject. This will happen when
 # fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestTicketsView:
+class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by
-    TicketAddView.
+    QuestionAddView.
     """
 
     def __call__(self):

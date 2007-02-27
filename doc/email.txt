@@ -100,10 +100,11 @@ for use with Launchpad development (production instances will just use
         `canonical.launchpad.mail.stub.test_email` list for easy access by
         unit tests.
 
-Developers (and production and dogfood server, until we are confident messaging is working fine) should use the StubMailer, like in the quickstart example.
-This causes all emails to be redirected to the specified destination address
-to you can test to your hearts content without spamming other developers or
-innocent civilians. 
+Developers (and production and dogfood server, until we are confident
+messaging is working fine) should use the StubMailer, like in the quickstart
+example.  This causes all emails to be redirected to the specified destination
+address to you can test to your hearts content without spamming other
+developers or innocent civilians.
 
 The functional test suite is already configured to use the TestMailer.
 See `canonical/launchpad/mail/ftests/test_stub.py` for an example showing

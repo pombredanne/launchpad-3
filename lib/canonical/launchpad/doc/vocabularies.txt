@@ -274,6 +274,18 @@ in the vocabulary.
     >>> debian_woody.milestones.count()
     0
 
+If the context is a specification, only milestones from that specification
+target are in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> spec_target_milestones = vocabulary_registry.get(
+    ...     canvas_spec, 'Milestone')
+    >>> for term in spec_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+
 The vocabulary contains only visible milestones.
 
     >>> one_dot_o = firefox.milestones[0]
@@ -439,6 +451,23 @@ All the products in a project.
     ...     print "%s: %s" %(term.token, term.title)
     firefox: Mozilla Firefox
     thunderbird: Mozilla Thunderbird
+
+ProjectProductsVocabularyUsingMalone
+-----------------------------------
+All the products in a project using Malone.
+
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> for product in mozilla_project.products:
+    ...     print "%s: %s" % (product.name, product.official_malone)
+    firefox: True
+    thunderbird: False
+
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProductsUsingMalone')
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
 
 Non-Enumerable Vocabularies
 ===========================
