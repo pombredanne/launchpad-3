@@ -74,8 +74,8 @@
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="info" file="../images/info.png" />
     <resource name="info-large" file="../images/info-large.png" />
-    <resource name="involved-no" file="../images/involved-no.png" />
-    <resource name="involved-yes" file="../images/involved-yes.png" />
+    <resource name="involved-no" file="../images/involved-no-mini.png" />
+    <resource name="involved-yes" file="../images/involved-yes-mini.png" />
     <resource name="launchpad" file="../images/launchpad.png" />
     <resource name="launchpad-large" file="../images/launchpad-large.png" />
     <resource name="launchpad-heading" file="../images/launchpad-heading.png" />
