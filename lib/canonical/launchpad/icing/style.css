@@ -553,11 +553,7 @@ ul#applicationchooser li#applicationchooser_selected {
 #actions li {
   margin: 0;
 }
-#actions li a {
-  width: 180px;
-  display: block;
-  padding: 4px;
-}
+#actions a {display: block; padding: 4px;}
 #actions li a:hover {
   background-color: #fff;
   text-decoration: underline;
