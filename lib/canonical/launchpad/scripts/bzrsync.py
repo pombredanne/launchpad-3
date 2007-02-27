@@ -67,16 +67,9 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch and release resources.
 
         Convenience method that implements the proper for the common case of
-        retrieving information from the database, Bazaar branch, calling
-        `syncBranch` and `close`.
+        calling `syncBranch` and `close`.
         """
         try:
-            # Get the history and ancestry from the branch first, to fail early
-            # if something is wrong with the branch.
-            self.retrieveBranchDetails()
-            # Load the ancestry as the database knows of it.
-            self.retrieveDatabaseAncestry()
-            # Synchronize the database with the branch.
             self.syncBranch()
         finally:
             self.close()
@@ -99,12 +92,16 @@ class BzrSync:
         """
         self.logger.info("Scanning branch: %s",self.db_branch.unique_name)
         self.logger.info("    from %s", self.bzr_branch.base)
-        self.planDatabaseChanges()
+        # Get the history and ancestry from the branch first, to fail early
+        # if something is wrong with the branch.
+        self.retrieveBranchDetails()
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
+        self.retrieveDatabaseAncestry()
+        self.planDatabaseChanges()
         self.syncRevisions()
         self.syncBranchRevisions()
         self.trans_manager.commit()

@@ -240,7 +240,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
 
     def test_shorten_history(self):
-        # commit some revisions with two paths to the head revision
+        # Commit some revisions with two paths to the head revision.
         self.commitRevision()
         merge_rev_id = self.bzr_branch.last_revision()
         self.commitRevision()
@@ -248,24 +248,19 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
         self.assertEqual(self.db_branch.revision_count, 3)
 
-        # now do a sync with a the shorter history.
-        old_revision_history = self.bzr_branch.revision_history()
-        new_revision_history = (old_revision_history[:-2] +
-                                old_revision_history[-1:])
-
+        # Sync with the shorter history.
         counts = self.getCounts()
         bzrsync = BzrSync(self.txn, self.db_branch)
-        bzrsync.retrieveDatabaseAncestry()
-        bzrsync.retrieveBranchDetails()
-        # now overwrite the bzr_history
-        bzrsync.bzr_history = new_revision_history
-        bzrsync.bzr_ancestry.remove(old_revision_history[-2])
-        try:
-            bzrsync.syncBranch()
-        finally:
-            bzrsync.close()
+        def patchedRetrieveBranchDetails():
+            unpatchedRetrieveBranchDetails()
+            full_history = bzrsync.bzr_history
+            bzrsync.bzr_history = (full_history[:-2] + full_history[-1:])
+            bzrsync.bzr_ancestry.remove(full_history[-2])
+        unpatchedRetrieveBranchDetails = bzrsync.retrieveBranchDetails
+        bzrsync.retrieveBranchDetails = patchedRetrieveBranchDetails
+        bzrsync.syncBranchAndClose()
 
-        # the new history is one revision shorter:
+        # The new history is one revision shorter.
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
