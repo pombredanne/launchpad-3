@@ -43,7 +43,7 @@ class SignableTagFile:
         """Verify the signature on the filename.
 
         Stores the fingerprint, the IGPGKey used to sign, the owner of
-        the key and a dictionary containing 
+        the key and a dictionary containing
 
         Raise UploadError if the signing key cannot be found in launchpad
         or if the GPG verification failed for any other reason.
@@ -129,17 +129,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     """XXX"""
 
     mandatory_fields = set([
-        "source", 
-        "version", 
-        "binary", 
+        "source",
+        "version",
+        "binary",
         "maintainer",
         "architecture",
         "files"])
 
     # Note that files is actually only set inside verify().
     files = None
+
     def __init__(self, *args, **kwargs):
-        """Construct a DSCFile instance. 
+        """Construct a DSCFile instance.
 
         This takes all NascentUploadFile constructor parameters plus package
         and version.
@@ -148,11 +149,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         """
         SourceUploadFile.__init__(self, *args, **kwargs)
         try:
-            self._dict = parse_tagfile(self.full_filename,
-                dsc_whitespace_rules=1,
+            self._dict = parse_tagfile(
+                self.full_filename, dsc_whitespace_rules=1,
                 allow_unsigned=self.policy.unsigned_dsc_ok)
         except (IOError, TagFileParseError), e:
-            raise UploadError("Unable to parse the dsc %s: %s" % (self.filename, e))
+            raise UploadError(
+                "Unable to parse the dsc %s: %s" % (self.filename, e))
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
@@ -173,6 +175,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self.logger.debug("DSC file can be unsigned.")
         else:
             self.process_signature()
+
 
     #
     #
@@ -242,14 +245,14 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     # or confusing exceptions at times and is out of
                     # our control.
                     yield UploadError(
-                        "%s: invalid %s field; cannot be parsed by apt: %s" 
+                        "%s: invalid %s field; cannot be parsed by apt: %s"
                         % (self.filename, field_name, e))
 
         # Verify the filename matches appropriately
         epochless_dsc_version = re_no_epoch.sub('', self._dict["version"])
         if epochless_dsc_version != self.version:
             yield UploadError("%s: version ('%s') in .dsc does not match version "
-                             "('%s') in .changes." % (self.filename, 
+                             "('%s') in .changes." % (self.filename,
                                 epochless_dsc_version, self.version))
 
         for error in self.check_files():
@@ -360,7 +363,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield UploadError("%s: couldn't remove tmp dir %s: code %s" % (
                                   self.filename, tmpdir, e.errno))
             else:
-                yield UploadWarning("%s: Couldn't remove tree, fixing up permissions." % 
+                yield UploadWarning("%s: Couldn't remove tree, fixing up permissions." %
                                     self.filename)
                 result = os.system("chmod -R u+rwx " + tmpdir)
                 if result != 0:
@@ -370,16 +373,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         self.logger.debug("Done")
 
     def store_in_database(self):
-        spns = getUtility(ISourcePackageNameSet)
-
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
         encoded = {}
         for k, v in self._dict.items():
             encoded[k] = guess_encoding(v)
 
+        source_name = getUtility(
+            ISourcePackageNameSet).getOrCreateByName(self.source)
+
         release = self.policy.distrorelease.createUploadedSourcePackageRelease(
-            sourcepackagename=spns.getOrCreateByName(self.source),
+            sourcepackagename=source_name,
             version=self.changes.version,
             maintainer=self.maintainer['person'],
 

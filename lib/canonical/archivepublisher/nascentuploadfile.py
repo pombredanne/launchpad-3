@@ -588,9 +588,10 @@ class UBinaryUploadFile(PackageUploadFile):
             # remove the support for this use case, see further
             # info in bug #55774.
             self.logger.debug("No source published, checking the ACCEPTED queue")
-            q = distrorelease.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
-                                            name=self.source_name,
-                                            version=self.source_version)
+            q = distrorelease.getQueueItems(
+                status=DistroReleaseQueueStatus.ACCEPTED,
+                name=self.source_name,
+                version=self.source_version)
             if q:
                 assert q.count() == 1
                 sourcepackagerelease = q[0].sourcepackagerelease
@@ -664,8 +665,6 @@ class UBinaryUploadFile(PackageUploadFile):
 
     def store_in_database(self, build):
         """Insert this binary release and build into the database."""
-        bpns = getUtility(IBinaryPackageNameSet)
-
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
         encoded = {}
@@ -687,9 +686,11 @@ class UBinaryUploadFile(PackageUploadFile):
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
         installedsize = int(self.control.get('Installed-Size','0'))
+        binary_name = getUtility(
+            IBinaryPackageNameSet).getOrCreateByName(self.package)
 
         binary = build.createBinaryPackageRelease(
-            binarypackagename=bpns.getOrCreateByName(self.package),
+            binarypackagename=binary_name,
             version=self.version,
             summary=summary,
             description=description,

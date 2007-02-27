@@ -201,7 +201,8 @@ class TestUploadProcessor(unittest.TestCase):
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue("This upload awaits approval" in raw_msg,
-                        "Expected an 'upload awaits approval' email.")
+                        "Expected an 'upload awaits approval' email.\n"
+                        "Got:\n%s" % raw_msg)
 
         # And verify that the queue item is in the unapproved state.
         queue_items = self.breezy.getQueueItems(

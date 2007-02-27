@@ -230,7 +230,7 @@ class UploadProcessor:
 
         try:
             self.ztm.begin()
-            self.log.info("Processing upload %s" % upload.changes_filename)
+            self.log.info("Processing upload %s" % upload.changes.filename)
 
             result = UploadStatusEnum.ACCEPTED
 
@@ -258,7 +258,7 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
-            if upload.rejected:
+            if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
                 self.ztm.abort()

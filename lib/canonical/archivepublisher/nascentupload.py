@@ -119,7 +119,8 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(self.changes.distrorelease_and_pocket)
+            self.policy.setDistroReleaseAndPocket(
+                self.changes.distrorelease_and_pocket)
         except NotFoundError:
             self.reject("Unable to find distrorelease: %s"
                         % self.changes.distrorelease_and_pocket)
@@ -480,10 +481,16 @@ class NascentUpload:
         # Version inconsistencies will (should) be identified during the
         # mandatory review in queue, anyway.
         # See bug #83976
-        lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
+        source_name = getUtility(
+            ISourcePackageNameSet).queryByName(uploaded_file.package)
+
+        if source_name is None:
+            return None
+
+        lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
-            candidates = self.distrorelease.getPublishedReleases(
-                uploaded_file.package, include_pending=True, pocket=pocket)
+            candidates = self.policy.distrorelease.getPublishedReleases(
+                source_name, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
         return None
@@ -498,8 +505,14 @@ class NascentUpload:
         uploaded file targeted to an architecture not present in the
         distrorelease in context. So callsites needs to be aware.
         """
+        binary_name = getUtility(
+            IBinaryPackageNameSet).queryByName(uploaded_file.package)
+
+        if binary_name is None:
+            return None
+
         if uploaded_file.architecture == "all":
-            arch_indep = self.distrorelease.nominatedarchindep
+            arch_indep = self.policy.distrorelease.nominatedarchindep
             archtag = arch_indep.architecturetag
         else:
             archtag = uploaded_file.architecture
@@ -507,22 +520,22 @@ class NascentUpload:
         # XXX cprov 20070213: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
-        dar = self.distrorelease[archtag]
+        dar = self.policy.distrorelease[archtag]
 
         # See the comment below, in getSourceAncestry
-        lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
+        lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
-                uploaded_file.package, include_pending=True, pocket=pocket)
+                binary_name, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
             # Try the other architectures...
-            dars = self.distrorelease.architectures
+            dars = self.policy.distrorelease.architectures
             other_dars = [other_dar for other_dar in dars
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
                 candidates = other_dar.getReleasedPackages(
-                    uploaded_file.bpn, include_pending=True, pocket=pocket)
+                    binary_name, include_pending=True, pocket=pocket)
                 if candidates:
                     return candidates[0]
         return None

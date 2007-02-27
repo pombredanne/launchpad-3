@@ -55,8 +55,10 @@ the changes file specified exists, raising FileNotFound if it does not.
   Traceback (most recent call last):
   ...
   FatalUploadError:...
-  >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+
+  >>> ed_upload = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockLogger())
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
 
   >>> ed_upload.changes.full_filename == datadir("ed_0.2-20_i386.changes")
@@ -76,10 +78,9 @@ the changes file specified exists, raising FileNotFound if it does not.
   DEBUG: Verifying binary ed_0.2-20_i386.deb
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
+  DEBUG: Checking for ed/0.2-20 source ancestry
   DEBUG: ed: (source) NEW
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for ed
+  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
   DEBUG: ed: (binary) NEW
   DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
@@ -111,20 +112,19 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_upload.archdep
   True
 
-XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
 
-  >>> ed_source_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
-  ...     MockLogger())
+  >>> ed_source_upload = NascentUpload(
+  ...     buildd_policy, datadir(''),
+  ...     "ed_0.2-20_i386.changes.source-only-unsigned", MockMunchyLogger())
   >>> ed_source_upload.process()
   >>> ed_source_upload.sourceful
   True
   >>> ed_source_upload.binaryful
   False
 
-  >>> ed_binary_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.binary-only-unsigned-changes",
-  ...     MockLogger())
+  >>> ed_binary_upload = NascentUpload(
+  ...     buildd_policy, datadir(''),
+  ...     "ed_0.2-20_i386.changes.binary-only-unsigned", MockMunchyLogger())
   >>> ed_binary_upload.process()
   >>> ed_binary_upload.sourceful
   False
@@ -135,32 +135,38 @@ XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
   >>> ed_binary_upload.archindep
   False
 
-If we ask a non-sourceful upload about its native or hasorig status it
-should throw an exception because non-sourceful uploads have no
-concept of nativeness.
+'native' and 'hasorig' status are always false for binary uploads:
 
   >>> ed_binary_upload.native
-  Traceback (most recent call last):
-  ...
+  False
+  >>> ed_binary_upload.hasorig
+  False
+
 
 If the Architecture line does not match then we get an exception.
 
-  >>> ed_mismatched_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.mismatched-arch-unsigned-changes",
-  ...     MockLogger())
+  >>> ed_mismatched_upload = NascentUpload(
+  ...     buildd_policy, datadir(''),
+  ...     "ed_0.2-20_i386.changes.mismatched-arch-unsigned", MockMunchyLogger())
   >>> ed_mismatched_upload.process()
   >>> ed_mismatched_upload.sourceful
   True
-  >>> ed_mismatched_upload.rejection_message
-  'Mismatch in binaryfulness. (arch) False != (files) True\nOne or more files uploaded with specific architecture but changes file does not list it.'
+  >>> print ed_mismatched_upload.rejection_message
+  ...
+  File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. e31eeb0b6b3b87e1ea79378df864be18 != 5963369d8874785077ca0b8773167ad0
+  Mismatch in binaryfulness. (arch) False != (files) True
+  One or more files uploaded with specific architecture but changes file does not list it.
+  ed_0.2-20_i386.deb: control file lists arch as 'i386' which isn't in the changes file.
+  Upload is sourceful, but policy refuses sourceful uploads.
 
-XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
-  >>> quodlibet = NascentUpload(buildd_policy,
-  ...     datadir(''), "quodlibet_0.13.1-1_i386.changes", MockLogger())
+  >>> quodlibet = NascentUpload(
+  ...     buildd_policy, datadir(''),
+  ...     "quodlibet_0.13.1-1_i386.changes", MockLogger())
   DEBUG: Changes file can be unsigned.
+
   >>> quodlibet.process()
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
@@ -170,11 +176,9 @@ We can distinguish between the arch-indep and arch-dep binary uploads.
   DEBUG: Verifying binary quodlibet-ext_0.13.1-1_i386.deb
   DEBUG: Verifying timestamps in quodlibet-ext_0.13.1-1_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for quodlibet
+  DEBUG: Checking for quodlibet/0.13.1-1/all binary ancestry
   DEBUG: quodlibet: (binary) NEW
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for quodlibet-ext
+  DEBUG: Checking for quodlibet-ext/0.13.1-1/i386 binary ancestry
   DEBUG: quodlibet-ext: (binary) NEW
   DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
@@ -189,9 +193,11 @@ We can distinguish between the arch-indep and arch-dep binary uploads.
 
 Let's start a new upload, mixed-mode.
 
-  >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  >>> ed_upload = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "ed_0.2-20_i386.changes", MockLogger())
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
+
   >>> ed_upload.policy.setOptions(MockOptions())
 
 The upload can extract distributions and distroreleases if it tries
@@ -415,9 +421,9 @@ Roll back everything so that we can try again
 
 First up, construct an upload of just the ed source...
 
-  >>> ed_src = NascentUpload(findPolicyByName('sync'),
-  ...          datadir('split-upload-test'), "ed_0.2-20_source.changes",
-  ...          MockMunchyLogger())
+  >>> ed_src = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('split-upload-test'),
+  ...     "ed_0.2-20_source.changes", MockMunchyLogger())
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.process()
   >>> ed_src.is_rejected
@@ -493,9 +499,11 @@ XXX cprov 20060728: Building from ACCEPTED is special condition, not
 really used in production. We should remove the support for this use
 case, see further info in bug #55774.
 
-  >>> ed_bin = NascentUpload(findPolicyByName('sync'),
-  ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes",
-  ...          MockMunchyLogger())
+  >>> ed_bin = NascentUpload(
+  ...      findPolicyByName('sync'), datadir('split-upload-test'),
+  ...      "ed_0.2-20_i386.changes", MockLogger())
+  DEBUG: Changes file can be unsigned.
+
   >>> ed_bin.policy.setOptions(MockOptions())
   >>> ed_bin.policy.can_upload_binaries = True
   >>> ed_bin.process()
@@ -505,11 +513,11 @@ case, see further info in bug #55774.
   DEBUG: Verifying binary ed_0.2-20_i386.deb
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for ed
+  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
   DEBUG: ed: (binary) NEW
   DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
+
   >>> ed_bin.is_rejected
   False
   >>> success, msgs = ed_bin.do_accept()
@@ -518,10 +526,9 @@ case, see further info in bug #55774.
   DEBUG: Creating queue entry
   DEBUG: No source published, checking the ACCEPTED queue
   DEBUG: Build 23 created
-  >>> print ed_bin.rejection_message+"\nEND"
-  END
-  >>> success
-  True
+
+  >>> ed_bin.queue_root.status.name
+  'NEW'
 
 Chuck it all away again
 
@@ -701,15 +708,11 @@ is stored in NascentUpload instance for further checks:
   >>> foo_failed = NascentUpload(
   ...     findPolicyByName('sync'), datadir('suite/foo_1.0-1_mixed'),
   ...     "foo_1.0-1_i386.changes", MockMunchyLogger())
-
-    >>> mock_options = MockOptions()
+  >>> mock_options = MockOptions()
   >>> foo_failed.policy.setOptions(MockOptions())
-
   >>> foo_failed.policy.can_upload_binaries = True
   >>> foo_failed.policy.can_upload_mixed = True
-
   >>> foo_failed.process()
 
-
   >>> print foo_failed.rejection_message
-  foo_1.0-1_i386.deb uses bzip2 compression but doesn't Pre-Depend on dpkg (>= 1.10.24)
+  foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
