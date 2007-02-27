@@ -291,16 +291,49 @@ And everything for mark:
 Unsubscribe everybody except for Sample Person (name12).
 
     >>> for subscription in branch.subscriptions:
-    ...     if subscription.person.name != 'name12':
-    ...         branch.unsubscribe(subscription.person)
-    >>> for subscription in branch.subscriptions:
-    ...     print subscription.person.name
-    name12
+    ...     branch.unsubscribe(subscription.person)
+    >>> len(list(branch.subscriptions))
+    0
 
+== Group subscriptions ==
+
+If a group is subscribed the emails are sent to the members of that team.
+If an individual is also subscribed to the branch, then the greater of
+the differences is taken with respect to diff size.
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('david.allouche@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    <BranchSubscription ...> 
+
+    >>> branch.subscribe(
+    ...     personset.getByName('vcs-imports'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.HALFKLINES)
+    <BranchSubscription ...> 
+
+    >>> details = branch.revisionNotificationDetails()
+    >>> for max_diff in sorted(details.keys()):
+    ...     for address in details[max_diff]:
+    ...         print address, max_diff.title
+    foo.bar@canonical.com         500 lines
+    robertc@robertcollins.net     500 lines
+    david.allouche@canonical.com 5000 lines
+
+== Attribute emails ==
 
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
 sent.
+
+Resubscribe our test user.
+
+    >>> branch.subscribe(
+    ...     personset.getByEmail('test@canonical.com'),
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...> 
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
