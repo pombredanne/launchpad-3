@@ -61,11 +61,12 @@ class ChangesFile(SignableTagFile):
         self.filename = filename
         self.fsroot = fsroot
         self.policy = policy
+        self.full_filename = os.path.join(self.fsroot, filename)
 
         try:
-            self._dict = parse_tagfile(os.path.join(self.fsroot, filename),
+            self._dict = parse_tagfile(self.full_filename,
                 allow_unsigned=policy.unsigned_changes_ok)
-        except TagFileParseError, e:
+        except (IOError, TagFileParseError), e:
             raise UploadError("Unable to parse the changes %s: %s" % (
                 filename, e))
 
@@ -187,9 +188,17 @@ class ChangesFile(SignableTagFile):
     def binary_package_files(self):
         binaries = []
         for file in self.files:
-            if isinstance(UBinaryUploadFile):
+            if isinstance(file, UBinaryUploadFile):
                 binaries.append(file)
         return binaries
+
+    @property
+    def custom_files(self):
+        custom = []
+        for file in self.files:
+            if isinstance(file, CustomUploadFile):
+                custom.append(file)
+        return custom
 
     @property
     def distrorelease_and_pocket(self):

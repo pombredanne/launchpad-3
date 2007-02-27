@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISourcePackageNameSet)
 
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, PackageUploadFile,
+    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile,
     re_no_epoch, re_valid_pkg_name, re_valid_version, re_issource)
 
 from canonical.archivepublisher.utils import (
@@ -53,7 +53,7 @@ class SignableTagFile:
         """
         filename = self.filename
         full_path = os.path.join(self.fsroot, filename)
-        self.logger.debug("Verifying signature on %s" % full_path)
+        self.logger.debug("Verifying signature on %s" % filename)
         assert os.path.exists(full_path)
 
         try:
@@ -95,7 +95,8 @@ class SignableTagFile:
         except ParseMaintError, e:
             raise UploadError(str(e))
 
-        if self.policy.create_people:
+        person = getUtility(IPersonSet).getByEmail(email)
+        if person is None and self.policy.create_people:
             package = self._dict['source']
             # XXX: The distrorelease property may raise an UploadError
             # in case there's no distrorelease with a name equal to
@@ -110,12 +111,10 @@ class SignableTagFile:
                 email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
                 comment=('when the %s package was uploaded to %s'
                          % (package, release)))
-        else:
-            person = getUtility(IPersonSet).getByEmail(email)
 
         if person is None:
-            raise UploadError("Unable to identify '%s':<%s> in launchpad" % (
-                name, email))
+            raise UploadError("Unable to identify '%s':<%s> in launchpad"
+                              % (name, email))
 
         return {
             "rfc822": rfc822,
@@ -126,7 +125,7 @@ class SignableTagFile:
             }
 
 
-class DSCFile(PackageUploadFile, SignableTagFile):
+class DSCFile(SourceUploadFile, SignableTagFile):
     """XXX"""
 
     mandatory_fields = set([
@@ -136,11 +135,6 @@ class DSCFile(PackageUploadFile, SignableTagFile):
         "maintainer",
         "architecture",
         "files"])
-
-    fingerprint = None
-    signingkey = None
-
-    maintainer = None
 
     # Note that files is actually only set inside verify().
     files = None
@@ -152,20 +146,20 @@ class DSCFile(PackageUploadFile, SignableTagFile):
 
         Can raise UploadError.
         """
-        PackageUploadFile.__init__(self, *args, **kwargs)
+        SourceUploadFile.__init__(self, *args, **kwargs)
         try:
             self._dict = parse_tagfile(self.full_filename,
                 dsc_whitespace_rules=1,
                 allow_unsigned=self.policy.unsigned_dsc_ok)
-        except TagFileParseError, e:
+        except (IOError, TagFileParseError), e:
             raise UploadError("Unable to parse the dsc %s: %s" % (self.filename, e))
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
             if mandatory_field not in self._dict:
-                self.reject("Unable to find mandatory field %s in %s" % (
+                raise UploadError(
+                    "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
-                return False
 
         self.maintainer = self.parse_address(self._dict['maintainer'])
 
@@ -198,6 +192,9 @@ class DSCFile(PackageUploadFile, SignableTagFile):
         Should raise no exceptions unless unforseen issues occur. Errors will
         be accumulated in the rejection message.
         """
+        for error in SourceUploadFile.verify(self):
+            yield error
+
         files = []
         for fileline in self._dict['files'].strip().split("\n"):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME

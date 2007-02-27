@@ -83,6 +83,9 @@ class NascentUpload:
     native = False
     hasorig = False
 
+    # Defined if we successfully do_accept() and store_objects_in_database()
+    queue_root = None
+
     def __init__(self, policy, fsroot, changes_filename, logger):
         """XXX
 
@@ -105,14 +108,6 @@ class NascentUpload:
             # script log.
             raise FatalUploadError(str(e))
 
-        try:
-            self.policy.setDistroReleaseAndPocket(self.changes.distrorelease_and_pocket)
-        except NotFoundError:
-            self.reject("Unable to find distrorelease: %s"
-                        % self.changes.distrorelease_and_pocket)
-
-        self.run_and_collect_errors(self.changes.process_files)
-
     def process(self):
         """Process this upload, checking it against policy, loading it into
         the database if it seems okay.
@@ -122,6 +117,14 @@ class NascentUpload:
         the caller should call the reject method and process a rejection.
         """
         self.logger.debug("Beginning processing.")
+
+        try:
+            self.policy.setDistroReleaseAndPocket(self.changes.distrorelease_and_pocket)
+        except NotFoundError:
+            self.reject("Unable to find distrorelease: %s"
+                        % self.changes.distrorelease_and_pocket)
+
+        self.run_and_collect_errors(self.changes.process_files)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
@@ -138,37 +141,31 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
-            if (isinstance(uploaded_file, CustomUploadFile) and
-                not self.single_custom):
-                self.reject("Mixed custom upload detected.")
 
-        if self.single_custom:
-            if len(self.changes.files) > 1:
-                self.reject("More than one file detected in custom upload.")
+        if (len(self.changes.files) == 1 and 
+            isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
-            return
+        else:
+            if self.sourceful and not self.policy.can_upload_source:
+                self.reject(
+                    "Upload is sourceful, but policy refuses sourceful uploads.")
 
-        # Policy checks
-        if self.sourceful and not self.policy.can_upload_source:
-            self.reject(
-                "Upload is sourceful, but policy refuses sourceful uploads.")
+            if self.binaryful and not self.policy.can_upload_binaries:
+                self.reject(
+                    "Upload is binaryful, but policy refuses binaryful uploads.")
 
-        if self.binaryful and not self.policy.can_upload_binaries:
-            self.reject(
-                "Upload is binaryful, but policy refuses binaryful uploads.")
+            if (self.sourceful and self.binaryful and
+                not self.policy.can_upload_mixed):
+                self.reject(
+                    "Upload is source/binary but policy refuses mixed uploads.")
 
-        if (self.sourceful and self.binaryful and
-            not self.policy.can_upload_mixed):
-            self.reject(
-                "Upload is source/binary but policy refuses mixed uploads.")
+            if self.sourceful and not self.changes.dsc:
+                self.reject("Unable to find the dsc file in the sourceful upload?")
 
-        if self.sourceful and not self.changes.dsc:
-            self.reject("Unable to find the dsc file in the sourceful upload?")
-
-        # Apply the overrides from the database. This needs to be done
-        # before doing component verifications because the component
-        # actually comes from overrides for packages that are not NEW.
-        self.find_and_apply_overrides()
+            # Apply the overrides from the database. This needs to be done
+            # before doing component verifications because the component
+            # actually comes from overrides for packages that are not NEW.
+            self.find_and_apply_overrides()
 
         signer_components = self.process_signer_acl()
         if not self.is_new:
@@ -189,19 +186,6 @@ class NascentUpload:
     #
     # Minor helpers
     #
-
-    @property
-    def single_custom(self):
-        """Identify single custom uploads.
-
-        Return True if the current upload is a single custom file.
-        It is necessary to identify dist-upgrade section uploads.
-        """
-        # XXX: I'm not sure why single_custom is important. What if two
-        # custom files are uploaded at once? What should happen? I don't
-        # think that is handled correctly..
-        return (len(self.changes.files) == 1 and 
-                isinstance(self.changes.files[0], CustomUploadFile))
 
     @property
     def is_new(self):
@@ -268,7 +252,7 @@ class NascentUpload:
                 files_binaryful = files_binaryful or True
                 files_archindep = files_archindep or uploaded_file.is_archindep
                 files_archdep = files_archdep or not uploaded_file.is_archindep
-            elif isinstance(uploaded_file, (SourceUploadFile, DSCFile)):
+            elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
             else:
                 # This is already caught in ChangesFile.__init__
@@ -451,8 +435,10 @@ class NascentUpload:
             return
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, SourceUploadFile):
-                # We don't do overrides on diff/tar
+            if not isinstance(uploaded_file, (DSCFile, BinaryUploadFile)):
+                # The only things that matter here are sources and
+                # binaries, because they are the only objects that get
+                # overridden and created in the database.
                 continue
             if (uploaded_file.component not in signer_components and
                 uploaded_file.new == False):
@@ -600,11 +586,6 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, (CustomUploadFile, SourceUploadFile)):
-                # Source files are irrelevant, being represented by the
-                # DSC, and custom files don't have overrides.
-                continue
-
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
@@ -645,7 +626,6 @@ class NascentUpload:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
                     uploaded_file.new = True
-
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -768,14 +748,14 @@ class NascentUpload:
 
         valid_recipients = []
         for person in recipients:
-            # We should only actually send mail to people that are
-            # registered Launchpad user with preferred email;
-            # this is a sanity check to avoid spamming the innocent.
-            # Not that we do that sort of thing.
             if person is None or person.preferredemail is None:
-                self.logger.debug("Could not find a person for <%r> or that "
-                                  "person has no preferred email address set "
-                                  "in launchpad" % recipients)
+                # We should only actually send mail to people that are
+                # registered Launchpad user with preferred email; this
+                # is a sanity check to avoid spamming the innocent.  Not
+                # that we do that sort of thing.
+                #
+                # In particular, people that were created because of
+                # policy.create_people won't get emailed. That's life.
                 continue
             recipient = format_address(person.displayname,
                                        person.preferredemail.email)
@@ -812,41 +792,50 @@ class NascentUpload:
         queue_root = distrorelease.createQueueEntry(self.policy.pocket,
             self.changes.filename, self.changes.filecontents)
 
+        # When binaryful and sourceful, we have a mixed-mode upload.
+        # Mixed-mode uploads need special handling, and the spr here is
+        # short-circuited into the binary. See the docstring in
+        # UBinaryUploadFile.verify_sourcepackagerelease() for details.
+        spr = None
         if self.sourceful:
             assert self.changes.dsc
-            sourcepackagerelease = self.changes.dsc.store_in_database()
-            queue_root.addSource(sourcepackagerelease)
+            spr = self.changes.dsc.store_in_database()
+            queue_root.addSource(spr)
 
         if self.binaryful:
-            if self.single_custom:
-                # Finally, add any custom files.
-                uploaded_file = self.changes.files[0]
-                libraryfile = uploaded_file.store_in_database()
-                assert isinstance(uploaded_file, CustomUploadFile)
-                libraryfile = self.librarian.create(
-                    uploaded_file.filename, uploaded_file.size,
-                    open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type)
-                queue_root.addCustom(libraryfile, uploaded_file.custom_type)
-            else:
-                for binary_package_file in self.changes.binary_package_files:
-                    try:
-                        build = binary_package_file.find_build()
-                        binary_package_file.store_in_database(build)
-                    except UploadError, e:
-                        self.reject("Error storing binaries: %s" % e)
-                        return
 
-                    # XXX: two questions: did we mean distrorelease or
-                    # pocket here, and can we assert build.pocket ==
-                    # self.policy.pocket?
-                    #
-                    # We cannot rely on the distrorelease coming in for a binary
-                    # release because it is always set to 'autobuild' by the builder.
-                    # We instead have to take it from the policy which gets instructed
-                    # by the buildd master during the upload.
-                    queue_root.pocket = build.pocket
-                    queue_root.addBuild(build)
+            for custom_file in self.changes.custom_files:
+                libraryfile = custom_file.store_in_database()
+                queue_root.addCustom(libraryfile, custom_file.custom_type)
+
+            for binary_package_file in self.changes.binary_package_files:
+                try:
+                    if self.sourceful:
+                        # The reason we need to do this verification
+                        # so late in the game is that in the
+                        # mixed-upload case we only have a
+                        # sourcepackagerelease to verify here!
+                        assert self.policy.can_upload_mixed
+                        assert spr
+                        binary_package_file.verify_sourcepackagerelease(spr)
+                    else:
+                        spr = binary_package_file.find_sourcepackagerelease()
+                    build = binary_package_file.find_build(spr)
+                    binary_package_file.store_in_database(build)
+                except UploadError, e:
+                    self.reject("Error storing binaries: %s" % e)
+                    return
+
+                # XXX: two questions: did we mean distrorelease or
+                # pocket here, and can we assert build.pocket ==
+                # self.policy.pocket?
+                #
+                # We cannot rely on the distrorelease coming in for a binary
+                # release because it is always set to 'autobuild' by the builder.
+                # We instead have to take it from the policy which gets instructed
+                # by the buildd master during the upload.
+                queue_root.pocket = build.pocket
+                queue_root.addBuild(build)
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to
@@ -857,4 +846,6 @@ class NascentUpload:
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 queue_root.setUnapproved()
+
+        self.queue_root = queue_root
 
