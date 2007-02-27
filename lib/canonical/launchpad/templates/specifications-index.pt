@@ -102,16 +102,18 @@
                         define="specs view/specs"
                       >
                         <p tal:condition="specs">
-                          Blueprints matching
+                          <span tal:replace="view/spec_count" />
+                          blueprint(s) matching
                           &#8220;<tal:string replace="view/searchtext" />&#8221:
                         </p>
 
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
 
-    <tal:per_spec repeat="spec specs">
-      <div tal:replace="structure spec/@@+listing-detailed" />
-    </tal:per_spec>
+    <table>
+      <tr tal:repeat="spec specs"
+          tal:replace="structure spec/@@+listing-simple" />
+    </table>
 
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">

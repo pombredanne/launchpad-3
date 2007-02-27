@@ -193,6 +193,10 @@ class HasSpecificationsView(LaunchpadView):
         return shortlist(self.context.specifications(filter=filter))
 
     @cachedproperty
+    def spec_count(self):
+        return len(self.specs)
+
+    @cachedproperty
     def documentation(self):
         filter = [SpecificationFilter.COMPLETE,
                   SpecificationFilter.INFORMATIONAL]
