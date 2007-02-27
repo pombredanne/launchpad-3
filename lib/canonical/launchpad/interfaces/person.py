@@ -260,7 +260,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -561,6 +561,11 @@ class IPerson(IHasSpecifications, ITicketCollection):
         specified in the TeamMembership spec. It's also responsible for
         filling/cleaning the TeamParticipation table when the transition
         requires it.
+        """
+
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
         """
 
     def getTeamAdminsEmailAddresses():

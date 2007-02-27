@@ -5,7 +5,6 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-import itertools
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -810,7 +809,7 @@ class Person(SQLBase):
         """See IPerson."""
         assert self.teamowner is not None
         to_addrs = set()
-        for person in itertools.chain(self.administrators, [self.teamowner]):
+        for person in self.getEffectiveAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -856,6 +855,16 @@ class Person(SQLBase):
             tm.comment = comment
 
         tm.syncUpdate()
+
+    def getEffectiveAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam()
+        owner = Person.select("id = %s" % sqlvalues(self.teamowner))
+        # We can't use Person.sortingColumns with union() queries
+        # because the table name Person is not available in that
+        # context.
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.adminmembers.union(owner, orderBy=orderBy)
 
     def _getMembersByStatus(self, status):
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
@@ -920,7 +929,7 @@ class Person(SQLBase):
         return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
-    def administrators(self):
+    def adminmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
 
@@ -936,8 +945,7 @@ class Person(SQLBase):
         # because the table name Person is not available in that
         # context.
         orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.approvedmembers.union(self.administrators,
-                                          orderBy=orderBy)
+        return self.approvedmembers.union(self.adminmembers, orderBy=orderBy)
 
     @property
     def active_member_count(self):

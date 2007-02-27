@@ -418,6 +418,21 @@ of it, all based on Person._getMembersByStatus:
 
 except shorter)
 
+Another convenient method is getEffectiveAdministrators(), which returns the
+admin members plus the owner in case he is not one of the admin members.
+
+    >>> [admin.unique_displayname for admin in t3.adminmembers]
+    [u'Foo Bar (name16)']
+    >>> list(t3.getEffectiveAdministrators()) == list(t3.adminmembers)
+    True
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.adminmembers.count() == 0
+    True
+    >>> owner = shipit_admins.teamowner
+    >>> list(shipit_admins.getEffectiveAdministrators()) == [owner]
+    True
+      
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
@@ -425,7 +440,7 @@ participants of teams by virtue of being members of other teams which are in
 turn members of these teams.
 
 We can ask a person what teams they participate in. The
-teams_participated_in attribute works recusively, listing all teams the
+teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
