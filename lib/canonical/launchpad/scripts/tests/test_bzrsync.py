@@ -18,10 +18,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    Revision, BranchRevision, RevisionParent, RevisionAuthor)
+    BranchRevision, BranchRevisionSet,
+    Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
-    IBranchSet, IRevisionSet, IBranchRevisionSet)
+    IBranchSet, IRevisionSet)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
@@ -370,7 +371,7 @@ class TestBzrSync(BzrSyncTestCase):
         # changed since the last sync
 
         # NOMERGE: make that a performance test and check that we DO nothing.
-        branch_revision_set = getUtility(IBranchRevisionSet)
+        branch_revision_set = BranchRevisionSet()
         revisions = self.makeBranchWithMerge()
 
         bzrsync = self.makeBzrSync()
@@ -415,7 +416,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         bzrsync.retrieveDatabaseAncestry()
 
-        b_r_set = getUtility(IBranchRevisionSet)
+        b_r_set = BranchRevisionSet()
         ancestry = b_r_set.getAncestryForBranch(self.db_branch)
         history = b_r_set.getRevisionHistoryForBranch(self.db_branch)
 

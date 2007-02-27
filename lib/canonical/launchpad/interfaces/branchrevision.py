@@ -38,11 +38,6 @@ class IBranchRevisionSet(Interface):
     def delete(branch_revision_id):
         """Delete the BranchRevision."""
 
-    # NOMERGE: remove that from the interface, we do not want non-test code
-    # to use it ever! Move the docstring into the content class.
-    def getAncestryForBranch(branch):
-        """Returns an unordered list of all BranchRevisions for a branch."""
-
     def getRevisionHistoryForBranch(branch, limit=None):
         """Returns an ordered list of at most limit BranchRevisions.
 
