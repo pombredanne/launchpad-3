@@ -110,7 +110,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile.close()
         self._datafile = None
 
-    def update_last_accessed(self):
+    def updateLastAccessed(self):
         """Update last_accessed if it has not been updated recently.
 
         This method relies on the system clock being vaguely sane, but

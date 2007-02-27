@@ -129,7 +129,7 @@ The comment/attach file form is available from a link on the bug page.
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/firefox/+bug/1")
-    >>> user_browser.getLink("Comment/Attach File").click()
+    >>> user_browser.getLink("Comment or attach file").click()
     >>> user_browser.getControl("Include attachment").selected = True
     >>> user_browser.getControl("File").add_file(
     ...     StringIO("a test file"), "text/plain", "foo.txt")

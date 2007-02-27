@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -163,7 +163,7 @@ class Bug(SQLBase):
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
+    questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
@@ -180,6 +180,17 @@ class Bug(SQLBase):
     def bugtasks(self):
         """See IBug."""
         result = BugTask.selectBy(bug=self)
+        result.prejoin(["assignee"])
+        return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def pillar_bugtasks(self):
+        """See IBug."""
+        result = BugTask.select(
+            """BugTask.bug = %d AND (
+                 BugTask.product IS NOT NULL OR
+                 BugTask.distribution IS NOT NULL)
+            """ % self.id)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 

@@ -1,13 +1,11 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2007 Canonical Ltd
 
 __metaclass__ = type
 
 __all__ = [
     'PersonNavigation',
     'TeamNavigation',
-    'PersonSetNavigation',
     'PersonSOP',
-    'PeopleContextMenu',
     'PersonFacets',
     'PersonBranchesMenu',
     'PersonBugsMenu',
@@ -51,15 +49,19 @@ __all__ = [
     'PersonAddView',
     'PersonLanguagesView',
     'RedirectToEditLanguagesView',
-    'PersonLatestTicketsView',
-    'PersonSearchTicketsView',
-    'PersonSupportMenu',
-    'SearchAnsweredTicketsView',
-    'SearchAssignedTicketsView',
-    'SearchCommentedTicketsView',
-    'SearchCreatedTicketsView',
-    'SearchNeedAttentionTicketsView',
-    'SearchSubscribedTicketsView',
+    'PersonLatestQuestionsView',
+    'PersonSearchQuestionsView',
+    'PersonAnswersMenu',
+    'SearchAnsweredQuestionsView',
+    'SearchAssignedQuestionsView',
+    'SearchCommentedQuestionsView',
+    'SearchCreatedQuestionsView',
+    'SearchNeedAttentionQuestionsView',
+    'SearchSubscribedQuestionsView',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSetFacets',
+    'PersonSetContextMenu',
     ]
 
 import cgi
@@ -79,7 +81,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, TicketParticipation,
+    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
 from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
@@ -101,7 +103,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.tickettarget import SearchTicketsView
+from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 
@@ -191,7 +193,7 @@ class PersonSetNavigation(RedirectionNavigation):
             raise NotFoundError(name)
         # Redirect to /~name
         return RedirectionNavigation.traverse(self, '~' + name)
-            
+
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
@@ -203,6 +205,70 @@ class PersonSetNavigation(RedirectionNavigation):
             return RedirectionNavigation.traverse(self, '~' + me.name)
         finally:
             self.redirection_status = 301
+
+
+class PersonSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'People and Teams'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class PersonSetFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for the IPersonSet."""
+
+    usedfor = IPersonSet
+
+    enable_only = ['overview',]
+
+
+class PersonSetContextMenu(ContextMenu):
+
+    usedfor = IPersonSet
+
+    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
+             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def meetings(self):
+        return Link('/sprints/', 'View meetings')
+
+    def peoplelist(self):
+        text = 'List all people'
+        return Link('+peoplelist', text, icon='people')
+
+    def teamlist(self):
+        text = 'List all teams'
+        return Link('+teamlist', text, icon='people')
+
+    def ubunterolist(self):
+        text = 'List all Ubunteros'
+        return Link('+ubunterolist', text, icon='people')
+
+    def newteam(self):
+        text = 'Register a team'
+        return Link('+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminrequestmerge(self):
+        text = 'Admin merge accounts'
+        return Link('+adminrequestmerge', text, icon='edit')
 
 
 class PersonSOP(StructuralObjectPresentation):
@@ -226,41 +292,12 @@ class PersonSOP(StructuralObjectPresentation):
         raise NotImplementedError
 
 
-class PeopleContextMenu(ContextMenu):
-
-    usedfor = IPersonSet
-
-    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
-             'adminrequestmerge']
-
-    def peoplelist(self):
-        text = 'All People'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'All Teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'All Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
-
-    def newteam(self):
-        text = 'Register a Team'
-        return Link('+newteam', text, icon='add')
-
-    @enabled_with_permission('launchpad.Admin')
-    def adminrequestmerge(self):
-        text = 'Admin Merge Accounts'
-        return Link('+adminrequestmerge', text, icon='edit')
-
-
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'branches', 'translations']
 
     def overview(self):
@@ -275,7 +312,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+assignedbugs', text, summary)
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
@@ -294,11 +331,9 @@ class PersonFacets(StandardLaunchpadFacets):
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)
 
-    def support(self):
-        text = 'Support'
-        summary = (
-            'Support requests that %s is involved with' %
-            self.context.browsername)
+    def answers(self):
+        text = 'Answers'
+        summary = 'Questions that involves %s' % self.context.browsername
         return Link('+tickets', text, summary)
 
     def translations(self):
@@ -328,19 +363,19 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
-        text = 'Branches Authored'
+        text = 'Show authored branches'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Branches Registered'
+        text = 'Show registered branches'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Branches Subscribed'
+        text = 'Show subscribed branches'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
-        text = 'Register Branch'
+        text = 'Register branch'
         return Link('+addbranch', text, icon='add')
 
 
@@ -455,37 +490,37 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Personal Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
         target = '+editlanguages'
-        text = 'Preferred Languages'
+        text = 'Set preferred languages'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'E-mail Addresses'
+        text = 'Update e-mail addresses'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
-        text = 'Wiki Names'
+        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
-        text = 'IRC Nicknames'
+        text = 'Update IRC nicknames'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Jabber IDs'
+        text = 'Update jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -505,7 +540,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'Update SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)
@@ -514,7 +549,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
         target = '+editpgpkeys'
-        text = 'OpenPGP Keys'
+        text = 'Update OpenPGP keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
@@ -544,43 +579,43 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Change Team Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
         target = '+reassign'
-        text = 'Change Owner'
+        text = 'Change owner'
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
     def members(self):
         target = '+members'
-        text = 'All Members'
+        text = 'Show all members'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
         target = '+addmember'
-        text = 'Add New Member'
+        text = 'Add member'
         return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
-        text = 'Polls'
+        text = 'Show polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_poll(self):
         target = '+newpoll'
-        text = 'Create a New Poll'
+        text = 'Create a poll'
         return Link(target, text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+editemail'
-        text = 'Edit Contact Address'
+        text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
@@ -593,7 +628,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             icon = 'remove'
         else:
             target = '+join'
-            text = 'Join the Team' # &#8230;
+            text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon)
 
@@ -2482,208 +2517,210 @@ class TeamReassignmentView(ObjectReassignmentView):
                 oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
 
 
-class PersonLatestTicketsView(LaunchpadView):
-    """View used by the porlet displaying the latest requests made by
+class PersonLatestQuestionsView(LaunchpadView):
+    """View used by the porlet displaying the latest questions made by
     a person.
     """
 
     @cachedproperty
-    def getLatestTickets(self, quantity=5):
-        """Return <quantity> latest tickets created for this target. """
-        return self.context.searchTickets(
-            participation=TicketParticipation.OWNER)[:quantity]
+    def getLatestQuestions(self, quantity=5):
+        """Return <quantity> latest questions created for this target. """
+        return self.context.searchQuestions(
+            participation=QuestionParticipation.OWNER)[:quantity]
 
 
-class PersonSearchTicketsView(SearchTicketsView):
-    """View used to search and display tickets in which an IPerson is
+class PersonSearchQuestionsView(SearchQuestionsView):
+    """View used to search and display questions in which an IPerson is
     involved.
     """
 
-    displayTargetColumn = True
+    display_target_column = True
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests involving $name',
+        """See SearchQuestionsView."""
+        return _('Questions involving $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests involving $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions  involving $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredTicketsView(SearchTicketsView):
-    """View used to search and display tickets answered by an IPerson."""
+class SearchAnsweredQuestionsView(SearchQuestionsView):
+    """View used to search and display questions answered by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.ANSWERER)
+        """See SearchQuestionsView."""
+        return dict(participation=QuestionParticipation.ANSWERER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests answered by $name',
+        """See SearchQuestionsView."""
+        return _('Questions answered by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests answered by $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions answered by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedTicketsView(SearchTicketsView):
-    """View used to search and display tickets assigned to an IPerson."""
+class SearchAssignedQuestionsView(SearchQuestionsView):
+    """View used to search and display questions assigned to an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.ASSIGNEE)
+        """See SearchQuestionsView."""
+        return dict(participation=QuestionParticipation.ASSIGNEE)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests assigned to $name',
+        """See SearchQuestionsView."""
+        return _('Questions assigned to $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests assigned to $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions assigned to $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedTicketsView(SearchTicketsView):
-    """View used to search and display tickets commented on by an IPerson."""
+class SearchCommentedQuestionsView(SearchQuestionsView):
+    """View used to search and display questions commented on by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.COMMENTER)
+        """See SearchQuestionsView."""
+        return dict(participation=QuestionParticipation.COMMENTER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests commented on by $name ',
+        """See SearchQuestionsView."""
+        return _('Questions commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests commented on by $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedTicketsView(SearchTicketsView):
-    """View used to search and display tickets created by an IPerson."""
+class SearchCreatedQuestionsView(SearchQuestionsView):
+    """View used to search and display questions created by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.OWNER)
+        """See SearchQuestionsView."""
+        return dict(participation=QuestionParticipation.OWNER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests created by $name',
+        """See SearchQuestionsView."""
+        return _('Questions asked by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests created by $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions asked by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionTicketsView(SearchTicketsView):
-    """View used to search and display tickets needing an IPerson attention."""
+class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+    """View used to search and display questions needing an IPerson attention."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
+        """See SearchQuestionsView."""
         return dict(needs_attention=True)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests needing $name attention',
+        """See SearchQuestionsView."""
+        return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests need $name attention.',
+        """See SearchQuestionsView."""
+        return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedTicketsView(SearchTicketsView):
-    """View used to search and display tickets subscribed to by an IPerson."""
+class SearchSubscribedQuestionsView(SearchQuestionsView):
+    """View used to search and display questions subscribed to by an IPerson."""
 
-    displayTargetColumn = True
+    display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchTicketsView."""
-        return dict(participation=TicketParticipation.SUBSCRIBER)
+        """See SearchQuestionsView."""
+        return dict(participation=QuestionParticipation.SUBSCRIBER)
 
     @property
     def pageheading(self):
-        """See SearchTicketsView."""
-        return _('Support requests $name is subscribed to',
+        """See SearchQuestionsView."""
+        return _('Questions $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchTicketsView."""
-        return _('No support requests subscribed to by $name found with the '
+        """See SearchQuestionsView."""
+        return _('No questions subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
-class PersonSupportMenu(ApplicationMenu):
+class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
-    facet = 'support'
+    facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
              'subscribed']
 
     def answered(self):
-        summary = 'Support requests answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='ticket')
+        summary = 'Questions answered by %s' % self.context.displayname
+        return Link('+answeredtickets', 'Answered', summary, icon='question')
 
     def assigned(self):
-        summary = 'Support requests assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='ticket')
+        summary = 'Questions assigned to %s' % self.context.displayname
+        return Link('+assignedtickets', 'Assigned', summary, icon='question')
 
     def created(self):
-        summary = 'Support requests created by %s' % self.context.displayname
-        return Link('+createdtickets', 'Created', summary, icon='ticket')
+        summary = 'Questions asked by %s' % self.context.displayname
+        return Link('+createdtickets', 'Asked', summary, icon='question')
 
     def commented(self):
-        summary = 'Support requests commented on by %s' % (
+        summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='ticket')
+        return Link('+commentedtickets', 'Commented', summary, icon='question')
 
     def need_attention(self):
-        summary = 'Support requests needing %s attention' % (
+        summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need Attention', summary,
-                    icon='ticket')
+        return Link('+needattentiontickets', 'Need attention', summary,
+                    icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
-        summary = 'Support requests subscribed to by %s' % (
+        summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='ticket')
+        return Link('+subscribedtickets', text, summary, icon='question')
+
+

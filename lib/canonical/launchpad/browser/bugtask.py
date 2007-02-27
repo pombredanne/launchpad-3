@@ -45,17 +45,18 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema
+from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugAttachmentSet, IBugExternalRefSet, IBugSet,
-    IBugTask, IBugTaskSet, IBugTaskSearch, IBugWatchSet, IDistribution,
-    IDistributionSourcePackage, IBug, IDistroBugTask, IDistroRelease,
-    IDistroReleaseBugTask, ILaunchBag, INullBugTask, IPerson,
+    IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
@@ -1148,6 +1149,42 @@ def upstream_status_vocabulary_factory(context):
     return SimpleVocabulary(terms)
 
 
+class BugTaskListingItem:
+    """A decorated bug task.
+
+    Some attributes that we want to display are too convoluted or expensive
+    to get on the fly for each bug task in the listing.  These items are
+    prefetched by the view and decorate the bug task.
+    """
+    decorates(IBugTask, 'bugtask')
+
+    def __init__(self, bugtask, bugbranches):
+        self.bugtask = bugtask
+        self.bugbranches = bugbranches
+        
+
+class BugListingBatchNavigator(TableBatchNavigator):
+    """A specialised batch navigator to load smartly extra bug information."""
+    
+    def __init__(self, tasks, request, columns_to_show, size):
+        TableBatchNavigator.__init__(
+            self, tasks, request, columns_to_show=columns_to_show, size=size)
+        # Now load the bug-branch links for this batch
+        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+            self.currentBatch())
+        # Create a map from the bug id to the branches.
+        self.bug_id_mapping = {}
+        for bugbranch in bugbranches:
+            self.bug_id_mapping.setdefault(
+                bugbranch.bug.id, []).append(bugbranch)
+
+    def getBugListingItems(self):
+        """Return a decorated list of visible bug tasks."""
+        return [BugTaskListingItem(bugtask,
+                                   self.bug_id_mapping.get(bugtask.bug.id, None))
+                for bugtask in self.batch]
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -1244,6 +1281,18 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def _getDefaultSearchParams(self):
+        """Return a BugTaskSearchParams instance with default values.
+
+        By default, a search includes any bug that is unresolved and not
+        a duplicate of another bug.
+        """
+        search_params = BugTaskSearchParams(
+            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+        search_params.orderby = get_sortorder_from_request(self.request)
+        return search_params
+
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
@@ -1258,7 +1307,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag",
+                "status_upstream", "tag", "has_cve"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1292,15 +1341,6 @@ class BugTaskSearchListingView(LaunchpadView):
             if has_no_package:
                 data["sourcepackagename"] = NULL
 
-        if data.get("omit_dupes") is None:
-            # The "omit dupes" parameter wasn't provided, so default to omitting
-            # dupes from reports, of course.
-            data["omit_dupes"] = True
-
-        if data.get("status") is None:
-            # Show only open bugtasks as default
-            data['status'] = UNRESOLVED_BUGTASK_STATUSES
-
         if 'status_upstream' in data:
             # Convert the status_upstream value to parameters we can
             # send to BugTaskSet.search().
@@ -1316,21 +1356,22 @@ class BugTaskSearchListingView(LaunchpadView):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
-            if value:
-                if zope_isinstance(value, (list, tuple)):
+            if zope_isinstance(value, (list, tuple)):
+                if len(value) > 0:
                     form_values[key] = any(*value)
-                else:
-                    form_values[key] = value
+            else:
+                form_values[key] = value
 
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
-        search_params = BugTaskSearchParams(user=self.user, **form_values)
-        search_params.orderby = get_sortorder_from_request(self.request)
+        search_params = self._getDefaultSearchParams()
+        for name, value in form_values.items():
+            setattr(search_params, name, value)
         tasks = context.searchTasks(search_params)
 
-        return TableBatchNavigator(
+        return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
@@ -1568,14 +1609,22 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getBugsFixedElsewhereInfo(self):
         """Return a dict with count and URL of bugs fixed elsewhere."""
-        fixed_elsewhere = self.context.searchTasks(
-            BugTaskSearchParams(self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            only_resolved_upstream=True, omit_dupes=True))
+        params = self._getDefaultSearchParams()
+        params.only_resolved_upstream = True
+        fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
             "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
+
+    def getOpenCVEBugsInfo(self):
+        """Return a dict with count and URL of open bugs linked to CVEs."""
+        params = self._getDefaultSearchParams()
+        params.has_cve = True
+        open_cve_bugs = self.context.searchTasks(params)
+        search_url = (
+            "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
+        return dict(count=open_cve_bugs.count(), url=search_url)
 
 
 class BugTargetView(LaunchpadView):

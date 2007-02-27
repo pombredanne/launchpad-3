@@ -1,0 +1,41 @@
+= Answer Tracker Introduction Page =
+
+The Answer Tracker main page present a short introduction to the
+application.
+
+    >>> anon_browser.open('http://answers.launchpad.dev/')
+    >>> print anon_browser.title
+    Launchpad Answer Tracker
+
+It also displays an indication of recent activity by
+displaying the number of questions tracked by the system.
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'application-footer').renderContents()
+    13 questions asked
+
+It also shows the 10 latest questions asked:
+
+    >>> latest_questions_asked = find_tag_by_id(
+    ...     anon_browser.contents, 'latest-questions-asked')
+    >>> print latest_questions_asked.first('h2').renderContents()
+    Latest questions asked
+    >>> for row in latest_questions_asked.fetch('tr', 'noted'):
+    ...     row.first('a').renderContents()
+    'Problemas de Impress\xc3\xa3o no Firefox'
+    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+    'Continue playing after shutdown'
+    'Installation failed'
+    'Firefox loses focus and gets stuck'
+    'Problem showing the SVG demo on W3C site'
+    'Firefox cannot render Bank Site'
+
+As well as the 10 latest questions solved:
+
+    >>> latest_questions_solved = find_tag_by_id(
+    ...     anon_browser.contents, 'latest-questions-solved')
+    >>> print latest_questions_solved.first('h2').renderContents()
+    Latest questions solved
+    >>> for row in latest_questions_solved.fetch('tr', 'noted'):
+    ...     row.first('a').renderContents()
+    'mailto: problem in webpage'

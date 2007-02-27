@@ -15,10 +15,12 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
-    valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -28,7 +30,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext, IHasSprints):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -132,6 +135,15 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this project."))
 
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this project. It should be "
+            "no bigger than 50k in size."))
+
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
         description=_(
@@ -216,7 +228,7 @@ class IProjectSet(Interface):
         """
 
     def new(name, displayname, title, homepageurl, summary, description,
-            owner, gotchi, emblem):
+            owner, gotchi, gotchi_heading, emblem):
         """Create and return a project with the given arguments."""
 
     def count_all():

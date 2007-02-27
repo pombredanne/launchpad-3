@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -42,8 +41,8 @@
     />
   <adapter
     for="canonical.launchpad.interfaces.IDistroRelease"
-    provides="canonical.launchpad.interfaces.ITicketTarget"
-    factory="canonical.launchpad.components.ticket.distrorelease_to_tickettarget"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
+    factory="canonical.launchpad.components.question.distrorelease_to_questiontarget"
     />
 
   <browser:navigation
@@ -85,7 +84,6 @@
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
       />
   </browser:pages>
 
@@ -129,7 +127,6 @@
       name="+builds"
       facet="overview"
       template="../templates/distrorelease-builds.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
       name="+search"
@@ -139,7 +136,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -172,11 +168,11 @@
     <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+      />
     <browser:page
       name="+last-uploads"
       template="../templates/distrorelease-last-uploads.pt"
-      lp:url="/distros/$Distro.name/$DRelease.name/+last-uploads" />
+      />
   </browser:pages>
 
   <browser:page
@@ -195,7 +191,7 @@
       name="+queue"
       facet="overview"
       template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue" />
+      />
   </browser:pages>
 
   <browser:pages
@@ -206,7 +202,7 @@
     <browser:page
       name="+reassign"
       template="../templates/object-reassignment.pt"
-      lp:url="/distros/$distro.id/$release.id/+reassign" />
+      />
   </browser:pages>
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -222,7 +218,6 @@
     facet="overview"
     fields="displayname title summary description"
     template="../templates/distrorelease-edit.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
@@ -237,20 +232,7 @@
     facet="overview"
     fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
-    lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />
-
-  <browser:editform
-    name="+driver"
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseEditView"
-    fields="driver"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-driver.pt"
-    lp:url="/$Distribution.name/$DistroRelease.name/+driver">
-  </browser:editform>
 
   <browser:addform
     name="+addmilestone"
@@ -262,7 +244,7 @@
     keyword_arguments="name dateexpected"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
-    lp:url="/distros/$Distribution.name/$Release.name/+addmilestone">
+    >
   </browser:addform>
 
   <browser:addform
