@@ -98,6 +98,9 @@ class ICrowd(Interface):
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
 
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
+
     bug_count = Attribute("The number of bugs recorded in Malone")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
