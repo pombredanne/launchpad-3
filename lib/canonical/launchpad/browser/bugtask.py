@@ -1281,6 +1281,18 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def _getDefaultSearchParams(self):
+        """Return a BugTaskSearchParams instance with default values.
+
+        By default, a search includes any bug that is unresolved and not
+        a duplicate of another bug.
+        """
+        search_params = BugTaskSearchParams(
+            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+        search_params.orderby = get_sortorder_from_request(self.request)
+        return search_params
+
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
@@ -1295,7 +1307,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag",
+                "status_upstream", "tag", "has_cve"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1329,15 +1341,6 @@ class BugTaskSearchListingView(LaunchpadView):
             if has_no_package:
                 data["sourcepackagename"] = NULL
 
-        if data.get("omit_dupes") is None:
-            # The "omit dupes" parameter wasn't provided, so default to omitting
-            # dupes from reports, of course.
-            data["omit_dupes"] = True
-
-        if data.get("status") is None:
-            # Show only open bugtasks as default
-            data['status'] = UNRESOLVED_BUGTASK_STATUSES
-
         if 'status_upstream' in data:
             # Convert the status_upstream value to parameters we can
             # send to BugTaskSet.search().
@@ -1353,18 +1356,19 @@ class BugTaskSearchListingView(LaunchpadView):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
-            if value:
-                if zope_isinstance(value, (list, tuple)):
+            if zope_isinstance(value, (list, tuple)):
+                if len(value) > 0:
                     form_values[key] = any(*value)
-                else:
-                    form_values[key] = value
+            else:
+                form_values[key] = value
 
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
-        search_params = BugTaskSearchParams(user=self.user, **form_values)
-        search_params.orderby = get_sortorder_from_request(self.request)
+        search_params = self._getDefaultSearchParams()
+        for name, value in form_values.items():
+            setattr(search_params, name, value)
         tasks = context.searchTasks(search_params)
 
         return BugListingBatchNavigator(
@@ -1605,14 +1609,22 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getBugsFixedElsewhereInfo(self):
         """Return a dict with count and URL of bugs fixed elsewhere."""
-        fixed_elsewhere = self.context.searchTasks(
-            BugTaskSearchParams(self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            only_resolved_upstream=True, omit_dupes=True))
+        params = self._getDefaultSearchParams()
+        params.only_resolved_upstream = True
+        fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
             "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
+
+    def getOpenCVEBugsInfo(self):
+        """Return a dict with count and URL of open bugs linked to CVEs."""
+        params = self._getDefaultSearchParams()
+        params.has_cve = True
+        open_cve_bugs = self.context.searchTasks(params)
+        search_url = (
+            "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
+        return dict(count=open_cve_bugs.count(), url=search_url)
 
 
 class BugTargetView(LaunchpadView):

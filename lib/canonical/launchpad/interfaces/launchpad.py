@@ -72,6 +72,8 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad product.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
 
 
 class ICrowd(Interface):

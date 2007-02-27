@@ -3,7 +3,7 @@ Page to edit a product - does the page load as the product owner?
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
 
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Edit Product Details').click()
+  >>> browser.getLink('Change details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/+edit
   >>> print browser.contents
@@ -41,7 +41,7 @@ Now we test if we edited it successfully.
 
 We can also change the product's icon/emblem.
 
-  >>> browser.getLink('Edit Product Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+edit'
 
@@ -54,7 +54,7 @@ We can also change the product's icon/emblem.
 
 And if we go back to that page we'll see the new images.
 
-  >>> browser.getLink('Edit Product Details').click()
+  >>> browser.getLink('Change details').click()
   >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
   u'.../emblem.png'
   >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')

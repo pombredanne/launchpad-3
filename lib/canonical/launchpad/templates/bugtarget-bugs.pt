@@ -64,10 +64,9 @@
                 bugs fixed elsewhere
               </a>
             </li>
-            <!-- Waiting for bug 79034. -->
-            <li tal:condition="nothing">
-              <a href="">
-                <strong tal:content="nothing"></strong>
+            <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
+              <a tal:attributes="href cve_bugs/url">
+                <strong tal:content="cve_bugs/count"></strong>
                 open CVE bugs
               </a>
             </li>
