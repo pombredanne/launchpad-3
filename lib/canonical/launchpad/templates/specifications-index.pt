@@ -153,16 +153,9 @@
                             tal:content="structure context/@@+portlet-sprints"
                           />
                         </div>
-<<<<<<< TREE
-                        <p id="application-footer">
-                          <strong>XXX</strong>
-                          blueprints registered
-                        </p>
-=======
                         <div id="application-footer">
                           <tal:stats replace="structure context/@@+portlet-stats" />
                         </div>
->>>>>>> MERGE-SOURCE
                       </tal:nosearchresults>
 
                       </div><!--container-->
