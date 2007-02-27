@@ -101,7 +101,8 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.launchpad.webapp.enum import DBSchema, Item
+from canonical.launchpad.webapp.enum import DBSchema
+from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
