@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Products with Code</h1>
+      <h1>Projects with Code</h1>
     </metal:heading>
 
 <div metal:fill-slot="main">
