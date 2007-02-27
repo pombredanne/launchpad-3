@@ -9,8 +9,6 @@ __all__ = [
     "BzrSync",
     ]
 
-import sys
-import os
 import logging
 from datetime import datetime, timedelta
 
@@ -20,12 +18,8 @@ from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
-from sqlobject import AND
-from canonical.lp import initZopeless
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchRevisionSet, IBranchSet, IRevisionSet)
+    ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
 
 UTC = pytz.timezone('UTC')
 
@@ -117,28 +111,11 @@ class BzrSync:
         self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):
-        """Since the ancestry of some branches is into the tens of thousands
-        we don't want to materialise BranchRevision instances for each of these
-        in the SQLObject cache, so keep a simple map here."""
-        # NOMERGE: move that into the content class, add interface.
+        """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        cur = cursor()
-        cur.execute("""
-            SELECT BranchRevision.id, BranchRevision.sequence, Revision.revision_id
-            FROM Revision, BranchRevision
-            WHERE
-                Revision.id = BranchRevision.revision
-            AND BranchRevision.branch = %s
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(self.db_branch))
-        self.db_ancestry = set()
-        self.db_history = []
-        self.db_branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchall():
-            self.db_ancestry.add(revision_id)
-            self.db_branch_revision_map[revision_id] = branch_revision_id
-            if sequence is not None:
-                self.db_history.append(revision_id)
+        branch_revision_set = getUtility(IBranchRevisionSet)
+        self.db_ancestry, self.db_history, self.db_branch_revision_map = \
+            branch_revision_set.getScannerDataForBranch(self.db_branch)
 
     def retrieveBranchDetails(self):
         # NOMERGE: docstring!

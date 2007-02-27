@@ -411,19 +411,25 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         bzrsync.retrieveDatabaseAncestry()
 
-        b_r_set = BranchRevisionSet()
-        ancestry = b_r_set.getAncestryForBranch(self.db_branch)
-        history = b_r_set.getRevisionHistoryForBranch(self.db_branch)
+        branch_revision_set = BranchRevisionSet()
+        ancestry = set(branch_revision.revision.revision_id
+            for branch_revision
+            in branch_revision_set.getAncestryForBranch(self.db_branch))
+        history = [branch_revision.revision.revision_id
+            for branch_revision
+            in branch_revision_set.getRevisionHistoryForBranch(self.db_branch)]
+        # getRevisionHistoryForBranch gives most recent first for display on
+        # web pages, but retrieveDatabaseAncestry gives most recent last for
+        # consistency with bzrlib.
+        history.reverse()
+        mapping = dict(
+            (branch_revision.revision.revision_id, branch_revision.id)
+            for branch_revision
+            in branch_revision_set.getAncestryForBranch(self.db_branch))
 
-        self.assertEqual(set([b.revision.revision_id for b in ancestry]),
-                         bzrsync.db_ancestry)
-        self.assertEqual(set([b.revision.revision_id for b in history]),
-                         set(bzrsync.db_history))
-        # We can't access BranchRevision.id, so just test that the keys are
-        # correct.
-        # NOMERGE: no reason we cannot, we can use the content class directly here.
-        self.assertEqual(set([b.revision.revision_id for b in ancestry]),
-                         set(bzrsync.db_branch_revision_map.keys()))
+        self.assertEqual(ancestry, set(bzrsync.db_ancestry))
+        self.assertEqual(history, list(bzrsync.db_history))
+        self.assertEqual(mapping, bzrsync.db_branch_revision_map)
 
 
 class TestBzrSyncPerformance(BzrSyncTestCase):
