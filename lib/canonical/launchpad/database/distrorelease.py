@@ -1079,6 +1079,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distrorelease = %s' % sqlvalues(self)
+
     def initialiseFromParent(self):
         """See IDistroRelease."""
         assert self.parentrelease is not None, "Parent release must be present"
