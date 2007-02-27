@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Provides an authserver service.
 NOMERGE - make this docstring betterer.
