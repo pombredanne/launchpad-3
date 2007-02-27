@@ -1,9 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = [
     'SourcePackageNavigation',
+    'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
     ]
@@ -25,10 +26,11 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship, relationship_builder)
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetSupportMenu)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -74,10 +76,32 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 
-class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distrorelease.displayname + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.sourcepackagename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Versions published, earliest first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
+class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'support', 'translations']
+    enable_only = ['overview', 'bugs', 'answers', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -113,12 +137,12 @@ class SourcePackageBugsMenu(ApplicationMenu):
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(TicketTargetSupportMenu):
+class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage
-    facet = 'support'
+    facet = 'answers'
 
-    links = TicketTargetSupportMenu.links + ['gethelp']
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')

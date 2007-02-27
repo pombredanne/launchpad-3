@@ -189,6 +189,8 @@ def bugs_assigned(context, view):
 
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
+bugtarget_bugs = ContextTitle('Bugs in %s')
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
@@ -451,9 +453,11 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
+launchpad_onezerostatus = 'One-Zero Page Template Status'
+
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search Launchpad Projects'
+launchpad_search = 'Search projects in Launchpad'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -703,11 +707,17 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
+project_filebug_search = bugtarget_filebug_simple
+
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
 project_specs = ContextTitle('Specifications for %s')
+
+project_translations = ContextTitle('Translatable products for %s')
+
+project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Projects registered in Launchpad'
 
@@ -750,6 +760,44 @@ def productseries_edit(context, view):
     return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
+
+def question_add(context, view):
+    return view.pagetitle
+
+question_add_search = question_add
+
+question_bug = ContextId('Link question #%s to a bug report')
+
+question_change_status = ContextId('Change status of question #%s')
+
+question_confirm_answer = ContextId('Confirm an answer to question #%s')
+
+question_edit = ContextId('Edit question #%s details')
+
+question_history = ContextId('History of question #%s')
+
+def question_index(context, view):
+    text = (
+        smartquote('%s question #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+    return text
+
+question_linkbug = ContextId('Link question  #%s to a bug report')
+
+def question_listing(context, view):
+    return view.pagetitle
+
+question_makebug = ContextId('Create bug report based on question #%s')
+
+question_reject = ContextId('Reject question #%s')
+
+question_subscription = ContextId('Subscription to question #%s')
+
+question_unlinkbugs = ContextId('Remove bug links from question #%s')
+
+questions_index = 'Launchpad Answer Tracker'
+
+questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
@@ -922,39 +970,6 @@ sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
-tickets_index = 'Launchpad support tracker'
-
-def ticket_add(context, view):
-    return view.pagetitle
-
-ticket_add_search = ticket_add
-
-ticket_bug = ContextId('Link support request #%s to a bug report')
-
-ticket_change_status = ContextId('Change status of support request #%s')
-
-ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
-
-ticket_edit = ContextId('Edit support request #%s details')
-
-def ticket_index(context, view):
-    text = (
-        smartquote('%s support request #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-    return text
-
-ticket_history = ContextId('History of support request #%s')
-
-ticket_linkbug = ContextId('Link support request #%s to a bug report')
-
-ticket_makebug = ContextId('Create bug report based on request #%s')
-
-ticket_reject = ContextId('Reject support request #%s')
-
-ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
-
-ticket_subscription = ContextId('Subscription to request #%s')
-
 standardshipitrequests_index = 'Standard ShipIt options'
 
 standardshipitrequest_new = 'Create a new standard option'
@@ -996,11 +1011,6 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
-
-def ticket_listing(context, view):
-    return view.pagetitle
-
-tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
 translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 

@@ -3,18 +3,14 @@
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
 
-    <include package="zope.app.mail"/>
+    <mail:directDelivery permission="zope.SendMail" mailer="smtp" />
 
-    <!-- Outgoing email from the beta server should all be redirected
-    to staging@launchpad.net. Note that this currently only works for the
-    Zope3 environment - Zopeless scripts have email turned off.
-    -->
-    <mail:stubMailer 
-        name="stub" from_addr="staging@launchpad.net"
-        to_addr="staging@launchpad.net"
+    <!-- Configured outside the tree in ${ROOT}/../+mail-configure.zcml
+        to avoid putting the username/password under revision control
+    <mail:smtpMailer
+        hostname="smtp.canonical.com" port="25"
+        username="???" password="???"
         />
-    <!-- Development configuration to avoid spamming innocent people -->
-    <mail:queuedDelivery name="Mail" permission="zope.SendMail"
-        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+    -->
 
 </configure>

@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
+    'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
@@ -37,8 +38,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetTraversalMixin)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
@@ -50,7 +52,7 @@ from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, TicketTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -100,11 +102,26 @@ class DistributionSetNavigation(RedirectionNavigation):
         return RedirectionNavigation.traverse(self, name)
 
 
-class DistributionFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class DistributionSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return self.context.releases[:num]
+
+    def listAltChildren(self, num):
+        return None
+
+
+class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations']
 
     def specifications(self):
@@ -131,7 +148,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals for all releases'
         return Link('+driver', text, summary, icon='edit')
 
@@ -436,6 +453,7 @@ class DistributionAddView(LaunchpadFormView):
             members=data['members'],
             owner=self.user,
             gotchi=data['gotchi'],
+            gotchi_heading=None,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

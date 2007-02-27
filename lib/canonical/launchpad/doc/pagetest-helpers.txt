@@ -145,7 +145,7 @@ function can find a portlet by its title and return it:
   ...         Contents of the portlet.
   ...       </div>
   ...     </div>
-  ...     <div id="region-content">
+  ...     <div id="maincontent">
   ...       Main content area
   ...     </div>
   ...   </body>

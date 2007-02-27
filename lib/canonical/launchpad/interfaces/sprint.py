@@ -18,7 +18,7 @@ from zope.schema import Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, SmallImageUpload, LargeImageUpload)
+    ContentNameField, LargeImageUpload, BaseImageUpload, SmallImageUpload)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
 
@@ -73,6 +73,14 @@ class ISprint(IHasOwner, IHasSpecifications):
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this meeting."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this meeting. It should "
+            "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
         description=_(
@@ -147,6 +155,6 @@ class ISprintSet(Interface):
         """Get a specific Sprint."""
 
     def new(owner, name, title, time_starts, time_ends, summary=None,
-            description=None, gotchi=None, emblem=None):
+            description=None, gotchi=None, gotchi_heading=None, emblem=None):
         """Create a new sprint."""
 

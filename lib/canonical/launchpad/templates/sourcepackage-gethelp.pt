@@ -44,14 +44,14 @@
   </p>
   </tal:needupstream>
 
-  <h2>Make a support request</h2>
+  <h2>Ask a question</h2>
 
   <p>
-    You can <a href="+addticket">make a support request</a> in Launchpad,
+    You can <a href="+addticket">ask a question</a> in Launchpad,
     and some community members might be able to help you free of charge.
   </p>
 
 </div>
 </body>
 </html>
- 
+
