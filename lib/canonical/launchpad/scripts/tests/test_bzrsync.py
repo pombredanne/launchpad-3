@@ -307,11 +307,9 @@ class TestBzrSync(BzrSyncTestCase):
         # Test that the timezone selected does not affect the
         # timestamp recorded in the database.
         self.commitRevision(rev_id='rev-1',
-                            timestamp=1000000000.0,
-                            timezone=0)
+                            timestamp=1000000000.0, timezone=0)
         self.commitRevision(rev_id='rev-2',
-                            timestamp=1000000000.0,
-                            timezone=28800)
+                            timestamp=1000000000.0, timezone=28800)
         self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
         rev_1 = Revision.selectOneBy(revision_id='rev-1')
         rev_2 = Revision.selectOneBy(revision_id='rev-2')
@@ -339,31 +337,29 @@ class TestBzrSync(BzrSyncTestCase):
         :return: A list of the revisions that have been committed, as returned
         by WorkingTree.commit().
         """
-        # NOMERGE: use fixed revisions ids for simpler tests, use bzrlib test helper
-        # (TestCaseWithRepository?) so we do not risk leaking test data outside.
+        # NOMERGE: use fixed revisions ids for simpler tests, use bzrlib test
+        # helper (TestCaseWithRepository?) so we do not risk leaking test data
+        # outside.
         revisions = []
 
         # Make the base revision.
-        revisions.append(self.bzr_tree.commit(u'common parent',
-                                              committer=self.AUTHOR,
-                                              allow_pointless=True))
-        # NOMERGE: Ugly layout.
+        revisions.append(self.bzr_tree.commit(
+            u'common parent', committer=self.AUTHOR, allow_pointless=True))
 
         # Branch from the base revision.
-        new_tree = self.bzr_tree.bzrdir.sprout('y').open_workingtree()
-        # NOMERGE: One-letter names are bad.
+        new_branch = self.bzr_tree.bzrdir.sprout('bzr_branch_merged')
+        new_tree = new_branch.open_workingtree()
 
         # Commit to both branches
-        revisions.append(self.bzr_tree.commit(u'commit one',
-                                              committer=self.AUTHOR,
-                                              allow_pointless=True))
-        revisions.append(new_tree.commit(u'commit two', committer=self.AUTHOR,
-                                         allow_pointless=True))
+        revisions.append(self.bzr_tree.commit(
+            u'commit one', committer=self.AUTHOR, allow_pointless=True))
+        revisions.append(new_tree.commit(
+            u'commit two', committer=self.AUTHOR, allow_pointless=True))
 
         # Merge and commit.
         self.bzr_tree.merge_from_branch(new_tree.branch)
-        revisions.append(self.bzr_tree.commit(u'merge', committer=self.AUTHOR,
-                                              allow_pointless=True))
+        revisions.append(self.bzr_tree.commit(
+            u'merge', committer=self.AUTHOR, allow_pointless=True))
         return revisions
 
     def test_get_revisions_branched(self):
