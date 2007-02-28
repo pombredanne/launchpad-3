@@ -1887,14 +1887,11 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # XXX cprov 20070222: It will fail if the two merged users have
-        # archives with the same name. See more information in #87098
-        # Just give all Archives to the new person
-        cur.execute('''
-            UPDATE Archive
-            SET owner = %(to_id)d
-            WHERE owner = %(from_id)d
-            ''' % vars())
+        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # we can't reassign the old user archive to the new user.
+        # It need to be done manually, probably by reasinning all publications
+        # to the old PPA to the new one, performing a careful_publishing on it
+        # and removing the old one from disk. See bug #87098
         skip.append(('archive', 'person'))
 
         # Sanity check. If we have a reference that participates in a
