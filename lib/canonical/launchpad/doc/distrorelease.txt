@@ -159,6 +159,7 @@ other things) the uploader for validating incoming uploads.
    editors
    admin
    devel
+   translations
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
@@ -182,6 +183,7 @@ other things) the uploader for validating incoming uploads.
    admin
    devel
    python
+   translations
 
 
 DistroReleases can be initialised from their parents
