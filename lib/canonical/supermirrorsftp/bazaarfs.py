@@ -302,7 +302,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
         h = "%08x" % int(branchID)
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
-        self._flagAsDirty = None
+        self._listener = None
         WriteLoggingDirectory.__init__(self, self._flagAsDirty,
                                        os.path.join(avatar.homeDirsRoot, path),
                                        branchName, parent)
@@ -313,16 +313,15 @@ class SFTPServerBranch(WriteLoggingDirectory):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
 
-    def touch(self):
-        if self._flagAsDirty is None:
-            # Find the root object and create a listener. If the listener is
-            # not already set, then we must be at the top-level directory in
-            # the branch. One parent up is the product, the next is the
-            # username and the third is the root of the SFTP server.
+    def _flagAsDirty(self):
+        if self._listener is None:
+            # Find the root object and create a listener. One parent up is the
+            # product, the next is the username and the third is the root of
+            # the SFTP server.
 
             # XXX - this is an awkward way of finding the root. Replace with
             # something that is clearer and requires fewer comments.
             # -- jml, 2007-02-14
-            self._flagAsDirty = self.parent.parent.parent.listenerFactory(
-                self.branchID)
-        self._flagAsDirty()
+            root = self.parent.parent.parent
+            self._listener = root.listenerFactory(self.branchID)
+        self._listener()

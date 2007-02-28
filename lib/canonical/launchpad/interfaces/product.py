@@ -18,7 +18,9 @@ from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, IKarmaContext, PillarNameField)
+    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
+    PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -32,7 +34,8 @@ class ProductNameField(PillarNameField):
 
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-               ISpecificationTarget, IHasSecurityContact, IKarmaContext):
+               ISpecificationTarget, IHasSecurityContact, IKarmaContext,
+               IHasSprints):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -109,11 +112,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     description = Description(
         title=_('Description'),
         required=False,
-        description=_("""Optional detailed product description, which may
-            be several paragraphs of text and include URL's to useful
-            information giving the product highlights and details. It will be
-            displayed as an extension of the summary, so don't repeat
-            yourself if you provide a description!"""))
+        description=_("""Include information on how to get involved with
+            development. Don't repeat anything from the Summary."""))
 
     datecreated = TextLine(
         title=_('Date Created'),

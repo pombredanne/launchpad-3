@@ -2,7 +2,7 @@ Test to add a product series
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Add Release Series').click()
+  >>> browser.getLink('Add series').click()
   >>> print browser.url
   http://launchpad.dev/firefox/+addseries
 
@@ -50,7 +50,7 @@ Now we are redirected to the Overview page of the product series we just added
 Now we test if we can edit the new added release series. First we check if we
 can reach the +edit page.
 
-  >>> browser.getLink('Change Series Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/stable/+edit'
 
