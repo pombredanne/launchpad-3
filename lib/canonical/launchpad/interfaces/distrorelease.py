@@ -187,7 +187,8 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None,
-                             include_pending=False, exclude_pocket=None):
+                             include_pending=False, exclude_pocket=None,
+                             archive=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
@@ -199,6 +200,9 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         records, those packages that will get published in the next publisher
         run (it's only useful when we need to know if a given package is
         known during a publisher run, mostly in pre-upload checks)
+
+        If 'archive' is not specified consider publication in the main_archive,
+        otherwise respect the given value.
         """
 
     def getSourcesPublishedForAllArchives():

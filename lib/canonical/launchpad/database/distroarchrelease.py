@@ -192,7 +192,8 @@ class DistroArchRelease(SQLBase):
             [self.id], status, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None):
+                            include_pending=False, exclude_pocket=None,
+                            archive=None):
         """See IDistroArchRelease."""
         queries = []
 
@@ -203,8 +204,7 @@ class DistroArchRelease(SQLBase):
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
         distroarchrelease=%s AND
-        archive = %s
-        """ % sqlvalues(binary_name, self, self.main_archive))
+        """ % sqlvalues(binary_name, self))
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
@@ -219,6 +219,10 @@ class DistroArchRelease(SQLBase):
         else:
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
+
+        if archive is None:
+            archive = self.main_archive
+        queries.append("archive=%s" % sqlvalues(archive))
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),

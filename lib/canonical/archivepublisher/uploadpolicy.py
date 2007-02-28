@@ -242,7 +242,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
-        pass
+        return False
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
@@ -291,7 +291,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""
-        pass
+        return False
 
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)

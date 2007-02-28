@@ -547,7 +547,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             spn in result]
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False, exclude_pocket=None):
+                             include_pending=False, exclude_pocket=None,
+                             archive=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -582,6 +583,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         else:
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
+
+        if archive is None:
+            archive = self.main_archive
+        queries.append("archive=%s" % sqlvalues(archive))
 
         published = SourcePackagePublishingHistory.select(
             " AND ".join(queries),

@@ -1563,7 +1563,8 @@ class NascentUpload:
         lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = self.distrorelease.getPublishedReleases(
-                uploaded_file.package, include_pending=True, pocket=pocket)
+                uploaded_file.package, include_pending=True, pocket=pocket,
+                archive=self.archive)
             if candidates:
                 return candidates[0]
         return None
@@ -1593,7 +1594,8 @@ class NascentUpload:
         lookup_pockets = [self.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
-                uploaded_file.package, include_pending=True, pocket=pocket)
+                uploaded_file.package, include_pending=True, pocket=pocket,
+                archive=self.archive)
             if candidates:
                 return candidates[0]
             # Try the other architectures...
@@ -1602,7 +1604,8 @@ class NascentUpload:
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
                 candidates = other_dar.getReleasedPackages(
-                    uploaded_file.bpn, include_pending=True, pocket=pocket)
+                    uploaded_file.bpn, include_pending=True, pocket=pocket,
+                    archive=self.archive)
                 if candidates:
                     return candidates[0]
         return None
@@ -1663,10 +1666,6 @@ class NascentUpload:
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
         """
-        if self.is_ppa:
-            self.logger.debug("Do not apply overrides for PPA")
-            return
-
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.files:
@@ -1697,9 +1696,10 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    self.logger.debug(
-                        "%s: (source) NEW" % (uploaded_file.package))
-                    uploaded_file.new = True
+                    if not self.is_ppa:
+                        self.logger.debug(
+                            "%s: (source) NEW" % (uploaded_file.package))
+                        uploaded_file.new = True
 
             elif not uploaded_file.is_source:
                 self.logger.debug(
@@ -1719,9 +1719,10 @@ class NascentUpload:
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    self.logger.debug(
-                        "%s: (binary) NEW" % (uploaded_file.package))
-                    uploaded_file.new = True
+                    if not self.is_ppa:
+                        self.logger.debug(
+                            "%s: (binary) NEW" % (uploaded_file.package))
+                        uploaded_file.new = True
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
