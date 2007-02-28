@@ -39,19 +39,13 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber',
-                            default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-    branch_product_name = StringCol(default=None)
-    product_locked = BoolCol(default=False, notNull=True)
 
     home_page = StringCol()
-    branch_home_page = StringCol(default=None)
-    home_page_locked = BoolCol(default=False, notNull=True)
 
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
@@ -74,8 +68,6 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=0, notNull=True)
-
-    cache_url = StringCol(default=None)
 
     @property
     def revision_history(self):
