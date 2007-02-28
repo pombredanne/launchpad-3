@@ -242,9 +242,9 @@ class QueueAction:
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
         # do should be enough.
-        if queue_item.sources.count() > 0:
+        if queue_item.containsSource:
             source_tag = 'S'
-        if queue_item.builds.count() > 0:
+        if queue_item.containsBuild:
             build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
@@ -637,12 +637,12 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.http_url))
 
-                self.sendAnnouncement(queue_item, "\n".join(summary))
+                self.maybeSendAnnouncement(queue_item, "\n".join(summary))
 
         self.displayRule()
         self.displayBottom()
 
-    def sendAnnouncement(self, queue_item, summary):
+    def maybeSendAnnouncement(self, queue_item, summary):
         """Build and send oppropriate annoncement email if allowed.
 
         Take the summary given, and derive the rest of the information
@@ -659,17 +659,17 @@ class QueueActionAccept(QueueAction):
         It also do not send messages for source uploads targeted to section
         'translations' ('laguage-pack-*' & 'language-support-*').
         """
-        # We do not send notifications for binary uploads. Only sourceful
-        # and single-custom uploads should be considered.
-        if (queue_item.sources.count() == 0 and
-            (queue_item.builds.count() > 0 and
-             queue_item.customfiles.count() != 1)):
+        # Skip announcement for binary or mixed uploads.
+        if queue_item.containsBuild:
             return
 
-        # We do not send acceptance emails for source uploads targeted
-        # to 'translation' section ('laguage-pack-*' & 'language-support-*')
-        if queue_item.sources.count() == 1:
+        # Skip annoncement for source uploads targeted to 'translation'
+        # section ('laguage-pack-*' & 'language-support-*')
+        if queue_item.containsSource:
             source = queue_item.sources[0]
+            # XXX cprov 20070228: instead of using the original section
+            # we should be aware of pre-publication overrides when we
+            # have them. See NativeSourceSync specification.
             section_name = source.sourcepackagerelease.section.name
             if section_name == 'translations':
                 return
@@ -677,8 +677,8 @@ class QueueActionAccept(QueueAction):
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
 
-        # only announce acceptance if the upload is not targeted for
-        # BACKPORTS
+        # Only include announcelist as recipient if the upload is not
+        # targeted for BACKPORTS.
         if (self.announcelist is not None and
             queue_item.pocket != PackagePublishingPocket.BACKPORTS):
             recipients.append(self.announcelist)
