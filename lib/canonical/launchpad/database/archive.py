@@ -22,7 +22,6 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    name = StringCol(dbName='name', notNull=True)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False)
 
@@ -36,8 +35,7 @@ class Archive(SQLBase):
         pubconf.distroroot = config.personalpackagearchive.root
 
         pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, self.owner.name, self.name,
-            distribution.name)
+            pubconf.distroroot, self.owner.name, distribution.name)
 
         pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
         pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
@@ -57,9 +55,9 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archive_id)
 
-    def new(self, name, owner=None):
+    def new(self, owner=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(name=name, owner=owner)
+        return Archive(owner=owner)
 
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""

@@ -371,8 +371,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archives = Attribute(
-        "The Archives owned by this person.")
+    archive = Attribute(
+        "The Archive owned by this person, his PPA.")
 
     @invariant
     def personCannotHaveEmblem(person):
@@ -664,12 +664,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN
         state.
-        """
-
-    def getArchive(name):
-        """Return the archive owned by this person with the given name.
-
-        Return None if the Archive with a given name was not found.
         """
 
 

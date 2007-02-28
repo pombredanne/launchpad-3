@@ -169,7 +169,7 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool, self.ubuntutest,
             self.ubuntutest.main_archive)
 
-        test_archive = getUtility(IArchiveSet).new(name='test-archive')
+        test_archive = getUtility(IArchiveSet).new()
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
@@ -188,7 +188,7 @@ class TestPublisher(TestNativePublishingBase):
         """Publisher also works as expected for another archives."""
         from canonical.archivepublisher.publishing import Publisher
 
-        test_archive = getUtility(IArchiveSet).new(name='test-archive')
+        test_archive = getUtility(IArchiveSet).new()
         test_pool_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, self.logger)
 
@@ -229,13 +229,13 @@ class TestPublisher(TestNativePublishingBase):
         allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
         distsroot = None
 
-        archive = self.ubuntutest.main_archive
         distro_publisher = getPublisher(
-            archive, self.ubuntutest, allowed_suites, self.logger, distsroot)
+            self.ubuntutest.main_archive, self.ubuntutest,
+            allowed_suites, self.logger, distsroot)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
-            u'ubuntutest', distro_publisher.archive.name)
+            self.ubuntutest.main_archive, distro_publisher.archive)
         self.assertEqual(
             '/var/tmp/archive/ubuntutest/dists',
             distro_publisher._config.distsroot)
@@ -245,17 +245,15 @@ class TestPublisher(TestNativePublishingBase):
 
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_archive = getUtility(IArchiveSet).new(
-            name='biscuit', owner=cprov)
 
         archive_publisher = getPublisher(
-            cprov_archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the given PPA archive
         self.assertEqual(
-            u'biscuit', archive_publisher.archive.name)
+            cprov.archive, archive_publisher.archive)
         self.assertEqual(
-            u'/var/tmp/ppa.test/cprov/biscuit/ubuntutest/dists',
+            u'/var/tmp/ppa.test/cprov/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
@@ -268,14 +266,13 @@ class TestPublisher(TestNativePublishingBase):
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_archive = getUtility(IArchiveSet).new(name='foobar', owner=cprov)
 
         archive_publisher = getPublisher(
-            cprov_archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
-            status=PackagePublishingStatus.PENDING, archive=cprov_archive)
+            status=PackagePublishingStatus.PENDING, archive=cprov.archive)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()

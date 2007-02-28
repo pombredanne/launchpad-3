@@ -15,7 +15,7 @@ from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    SQLRelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound, SingleJoin)
 from sqlobject.sqlbuilder import AND, SQLConstant
 
 from canonical.database import postgresql
@@ -169,8 +169,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
-    archives = SQLMultipleJoin(
-        'Archive', joinColumn='owner', orderBy='-id')
+
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -1213,10 +1212,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    def getArchive(self, name):
+    @property
+    def archive(self):
         """See IPerson."""
-        return Archive.selectOneBy(name=name, owner=self)
-
+        return Archive.selectOneBy(owner=self)
 
 class PersonSet:
     """The set of persons."""

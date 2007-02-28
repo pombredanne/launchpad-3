@@ -1373,7 +1373,6 @@ COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given t
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
-COMMENT ON COLUMN archive.name IS 'Unique valid name for this archive. It will be presented in the URL.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

@@ -13,23 +13,20 @@ Let get the IArchiveSet utility:
 
 A new Archive can be created by passing a name and an owner
 
-  >>> cprov = getUtility(IPersonSet).getByName('cprov')
-  >>> sandbox_archive = archive_set.new(
-  ...     name='sandbox', owner=cprov)
+  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+  >>> sandbox_archive = archive_set.new(owner=sabdfl)
 
   >>> verifyObject(IArchive, sandbox_archive)
   True
 
-  >>> sandbox_archive.owner == cprov
+  >>> sandbox_archive.owner == sabdfl
   True
 
-An Archive can be retrieved via IPerson.archives MultipleJoin:
+An Archive can be retrieved via IPerson.archive SingleJoin:
 
-  >>> cprov.archives.count()
-  2
-
-  >>> sandbox_archive in cprov.archives
+  >>> sabdfl.archive == sandbox_archive
   True
+
 
 IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its
@@ -53,16 +50,16 @@ configuration file:
 
 Then, the archive topology will follow:
 
-<PPA>/<PERSONNAME>/<ARCHIVENAME>/<DISTRIBUTION>
+<PPA>/<PERSONNAME>/<DISTRIBUTION>
 
   >>> pubconfig.archiveroot
-  u'/var/tmp/ppa/cprov/sandbox/ubuntutest'
+  u'/var/tmp/ppa.test/sabdfl/ubuntutest'
 
   >>> pubconfig.poolroot
-  u'/var/tmp/ppa/cprov/sandbox/ubuntutest/pool'
+  u'/var/tmp/ppa.test/sabdfl/ubuntutest/pool'
 
   >>> pubconfig.distsroot
-  u'/var/tmp/ppa/cprov/sandbox/ubuntutest/dists'
+  u'/var/tmp/ppa.test/sabdfl/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -88,15 +85,19 @@ Usual methods from Publisher Configuration are preserved:
 
 IArchiveSet.getAllPPAs provides all present *personal* archive:
 
-  >>> [(archive.owner.name, archive.name)
-  ...  for archive in archive_set.getAllPPAs()]
-  [(u'cprov', u'ubuntu-fun'), (u'cprov', u'sandbox')]
+  >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
+  [u'cprov', u'sabdfl']
 
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
 
+  >>> main_archives = 0
+  >>> ppas = 0
   >>> for archive in archive_set:
-  ...     if archive.name == 'ubuntu':
-  ...          print "I do know about '%s'" % archive.name
-  I do know about 'ubuntu'
+  ...     if archive.owner is None:
+  ...          main_archives += 1
+  ...     else:
+  ...          ppas += 1
+  >>> main_archives, ppas
+  (8, 2)

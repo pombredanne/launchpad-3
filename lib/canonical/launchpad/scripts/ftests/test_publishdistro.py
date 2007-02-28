@@ -81,15 +81,14 @@ class TestPublishDistro(TestNativePublishingBase):
         """
         pub_source = self.getPubSource(filecontent='foo')
 
-        cprov_ppa = getUtility(IArchiveSet).new(
-            name='default', owner=getUtility(IPersonSet).getByName('cprov'))
+        cprov = getUtility(IPersonSet).getByName('cprov')
         pub_source2 = self.getPubSource(
-            sourcename='baz', filecontent='baz', archive=cprov_ppa)
+            sourcename='baz', filecontent='baz', archive=cprov.archive)
 
-        name16_ppa = getUtility(IArchiveSet).new(
-            name='default', owner=getUtility(IPersonSet).getByName('name16'))
+        name16 = getUtility(IPersonSet).getByName('name16')
+        getUtility(IArchiveSet).new(owner=name16)
         pub_source3 = self.getPubSource(
-            sourcename='bar', filecontent='bar', archive=name16_ppa)
+            sourcename='bar', filecontent='bar', archive=name16.archive)
 
         self.layer.txn.commit()
 
@@ -105,12 +104,12 @@ class TestPublishDistro(TestNativePublishingBase):
         self.assertEqual(False, os.path.exists(foo_path))
 
         baz_path = os.path.join(
-            config.personalpackagearchive.root, 'cprov/default',
+            config.personalpackagearchive.root, cprov.name,
             'ubuntutest/pool/main/b/baz/baz.dsc')
         self.assertEqual('baz', open(baz_path).read().strip())
 
         bar_path = os.path.join(
-            config.personalpackagearchive.root, 'name16/default',
+            config.personalpackagearchive.root, name16.name,
             'ubuntutest/pool/main/b/bar/bar.dsc')
         self.assertEqual('bar', open(bar_path).read().strip())
 

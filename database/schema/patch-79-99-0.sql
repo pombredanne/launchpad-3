@@ -12,15 +12,13 @@ DROP TABLE PersonalPackageArchive;
 -- Create the new tables...
 CREATE TABLE Archive (
 	id SERIAL NOT NULL PRIMARY KEY,
-	name text NOT NULL,
 	owner integer,
-        CONSTRAINT valid_name CHECK (valid_name(name)),
 	CONSTRAINT archive__owner__fk
 	  FOREIGN KEY (owner) REFERENCES Person(id)
 	);
 
-CREATE UNIQUE INDEX archive_owner_name_unique_idx on
-	Archive (name, owner) where owner is not NULL;
+CREATE UNIQUE INDEX archive_owner_unique_idx on
+	Archive (owner) where owner is not NULL;
 
 -- Drop all the views associated with publishing
 DROP VIEW PublishedPackageView;
@@ -238,12 +236,11 @@ SELECT binarypackagepublishing.id,
 
 -- Data migration for distribution and publishing tables
 --- Each distribution needs a main archive
-INSERT INTO ARCHIVE (name) SELECT name FROM Distribution;
+INSERT INTO ARCHIVE (id) SELECT id FROM Distribution;
 
 UPDATE Distribution
    SET main_archive = archive.id
-  	FROM Archive
-       WHERE archive.name = distribution.name;
+  	FROM Archive WHERE archive.id = distribution.id;
 
 --- Update the publishing tables to reference this archive
 UPDATE SecureSourcePackagePublishingHistory

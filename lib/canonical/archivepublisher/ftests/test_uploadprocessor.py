@@ -244,9 +244,9 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         # Make a PPA called foo for kinnison and another called bar for
         # name16 (Foo Bar)
         self.kinnison_archive = getUtility(IArchiveSet).new(
-            name="foo", owner=getUtility(IPersonSet).getByName("kinnison"))
+            owner=getUtility(IPersonSet).getByName("kinnison"))
         self.name16_archive = getUtility(IArchiveSet).new(
-            name="bar", owner=getUtility(IPersonSet).getByName("name16"))
+            owner=getUtility(IPersonSet).getByName("name16"))
 
         # Extra setup for breezy
         self.setupBreezy()
@@ -288,7 +288,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         Email announcement is sent and package is on queue ACCEPTED even if
         the source is NEW (PPA Auto-Accept everything).
         """
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~name16/bar")
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = ["Subject: Accepted bar 1.0-1 (source)"]
@@ -301,7 +301,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
     def testUploadToSomeoneElsePPA(self):
         """Upload to a someone else's PPA gets rejected with proper message."""
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~kinnison/foo")
+        upload_dir = self.queueUpload("bar_1.0-1", "~kinnison/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
@@ -319,19 +319,19 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Could not find distribution 'biscuit'"]
         self.assertEmail(contents)
 
-    def testUploadToUnknownPPA(self):
-        """Upload to unknown PPA gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~name16/fooix")
+    def testUploadWithMismatchingPPANotation(self):
+        """Upload with mismatching PPA notation gets proper rejection email."""
+        upload_dir = self.queueUpload("bar_1.0-1", "biscuit/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
             "Subject: bar_1.0-1_source.changes Rejected",
-            "Could not find PPA 'name16/fooix'"]
+            "PPA upload path must start with '~'."]
         self.assertEmail(contents)
 
     def testUploadToUnknownPerson(self):
         """Upload to unknown person gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/~orange/lemon")
+        upload_dir = self.queueUpload("bar_1.0-1", "~orange/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
@@ -347,7 +347,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes Rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use <distro>/~<person>/<archive>/[files] for PPAs "
+            "Use ~<person>/<distro>/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 

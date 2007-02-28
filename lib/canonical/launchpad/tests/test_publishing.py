@@ -323,21 +323,19 @@ class TestNativePublishing(TestNativePublishingBase):
         than Distribution.main_archive work as expected
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
-        test_archive = getUtility(IArchiveSet).new(
-            name='test-archive', owner=cprov)
         test_pool_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
             filecontent='Am I a PPA Record ?',
-            archive=test_archive)
+            archive=cprov.archive)
         pub_source.publish(test_disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source.sourcepackagerelease.upload_archive.name,
-                         'test-archive')
+        self.assertEqual(pub_source.sourcepackagerelease.upload_archive,
+                         cprov.archive)
         foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
 

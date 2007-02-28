@@ -489,7 +489,7 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        archive = getUtility(IArchiveSet).new(name=data['name'])
+        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],

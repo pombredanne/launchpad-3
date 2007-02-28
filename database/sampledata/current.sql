@@ -544,15 +544,15 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, name, owner) VALUES (1, 'ubuntu', NULL);
-INSERT INTO archive (id, name, owner) VALUES (2, 'redhat', NULL);
-INSERT INTO archive (id, name, owner) VALUES (3, 'debian', NULL);
-INSERT INTO archive (id, name, owner) VALUES (4, 'gentoo', NULL);
-INSERT INTO archive (id, name, owner) VALUES (5, 'kubuntu', NULL);
-INSERT INTO archive (id, name, owner) VALUES (6, 'guadalinex', NULL);
-INSERT INTO archive (id, name, owner) VALUES (7, 'ubuntutest', NULL);
-INSERT INTO archive (id, name, owner) VALUES (8, 'ubuntu-extra', NULL);
-INSERT INTO archive (id, name, owner) VALUES (9, 'ubuntu-fun', 28);
+INSERT INTO archive (id, owner) VALUES (1, NULL);
+INSERT INTO archive (id, owner) VALUES (2, NULL);
+INSERT INTO archive (id, owner) VALUES (3, NULL);
+INSERT INTO archive (id, owner) VALUES (4, NULL);
+INSERT INTO archive (id, owner) VALUES (5, NULL);
+INSERT INTO archive (id, owner) VALUES (6, NULL);
+INSERT INTO archive (id, owner) VALUES (7, NULL);
+INSERT INTO archive (id, owner) VALUES (8, NULL);
+INSERT INTO archive (id, owner) VALUES (9, 28);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;

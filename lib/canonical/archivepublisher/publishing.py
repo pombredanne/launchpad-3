@@ -86,8 +86,8 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
         log.debug("Finding configuration for %s main_archive."
                   % distribution.name)
     else:
-        log.debug("Finding configuration for '%s/%s'."
-                  % (archive.owner.name, archive.name))
+        log.debug("Finding configuration for '%s' PPA."
+                  % archive.owner.name)
     try:
         pubconf = archive.getPubConfig(distribution)
     except LucilleConfigError, info:

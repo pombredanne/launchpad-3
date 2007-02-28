@@ -377,7 +377,7 @@ class UploadProcessor:
         The valid paths are:
         '' - default distro, ubuntu
         '<distroname>' - given distribution
-        '<distroname>/~<personname>/<archivename>' - given distro and ppa.
+        '~<personname>/<distroname>' - given ppa and distribution.
 
         I raises UploadPathError if something was wrong when parsing it.
 
@@ -386,11 +386,12 @@ class UploadProcessor:
         """
         parts = relative_path.split(os.path.sep)
 
+        first_path = parts[0]
+
         # Distribution name only, or nothing
         if len(parts) == 1:
-            distro_name = parts[0]
-
-            # XXX cprov 20070221: fallback to ubuntu
+            distro_name = first_path
+            # fallback to ubuntu
             if not distro_name:
                 distro_name = 'ubuntu'
 
@@ -398,32 +399,35 @@ class UploadProcessor:
             if not distro:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distro_name)
-
             archive = distro.main_archive
-        # PPA upload (<distro>/~<person>/<archive>/)
-        elif len(parts) == 3:
-            distro_name = parts[0]
 
-            distro = getUtility(IDistributionSet).getByName(distro_name)
-            if distro is None:
+        # PPA upload (~<person>/<distro>/)
+        elif len(parts) == 2:
+            if not first_path.startswith('~'):
                 raise UploadPathError(
-                    "Could not find distribution '%s'" % distro_name)
+                    "PPA upload path must start with '~'.")
 
             # Skip over ~
-            person_name = parts[1][1:]
+            person_name = first_path[1:]
             person = getUtility(IPersonSet).getByName(person_name)
             if person is None:
                 raise UploadPathError(
                     "Could not find person '%s'" % person_name)
 
-            archive_name = parts[2]
-            archive = person.getArchive(archive_name)
+            distro_name = parts[1]
+            distro = getUtility(IDistributionSet).getByName(distro_name)
+            if distro is None:
+                raise UploadPathError(
+                    "Could not find distribution '%s'" % distro_name)
+
+            archive = person.archive
             if archive is None:
                 raise UploadPathError(
-                    "Could not find PPA '%s/%s'" % (person_name, archive_name))
+                    "Could not find PPA for '%s'" % person_name)
+
         else:
             raise UploadPathError(
-                "Path mismatch '%s'. Use <distro>/~<person>/<archive>/[files] "
+                "Path mismatch '%s'. Use ~<person>/<distro>/[files] "
                 "for PPAs and <distro>/[files] for normal uploads."
                 % (relative_path))
 
