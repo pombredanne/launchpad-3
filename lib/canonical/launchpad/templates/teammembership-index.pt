@@ -77,13 +77,13 @@
                 <label for="admin">
                   <input tal:attributes="checked python:view.adminIsSelected()
                                                  and 'checked' or ''"
-                         type="radio" value="yes" name="admin" />
+                         type="radio" value="yes" name="admin" id="admin"/>
                   Yes
                 </label>
                 <label for="notadmin">
                   <input tal:attributes="checked python:not view.adminIsSelected()
                                                  and 'checked' or ''"
-                         type="radio" value="yes" name="notadmin" />
+                         type="radio" value="no" name="admin" id="notadmin"/>
                   No
                 </label>
               </tal:can-change>

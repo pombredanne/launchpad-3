@@ -82,13 +82,6 @@ You can use the following authorization lines:
   for Daf: (launchpad admin, rosetta admin)
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
 
-  for Danner: (no memberships)
-    >>> browser.addHeader('Authorization', 'Basic danner@mixmail.com:danner')
-
-  for Edgar: (no memberships)
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic edgar@monteparadiso.hr:edgar')
-
   for Jblack: (launchpad admins)
     >>> browser.addHeader('Authorization',
     ...                   'Basic james.blackwell@ubuntulinux.com:jblack')

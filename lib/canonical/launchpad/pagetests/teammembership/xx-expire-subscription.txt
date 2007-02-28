@@ -7,8 +7,8 @@ value for the year 2000 is not available in HTML, but we can encode the
 variables:
 
   >>> import urllib
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open("http://launchpad.dev/~myemail/+member/name16",
+  >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+  >>> browser.open("http://launchpad.dev/~name20/+member/name12",
   ...              urllib.urlencode(dict(
   ...                   admin="no",
   ...                   day=1,
@@ -27,9 +27,9 @@ Let's do it under the wraps:
 
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> from canonical.lp.dbschema import TeamMembershipStatus
-  >>> foobar = Person.byName('name16')
-  >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
+  >>> sampleperson = Person.byName('name12')
+  >>> team = Person.byName('name20')
+  >>> tm = TeamMembership.selectOneBy(personID=sampleperson.id, teamID=team.id)
   >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
 
 Persist the change:
@@ -39,6 +39,6 @@ Persist the change:
 
 And make sure that 'name16' is now an EXPIRED member of this team.
 
-  >>> foobar.inTeam(team)
+  >>> sampleperson.inTeam(team)
   False
 

@@ -143,10 +143,10 @@ class TeamMembershipEditView:
                 return
             new_status = TeamMembershipStatus.DEACTIVATED
         elif form.get('change'):
-            if (form.get('notadmin') and
+            if (form.get('admin') == "no" and
                 context.status == TeamMembershipStatus.ADMIN):
                 new_status = TeamMembershipStatus.APPROVED
-            elif (form.get('admin') and
+            elif (form.get('admin') == "yes" and
                   context.status == TeamMembershipStatus.APPROVED
                   # XXX: salgado, 2005-03-15: The clause below is a hack
                   # to make sure only the teamowner can promote a given

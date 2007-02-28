@@ -1,0 +1,102 @@
+= Joining a team =
+
+Foo Bar will join the newly created team.
+
+    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~myemail/')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/'
+
+Since this is an open team, he's automatically approved.
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Successfully joined my own team.
+
+Now, the link to join the team is not present anymore and the +join page will
+say that there's no need to join since the user is already a member of that
+team.
+
+    >>> browser.getLink('Join the team')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> browser.open('http://launchpad.dev/~myemail/+join')
+    >>> for tag in find_tags_by_class(browser.contents, 'warning'):
+    ...     print tag.renderContents()
+    You are an active member of this team already.
+
+If this was a moderated team, the membership would not have been automatically
+approved, though.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> myemail = Person.selectOneBy(name='myemail')
+    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> browser = Browser()
+    >>> browser.addHeader(
+    ...     'Authorization', 'Basic james.blackwell@ubuntulinux.com:jblack')
+    >>> browser.open('http://launchpad.dev/~myemail/')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> print find_tag_by_id(browser.contents, 'maincontent').renderContents()
+    <BLANKLINE>
+    ...
+    Since this is a moderated team, one of its administrators will have to
+    approve your membership before you actually become a member of this team.
+    ...
+
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Subscription request pending approval.
+
+If it was a restricted team, users wouldn't even be able to ask to join the
+team.
+
+    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> flush_database_updates()
+
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization',
+    ...     'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser.open('http://launchpad.dev/~myemail/+join')
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'warning'):
+    ...     print tag.renderContents()
+    my own team is a restricted team.
+    Only a team administrator can add new members.
+
+On the team's +members page we can now see Foo Bar as an approved member,
+James Blackwell as a proposed one and Jeff Waugh won't be there at all.
+
+    >>> anon_browser.open('http://launchpad.dev/~myemail')
+    >>> anon_browser.getLink('Show all members').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/~myemail/+members'
+
+    >>> contents = anon_browser.contents
+    >>> for link in find_tag_by_id(contents, 'activemembers').findAll('a'):
+    ...     print link.renderContents()
+    Foo Bar
+    Sample Person
+
+    >>> for link in find_tag_by_id(contents, 'proposedmembers').findAll('a'):
+    ...     print link.renderContents()
+    James Blackwell

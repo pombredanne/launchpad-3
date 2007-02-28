@@ -3,24 +3,24 @@
 Any administrator of a team can add new members to that team.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Add member').click()
     >>> browser.url
-    'http://launchpad.dev/~myemail/+addmember'
+    'http://launchpad.dev/~landscape-developers/+addmember'
     >>> browser.getControl('New member').value = 'cprov'
     >>> browser.getControl('Add').click()
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of my own team.
+    Celso Providelo (cprov) was added as a member of Landscape Developers.
 
 
-Let's make sure that 'cprov' is now an Approved member of 'myemail'
+Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
 
     >>> from canonical.launchpad.database import Person, TeamMembership
     >>> cprov = Person.byName('cprov')
-    >>> team = Person.byName('myemail')
+    >>> team = Person.byName('landscape-developers')
     >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
     >>> tm.statusname
     'Approved'
@@ -30,13 +30,13 @@ Let's make sure that 'cprov' is now an Approved member of 'myemail'
 If the new member is already an approved member of that team, we'll say that.
 
     >>> browser.url
-    'http://launchpad.dev/%7Emyemail/+addmember?added=28'
+    'http://launchpad.dev/%7Elandscape-developers/+addmember?added=28'
     >>> browser.getControl('New member').value = 'cprov'
     >>> browser.getControl('Add').click()
 
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) is already a member of my own team.
+    Celso Providelo (cprov) is already a member of Landscape Developers.
 
 
 On the other hand, if the member is among the inactive/proposed members of
@@ -51,12 +51,12 @@ successfully added.
     >>> tm.syncUpdate()
 
     >>> browser.url
-    'http://launchpad.dev/%7Emyemail/+addmember?notadded=28'
+    'http://launchpad.dev/%7Elandscape-developers/+addmember?notadded=28'
     >>> browser.getControl('New member').value = 'cprov'
     >>> browser.getControl('Add').click()
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of my own team.
+    Celso Providelo (cprov) was added as a member of Landscape Developers.
 
