@@ -409,35 +409,28 @@ class TestBzrSync(BzrSyncTestCase):
         # db_branch_revision_map should map Bazaar revision_ids to
         # BranchRevision.ids.
 
-        # Put the database into a known state.
-        self.makeBranchWithMerge()
-        # NOMERGE: dependency inversion, tests for retrieveDatabaseAncestry
-        # should not depend on syncBranchAndClose, because it uses
-        # retrieveDatabaseAncestry.
-        self.syncBranch()
+        # Use the sampledata for this test, so we do not have to rely on
+        # BzrSync to fill the database. That would cause a circular dependency,
+        # as the test setup would depend on retrieveDatabaseAncestry.
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~name12/+junk/junk.contrib')
+        self.db_branch = branch
+        sampledata = list(
+            BranchRevision.selectBy(branch=branch).orderBy('sequence'))
+        expected_ancestry = set(branch_revision.revision.revision_id
+            for branch_revision in sampledata)
+        expected_history = [branch_revision.revision.revision_id
+            for branch_revision in sampledata
+            if branch_revision.sequence is not None]
+        expected_mapping = dict(
+            (branch_revision.revision.revision_id, branch_revision.id)
+            for branch_revision in sampledata)
 
         bzrsync = self.makeBzrSync()
         bzrsync.retrieveDatabaseAncestry()
-
-        branch_revision_set = BranchRevisionSet()
-        ancestry = set(branch_revision.revision.revision_id
-            for branch_revision
-            in branch_revision_set.getAncestryForBranch(self.db_branch))
-        history = [branch_revision.revision.revision_id
-            for branch_revision
-            in branch_revision_set.getRevisionHistoryForBranch(self.db_branch)]
-        # getRevisionHistoryForBranch gives most recent first for display on
-        # web pages, but retrieveDatabaseAncestry gives most recent last for
-        # consistency with bzrlib.
-        history.reverse()
-        mapping = dict(
-            (branch_revision.revision.revision_id, branch_revision.id)
-            for branch_revision
-            in branch_revision_set.getAncestryForBranch(self.db_branch))
-
-        self.assertEqual(ancestry, set(bzrsync.db_ancestry))
-        self.assertEqual(history, list(bzrsync.db_history))
-        self.assertEqual(mapping, bzrsync.db_branch_revision_map)
+        self.assertEqual(expected_ancestry, set(bzrsync.db_ancestry))
+        self.assertEqual(expected_history, list(bzrsync.db_history))
+        self.assertEqual(expected_mapping, bzrsync.db_branch_revision_map)
 
 
 class TestBzrSyncPerformance(BzrSyncTestCase):
