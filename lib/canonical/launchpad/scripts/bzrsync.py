@@ -118,7 +118,7 @@ class BzrSync:
             branch_revision_set.getScannerDataForBranch(self.db_branch)
 
     def retrieveBranchDetails(self):
-        # NOMERGE: docstring!
+        """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
         self.last_revision = self.bzr_branch.last_revision()
         # Make bzr_ancestry a set for consistency with db_ancestry.
@@ -156,9 +156,24 @@ class BzrSync:
                     break
             common_len -= 1
 
-        # Revision added or removed from the branch's history.
+        # Revision added or removed from the branch's history. These lists may
+        # include revisions whose history position has merely changed.
+        #
+        # removed_history may include revisions that are still part of the
+        # ancestry or history of the branch, but whose sequence value has
+        # changed.
         removed_history = db_history[common_len:]
+        # Similarly, added_history may include revisions that were previously
+        # part of the ancestry, but that need to be added because their
+        # relation to the branch has changed.
         added_history = bzr_history[common_len:]
+
+        # NOMERGE: Check that BranchRevision rows for revisions that were
+        # previously part of the ancestry, but not of the history, and which
+        # are now part of the history, are deleted and added. The
+        # added_ancestry and removed_ancestry set should probably be renamed
+        # added_merged and removed_merged and capture changes in the
+        # non-history ancestry.
 
         # Revisions added or removed from the branch's ancestry.
         added_ancestry = bzr_ancestry.difference(db_ancestry)
@@ -174,10 +189,6 @@ class BzrSync:
         # to the ancestry or to the history.
         self.branchrevisions_to_insert = list(
             self.getRevisions(added_ancestry.union(added_history)))
-        # NOMERGE: make it more obvious that added_history may include
-        # revisions that were previously part of the ancestry, but that need to
-        # be added because their relation to the branch has changed and they
-        # are in branchrevisions_to_delete.
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
