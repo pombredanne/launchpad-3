@@ -56,7 +56,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
+        name="+questions"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -72,7 +72,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductBranchesMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu 
+            ProductTranslationsMenu ProductBugsMenu
             ProductSetFacets ProductSetContextMenu
             "
             />

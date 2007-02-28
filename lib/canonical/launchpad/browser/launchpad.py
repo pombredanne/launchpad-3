@@ -26,7 +26,6 @@ import cgi
 import errno
 import urllib
 import os
-import os.path
 import re
 import time
 from datetime import timedelta, datetime
@@ -60,7 +59,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    RedirectionView, stepto, canonical_url)
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -404,6 +403,13 @@ class LaunchpadRootNavigation(Navigation):
     def breadcrumb(self):
         return 'Launchpad'
 
+    @stepto('support')
+    def redirect_support(self):
+        """Redirect /support to Answers root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='answers')
+        return RedirectionView(target_url, self.request, status=301)
+
     stepto_utilities = {
         'products': IProductSet,
         'people': IPersonSet,
@@ -419,7 +425,7 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': IQuestionSet,
+        'questions': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,

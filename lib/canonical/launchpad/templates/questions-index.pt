@@ -33,7 +33,7 @@
                             </a>
                           </li>
                         </ul>
-                        <form class="central" action="+tickets" method="get">
+                        <form class="central" action="+questions" method="get">
                           <table>
                             <tbody>
                               <tr>

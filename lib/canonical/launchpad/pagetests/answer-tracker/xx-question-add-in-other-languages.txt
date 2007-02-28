@@ -4,7 +4,7 @@ It is possible to ask questions in a language other than English. The
 'Ask Quesiton' page has a pop-up where the user can select the language
 of the question. By default, the question language is 'English'.
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> user_browser.getLink('Ask question').click()
     >>> user_browser.getControl('Language').value
     ['en']
@@ -24,7 +24,7 @@ a language that is not spoken/understood by any of the context's answer
 contacts.
 
     >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['pt_BR']
     >>> browser.getControl('Summary').value = (
@@ -70,7 +70,7 @@ from asking a question in the language of his choice.
     ...     ).encode('utf-8')
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../ubuntu/+ticket/...'
+    '.../ubuntu/+question/...'
     >>> browser.title
     'Ubuntu question #...Abrir uma pagina que requer...'
 
@@ -85,7 +85,7 @@ then changed his mind on the second page.
     >>> from zope.testbrowser.testing import Browser
     >>> browser = Browser()
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
-    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']
     >>> browser.getControl('Summary').value = 'some random words'
@@ -107,7 +107,7 @@ Welsh, we'll have to warn him.
     >>> browser.getControl('Add').click()
 
     >>> browser.url
-    'http://launchpad.dev/ubuntu/+addticket'
+    'http://launchpad.dev/ubuntu/+addquestion'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -140,7 +140,7 @@ new question.
 
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../ubuntu/+ticket/...'
+    '.../ubuntu/+question/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> soup = BeautifulSoup(browser.contents)

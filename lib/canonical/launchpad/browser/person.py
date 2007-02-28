@@ -334,7 +334,7 @@ class PersonFacets(StandardLaunchpadFacets):
     def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
-        return Link('+tickets', text, summary)
+        return Link('+questions', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -2696,31 +2696,31 @@ class PersonAnswersMenu(ApplicationMenu):
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='question')
+        return Link('+answeredquestions', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='question')
+        return Link('+assignedquestions', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
-        return Link('+createdtickets', 'Asked', summary, icon='question')
+        return Link('+createdquestions', 'Asked', summary, icon='question')
 
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='question')
+        return Link('+commentedquestions', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need attention', summary,
+        return Link('+needattentionquestions', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='question')
+        return Link('+subscribedquestions', text, summary, icon='question')
 
 

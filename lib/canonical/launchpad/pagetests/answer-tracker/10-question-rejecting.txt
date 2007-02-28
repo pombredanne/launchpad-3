@@ -10,7 +10,7 @@ doesn't have access to that feature.
     # XXX flacoste 2006/10/19 Bug 52077 user_browser should be no-priv
     # We can't use user_browser here because he is Firefox's registrant.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> browser.open('http://launchpad.dev/firefox/+question/2')
     >>> browser.getLink('Reject question')
     Traceback (most recent call last):
       ...
@@ -20,14 +20,14 @@ Even when trying to access the page directly, he will get an unauthorized
 error.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2/+reject')
+    ...     'http://launchpad.dev/firefox/+question/2/+reject')
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
 To reject the question, the user clicks on the 'Reject Question' link.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> admin_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> admin_browser.getLink('Reject question').click()
     >>> admin_browser.getControl('Reject').click()
 
@@ -74,16 +74,16 @@ set the question status to an arbitrary value without workflow constraint.
 
 That action isn't available to a non-privileged user:
 
-    >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> browser.open('http://launchpad.dev/firefox/+question/2')
     >>> browser.getLink('Change status')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
-The change status form is available to an adminsitrator through the
+The change status form is available to an administrator through the
 'Change status' link.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> admin_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> admin_browser.getLink('Change status').click()
 
 The form has a select widget displaying the current status.

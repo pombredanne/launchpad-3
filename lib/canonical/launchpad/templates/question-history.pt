@@ -33,7 +33,7 @@
       <tr tal:repeat="message context/messages">
         <td tal:content="message/datecreated/fmt:date">2005-10-16</td>
         <td><img src="/@@/user" />
-          <a tal:attributes="href string:${message/owner/fmt:url}/+tickets"
+          <a tal:attributes="href string:${message/owner/fmt:url}/+questions"
              tal:content="message/owner/browsername"
               >Foo Bar</a></td>
         <td tal:content="message/action/title">Comment</td>

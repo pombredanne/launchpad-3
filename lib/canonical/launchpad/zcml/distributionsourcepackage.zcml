@@ -36,7 +36,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
     />
 
   <browser:url

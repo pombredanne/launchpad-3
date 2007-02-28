@@ -34,8 +34,9 @@ from canonical.launchpad.interfaces import (
     ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionTarget,
     NotFoundError)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, redirection, stepthrough,
-    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
+    action, canonical_url, custom_widget, stepthrough, urlappend,
+    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link,
+    RedirectionNavigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -45,15 +46,15 @@ class AskAQuestionButtonView:
     """View that renders a clickable button to ask a question on its context."""
 
     def __call__(self):
-        # Check if the context has an +addticket view available...
-        if queryMultiAdapter((self.context, self.request), name='+addticket'):
+        # Check if the context has an +addquestion view available...
+        if queryMultiAdapter((self.context, self.request), name='+addquestion'):
             target = self.context
         else:
             # otherwise find an adapter to IQuestionTarget which will.
             target = IQuestionTarget(self.context)
 
         return """
-              <a href="%s/+addticket">
+              <a href="%s/+addquestion">
                 <img
                   alt="Ask a question"
                   src="/+icing/but-sml-askaquestion.gif"
@@ -291,8 +292,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         else:
             sourcepackage = self.context.getSourcePackage(
                 question.sourcepackagename)
-            return '<a href="%s/+tickets">%s</a>' % (
-                canonical_url(sourcepackage), question.sourcepackagename.name)
+            return '<a href="%s">%s</a>' % (
+                canonical_url(sourcepackage, rootsite='answers'),
+                question.sourcepackagename.name)
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
@@ -425,7 +427,7 @@ class ManageAnswerContactView(GeneralFormView):
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
 
-        self._nextURL = canonical_url(self.context) + '/+tickets'
+        self._nextURL = canonical_url(self.context, rootsite='answers')
 
 
 class QuestionTargetFacetMixin:
@@ -434,22 +436,30 @@ class QuestionTargetFacetMixin:
     def answers(self):
         summary = (
             'Questions for %s' % self.context.displayname)
-        return Link('+tickets', 'Answers', summary)
+        return Link('+questions', 'Answers', summary)
 
 
 class QuestionTargetTraversalMixin:
     """Navigation mixin for IQuestionTarget."""
 
-    @stepthrough('+ticket')
+    @stepthrough('+question')
     def traverse_question(self, name):
         # questions should be ints
         try:
             question_id = int(name)
         except ValueError:
-            raise NotFoundError
+            raise NotFoundError(name)
         return self.context.getQuestion(question_id)
 
-    redirection('+ticket', '+tickets')
+
+    @stepthrough('+ticket')
+    def redirect_ticket(self, name):
+        # Use RedirectionNavigation to redirect to +question.
+        # It will take care of the remaining steps and query URL.
+        redirection_helper = RedirectionNavigation(self.context, self.request)
+        redirection_helper.redirection_root_url = urlappend(
+            canonical_url(self.context, rootsite='answers'), '+question')
+        return redirection_helper.traverse(name)
 
 
 class QuestionCollectionAnswersMenu(ApplicationMenu):
@@ -460,7 +470,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
     links = ['open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
-        return "+tickets?" + urlencode(
+        return "+questions?" + urlencode(
             {'field.status': statuses,
              'field.sort': sort,
              'field.search_text': '',
@@ -478,7 +488,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
 
     def myrequests(self):
         text = 'My questions'
-        return Link('+mytickets', text, icon='question')
+        return Link('+myquestions', text, icon='question')
 
     def need_attention(self):
         text = 'Need attention'
@@ -494,9 +504,9 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     def new(self):
         text = 'Ask question'
-        return Link('+addticket', text, icon='add')
+        return Link('+addquestion', text, icon='add')
 
     def answer_contact(self):
         text = 'Answer contact'
-        return Link('+support-contact', text, icon='edit')
+        return Link('+answer-contact', text, icon='edit')
 

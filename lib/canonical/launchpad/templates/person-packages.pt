@@ -100,7 +100,7 @@
         </a>
       </td>
       <td style="text-align: right">
-        <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+tickets"
+        <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+questions"
            tal:content="spr/open_ticket_count">
         </a>
       </td>

@@ -24,7 +24,7 @@
 
   <p>
     Subscribing to a question makes it show up on
-    <a tal:attributes="href string:/~${request/lp:person/name}/+tickets"
+    <a tal:attributes="href string:/~${request/lp:person/name}/+questions"
     >your Answers page</a>.
   </p>
 

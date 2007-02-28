@@ -110,7 +110,7 @@
           </td>
           <td tal:content="question/datecreated/fmt:date">2006-07-17</td>
           <td><img src="/@@/user" />
-            <a tal:attributes="href string:${question/owner/fmt:url}/+tickets"
+            <a tal:attributes="href string:${question/owner/fmt:url}/+questions"
                tal:content="question/owner/browsername"
               >Foo Bar</a>
           </td>
@@ -118,7 +118,7 @@
               tal:condition="view/display_target_column"
               ><a href="#"
                   tal:define="target question/target"
-                  tal:attributes="href string:${target/fmt:url}/+tickets"
+                  tal:attributes="href string:${target/fmt:url}/+questions"
                   tal:content="target/displayname">Firefox</a></td>
           <td tal:condition="view/display_sourcepackage_column"
               tal:content="structure python:view.formatSourcePackageName(question)"

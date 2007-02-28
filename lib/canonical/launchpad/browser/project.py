@@ -215,7 +215,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
 
     def new(self):
         text = 'Ask question'
-        return Link('+addticket', text, icon='add')
+        return Link('+addquestion', text, icon='add')
 
 
 class ProjectTranslationsMenu(ApplicationMenu):
@@ -447,7 +447,7 @@ class ProjectAddQuestionView(QuestionAddView):
 # XXX flacoste 2006-12-13 This should be removed and the
 # QuestionTargetLatestQuestionsView used instead once we add a
 # searchQuestions() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
+# fixing bug #4935 (/projects/whatever/+questions returns NotFound error)
 class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by
     QuestionAddView.

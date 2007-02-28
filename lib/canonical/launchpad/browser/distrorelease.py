@@ -140,7 +140,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     def answers(self):
         text = 'Ask question'
-        url = canonical_url(self.context.distribution) + '/+addticket'
+        url = canonical_url(self.context.distribution) + '/+addquestion'
         return Link(url, text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')

@@ -20,20 +20,20 @@
     posted <span tal:replace="context/datecreated/fmt:date">2005-10-05</span> by
     <img src="/@@/user" />
     <a
-      tal:attributes="href string:${context/owner/fmt:url}/+tickets"
+      tal:attributes="href string:${context/owner/fmt:url}/+questions"
       tal:content="context/owner/browsername"
     >Foo Bar
     </a><tal:assignee condition="context/assignee">,
     assigned to
     <img src="/@@/user" />
     <a
-      tal:attributes="href string:${context/assignee/fmt:url}/+tickets"
+      tal:attributes="href string:${context/assignee/fmt:url}/+questions"
       tal:content="context/assignee/browsername"
     >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
     answered by
     <img src="/@@/user" />
     <a
-      tal:attributes="href string:${context/answerer/fmt:url}/+tickets"
+      tal:attributes="href string:${context/answerer/fmt:url}/+questions"
       tal:content="context/answerer/browsername">Foo Bar
     </a>
     </tal:answerer>
