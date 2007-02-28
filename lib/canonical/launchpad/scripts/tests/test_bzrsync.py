@@ -378,12 +378,10 @@ class TestBzrSync(BzrSyncTestCase):
         bzrsync = self.makeBzrSync()
         bzrsync.syncBranchAndClose()
 
-        # Make a new BzrSync object, because close() renders the first one
-        # unusable.
-        bzrsync = self.makeBzrSync()
-        # NOMERGE: use database.BranchRevision instead.
-        bzrsync.retrieveDatabaseAncestry()
-        self.assertEqual(bzrsync.db_ancestry, set(revisions))
+        db_ancestry = set(branch_revision.revision.revision_id
+            for branch_revision
+            in BranchRevision.selectBy(branch=self.db_branch))
+        self.assertEqual(db_ancestry, set(revisions))
 
     def test_sync_is_idempotent(self):
         # Nothing should be changed if we sync a branch that hasn't been
