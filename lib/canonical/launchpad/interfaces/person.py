@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Person interfaces."""
 
@@ -32,8 +32,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.ticket import (
-    ITicketCollection, TICKET_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.question import IQuestionCollection
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -85,7 +84,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, ITicketCollection):
+class IPerson(IHasSpecifications, IQuestionCollection):
     """A Person."""
 
     id = Int(
@@ -269,7 +268,7 @@ class IPerson(IHasSpecifications, ITicketCollection):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -578,6 +577,11 @@ class IPerson(IHasSpecifications, ITicketCollection):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
+        """
+
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
@@ -641,20 +645,18 @@ class IPerson(IHasSpecifications, ITicketCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, sort=None, participation=None,
-                      needs_attention=False):
-        """Search the person's tickets.
+    def searchQuestions(**search_criteria):
+        """Search the person's questions.
 
-        See ITicketCollection for the description of the standard search
+        See IQuestionCollection for the description of the standard search
         parameters.
 
-        :participation: A list of TicketParticipation that defines the set
-        of relationship to tickets that will be searched. If None or an empty
+        :participation: A list of QuestionParticipation that defines the set
+        of relationship to questions that will be searched. If None or an empty
         sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only tickets needing attention
-        from the person will be included. Tickets needing attention are those
+        :needs_attention: If this flag is true, only questions needing attention
+        from the person will be included. Questions needing attention are those
         owned by the person in the ANSWERED or NEEDSINFO state, as well as,
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN
