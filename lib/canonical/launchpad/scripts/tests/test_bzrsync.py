@@ -6,13 +6,15 @@
 import datetime
 import os
 import random
+import shutil
+import sys
 import time
 import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 import pytz
 from zope.component import getUtility
 
@@ -30,10 +32,36 @@ from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import ZopelessLayer
 
 
+class BzrlibZopelessLayer(ZopelessLayer):
+    """Clean up the test directory created by TestCaseInTempDir tests."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # Remove the test directory created by TestCaseInTempDir.
+        # Copied from bzrlib.tests.TextTestRunner.run.
+        test_root = TestCaseInTempDir.TEST_ROOT
+        if test_root is not None:
+            test_root = test_root.encode(sys.getfilesystemencoding())
+            shutil.rmtree(test_root)
+
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
-    layer = ZopelessLayer
+    layer = BzrlibZopelessLayer
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
