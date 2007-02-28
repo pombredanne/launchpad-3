@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import atexit
 import unittest
 import tempfile
 import os
@@ -12,7 +13,6 @@ import signal
 import shutil
 import gc
 import threading
-import sys
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
@@ -28,6 +28,7 @@ from bzrlib.builtins import cmd_push
 from twisted.internet import defer, threads
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.trial.runner import TrialSuite
 
 import canonical
 from canonical.config import config
@@ -38,6 +39,10 @@ from canonical.launchpad.daemons.sftp import SFTPSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.testing import LaunchpadZopelessLayer
+
+
+# XXX - We need to run TrialSuite()._bail once at the exit if we are 
+_bail_registered = False
 
 
 def deferToThread(f):
@@ -65,6 +70,8 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        if not _bail_registered:
+            atexit.register(TrialSuite()._bail)
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         super(SFTPTestCase, self).setUp()
 
@@ -274,10 +281,8 @@ class AcceptanceTests(SFTPTestCase):
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
-        # XXX Andrew Bennetts 2006-04-20: Force bzrlib to make a new SFTP
-        # connection. We use getattr to protect against this private attr
-        # going away in a later version of bzrlib.
-        getattr(sftp, '_connected_hosts', {}).clear()
+        # Force bzrlib to make a new SFTP connection.
+        sftp.clear_connection_cache()
 
         remote_revision = self._pushThenGetLastRevision(remote_url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
@@ -289,17 +294,12 @@ class AcceptanceTests(SFTPTestCase):
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
-        getattr(sftp, '_connected_hosts', {}).clear()
+        sftp.clear_connection_cache()
 
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open(self.server_base
                                       + '~testuser/+junk/renamed-branch'))
-
-        @deferToThread
-        def openRenamedBranch(remote_url):
-            remote_branch = bzrlib.branch.Branch.open(remote_url)
-            return remote_branch.last_revision()
 
         remote_branch = bzrlib.branch.Branch.open(
             self.server_base + '~testuser/firefox/renamed-branch')
@@ -394,13 +394,6 @@ def test_suite():
     return suite
 
 
-# Kill any daemons left lying around from a previous interrupted run.
 # Be paranoid since we trash directories as part of this.
 assert config.default_section == 'testrunner', \
         'Imported dangerous test harness outside of the test runner'
-
-# NOMERGE - figure out what to do with this, we aren't using
-#SFTPSetup().killTac()
-# AuthserverTacTestSetup anymore.
-#AuthserverTacTestSetup().killTac()
-

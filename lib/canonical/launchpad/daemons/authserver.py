@@ -38,19 +38,22 @@ class AuthserverSetup:
                                 cp_reconnect=True)
         return dbpool
 
-    def makeResource(self, dbpool, debug=False):
+    def buildTree(self, versionOneAPI, versionTwoAPI, branchAPI):
         root = resource.Resource()
+        root.putChild('', versionOneAPI)
+        root.putChild('RPC2', versionTwoAPI)
+        root.putChild('v2', versionTwoAPI)
+        root.putChild('branch', branchAPI)
+        return root
+
+    def makeResource(self, dbpool, debug=False):
         v1API = UserDetailsResource(DatabaseUserDetailsStorage(dbpool),
                                     debug=debug)
         v2API = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool),
                                       debug=debug)
         branchAPI = BranchDetailsResource(DatabaseBranchDetailsStorage(dbpool),
                                           debug=debug)
-        root.putChild('', v1API)
-        root.putChild('RPC2', v2API)
-        root.putChild('v2', v2API)
-        root.putChild('branch', branchAPI)
-        return root
+        return self.buildTree(v1API, v2API, branchAPI)
 
     def makeService(self):
         site = server.Site(self.makeResource(self.makeConnectionPool()))
