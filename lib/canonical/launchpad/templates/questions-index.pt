@@ -48,7 +48,7 @@
                                 </td>
                                 <td>
                                   <input
-                                    name="field.actions.search"
+                                    tal:replace="structure view/search_action/render"
                                     type="submit"
                                     value="Search Questions"
                                   />

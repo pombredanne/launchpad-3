@@ -78,7 +78,7 @@ class QuestionSetView(LaunchpadFormView):
         """The error message for the scope widget."""
         return self.getWidgetError('scope')
 
-    @action('Search')
+    @action('Search Questions', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
         scope = data['scope']
