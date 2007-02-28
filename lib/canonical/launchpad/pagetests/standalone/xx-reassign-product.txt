@@ -50,7 +50,7 @@
   Now we're logged in as FooBar and he's an LP admin, so he can do everything.
 
   >>> admin_browser.open('http://launchpad.dev/firefox')
-  >>> admin_browser.getLink('Change Maintainer').click()
+  >>> admin_browser.getLink('Change maintainer').click()
   >>> admin_browser.url
   'http://launchpad.dev/firefox/+reassign'
 
@@ -115,7 +115,7 @@
   another person.
 
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Change Maintainer').click()
+  >>> browser.getLink('Change maintainer').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+reassign'
 

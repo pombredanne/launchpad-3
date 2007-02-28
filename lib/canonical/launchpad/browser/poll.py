@@ -36,17 +36,17 @@ class PollContextMenu(ContextMenu):
     links = ['showall', 'addnew', 'edit']
 
     def showall(self):
-        text = 'Show Option Details'
+        text = 'Show option details'
         return Link('+options', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def addnew(self):
-        text = 'Add New Option'
+        text = 'Add new option'
         return Link('+newoption', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit this Poll'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
 

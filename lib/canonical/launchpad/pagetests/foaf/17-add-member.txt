@@ -4,7 +4,7 @@ Any administrator of a team can add new members to that team.
 
     >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
     >>> browser.open('http://launchpad.dev/~myemail')
-    >>> browser.getLink('Add New Member').click()
+    >>> browser.getLink('Add member').click()
     >>> browser.url
     'http://launchpad.dev/~myemail/+addmember'
     >>> browser.getControl('New member').value = 'cprov'

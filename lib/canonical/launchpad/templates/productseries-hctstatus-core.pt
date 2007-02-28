@@ -39,30 +39,30 @@
     <tbody class="lesser">
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
-            <td><b>CVS</b></td>
+            <th>CVS</th>
 	  </tr>
 	  <tr>
-            <td>Root:</td>
+            <th>Root:</th>
             <td tal:content="context/cvsroot">
               :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</td>
 	  </tr>
 	  <tr>
-	    <td>Module:</td>
+	    <th>Module:</th>
 	    <td tal:content="context/cvsmodule">evolution</td>
           </tr>
           <tr>
-            <td>Branch:</td>
+            <th>Branch:</th>
             <td tal:content="context/cvsbranch">MAIN</td>
           </tr>
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
-            <td><b>Subversion:</b></td>
+            <th>Subversion:</th>
             <td tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
           </tr>
         </tal:block>
         <tr>
-          <td><b>Import Status:</b></td>
+          <th>Import status:</th>
           <td tal:content="context/importstatus/title">Syncing</td>
         </tr>
         <tr class="secondary">

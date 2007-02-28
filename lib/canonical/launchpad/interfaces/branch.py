@@ -48,6 +48,11 @@ class BranchURIField(URIField):
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
@@ -273,6 +278,7 @@ class IBranch(IHasOwner):
         script.
         """
 
+
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
@@ -284,8 +290,6 @@ class IBranchSet(Interface):
 
     def __iter__():
         """Return an iterator that will go through all branches."""
-
-    all = Attribute("All branches in the system.")
 
     def count():
         """Return the number of branches in the database."""
@@ -321,6 +325,16 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getProductDevelopmentBranches(products):
+        """Return branches that are associated with the products dev series.
+
+        The branches will be either the import branches if imported, or
+        the user branches if native.
+        """
+
+    def getBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products."""
 
     def getRecentlyChangedBranches(branch_count):
         """Return a list of branches that have been recently updated.

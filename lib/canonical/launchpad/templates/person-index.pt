@@ -20,7 +20,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-latesttickets" />
+  <div tal:replace="structure context/@@+portlet-latestquestions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -67,7 +67,7 @@
             <table class="contributions">
               <tbody>
                 <tr class="odd">
-                  <th>Ubuntu</th>
+                  <th>Example project 1</th>
                   <td><img alt="Code" src="/@@/branch" /></td>
                   <td></td>
                   <td></td>
@@ -75,7 +75,7 @@
                   <td><img alt="Answers" src="/@@/question" /></td>
                 </tr>
                 <tr class="even">
-                  <th>Fooix the Wonder-Toaster</th>
+                  <th>Example project 2</th>
                   <td></td>
                   <td></td>
                   <td><img alt="Blueprints" src="/@@/blueprint" /></td>
@@ -131,8 +131,7 @@
                 </li>
               </ul>
             </div>
-          </div>
-        </tal:recent-members>
+          </tal:recent-members>
         <div class="right">
           <div class="section">
             <h2>Contact details</h2>
@@ -152,7 +151,7 @@
       <th>Wiki:</th>
       <td>
         <span tal:repeat="wiki context/allwikis">
-          <a tal:content="wiki/wikiname" 
+          <a tal:content="wiki/wikiname"
              tal:attributes="href wiki/url"
            >WikiName</a><tal:block condition="not: repeat/wiki/end">,
            </tal:block>
@@ -167,7 +166,7 @@
           on network <code style="font-size: 120%"
                            tal:content="ircnick/network" />
       </td>
-    </tr> 
+    </tr>
 
     <tr tal:condition="context/jabberids">
       <th>Jabber:</th>
@@ -177,7 +176,7 @@
             /><span tal:condition="not: repeat/jabber/end">,</span>
         </tal:block>
       </td>
-    </tr> 
+    </tr>
 
     <tr tal:condition="context/gpgkeys">
       <th>OpenPGP keys:</th>
@@ -198,7 +197,7 @@
         </a>
       </td>
     </tr>
-                
+
               </tbody>
             </table>
           </div>
@@ -330,7 +329,7 @@
       </tal:not-user-created>
     </tal:block>
     <tal:block condition="not: context/creation_comment">
-      (This page was created on 
+      (This page was created on
       <span tal:replace="context/datecreated/fmt:date" />.)
     </tal:block>
   </p>
@@ -347,7 +346,7 @@
 
 </tal:invalid-person>
 
-</div> 
+</div>
 </body>
 </html>
 <!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222). -->
