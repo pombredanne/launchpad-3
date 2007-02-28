@@ -505,7 +505,9 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
 
+        # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
+
         # We verify that a selection of expected branches are included
         # in the results, each triggering a different pull_url algorithm.
         #   a vcs-imports branch:
@@ -530,6 +532,8 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
 
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
+
+        # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
 
         # branch 3 is a branch without a product.

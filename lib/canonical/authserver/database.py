@@ -534,9 +534,13 @@ class DatabaseBranchDetailsStorage:
         result = []
         for row in transaction.fetchall():
             branch_id, branch_name, url, owner_name, product_name = row
+            # XXX - this logic is almost identical to that in
+            # Branch.unique_name. Ideally, they should use the same code.
+            # Jonathan Lange, 2007-03-01
             if product_name is None:
                 product_name = u'+junk'
             unique_name = u'%s/%s/%s' % (owner_name, product_name, branch_name)
+
             if url is not None:
                 # This is a pull branch, hosted externally.
                 pull_url = url
