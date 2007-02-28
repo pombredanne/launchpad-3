@@ -170,7 +170,7 @@
       template="../templates/object-portlet-milestones.pt"
       />
     <browser:page
-      name="+last-uploads"
+      name="+latest-uploads"
       template="../templates/distrorelease-latest-uploads.pt"
       />
   </browser:pages>
