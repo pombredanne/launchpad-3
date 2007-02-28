@@ -625,7 +625,7 @@ When no results are found, a message informs the user of this fact:
     ...     browser.contents).first('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
 
-== Searching in a Selected Projects ==
+== Searching in a Selected Project ==
 
 From the Answers front page, the user can select to search questions
 only in a particular project. In this context a "project" means either
@@ -689,7 +689,7 @@ value in the text field.)
     >>> print anon_browser.title
     Questions matching "plugins" for the Mozilla Project
 
-This works also with distribution:
+This works also with distributions:
 
     >>> anon_browser.open('http://answers.launchpad.dev')
     >>> anon_browser.getControl(name='field.search_text').value = 'firefox'
@@ -699,7 +699,7 @@ This works also with distribution:
     >>> print anon_browser.title
     Questions matching "firefox" for Ubuntu
 
-And also with proudcts:
+And also with products:
 
     >>> anon_browser.open('http://answers.launchpad.dev')
     >>> anon_browser.getControl(name='field.search_text').value = 'plugins'
