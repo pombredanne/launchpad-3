@@ -362,34 +362,15 @@ class TestBzrSync(BzrSyncTestCase):
 
     def test_sync_with_merged_branches(self):
         # Confirm that when we syncHistory, all of the revisions are included
-        # in the BranchRevision table.
+        # correctly in the BranchRevision table.
         self.makeBranchWithMerge()
         self.syncBranch()
-        db_ancestry = set(branch_revision.revision.revision_id
+        expected = set([(1, 'r1'), (2, 'r2'), (3, 'r3'), (None, 'r1.1.1')])
+        ancestry = set(
+            (branch_revision.sequence, branch_revision.revision.revision_id)
             for branch_revision
             in BranchRevision.selectBy(branch=self.db_branch))
-        self.assertEqual(db_ancestry, set(['r1', 'r2', 'r1.1.1', 'r3']))
-
-    def test_sync_is_idempotent(self):
-        # Nothing should be changed if we sync a branch that hasn't been
-        # changed since the last sync
-
-        # NOMERGE: make that a performance test and check that we DO nothing.
-        branch_revision_set = BranchRevisionSet()
-        self.makeBranchWithMerge()
-
-        self.syncBranch()
-        ancestry1 = set((br.sequence, br.revision.revision_id)
-            for br in branch_revision_set.getAncestryForBranch(self.db_branch))
-
-        expected = set([(1, 'r1'), (2, 'r2'), (3, 'r3'), (None, 'r1.1.1')])
-        self.assertEqual(expected, ancestry1)
-
-        self.syncBranch()
-        ancestry2 = set((br.sequence, br.revision.revision_id)
-            for br in branch_revision_set.getAncestryForBranch(self.db_branch))
-
-        self.assertEqual(expected, ancestry2)
+        self.assertEqual(ancestry, expected)
 
     def test_retrieveBranchDetails(self):
         # retrieveBranchDetails should set last_revision, bzr_ancestry and
@@ -437,32 +418,57 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.syncrevision_calls = []
+        self.clearCalls()
+
+    def clearCalls(self):
+        """Clear the record of instrumented method calls."""
+        self.calls = {
+            'syncRevisions': [],
+            'insertBranchRevisions': [],
+            'deleteBranchRevisions': []}
 
     def makeBzrSync(self):
-        def syncOneRevision_called(name, args, kwargs):
-            (bzr_revision,) = args
-            self.assertEqual(kwargs, {})
-            self.syncrevision_calls.append(bzr_revision.revision_id)
         bzrsync = BzrSyncTestCase.makeBzrSync(self)
-        observer = InstrumentedMethodObserver(called=syncOneRevision_called)
-        instrument_method(observer, bzrsync, 'syncOneRevision')
+        def unary_method_called(name, args, kwargs):
+            (single_arg,) = args
+            self.assertEqual(kwargs, {})
+            self.calls[name].append(single_arg)
+        unary_observer = InstrumentedMethodObserver(called=unary_method_called)
+        instrument_method(unary_observer, bzrsync, 'syncRevisions')
+        instrument_method(unary_observer, bzrsync, 'insertBranchRevisions')
+        instrument_method(unary_observer, bzrsync, 'deleteBranchRevisions')
         return bzrsync
+
+    def test_no_change(self):
+        # Nothing should be changed if we sync a branch that hasn't been
+        # changed since the last sync
+        self.makeBranchWithMerge()
+        self.syncBranch()
+        # Second scan has nothing to do.
+        self.clearCalls()
+        self.syncBranch()
+        assert len(self.calls) == 3, \
+               'update test for additional instrumentation'
+        self.assertEqual(map(len, self.calls['syncRevisions']), [0])
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [0])
+        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
 
     def test_one_more_commit(self):
         # Scanning a branch which has already been scanned, and to which a
-        # single simple commit was added, only runs syncOneRevision once, for
-        # the new revision.
+        # single simple commit was added, only do the minimal amount of work.
         self.commitRevision(rev_id='rev-1')
         # First scan checks the full ancestry, which is only one revision.
         self.syncBranch()
-        self.assertEqual(self.syncrevision_calls, ['rev-1'])
         # Add a single simple revision to the branch.
         self.commitRevision(rev_id='rev-2')
         # Second scan only checks the added revision.
-        self.syncrevision_calls = []
+        self.clearCalls()
         self.syncBranch()
-        self.assertEqual(self.syncrevision_calls, ['rev-2'])
+        assert len(self.calls) == 3, \
+               'update test for additional instrumentation'
+        self.assertEqual(map(len, self.calls['syncRevisions']), [1])
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [1])
+        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
 
 
 class TestBzrSyncModified(BzrSyncTestCase):

@@ -95,9 +95,11 @@ class BzrSync:
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
         self.retrieveDatabaseAncestry()
-        self.planDatabaseChanges()
-        self.syncRevisions()
-        self.syncBranchRevisions()
+        (revisions_to_insert_or_check, branchrevisions_to_delete,
+            branchrevisions_to_insert) = self.planDatabaseChanges()
+        self.syncRevisions(revisions_to_insert_or_check)
+        self.deleteBranchRevisions(branchrevisions_to_delete)
+        self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
         # The Branch table is written to by other systems, including the web
         # UI, so we need to update it in a short transaction to avoid causing
@@ -181,25 +183,28 @@ class BzrSync:
 
         # We must delete BranchRevision rows for all revisions which were
         # removed from the ancestry or from the history.
-        self.branchrevisions_to_delete = set(
+        branchrevisions_to_delete = set(
             db_branch_revision_map[revid]
             for revid in set(removed_history).union(removed_ancestry))
 
         # We must insert BranchRevision rows for all revisions which were added
         # to the ancestry or to the history.
-        self.branchrevisions_to_insert = list(
+        branchrevisions_to_insert = list(
             self.getRevisions(added_ancestry.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
-        self.revisions_to_insert_or_check = added_ancestry
+        revisions_to_insert_or_check = added_ancestry
 
-    def syncRevisions(self):
+        return (revisions_to_insert_or_check, branchrevisions_to_delete,
+            branchrevisions_to_insert)
+
+    def syncRevisions(self, revisions_to_insert_or_check):
         """Import all the revisions added to the ancestry of the branch."""
         self.logger.info("Inserting or checking %d revisions.",
-            len(self.revisions_to_insert_or_check))
+            len(revisions_to_insert_or_check))
         # Add new revisions to the database.
-        for revision_id in self.revisions_to_insert_or_check:
+        for revision_id in revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
@@ -296,21 +301,21 @@ class BzrSync:
         revision_date += timedelta(seconds=timestamp - int_timestamp)
         return revision_date
 
-    def syncBranchRevisions(self):
-        """Synchronize the ancestry of the branch."""
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        revision_set = getUtility(IRevisionSet)
-
-        # Delete BranchRevision records.
+    def deleteBranchRevisions(self, branchrevisions_to_delete):
+        """Delete a batch of BranchRevision rows."""
         self.logger.info("Deleting %d branchrevision records.",
-            len(self.branchrevisions_to_delete))
-        for branchrevision in sorted(self.branchrevisions_to_delete):
+            len(branchrevisions_to_delete))
+        branch_revision_set = getUtility(IBranchRevisionSet)
+        for branchrevision in sorted(branchrevisions_to_delete):
             branch_revision_set.delete(branchrevision)
 
-        # Insert BranchRevision records.
+    def insertBranchRevisions(self, branchrevisions_to_insert):
+        """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
-            len(self.branchrevisions_to_insert))
-        for sequence, revision_id in self.branchrevisions_to_insert:
+            len(branchrevisions_to_insert))
+        branch_revision_set = getUtility(IBranchRevisionSet)
+        revision_set = getUtility(IRevisionSet)
+        for sequence, revision_id in branchrevisions_to_insert:
             db_revision = revision_set.getByRevisionId(revision_id)
             branch_revision_set.new(self.db_branch, sequence, db_revision)
 
