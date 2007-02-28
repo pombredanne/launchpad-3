@@ -12,6 +12,7 @@ import time
 import unittest
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.memorytree import MemoryTree
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
@@ -93,12 +94,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
         return self.webserver_helper.get_remote_url(name)
 
     def setUpBzrBranch(self):
-        self.bzr_branch_relpath = "bzr_branch"
-        self.bzr_branch_abspath = self.join(self.bzr_branch_relpath)
-        self.bzr_branch_url = self.url(self.bzr_branch_relpath)
-        os.mkdir(self.bzr_branch_abspath)
-        self.bzr_tree = BzrDir.create_standalone_workingtree(
-            self.bzr_branch_abspath)
+        relpath = "bzr_branch"
+        self.bzr_branch_url = self.url(relpath)
+        self.bzr_tree = self.make_branch_and_tree(relpath)
         self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
@@ -182,23 +180,17 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
                        timestamp=None, timezone=None):
-        file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
-        file.write(str(time.time()+random.random()))
-        file.close()
-        inventory = self.bzr_tree.read_working_inventory()
-        if not inventory.has_filename("file"):
-            self.bzr_tree.add("file")
         if message is None:
             message = self.LOG
         if committer is None:
             committer = self.AUTHOR
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        self.bzr_tree.commit(message, committer=committer, rev_id=rev_id,
-                             timestamp=timestamp, timezone=timezone)
+        self.bzr_tree.commit(
+            message, committer=committer, rev_id=rev_id,
+            timestamp=timestamp, timezone=timezone, allow_pointless=True)
 
     def uncommitRevision(self):
-        self.bzr_tree = self.bzr_branch.bzrdir.open_workingtree()
         branch = self.bzr_tree.branch
         uncommit(branch, tree=self.bzr_tree)
 
@@ -209,32 +201,28 @@ class BzrSyncTestCase(TestCaseWithTransport):
         :return: A list of the revisions that have been committed, as returned
         by WorkingTree.commit().
         """
-        # NOMERGE: Use TestCaseWithRepository?) helpers.
-        revisions = []
-
         # Make the base revision.
-        revisions.append(self.bzr_tree.commit(
+        self.bzr_tree.commit(
             u'common parent', committer=self.AUTHOR, rev_id='r1',
-            allow_pointless=True))
+            allow_pointless=True)
 
         # Branch from the base revision.
-        new_branch = self.bzr_tree.bzrdir.sprout('bzr_branch_merged')
-        new_tree = new_branch.open_workingtree()
+        new_tree = self.make_branch_and_tree('bzr_branch_merged')
+        new_tree.pull(self.bzr_branch)
 
         # Commit to both branches
-        revisions.append(self.bzr_tree.commit(
+        self.bzr_tree.commit(
             u'commit one', committer=self.AUTHOR, rev_id='r2',
-            allow_pointless=True))
-        revisions.append(new_tree.commit(
+            allow_pointless=True)
+        new_tree.commit(
             u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
-            allow_pointless=True))
+            allow_pointless=True)
 
         # Merge and commit.
         self.bzr_tree.merge_from_branch(new_tree.branch)
-        revisions.append(self.bzr_tree.commit(
+        self.bzr_tree.commit(
             u'merge', committer=self.AUTHOR, rev_id='r3',
-            allow_pointless=True))
-        return revisions
+            allow_pointless=True)
 
 
 class TestBzrSync(BzrSyncTestCase):
