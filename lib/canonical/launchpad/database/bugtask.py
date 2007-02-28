@@ -277,7 +277,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         if self._isConjoinedBugTask():
             raise ConjoinedBugTaskEditError(
-                "This task cannot be edited directly.")
+                "This task cannot be edited directly, it should be"
+                " edited through its conjoined_master.")
         # The conjoined slave is updated before the master one because,
         # for distro tasks, conjoined_slave does a comparison on
         # sourcepackagename, and the sourcepackagenames will not match

@@ -1,4 +1,4 @@
-<tal:bugtask define="can_edit_bugtask context/required:launchpad.Edit;
+<tal:bugtask define="can_edit_bugtask not: context/conjoined_master;
                      indent_task view/shouldIndentTask;
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
