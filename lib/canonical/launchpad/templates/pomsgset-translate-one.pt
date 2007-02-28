@@ -234,38 +234,37 @@
         </td>
       </tal:without-content>
     </tr>
-    <tal:selection
-      define="selection translation_dictionary/selection"
-      condition="selection">
-      <tr class="discreet secondary translation"
-          tal:condition="selection/activesubmission">
+    <tal:active-submission
+      define="active_submission translation_dictionary/active_submission"
+      condition="active_submission">
+      <tr class="discreet secondary translation">
         <th colspan="3">
           Translated by:
         </th>
         <td class="icon left right" />
         <td style="overflow: auto;">
-          <a tal:content="selection/activesubmission/person/browsername"
-             tal:attributes="href selection/activesubmission/person/fmt:url">Foo Bar</a> on
-          <span tal:content="selection/activesubmission/datecreated/fmt:datetime">
+          <a tal:content="active_submission/person/browsername"
+             tal:attributes="href active_submission/person/fmt:url">Foo Bar</a> on
+          <span tal:content="active_submission/datecreated/fmt:datetime">
             2006-08-05 01:04 UTC
           </span>
         </td>
       </tr>
       <tr class="discreet secondary translation"
-          tal:condition="selection/reviewer">
+          tal:condition="context/reviewer">
         <th colspan="3">
           Reviewed by:
         </th>
         <td class="icon left right" />
         <td style="overflow: auto;">
-          <a tal:content="selection/reviewer/browsername"
-             tal:attributes="href selection/reviewer/fmt:url">Foo Bar</a> on
-          <span tal:content="selection/date_reviewed/fmt:datetime">
+          <a tal:content="context/reviewer/browsername"
+             tal:attributes="href context/reviewer/fmt:url">Foo Bar</a> on
+          <span tal:content="context/date_reviewed/fmt:datetime">
             2006-08-05 01:04 UTC
           </span>
         </td>
       </tr>
-    </tal:selection>
+    </tal:active-submission>
     <tal:suggestion_block
          define="suggestion_block translation_dictionary/suggestion_block">
       <tal:suggestions repeat="suggestions suggestion_block">
