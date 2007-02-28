@@ -39,7 +39,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -49,12 +49,12 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Owner'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Mark as Official'
+        text = 'Mark as official'
         return Link('+mark-official', text, icon='edit')
 
 

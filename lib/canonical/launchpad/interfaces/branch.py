@@ -48,6 +48,11 @@ class BranchURIField(URIField):
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(

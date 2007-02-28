@@ -67,7 +67,7 @@ There should be a link in the branch context menu for person which points to
 the authored branches page.
 
    >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('View Authored Branches').click()
+   >>> browser.getLink('Show authored branches').click()
    >>> print browser.title
    Authored branches for Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -83,7 +83,7 @@ the authored branches page.
 There should also be a link which points to the registered branches page.
 
    >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('View Registered Branches').click()
+   >>> browser.getLink('Show registered branches').click()
    >>> print browser.title
    Registered branches for Sample Person 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -100,7 +100,7 @@ From the persons main listing page, there is also a link to subscribed
 branches.
 
    >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('View Subscribed Branches').click()
+   >>> browser.getLink('Show subscribed branches').click()
    >>> print browser.title
    Subscribed branches for Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -108,4 +108,3 @@ branches.
    ...     print extract_text(row)
    launchpad   Launchpad Developers 60 New gnome-terminal
    junk.dev    Ubuntu Team          30 Experimental
-

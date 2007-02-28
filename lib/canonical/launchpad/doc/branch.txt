@@ -568,14 +568,15 @@ Lets make gnome terminal have a user branch as the dev focus.
   >>> summary = branchset.getBranchSummaryForProducts(products)
   >>> for product in products:
   ...     print "%s %s %s" % (
-  ...         product.displayname,
+  ...         product.name,
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
-  Evolution             2 None
-  GNOME Terminal        8 None
-  iso-codes             1 None
-  Mozilla Firefox       5 None
-  Mozilla Thunderbird   1 None
+  evolution      2 None
+  firefox        5 None
+  gnome-terminal 8 None
+  iso-codes      1 None
+  thunderbird    1 None
+
 
 == Getting branches by owner ==
 

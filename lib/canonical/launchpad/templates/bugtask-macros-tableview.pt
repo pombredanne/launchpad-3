@@ -444,13 +444,25 @@
                     >An error message.</div>
                 </div>
               </td>
+              <td style="white-space: nowrap">
+                  <input tal:replace="structure view/has_cve_widget" />
+                  <label tal:attributes="for view/has_cve_widget/name">
+                     Show only bugs associated with a CVE
+                  </label>
+              </td>
+            </tr>
+
+            <tr>
               <td tal:condition="view/shouldShowNoPackageWidget">
                   <span tal:content="structure view/has_no_package_widget" />
                   <label for="field.has_no_package">
                     Hide bugs with packages specified
                   </label>
               </td>
+              <td style="white-space: nowrap">
+              </td>
             </tr>
+
           </table>
 
     </fieldset>

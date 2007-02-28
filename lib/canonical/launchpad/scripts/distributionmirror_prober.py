@@ -136,9 +136,18 @@ class ProberFactory(protocol.ClientFactory):
         self.setURL(url.encode('ascii'))
 
     def probe(self):
+        # NOTE: We don't want to issue connections to any outside host when
+        # running the mirror prober in a development machine, so we do this
+        # hack here.
+        if (self.connect_host != 'localhost' 
+            and config.distributionmirrorprober.localhost_only):
+            reactor.callLater(0, self.succeeded, '200')
+            return self._deferred
+
         if should_skip_host(self.request_host):
             reactor.callLater(0, self.failed, ConnectionSkipped(self.url))
             return self._deferred
+
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
