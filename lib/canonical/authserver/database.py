@@ -535,7 +535,8 @@ class DatabaseBranchDetailsStorage:
         for row in transaction.fetchall():
             branch_id, branch_name, url, owner_name, product_name = row
             # XXX - this logic is almost identical to that in
-            # Branch.unique_name. Ideally, they should use the same code.
+            # Branch.unique_name. Ideally, they should use the same code. Also,
+            # it would be nice to guarantee that this points to a branch.
             # Jonathan Lange, 2007-03-01
             if product_name is None:
                 product_name = u'+junk'
