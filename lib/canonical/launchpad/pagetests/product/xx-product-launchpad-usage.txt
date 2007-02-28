@@ -8,7 +8,7 @@ use Sample Person, the registrant of Firefox..
   ...     'Authorization', 'Basic test@canonical.com:test')
 
   >>> registrant_browser.open('http://launchpad.dev/firefox')
-  >>> registrant_browser.getLink('Define Launchpad Usage').click()
+  >>> registrant_browser.getLink('Define Launchpad usage').click()
   >>> registrant_browser.url
   'http://launchpad.dev/firefox/+launchpad'
 
@@ -37,7 +37,7 @@ tracker, not even Launchpad.
 
 Now let's go back and choose to use a specific bug tracker.
 
-  >>> registrant_browser.getLink('Define Launchpad Usage').click()
+  >>> registrant_browser.getLink('Define Launchpad usage').click()
   >>> registrant_browser.getControl('No bug tracker').selected
   True
   >>> registrant_browser.getControl('External bug tracker').selected = True
@@ -54,7 +54,7 @@ Now let's go back and choose to use a specific bug tracker.
 
 Let's reset it to the way it was before.
 
-  >>> registrant_browser.getLink('Define Launchpad Usage').click()
+  >>> registrant_browser.getLink('Define Launchpad usage').click()
   >>> registrant_browser.getControl('External bug tracker').selected
   True
   >>> registrant_browser.getControl(

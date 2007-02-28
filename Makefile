@@ -155,7 +155,7 @@ iharness:
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
-	database/schema/fti.py -d launchpad_dev --force
+	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

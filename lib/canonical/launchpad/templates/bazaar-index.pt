@@ -6,12 +6,15 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/code"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Code in branches</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/code" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-code">
-        <h1>Code</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,39 +23,53 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <p id="application-summary">
-                          Launchpad lets you track branches of any product that
-                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                          version control system &mdash; and imports many
-                          <abbr>CVS</abbr>, <abbr>SVN</abbr>, and git projects,
-                          so you can use Bazaar with those too.
-                        </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="/+tour">
                               <img
-                                  alt="Take a tour"
-                                  src="/+icing/but_lrg_takeatour.gif"
-                                  />
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
                             </a>
                           </li>
                           <li>
-                            <a href="/+addbranch">
+                            <a href="/people/+me/+addbranch">
                               <img
-                                  alt="Register a branch"
-                                  src="/+icing/but_lrg_registerabranch.gif"
-                                  />
+                                alt="Register a branch"
+                                src="/+icing/but-lrg-registerabranch.gif"
+                              />
                             </a>
                           </li>
                           <li>
                             <a href="/+import">
                               <img
-                                  alt="Import your project"
-                                  src="/+icing/but_lrg_importyourproject.gif"
-                                  />
+                                alt="Import your project"
+                                src="/+icing/but-lrg-importyourproject.gif"
+                              />
                             </a>
                           </li>
                         </ul>
+                        <p id="application-summary">
+                          Launchpad lets you track branches of any
+                          <a href="/+code/+products-with-code">product</a> that
+                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system &mdash; and can convert many
+                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
+                          so you can use Bazaar with those too.
+                          <a href="/+tour">Learn more&#8230;</a>
+                        </p>
+                        <form class="central" action="/products" method="get">
+                          <input
+                            id="text"
+                            type="text"
+                            name="text"
+                            size="50"
+                          />
+                          <input
+                            type="submit"
+                            value="Find a Project"
+                          />
+                        </form>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>
@@ -85,30 +102,15 @@
                             </ul>
                           </div>
                         </div>
-                        <form class="central" action="/products" method="get">
-                          <p
-                            xtal:condition="view/error_message"
-                            xtal:content="view/error_message"
-                            class="error message"
-                          ><!-- Error message. --></p>
-                          <input
-                            id="text"
-                            type="text"
-                            name="text"
-                            size="50"
-                          />
-                          <input
-                            type="submit"
-                            value="Find a Project"
-                          />
-                        </form>
                         <div class="clear"></div>
                         <div id="application-footer">
                           <div>
                             <strong tal:content="view/branch_count">123</strong>
                             branches registered in
+                            <a href="/+code/+products-with-code">
                             <strong tal:content="view/product_count">1234</strong>
                             products
+                            </a>
                           </div>
                           <div>
                             <strong tal:content="view/import_count">123</strong>
@@ -196,4 +198,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs lists of recent imports (bug 79036), registered branches (bug 79038), and changed branches (bug 79041). -->
+<!-- 1-0 done -->
