@@ -410,3 +410,11 @@ object for us too:
   >>> context.displayname
   u'James Henstridge'
 
+By default updateContextFromData() uses the view's context, but it's
+possible to pass in a specific context to use instead:
+
+  >>> custom_context = FormTest()
+  >>> view.updateContextFromData({'displayname': u'New name'}, custom_context)
+  >>> custom_context.displayname
+  u'New name'
+

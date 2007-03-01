@@ -132,11 +132,16 @@ class LaunchpadFormView(LaunchpadView):
             if field.__name__ in self.custom_widgets:
                 field.custom_widget = self.custom_widgets[field.__name__]
 
-    def setUpWidgets(self):
+    def setUpWidgets(self, context=None):
+        """Set up the widgets using the view's form fields and the context.
+
+        If no context is given, the view's context is used."""
+        if context is None:
+            context = self.context
         # XXX: 20060802 jamesh
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
+            self.form_fields, self.prefix, context, self.request,
             data=self.initial_values, ignore_request=False)
 
     @property
@@ -278,23 +283,27 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def updateContextFromData(self, data):
+    def updateContextFromData(self, data, context=None):
         """Update the context object based on form data.
+
+        If no context is given, the view's context is used.
 
         If any changes were made, SQLObjectModifiedEvent will be
         emitted.
 
         This method should be called by an action method of the form.
         """
+        if context is None:
+            context = self.context
         context_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
+            context, providing=providedBy(context))
 
-        notify(SQLObjectToBeModifiedEvent(self.context, data))
+        notify(SQLObjectToBeModifiedEvent(context, data))
 
-        if form.applyChanges(self.context, self.form_fields, data):
+        if form.applyChanges(context, self.form_fields, data):
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(self.context,
+            notify(SQLObjectModifiedEvent(context,
                                           context_before_modification,
                                           field_names))
 
