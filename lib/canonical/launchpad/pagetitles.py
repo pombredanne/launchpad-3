@@ -653,8 +653,6 @@ product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
-product_bazaar = 'Projects with Code'
-
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
@@ -663,6 +661,8 @@ product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
+product_code_index = 'Projects with Code'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
