@@ -779,12 +779,14 @@ The generic tasks are not directly editable.
     >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToStatus', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
     >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
 
 A conjoined relationship can be broken, though. If the development
