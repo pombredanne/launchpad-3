@@ -241,6 +241,9 @@ def generate_bug_add_email(bug):
             bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
         bug_info += u"         Status: %s\n" % bugtask.status.title
 
+    if bug.tags:
+        bug_info += '\n** Tags: %s\n' % ' '.join(bug.tags)
+
     mailwrapper = MailWrapper(width=72)
     contents = get_email_template('bug-add-notification-contents.txt') % {
         'visibility' : visibility, 'bugurl' : canonical_url(bug),
