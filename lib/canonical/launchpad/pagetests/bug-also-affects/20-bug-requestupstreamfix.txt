@@ -128,7 +128,7 @@ to register the product if he doesn't find it.
 
     >>> user_browser.getLink('register it').click()
     >>> user_browser.title
-    'Register a product in the Launchpad'
+    'Register a project in Launchpad'
 
 Since we don't restrict the input, the user can write anything, so we
 need to make sure that everything is quoted before displaying the input.

@@ -49,6 +49,10 @@
         </li>
       </ul>
       <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
         <div class="portlet">
           <h2>Timeline</h2>
 

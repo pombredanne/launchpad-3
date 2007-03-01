@@ -50,7 +50,7 @@
                                   <input
                                     tal:replace="structure view/search_action/render"
                                     type="submit"
-                                    value="Search Questions"
+                                    value="Find Answers"
                                   />
                                 </td>
                               </tr>
@@ -93,6 +93,7 @@
                           Launchpad&rsquo;s Answers system lets people
                           ask questions about products or distributions,
                           and lets anyone help answer those questions.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div id="latest-questions-asked" class="left">
 

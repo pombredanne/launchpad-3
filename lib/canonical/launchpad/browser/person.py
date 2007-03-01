@@ -5,9 +5,7 @@ __metaclass__ = type
 __all__ = [
     'PersonNavigation',
     'TeamNavigation',
-    'PersonSetNavigation',
     'PersonSOP',
-    'PeopleContextMenu',
     'PersonFacets',
     'PersonBranchesMenu',
     'PersonBugsMenu',
@@ -60,6 +58,10 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSetFacets',
+    'PersonSetContextMenu',
     ]
 
 import cgi
@@ -94,7 +96,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, BugTaskSearchParams)
+    ILaunchpadRoot, BugTaskSearchParams, IPersonBugTaskSearch)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -205,6 +207,70 @@ class PersonSetNavigation(RedirectionNavigation):
             self.redirection_status = 301
 
 
+class PersonSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'People and Teams'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class PersonSetFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for the IPersonSet."""
+
+    usedfor = IPersonSet
+
+    enable_only = ['overview',]
+
+
+class PersonSetContextMenu(ContextMenu):
+
+    usedfor = IPersonSet
+
+    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
+             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def meetings(self):
+        return Link('/sprints/', 'View meetings')
+
+    def peoplelist(self):
+        text = 'List all people'
+        return Link('+peoplelist', text, icon='people')
+
+    def teamlist(self):
+        text = 'List all teams'
+        return Link('+teamlist', text, icon='people')
+
+    def ubunterolist(self):
+        text = 'List all Ubunteros'
+        return Link('+ubunterolist', text, icon='people')
+
+    def newteam(self):
+        text = 'Register a team'
+        return Link('+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminrequestmerge(self):
+        text = 'Admin merge accounts'
+        return Link('+adminrequestmerge', text, icon='edit')
+
+
 class PersonSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -224,35 +290,6 @@ class PersonSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
-
-
-class PeopleContextMenu(ContextMenu):
-
-    usedfor = IPersonSet
-
-    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
-             'adminrequestmerge']
-
-    def peoplelist(self):
-        text = 'All People'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'All Teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'All Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
-
-    def newteam(self):
-        text = 'Register a Team'
-        return Link('+newteam', text, icon='add')
-
-    @enabled_with_permission('launchpad.Admin')
-    def adminrequestmerge(self):
-        text = 'Admin Merge Accounts'
-        return Link('+adminrequestmerge', text, icon='edit')
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -275,7 +312,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+assignedbugs', text, summary)
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
@@ -326,19 +363,19 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
-        text = 'View Authored Branches'
+        text = 'Show authored branches'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'View Registered Branches'
+        text = 'Show registered branches'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'View Subscribed Branches'
+        text = 'Show subscribed branches'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
-        text = 'Register Branch'
+        text = 'Register branch'
         return Link('+addbranch', text, icon='add')
 
 
@@ -453,37 +490,37 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Personal Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
         target = '+editlanguages'
-        text = 'Preferred Languages'
+        text = 'Set preferred languages'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'E-mail Addresses'
+        text = 'Update e-mail addresses'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
-        text = 'Wiki Names'
+        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
-        text = 'IRC Nicknames'
+        text = 'Update IRC nicknames'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Jabber IDs'
+        text = 'Update jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -503,7 +540,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'Update SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)
@@ -512,7 +549,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
         target = '+editpgpkeys'
-        text = 'OpenPGP Keys'
+        text = 'Update OpenPGP keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
@@ -542,43 +579,43 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Change Team Details'
+        text = 'Change details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
         target = '+reassign'
-        text = 'Change Owner'
+        text = 'Change owner'
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
     def members(self):
         target = '+members'
-        text = 'All Members'
+        text = 'Show all members'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
         target = '+addmember'
-        text = 'Add New Member'
+        text = 'Add member'
         return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
-        text = 'Polls'
+        text = 'Show polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_poll(self):
         target = '+newpoll'
-        text = 'Create a New Poll'
+        text = 'Create a poll'
         return Link(target, text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+editemail'
-        text = 'Edit Contact Address'
+        text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
@@ -591,7 +628,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             icon = 'remove'
         else:
             target = '+join'
-            text = 'Join the Team' # &#8230;
+            text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon)
 
@@ -894,6 +931,11 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
 
     columns_to_show = ["id", "summary", "importance", "status"]
+
+    def initialize(self):
+        # Set schema here to avoid ZCML magic overriding it.
+        self.schema = IPersonBugTaskSearch
+        BugTaskSearchListingView.initialize(self)
 
     @property
     def current_package(self):
@@ -1685,10 +1727,8 @@ class PersonGPGView(LaunchpadView):
 
     def keyserver_url(self):
         assert self.fingerprint
-        url = getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
-        # Our servers use an internal keyserver which users can't access.
-        # We must point them to the ubuntu keyserver. See bug 81269
-        return url.replace('keyserver.internal', 'keyserver.ubuntu.com', 1)
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
         permitted_actions = [
@@ -2617,13 +2657,13 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     @property
     def pageheading(self):
         """See SearchQuestionsView."""
-        return _('Questions needing $name attention',
+        return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
         """See SearchQuestionsView."""
-        return _('No questions need $name attention.',
+        return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
 
@@ -2677,7 +2717,7 @@ class PersonAnswersMenu(ApplicationMenu):
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need Attention', summary,
+        return Link('+needattentiontickets', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):
@@ -2685,3 +2725,5 @@ class PersonAnswersMenu(ApplicationMenu):
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
         return Link('+subscribedtickets', text, summary, icon='question')
+
+

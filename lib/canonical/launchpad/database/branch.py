@@ -356,13 +356,16 @@ class BranchSet:
     def getBranchSummaryForProducts(self, products):
         """See IBranchSet."""
         product_ids = [product.id for product in products]
+        if not product_ids:
+            return []
         cur = cursor()
         cur.execute("""
-            SELECT Product, COUNT(Branch.id), MAX(Revision.revision_date)
+            SELECT
+                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
             FROM Branch
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Product IN %s
+            WHERE Branch.product in %s
             GROUP BY Product
             """ % sqlvalues(product_ids))
         result = {}

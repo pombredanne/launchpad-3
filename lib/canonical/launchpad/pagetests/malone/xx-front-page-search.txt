@@ -29,8 +29,6 @@ bug listing.
     ...         if not tr.td:
     ...             continue
     ...         print extract_text(tr)
-    ...         #icon, id, description = tr('td', limit=3)
-    ...         #print id.string, description.a.string
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
@@ -92,7 +90,6 @@ name is specified, an error message will be displayed.
     ...     print message.renderContents()
     Please enter a project name
 
-
 An error message will be displayed also if the project isn't registered
 in the Launchpad.
 
@@ -108,6 +105,23 @@ in the Launchpad.
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
     There is no project named 'invalid' registered in Launchpad
+
+If the user doesn't know what name to write, he can use the 'Choose'
+link that will present him with a search box.
+
+    >>> choose_link = anon_browser.getLink('Choose')
+    >>> choose_link.url
+    "javascript:popup_window('@@popup-window?..."
+
+Since the link is a javascript popup, we can't follow the link directly,
+so let's extract the real URL and open it manually.
+
+    >>> import re
+    >>> search_url = re.search(
+    ...     "popup_window\('([^']*)'", choose_link.url).group(1)
+    >>> user_browser.open('http://bugs.launchpad.dev/' + search_url)
+    >>> user_browser.title
+    'Select a distribution, product or project'
 
 'Project' in this context means either a product, distribution or a
 project.
@@ -156,3 +170,16 @@ project.
     >>> print_bugtasks(find_main_content(anon_browser.contents))
     10 another test bug
        linux-source-2.6.15  Medium  Unconfirmed
+
+=== Jumping to a bug ===
+
+Like with all other bug searches, it's possible to jump a bug by
+specifying only the bug id as the search term.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/')
+    >>> anon_browser.getControl(name='field.searchtext').value = '7'
+    >>> anon_browser.getControl('Search Bug Reports').click()
+    >>> anon_browser.url
+    'http://.../+bug/7'
+    >>> anon_browser.title
+    'Bug #7...'
