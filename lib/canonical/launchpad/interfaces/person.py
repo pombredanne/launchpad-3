@@ -32,8 +32,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.question import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.question import IQuestionCollection
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -269,7 +268,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -286,6 +285,9 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
+    assigned_specs_in_progress = Attribute(
+        "Specifications assigned to this person whose implementation is "
+        "started but not yet completed, sorted newest first.")
     drafted_specs = Attribute(
         "Specifications being drafted by this person, sorted newest first.")
     created_specs = Attribute(
@@ -576,6 +578,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         """Return the people whose membership on this team match :status:.
 
         If no orderby is provided, Person.sortingColumns is used.
+        """
+
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
         """
 
     def getTeamAdminsEmailAddresses():
