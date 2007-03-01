@@ -573,7 +573,7 @@ Lets make gnome terminal have a user branch as the dev focus.
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
   evolution      2 None
-  firefox        5 None
+  firefox        5 2005-03-09 15:50:00
   gnome-terminal 8 None
   iso-codes      1 None
   thunderbird    1 None
