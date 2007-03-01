@@ -32,8 +32,8 @@ from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IManageAnswerContactsForm, IProject,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionTarget,
-    NotFoundError)
+    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionCollection,
+    IQuestionTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -91,7 +91,7 @@ class QuestionCollectionOpenCountView:
     """View used to render the number of open questions."""
 
     def __call__(self):
-        questiontarget = IQuestionTarget(self.context)
+        questiontarget = IQuestionCollection(self.context)
         open_questions = questiontarget.searchQuestions(
             status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
         return unicode(open_questions.count())
