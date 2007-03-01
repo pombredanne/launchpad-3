@@ -10,12 +10,12 @@ which support is desired. Then use the 'Ask Question' action:
 
 Asking a new question requires logging in:
 
-    >>> browser.getLink('Ask Question').click()
+    >>> browser.getLink('Ask question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> user_browser.getLink('Ask Question').click()
+    >>> user_browser.getLink('Ask question').click()
     >>> user_browser.title
     'Ask a question about Ubuntu'
 

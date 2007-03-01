@@ -45,6 +45,7 @@ But suggestion text is tagged with its language code and its own text
 direction:
 
   >>> print find_tag_by_id(browser.contents, 'msgset_130_es_suggestion_565_0')
-  <label lang="es" id="msgset_130_es_suggestion_565_0"
-    dir="ltr" for="msgset_130_es_suggestion_565_0_radiobutton">libreta de
+  <label style="white-space: normal" lang="es"
+    id="msgset_130_es_suggestion_565_0" dir="ltr"
+    for="msgset_130_es_suggestion_565_0_radiobutton">libreta de
       direcciones de Evolution</label>

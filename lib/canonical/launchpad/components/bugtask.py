@@ -84,6 +84,12 @@ class BugTaskMixin:
 
         return other_tasks
 
+    @property
+    def related_pillar_bugtasks(self):
+        """See IBugTask."""
+        return [task for task in self.bug.bugtasks if task != self and (
+            task.product is not None or task.distribution is not None)]
+
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.

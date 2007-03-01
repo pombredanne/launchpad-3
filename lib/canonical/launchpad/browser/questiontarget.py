@@ -25,7 +25,7 @@ from urllib import urlencode
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
-from zope.component import getUtility
+from zope.component import getUtility, queryMultiAdapter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -46,6 +46,13 @@ class AskAQuestionButtonView:
     """View that renders a clickable button to ask a question on its context."""
 
     def __call__(self):
+        # Check if the context has an +addticket view available...
+        if queryMultiAdapter((self.context, self.request), name='+addticket'):
+            target = self.context
+        else:
+            # otherwise find an adapter to IQuestionTarget which will.
+            target = IQuestionTarget(self.context)
+
         return """
               <a href="%s/+addticket">
                 <img
@@ -53,7 +60,7 @@ class AskAQuestionButtonView:
                   src="/+icing/but-sml-askaquestion.gif"
                 />
               </a>
-        """ % canonical_url(IQuestionTarget(self.context), rootsite='answers')
+        """ % canonical_url(target, rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
@@ -300,7 +307,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
-    """SearchQuestionsView specialization for the 'My Questions' report.
+    """SearchQuestionsView specialization for the 'My questions' report.
 
     It displays and searches the questions made by the logged
     in user in a questiontarget context.
@@ -337,7 +344,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
-    """SearchQuestionsView specialization for the 'Need Attention' report.
+    """SearchQuestionsView specialization for the 'Need attention' report.
 
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
@@ -481,11 +488,11 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
             self.makeSearchLink(['Answered', 'Solved']), text, icon='question')
 
     def myrequests(self):
-        text = 'My Questions'
+        text = 'My questions'
         return Link('+mytickets', text, icon='question')
 
     def need_attention(self):
-        text = 'Need Attention'
+        text = 'Need attention'
         return Link('+need-attention', text, icon='question')
 
 
@@ -497,10 +504,10 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
-        text = 'Ask Question'
+        text = 'Ask question'
         return Link('+addticket', text, icon='add')
 
     def answer_contact(self):
-        text = 'Answer Contact'
+        text = 'Answer contact'
         return Link('+support-contact', text, icon='edit')
 

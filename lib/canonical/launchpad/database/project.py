@@ -35,11 +35,14 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.question import QuestionTargetSearch
 
 
-class Project(SQLBase, BugTargetBase, KarmaContextMixin):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner)
@@ -122,6 +125,21 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Product.project= %s AND
+            Specification.product = Product.id AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def has_any_specifications(self):
@@ -224,6 +242,10 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
 
     # IQuestionCollection
