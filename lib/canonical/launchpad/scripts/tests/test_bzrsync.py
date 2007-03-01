@@ -224,6 +224,17 @@ class BzrSyncTestCase(TestCaseWithTransport):
             u'merge', committer=self.AUTHOR, rev_id='r3',
             allow_pointless=True)
 
+    def getBranchRevisions(self):
+        """Get a set summarizing the BranchRevision rows in the database.
+
+        :return: A set of tuples (sequence, revision-id) for all the
+            BranchRevisions rows belonging to self.db_branch.
+        """
+        return set(
+            (branch_revision.sequence, branch_revision.revision.revision_id)
+            for branch_revision
+            in BranchRevision.selectBy(branch=self.db_branch))
+
 
 class TestBzrSync(BzrSyncTestCase):
 
@@ -366,11 +377,34 @@ class TestBzrSync(BzrSyncTestCase):
         self.makeBranchWithMerge()
         self.syncBranch()
         expected = set([(1, 'r1'), (2, 'r2'), (3, 'r3'), (None, 'r1.1.1')])
-        ancestry = set(
-            (branch_revision.sequence, branch_revision.revision.revision_id)
-            for branch_revision
-            in BranchRevision.selectBy(branch=self.db_branch))
-        self.assertEqual(ancestry, expected)
+        self.assertEqual(self.getBranchRevisions(), expected)
+
+    def test_sync_merged_to_merging(self):
+        # When replacing a branch by another branch that merges it (for
+        # example, as done by "bzr pull" on newer bzr releases), the database
+        # must be updated appropriately.
+        self.makeBranchWithMerge()
+        # First, sync with the merged branch.
+        self.bzr_branch_url = self.url('bzr_branch_merged')
+        self.syncBranch()
+        # Then sync with the merging branch.
+        self.bzr_branch_url = self.url('bzr_branch')
+        self.syncBranch()
+        expected = set([(1, 'r1'), (2, 'r2'), (3, 'r3'), (None, 'r1.1.1')])
+        self.assertEqual(self.getBranchRevisions(), expected)
+
+    def test_sync_merging_to_merged(self):
+        # When replacing a branch by one of the branches it merged, the
+        # database must be updated appropriately.
+        self.makeBranchWithMerge()
+        # First, sync with the merging branch.
+        self.bzr_branch_url = self.url('bzr_branch')
+        self.syncBranch()
+        # Then sync with the merged branch.
+        self.bzr_branch_url = self.url('bzr_branch_merged')
+        self.syncBranch()
+        expected = set([(1, 'r1'), (2, 'r1.1.1')])
+        self.assertEqual(self.getBranchRevisions(), expected)
 
     def test_retrieveBranchDetails(self):
         # retrieveBranchDetails should set last_revision, bzr_ancestry and
@@ -416,6 +450,11 @@ class TestBzrSync(BzrSyncTestCase):
 
 class TestBzrSyncPerformance(BzrSyncTestCase):
 
+    # TODO: Turn these into unit tests for planDatabaseChanges. To do this, we
+    # need to change the BzrSync constructor to either delay the opening of the
+    # bzr branch, so those unit-tests need not set up a dummy bzr branch.
+    # -- DavidAllouche 2007-03-01
+
     def setUp(self):
         BzrSyncTestCase.setUp(self)
         self.clearCalls()
@@ -435,8 +474,8 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
             self.calls[name].append(single_arg)
         unary_observer = InstrumentedMethodObserver(called=unary_method_called)
         instrument_method(unary_observer, bzrsync, 'syncRevisions')
-        instrument_method(unary_observer, bzrsync, 'insertBranchRevisions')
         instrument_method(unary_observer, bzrsync, 'deleteBranchRevisions')
+        instrument_method(unary_observer, bzrsync, 'insertBranchRevisions')
         return bzrsync
 
     def test_no_change(self):
@@ -450,8 +489,49 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
         assert len(self.calls) == 3, \
                'update test for additional instrumentation'
         self.assertEqual(map(len, self.calls['syncRevisions']), [0])
-        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [0])
         self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [0])
+
+    def test_merged_to_merging(self):
+        # When replacing a branch by another branch that merges it (for
+        # example, as done by "bzr pull" on newer bzr releases), the database
+        # must be updated appropriately.
+        self.makeBranchWithMerge()
+        # First, sync with the merged branch.
+        self.bzr_branch_url = self.url('bzr_branch_merged')
+        self.syncBranch()
+        # Then sync with the merging branch.
+        self.bzr_branch_url = self.url('bzr_branch')
+        self.clearCalls()
+        self.syncBranch()
+        assert len(self.calls) == 3, \
+               'update test for additional instrumentation'
+        # Two revisions added to ancestry: r2 and r3.
+        self.assertEqual(map(len, self.calls['syncRevisions']), [2])
+        # One branch-revision deleted: r1.1.1, becoming a merged revision.
+        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [1])
+        # Three branch-revisions added: r2, r1.1.1, r3
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [3])
+
+    def test_merging_to_merged(self):
+        # When replacing a branch by one of the branches it merged, the
+        # database must be updated appropriately.
+        self.makeBranchWithMerge()
+        # First, sync with the merging branch.
+        self.bzr_branch_url = self.url('bzr_branch')
+        self.syncBranch()
+        # Then sync with the merged branch.
+        self.bzr_branch_url = self.url('bzr_branch_merged')
+        self.clearCalls()
+        self.syncBranch()
+        assert len(self.calls) == 3, \
+               'update test for additional instrumentation'
+        # No revision is added to the ancestry.
+        self.assertEqual(map(len, self.calls['syncRevisions']), [0])
+        # Three branch-revisions deleted: r2, r3 and r1.1.1.
+        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [3])
+        # One branch-revision added: r1.1.1 becoming an history revision.
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [1])
 
     def test_one_more_commit(self):
         # Scanning a branch which has already been scanned, and to which a
@@ -467,8 +547,8 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
         assert len(self.calls) == 3, \
                'update test for additional instrumentation'
         self.assertEqual(map(len, self.calls['syncRevisions']), [1])
-        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [1])
         self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
+        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [1])
 
 
 class TestBzrSyncModified(BzrSyncTestCase):

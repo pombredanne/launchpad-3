@@ -158,39 +158,32 @@ class BzrSync:
                     break
             common_len -= 1
 
+        # Revisions added to the branch's ancestry.
+        added_ancestry = bzr_ancestry.difference(db_ancestry)
+
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
-        #
-        # removed_history may include revisions that are still part of the
-        # ancestry or history of the branch, but whose sequence value has
-        # changed.
         removed_history = db_history[common_len:]
-        # Similarly, added_history may include revisions that were previously
-        # part of the ancestry, but that need to be added because their
-        # relation to the branch has changed.
         added_history = bzr_history[common_len:]
 
-        # NOMERGE: Check that BranchRevision rows for revisions that were
-        # previously part of the ancestry, but not of the history, and which
-        # are now part of the history, are deleted and added. The
-        # added_ancestry and removed_ancestry set should probably be renamed
-        # added_merged and removed_merged and capture changes in the
-        # non-history ancestry.
+        # Merged (non-history) revisions in the database and the bzr branch.
+        old_merged = db_ancestry.difference(db_history)
+        new_merged = bzr_ancestry.difference(bzr_history)
 
-        # Revisions added or removed from the branch's ancestry.
-        added_ancestry = bzr_ancestry.difference(db_ancestry)
-        removed_ancestry = db_ancestry.difference(bzr_ancestry)
+        # Revisions added or removed from the set of merged revisions.
+        removed_merged = old_merged.difference(new_merged)
+        added_merged = new_merged.difference(old_merged)
 
-        # We must delete BranchRevision rows for all revisions which were
-        # removed from the ancestry or from the history.
+        # We must delete BranchRevision rows for all revisions which where
+        # removed from the ancestry or whose sequence value has changed.
         branchrevisions_to_delete = set(
             db_branch_revision_map[revid]
-            for revid in set(removed_history).union(removed_ancestry))
+            for revid in removed_merged.union(removed_history))
 
         # We must insert BranchRevision rows for all revisions which were added
-        # to the ancestry or to the history.
+        # to the ancestry or whose sequence value has changed.
         branchrevisions_to_insert = list(
-            self.getRevisions(added_ancestry.union(added_history)))
+            self.getRevisions(added_merged.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
