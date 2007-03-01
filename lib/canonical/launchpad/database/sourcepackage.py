@@ -461,6 +461,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not release-specific) source package.")
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distrorelease, self.sourcepackagename))
+
     def setPackaging(self, productseries, user):
         target = self.direct_packaging
         if target is not None:

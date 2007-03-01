@@ -122,18 +122,14 @@ class ProductInfo:
     
     decorates(IProduct, 'product')
 
-    def __init__(self, product, branch_count, elapsed):
+    def __init__(self, product, branch_size, elapsed):
         self.product = product
-        self.branch_count = branch_count
+        self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
 
     @property
     def branch_class(self):
-        if self.branch_count < 20:
-            return "cloud-size-small"
-        if self.branch_count < 100:
-            return "cloud-size-medium"
-        return "cloud-size-large"
+        return "cloud-size-%s" % self.branch_size
 
     @property
     def time_class(self):
@@ -168,7 +164,14 @@ class BazaarProductView:
         
         branchset = getUtility(IBranchSet)
         branch_summaries = branchset.getBranchSummaryForProducts(products)
-
+        # Choose appropriate branch counts so we have an evenish distribution.
+        counts = sorted([
+            summary['branch_count'] for summary in branch_summaries.values()])
+        # Lowest half are small.
+        small_count = counts[len(counts)/2]
+        # Top 20% are big.
+        large_count = counts[-(len(counts)/5)]
+        
         items = []
         now = datetime.today()
         for product in products:
@@ -178,8 +181,16 @@ class BazaarProductView:
                 elapsed = None
             else:
                 elapsed = now - last_commit
-            items.append(ProductInfo(
-                product, summary['branch_count'], elapsed))
+
+            num_branches = summary['branch_count']
+            if num_branches <= small_count:
+                branch_size = 'small'
+            elif num_branches > large_count:
+                branch_size = 'large'
+            else:
+                branch_size = 'medium'
+            
+            items.append(ProductInfo(product, branch_size, elapsed))
 
         return items
     

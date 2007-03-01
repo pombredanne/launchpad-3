@@ -37,7 +37,8 @@ class GPGKey(SQLBase):
 
     @property
     def keyserverURL(self):
-        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     @property
     def displayname(self):
