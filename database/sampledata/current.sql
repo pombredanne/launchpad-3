@@ -1601,6 +1601,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created, signing_key) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created, signing_key) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created, signing_key) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile, date_created, signing_key) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1633,6 +1634,7 @@ INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelea
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (3, 8, 30, '2006-10-16 18:31:43.53795');
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
 INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -2600,6 +2602,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (58, 58, 'pt_BR.po', 'application/x-po', NULL, '2006-12-13 21:18:28.796588');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (59, 59, 'salgado-mugshot.jpg', 'image/jpeg', NULL, '2006-07-31 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2663,6 +2666,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (58, '2006-12-13 21:18:28.796588', NULL, 1599, 'acdf6b9b99c39b1585f829ec7d68598a8e10816d', false, '5c6fa250b612e7e4d17261268a4d8400');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (59, '2006-05-24 09:31:29.606407', NULL, 2, 'fabb42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (61, '2007-02-15 14:26:27.288968', NULL, 100, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -8085,6 +8089,7 @@ INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (80, 1, 4, '2006-10-16 18:31:52.595418');
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (81, 1, 7, '2007-02-09 10:31:52.595418');
 INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (82, 3, 7, '2007-02-09 10:31:52.595418');
+INSERT INTO sectionselection (id, distrorelease, section, date_created) VALUES (83, 3, 29, '2007-02-15 12:31:52.595418');
 
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
@@ -8230,6 +8235,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (21, 'libstdc++');
 INSERT INTO sourcepackagename (id, name) VALUES (22, 'linux-source-2.6.15');
 INSERT INTO sourcepackagename (id, name) VALUES (23, 'foobar');
 INSERT INTO sourcepackagename (id, name) VALUES (24, 'cdrkit');
+INSERT INTO sourcepackagename (id, name) VALUES (25, 'language-pack-de');
 
 
 ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
@@ -8264,6 +8270,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 20, 10, 1, NULL, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 23, 10, 1, NULL, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 24, 10, 1, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, NULL, 16, 25, 10, 1, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -8279,6 +8286,7 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (25, 43, 3, 5);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (32, 53, 3, 7);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (33, 54, 3, 8);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (34, 61, 3, 9);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;

@@ -24,6 +24,11 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
  * AUTO-APPROVED binaries to SECURITY (via security): submitter set
    receives only an 'acceptance' warning ('announcement' is skipped).
 
+ * NEW, AUTO-APPROVED or UNAPPROVED source uploads targeted to section
+   'translations' (all policies, all pockets) do not generate any
+   messages. Remembering that NEW and UNAPPROVED messages are also
+   suppressed in 'queue' application.
+
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
@@ -117,9 +122,109 @@ this series *known* in hoary:
   >>> netapplet_src.queue_root.realiseUpload()
 
 
+NEW source uploads for 'translations' section via sync policy:
+
+  >>> lang_pack = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('language-packs'),
+  ...     "language-pack-pt_1.0-1_source.changes", MockMunchyLogger())
+  >>> local_options = MockOptions()
+  >>> local_options.distrorelease = "hoary"
+  >>> lang_pack.policy.setOptions(local_options)
+  >>> lang_pack.process()
+  >>> lang_pack.rejected
+  False
+
+  >>> lang_pack.logger = MockLogger()
+  >>> result, msgs = lang_pack.do_accept()
+  DEBUG: Building recipients list.
+  DEBUG: Changes file is unsigned, adding changer as recipient
+  DEBUG: Creating a New queue entry
+  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+
+  >>> lang_pack.queue_root.status.name
+  'NEW'
+
+No messages were generated since this upload is targeted for
+'translation' section:
+
+  >>> len(msgs)
+  0
+
+Accept and publish this series:
+
+  >>> lang_pack.queue_root.setAccepted()
+  >>> lang_pack.queue_root.realiseUpload()
+
+
+AUTO_APPROVED source uploads for 'translations' section:
+
+  >>> lang_pack = NascentUpload(
+  ...     findPolicyByName('sync'), datadir('language-packs'),
+  ...     "language-pack-pt_1.0-2_source.changes", MockMunchyLogger())
+  >>> local_options = MockOptions()
+  >>> local_options.distrorelease = "hoary"
+  >>> lang_pack.policy.setOptions(local_options)
+  >>> lang_pack.process()
+  >>> lang_pack.rejected
+  False
+
+  >>> lang_pack.logger = MockLogger()
+  >>> result, msgs = lang_pack.do_accept()
+  DEBUG: Building recipients list.
+  DEBUG: Changes file is unsigned, adding changer as recipient
+  DEBUG: Creating a New queue entry
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+
+  >>> lang_pack.queue_root.status.name
+  'ACCEPTED'
+
+Again, no messages were generated since this upload is targeted for
+'translation' section:
+
+  >>> len(msgs)
+  0
+
+
 Release hoary, enable uploads to post-release pockets:
 
   >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
+
+
+Import the test keys to use 'insecure' policy.
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+
+UNAPPROVED source uploads for 'translations' section via insecure:
+
+  >>> lang_pack = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('language-packs'),
+  ...     "language-pack-pt_1.0-3_source.changes", MockMunchyLogger())
+  >>> local_options = MockOptions()
+  >>> local_options.distrorelease = "hoary-updates"
+  >>> lang_pack.policy.setOptions(local_options)
+  >>> lang_pack.process()
+  >>> lang_pack.rejected
+  False
+
+  >>> lang_pack.logger = MockLogger()
+  >>> result, msgs = lang_pack.do_accept()
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Creating a New queue entry
+  DEBUG: Setting it to UNAPPROVED
+  DEBUG: Skipping acceptance and announcement, it is a language-package upload.
+
+  >>> lang_pack.queue_root.status.name
+  'UNAPPROVED'
+
+UNAPPROVED message was also skipped for an upload targeted to
+'translation' section:
+
+  >>> len(msgs)
+  0
 
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
@@ -211,5 +316,3 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 
   >>> [email.message_from_string(str(m))['To'] for m in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>']
-
-
