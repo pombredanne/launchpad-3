@@ -259,7 +259,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answerer = user
             self.answer = msg
             self.owner.assignKarma(
-                'ticketownersolved', product=self.product,
+                'questionownersolved', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg
@@ -298,11 +298,11 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answer = answer
 
             self.owner.assignKarma(
-                'ticketansweraccepted', product=self.product,
+                'questionansweraccepted', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
             self.answerer.assignKarma(
-                'ticketanswered', product=self.product,
+                'questionanswered', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg

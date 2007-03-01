@@ -1846,19 +1846,19 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'ticketcommentadded', 'Comment made on a ticket.', 'User made a comment on a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'tickettitlechanged', 'Ticket title changed', 'User changed the title of a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41, 7, 0, 'ticketrequestedinfo', 'Requested for information on a ticket', 'User made a comment requesting for more information from a ticket owner in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'ticketgaveinfo', 'Gave more information on a ticket', 'User replied to a comment asking for more information on a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'ticketgaveanswer', 'Gave answer on a ticket', 'User made a comment containing an answer to a ticket in Launchpad. This is distinct from having that comment confirmed as solving the problem.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'ticketrejected', 'Rejected ticket', 'User rejected a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'ticketownersolved', 'Solved own ticket', 'User made a comment explaining how he solved his own problem.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'ticketreopened', 'Reopened ticket', 'User made a comment to reopen his ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'ticketcreated', 'Created ticket', 'User created a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'questioncommentadded', 'Comment made on a question', 'User made a comment on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'questiontitlechanged', 'Question title changed', 'User changed the title of a question in the Answer Tracker');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'questiondescriptionchanged', 'Question description changed', 'User changed the description of a question in the Answer Tracker');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'questionlinkedtobug', 'Question linked to a bug', 'User linked a question in the Answer Tracker to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'questionansweraccepted', 'Question owner accepted answer', 'User accepted one of the message as the actual answer to his question.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'questionanswered', 'Answered question', 'User posed a message that was accepted by the question owner as answering the question.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41, 7, 0, 'questionrequestedinfo', 'Requested for information on a question', 'User post a message requesting for more information from a question owner in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'questiongaveinfo', 'Gave more information on a question', 'User replied to a message asking for more information on a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'questiongaveanswer', 'Gave answer on a question', 'User post a message containing an answer to a question in the Answer Tracker. This is distinct from having that message confirmed as solving the problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'questionrejected', 'Rejected question', 'User rejected a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'questionreopened', 'Reopened question', 'User posed a message to reopen his question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -1937,7 +1937,7 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 
 INSERT INTO karmacategory (id, name, title, summary) VALUES (4, 'bounties', 'Bounty Tracking', 'This covers all karma associated with the bounty system. Registering bounties, or closing them, will earn you karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (5, 'registry', 'The Registry', 'This category covers all work with product, projects and the general registry which Launchpad maintains of the open source world.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
-INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Support Tracker', 'This is the category for all karma associated with technical support, and the ticket tracker in Launchpad. Help solve users problems to earn this karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;
