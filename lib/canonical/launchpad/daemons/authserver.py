@@ -1,7 +1,13 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Provides an authserver service.
-NOMERGE - make this docstring betterer.
+
+This service creates an XML-RPC service listening on port 8999.  It
+exposes two APIs:
+  - the version 1 API with salts + SSHA digests, at /
+  - and the version 2 API with clear text passwords, at /v2/
+
+e.g. http://localhost:8999/v2/ is the path the version 2 API.
 """
 
 __metaclass__ = type
@@ -20,7 +26,6 @@ from canonical.authserver.database import (
 from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
-# NOMERGE - make authserver.tac use this
 
 class AuthserverService(service.Service):
     """Twisted service to run the authserver.
@@ -28,6 +33,7 @@ class AuthserverService(service.Service):
 
     # XXX - that docstring should point to more general information on the
     # authserver.
+    # Jonathan Lange, 2007-03-01
 
     def __init__(self, dbpool=None, port=config.authserver.port):
         """Construct an AuthserverService.
