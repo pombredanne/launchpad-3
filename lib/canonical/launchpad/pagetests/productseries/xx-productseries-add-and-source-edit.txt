@@ -2,7 +2,7 @@ Open the "Upstream Source Import" page for a series.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
-  >>> browser.getLink('Edit Source').click()
+  >>> browser.getLink('Edit source').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
 
@@ -24,7 +24,7 @@ as is, which will leave us with no revision control system selected:
 
 Now we'll go back to the edit source form and add some CVS details:
 
-  >>> browser.getLink('Edit Source').click()
+  >>> browser.getLink('Edit source').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
   >>> browser.getControl('CVS').click()

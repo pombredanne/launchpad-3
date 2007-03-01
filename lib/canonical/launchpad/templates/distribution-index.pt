@@ -42,6 +42,10 @@
   </form>
 
       <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
         <div class="portlet">
           <h2>Releases</h2>
           <p tal:condition="not:context/releases">

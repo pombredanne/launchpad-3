@@ -436,6 +436,9 @@
     <browser:page
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
+    <browser:page
+      name="+portlet-stats"
+      template="../templates/specifications-portlet-stats.pt" />
   </browser:pages>
 
   <browser:page

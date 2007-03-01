@@ -291,7 +291,7 @@ class MaloneContextMenu(ContextMenu):
     links = ['cvetracker']
 
     def cvetracker(self):
-        text = 'CVE Tracker'
+        text = 'CVE tracker'
         return Link('cve/', text, icon='cve')
 
 

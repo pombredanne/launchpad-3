@@ -53,7 +53,7 @@ the question in the 'Message' field and clicks on the
     ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
-    >>> support_browser.getControl('Add Information Request').click()
+    >>> support_browser.getControl('Add information request').click()
 
 The message was added to the question and its status was changed to
 'Needs information':
@@ -67,7 +67,7 @@ The message was added to the question and its status was changed to
 Of course, if you don't add a message, clicking on the button will give
 you an error.
 
-    >>> support_browser.getControl('Add Information Request').click()
+    >>> support_browser.getControl('Add information request').click()
     >>> soup = BeautifulSoup(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.

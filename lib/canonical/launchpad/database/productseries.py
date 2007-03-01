@@ -37,7 +37,8 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 
 
 class NoImportBranchError(Exception):
@@ -69,7 +70,7 @@ class ProductSeriesSet:
             raise NotFoundError(productseriesid)
 
 
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'

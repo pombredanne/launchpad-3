@@ -2,7 +2,7 @@
 
   >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
   >>> browser.open('http://launchpad.dev/people/')
-  >>> browser.getLink('Register a Team').click()
+  >>> browser.getLink('Register a team').click()
 
   >>> browser.url
   'http://launchpad.dev/people/+newteam'

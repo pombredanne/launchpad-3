@@ -4,7 +4,7 @@ The owner of a project can edit its details.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/gnome')
-  >>> browser.getLink('Edit Project Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.title
   'The GNOME Project project details'
 
