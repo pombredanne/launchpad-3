@@ -59,15 +59,16 @@
 
   <h2>Automated querying</h2>
 
-  <p>The use of scripts or robots to access the data contained on this
-  website is allowable subject to the following conditions:</p>
+  <p>We allow you to use scripts or robots to access the data contained on this
+  website subject to the following conditions:</p>
   <ul>
     <li>Contact information for the organization running the script must be
-  included in the user agent.</li> 
-    <li>The organization must coordinate with Canonical Ltd to ensure
-  their automated access does not occur during peak load hours for the
-  website nor cause undue stress on the website servers.</li>
-    <li>These conditions do not apply to search engine spiders.</li>
+  included in the 'User-Agent' HTTP header.</li>
+
+    <li>If you think you will be requesting significantly more pages
+    in a given period of time than a regular user, you should discuss
+    this with us by sending an email to
+    <a href="mailto:info@launchpad.net">info@launchpad.net</a>.
   </ul>
 
 </div>
