@@ -23,7 +23,7 @@ The language can be changed on the regular 'Edit Question' screen.
 
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5')
-    >>> browser.getLink('Edit Question').click()
+    >>> browser.getLink('Edit question').click()
 
 That screen contains a selection field to allow changing the question
 language. The list of available languages is determined by the user's

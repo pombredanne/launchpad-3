@@ -38,12 +38,12 @@ class CveContextMenu(ContextMenu):
     links = ['linkbug', 'unlinkbug']
 
     def linkbug(self):
-        text = 'Link to Bug'
+        text = 'Link to bug'
         return Link('+linkbug', text, icon='edit')
 
     def unlinkbug(self):
         enabled = bool(self.context.bugs)
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         return Link('+unlinkbug', text, icon='edit', enabled=enabled)
 
 
@@ -53,7 +53,7 @@ class CveSetContextMenu(ContextMenu):
     links = ['findcve', 'allcve']
 
     def allcve(self):
-        text = 'All Registered CVEs'
+        text = 'All registered CVEs'
         return Link('+all', text)
 
     def findcve(self):
