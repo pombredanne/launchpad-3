@@ -66,7 +66,7 @@ somebody are subject to expiration.
 
     # This one was put in the NEEDSINFO state recently.
     >>> recent_needsinfo_question = questionset.get(4)
-    >>> recent_needsinfo_question.questionInfo(
+    >>> recent_needsinfo_question.requestInfo(
     ...     no_priv, 'What URL were you visiting?')
     <QuestionMessage...>
 
