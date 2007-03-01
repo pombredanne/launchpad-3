@@ -4,15 +4,11 @@
 #         David Allouche <david@allouche.net>
 
 import datetime
-import os
-import random
 import shutil
 import sys
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir
-from bzrlib.memorytree import MemoryTree
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
@@ -21,8 +17,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    BranchRevision, BranchRevisionSet,
-    Revision, RevisionAuthor, RevisionParent)
+    BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
