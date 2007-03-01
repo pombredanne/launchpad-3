@@ -136,7 +136,7 @@ class SourcePackageQuestionTargetMixin:
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename = %s'
                 % sqlvalues(self.distribution, self.sourcepackagename),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
 
 

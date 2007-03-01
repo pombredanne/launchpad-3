@@ -107,7 +107,7 @@ ALL_FTI = [
             ('whiteboard', D),
             ]),
 
-    ('ticket', [
+    ('question', [
             ('title', A),
             ('description', B),
             ('whiteboard', B),
@@ -300,7 +300,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
-        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to 
+        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to
         # ((foo&bar&baz)|foobarbaz)
         def hyphen_repl(match):
             bits = match.group(0).split("-")
@@ -436,7 +436,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             return "MODIFY"
         ' LANGUAGE plpythonu
         """)
-        
+
     execute(con,
         r"COMMENT ON FUNCTION ftiupdate() IS 'Trigger function that keeps "
         r"the fti tsvector column up to date.'"
@@ -470,7 +470,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
                 )
             WHERE ts_name='default'
             """)
-    
+
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
     # way we can use is setting search_path in postgresql.conf
@@ -543,7 +543,7 @@ def get_tsearch2_sql_path(con):
 
 def update_dicts(con):
     '''Fix paths to the stop word lists.
-    
+
     The PostgreSQL 7.4 installation had absolute paths to the stop words
     lists. This path changed with breezy. Update the paths to the
     newer relative paths.

@@ -31,10 +31,10 @@ class QuestionMessage(SQLBase):
 
     decorates(IMessage, context='message')
 
-    _table = 'TicketMessage'
+    _table = 'QuestionMessage'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
-
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
 
     action = EnumCol(

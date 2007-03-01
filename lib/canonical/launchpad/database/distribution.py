@@ -537,7 +537,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename IS NULL' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

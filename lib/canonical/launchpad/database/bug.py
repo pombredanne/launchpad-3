@@ -164,7 +164,7 @@ class Bug(SQLBase):
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='ticket', intermediateTable='TicketBug',
+        otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 

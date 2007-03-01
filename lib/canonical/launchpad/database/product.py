@@ -331,7 +331,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND product = %s' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
     @property
     def translatable_packages(self):

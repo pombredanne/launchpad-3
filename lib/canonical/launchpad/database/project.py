@@ -264,7 +264,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return set(Language.select(
             'Language.id = language AND product IN (%s)' % ', '.join(
                 product_ids),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
 
 class ProjectSet:
