@@ -24,19 +24,26 @@ from canonical.lp.dbschema import MirrorStatus
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
 # requests on a given host. (This ratio is per run, rather than held long
 # term)
+# IMPORTANT: Changing these values can cause lots of false negatives when
+# probing mirrors, so please don't change them unless you know what you're
+# doing.
 MIN_REQUEST_TIMEOUT_RATIO = 3
-MIN_REQUESTS_TO_CONSIDER_RATIO = 10
+MIN_REQUESTS_TO_CONSIDER_RATIO = 30
+
 # XXX: We need to get rid of these global dicts in this module. See
 # https://launchpad.net/launchpad/+bug/82201 for more details.
 # -- Guilherme Salgado, 2007-01-30
 host_requests = {}
 host_timeouts = {}
+host_semaphores = {}
 
 MAX_REDIRECTS = 3
 
 # Number of simultaneous connections we issue on a given host
-PER_HOST_REQUESTS = 1
-host_semaphores = {}
+# IMPORTANT: Don't change this unless you really know what you're doing. Using
+# a to big value can cause spurious failures on lots of mirrors and a to small
+# one can cause the prober to run for hours.
+PER_HOST_REQUESTS = 2
 
 
 class ProberProtocol(HTTPClient):
