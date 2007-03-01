@@ -69,10 +69,18 @@ def deferToThread(f):
 
 
 class TestSFTPService(SFTPService):
+    root = '/tmp/sftp-test'
     _event = None
 
     def setConnectionLostEvent(self, event):
         self._event = event
+
+    def setUpRoot(self):
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
+        os.makedirs(self.root, 0700)
+        shutil.copytree(sibpath(__file__, 'keys'),
+                        os.path.join(self.root, 'keys'))
 
     def makeRealm(self):
         realm = SFTPService.makeRealm(self)
@@ -84,6 +92,10 @@ class TestSFTPService(SFTPService):
                                          userDict, launchpad)
         self.avatar._event = self._event
         return self.avatar
+
+    def makeService(self):
+        self.setUpRoot()
+        return SFTPService.makeService(self)
 
 
 class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
@@ -154,8 +166,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         self.authserver.startService()
 
         # Start the SFTP server
-        keydir = sibpath(__file__, 'keys')
-        self.server = TestSFTPService(keydir)
+        self.server = TestSFTPService()
         self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
 

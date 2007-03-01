@@ -25,17 +25,8 @@ class SFTPService(service.Service):
     """A Twisted service for the supermirror SFTP server.
     """
 
-    def __init__(self, keydir):
-        self.service = self.makeService(keydir)
-
-    def makeRoot(self, keydir):
-        root = os.path.dirname(config.supermirrorsftp.host_key_pair_path)
-        assert root == os.path.dirname(config.supermirrorsftp.branches_root), \
-               "Parent of host_key_pair_path should be parent of branches_root."
-        if os.path.isdir(root):
-            shutil.rmtree(root)
-        os.makedirs(root, 0700)
-        shutil.copytree(keydir, config.supermirrorsftp.host_key_pair_path)
+    def __init__(self):
+        self.service = self.makeService()
 
     def makeRealm(self):
         homedirs = config.supermirrorsftp.branches_root
@@ -52,8 +43,7 @@ class SFTPService(service.Service):
         sftpfactory.portal = p
         return sftpfactory
 
-    def makeService(self, keydir):
-        self.makeRoot(keydir)
+    def makeService(self):
         hostPublicKey, hostPrivateKey = self.makeKeys()
         sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
         return strports.service(config.supermirrorsftp.port, sftpfactory)
