@@ -40,7 +40,6 @@
     name="+open_questions_count"
     permission="zope.Public"
     />
-
    <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
