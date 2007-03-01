@@ -12,6 +12,7 @@ __all__ = [
     'IBugTaskSearch',
     'IAddBugTaskForm',
     'IPersonBugTaskSearch',
+    'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
@@ -245,6 +246,8 @@ class IBugTaskSearchBase(Interface):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
+    has_cve = Bool(
+        title=_('Show only bugs associated with a CVE'), required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -273,6 +276,13 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+
+
+class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+
+    scope = Choice(
+        title=u"Search Scope", required=True,
+        vocabulary="DistributionOrProductOrProject")
 
 
 class IBugTaskDelta(Interface):

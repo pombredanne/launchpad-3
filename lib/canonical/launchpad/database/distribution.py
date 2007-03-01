@@ -276,6 +276,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distribution = %s' % sqlvalues(self)
+
     @property
     def currentrelease(self):
         # XXX: this should be just a selectFirst with a case in its

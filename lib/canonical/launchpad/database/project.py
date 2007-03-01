@@ -243,6 +243,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

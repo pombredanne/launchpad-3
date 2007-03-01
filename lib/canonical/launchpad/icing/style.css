@@ -76,7 +76,7 @@ body {margin: 0; padding: 0;}
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
 h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h3 {font-size: 1.25em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
@@ -546,24 +546,21 @@ ul#applicationchooser li#applicationchooser_selected {
 #actions ul {
   width: 192px;
   overflow: hidden;
-  margin: 3px 0px 0px 0px;
-  padding: 4px 4px 0 4px;
-  list-style: none;
+  margin: 0;
+  padding: 4px;
 }
 #actions li {
-  margin: 0;
+  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
+  list-style-image: url(/+icing/action.png);
+  list-style-type: circle; /* A fallback in case the image can't be found. */
+  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
 }
-#actions li a {
-  width: 180px;
-  height: auto !important;
-  display: block;
-  padding: 6px !important;
+#actions li:hover {background-color: #fff; text-decoration: underline;}
+#actions a {
+  display: block; /* Makes the clickable area equal to the highlighted area. */
+  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
+  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
 }
-#actions li a:hover {
-  background-color: #fff;
-  text-decoration: underline;
-}
-
 #globalsearch {
   width: 220px;
   float: right;
@@ -685,6 +682,8 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #applicationchooser {
   clear: both;
+  position: relative; /* needed to make z-index work */
+  z-index: 1; /* ensures tabs appear above structural object heading */
 }
 #mainarea {
   clear: both;
@@ -698,7 +697,7 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-left: 0;
   margin-right: 0;
 }
-#mainarea {position: relative; top: -10px;} /* reduces pillargotchi~tab gap */
+#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
 * html #mainarea {top: 0;}
 #singlecolumn #mainarea {top: -20px;}
 * html #singlecolumn #mainarea {top: 0;}
@@ -1497,4 +1496,22 @@ th.descending {
 }
 #locationbar {
   overflow: visible;
+}
+.cloud-size-small { 
+  font-size: 1em;
+}
+.cloud-size-medium {
+  font-size: 1.35em;
+}
+.cloud-size-large {
+  font-size: 1.7em;
+}
+.cloud-shade-dark { 
+  color: #00f;
+}
+.cloud-shade-medium { 
+  color: #7878ff;
+}
+.cloud-shade-light {
+  color: #b8b8ff;
 }

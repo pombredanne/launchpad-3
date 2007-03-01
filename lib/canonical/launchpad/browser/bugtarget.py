@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
+    "BugTargetBugsView",
     "BugTargetBugTagsView",
     "FileBugViewBase",
     "FileBugAdvancedView",
@@ -32,6 +33,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
@@ -44,6 +46,7 @@ from canonical.launchpad.webapp import (
     urlappend)
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
 
 
@@ -658,6 +661,86 @@ class BugTargetBugListingView:
                     count=release.open_bugtasks.count()))
 
         return release_buglistings
+
+
+class BugCountDataItem:
+    """Data about bug count for a status."""
+
+    def __init__(self, label, count, color):
+        self.label = label
+        self.count = count
+        if color.startswith('#'):
+            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
+        else:
+            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
+
+
+class BugTargetBugsView(BugTaskSearchListingView):
+    """View for the Bugs front page."""
+
+    # XXX: These colors should be changed. It's the same colors that are used
+    #      to color statuses in buglistings using CSS, but there should be one
+    #      unique color for each status in the pie chart
+    #      -- Bjorn Tillenius, 2007-02-13
+    status_color = {
+        BugTaskStatus.UNCONFIRMED: '#993300',
+        BugTaskStatus.NEEDSINFO: 'red',
+        BugTaskStatus.CONFIRMED: 'orange',
+        BugTaskStatus.INPROGRESS: 'blue',
+        BugTaskStatus.FIXCOMMITTED: 'green',
+        BugTaskStatus.FIXRELEASED: 'magenta',
+        BugTaskStatus.REJECTED: 'yellow',
+        BugTaskStatus.UNKNOWN: 'purple',
+    }
+
+    def initialize(self):
+        BugTaskSearchListingView.initialize(self)
+        bug_statuses_to_show = [
+            BugTaskStatus.UNCONFIRMED,
+            BugTaskStatus.NEEDSINFO,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.FIXCOMMITTED,
+            ]
+        if IDistroRelease.providedBy(self.context):
+            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
+        bug_counts = sorted(
+            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
+        self.bug_count_items = [
+            BugCountDataItem(status.title, count, self.status_color[status])
+            for status, count in bug_counts]
+
+    def getChartJavascript(self):
+        """Return a snippet of Javascript that draws a pie chart."""
+        # XXX: This snippet doesn't work in IE, since (I think) there
+        #      has to be a delay between creating the canvas element and
+        #      using it to draw the chart. -- Bjorn Tillenius, 2007-02-13
+        js_template = """
+            function drawGraph() {
+                var options = {
+                  "drawBackground": false,
+                  "colorScheme": [%(color_list)s],
+                  "xTicks": [%(label_list)s]};
+                var data = [%(data_list)s];
+                var plotter = PlotKit.EasyPlot(
+                    "pie", options, $("bugs-chart"), [data]);
+            }
+            MochiKit.DOM.addLoadEvent(drawGraph);
+            """
+        # The color list should inlude only colors for slices that will
+        # be drawn in the pie chart, so colors that don't have any bugs
+        # associated with them.
+        color_list = ', '.join(
+            data_item.color for data_item in self.bug_count_items
+            if data_item.count > 0)
+        label_list = ', '.join([
+            '{v:%i, label:"%s"}' % (index, data_item.label)
+            for index, data_item in enumerate(self.bug_count_items)])
+        data_list = ', '.join([
+            '[%i, %i]' % (index, data_item.count)
+            for index, data_item in enumerate(self.bug_count_items)])
+        return js_template % dict(
+            color_list=color_list, label_list=label_list, data_list=data_list)
 
 
 class BugTargetBugTagsView(LaunchpadView):

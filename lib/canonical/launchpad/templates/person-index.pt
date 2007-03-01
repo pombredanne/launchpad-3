@@ -67,7 +67,7 @@
             <table class="contributions">
               <tbody>
                 <tr class="odd">
-                  <th>Ubuntu</th>
+                  <th>Example project 1</th>
                   <td><img alt="Code" src="/@@/branch" /></td>
                   <td></td>
                   <td></td>
@@ -75,7 +75,7 @@
                   <td><img alt="Answers" src="/@@/question" /></td>
                 </tr>
                 <tr class="even">
-                  <th>Fooix the Wonder-Toaster</th>
+                  <th>Example project 2</th>
                   <td></td>
                   <td></td>
                   <td><img alt="Blueprints" src="/@@/blueprint" /></td>
@@ -210,16 +210,16 @@
             <h2>Working on&#8230;</h2>
             <ul class="bug">
               <li>
-                <div><a href="/bugs/12">123. some bug</a></div>
+                <div><a href="/bugs/12">123. example bug</a></div>
                 <div>
-                  gnome-network-blaster (Ubuntu),
+                  example project 3,
                   reported by David Prieto
                 </div>
               </li>
               <li>
-                <div><a href="/bugs/13">123. some other bug</a></div>
+                <div><a href="/bugs/13">456. another example bug</a></div>
                 <div>
-                  gnome-network-blaster (Ubuntu),
+                  example project 4,
                   reported by David Prieto
                 </div>
               </li>

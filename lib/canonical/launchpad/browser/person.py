@@ -96,7 +96,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, BugTaskSearchParams)
+    ILaunchpadRoot, BugTaskSearchParams, IPersonBugTaskSearch)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -932,6 +932,11 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
+    def initialize(self):
+        # Set schema here to avoid ZCML magic overriding it.
+        self.schema = IPersonBugTaskSearch
+        BugTaskSearchListingView.initialize(self)
+
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
@@ -1722,10 +1727,8 @@ class PersonGPGView(LaunchpadView):
 
     def keyserver_url(self):
         assert self.fingerprint
-        url = getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
-        # Our servers use an internal keyserver which users can't access.
-        # We must point them to the ubuntu keyserver. See bug 81269
-        return url.replace('keyserver.internal', 'keyserver.ubuntu.com', 1)
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
         permitted_actions = [

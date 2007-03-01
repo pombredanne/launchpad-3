@@ -5,7 +5,7 @@
                          and the list of IDistributionMirrors to be listed
   </tal:comment>
 
-  <table class="listing">
+  <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
       <tr class="highlighted">
