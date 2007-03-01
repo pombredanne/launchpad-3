@@ -108,35 +108,30 @@
     </p>
 
           </div>
-          <div tal:condition="context/isTeam">
-            <h2>Recently approved</h2>
-              <ul tal:condition="view/recently_approved_members">
+          <tal:recent-members condition="context/isTeam">
+            <div tal:condition="view/recently_approved_members">
+              <h2>Recently approved</h2>
+              <ul>
                 <li class="person"
                     tal:repeat="person view/recently_approved_members">
                   <a tal:attributes="href person/fmt:url"
                      tal:content="person/unique_displayname"
                   >Foo Bar (name16)</a>
                 </li>
-                <p tal:condition="not: view/recently_approved_members">
-                  This team has no approved members.
-                </p>
               </ul>
-          </div>
-          <div tal:condition="context/isTeam">
-            <h2>Recently applied</h2>
-              <ul tal:condition="view/recently_proposed_members">
+            </div>
+            <div tal:condition="view/recently_proposed_members">
+              <h2>Recently applied</h2>
+              <ul>
                 <li class="person"
                     tal:repeat="person view/recently_proposed_members">
                   <a tal:attributes="href person/fmt:url"
                      tal:content="person/unique_displayname"
                   >Foo Bar (name16)</a>
                 </li>
-                <p tal:condition="not: view/recently_proposed_members">
-                  This team has no applicants.
-                </p>
               </ul>
-          </div>
-        </div>
+            </div>
+          </tal:recent-members>
         <div class="right">
           <div class="section">
             <h2>Contact details</h2>
@@ -206,28 +201,44 @@
               </tbody>
             </table>
           </div>
-          <div tal:condition="not:context/isTeam" class="demo section">
+          <div tal:condition="not:context/isTeam"
+               id="working-on" class="section"
+               tal:define="bugtasks view/getBugsInProgress;
+                           specs context/assigned_specs_in_progress">
             <h2>Working on&#8230;</h2>
             <ul class="bug">
-              <li>
-                <div><a href="/bugs/12">123. example bug</a></div>
-                <div>
-                  example project 3,
-                  reported by David Prieto
-                </div>
-              </li>
-              <li>
-                <div><a href="/bugs/13">456. another example bug</a></div>
-                <div>
-                  example project 4,
-                  reported by David Prieto
+              <li tal:repeat="bugtask bugtasks">
+                <div><a tal:attributes="href bugtask/fmt:url">
+                <span tal:replace="
+                      string: ${bugtask/bug/id}. ${bugtask/bug/title}" /></a>
+                <span tal:content="string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
                 </div>
               </li>
             </ul>
+            <div tal:condition="bugtasks">
+              <a tal:attributes="href view/getURLToAssignedBugsInProgress">
+                Show all bugs in progress 
+              </a>
+            </div>
             <ul class="blueprint">
-              <li><a href="">some blueprint</a></li>
-              <li><a href="">some other blueprint</a></li>
+              <li tal:repeat="spec specs">
+                <div>
+                  <a tal:attributes="href spec/fmt:url">
+                  <span tal:replace="spec/title" /></a>
+                </div>
+              </li>
             </ul>
+            <div tal:condition="specs">
+              <tal:comment condition="nothing">
+                XXX: This link should point to a list of the in-progress specs
+                assigned to this person, but we don't have a way to list that
+                right now, wo we'll have to list all incomplete specs assigned
+                to the person. -- Guilherme Salgado, 2007-02-12
+              </tal:comment>
+              <a tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
+                Show all assigned specs
+              </a>
+            </div>
           </div>
           <div tal:condition="context/isTeam" class="section">
             <h2>Subteam of</h2>

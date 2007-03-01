@@ -1287,7 +1287,7 @@ class PersonView(LaunchpadView):
     def getBugsInProgress(self):
         """Return up to 5 bugs assigned to this person that are In Progress."""
         params = BugTaskSearchParams(
-            user=self.user, assignee=self.context,
+            user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
 
