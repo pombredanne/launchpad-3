@@ -5,7 +5,7 @@ NOMERGE - make this docstring betterer.
 """
 
 __metaclass__ = type
-__all__ = ['AuthserverSetup']
+__all__ = ['AuthserverService']
 
 
 from twisted.application import service, strports
@@ -22,11 +22,33 @@ from canonical.config import config
 
 # NOMERGE - make authserver.tac use this
 
-class AuthserverSetup:
-    # NOMERGE - docstring here and on methods
-    # NOMERGE - make this a service subclass
+class AuthserverService(service.Service):
+    """Twisted service to run the authserver.
+    """
 
-    def makeConnectionPool(self):
+    # XXX - that docstring should point to more general information on the
+    # authserver.
+
+    def __init__(self, dbpool=None, port=config.authserver.port):
+        """Construct an AuthserverService.
+
+        :param dbpool: An ADBAPI ConnectionPool to use for the authserver. If
+        None, one is constructed based on settings in the Launchpad
+        configuration.
+
+        :param port: The port to run the server on, in Twisted strports format.
+        Defaults to config.authserver.port.
+        """
+        if dbpool is None:
+            self.dbpool = self._makeConnectionPool()
+        self.port = port
+        self.site = server.Site(self.makeResource(self.dbpool))
+        self.service = strports.service(self.port, self.site)
+
+    def _makeConnectionPool(self):
+        """Construct a ConnectionPool from the database settings in the
+        Launchpad config.
+        """
         if config.dbhost is None:
             dbhost = ''
         else:
@@ -39,6 +61,8 @@ class AuthserverSetup:
         return dbpool
 
     def buildTree(self, versionOneAPI, versionTwoAPI, branchAPI):
+        """Take the XML-RPC resources and build a tree out of them.
+        """
         root = resource.Resource()
         root.putChild('', versionOneAPI)
         root.putChild('RPC2', versionTwoAPI)
@@ -47,6 +71,9 @@ class AuthserverSetup:
         return root
 
     def makeResource(self, dbpool, debug=False):
+        """Create and return a single resource which has all of our XML-RPC
+        resources hanging off it as child nodes.
+        """
         v1API = UserDetailsResource(DatabaseUserDetailsStorage(dbpool),
                                     debug=debug)
         v2API = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool),
@@ -55,8 +82,10 @@ class AuthserverSetup:
                                           debug=debug)
         return self.buildTree(v1API, v2API, branchAPI)
 
-    def makeService(self):
-        site = server.Site(self.makeResource(self.makeConnectionPool()))
-        return strports.service(config.authserver.port, site)
+    def startService(self):
+        service.Service.startService(self)
+        self.service.startService()
 
-
+    def stopService(self):
+        service.Service.stopService(self)
+        self.service.stopService()

@@ -4,7 +4,7 @@
 """
 
 __metaclass__ = type
-__all__ = ['SFTPSetup']
+__all__ = ['SFTPService']
 
 
 import os
@@ -21,7 +21,13 @@ from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.supermirrorsftp import sftponly
 
 
-class SFTPSetup:
+class SFTPService(service.Service):
+    """A Twisted service for the supermirror SFTP server.
+    """
+
+    def __init__(self, keydir):
+        self.service = self.makeService(keydir)
+
     def makeRoot(self, keydir):
         root = os.path.dirname(config.supermirrorsftp.host_key_pair_path)
         assert root == os.path.dirname(config.supermirrorsftp.branches_root), \
@@ -62,3 +68,11 @@ class SFTPSetup:
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa'), 'rb').read())
         return hostPublicKey, hostPrivateKey
+
+    def startService(self):
+        service.Service.startService(self)
+        self.service.startService()
+
+    def stopService(self):
+        service.Service.stopService(self)
+        self.service.stopService()

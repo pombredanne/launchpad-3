@@ -34,8 +34,8 @@ import canonical
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
-from canonical.launchpad.daemons.authserver import AuthserverSetup
-from canonical.launchpad.daemons.sftp import SFTPSetup
+from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.supermirrorsftp.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
@@ -68,14 +68,14 @@ def deferToThread(f):
     return decorated
 
 
-class TestSFTPSetup(SFTPSetup):
+class TestSFTPService(SFTPService):
     _event = None
 
     def setConnectionLostEvent(self, event):
         self._event = event
 
     def makeRealm(self):
-        realm = SFTPSetup.makeRealm(self)
+        realm = SFTPService.makeRealm(self)
         realm.avatarFactory = self.makeAvatar
         return realm
 
@@ -150,13 +150,12 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         ssh._ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
-        self.authserver = AuthserverSetup().makeService()
+        self.authserver = AuthserverService()
         self.authserver.startService()
 
         # Start the SFTP server
         keydir = sibpath(__file__, 'keys')
-        self.sftpServerSetup = TestSFTPSetup()
-        self.server = self.sftpServerSetup.makeService(keydir)
+        self.server = TestSFTPService(keydir)
         self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
 
@@ -241,7 +240,7 @@ class AcceptanceTests(SFTPTestCase):
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
             push_done = threading.Event()
-            self.sftpServerSetup.setConnectionLostEvent(push_done)
+            self.server.setConnectionLostEvent(push_done)
             cmd_push().run_argv([remote_url])
             push_done.wait()
         finally:
