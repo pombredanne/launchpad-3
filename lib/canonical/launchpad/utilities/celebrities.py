@@ -99,7 +99,7 @@ class LaunchpadCelebrities:
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
     answer_tracker_janitor = CelebrityDescriptor(
-        IPersonSet, 'support-tracker-janitor')
+        IPersonSet, 'answer-tracker-janitor')
     team_membership_janitor = CelebrityDescriptor(
         IPersonSet, 'team-membership-janitor')
 
