@@ -31,11 +31,16 @@ class SFTPSetup:
         os.makedirs(root, 0700)
         shutil.copytree(keydir, config.supermirrorsftp.host_key_pair_path)
 
+    def makeRealm(self):
+        homedirs = config.supermirrorsftp.branches_root
+        authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        return sftponly.Realm(homedirs, authserver)
+
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         # Configure the authentication
         homedirs = config.supermirrorsftp.branches_root
         authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
-        p = portal.Portal(sftponly.Realm(homedirs, authserver))
+        p = portal.Portal(self.makeRealm())
         p.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))
         sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = p

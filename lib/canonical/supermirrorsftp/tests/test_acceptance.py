@@ -37,11 +37,13 @@ from canonical.launchpad import database
 from canonical.launchpad.daemons.authserver import AuthserverSetup
 from canonical.launchpad.daemons.sftp import SFTPSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.supermirrorsftp.sftponly import (
+    BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.database.sqlbase import sqlvalues
 from canonical.testing import LaunchpadZopelessLayer
 
 
-# XXX - We need to run TrialSuite()._bail once at the exit if we are 
+# XXX - We need to run TrialSuite()._bail once at the exit if we are
 _bail_registered = False
 
 
@@ -64,6 +66,46 @@ def deferToThread(f):
         t.start()
         return d
     return decorated
+
+
+class TestSFTPSetup(SFTPSetup):
+    _event = None
+
+    def setConnectionLostEvent(self, event):
+        self._event = event
+
+    def makeRealm(self):
+        realm = SFTPSetup.makeRealm(self)
+        realm.avatarFactory = self.makeAvatar
+        return realm
+
+    def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
+        self.avatar = TestSFTPOnlyAvatar(avatarId, homeDirsRoot,
+                                         userDict, launchpad)
+        self.avatar._event = self._event
+        return self.avatar
+
+
+class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
+    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
+        SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
+                                launchpad)
+        self.subsystemLookup = {'sftp': self.makeFileTransferServer}
+
+    def makeFileTransferServer(self, data=None, avatar=None):
+        return TestBazaarFileTransferServer(self._event, data, avatar)
+
+
+class TestBazaarFileTransferServer(BazaarFileTransferServer):
+    def __init__(self, event, data=None, avatar=None):
+        BazaarFileTransferServer.__init__(self, data=data, avatar=avatar)
+        self.connectionLostEvent = event
+
+    def connectionLost(self, reason):
+        d = self.sendMirrorRequests()
+        if self.connectionLostEvent is not None:
+            d.addBoth(lambda ignored: self.connectionLostEvent.set())
+        return d
 
 
 class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
@@ -113,7 +155,8 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
 
         # Start the SFTP server
         keydir = sibpath(__file__, 'keys')
-        self.server = SFTPSetup().makeService(keydir)
+        self.sftpServerSetup = TestSFTPSetup()
+        self.server = self.sftpServerSetup.makeService(keydir)
         self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
 
@@ -197,7 +240,10 @@ class AcceptanceTests(SFTPTestCase):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
+            push_done = threading.Event()
+            self.sftpServerSetup.setConnectionLostEvent(push_done)
             cmd_push().run_argv([remote_url])
+            push_done.wait()
         finally:
             os.chdir(old_dir)
 
@@ -298,8 +344,8 @@ class AcceptanceTests(SFTPTestCase):
 
         self.assertRaises(
             NotBranchError,
-            bzrlib.branch.Branch.open(self.server_base
-                                      + '~testuser/+junk/renamed-branch'))
+            bzrlib.branch.Branch.open,
+            self.server_base + '~testuser/+junk/renamed-branch')
 
         remote_branch = bzrlib.branch.Branch.open(
             self.server_base + '~testuser/firefox/renamed-branch')
