@@ -36,7 +36,8 @@ name appears in the 'Subscribers' portlet:
     >>> portlet.first('ul')
     <ul class="people">
       <li>
-        <a href="http://answers.launchpad.dev/~name12">Sample Person</a>
+        <a href="http://answers.launchpad.dev/~no-priv">No Privileges
+            Person</a>
       </li>
     </ul>
 
@@ -77,23 +78,24 @@ discussion about this question' checkbox:
 
     >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/6')
     >>> user_browser.getControl('Message').value = (
-    ...     "I restarted Firefox and the plug-in still doesn't work.")
+    ...     "Try starting firefox from the command-line. Are there any "
+    ...     "messages appearing?")
     >>> user_browser.getControl(
     ...     'E-mail me future discussion about this question').selected = True
-    >>> user_browser.getControl("I'm Still Having This Problem").click()
+    >>> user_browser.getControl("Add Information Request").click()
 
 A notification message is displayed notifying of the subscription:
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Your question was reopened.
+    Thanks for your information request.
     You have subscribed to this question.
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> portlet = soup.first('div', id='question-subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()
-    Sample Person
+    No Privileges Person
 
 When the person is already subscribed to the question, the checkbox
 doesn't appear on the page:

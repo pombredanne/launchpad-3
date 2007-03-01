@@ -131,6 +131,6 @@ The user automatically got subscribed to this new question.
 
     >>> soup.first('div', {'id': 'question-subscribers'})
     <div id="question-subscribers" class="portlet">
-    ...<a href=".../~name12">Sample Person</a>...
+    ...<a href=".../~no-priv">No Privileges Person</a>...
     </div>
 

@@ -19,6 +19,7 @@ from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp, ssh
 from bzrlib.urlutils import local_path_from_url
+from bzrlib.workingtree import WorkingTree
 from bzrlib.builtins import cmd_push
 
 from twisted.python.util import sibpath
@@ -177,6 +178,26 @@ class AcceptanceTests(SFTPTestCase):
             cmd_push().run_argv([remote_url])
         finally:
             os.chdir(old_dir)
+
+    def test_bzr_push_again(self):
+        """Pushing to an existing branch must work.
+
+        test_1_bzr_sftp tests that the initial push works. Here we test that
+        pushing further revisions to an existing branch works as well.
+        """
+        # Initial push.
+        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        self._push(remote_url)
+        self.assertEqual(
+            bzrlib.branch.Branch.open(remote_url).last_revision(), 'rev1')
+        # Add a single revision to the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+        # Push the new revision.
+        self._push(remote_url)
+        # Check that the new revision was pushed successfully
+        self.assertEqual(
+            bzrlib.branch.Branch.open(remote_url).last_revision(), 'rev2')
 
     def test_2_namespace_restrictions(self):
         """
