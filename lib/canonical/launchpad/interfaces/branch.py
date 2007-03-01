@@ -48,6 +48,11 @@ class BranchURIField(URIField):
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
@@ -248,22 +253,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     # revision number manipulation
-    def getRevisionNumber(sequence):
-        """Gets the RevisionNumber for the given sequence number.
+    def getBranchRevision(sequence):
+        """Gets the BranchRevision for the given sequence number.
 
-        If no such RevisionNumber exists, None is returned.
+        If no such BranchRevision exists, None is returned.
         """
 
-    def createRevisionNumber(sequence, revision):
-        """Create a RevisionNumber mapping sequence to revision."""
+    def createBranchRevision(sequence, revision):
+        """Create a BranchRevision mapping sequence to revision."""
 
     def truncateHistory(from_rev):
         """Truncate the history of the given branch.
 
-        RevisionNumber objects with sequence numbers greater than or
+        BranchRevision objects with sequence numbers greater than or
         equal to from_rev are destroyed.
 
-        Returns True if any RevisionNumber objects were destroyed.
+        Returns True if any BranchRevision objects were destroyed.
         """
 
     def updateScannedDetails(revision_id, revision_count):

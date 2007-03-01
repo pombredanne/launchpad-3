@@ -5,7 +5,7 @@ if the page is not broken.
 Navigate to the edit page as admin
 
   >>> admin_browser.open('http://localhost/ubuntu/warty')
-  >>> admin_browser.getLink('Edit Details').click()
+  >>> admin_browser.getLink('Change details').click()
   >>> admin_browser.url
   'http://localhost/ubuntu/warty/+edit'
 
