@@ -350,11 +350,11 @@ It has however been nominated for 1.0:
 This means that if we iterate through the vocabulary with bug one, only
 the trunk will be nominatable:
 
-    >>> firefox_task = bug_one.bugtasks[0]
-    >>> firefox_task.target.name
+    >>> firefox_bug_one = bug_one.bugtasks[0]
+    >>> firefox_bug_one.target.name
     u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     firefox_task, 'BugNominatableReleases')
+    ...     firefox_bug_one, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     trunk: Trunk
@@ -371,11 +371,11 @@ No series is targeted or nominated on bug 4:
 
 So if we give bug four to the vocabulary, all releases will be returned:
 
-    >>> firefox_task = bug_four.bugtasks[0]
-    >>> firefox_task.target.name
+    >>> firefox_bug_four = bug_four.bugtasks[0]
+    >>> firefox_bug_four.target.name
     u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     firefox_task, 'BugNominatableReleases')
+    ...     firefox_bug_four, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     1.0: 1.0
