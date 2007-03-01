@@ -95,7 +95,14 @@ class QuestionCollectionLatestQuestionsView:
 
 
 class QuestionCollectionOpenCountView:
-    """View used to render the number of open questions."""
+    """View used to render the number of open questions.
+    
+    This view is used to render the number of open questions on 
+    each ISourcePackageRelease on the person-packages-templates.pt.
+    It is simpler to define generic view and an adapter (since
+    SourcePackageRelease does not provide IQuestionCollection), than
+    to write a specific view for that template.
+    """
 
     def __call__(self):
         questiontarget = IQuestionCollection(self.context)
