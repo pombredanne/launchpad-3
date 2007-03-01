@@ -11,8 +11,10 @@
 
 <div metal:fill-slot="main">
 
-    <p class="documentDescription">Terms and conditions of use for this web
-    site, and the Launchpad system. Please read carefully.</p>
+    <p class="documentDescription">
+      These are the terms and conditions of use for this web site, and the
+      Launchpad system.
+    </p>
 
   <h2>General copyright</h2>
 

@@ -66,6 +66,15 @@ class IBugTarget(Interface):
         bugs will be returned.
         """
 
+    def getBugCounts(user, statuses=None):
+        """Return a dict with the number of bugs in each possible status.
+
+            :user: Only bugs the user has permission to view will be
+                   counted.
+            :statuses: Only bugs with these statuses will be counted. If
+                       None, all statuses will be included.
+        """
+
 
 class BugDistroReleaseTargetDetails:
     """The details of a bug targeted to a specific IDistroRelease.
