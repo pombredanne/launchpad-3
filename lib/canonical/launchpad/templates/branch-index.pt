@@ -167,7 +167,7 @@
       <h3>
         Revision <span tal:replace="rev_no/sequence">1</span>
         <tal:valid-user tal:condition="rev_no/revision/revision_author">
-          by <span tal:replace="rev_no/revision/revision_author/displayname">John Doe
+          by <span tal:replace="rev_no/revision/revision_author/name">John Doe
             &lt;john.doe@example.com&gt;</span>
         </tal:valid-user>
         <tal:date>
