@@ -174,7 +174,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
@@ -394,7 +394,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall']
+             'register', 'listall', 'withcode']
 
     def register(self):
         text = 'Register a project'
@@ -415,6 +415,12 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
+
+    def withcode(self):
+        text = 'Show projects with code'
+        productset = getUtility(IProductSet)
+        return Link(canonical_url(
+            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:

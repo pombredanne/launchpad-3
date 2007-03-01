@@ -5,18 +5,24 @@ there are branches associated with products, and to entice them to click
 through to get lists of branches of products that interest them.
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('branches registered in').click()
+    >>> browser.getLink('5 products').click()
     >>> print browser.title
     Projects with Code
 
-    >>> table = find_tag_by_id(browser.contents, 'products')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     cells = row.fetch('td')
-    ...     print cells[0].renderContents(), cells[1].renderContents()
-    <a href="http://code.launchpad.dev/evolution">Evolution</a>              2
-    <a href="http://code.launchpad.dev/gnome-terminal">GNOME Terminal</a>    7
-    <a href="http://code.launchpad.dev/iso-codes">iso-codes</a>              1
-    <a href="http://code.launchpad.dev/firefox">Mozilla Firefox</a>          5
-    <a href="http://code.launchpad.dev/thunderbird">Mozilla Thunderbird</a>  1
+You can also get to this page as the default view on the code rootsite
+for the IProductSet.
+
+    >>> browser.open('http://code.launchpad.dev/products')
+    >>> print browser.title
+    Projects with Code
+
+    >>> contents = find_tag_by_id(browser.contents, 'maincontent')
+    >>> for anchor in contents.fetch('a'):
+    ...     print anchor['href']
+    http://code.launchpad.dev/evolution
+    http://code.launchpad.dev/firefox
+    http://code.launchpad.dev/gnome-terminal
+    http://code.launchpad.dev/iso-codes
+    http://code.launchpad.dev/thunderbird
 
     

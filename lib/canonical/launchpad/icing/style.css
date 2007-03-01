@@ -1235,7 +1235,7 @@ body {
 }
 #singlecolumn #container {
   padding-left: 20px;
-  padding-top: 60px;
+  padding-top: 50px;
 }
 #maincontent, #portlets {
   display: inline;
@@ -1258,7 +1258,7 @@ body {
 #portlets .portlet {
   width: 200px;
 }
-#singlecolumn {margin: 20px 20px 20px 38px;} /* test: front page, Oops page */
+#singlecolumn {margin: 20px 20px 0 38px;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 
 /* ====== Content area styles ====== */
@@ -1294,8 +1294,8 @@ div.bordered {
 }
 #application-summary, #application-footer {
   font-size: 1.5em;
-  line-height: 1.35em;
- /* width: 50%; */
+  line-height: 1.5em;
+  margin-top: 0;
 }
 #application-footer {
   border-top: 1px dotted #999;
@@ -1353,7 +1353,8 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 }
 ul.buttons {margin: 2em 0 4em 0; padding: 0;}
 ul.buttons li {display: inline; margin-right: 1em;}
-#singlecolumn ul.buttons {float: right;}
+#singlecolumn ul.buttons {float: right; margin: 0;}
+#singlecolumn ul.buttons li {margin: 0;}
 #singlecolumn ul.buttons li {display: block;}
 ul.cross-reference {font-size: 1.25em;}
 /*
@@ -1495,4 +1496,22 @@ th.descending {
 }
 #locationbar {
   overflow: visible;
+}
+.cloud-size-small { 
+  font-size: 1em;
+}
+.cloud-size-medium {
+  font-size: 1.35em;
+}
+.cloud-size-large {
+  font-size: 1.7em;
+}
+.cloud-shade-dark { 
+  color: #00f;
+}
+.cloud-shade-medium { 
+  color: #7878ff;
+}
+.cloud-shade-light {
+  color: #b8b8ff;
 }

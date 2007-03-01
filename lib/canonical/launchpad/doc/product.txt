@@ -230,9 +230,9 @@ We can also find all the products that have branches.
  >>> productset.getProductsWithBranches().count()
  5
  >>> for product in productset.getProductsWithBranches():
- ...     print product.displayname
- Evolution
- GNOME Terminal
+ ...     print product.name
+ evolution
+ firefox
+ gnome-terminal
  iso-codes
- Mozilla Firefox
- Mozilla Thunderbird
+ thunderbird

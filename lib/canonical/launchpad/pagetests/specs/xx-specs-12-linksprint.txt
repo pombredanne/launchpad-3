@@ -22,7 +22,7 @@ Then we are going to propose it for the meeting agenda:
 
   >>> browser.getLink('Propose for meeting agenda').click()
   >>> browser.title
-  'Put specification on sprint agenda'
+  'Put blueprint on sprint agenda'
 
 Now  with a POST, we try to Add the spec to the Guacamole sprint.
 

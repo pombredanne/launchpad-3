@@ -22,26 +22,25 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but-lrg-takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addspec">
+                            <img
+                              alt="Register a specification"
+                              src="/+icing/but-lrg-registeraspec.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <form class="central" name="spec_search" method="get">
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+addspec">
-                              <img
-                                alt="Register a specification"
-                                src="/+icing/but-lrg-registeraspec.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <table>
                           <tbody>
                             <tr>
@@ -58,7 +57,7 @@
                                 <input
                                   tal:condition="not:view/searchrequested"
                                   type="submit"
-                                  value="Search Specifications"
+                                  value="Search Blueprints"
                                 />
                                 <input
                                   tal:condition="view/searchrequested"
@@ -117,12 +116,10 @@
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">
                         <p id="application-summary">
-                          With Launchpad you can track blueprints -
-                          lightweight specifications - through the
-                          discussion, design and implementation process.
-                          You can also keep track of your progress to a
-                          release as these features land.
-                          <a href="/specs/+tour">Learn more...</a>
+                          With Launchpad you can track blueprints
+                          (feature specifications) from discussion through to
+                          review, approval, and implementation.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
                           <div class="three column left">
@@ -174,4 +171,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs "Recently implemented" list, specifications count -->
+<!-- 1-0 inprogress Needs "Recently implemented" list, blueprints count -->
