@@ -104,51 +104,11 @@
       permission="launchpad.View"
       template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
 
-    <browser:pages
-      for="canonical.launchpad.interfaces.IBugTask"
-      class="canonical.launchpad.browser.BugView"
-      permission="zope.Public">
-
-      <!-- BugTask Portlets (Note: These are Bug portlets. These
-      registrations are duplicated in bug.zcml, so that they can work
-      on pages where IBug is the context.) -->
-      <browser:page
-          name="+portlet-watch"
-          template="../templates/bug-portlet-watch.pt" />
-      <browser:page
-          name="+portlet-details"
-          template="../templates/bug-portlet-details.pt" />
-      <browser:page
-          name="+portlet-specs"
-          template="../templates/bug-portlet-specs.pt" />
-      <browser:page
-          name="+portlet-questions"
-          template="../templates/bug-portlet-questions.pt" />
-      <browser:page
-          name="+portlet-reference"
-          template="../templates/bug-portlet-reference.pt" />
-      <browser:page
-          name="+portlet-duplicates"
-          template="../templates/bug-portlet-duplicates.pt" />
-      <browser:page
-          name="+portlet-cve"
-          template="../templates/bug-portlet-cve.pt" />
-      <browser:page
-          name="+portlet-attachments"
-          template="../templates/bug-portlet-attachments.pt" />
-    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
         name="+listing-detailed"
         template="../templates/bugtask-listing-detailed.pt"
-        permission="zope.Public" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+portlet-subscribers"
-        class="canonical.launchpad.browser.BugView"
-        template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
     <browser:page

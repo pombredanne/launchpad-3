@@ -86,6 +86,13 @@ class LaunchbagBugID(SubstitutionHelper):
         return self.text % getUtility(ILaunchBag).bug.id
 
 
+class ContextBugId(SubstitutionHelper):
+    """Helper to include the context's bug id in the title."""
+
+    def __call__(self, context, view):
+        return self.text % context.bug.id
+
+
 # Functions and strings used as the titles of pages.
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
@@ -124,7 +131,7 @@ branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextTitle('Details of Branches for %s')
 
-bug_activity = ContextId('Bug #%s - Activity log')
+bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
@@ -138,9 +145,9 @@ bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = ContextId('Bug #%d - Edit')
+bug_edit = ContextBugId('Bug #%d - Edit')
 
-bug_edit_confirm = ContextId('Bug #%d - Edit confirmation')
+bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
@@ -148,14 +155,14 @@ def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
-bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
+bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
 def bug_nominate_for_release(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
-bug_secrecy = ContextId('Bug #%d - Set visibility')
+bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
@@ -502,7 +509,7 @@ malone_filebug = "Report a bug"
 
 # messages_index is a redirect
 
-message_add = ContextId('Bug #%d - Add a comment')
+message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
 
