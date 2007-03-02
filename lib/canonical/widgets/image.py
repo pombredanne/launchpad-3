@@ -64,7 +64,7 @@ class ImageChangeWidget(SimpleInputWidget):
             # This widget is meant to be used only by fields which expect an
             # object implementing ILibraryFileAlias as their values.
             assert ILibraryFileAlias.providedBy(img)
-            url = img.secure_url
+            url = img.getURL()
         else:
             url = self.context.default_image_resource
         html = ('<div><img id="%s" src="%s" alt="%s" /></div>\n'

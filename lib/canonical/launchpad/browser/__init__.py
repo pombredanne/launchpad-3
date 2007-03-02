@@ -49,7 +49,6 @@ from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
 from canonical.launchpad.browser.packagerelationship import *
-from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *
@@ -78,8 +77,8 @@ from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.temporaryblobstorage import *
-from canonical.launchpad.browser.ticket import *
-from canonical.launchpad.browser.tickettarget import *
+from canonical.launchpad.browser.question import *
+from canonical.launchpad.browser.questiontarget import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *

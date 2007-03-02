@@ -108,7 +108,7 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'support']
+        'answers']
 
     enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
@@ -123,7 +123,7 @@ class StandardLaunchpadFacets(FacetMenu):
                 link.site = 'code'
             elif name == 'translations':
                 link.site = 'translations'
-            elif name == 'support':
+            elif name == 'answers':
                 link.site = 'answers'
             elif name == 'bugs':
                 link.site = 'bugs'
@@ -146,12 +146,12 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bugs'
         return Link(target, text)
 
-    def support(self):
+    def answers(self):
         # This facet is visible but unavailable by default.
         # See the enable_only list above.
         target = '+tickets'
-        text = 'Support'
-        summary = 'Technical Support Requests'
+        text = 'Answers'
+        summary = 'Launchpad Answer Tracker'
         return Link(target, text, summary)
 
     def specifications(self):

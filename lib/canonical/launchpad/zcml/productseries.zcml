@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
     <!-- This is class ProductSeries -->
@@ -39,6 +38,13 @@
         classes="ProductSeriesNavigation"
         />
 
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.browser.ProductSeriesSOP"
+        permission="zope.Public"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
         path_expression="name"
@@ -66,7 +72,7 @@
         <browser:page
             name="+index"
             template="../templates/productseries-index.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/" />
+            />
         <browser:page
             name="+importstatus"
             template="../templates/productseries-importstatus.pt" />
@@ -104,7 +110,7 @@
             name="+translations"
             facet="translations"
             template="../templates/productseries-translations.pt"
-            lp:url="/products/evolution/main/+translations" />
+            />
         <browser:page
             name="+potlist"
             facet="translations"
@@ -113,7 +119,7 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/+ubuntupkg" />
+            />
     </browser:pages>
 
     <browser:page
@@ -122,7 +128,6 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/products/$Product.name/$ProductSeries.name/+rdf"
         attribute="__call__"
         />
 
@@ -133,20 +138,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
-        lp:url="/products/$Product.name/$ProductSeries.name/+edit"
       />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="driver"
-        class="canonical.launchpad.browser.ProductSeriesAppointDriverView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Product.name/$Series.name/+driver">
-    </browser:editform>
 
     <browser:addform
         name="+addrelease"
@@ -159,7 +151,7 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productrelease-add.pt"
-        lp:url="/product/$Product.name/$ProductSeries.name/+addrelease">
+        >
         <browser:widget
             field="productseries"
             class="canonical.widgets.ContextWidget" />
@@ -182,8 +174,7 @@
       keyword_arguments="name dateexpected"
       permission="launchpad.Edit"
       template="../templates/milestone-add.pt"
-      lp:url="/products/$Product.name/$Series.name/+addmilestone">
-    </browser:addform>
+      />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -192,7 +183,7 @@
         template="../templates/productseries-source.pt"
         facet="overview"
         permission="launchpad.EditSource"
-        lp:url="/products/$Product.name/$ProductSeries.name/+source" />
+        />
 
     <browser:editform
         name="+review"
@@ -204,7 +195,7 @@
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="/products/$Product.name/$ProductSeries.name/+review">
+        >
         <browser:widget
             field="name"
             class="zope.app.form.browser.TextWidget"
@@ -232,7 +223,7 @@
         <browser:page
             name="+translations-upload"
             template="../templates/productseries-translations-upload.pt"
-            lp:url="/products/evolution/main/+translations-upload" />
+            />
     </browser:pages>
 
   <!-- ProductSeriesSet -->
@@ -261,8 +252,15 @@
     <browser:page
         name="+bazaar-index"
         template="../templates/sources-index.pt"
-        lp:url="/bazaar/series/"
         />
   </browser:pages>
+
+<browser:page
+  for="canonical.launchpad.interfaces.IProductSeries"
+  name="+shortlink"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.ProductSeriesShortLink"
+  attribute="__call__"
+  />
 
 </configure>

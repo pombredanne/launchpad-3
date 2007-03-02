@@ -4,7 +4,7 @@ The Branch table holds information about an Bazaar Branch. It describes the
 Launchpad user model of a branch, and in particular should be able (in the
 future) to support un-committing of revisions.
 
-It has a N-N association to the Revision table through the RevisionNumber
+It has a N-N association to the Revision table through the BranchRevision
 table. An association table is required because the sequence of revisions
 listed by "bzr log" is defined by a "revision-history" file which has some
 freedom with respect to the ancestry of revisions.
@@ -24,12 +24,6 @@ A Branch is not tied to an URL, since a branch may change locations over time.
 It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
-
-Bazaar does not have a identifiable concept of a Branch below the user
-interface level. Since the conceptual model of Bazaar does not define Branch,
-Launchpad cannot just implement the Bazaar branch model. You should think of a
-Branch, not as "a Bazaar branch in Launchpad", but as a "Launchpad branch based
-on Bazaar". If that makes any sense to you. Otherwise, don't worry.
 
 == Creating branches ==
 
@@ -70,12 +64,26 @@ If it doesn't exist an exception NotFoundError is raised
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
 
+>>> from datetime import datetime, timedelta
+>>> from pytz import UTC
+>>> def timegenerator(origin):
+...     now = origin
+...     while True:
+...         now += timedelta(seconds=5)
+...         yield now
+>>> now = timegenerator(datetime.now(UTC))
+
+The timegenerator is used to create nicely ordered 'fake' date_created
+times for the branches.  This avoids using transaction.commit to get the
+date_created values from the database.
+
 >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
 >>> title = "David Allouche's Main GNOME Terminal Branch"
 >>> summary = "Main line of development for David Allouche on GNOME Terminal."
 >>> home_page = "http://example.com/~ddaa/"
 >>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
-...     title, summary=summary, home_page=home_page)
+...     title, summary=summary, home_page=home_page, date_created=now.next())
+
 >>> gterm_dev.name
 u'dev'
 >>> gterm_dev.product == gterm_product
@@ -96,7 +104,9 @@ no title, and no summary, and even no URL.
 Branches with no URL are primarily hosted on the supermirror.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, None)
+>>> junkcode = branchset.new('junkcode', ddaa, None, None,
+...                          date_created=now.next())
+
 >>> junkcode.name
 u'junkcode'
 >>> print repr(junkcode.product)
@@ -109,6 +119,84 @@ None
 None
 >>> print repr(junkcode.url)
 None
+
+
+== Determing the number of branches ==
+
+The IBranchSet can tell us how many branches there are registered.
+
+>>> branchset.count()
+27
+
+(25 in the sample data, and two added above.)
+
+== Determing the number of branches with bugs ==
+
+The count of branches that have bugs associated with them is another
+useful piece of summary information that is supplied on one of the initial
+pages to show that there can be a relationship created between
+branches and bugs.
+
+>>> branchset.countBranchesWithAssociatedBugs()
+2
+
+== Determining the recently changed, registered and imported branches ==
+
+The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
+and getRecentlyRegisteredBranches are used to give summary information that
+is to be displayed on the code.launchpad.net page to entice the 
+user to click through.
+
+Changed branches are branches that are owned by real people or groups (as
+opposed to vcs-imports), and have recently had new revisions detected by
+the branch scanner, either through the branch being pushed to the supermirror
+or the branch puller script mirroring a remote branch.
+
+Imported branches are those branches owned by vcs-imports, and are "imported"
+from other VCS hosted code bases.  Again recently imported branches are
+identified by new revisions detected by the branch scanner.
+
+Branches that have been recently registered have either been created by a user
+using the web UI, or by pushing a new branch directly to the supermirror.
+
+In order to determine changes in the branches the last_scanned timestamp
+is used.  This is set by the branch scanner when it has finished
+scanning the branches and recording the branch data in the launchpad
+database.  The sample data doesn't have this value set, so we'll fake
+it here to get some interesting results instead of nothing.
+
+>>> list(branchset.getRecentlyChangedBranches(5))
+[]
+>>> list(branchset.getRecentlyImportedBranches(5))
+[]
+
+>>> from datetime import datetime, timedelta
+>>> import pytz
+>>> today = datetime.now(pytz.timezone('UTC'))
+>>> branch = branchset.getByUniqueName('~ddaa/gnome-terminal/dev')
+>>> branch.last_scanned = today - timedelta(3)
+>>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~ddaa/+junk/junkcode')
+>>> branch.last_scanned = today - timedelta(2)
+>>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
+>>> branch.last_scanned = today - timedelta(1)
+>>> syncUpdate(branch)
+
+>>> for branch in branchset.getRecentlyChangedBranches(5):
+...   print branch.unique_name
+~ddaa/+junk/junkcode
+~ddaa/gnome-terminal/dev
+
+>>> for branch in branchset.getRecentlyImportedBranches(5):
+...   print branch.unique_name
+~vcs-imports/evolution/main
+
+>>> for branch in branchset.getRecentlyRegisteredBranches(2):
+...   print branch.unique_name
+~ddaa/+junk/junkcode
+~ddaa/gnome-terminal/dev
+
 
 == Finding a branch by URL ==
 
@@ -287,7 +375,7 @@ the branches registered, authored and subscribed to by this person.
 >>> url = 'http://example.com/~lifeless/mesh-merge'
 >>> title = "Experimental mesh merging algorithm."
 >>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
-...     title, summary=title)
+...     title, summary=title, date_created=now.next())
 >>> junkcode.author = lifeless
 >>> syncUpdate(junkcode)
 >>> unused = gterm_dev.subscribe(lifeless)
@@ -311,14 +399,14 @@ Let's get a branch with some revisions in it.
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
-IRevisionNumber interface. The Branch.revision_count attribute gives the length
+IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
->>> from canonical.launchpad.interfaces import IRevisionNumber
+>>> from canonical.launchpad.interfaces import IBranchRevision
 >>> count = junk.revision_count
 >>> count
 6
->>> [verifyObject(IRevisionNumber, a) for a in junk.revision_history]
+>>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
 >>> [revno.sequence for revno in junk.revision_history]
 [6, 5, 4, 3, 2, 1]
@@ -326,14 +414,14 @@ of the revision_history attribute but without building the list.
 There are two methods for getting only the the latest items of the revision
 history.
 
-Branch.latest_revisions give a specific count of RevisionNumbers at the end of
+Branch.latest_revisions give a specific count of BranchRevisions at the end of
 the history.
 
 >>> three_latest = list(junk.revision_history)[:3]
 >>> list(junk.latest_revisions(3)) == three_latest
 True
 
-Branch.revisions_since gives all the RevisionNumbers for revisions comitted
+Branch.revisions_since gives all the BranchRevisions for revisions comitted
 since a given timestamp. It may give suprising results if some committers had a
 skewed clock.
 
@@ -440,3 +528,77 @@ scanned ID is.
   >>> syncUpdate(branch)
   >>> branch in branchset.getBranchesToScan()
   False
+
+== Getting last commit time for branches ==
+
+There is not sufficient correct data in the sample code to make this
+right, but we still want to test the corner cases.
+
+  >>> branchset.getLastCommitForBranches([])
+  {}
+  >>> branch = branchset.get(1)
+  >>> branchset.getLastCommitForBranches([branch])
+  {<Branch ...>: None}
+  >>> another = branchset.get(2)
+  >>> branchset.getLastCommitForBranches([branch, another])
+  {<Branch ...>: None, <Branch ...>: None}
+
+== Getting the development focus branches for products ==
+
+One of the primary initial code pages will be the "products with code" page.
+In order to entice the user to click through, one of the links for each
+product will be the development focus branch if there is one.
+
+Lets make gnome terminal have a user branch as the dev focus.
+
+  >>> login('test@canonical.com')
+  >>> gterm_main = branchset.getByUniqueName('~name12/gnome-terminal/main')
+  >>> gterm_product.development_focus.user_branch = gterm_main
+  >>> syncUpdate(gterm_product.development_focus)
+  
+  >>> products = productset.getProductsWithBranches()
+  >>> branches = branchset.getProductDevelopmentBranches(products)
+  >>> import operator
+  >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+  ...     print branch.unique_name
+  ~name12/gnome-terminal/main
+  ~vcs-imports/evolution/main
+
+== Getting the branch count and last commit for products ==
+
+  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> for product in products:
+  ...     print "%s %s %s" % (
+  ...         product.name,
+  ...         summary[product]['branch_count'],
+  ...         summary[product]['last_commit'])
+  evolution      2 None
+  firefox        5 2005-03-09 15:50:00
+  gnome-terminal 8 None
+  iso-codes      1 None
+  thunderbird    1 None
+
+
+== Getting branches by owner ==
+
+In order to facilitate getting the branches for all the teams that a 
+person is a member of, we need to be able to get branches owned by
+arbitrary people.
+
+  >>> branchset.getBranchesForOwners([])
+  []
+  >>> owners = [personset.getByName('launchpad')]
+  >>> branches = branchset.getBranchesForOwners(owners)
+  >>> import operator
+  >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+  ...     print branch.unique_name
+  ~launchpad/gnome-terminal/launchpad
+
+  >>> owners.append(personset.getByName('ddaa'))
+  >>> branches = branchset.getBranchesForOwners(owners)
+  >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+  ...     print branch.unique_name
+  ~ddaa/+junk/junkcode
+  ~ddaa/gnome-terminal/dev
+  ~launchpad/gnome-terminal/launchpad
+ 

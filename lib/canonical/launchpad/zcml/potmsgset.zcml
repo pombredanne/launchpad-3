@@ -2,7 +2,6 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POTMsgSet">

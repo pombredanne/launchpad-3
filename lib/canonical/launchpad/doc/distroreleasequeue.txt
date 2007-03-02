@@ -161,6 +161,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   10
   11
   12
+  13
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -173,7 +174,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  12
+  13
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -189,7 +190,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  10
+  11
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -342,7 +343,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED)
   >>> items.count()
-  4
+  5
 
 We can't retrieve it with a 'what' substring:
 
@@ -585,7 +586,6 @@ Construct a new upload for universe/misc and a lot of errors ;)
   Rejected:
   usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
   Unable to find source package usplash/0.1-22 in hoary
-  usplash: Unable to find arch: powerpc
   usplash: Unable to find arch: powerpc
   Signer has no upload rights at all to this distribution.
   Alas, someone called do_accept when we're rejected

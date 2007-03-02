@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Security policies for using content objects.
 
 """
@@ -7,20 +7,21 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
+    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import IAuthorization
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -322,15 +323,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj, user)
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -338,15 +331,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.team.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj.team, user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -388,15 +373,7 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = IPollOption
 
     def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(self.obj.poll.team.teamowner) or user.inTeam(admins):
-            return True
-        else:
-            for team in self.obj.poll.team.administrators:
-                if user.inTeam(team):
-                    return True
-
-        return False
+        return can_admin_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -793,10 +770,9 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
-
-class EditDistroReleaseQueue(AdminByAdminsTeam):
+class EditPackageUploadQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
         """Check user presence in admins or distrorelease upload admin team."""
@@ -805,22 +781,33 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
 
         return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
-class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+
+class ViewPackageUploadQueue(EditPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
         """Allow only members of the admin team to view unapproved entries.
 
         Any logged in user can view entries in other state.
         """
-        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+        if EditPackageUploadQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
         if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
             return False
 
         return True
+
+
+class EditDistroReleaseQueue(EditPackageUploadQueue):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseQueue
+
+
+class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+    permission = 'launchpad.View'
+    usedfor = IDistroReleaseQueue
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -854,35 +841,47 @@ class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
 
-class AdminTicket(AdminByAdminsTeam):
+class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow only admins and owners of the ticket pillar target."""
+        """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
                 user.inTeam(context.owner))
 
 
-class ModerateTicket(AdminTicket):
+class ModerateQuestion(AdminQuestion):
     permission = 'launchpad.Moderate'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow user who can administer the ticket and support contacts."""
-        if AdminTicket.checkAuthenticated(self, user):
+        """Allow user who can administer the question and answer contacts."""
+        if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for support_contact in self.obj.target.support_contacts:
-            if user.inTeam(support_contact):
+        for answer_contact in self.obj.target.answer_contacts:
+            if user.inTeam(answer_contact):
                 return True
         return False
 
 
-class TicketOwner(AuthorizationBase):
+class QuestionOwner(AuthorizationBase):
     permission = 'launchpad.Owner'
-    usedfor = ITicket
+    usedfor = IQuestion
 
     def checkAuthenticated(self, user):
-        """Allow the ticket's owner."""
+        """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+def can_admin_team(team, user):
+    """Return True if the given user has admin rights for the given team."""
+    if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        return True
+    else:
+        for person in team.getEffectiveAdministrators():
+            if user.inTeam(person):
+                return True
+    return False
+

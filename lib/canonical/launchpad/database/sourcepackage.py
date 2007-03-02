@@ -1,9 +1,9 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
     'SourcePackage',
-    'SourcePackageTicketTargetMixin',
+    'SourcePackageQuestionTargetMixin',
     ]
 
 from operator import attrgetter
@@ -22,22 +22,21 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ITicketTarget,
-    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+    ISourcePackage, IHasBuildRecords, IQuestionTarget, get_supported_languages)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.question import (
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -45,95 +44,94 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.build import Build
 
 
-class SourcePackageTicketTargetMixin:
-    """Implementation of ITicketTarget for SourcePackage."""
+class SourcePackageQuestionTargetMixin:
+    """Implementation of IQuestionTarget for SourcePackage."""
 
-    def newTicket(self, owner, title, description, language=None,
-                  datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
+    def newQuestion(self, owner, title, description, language=None,
+                    datecreated=None):
+        """See IQuestionTarget."""
+        return QuestionSet.new(
             title=title, description=description, owner=owner,
             language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
+    def getQuestion(self, question_id):
+        """See IQuestionTarget."""
         try:
-            ticket = Ticket.get(ticket_id)
+            question = Question.get(question_id)
         except SQLObjectNotFound:
             return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
+        # Verify that this question is actually for this target.
+        if question.distribution != self.distribution:
             return None
-        if ticket.sourcepackagename != self.sourcepackagename:
+        if question.sourcepackagename != self.sourcepackagename:
             return None
-        return ticket
+        return question
 
-    def searchTickets(self, **search_criteria):
-        """See ITicketTarget."""
-        return TicketTargetSearch(
+    def searchQuestions(self, **search_criteria):
+        """See IQuestionTarget."""
+        return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             **search_criteria).getResults()
 
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return SimilarTicketsSearch(
+    def findSimilarQuestions(self, title):
+        """See IQuestionTarget."""
+        return SimilarQuestionsSearch(
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        support_contact_entry = SupportContact.selectOneBy(
+    def addAnswerContact(self, person):
+        """See IQuestionTarget."""
+        answer_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if support_contact_entry:
+        if answer_contact_entry:
             return False
 
-        SupportContact(
+        AnswerContact(
             product=None, person=person,
             sourcepackagename=self.sourcepackagename,
             distribution=self.distribution)
         return True
 
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        support_contact_entry = SupportContact.selectOneBy(
+    def removeAnswerContact(self, person):
+        """See IQuestionTarget."""
+        answer_contact_entry = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if not support_contact_entry:
+        if not answer_contact_entry:
             return False
 
-        support_contact_entry.destroySelf()
+        answer_contact_entry.destroySelf()
         return True
 
     @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = set()
-        support_contacts.update(self.direct_support_contacts)
-        support_contacts.update(self.distribution.support_contacts)
-        return sorted(support_contacts, key=attrgetter('displayname'))
+    def answer_contacts(self):
+        """See IQuestionTarget."""
+        answer_contacts = set()
+        answer_contacts.update(self.direct_answer_contacts)
+        answer_contacts.update(self.distribution.answer_contacts)
+        return sorted(answer_contacts, key=attrgetter('displayname'))
 
     @property
-    def direct_support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
+    def direct_answer_contacts(self):
+        """See IQuestionTarget."""
+        answer_contacts = AnswerContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return sorted(
-            [contact.person for contact in support_contacts],
+            [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
 
     def getSupportedLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return get_supported_languages(self)
 
-    def getTicketLanguages(self):
-        """See ITicketTarget."""
+    def getQuestionLanguages(self):
+        """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename = %s'
@@ -142,7 +140,7 @@ class SourcePackageTicketTargetMixin:
 
 
 
-class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
+class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     """A source package, e.g. apache2, in a distrorelease.
 
     This object implements the MagicSourcePackage specification. It is not a
@@ -151,7 +149,7 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
     objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords, ITicketTarget)
+    implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
 
     def __init__(self, sourcepackagename, distrorelease):
         self.sourcepackagename = sourcepackagename
@@ -462,6 +460,12 @@ class SourcePackage(BugTargetBase, SourcePackageTicketTargetMixin):
             "distribution release source package in the not-too-distant "
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not release-specific) source package.")
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distrorelease, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging

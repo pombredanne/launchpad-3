@@ -29,7 +29,7 @@ Starting from distribution page:
 
 We get a list of all published packages:
 
-  >>> browser.getLink("List All Packages").click()
+  >>> browser.getLink("List all packages").click()
 
 Click on the respective name to get in the DistributionSourcePackage:
 Let's have a look at the firefox DistributionSourcePackage.
@@ -138,6 +138,29 @@ Move back to the SourcePackage page to continue the tests:
   >>> browser.open(
   ...     'http://localhost/ubuntu/warty/+source/mozilla-firefox')
 
+
+PackageRelationships, 'builddepends' & 'builddependsindep', for the
+source in question are provided is this page:
+
+  >>> depends_section = find_tag_by_id(browser.contents, 'depends')
+
+  >>> parse_relationship_section(str(depends_section))
+  LINK: "alsa-utils" -> http://localhost/ubuntu/warty/+source/alsa-utils
+  TEXT: "gcc-3.4 (&gt;= 3.4.1-4sarge1)"
+  TEXT: "gcc-3.4 (&lt;&lt; 3.4.2)"
+  TEXT: "gcc-3.4-base"
+  TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
+  TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
+
+  >>> dependsindep_section = find_tag_by_id(browser.contents, 'dependsindep')
+
+  >>> parse_relationship_section(str(dependsindep_section))
+  LINK: "alsa-utils" -> http://localhost/ubuntu/warty/+source/alsa-utils
+  TEXT: "bacula-common (= 1.34.6-2)"
+  TEXT: "bacula-director-common (= 1.34.6-2)"
+  TEXT: "postgresql-client (&gt;= 7.4)"
+
+
 The '+changelog' page provides an aggregation of the changelogs for
 SourcePackageReleases published in this DistroRelease.
 
@@ -153,7 +176,7 @@ The text is generated automatically by appending:
 
 for each published version.
 
-  >>> browser.getLink("Change Log").click()
+  >>> browser.getLink("View changelog").click()
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 

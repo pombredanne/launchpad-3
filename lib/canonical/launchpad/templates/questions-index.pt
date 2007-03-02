@@ -1,0 +1,154 @@
+<tal:layout define="columns1 default">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Questions and answers</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/answers" />
+          </tr>
+        </tbody>
+      </table>
+      <div id="mainarea" class="tab-translations">
+        <div class="t">
+          <div class="u">
+            <div class="v">
+              <div class="w">
+                <div class="x">
+                  <div class="y">
+                    <div class="z">
+                      <div id="container">
+                        <ul class="rollover buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <form class="central" action="" method="get"
+                              tal:attributes="action request/URL">
+                          <table>
+                            <tbody>
+                              <tr>
+                                <td style="text-align: right;">
+                                  <input
+                                    id="text"
+                                    type="text"
+                                    name="field.search_text"
+                                    size="50"
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    tal:replace="structure view/search_action/render"
+                                    type="submit"
+                                    value="Find Answers"
+                                  />
+                                </td>
+                              </tr>
+                              <tr>
+                                <td tal:attributes="class view/scope_css_class"
+                                    style="text-align: right;">
+
+                                  <tal:scope
+                                    replace="structure view/widgets/scope/renderScopeOptions" />
+
+                                  <input
+                                    id="project"
+                                    name="project"
+                                    tal:define="widget_name view/widgets/scope/target_widget/name"
+                                    tal:attributes="
+                                      value view/request/form/?widget_name|nothing;
+                                      id widget_name;
+                                      name widget_name;
+                                      onkeypress view/widgets/scope/target_widget/onKeyPress"
+                                      type="text"
+                                     />
+
+                                  <tal:sort
+                                    replace="structure view/widgets/sort/hidden" />
+                                  <tal:status
+                                    replace="structure view/widgets/status/hidden" />
+                                  <div class="message"
+                                    tal:condition="view/scope_error"
+                                    tal:content="structure view/scope_error">
+                                    Error message
+                                  </div>
+                                </td>
+                                <td>(<a tal:attributes="href view/widgets/scope/target_widget/popupHref">Choose&hellip;</a>)</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <div>
+                        </form>
+                        <p id="application-summary">
+                          Launchpad&rsquo;s Answers system lets people
+                          ask questions about products or distributions,
+                          and lets anyone help answer those questions.
+                          <a href="/+tour">Learn more&#8230;</a>
+                        </p>
+                        <div id="latest-questions-asked" class="left">
+
+      <h2 i18n:translate="">Latest questions asked</h2>
+      <table>
+        <tal:question
+          repeat="question view/latest_questions_asked"
+          content="structure question/@@+listing-detailed"
+        />
+      </table>
+
+                        </div>
+                        <div id="latest-questions-solved" class="right">
+
+      <h2 i18n:translate="">Latest questions solved</h2>
+      <table>
+        <tal:question
+          repeat="question view/latest_questions_solved"
+          content="structure question/@@+listing-detailed"
+        />
+      </table>
+
+                        </div>
+                        <p id="application-footer" i18n:translate="">
+                          <tal:count
+                            i18n:name="count"
+                            tal:content="view/questions_count"
+                          >318</tal:count>
+                          questions asked
+                        </p>
+                      </div><!--container-->
+                    </div><!--z-->
+                  </div><!--y-->
+                </div><!--x-->
+              </div><!--w-->
+            </div><!--v-->
+          </div><!--u-->
+        </div><!--t-->
+      </div><!--mainarea-->
+    </div><!--main-->
+
+  <metal:help fill-slot="help">
+    <p>This page gives you a quick overview of the recent
+    activity in the Launchpad Answer Tracker.
+    </p>
+    <p>To post a new question, navigate to the product or distribution
+      you are having a problem with and use the <emph>Ask Question</emph>
+      menu item.
+    </p>
+    <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
+        documention</a> for the Answer Tracker application is available in the
+      Help wiki.</p>
+  </metal:help>
+
+  </body>
+</html>
+</tal:layout>
+<!-- 1-0 inprogress needs search of all answers -->
