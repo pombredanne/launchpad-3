@@ -432,7 +432,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False, bug_contact=None):
+                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -454,6 +454,7 @@ class BugTaskSearchParams:
         self.tag = tag
         self.has_cve = has_cve
         self.bug_contact = bug_contact
+        self.bug_reporter = bug_reporter
 
         self._has_context = False
 
