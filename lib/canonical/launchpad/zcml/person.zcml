@@ -43,8 +43,8 @@
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
-      name="+branches"
       layer="canonical.launchpad.layers.CodeLayer"
+      name="+branches"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
@@ -143,9 +143,6 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           />
-      <browser:page
-          name="+portlet-working-on"
-          template="../templates/person-portlet-working-on.pt" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"

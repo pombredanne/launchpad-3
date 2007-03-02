@@ -1,8 +1,10 @@
-= Support Tracker System =
+= Launchpad Answer Tracker =
 
-Launchpad includes a tech support question tracker. Questions are created
-and accessed using the IQuestionTarget interface. This interface is
-available on products, distributions and sourcepackages.
+Launchpad includes an Answer Tracker where users can post questions
+(usually about problems they encounter with projects) and other can
+answer them.) Questions are created and accessed using the
+IQuestionTarget interface. This interface is available on products,
+distributions and sourcepackages.
 
     >>> login('test@canonical.com')
 
@@ -136,10 +138,10 @@ the getDirectSubscribers() method.
 
 There is also a list of 'indirect' subscribers to the question. These
 are persons that didn't explicitely subscribed to the question, but that
-will receive notifications for other reason. Support contacts for the
+will receive notifications for other reason. Answer contacts for the
 question target are part of the indirect subscribers list.
 
-    # There is no support contact on the firefox product.
+    # There are no answer contacts on the firefox product.
     >>> [person.displayname
     ...     for person in firefox_question.getIndirectSubscribers()]
     []
@@ -149,11 +151,11 @@ question target are part of the indirect subscribers list.
     ...  for person in firefox_question.getIndirectSubscribers()]
     [u'No Privileges Person']
 
-There is a special case for when the question's is associated to a source
-package. The support contacts for both the distribution and the source
-package are part of the indirect subscribers list.
+There is a special case for when the question's is associated to a
+source package. The answer contacts for both the distribution and the
+source package are part of the indirect subscribers list.
 
-    # Let's register some support contacts for the distribution and
+    # Let's register some answer contacts for the distribution and
     # the package.
     >>> list(ubuntu.answer_contacts)
     []
@@ -190,7 +192,7 @@ getSubscribers() method.
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the question notifications can be found in
-'support-tracker-notifications.txt'.)
+'answer-tracker-notifications.txt'.)
 
 == Workflow ==
 
@@ -198,7 +200,7 @@ A question status should not be manipulated directly but through the
 workflow methods.
 
 The complete question workflow is documented in
-'support-tracker-workflow.txt'.
+'answer-tracker-workflow.txt'.
 
 == Bug Linking ==
 

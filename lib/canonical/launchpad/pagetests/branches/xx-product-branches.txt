@@ -108,11 +108,11 @@ We are wanting to have badges for associated bugs and blueprints.
 
   >>> browser.open('http://code.launchpad.dev/firefox')
   >>> names_and_bugs(browser.contents)
-  http://code.launchpad.dev/~sabdfl/+branch/firefox/release--0.9.1
-  http://code.launchpad.dev/~sabdfl/+branch/firefox/release-0.8
-  http://code.launchpad.dev/~sabdfl/+branch/firefox/release-0.9
-  http://code.launchpad.dev/~sabdfl/+branch/firefox/release-0.9.2
+  http://code.launchpad.dev/~sabdfl/firefox/release--0.9.1
+  http://code.launchpad.dev/~sabdfl/firefox/release-0.8
+  http://code.launchpad.dev/~sabdfl/firefox/release-0.9
+  http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2
     Bug: http://launchpad.dev/bugs/4
-  http://code.launchpad.dev/~name12/+branch/firefox/main
+  http://code.launchpad.dev/~name12/firefox/main
     Bug: http://launchpad.dev/bugs/4
     Bug: http://launchpad.dev/bugs/5

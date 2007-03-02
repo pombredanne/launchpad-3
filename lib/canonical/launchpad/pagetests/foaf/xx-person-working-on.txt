@@ -1,14 +1,14 @@
 = Things a person is working on =
 
-The +portlet-working-on portlet shows up to 5 bugtaks with an InProgress
-status that are assigned to a given person.
+Any person page contains the bugs/blueprints a person is working on.
 
-Since there are no InProgress bugtaks assigned to Sample Person, the portlet
+Sample Person is not working on any bugs/blueprints right now, so the list
 will be empty.
 
-    >>> browser.open('http://launchpad.dev/~name12/+portlet-working-on')  
-    >>> browser.contents
-    '\n'
+    >>> browser.open('http://launchpad.dev/~name12/')  
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> [tag.renderContents() for tag in div.findAll('li')]
+    []
 
 We'll then change the statuses of some bugs that are already assigned to
 Sample Person.
@@ -20,31 +20,35 @@ Sample Person.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskSearchParams, IBugTaskSet, IPersonSet)
     >>> login('test@canonical.com')
-    >>> params = BugTaskSearchParams(
-    ...     user=None, assignee=getUtility(IPersonSet).getByName('name12'))
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> params = BugTaskSearchParams(user=None, assignee=sample_person)
     >>> for task in getUtility(IBugTaskSet).search(params):
     ...     task.transitionToStatus(BugTaskStatus.INPROGRESS)
+
+And the same for some blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationDelivery
+    >>> from canonical.launchpad.database import Specification
+    >>> spec = Specification.selectOneBy(name='media-integrity-check')
+    >>> spec.assignee = sample_person
+    >>> spec.delivery = SpecificationDelivery.STARTED
+    >>> newstate = spec.updateLifecycleStatus(sample_person)
     >>> logout()
     >>> flush_database_updates()
 
-Let's see what we got on the portlet now.
+Let's see what we got on his page now.
 
-    >>> browser.open('http://launchpad.dev/~name12/+portlet-working-on')  
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup.findAll('li'):
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> for tag in div.findAll('li'):
     ...     print tag.find('a').renderContents()
-    <BLANKLINE>
     5. Firefox install instructions should be complete
-    <BLANKLINE>
-    <BLANKLINE>
     2. Blackhole Trash folder
-    <BLANKLINE>
+    CD Media Integrity Check
 
-The portlet even has a link for us to see all bugs that Sample Person is
-working on.
+We even have a link for us to see all bugs that Sample Person is working on.
 
-    >>> browser.getLink('Show the complete list').click()
+    >>> browser.getLink('Show all bugs in progress').click()
     >>> browser.url
     'http://launchpad.dev/...In+Progress'
 
@@ -56,4 +60,31 @@ Which obviously contains only the above two bugs we changed statuses.
     Firefox install instructions should be complete
     <img src="/@@/branch" />
     Blackhole Trash folder
+
+For the specs, though, we don't have a page where it's possible to list only
+the specs that have started but were not yet concluded, so for now we'll have
+to link to the page which shows the whole list of specs assigned to the
+person.
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> browser.getLink('Show all assigned specs').click()
+    >>> browser.url
+    'http://launchpad.dev/.../+specs?role=assignee'
+
+If one of the bugs that Sample Person is working on gets marked as a dupe of
+another one, it'll be removed from the list of bugs he's working on.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bugset = getUtility(IBugSet)
+    >>> login('test@canonical.com')
+    >>> bugset.get(5).duplicateof = bugset.get(4)
+    >>> logout()
+    >>> flush_database_updates()
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> for tag in div.findAll('li'):
+    ...     print tag.find('a').renderContents()
+    2. Blackhole Trash folder
+    CD Media Integrity Check
 
