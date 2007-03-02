@@ -1198,6 +1198,7 @@ class BugTaskSearchListingView(LaunchpadView):
     form_has_errors = False
     owner_error = ""
     assignee_error = ""
+    bug_contact_error = ""
 
     @property
     def schema(self):
@@ -1312,7 +1313,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve"
+                "status_upstream", "tag", "has_cve", "bug_contact"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1547,13 +1548,18 @@ class BugTaskSearchListingView(LaunchpadView):
         except WidgetsError:
             self.assignee_error = error_message % (
                 cgi.escape(self.request.get('field.assignee')))
+            self.form_has_errors = True
         try:
             getWidgetsData(self, self.schema, names=["owner"])
         except WidgetsError:
             self.owner_error = error_message % (
                 cgi.escape(self.request.get('field.owner')))
-
-        if self.assignee_error or self.owner_error:
+            self.form_has_errors = True
+        try:
+            getWidgetsData(self, self.schema, names=["bug_contact"])
+        except WidgetsError:
+            self.bug_contact_error = error_message % (
+                cgi.escape(self.request.get('field.bug_contact')))
             self.form_has_errors = True
 
     def _upstreamContext(self):
