@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    Revision, RevisionNumber, RevisionParent, RevisionAuthor)
+    Revision, BranchRevision, RevisionParent, RevisionAuthor)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
@@ -86,7 +86,7 @@ class BzrSyncTestCase(unittest.TestCase):
 
     def getCounts(self):
         return (Revision.select().count(),
-                RevisionNumber.select().count(),
+                BranchRevision.select().count(),
                 RevisionParent.select().count(),
                 RevisionAuthor.select().count())
 
@@ -112,7 +112,7 @@ class BzrSyncTestCase(unittest.TestCase):
                          "Wrong Revision count (should be %d, not %d)"
                          % revision_pair)
         self.assertEqual(revisionnumber_pair[0], revisionnumber_pair[1],
-                         "Wrong RevisionNumber count (should be %d, not %d)"
+                         "Wrong BranchRevision count (should be %d, not %d)"
                          % revisionnumber_pair)
         self.assertEqual(revisionparent_pair[0], revisionparent_pair[1],
                          "Wrong RevisionParent count (should be %d, not %d)"

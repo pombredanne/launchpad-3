@@ -18,7 +18,7 @@ Now if the registrant associates a branch it should be there:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
-  >>> browser.getLink('Change Series Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/trunk/+edit'
   >>> browser.getControl('Branch').value = '~name12/firefox/main'
@@ -30,5 +30,5 @@ Should now be back at the main series page
   'http://launchpad.dev/firefox/trunk'
   >>> print find_portlet(browser.contents, 'Revision control details')
   <div class="portlet">
-  ...<a href="http://launchpad.dev/~name12/+branch/firefox/main">Mozilla Firefox Mainline</a>...
+  ...<a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox Mainline</a>...
   </div>

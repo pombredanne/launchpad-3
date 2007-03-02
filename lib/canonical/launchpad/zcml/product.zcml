@@ -73,7 +73,8 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductBranchesMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
+            ProductTranslationsMenu ProductBugsMenu 
+            ProductSetFacets ProductSetContextMenu
             "
             />
 
@@ -100,7 +101,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"
@@ -133,6 +134,10 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/product-listing-detailed.pt"
+            />
+        <browser:page
+            name="+listing-simple"
+            template="../templates/product-listing-simple.pt"
             />
         <!-- Products Portlets -->
         <browser:page
@@ -380,9 +385,21 @@
         <allow interface="canonical.launchpad.interfaces.IProductSet" />
     </securedutility>
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IProductSet"
+      factory="canonical.launchpad.browser.ProductSetSOP"
+      permission="zope.Public"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSet"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSet"
+        name="+code-index"
+        layer="canonical.launchpad.layers.CodeLayer" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -400,6 +417,15 @@
         class="canonical.launchpad.browser.product.ProductSetDynMenu"
         attribute="__call__"
         name="+menudata"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BazaarProductView"
+        name="+code-index"
+        facet="branches"
+        template="../templates/product-code-index.pt"
         />
 
     <browser:page

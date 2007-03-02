@@ -4,7 +4,7 @@ Appoint Sample Person as the driver of Firefox product.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Appoint Driver').click()
+  >>> browser.getLink('Appoint driver').click()
 
   >>> browser.url
   'http://launchpad.dev/firefox/+driver'

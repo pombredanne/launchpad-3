@@ -46,8 +46,8 @@
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
-      name="+branches"
       layer="canonical.launchpad.layers.CodeLayer"
+      name="+branches"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
@@ -58,7 +58,8 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PeopleContextMenu TeamBugsMenu PersonBranchesMenu"
+          PersonSpecsMenu TeamBugsMenu PersonBranchesMenu
+          PersonSetFacets PersonSetContextMenu"
       />
 
   <browser:url
@@ -145,9 +146,6 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           />
-      <browser:page
-          name="+portlet-working-on"
-          template="../templates/person-portlet-working-on.pt" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
@@ -240,7 +238,7 @@
       fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      template="../templates/person-bugs.pt"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform
@@ -277,7 +275,7 @@
       fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      template="../templates/person-bugs.pt"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform
@@ -289,7 +287,7 @@
       fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      template="../templates/person-bugs.pt"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
 
@@ -501,6 +499,13 @@
       provides="canonical.launchpad.interfaces.IPersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </securedutility>
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      factory="canonical.launchpad.browser.PersonSetSOP"
+      permission="zope.Public"
+      />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPersonSet"

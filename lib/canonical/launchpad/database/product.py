@@ -43,7 +43,9 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
@@ -51,7 +53,8 @@ from canonical.launchpad.interfaces import (
     IHasGotchiAndEmblem)
 
 
-class Product(SQLBase, BugTargetBase, KarmaContextMixin):
+class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
@@ -151,6 +154,20 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
 
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Specification.product = %s AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
+
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
@@ -247,6 +264,10 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product = %s' % sqlvalues(self)
 
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
@@ -527,7 +548,7 @@ class ProductSet:
     implements(IProductSet)
 
     def __init__(self):
-        self.title = "Products registered in Launchpad"
+        self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -570,7 +591,7 @@ class ProductSet:
         """See IProductSet."""
         return Product.select(
             'Product.id in (select distinct(product) from Branch)',
-            orderBy=SQLConstant('lower(displayname)'))
+            orderBy='name')
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
