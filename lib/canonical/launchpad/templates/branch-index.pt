@@ -163,7 +163,8 @@
 
   <tal:history-available condition="context/revision_count">
   <div class="listing">
-    <div tal:repeat="rev_no context/latest_revisions">
+    <div tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <h3>
         Revision <span tal:replace="rev_no/sequence">1</span>
         <tal:valid-user tal:condition="rev_no/revision/revision_author">

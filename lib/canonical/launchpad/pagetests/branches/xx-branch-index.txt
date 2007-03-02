@@ -4,18 +4,27 @@ Branch Details
 Recent Revisions
 ----------------
 
+On the Code site, registered branches are reached by
+/<owner>/<product>/<branch-name>.
+
   >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
   >>> main = find_tag_by_id(browser.contents, 'mainarea')
 
 
+Heading
+~~~~~~~
+
 We display the recent revisions of a branch if it has been scanned. There's a
-recent revisions heading:
+"Recent revisions" heading:
 
   >>> for heading in main.fetch('h2'):
   ...     print heading.renderContents()
   Recent revisions
   ...
 
+
+Revision information
+~~~~~~~~~~~~~~~~~~~~
 
 Underneath that heading we see the ten most-recent revisions of the branch in
 reverse-chronological order.
@@ -30,3 +39,28 @@ reverse-chronological order.
   Revision 1 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
 
 
+Excursis
+~~~~~~~~
+
+In terms of HTML, each commit is contained in a <div> with an id of "revN",
+where "N" is the revision sequence number.
+
+The revision number, author and date are all contained in a heading (h3), and
+the commit message follows as a number of paragraphs.
+
+  >>> def get_commit_message(sequence):
+  ...     revision = find_tag_by_id(browser.contents, 'rev%s' % (sequence,))
+  ...     return revision.fetch('p')
+
+
+Commit messages
+~~~~~~~~~~~~~~~
+
+The commit message for revision 6 should match what's in the database. There's
+only one paragraph, so it's OK to check the first item of the list.
+
+  >>> commit_message = get_commit_message(6)
+  >>> print len(commit_message)
+  1
+  >>> print commit_message[0].renderContents()
+  fix bug in bar
