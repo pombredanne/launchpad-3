@@ -570,7 +570,7 @@ class RedirectionView:
 
     def __call__(self):
         self.request.response.redirect(self.target, status=self.status)
-        return ''
+        return u''
 
     def browserDefault(self, request):
         return self, ()

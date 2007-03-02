@@ -500,21 +500,21 @@ Let's make another navigation class to test redirection.
     >>> navigation4.publishTraverse(request, 'tree')
     <...RedirectionView...>
     >>> navigation4.publishTraverse(request, 'tree')()
-    ''
+    u''
     >>> request.response.redirected_to
     'trees'
     >>> print request.response.status
     301
 
     >>> navigation4.publishTraverse(request, 'toad')()
-    ''
+    u''
     >>> request.response.redirected_to
     'toads'
     >>> print request.response.status
     None
 
     >>> navigation4.publishTraverse(request, 'something')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/another/place'
     >>> print request.response.status
@@ -522,14 +522,14 @@ Let's make another navigation class to test redirection.
 
     >>> request.traversal_stack = ['tundra']
     >>> navigation4.publishTraverse(request, 'outerspace')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/siberia/tundra'
     >>> print request.response.status
     None
 
     >>> navigation4.publishTraverse(request, 'here')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/there'
     >>> print request.response.status
@@ -554,7 +554,7 @@ with the remainder of the URL and or query string.
     >>> navigation5.publishTraverse(request, 'jobs')
     <...RedirectionView...>
     >>> navigation5.publishTraverse(request, 'jobs')()
-    ''
+    u''
     >>> request.response.redirected_to
     'http://ubuntu.com/jobs'
     >>> print request.response.status
@@ -563,7 +563,7 @@ with the remainder of the URL and or query string.
     >>> request.traversal_stack = ['LaunchpadMeeting']
     >>> request.query_string = 'hilight=Time'
     >>> navigation5.publishTraverse(request, '+foo')()
-    ''
+    u''
     >>> request.response.redirected_to
     'http://wiki.canonical.com/LaunchpadMeeting?hilight=Time'
     >>> print request.response.status
@@ -618,7 +618,7 @@ Check out the traversals defined directly.
     'diplodocus called frank'
 
     >>> ubernav.publishTraverse(request, 'topology')()
-    ''
+    u''
     >>> request.response.redirected_to
     'topologies'
 
@@ -643,17 +643,17 @@ Check those from ThingSetNavigation3:
 Check those from ThingSetNavigation4:
 
     >>> ubernav.publishTraverse(request, 'tree')()
-    ''
+    u''
     >>> request.response.redirected_to
     'trees'
 
     >>> ubernav.publishTraverse(request, 'toad')()
-    ''
+    u''
     >>> request.response.redirected_to
     'toads'
 
     >>> ubernav.publishTraverse(request, 'ttt')()
-    ''
+    u''
     >>> request.response.redirected_to
     '/another/place'
 

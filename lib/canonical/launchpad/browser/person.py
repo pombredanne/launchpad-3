@@ -96,7 +96,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, BugTaskSearchParams, IPersonBugTaskSearch)
+    BugTaskSearchParams, IPersonBugTaskSearch)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -106,7 +106,6 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
-from canonical.launchpad.layers import CodeLayer
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
@@ -122,22 +121,26 @@ from canonical.launchpad import _
 
 
 class BranchTraversalMixin:
+    """Branch of this person or team for the specified product and
+    branch names.
+
+    For example:
+
+    * '/~ddaa/bazaar/devel' points to the branch whose owner
+    name is 'ddaa', whose product name is 'bazaar', and whose branch name
+    is 'devel'.
+    
+    * '/~sabdfl/+junk/junkcode' points to the branch whose
+    owner name is 'sabdfl', with no associated product, and whose branch
+    name is 'junkcode'.
+
+    * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
+    
+    """
 
     @stepto('+branch')
-    def traverse_branch(self):
-        """Branch of this person or team for the specified product and
-        branch names.
-
-        For example:
-
-        * '/~ddaa/+branch/bazaar/devel' points to the branch whose owner
-          name is 'ddaa', whose product name is 'bazaar', and whose branch name
-          is 'devel'.
-
-        * '/~sabdfl/+branch/+junk/junkcode' points to the branch whose
-          owner name is 'sabdfl', with no associated product, and whose branch
-          name is 'junkcode'.
-        """
+    def redirect_branch(self):
+        """Redirect to canonical_url for branch which is ~user/product/name."""
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
@@ -147,8 +150,7 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, product_name):
-        stepstogo = self.request.stepstogo
-        branch_name = stepstogo.consume()
+        branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
             return self.context.getBranch(product_name, branch_name)
         else:
@@ -332,7 +334,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('', text, summary)
+        return Link('+branches', text, summary)
 
     def answers(self):
         text = 'Answers'
