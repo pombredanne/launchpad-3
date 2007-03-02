@@ -1274,6 +1274,17 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    @cachedproperty
+    def contributions(self):
+        return self.context.getProjectsAndCategoriesContributedTo()
+
+    @cachedproperty
+    def contributed_categories(self):
+        categories = set()
+        for contrib in self.context.getProjectsAndCategoriesContributedTo():
+            categories.update(category for category in contrib['categories'])
+        return sorted(categories)
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.

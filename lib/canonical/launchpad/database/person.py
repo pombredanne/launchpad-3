@@ -6,6 +6,7 @@ __all__ = [
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
+from operator import itemgetter
 import pytz
 import sha
 
@@ -29,6 +30,8 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent
@@ -47,8 +50,9 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
-    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
+    ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
+    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES, IProduct,
+    IDistribution)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -629,6 +633,85 @@ class Person(SQLBase, HasSpecificationsMixin):
     def searchTasks(self, search_params):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    def getProjectsAndCategoriesContributedTo(self, limit=10):
+        """See IPerson."""
+        contributions = []
+        results = self._getProjectsWithTheMostKarma(limit=limit)
+        for pillar_name, karma in results:
+            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+            categories = {}
+            for cat_name, cat_title in self._getContributedCategories(pillar):
+                categories[cat_title] = self._getIcon(cat_name)
+            contribution = {
+                'project_title': pillar.title,
+                'project_url': canonical_url(pillar),
+                'categories': categories}
+            contributions.append(contribution)
+        return contributions
+
+    def _getProjectsWithTheMostKarma(self, limit=10):
+        """Return the names and karma points of of this person on the
+        product/distribution with that name.
+
+        The results are ordered descending by the karma points and limited to
+        the given limit.
+        """
+        query = """
+            SELECT name, karmavalue
+            FROM KarmaCache
+            JOIN PillarName ON 
+                COALESCE(KarmaCache.distribution, -1) =
+                COALESCE(PillarName.distribution, -1)
+                AND
+                COALESCE(KarmaCache.product, -1) =
+                COALESCE(PillarName.product, -1)
+            WHERE person = %(person)s
+                AND KarmaCache.category IS NULL
+                AND KarmaCache.project IS NULL
+            ORDER BY karmavalue DESC, name
+            LIMIT %(limit)s;
+            """ % sqlvalues(person=self, limit=limit)
+        cur = cursor()
+        cur.execute(query)
+        # Sort descending by karmavalue.
+        return sorted(cur.fetchall(), key=itemgetter(1), reverse=True)
+
+    def _getContributedCategories(self, pillar):
+        """Return the titles of the KarmaCategories to which this person has
+        karma on the given pillar.
+
+        The given pillar must be either an IProduct or an IDistribution.
+        """
+        if IProduct.providedBy(pillar):
+            where_clause = "product = %s" % sqlvalues(pillar)
+        elif IDistribution.providedBy(pillar):
+            where_clause = "distribution = %s" % sqlvalues(pillar)
+        else:
+            raise AssertionError()
+        replacements = sqlvalues(person=self)
+        replacements['where_clause'] = where_clause
+        query = """
+            SELECT DISTINCT name, title
+            FROM KarmaCache
+            JOIN KarmaCategory ON KarmaCache.category = KarmaCategory.id
+            WHERE %(where_clause)s
+                AND category IS NOT NULL
+                AND person = %(person)s
+            """ % replacements
+        cur = cursor()
+        cur.execute(query)
+        return cur.fetchall()
+        return [title for [title] in cur.fetchall()]
+
+    def _getIcon(self, category_name):
+        icons_for_karma_categories = {
+            'bugs': '/@@/bug',
+            'translations': '/@@/translation',
+            'specs': '/@@/blueprint',
+            'support': '/@@/question'}
+        category = KarmaCategory.byName(category_name)
+        return icons_for_karma_categories[category_name]
 
     @property
     def karma_category_caches(self):

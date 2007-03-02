@@ -1,5 +1,4 @@
-People karma
-============
+= People karma =
 
 In Launchpad, everytime a user performs an action, we give him some karma
 points. These karma points are stored in the KarmaAction table and the
@@ -68,8 +67,30 @@ calculated daily. That's why it's still 0.
     0
 
 
-Karma Updater
--------------
+== Projects a person is most active on ==
+
+Using our karma records we can also tell in which projects a person is most
+active on, including the type of work the person does on each project.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
+    ...     print contrib['project_title'], contrib['categories']
+    The Evolution Groupware Application {2: '/@@/bug', 3: '/@@/translation'}
+    Ubuntu Linux {2: '/@@/bug'}
+    Gnome Baker {2: '/@@/bug'}
+    Mozilla Thunderbird {2: '/@@/bug'}
+    Mozilla Firefox {2: '/@@/bug'}
+    Bazaar {2: '/@@/bug'}
+
+As we can see, the results are ordered descending by the karma of the person
+on that project.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
+    [[u'evolution', 175], [u'ubuntu', 26], [u'gnomebaker', 15],
+     [u'thunderbird', 15], [u'firefox', 8], [u'bazaar', 2]]
+
+== Karma Updater ==
 
 It would be a problem if every time we wanted to see a user's total karma we
 had to calculate it, so we decided to cache this total and update it
