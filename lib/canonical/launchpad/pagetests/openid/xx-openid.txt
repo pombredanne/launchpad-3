@@ -19,6 +19,45 @@ This is an OpenID server endpoint. For more information, see http://openid.net/
 <BLANKLINE>
 
 
+We are going to fake a consumer for these examples. In order to ensure
+that the consumer is being fed the correct replies, we register a view
+that renders the parameters in the response in an easily testable format.
+
+XXX: Break most of this out into a helper -- StuartBishop 20070302
+
+>>> from StringIO import StringIO
+>>> from canonical.launchpad.webapp.publisher import LaunchpadView
+>>> from zope.publisher.interfaces.browser import IBrowserPublisher
+>>> from zope.interface import implements
+>>> class ConsumerView(LaunchpadView):
+...     implements(IBrowserPublisher)
+...     def render(self):
+...         out = StringIO()
+...         print >> out, self.request.method
+...         keys = sorted(self.request.form.keys())
+...         for key in keys:
+...             print >> out, '%s=%s' % (key, self.request.form[key])
+...         return out.getvalue()
+...     def browserDefault(self, request):
+...         return self, ()
+...
+>>> from zope.security.checker import defineChecker, Checker, CheckerPublic
+>>> defineChecker(ConsumerView, Checker({
+...     '__call__': CheckerPublic,
+...     'browserDefault': CheckerPublic,
+...     'render': CheckerPublic,
+...     }))
+>>> from zope.app.testing.ztapi import browserView
+>>> browserView(None, '+openid-consumer', ConsumerView)
+
+NB. If this fails, your Z3 tree isn't up to date enough.
+
+>>> anon_browser.open('http://launchpad.dev/+openid-consumer?foo=%2Bbar')
+>>> print anon_browser.contents
+GET
+foo=+bar
+
+
 A Launchpad user's home page contains the required <link rel="openid.server" />
 tag to allow OpenID consumers to determine the URL of the OpenID server to
 be contacted.
@@ -56,7 +95,7 @@ Content-Type: text/plain
 >>> print anon_browser.contents
 assoc_handle:{HMAC-SHA1}{...}{...}
 assoc_type:HMAC-SHA1
-expires_in:1209600
+expires_in:1209...
 mac_key:...
 <BLANKLINE>
 
@@ -74,13 +113,13 @@ will currently return "can't say" as we are not yet logged into Launchpad.
 ...     'openid.mode': 'checkid_immediate',
 ...     'openid.identity': 'https://launchpad.dev/~sabdfl',
 ...     'openid.assoc_handle': assoc_handle,
-...     'openid.return_to': 'http://example.com/',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
->>> result = http("GET /?%s HTTP/1.1\nHost: openid.launchpad.dev\n" % args)
->>> print result
-HTTP/1.1 302 Moved Temporarily
-...
-Location: http://example.com/?openid...
+>>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print anon_browser.contents
+GET
+openid.mode=id_res
+openid.user_setup_url=http://openid.launchpad.dev/?...
 <BLANKLINE>
 
 
@@ -88,12 +127,30 @@ checkid_setup is interactive with the user, giving them the oppertunity
 to log in and approve access to the consumer site. We can extract the
 URL for the checkid_setup from the result of the previous test.
 
->>> [url] = re.findall('(?m)^Location: (.*)$', str(result))
->>> from cgi import parse_qs
->>> from urlparse import urlparse
->>> parameters = parse_qs(urlparse(url)[4])
->>> [setup_url] = parameters['openid.user_setup_url']
-
+>>> [setup_url] = re.findall(
+...     '(?m)^openid.user_setup_url=(.*)$', anon_browser.contents
+...     )
 >>> anon_browser.open(setup_url)
->>> print anon_browser.contents
+>>> print '\n' + anon_browser.contents
+<BLANKLINE>
+...
+<form method="post" action=".">
+    <input type="hidden" name="token" value="..." />
+    <input type="submit" value="Allow Once" />
+</form>
+...
+<form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel">
+    <input type="submit" value="Deny" />
+</form>
+...
 
+>>> anon_browser.getControl('Allow Once').click()
+>>> anon_browser.url
+'http://openid.launchpad.dev/'
+>>> print anon_browser.contents
+openid.assoc_handle=...
+openid.identity=https://launchpad.dev/~sabdfl
+openid.mode=cancel
+openid.return_to=whatever
+openid.signed=whatever
+openid.sig=whatever
