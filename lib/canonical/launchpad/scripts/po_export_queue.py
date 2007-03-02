@@ -2,11 +2,12 @@
 
 __metaclass__ = type
 
-import logging
 import tempfile
 import textwrap
-from StringIO import StringIO
+import traceback
+import psycopg
 
+from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
@@ -15,12 +16,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
     MOCompiler, RosettaWriteTarFile)
-from canonical.launchpad.components.poparser import (
-    POInvalidInputError)
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
-    ILaunchpadCelebrities)
-from canonical.librarian.interfaces import LibrarianFailure
+    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet)
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -147,17 +144,6 @@ def get_handler(format, obj):
 
     return format_handlers[format](obj)
 
-def get_rosetta_experts_email():
-    """Return Rosetta Experts' email address as a string."""
-
-    rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-    assert rosetta_expert.preferredemail, (
-        'Rosetta experts team must have always a contact email.')
-
-    return str(rosetta_expert.preferredemail.email)
-
-
 class ExportResult:
     """The results of a PO export request.
 
@@ -171,40 +157,25 @@ class ExportResult:
     def __init__(self, name):
         self.name = name
         self.url = None
-        self.failures = []
-        self.successes = {}
+        self.failures = {}
+        self.successes = []
 
-    def _getWarningsLines(self):
-        """Return a string with logging information about warnings.
+    def _getErrorLines(self):
+        """Return a string with logging information about errors.
 
-        That logging information contains warning messages got while doing the
+        That logging information contains error messages got while doing the
         export.
         """
         # Look for any export that is success but got any warning that we
         # should show to the user.
-        warnings = '\n'.join([
-            '%s: %s' % (success_key, success_value)
-            for success_key, success_value in self.successes.iteritems()
-            if success_value
+        return '\n'.join([
+            '%s:\n%s\n\n' % (failure_key, failure_value)
+            for failure_key, failure_value in self.failures.iteritems()
             ])
 
-        # Prepare the list of warnings to give some input about it to the
-        # users.
-        if warnings:
-            warning_text = textwrap.dedent('''
-                The following files were exported but had warnings:
-
-                %s
-                ''' % warnings)
-        else:
-            # There are no warnings.
-            warning_text = ''
-
-        return warning_text
-
-    def _notify_failure(self, person):
+    def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
-        body = textwrap.dedent('''
+        return textwrap.dedent('''
             Hello %s,
 
             Rosetta encountered problems exporting the files you
@@ -212,28 +183,17 @@ class ExportResult:
             problem. Please reply to this email for further assistance.''' %
                 person.browsername)
 
-        recipients = list(helpers.contactEmailAddresses(person))
-        # Add the errors mailing list.
-        recipients.append(config.launchpad.errors_address)
-
-        for recipient in [str(recipient) for recipient in recipients]:
-            simple_sendmail(
-                from_addr=get_rosetta_experts_email(),
-                to_addrs=[recipient],
-                subject='Rosetta PO export request: %s' % self.name,
-                body=body)
-
-    def _notify_partial_success(self, person):
+    def _getPartialSuccessEmailBody(self, person):
         """Send an email notification about the export working partially."""
         # Get a list of files that failed.
         failure_list = '\n'.join([
             ' * %s' % failure
-            for failure in self.failures])
+            for failure in self.failures.keys()])
 
         success_count = len(self.successes)
         total_count = success_count + len(self.failures)
 
-        body = textwrap.dedent('''
+        return textwrap.dedent('''
             Hello %s,
 
             Rosetta has finished exporting your requested files.
@@ -244,44 +204,24 @@ class ExportResult:
 
             The Rosetta team has been notified of this problem. Please
             reply to this email for further assistance.
-            %s
+
             Of the %d files you requested, Rosetta successfully exported
             %d, which can be downloaded from the following location:
 
-            \t%s''' % (
-                person.browsername, failure_list, self._getWarningsLines(),
-                total_count, success_count, self.url))
+            \t%s''') % (
+                person.browsername, failure_list, total_count, success_count,
+                self.url)
 
-        recipients = list(helpers.contactEmailAddresses(person))
-        # Add the errors mailing list.
-        recipients.append(config.launchpad.errors_address)
-
-        for recipient in [str(recipient) for recipient in recipients]:
-            simple_sendmail(
-                from_addr=get_rosetta_experts_email(),
-                to_addrs=[recipient],
-                subject='Rosetta PO export request: %s' % self.name,
-                body=body)
-
-    def _notify_success(self, person):
+    def _getSuccessEmailBody(self, person):
         """Send an email notification about the export working."""
-        body = textwrap.dedent('''
+        return textwrap.dedent('''
             Hello %s,
-            %s
+
             The files you requested from Rosetta are ready for download
             from the following location:
 
-            \t%s''' % (person.browsername, self._getWarningsLines(), self.url)
+            \t%s''' % (person.browsername, self.url)
             )
-
-        recipients = list(helpers.contactEmailAddresses(person))
-
-        for recipient in [str(recipient) for recipient in recipients]:
-            simple_sendmail(
-                from_addr=get_rosetta_experts_email(),
-                to_addrs=[recipient],
-                subject='Rosetta PO export request: %s' % self.name,
-                body=body)
 
     def notify(self, person):
         """Send a notification email to the given person about the export.
@@ -297,54 +237,69 @@ class ExportResult:
             'Can\'t have a URL without successes (or vice versa).')
 
         if self.failures and self.url:
-            self._notify_partial_success(person)
+            body = self._getPartialSuccessEmailBody(person)
         elif self.failures:
-            self._notify_failure(person)
+            body = self._getFailureEmailBody(person)
         else:
             # There are no failures, so we have a full export without
             # problems.
-            self._notify_success(person)
+            body = self._getSuccessEmailBody(person)
 
-    def install_warnings_logger(self):
-        """Install an specific logger to get all warnings raised."""
-        logger = logging.getLogger('poexport-user-warnings')
-        # Disable the propagation of logging messages so we only use our
-        # handler.
-        logger.propagate = 0
-        # Here we are going to store the warning output.
-        self.warnings_stream = StringIO()
-        self.warnings_handler = logging.StreamHandler(self.warnings_stream)
-        logger.addHandler(self.warnings_handler)
+        recipients = list(helpers.contactEmailAddresses(person))
 
-    def remove_warnings_logger(self):
-        """Remove the specific logger installed by install_warnings_logger."""
-        assert self.warnings_handler is not None
+        for recipient in [str(recipient) for recipient in recipients]:
+            simple_sendmail(
+                from_addr='Rosetta SWAT Team <%s>' % (
+                    config.rosetta.rosettaadmin.email),
+                to_addrs=[recipient],
+                subject='Translation download request: %s' % self.name,
+                body=body)
 
-        logger = logging.getLogger('poexport-user-warnings')
-        logger.removeHandler(self.warnings_handler)
+        if len(self.failures) > 0:
+            # The export process had errors that we should notify to admins.
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
 
-    def add_failure(self, name):
+                Rosetta encountered problems exporting some files requested by
+                %s. This means we have a bug in
+                Launchpad that needs to be fixed to be able to proceed with
+                this export. You can see the list of failed files with the
+                error we got:
+
+                %s''') % (
+                    person.browsername, self._getErrorLines())
+
+            simple_sendmail(
+                from_addr='Rosetta SWAT Team <%s>' % (
+                    config.rosetta.rosettaadmin.email),
+                to_addrs=[config.launchpad.errors_address],
+                subject='Translation download errors: %s' % self.name,
+                body=admins_email_body)
+
+    def addFailure(self, name):
         """Add name as an export that failed.
 
-        The failures are stored at self.failures list.
+        The failures are stored at self.failures dictionary using the entry
+        that failed as the key and the exception that caused the error as the
+        value. If there isn't any warning information, the value is the empty
+        string.
         """
-        self.failures.append(name)
+        # Get the trace back that produced this failure.
+        exception = StringIO()
+        traceback.print_exc(file=exception)
+        exception.seek(0)
+        # And store it.
+        self.failures[name] = exception.read()
 
-    def add_success(self, name):
+    def addSuccess(self, name):
         """Add name as an export that succeed.
 
-        The success are stored at self.success dictionary using the entry that
-        succeed as the key and the log warning information as the value. If
-        there isn't any warning information, the value is the empty string.
+        The success are stored at self.success list.
         """
-        assert self.warnings_stream is not None
+        self.successes.append(name)
 
-        # Need to flush our handler buffers to be sure to get all warning
-        # text.
-        self.warnings_handler.flush()
-        self.successes[name] = self.warnings_stream.getvalue()
 
-def process_single_object_request(obj, format):
+def process_single_object_request(obj, format, logger):
     """Process a request for a single object.
 
     Returns an ExportResult object. The object must be a PO template or a PO
@@ -353,27 +308,32 @@ def process_single_object_request(obj, format):
 
     handler = get_handler(format, obj)
     name = handler.get_name()
+    filename = handler.get_filename()
     result = ExportResult(name)
-    # Install an specific logger to catch the raised warning while doing the
-    # export.
-    result.install_warnings_logger()
 
     try:
         result.url = handler.get_librarian_url()
-    except (LibrarianFailure, POInvalidInputError):
-        result.add_failure(obj)
-        # The export for the current entry failed, we can remove the specific
-        # logger to catch warnings.
-        result.remove_warnings_logger()
+    except (KeyboardInterrupt, SystemExit):
+        # We should never catch KeyboardInterrupt or SystemExit.
+        raise
+    except psycopg.Error:
+        # It's a DB exception, we don't catch it either, the export
+        # should be done again in a new transaction.
+        raise
+    except:
+        # The export for the current entry failed with an unexpected error, we
+        # add the entry to the list of errors.
+        result.addFailure(filename)
+        # And log the error.
+        logger.error(
+            "A unexpected exception was raised when exporting %s" % obj.title,
+            exc_info=True)
         return result
     else:
-        result.add_success(obj)
-        # The export for the current entry succeed, we can remove the specific
-        # logger to catch warnings and add_success already saved it.
-        result.remove_warnings_logger()
+        result.addSuccess(filename)
         return result
 
-def process_multi_object_request(objects, format):
+def process_multi_object_request(objects, format, logger):
     """Process an export request for many objects.
 
     This function creates a tarball containing all of the objects requested,
@@ -392,19 +352,28 @@ def process_multi_object_request(objects, format):
     for obj in objects:
         handler = get_handler(format, obj)
         filename = handler.get_filename()
-        # Install an specific logger to catch the raised warning while doing
-        # the export.
-        result.install_warnings_logger()
 
         try:
             contents = handler.get_contents()
-        except (LibrarianFailure, POInvalidInputError):
-            result.add_failure(filename)
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch KeyboardInterrupt or SystemExit.
+            raise
+        except psycopg.Error:
+            # It's a DB exception, we don't catch it either, the export
+            # should be done again in a new transaction.
+            raise
+        except:
+            # The export for the current entry failed with an unexpected
+            # error, we add the entry to the list of errors.
+            result.addFailure(filename)
+            # And log the error.
+            logger.error(
+                "A unexpected exception was raised when exporting %s" % (
+                    obj.title),
+                exc_info=True)
         else:
-            result.add_success(filename)
+            result.addSuccess(filename)
             archive.add_file('rosetta-%s/%s' % (name, filename), contents)
-
-        result.remove_warnings_logger()
 
     archive.close()
     size = filehandle.tell()
@@ -421,7 +390,7 @@ def process_multi_object_request(objects, format):
 
     return result
 
-def process_request(person, objects, format):
+def process_request(person, objects, format, logger):
     """Process a request for an export of Rosetta files.
 
     After processing the request a notification email is sent to the requester
@@ -431,9 +400,9 @@ def process_request(person, objects, format):
     """
 
     if len(objects) == 1:
-        result = process_single_object_request(objects[0], format)
+        result = process_single_object_request(objects[0], format, logger)
     else:
-        result = process_multi_object_request(objects, format)
+        result = process_multi_object_request(objects, format, logger)
 
     result.notify(person)
 
@@ -453,16 +422,25 @@ def process_queue(transaction_manager, logger):
             return
 
         person, potemplate, objects, format = request
-        logger.debug('Exporting objects for person %d, PO template %d' %
-            (person.id, potemplate.id))
+        logger.debug('Exporting objects for %s, related to template %s' % (
+            person.displayname, potemplate.displayname))
 
-        process_request(person, objects, format)
+        try:
+            process_request(person, objects, format, logger)
+        except psycopg.Error:
+            # We had a DB error, we don't try to recover it here, just exit
+            # from the script and next run will retry the export.
+            logger.error(
+                "A DB exception was raised when exporting files for %s" % (
+                    person.displayname),
+                exc_info=True)
+            transaction_manager.abort()
+            break
 
         # This is here in case we need to process the same file twice in the
         # same queue run. If we try to do that all in one transaction, the
         # second time we get to the file we'll get a Librarian lookup error
         # because files are not accessible in the same transaction as they're
         # created.
-
         transaction_manager.commit()
 

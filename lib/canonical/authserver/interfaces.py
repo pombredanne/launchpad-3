@@ -1,5 +1,8 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-"""Interfaces for the Authserver.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""XML-RPC interfaces for the Authserver.
+
+The interfaces here are purely for documentation purposes.  They describe the
+XML-RPC methods published by this server.
 
 Some terminology:
     :id: a numeric ID for a person.
@@ -10,9 +13,10 @@ Some terminology:
 """
 
 __all__ = [
+    'IBranchDetailsStorage',
+    'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
-    'IBranchDetailsStorage',
     ]
     
 
@@ -21,6 +25,8 @@ from zope.interface import Interface
 
 class IUserDetailsStorage(Interface):
     """A storage for details about users.
+
+    Published at `http://$authserver_host/`. (i.e. the root)
 
     Many of the methods defined here return *user dicts*.  A user dict is a
     dictionary containing:
@@ -59,6 +65,8 @@ class IUserDetailsStorage(Interface):
 
 class IUserDetailsStorageV2(Interface):
     """A storage for details about users.
+
+    Published at `http://$authserver_host/v2`.
 
     Many of the methods defined here return *user dicts*.  A user dict is a
     dictionary containing:
@@ -106,8 +114,54 @@ class IUserDetailsStorageV2(Interface):
             empty if the user has no keys or does not exist.
         """
 
+
+class IHostedBranchStorage(Interface):
+    """An interface for dealing with hosted branches in Launchpad.
+
+    Published at `http://$authserver_host/v2`.
+
+    The sftp://bazaar.launchpad.net/ service uses this to register branches, to
+    retrieve information about a user's branches, and to update their status.
+    """
+
+    def getBranchesForUser(personID):
+        """Return all branches owned by a particular user, grouped by product.
+
+        :returns: a list like::
+            [(product id, product name, [(branch id, branch name), ...]), ...]
+        """
+
+    def fetchProductID(productName):
+        """Return the database ID for a product name.
+        
+        :returns: a product ID.
+        """
+
+    def createBranch(personID, productID, branchName):
+        """Register a new hosted branch in Launchpad.
+
+        This is called by the bazaar.launchpad.net server when a user pushes a
+        new branch to it.  See also
+        https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
+
+        :param personID: a person ID.
+        :param productID: a product ID.
+        :param branchName: the name for this branch, to be used in URLs.
+        :returns: the ID for the new branch.
+        """
+
+    def requestMirror(branchID):
+        """Mark a branch as needing to be mirrored.
+
+        :param branchID: a branch ID.
+        """
+
+
 class IBranchDetailsStorage(Interface):
-    """An interface for updating the status of branches in Launchpad."""
+    """An interface for updating the status of branches in Launchpad.
+    
+    Published at `http://$authserver_host/branch`.
+    """
 
     def getBranchPullQueue():
         """Get the list of branches to be pulled by the supermirror.
@@ -128,9 +182,9 @@ class IBranchDetailsStorage(Interface):
     def mirrorComplete(branchID, lastRevisionID):
         """Notify Launchpad that the branch has been successfully mirrored.
 
-        In the Launchpad database, the last_mirrored field will be updated
-        to match the last_mirror_attempt value, and mirror_failures counter
-        will be reset to zero.
+        In the Launchpad database, the last_mirrored field will be updated to
+        match the last_mirror_attempt value, the mirror_failures counter will
+        be reset to zero and the mirror_request_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param lastRevisionID: The last revision ID mirrored.
@@ -141,7 +195,7 @@ class IBranchDetailsStorage(Interface):
         """Notify Launchpad that the branch could not be mirrored.
 
         The mirror_failures counter for the given branch record will be
-        incremented
+        incremented and the mirror_request_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.

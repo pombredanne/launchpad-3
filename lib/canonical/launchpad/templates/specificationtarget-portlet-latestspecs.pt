@@ -1,21 +1,16 @@
-<tal:defspecs define="specs view/getLatestSpecifications">
-  <div tal:condition="specs" class="portlet">
+<div
+  tal:define="specs view/getLatestSpecifications"
+  tal:condition="specs"
+  class="portlet"
+>
 
-    <h2>Latest specifications</h2>
-
+    <h2>Latest proposed features</h2>
     <div class="portletBody portletContent">
-
-      <ul>
-        <li class="spec" tal:repeat="spec specs">
+      <ul class="blueprint">
+        <li tal:repeat="spec specs">
           <a tal:content="spec/title"
              tal:attributes="href spec/fmt:url">spec title</a>
         </li>
-        <li class="info" tal:condition="not: specs">
-          No specifications registered.
-        </li>
       </ul>
-	
     </div>
-
   </div>
-</tal:defspecs>

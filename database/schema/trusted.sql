@@ -121,7 +121,9 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    if scheme == "sftp":
+    # urlparse in the stdlib does not correctly parse the netloc from
+    # sftp and bzr+ssh schemes, so we have to manually check those
+    if scheme in ("sftp", "bzr+ssh"):
         return 1
     if not (scheme and netloc):
         return 0
@@ -154,7 +156,7 @@ $$
         return 0
 $$;
 
-COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
+COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the ''common'' definition.';
 
 
 CREATE OR REPLACE FUNCTION valid_regexp(text) RETURNS boolean

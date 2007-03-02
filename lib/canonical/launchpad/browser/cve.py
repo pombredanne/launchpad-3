@@ -18,8 +18,8 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators.cve import valid_cve
+
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -38,12 +38,12 @@ class CveContextMenu(ContextMenu):
     links = ['linkbug', 'unlinkbug']
 
     def linkbug(self):
-        text = 'Link to Bug'
+        text = 'Link to bug'
         return Link('+linkbug', text, icon='edit')
 
     def unlinkbug(self):
         enabled = bool(self.context.bugs)
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         return Link('+unlinkbug', text, icon='edit', enabled=enabled)
 
 
@@ -53,7 +53,7 @@ class CveSetContextMenu(ContextMenu):
     links = ['findcve', 'allcve']
 
     def allcve(self):
-        text = 'All Registered CVEs'
+        text = 'All registered CVEs'
         return Link('+all', text)
 
     def findcve(self):
@@ -69,6 +69,7 @@ class CveLinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
+        self.current_bugtask = context
         context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
@@ -86,6 +87,7 @@ class CveUnlinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
+        self.current_bugtask = context
         context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 

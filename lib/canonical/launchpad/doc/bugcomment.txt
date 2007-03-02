@@ -98,13 +98,14 @@ same chunk.
 Comment omission
 ----------------
 
-If a comment is strictly identical to its previous comment in sequence,
-it will be omitted. Let's add some comments and attachments to a bug to see
-this in action:
+If a comment made by the same user is strictly identical to its previous 
+comment in sequence, it will be omitted. Let's add some comments and 
+attachments to a bug to see this in action:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
     >>> import StringIO
     >>> user = getUtility(ILaunchBag).user
+    >>> different_user = getUtility(IPersonSet).getByName('name16')
 
     >>> login("test@canonical.com")
     >>> bug_three = getUtility(IBugSet).get(3)
@@ -116,12 +117,14 @@ this in action:
     >>> a1 = bug_three.addAttachment(owner=user, file_=file_, description="Ho",
     ...                              filename="munchy", comment="Hello there")
     >>> m6 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
+    >>> m7 = bug_three.newMessage(owner=different_user, subject="Ho", content="Hello there")
     >>> bug_three.messages.count()
-    7
+    8
 
 Now checking what gets displayed. m2 and m4 should be omitted, as they are
-identical to the comment that precedes them in order; no other comments
-should be hidden.
+identical to the comment that precedes them in order; Although m7 is identical
+to its preceding comment, it was made by a different user so it shouldn't be 
+hidden.
 
     >>> bug_three_bugtask = bug_three.bugtasks[0]
     >>> bug_view = getView(bug_three_bugtask, '+index', LaunchpadTestRequest())
@@ -131,7 +134,8 @@ should be hidden.
     [(1, u'Hi', u'Hello there'),
      (3, u'Ho', u'Hello there'),
      (5, u'Ho', u'Hello there'),
-     (6, u'Ho', u'Hello there')]
+     (6, u'Ho', u'Hello there'),
+     (7, u'Ho', u'Hello there')]
 
 Wrapping up
 -----------
