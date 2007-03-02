@@ -1,0 +1,32 @@
+Branch Details
+==============
+
+Recent Revisions
+----------------
+
+  >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+  >>> main = find_tag_by_id(browser.contents, 'mainarea')
+
+
+We display the recent revisions of a branch if it has been scanned. There's a
+recent revisions heading:
+
+  >>> for heading in main.fetch('h2'):
+  ...     print heading.renderContents()
+  Recent revisions
+  ...
+
+
+Underneath that heading we see the ten most-recent revisions of the branch in
+reverse-chronological order.
+
+  >>> for heading in main.fetch('h3'):
+  ...    print heading.renderContents()
+  Revision 6 by foo &lt;foo@localhost&gt; (2005-10-31)
+  Revision 5 by foo &lt;foo@localhost&gt; (2005-10-31)
+  Revision 4 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
+  Revision 3 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
+  Revision 2 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
+  Revision 1 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
+
+
