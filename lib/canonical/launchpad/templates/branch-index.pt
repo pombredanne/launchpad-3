@@ -151,7 +151,7 @@
   <p class="highlighted lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
     <span id="branch-whiteboard-value"
-      tal:content="context/whiteboard">whiteboard</span>
+      tal:content="structure context/whiteboard/fmt:text-to-html">whiteboard</span>
   </p>
 
   <h2 style="clear: both;">Recent revisions</h2>
