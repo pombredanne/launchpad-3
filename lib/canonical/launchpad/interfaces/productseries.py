@@ -17,7 +17,7 @@ from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
     IHasDrivers, validate_url)
@@ -68,13 +68,6 @@ def validate_cvs_branch(branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
-
-def validate_svn_repo(repo):
-    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
-        return True
-    else:
-        raise LaunchpadValidationError(
-            'Please give valid Subversion server details.')
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -223,14 +216,17 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "trying to query the server for commit-by-commit data."))
     cvsbranch = TextLine(title=_("Branch"), required=False,
         constraint=validate_cvs_branch,
-        description=_('The branch in this module. To import HEAD '
-            '(which is a tag in CVS), enter MAIN. '
-            'Only MAIN branches are imported.'))
-    svnrepository = TextLine(title=_("Branch"), required=False,
-        constraint=validate_svn_repo,
-        description=_('The URL of a Subversion branch, '
-            'starting with svn:// or http(s)://. '
-            'Only trunk branches are imported.'))
+        description=_("The branch in this module."
+            " Only MAIN branches are imported."))
+    svnrepository = URIField(title=_("Branch"), required=False,
+        description=_("The URL of a Subversion branch, starting with svn:// or"
+            " http(s)://. Only trunk branches are imported."),
+        allowed_schemes=["http", "https", "svn", "svn+ssh"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
