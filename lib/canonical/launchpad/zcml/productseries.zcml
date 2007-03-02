@@ -74,9 +74,6 @@
             template="../templates/productseries-index.pt"
             />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt" />
-        <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />
         <browser:page
@@ -119,6 +116,10 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
+            />
+        <browser:page
+            name="+hctstatus-core"
+            template="../templates/productseries-hctstatus-core.pt"
             />
     </browser:pages>
 
