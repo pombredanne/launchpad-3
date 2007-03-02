@@ -776,3 +776,14 @@ It works also with user submitted values:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
+
+== QuestionCollectionOpenCountView ==
+
+There is a helper view that is available on all IQuestionCollection
+that returns the number of questions in the Open and Needs information
+states on that target.
+
+    >>> view = getView(
+    ...     firefox, '+open_questions_count', LaunchpadTestRequest())
+    >>> view()
+    u'4'
