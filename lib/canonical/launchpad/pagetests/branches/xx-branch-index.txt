@@ -64,3 +64,14 @@ only one paragraph, so it's OK to check the first item of the list.
   1
   >>> print commit_message[0].renderContents()
   fix bug in bar
+
+
+If a commit messages refers to a bug by including "bug 1", then we should turn
+that into a link to the Launchpad bug of the same number.
+
+  >>> commit_message = get_commit_message(3)
+  >>> print len(commit_message)
+  1
+  >>> print commit_message[0]
+  <p>fix <a href="/bugs/1" title="...">bug 1</a></p>
+
