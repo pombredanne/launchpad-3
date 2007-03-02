@@ -4,17 +4,10 @@
       i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
-      </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-tickets" />
+    <div tal:replace="structure context/@@+portlet-questions" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
     <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
@@ -30,6 +23,12 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <tal:icon replace="structure context/fmt:icon" />
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
   <tal:block condition="view/reportBugInContext" />
 
@@ -88,11 +87,10 @@
 
         </form>
 
-  <div tal:condition="not: context/bug/duplicateof"
-       tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
+  <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-  <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
-    <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
+      <div class="report">
+        <h2>Bug description <small>(<a href="+edit">edit</a>)</small></h2>
 
     <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />
@@ -106,7 +104,7 @@
            tal:attributes="
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
-  </fieldset>
+  </div>
 
   <div style="margin-bottom: 1em; text-align: center">
     <span tal:condition="view/wasDescriptionModified" 

@@ -28,6 +28,8 @@ interface.
 
 >>> verifyObject(IProductSeries, trunk)
 True
+>>> IProductSeries.providedBy(trunk)
+True
 
 And verify that it looks like the series we think it should be.
 

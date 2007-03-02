@@ -332,17 +332,9 @@ class TestErrorHandling(unittest.TestCase):
     def testUnknownFormatError(self):
         self.errors = []
         def stubOpenSourceBranch():
-            raise UnknownFormatError('Some junk')
+            raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Unknown branch format:'
-        self._runMirrorAndCheckError(expected_msg)
-
-        self.errors = []
-        def stubOpenSourceBranch():
-            raise UnknownFormatError(
-                'Loads of junk\n with two or more\n newlines.')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'Not a branch'
         self._runMirrorAndCheckError(expected_msg)
 
     def testParamikoNotPresent(self):

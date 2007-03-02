@@ -61,7 +61,9 @@ Check that that import status was indeed updated.
 
   >>> print find_main_content(browser.contents)
   <...
-  <td><b>Bazaar Status:</b></td>
+  <tr>
+  <th>Import status:</th>
   <td>Processing</td>
+  </tr>
   ...
 

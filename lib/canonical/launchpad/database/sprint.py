@@ -46,6 +46,8 @@ class Sprint(SQLBase):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     time_zone = StringCol(notNull=True)
@@ -60,6 +62,13 @@ class Sprint(SQLBase):
     @property
     def displayname(self):
         return self.title
+
+    @property
+    def drivers(self):
+        """See IHasDrivers."""
+        if self.driver is not None:
+            return [self.driver, self.owner]
+        return [self.owner,]
 
     # useful joins
     attendees = SQLRelatedJoin('Person',
@@ -296,14 +305,15 @@ class SprintSet:
 
     def __iter__(self):
         """See ISprintSet."""
-        return iter(Sprint.select(orderBy='-time_starts'))
+        return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
             summary=None, driver=None, home_page=None, gotchi=None,
-            emblem=None):
+            gotchi_heading=None, emblem=None):
         """See ISprintSet."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,
-            home_page=home_page, gotchi=gotchi, emblem=emblem)
+            home_page=home_page, gotchi=gotchi, emblem=emblem,
+            gotchi_heading=gotchi_heading)
 
