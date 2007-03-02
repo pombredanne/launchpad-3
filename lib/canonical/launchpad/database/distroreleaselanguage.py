@@ -60,7 +60,7 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             ''' % sqlvalues(self.language.id, self.distrorelease.id),
             clauseTables=['POTemplate'],
             prejoins=["potemplate.sourcepackagename",
-                      "latestsubmission.person"],
+                      "last_touched_pomsgset.reviewer"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property

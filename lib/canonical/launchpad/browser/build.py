@@ -44,14 +44,14 @@ class BuildOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry Build'
+        text = 'Retry build'
         return Link('+retry', text, icon='edit',
                     enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         """Only enabled for pending build records."""
-        text = 'Rescore Build'
+        text = 'Rescore build'
         return Link('+rescore', text, icon='edit',
                     enabled=self.context.can_be_rescored)
 

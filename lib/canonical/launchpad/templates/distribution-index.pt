@@ -19,20 +19,13 @@
       <ul class="buttons">
         <li>
           <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but_sml_reportabug.gif" />
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li tal:content="structure context/@@+ask-a-question-button">
-          <a href="+addticket">
-            <img
-              alt="Ask a question"
-              src="/+icing/but_sml_askaquestion.gif"
-            />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
         <li>
           <a href="+translations">
-            <img alt="Help translate" src="/+icing/but_sml_helptranslate.gif" />
+            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
           </a>
         </li>
       </ul>
@@ -49,6 +42,10 @@
   </form>
 
       <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
         <div class="portlet">
           <h2>Releases</h2>
           <p tal:condition="not:context/releases">
@@ -85,11 +82,11 @@
             </li>
           </ul>
         </div>
+        <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
-          class="portlet"
-          tal:condition="nothing"
-          tal:content="structure context/currentrelease/@@+last-uploads"
-        >After bug 74342, change tal:condition="context/currentrelease"</div>
+          tal:condition="context/currentrelease"
+          tal:content="structure context/currentrelease/@@+latest-uploads"
+        />
       </div>
       <div class="right">
         <div
@@ -99,10 +96,6 @@
         <div
           class="two column section"
           tal:content="structure context/@@+portlet-top-contributors"
-        />
-        <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-latestbugs"
         />
         <div
           class="two column section"

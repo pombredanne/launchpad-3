@@ -161,6 +161,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   10
   11
   12
+  13
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -173,7 +174,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  12
+  13
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -189,7 +190,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  10
+  11
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -342,7 +343,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      DistroReleaseQueueStatus.UNAPPROVED)
   >>> items.count()
-  4
+  5
 
 We can't retrieve it with a 'what' substring:
 
