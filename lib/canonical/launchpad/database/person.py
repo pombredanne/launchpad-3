@@ -187,6 +187,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             assignee=self, orderBy=['-datecreated']))
 
     @property
+    def assigned_specs_in_progress(self):
+        replacements = sqlvalues(assignee=self)
+        replacements['started_clause'] = Specification.started_clause
+        replacements['completed_clause'] = Specification.completeness_clause
+        query = """
+            (assignee = %(assignee)s)
+            AND (%(started_clause)s)
+            AND NOT (%(completed_clause)s)
+            """ % replacements
+        return Specification.select(query, orderBy=['-date_started'], limit=5)
+
+    @property
     def created_specs(self):
         return shortlist(Specification.selectBy(
             owner=self, orderBy=['-datecreated']))
@@ -1027,7 +1039,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         # Note that we can't use selectBy here because of the prejoins.
         history = POFileTranslator.select(
-            "POFileTranslator.person = %d" % self.id,
+            "POFileTranslator.person = %s" % sqlvalues(self),
             prejoins=[
                 "pofile",
                 "pofile.potemplate",

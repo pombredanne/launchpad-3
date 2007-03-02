@@ -196,7 +196,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"

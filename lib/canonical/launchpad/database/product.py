@@ -261,6 +261,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product = %s' % sqlvalues(self)
+
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)

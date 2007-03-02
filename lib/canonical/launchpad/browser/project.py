@@ -39,7 +39,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
-    ILaunchpadRoot, NotFoundError)
+    NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
@@ -48,7 +48,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, structured)
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
@@ -67,22 +67,19 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(RedirectionNavigation):
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
-        if self.context.getByName(name) is None:
+        project = self.context.getByName(name)
+        if project is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(project))
 
 
 class ProjectSOP(StructuralObjectPresentation):
