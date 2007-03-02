@@ -321,7 +321,7 @@
                 <table>
                   <tr>
                     <td>
-                        <label for="field.owner">Reporter:</label>
+                        <label for="field.bug_reporter">Reporter:</label>
                     </td>
                   </tr>
                   <tr>
@@ -330,7 +330,7 @@
                         <div tal:attributes="class python:view.owner_error
                                                           and 'error' or
                                                           ''">
-                        <span tal:content="structure view/owner_widget" />
+                        <span tal:content="structure view/bug_reporter_widget" />
                         <div tal:condition="view/owner_error"
                              class="message"
                              tal:content="view/owner_error">An error on

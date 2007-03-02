@@ -1311,7 +1311,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
-                "owner", "omit_dupes", "has_patch",
+                "owner", "omit_dupes", "has_patch", "bug_reporter"
                 "milestone", "component", "has_no_package",
                 "status_upstream", "tag", "has_cve", "bug_contact"
                 ]
@@ -1550,10 +1550,10 @@ class BugTaskSearchListingView(LaunchpadView):
                 cgi.escape(self.request.get('field.assignee')))
             self.form_has_errors = True
         try:
-            getWidgetsData(self, self.schema, names=["owner"])
+            getWidgetsData(self, self.schema, names=["bug_reporter"])
         except WidgetsError:
             self.owner_error = error_message % (
-                cgi.escape(self.request.get('field.owner')))
+                cgi.escape(self.request.get('field.bug_reporter')))
             self.form_has_errors = True
         try:
             getWidgetsData(self, self.schema, names=["bug_contact"])

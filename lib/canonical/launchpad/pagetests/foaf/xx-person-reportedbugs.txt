@@ -1,12 +1,25 @@
   These are the bugs reported by Foo Bar.
 
-  >>> print http(r"""
-  ... GET /~name16/+reportedbugs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Bug Title Test...
-  ...A test bug...
-  ...
+    >>> anon_browser.open('http://bugs.launchpad.dev/~name16')
+    >>> anon_browser.getLink('Reported').click()
+    >>> anon_browser.title
+    'Bugs reported by Foo Bar'
+
+    >>> def print_bugtasks(soup):
+    ...     """Print all the bugtasks in the text."""
+    ...     table = soup.find('table', {'id': 'buglisting'})
+    ...     if table is None:
+    ...         return
+    ...     for tr in table('tr'):
+    ...         if not tr.td:
+    ...             continue
+    ...         print extract_text(tr)
+    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    3 Bug Title Test
+      mozilla-firefox (Debian) Unknown Unconfirmed
+    7 A test bug
+      evolution (upstream) Medium Unconfirmed
+    9 Thunderbird crashes
+      thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 (Ubuntu) Medium Unconfirmed
