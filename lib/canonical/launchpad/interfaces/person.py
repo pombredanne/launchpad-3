@@ -32,7 +32,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.question import IQuestionCollection
+from canonical.launchpad.interfaces.question import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -648,7 +649,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchQuestions(**search_criteria):
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
