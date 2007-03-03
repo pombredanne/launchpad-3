@@ -27,7 +27,8 @@ from canonical.launchpad.layers import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    IBreadcrumb, ILaunchBag, IOpenLaunchBag, NotFoundError)
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+from canonical.launchpad.webapp.url import urlappend
 
 
 class DecoratorAdvisor:
@@ -410,6 +411,20 @@ class Navigation:
         """
         raise NotFoundError(name)
 
+    def redirectSubTree(self, target, status=301):
+        """Redirect the subtree to the given target URL."""
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            target = urlappend(target, nextstep)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            target = target + '?' + query_string
+
+        return RedirectionView(target, self.request, status)
+ 
     # The next methods are for use by the Zope machinery.
 
     def publishTraverse(self, request, name):
@@ -556,7 +571,7 @@ class RedirectionView:
 
     def __call__(self):
         self.request.response.redirect(self.target, status=self.status)
-        return ''
+        return u''
 
     def browserDefault(self, request):
         return self, ()

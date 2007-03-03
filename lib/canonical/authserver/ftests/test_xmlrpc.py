@@ -145,12 +145,21 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.assertEqual('', self.server.fetchProductID('xxxxx'))
 
     def test_createBranch(self):
-        # XXX: justs check that it doesn't error, should also check the result.
+        # XXX: This test just checks that createBranch doesn't error.  This test
+        # should also check the result.
+        #   - Andrew Bennetts, 2007-01-24
         self.server.createBranch(12, 4, 'new-branch')
 
+    def test_requestMirror(self):
+        # XXX: Only checks that requestMirror doesn't error. Should instead
+        # check the result.
+        #   - Andrew Bennetts, 2007-01-24
+        hosted_branch_id = 25
+        self.server.requestMirror(hosted_branch_id)
+        
 
 class BranchAPITestCase(LaunchpadTestCase):
-    """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
+    """Tests for the branch details API."""
     
     def setUp(self):
         LaunchpadTestCase.setUp(self)

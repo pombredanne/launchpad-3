@@ -19,15 +19,16 @@ provide an RSS feed with information about all official archive mirrors.
         ...
         <item>
           <title>Archive-mirror</title>
-          <link>http://localhost:11375/valid-mirror</link>
+          <link>http://localhost:11375/valid-mirror/</link>
           <description>
           </description>
           <mirror:bandwidth>...</mirror:bandwidth>
           <mirror:location>
-            <mirror:continent>Asia</mirror:continent>
-            <mirror:country>Afghanistan</mirror:country>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
+            <mirror:countrycode>FR</mirror:countrycode>
           </mirror:location>
-          <guid>http://localhost:11375/valid-mirror</guid>
+          <guid>http://localhost:11375/valid-mirror/</guid>
         </item>
         ...
       </channel>

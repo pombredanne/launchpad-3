@@ -70,8 +70,10 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
-    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -95,6 +97,9 @@ class ICrowd(Interface):
 
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
+
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Malone")
     bugwatch_count = Attribute("The number of links to external bug trackers")

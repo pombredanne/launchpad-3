@@ -20,9 +20,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-        IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError,
-        )
-from canonical.launchpad.database.revision import RevisionNumber
+    IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.database.revision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -40,7 +39,7 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber',
+    started_at = ForeignKey(dbName='started_at', foreignKey='BranchRevision',
                             default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -78,8 +77,21 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
+    @property
+    def revision_history(self):
+        """See IBranch."""
+        query = self._get_revision_history_query()
+        return query.prejoin(['revision'])
+
+    def _get_revision_history_query(self):
+        # XXX: David Allouche 2007-02-09.
+        # Transitional helper for revision_history and latest_revisions.
+        # Will be moved to BranchRevisionSet by the full implementation of
+        # CompleteBranchRevisions.
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
+            ''' % sqlvalues(self), orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -152,14 +164,15 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return RevisionNumber.selectBy(
-            branch=self, orderBy='-sequence').limit(quantity)
+        query = self._get_revision_history_query()
+        return query.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
-        return RevisionNumber.select(
-            'Revision.id=RevisionNumber.revision AND '
-            'RevisionNumber.branch = %d AND '
+        return BranchRevision.select(
+            'Revision.id=BranchRevision.revision AND '
+            'BranchRevision.branch = %d AND '
+            'BranchRevision.sequence IS NOT NULL AND '
             'Revision.revision_date > %s' %
             (self.id, quote(timestamp)),
             orderBy='-sequence',
@@ -194,23 +207,25 @@ class Branch(SQLBase):
         return subscription is not None
 
     # revision number manipulation
-    def getRevisionNumber(self, sequence):
-        """See IBranch.getRevisionNumber()"""
-        return RevisionNumber.selectOneBy(
+    def getBranchRevision(self, sequence):
+        """See IBranch.getBranchRevision()"""
+        assert sequence is not None, \
+               "Only use this to fetch revisions from mainline history."
+        return BranchRevision.selectOneBy(
             branch=self, sequence=sequence)
 
-    def createRevisionNumber(self, sequence, revision):
-        """See IBranch.createRevisionNumber()"""
-        return RevisionNumber(branch=self, sequence=sequence, revision=revision)
+    def createBranchRevision(self, sequence, revision):
+        """See IBranch.createBranchRevision()"""
+        return BranchRevision(branch=self, sequence=sequence, revision=revision)
 
     def truncateHistory(self, from_rev):
         """See IBranch.truncateHistory()"""
-        revnos = RevisionNumber.select(AND(
-            RevisionNumber.q.branchID == self.id,
-            RevisionNumber.q.sequence >= from_rev))
+        revnos = BranchRevision.select(AND(
+            BranchRevision.q.branchID == self.id,
+            BranchRevision.q.sequence >= from_rev))
         did_something = False
         # Since in the future we may not be storing the entire
-        # revision history, a simple count against RevisionNumber
+        # revision history, a simple count against BranchRevision
         # may not be sufficient to adjust the revision_count.
         for revno in revnos:
             revno.destroySelf()
@@ -240,12 +255,7 @@ class BranchSet:
 
     def __iter__(self):
         """See IBranchSet."""
-        return iter(Branch.select())
-
-    @property
-    def all(self):
-        branches = Branch.select()
-        return branches.prejoin(['author', 'product'])
+        return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
         """See IBranchSet."""
@@ -332,6 +342,40 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getProductDevelopmentBranches(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        query = Branch.select('''
+            (Branch.id = ProductSeries.import_branch OR
+            Branch.id = ProductSeries.user_branch) AND
+            ProductSeries.id = Product.development_focus AND
+            Branch.product IN %s''' % sqlvalues(product_ids),
+            clauseTables = ['Product', 'ProductSeries'])
+        return query.prejoin(['author'])
+            
+    def getBranchSummaryForProducts(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        if not product_ids:
+            return []
+        cur = cursor()
+        cur.execute("""
+            SELECT
+                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.product in %s
+            GROUP BY Product
+            """ % sqlvalues(product_ids))
+        result = {}
+        product_map = dict([(product.id, product) for product in products])
+        for product_id, branch_count, last_commit in cur.fetchall():
+            product = product_map[product_id]
+            result[product] = {'branch_count' : branch_count,
+                               'last_commit' : last_commit}
+        return result
+
     def getRecentlyChangedBranches(self, branch_count):
         """See IBranchSet."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -368,11 +412,11 @@ class BranchSet:
             return {}
         cur = cursor()
         cur.execute("""
-            SELECT branch.id, revision.revision_date
-            FROM branch
-            LEFT OUTER JOIN revision
-            ON branch.last_scanned_id = revision.revision_id
-            WHERE branch.id IN %s
+            SELECT Branch.id, Revision.revision_date
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.id IN %s
             """ % sqlvalues(branch_ids))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))

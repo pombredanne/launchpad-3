@@ -2,32 +2,34 @@
 Adding a Product to a Project
 -----------------------------
 
-Let's add an Eye of GNOME product to the GNOME project.  There is a
-link at the bottom of the project page to add a new product:
+A project registrant can add products to a project. Let's add an
+Eye of GNOME product to the GNOME project.  There is a link at the
+bottom of the project page to add a new product:
 
-  >>> user_browser.open('http://launchpad.dev/gnome')
-  >>> user_browser.getLink('Register another product').click()
-  >>> print user_browser.url
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> browser.getLink('Register another product').click()
+  >>> print browser.url
   http://launchpad.dev/gnome/+newproduct
 
 Now we'll fill in the product details and add it.  This will bring us
 back to the project page:
 
-  >>> user_browser.getControl('Name', index=0).value = 'eog'
-  >>> user_browser.getControl('Display Name').value = 'Eye of GNOME'
-  >>> user_browser.getControl('Title').value = 'Eye of GNOME'
-  >>> user_browser.getControl('Summary').value = 'An image viewer for GNOME'
-  >>> user_browser.getControl('Description').value = 'Blah blah blah'
-  >>> user_browser.getControl('Homepage URL').value = 'http://homepage'
-  >>> user_browser.getControl('Sourceforge Project').value = 'eog'
-  >>> user_browser.getControl('Freshmeat Project').value = 'eog'
-  >>> user_browser.getControl('Wiki URL').value = 'http://wiki'
-  >>> user_browser.getControl('Screenshots URL').value = 'http://screenshots'
-  >>> user_browser.getControl('Download URL').value = 'http://download'
-  >>> user_browser.getControl('Programming Language').value = 'C'
+  >>> browser.getControl('Name', index=0).value = 'eog'
+  >>> browser.getControl('Display Name').value = 'Eye of GNOME'
+  >>> browser.getControl('Title').value = 'Eye of GNOME'
+  >>> browser.getControl('Summary').value = 'An image viewer for GNOME'
+  >>> browser.getControl('Description').value = 'Blah blah blah'
+  >>> browser.getControl('Homepage URL').value = 'http://homepage'
+  >>> browser.getControl('Sourceforge Project').value = 'eog'
+  >>> browser.getControl('Freshmeat Project').value = 'eog'
+  >>> browser.getControl('Wiki URL').value = 'http://wiki'
+  >>> browser.getControl('Screenshots URL').value = 'http://screenshots'
+  >>> browser.getControl('Download URL').value = 'http://download'
+  >>> browser.getControl('Programming Language').value = 'C'
 
-  >>> user_browser.getControl('Add').click()
-  >>> print user_browser.url
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
   http://launchpad.dev/eog
 
 

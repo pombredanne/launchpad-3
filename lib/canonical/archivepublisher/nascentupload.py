@@ -1600,7 +1600,7 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = uploaded_file.version
+        proposed_version = self.changes['version']
         archive_version = ancestry.sourcepackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
@@ -2117,6 +2117,14 @@ class NascentUpload:
                 self, interpolations)
 
             self.insert_into_queue()
+
+            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
+            # section 'translations' should not generate any emails.
+            if (self.sourceful and self._find_dsc().section == 'translations'):
+                self.logger.debug(
+                    "Skipping acceptance and announcement, it is a language-"
+                    "package upload.")
+                return True, []
 
             # Unknown uploads
             if self.is_new():

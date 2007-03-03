@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -29,8 +29,8 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship, relationship_builder)
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetSupportMenu)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
@@ -98,10 +98,10 @@ class SourcePackageSOP(StructuralObjectPresentation):
         raise NotImplementedError
 
 
-class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'support', 'translations']
+    enable_only = ['overview', 'bugs', 'answers', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -116,13 +116,13 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+hctstatus', text, icon='info')
 
     def changelog(self):
-        return Link('+changelog', 'Change Log', icon='list')
+        return Link('+changelog', 'View changelog', icon='list')
 
     def upstream(self):
-        return Link('+packaging', 'Edit Upstream Link', icon='edit')
+        return Link('+packaging', 'Edit upstream link', icon='edit')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
 
@@ -133,19 +133,19 @@ class SourcePackageBugsMenu(ApplicationMenu):
     links = ['reportbug']
 
     def reportbug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(TicketTargetSupportMenu):
+class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage
-    facet = 'support'
+    facet = 'answers'
 
-    links = TicketTargetSupportMenu.links + ['gethelp']
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
 
     def gethelp(self):
-        return Link('+gethelp', 'Help and Support Options', icon='info')
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):
@@ -155,11 +155,11 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     links = ['help', 'templates']
 
     def help(self):
-        return Link('+translate', 'How You Can Help', icon='info')
+        return Link('+translate', 'How you can help', icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        return Link('+potemplatenames', 'Edit Template Names', icon='edit')
+        return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
 class SourcePackageView(BuildRecordsView):
