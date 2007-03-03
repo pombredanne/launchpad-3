@@ -21,7 +21,7 @@
     Launchpad needs accurate information about the link between <span
     tal:replace="context/title">apache in ubuntu hoary</span> and
     its &#8220;upstream&#8221;, so that bugs, translations, and patches can be
-    shared easily between distribution and product maintainers.
+    shared easily between distribution and project maintainers.
   </p>
 
   <p class="error message" tal:condition="view/status_message"
@@ -30,7 +30,7 @@
   </p>
 
   <p class="informational message" tal:condition="not: context/productseries">
-    Launchpad does not know the upstream product series for this package.
+    Launchpad does not know the upstream project series for this package.
     If you know the correct details, please enter them carefully.
   </p>
 

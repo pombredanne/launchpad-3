@@ -91,7 +91,7 @@
                         </form>
                         <p id="application-summary">
                           Launchpad&rsquo;s Answers system lets people
-                          ask questions about products or distributions,
+                          ask questions about projects in Launchpad,
                           and lets anyone help answer those questions.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
@@ -139,7 +139,7 @@
     <p>This page gives you a quick overview of the recent
     activity in the Launchpad Answer Tracker.
     </p>
-    <p>To post a new question, navigate to the product or distribution
+    <p>To post a new question, navigate to the project
       you are having a problem with and use the <emph>Ask Question</emph>
       menu item.
     </p>

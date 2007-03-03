@@ -37,7 +37,7 @@
           </option>
           <option value="products"
             tal:attributes="selected request/htmlform:target/selected/products">
-            Only Products
+            Only Upstream Projects
           </option>
           <option value="distros"
             tal:attributes="selected request/htmlform:target/selected/distros">

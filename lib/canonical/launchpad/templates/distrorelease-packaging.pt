@@ -27,7 +27,7 @@
   <p>
     <abbr>HCT</abbr>, the Hypothetical Changeset Tool, uses packaging
     information to link a source package in a distribution to an upstream
-    product series.
+    project series.
   </p>
   <p tal:condition="not: packagings" class="informational message">
     There are no links between packages in <span
@@ -57,7 +57,7 @@
       <thead>
         <tr>
           <th>Source Package</th>
-          <th>Upstream Product Series</th>
+          <th>Upstream Project Series</th>
         </tr>
       </thead>
 

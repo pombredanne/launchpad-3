@@ -63,7 +63,7 @@
                         </div>
                         <div class="three column middle">
 
-                            <h2>Translatable products</h2>
+                            <h2>Translatable projects</h2>
                             <ul class="product">
                               <li tal:repeat="product context/translatable_products">
                                 <a

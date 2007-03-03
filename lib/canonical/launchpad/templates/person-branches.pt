@@ -32,7 +32,7 @@
         <th>Author</th>
         <th>Status</th>
         <th>Last Commit</th>
-        <th class="initial-sort">Product</th>
+        <th class="initial-sort">Project</th>
         <th>Role</th>
       </tr>
     </thead>
@@ -76,7 +76,7 @@
           <a tal:condition="branch/product"
              tal:attributes="href branch/product/fmt:url"
              tal:content="branch/product/name">
-               Product
+               Project
           </a>
         </td>
         <!-- Role -->
