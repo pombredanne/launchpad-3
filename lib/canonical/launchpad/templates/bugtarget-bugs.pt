@@ -12,9 +12,21 @@
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
+
       <div class="columns">
-        <div class="two column left">
-          <img alt="" src="/@@/nyet-mugshot" title="pie chart here" />
+        <div id="bugs-chart" class="two column left" height="200" width="200">
+          <script type="text/javascript" src="/@@/PlotKit/PlotKit_Packed.js"></script>
+          <script type="text/javascript"
+               tal:content="structure view/getChartJavascript">
+          </script>
+          <noscript>
+          <ul>
+            <li tal:repeat="bug_count view/bug_count_items"
+                tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+              12 Unconfirmed bugs
+            </li>
+          </ul>
+          </noscript>
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>

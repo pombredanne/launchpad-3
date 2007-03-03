@@ -33,6 +33,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
+    def searchTasks(self, search_params):
+        """See IMaloneApplication."""
+        return getUtility(IBugTaskSet).search(search_params)
+
     @property
     def bug_count(self):
         user = getUtility(ILaunchBag).user

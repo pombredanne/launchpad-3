@@ -63,9 +63,8 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, RedirectionNavigation,
-    sorted_version_numbers, StandardLaunchpadFacets, stepto, stepthrough, 
-    structured)
+    LaunchpadFormView, Link, Navigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.image import ImageAddWidget
 from canonical.widgets.product import ProductBugTrackerWidget
@@ -104,22 +103,19 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(RedirectionNavigation):
+class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid product name
-        if self.context.getByName(name) is None:
+        product = self.context.getByName(name)
+        if product is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(product))
 
 
 class ProductSOP(StructuralObjectPresentation):
@@ -394,7 +390,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall']
+             'register', 'listall', 'withcode']
 
     def register(self):
         text = 'Register a project'
@@ -415,6 +411,12 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
+
+    def withcode(self):
+        text = 'Show projects with code'
+        productset = getUtility(IProductSet)
+        return Link(canonical_url(
+            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:
