@@ -17,10 +17,34 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
         NotFoundError, IPillarNameSet, IPillarName,
+        IProduct, IDistribution,
         IDistributionSet, IProductSet, IProjectSet,
         )
 
-__all__ = ['PillarNameSet', 'PillarName']
+__all__ = [
+    'pillar_sort_key',
+    'PillarNameSet',
+    'PillarName',
+    ]
+
+
+def pillar_sort_key(pillar):
+    """A sort key for a set of pillars. We want:
+
+          - products first, alphabetically
+          - distributions, with ubuntu first and the rest alphabetically
+    """
+    product_name = None
+    distribution_name = None
+    if IProduct.providedBy(pillar):
+        product_name = pillar.name
+    elif IDistribution.providedBy(pillar):
+        distribution_name = pillar.name
+    # Move ubuntu to the top.
+    if distribution_name == 'ubuntu':
+        distribution_name = '-'
+
+    return (distribution_name, product_name)
 
 
 class PillarNameSet:

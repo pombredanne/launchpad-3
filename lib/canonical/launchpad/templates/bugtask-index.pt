@@ -26,7 +26,11 @@
 
       <div>
         <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
+        first reported by
+        <a tal:attributes="href context/bug/owner/fmt:url"
+           tal:content="context/bug/owner/browsername">Foo Bar</a>
+        on <tal:date content="context/bug/datecreated/fmt:date" />
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
