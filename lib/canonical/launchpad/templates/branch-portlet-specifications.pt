@@ -1,13 +1,13 @@
 <div class="portlet" tal:condition="context/spec_links">
-  <h2>Specifications</h2>
+  <h2>Blueprints</h2>
   <div class="portletBody portletContent">
-    <ul class="spec">
+    <ul class="blueprint">
       <li tal:repeat="speclink context/spec_links">
         <a tal:attributes="href speclink/specification/fmt:url"
            tal:content="speclink/specification/title">Spec title</a>
         <a tal:condition="speclink/required:launchpad.AnyPerson"
            tal:attributes="href speclink/fmt:url"
-          >(edit)</a><tal:block condition="speclink/summary"><br/>
+          ><img src="/@@/edit" title="Change this specification link" /></a><tal:block condition="speclink/summary"><br/>
         <i tal:content="speclink/summary">summary</i></tal:block>
       </li>
     </ul>

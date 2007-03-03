@@ -118,7 +118,8 @@
               </td>
               <td>
                 <tal:block condition="entry/required:launchpad.Admin">
-                  [<a tal:attributes="href entry/fmt:url">Edit</a>]
+                  <a tal:attributes="href entry/fmt:url"
+                    ><img src="/@@/edit" title="Change this entry" /></a>
                 </tal:block>
               </td>
             </tr>

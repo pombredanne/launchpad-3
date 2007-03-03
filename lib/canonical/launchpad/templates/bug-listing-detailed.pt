@@ -4,9 +4,9 @@
   </td>
   <td>
     <div>
+      #<span tal:replace="context/id">4</span>
       <a tal:attributes="href context/fmt:url">
-        <span tal:replace="context/id">4</span>.
-        <strong tal:content="context/title">Bug Title Here</strong>
+        <span tal:content="context/title">Bug Title Here</span>
       </a>
     </div>
     <div class="lesser">

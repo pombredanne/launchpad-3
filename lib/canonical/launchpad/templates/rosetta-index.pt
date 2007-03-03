@@ -34,8 +34,11 @@
                           </li>
                         </ul>
                         <p id="application-summary">
-                          With Launchpad you can translate Free Software
-                          into your own language.
+                          Launchpad helps you build a community to
+                          translate your project into into almost any
+                          language. Translators use this simple web
+                          interface to contribute translations in a
+                          wiki-style of collaboration.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="three column left">
