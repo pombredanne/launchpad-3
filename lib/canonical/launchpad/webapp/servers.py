@@ -286,6 +286,17 @@ class BasicLaunchpadRequest:
                     return context, iface
         return None, None
 
+    def setInWSGIEnvironment(self, key, value):
+        """Set a key-value pair in the WSGI environment of this request.
+
+        Raises KeyError if the key is already present in the environment.
+        """
+        # This method expects the BasicLaunchpadRequest mixin to be used
+        # with a base that provides self._orig_env.
+        if key in self._orig_env:
+            raise KeyError("'%s' already present in wsgi environment." % key)
+        self._orig_env[key] = value
+
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
                               NotificationRequest, ErrorReportRequest):
@@ -304,15 +315,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
-
-    def setInWSGIEnvironment(self, key, value):
-        """Set a key-value pair in the WSGI environment of this request.
-
-        Raises KeyError if the key is already present in the environment.
-        """
-        if key in self._orig_env:
-            raise KeyError("'%s' already present in wsgi environment." % key)
-        self._orig_env[key] = value
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
