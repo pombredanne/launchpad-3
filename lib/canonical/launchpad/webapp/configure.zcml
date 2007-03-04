@@ -101,6 +101,14 @@
         name="count"
         />
 
+    <!-- TALES macro: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageMacroDispatcher"
+        name="macro"
+        />
+
     <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
