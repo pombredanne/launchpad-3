@@ -222,20 +222,16 @@ class LaunchpadBrowserPublication(
         request.setTraversalStack([])
 
     def callObject(self, request, ob):
-        from zope.security.proxy import getObject
-        usedfor = getattr(getObject(ob), '__used_for__', None)
+
+        # Set the launchpad user-id and page-id (if available) in the
+        # wsgi environment, so that the request logger can access it.
+        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
+        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
         if usedfor is not None:
-            name = getattr(getObject(ob), '__name__', '')
+            name = getattr(removeSecurityProxy(ob), '__name__', '')
             pageid = '%s:%s' % (usedfor.__name__, name)
-            print '====', pageid
-            import pdb; pdb.set_trace()
-            # XXX: need to also include either what 'site' is used, or what
-            # layer is used.  Probably layer.  But, leave this for now.
-            # So, stick this pageid in the request, and make the logging
-            # put the pageid in the request, ensuring we also have the
-            # referer and full URL.
-            #  - make log include the original host
-            #  - all lines say "anonymous" for the user.  not right.
+            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
         return mapply(ob, request.getPositionalArguments(), request)
 
     def callTraversalHooks(self, request, ob):

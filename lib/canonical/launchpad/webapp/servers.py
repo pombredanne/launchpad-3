@@ -305,6 +305,15 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
+    def setInWSGIEnvironment(self, key, value):
+        """Set a key-value pair in the WSGI environment of this request.
+
+        Raises KeyError if the key is already present in the environment.
+        """
+        if key in self._orig_env:
+            raise KeyError("'%s' already present in wsgi environment." % key)
+        self._orig_env[key] = value
+
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
@@ -337,6 +346,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(location, status=status)
+
 
 def adaptResponseToSession(response):
     """Adapt LaunchpadBrowserResponse to ISession"""
@@ -425,41 +435,53 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
-import time
 class LaunchpadAccessLogger(CommonAccessLogger):
 
     def log(self, task):
-        """Receives a completed task and logs it in the common log format."""
-        now = time.time()
-        request_data = task.request_data
-        req_headers = request_data.headers
+        """Receives a completed task and logs it in launchpad log format.
 
-        user_name = task.auth_user_name or 'anonymous'
-        user_agent = req_headers.get('USER_AGENT', '')
-        referer = req_headers.get('REFERER', '')
+        task IP address
+        HTTP_X_FORWARDED_FOR
+        HOST
+        datetime task started
+        request string  (1st line of request)
+        response status
+        response bytes written
+        launchpad user id
+        launchpad page id
+        REFERER
+        USER_AGENT
 
-        host = req_headers.get('HOST', '')
-        # task.getCGIEnvironment()
-        remote_addr = task.cgi_env.get('REMOTE_ADDR', '')
-        # task.start_time
-        # env['SERVER_PORT']
-        channel_creation_time = task.cgi_env.get(
-            'CHANNEL_CREATION_TIME', '')
+        """
+        request_headers = task.request_data.headers
+        cgi_env = task.getCGIEnvironment()
 
+        x_forwarded_for = request_headers.get('HTTP_X_FORWARDED_FOR', '')
+        host = request_headers.get('HOST', '')
+        start_time = self.log_date_string(task.start_time)
+        first_line = task.request_data.first_line
+        status = task.status
+        bytes_written = task.bytes_written
+        userid = cgi_env.get('launchpad.userid', '')
+        pageid = cgi_env.get('launchpad.pageid', '')
+        referer = request_headers.get('REFERER', '')
+        user_agent = request_headers.get('USER_AGENT', '')
 
         self.output.logRequest(
             task.channel.addr[0],
-            ' - %s [%s] "%s" %s %d "%s" "%s"\n' % (
-                user_name,
-                self.log_date_string(now),
-                request_data.first_line,
-                task.status,
-                task.bytes_written,
+            ' - "%s" "%s" [%s] "%s" %s %d "%s" "%s" "%s" "%s"\n' % (
+                x_forwarded_for,
+                host,
+                start_time,
+                first_line,
+                status,
+                bytes_written,
+                userid,
+                pageid,
                 referer,
                 user_agent
                 )
-            )
-
+           )
 
 
 http = wsgi.ServerType(

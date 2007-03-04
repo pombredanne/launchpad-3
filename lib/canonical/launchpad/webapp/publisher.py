@@ -1,7 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """Publisher of objects as web pages.
 
-XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
@@ -195,7 +194,6 @@ class LaunchpadView(UserAttributeCache):
         else:
             return self.render()
 
-import zope.interface
 
 class LaunchpadXMLRPCView(UserAttributeCache):
     """Base class for writing XMLRPC view code."""
