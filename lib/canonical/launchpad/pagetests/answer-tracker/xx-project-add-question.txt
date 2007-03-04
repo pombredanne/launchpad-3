@@ -14,7 +14,7 @@ The user must login to proceed:
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask question').click()
     >>> print user_browser.title
-    Ask a question about a product from the Mozilla Project
+    Ask a question about a project from the Mozilla Project
 
 The workflow is identical to the regular one, except that the user has
 to select the project's product for which a quesiton is asked .
