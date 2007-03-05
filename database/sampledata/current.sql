@@ -3,8 +3,12 @@ SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET standard_conforming_strings = off;
 
 SET search_path = public, pg_catalog;
+
+
+
 
 
 
@@ -806,12 +810,19 @@ ALTER TABLE bugattachment ENABLE TRIGGER ALL;
 
 ALTER TABLE bugbranch DISABLE TRIGGER ALL;
 
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, 20, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, 10, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, 20, NULL);
 
 
 ALTER TABLE bugbranch ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugbranchrevision DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugbranchrevision ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugcve DISABLE TRIGGER ALL;
