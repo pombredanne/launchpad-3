@@ -256,6 +256,9 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         self._dirtyBranches.add(branchID)
 
     def sendMirrorRequests(self):
+        """Request that all changed branches be mirrored. Return a deferred
+        which fires when each request has received a response from the server.
+        """
         deferreds = [self._launchpad.requestMirror(branch)
                      for branch in self._dirtyBranches]
         return defer.gatherResults(deferreds)
