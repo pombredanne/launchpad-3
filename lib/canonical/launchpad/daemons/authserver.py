@@ -28,12 +28,7 @@ from canonical.config import config
 
 
 class AuthserverService(service.Service):
-    """Twisted service to run the authserver.
-    """
-
-    # XXX - that docstring should point to more general information on the
-    # authserver.
-    # Jonathan Lange, 2007-03-01
+    """Twisted service to run the authserver."""
 
     def __init__(self, dbpool=None, port=config.authserver.port):
         """Construct an AuthserverService.
@@ -59,16 +54,14 @@ class AuthserverService(service.Service):
             dbhost = ''
         else:
             dbhost = 'host=' + config.dbhost
-        dbpool = ConnectionPool('psycopg',
-                                'dbname=%s %s user=%s'
-                                % (config.dbname, dbhost,
-                                   config.authserver.dbuser),
-                                cp_reconnect=True)
+        dbpool = ConnectionPool(
+            'psycopg', 'dbname=%s %s user=%s' % (
+                config.dbname, dbhost, config.authserver.dbuser),
+            cp_reconnect=True)
         return dbpool
 
     def buildTree(self, versionOneAPI, versionTwoAPI, branchAPI):
-        """Take the XML-RPC resources and build a tree out of them.
-        """
+        """Take the XML-RPC resources and build a tree out of them."""
         root = resource.Resource()
         root.putChild('', versionOneAPI)
         root.putChild('RPC2', versionTwoAPI)

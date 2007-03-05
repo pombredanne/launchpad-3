@@ -1,6 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""NOMERGE - make this docstring betterer.
+"""Provides an SFTP server which Launchpad users can use to host their Bazaar
+branches. For more information, see lib/canonical/supermirrorsftp/README.
 """
 
 __metaclass__ = type
@@ -10,7 +11,7 @@ __all__ = ['SFTPService']
 import os
 import shutil
 
-from twisted.cred import portal
+from twisted.cred.portal import Portal
 from twisted.conch.ssh import keys
 from twisted.application import service, strports
 
@@ -22,34 +23,44 @@ from canonical.supermirrorsftp import sftponly
 
 
 class SFTPService(service.Service):
-    """A Twisted service for the supermirror SFTP server.
-    """
+    """A Twisted service for the supermirror SFTP server."""
 
     def __init__(self):
         self.service = self.makeService()
 
     def makeRealm(self):
+        """Create and return an authentication realm for the authserver.
+        """
         homedirs = config.supermirrorsftp.branches_root
         authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
         return sftponly.Realm(homedirs, authserver)
 
     def makeFactory(self, hostPublicKey, hostPrivateKey):
-        # Configure the authentication
+        """Create and return an SFTP server that uses the given public and
+        private keys.
+        """
         homedirs = config.supermirrorsftp.branches_root
         authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
-        p = portal.Portal(self.makeRealm())
+        portal = Portal(self.makeRealm())
         p.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))
         sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
-        sftpfactory.portal = p
+        sftpfactory.portal = portal
         return sftpfactory
 
     def makeService(self):
+        """Return a service that provides an SFTP server. This is called in the
+        constructor.
+        """
         hostPublicKey, hostPrivateKey = self.makeKeys()
         sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
         return strports.service(config.supermirrorsftp.port, sftpfactory)
 
     def makeKeys(self):
-        # mkdir keys; cd keys; ssh-keygen -t rsa -f ssh_host_key_rsa
+        """Load the public and private host keys from the configured key pair
+        path. Returns both keys in a 2-tuple.
+
+        :return: (hostPublicKey, hostPrivateKey)
+        """
         keydir = config.supermirrorsftp.host_key_pair_path
         hostPublicKey = keys.getPublicKeyString(
             data=open(os.path.join(keydir,
@@ -60,9 +71,13 @@ class SFTPService(service.Service):
         return hostPublicKey, hostPrivateKey
 
     def startService(self):
+        """Start the SFTP service.
+        """
         service.Service.startService(self)
         self.service.startService()
 
     def stopService(self):
+        """Stop the SFTP service.
+        """
         service.Service.stopService(self)
         self.service.stopService()
