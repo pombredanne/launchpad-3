@@ -563,13 +563,13 @@ class RedirectionView:
 
 
 class RenamedView:
-    """Redirect permently to the new name of the view.
+    """Redirect permanently to the new name of the view.
 
     This view should be used when pages are renamed.
 
-    The 'new_name' parameter contain the new page name.
-    The optional 'rootsite' can be used to redirect to an alternative
-    virtual host.
+    :param new_name: the new page name.
+    :param rootsite: (optional) the virtual host to redirect to,
+            e.g. 'answers'.
     """
     implements(IBrowserPublisher)
 
@@ -594,7 +594,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound, name
+        raise NotFound(name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
