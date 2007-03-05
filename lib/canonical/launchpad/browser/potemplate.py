@@ -19,7 +19,7 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ICanonicalUrlData, ILaunchBag, IPOFileSet, 
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, 
     IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
@@ -27,6 +27,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class POTemplateNavigation(Navigation):
@@ -96,16 +97,16 @@ class POTemplateAppMenus(POFileAppMenus):
     links = ['overview', 'upload', 'download', 'edit', 'administer']
 
     def download(self):
-        text = 'Download Translations'
+        text = 'Download translations'
         return Link('+export', text, icon='download')
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
-        text = 'Admin Edit'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 

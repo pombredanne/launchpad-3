@@ -12,30 +12,40 @@ from zope.interface import implements
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
         SQLMultipleJoin, SQLRelatedJoin)
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
+    TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
+
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
-class Project(SQLBase, BugTargetBase):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -56,6 +66,8 @@ class Project(SQLBase, BugTargetBase):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -102,6 +114,32 @@ class Project(SQLBase, BugTargetBase):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    def translatables(self):
+        """See IProject."""
+        return Product.select('''
+            Product.project = %s AND
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''' % sqlvalues(self),
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Product.project= %s AND
+            Specification.product = Product.id AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def has_any_specifications(self):
@@ -205,6 +243,29 @@ class Project(SQLBase, BugTargetBase):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
+
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
+            product=self.products).getResults()
+
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
+        product_ids = sqlvalues(*self.products)
+        return set(Language.select(
+            'Language.id = language AND product IN (%s)' % ', '.join(
+                product_ids),
+            clauseTables=['Ticket'], distinct=True))
+
 
 class ProjectSet:
     implements(IProjectSet)
@@ -248,24 +309,8 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner):
-        r"""See canonical.launchpad.interfaces.project.IProjectSet
-
-        >>> ps = getUtility(IProjectSet)
-        >>> p = ps.new(
-        ...     name=u'footest',
-        ...     displayname=u'T\N{LATIN SMALL LETTER E WITH ACUTE}st',
-        ...     title=u'The T\N{LATIN SMALL LETTER E WITH ACUTE}st Project',
-        ...     homepageurl=None,
-        ...     summary=u'Mandatory Summary',
-        ...     description=u'Blah',
-        ...     owner=1
-        ...     )
-        >>> p.name
-        u'footest'
-        >>> p.displayname
-        u'T\xe9st'
-        """
+            description, owner, gotchi, gotchi_heading, emblem):
+        """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
             displayname=displayname,
@@ -274,7 +319,10 @@ class ProjectSet:
             description=description,
             homepageurl=homepageurl,
             owner=owner,
-            datecreated=UTC_NOW)
+            datecreated=UTC_NOW,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
+            emblem=emblem)
 
     def count_all(self):
         return Project.select().count()

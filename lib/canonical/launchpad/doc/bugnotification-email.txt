@@ -42,6 +42,7 @@ message, and returns it as a (subject, body) tuple.
 So, let's pretend that we filed bug 4 just now:
 
     >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.tags = []
 
 Let's take a look at what the notification email looks like:
 
@@ -60,6 +61,26 @@ Let's take a look at what the notification email looks like:
 
 (In reality, the importance of a newly-reported bug would not have been
 decided yet, so it would appear as Undecided.)
+
+If the filed bug would have tags, these are included in the notification
+as well.
+
+    >>> bug_four.tags = [u'foo', u'bar']
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> subject
+    u'[Bug 4] Reflow problems with complex page layouts'
+    >>> print body
+    Public bug reported:
+    <BLANKLINE>
+    Malone pages that use more complex layouts with portlets and fancy CSS
+    are sometimes not getting properly reflowed after rendering.
+    <BLANKLINE>
+    ** Affects: firefox (upstream)
+         Importance: Medium
+             Status: Unconfirmed
+    <BLANKLINE>
+    ** Tags: bar foo
 
 
 Editing a bug
@@ -486,7 +507,7 @@ Adding an attachment will generate a notification that looks as follows:
 
     >>> class MockLibraryFile:
     ...     def __init__(self, url):
-    ...         self.url = url
+    ...         self.http_url = url
     >>> class MockAttachment:
     ...     def __init__(self, title, libraryfile):
     ...         self.title = title

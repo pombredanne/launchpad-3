@@ -1,5 +1,9 @@
-<tal:defspecs define="specs view/getLatestSpecifications">
-  <div tal:condition="specs" class="portlet">
+<div
+  tal:define="specs view/getLatestSpecifications"
+  tal:condition="specs"
+  class="portlet"
+>
+
     <h2>Latest proposed features</h2>
     <div class="portletBody portletContent">
       <ul class="blueprint">
@@ -10,5 +14,3 @@
       </ul>
     </div>
   </div>
-  <p tal:condition="not: specs">No specifications registered.</p>
-</tal:defspecs>

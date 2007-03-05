@@ -1,3 +1,4 @@
+
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Run all of the pagetests, in priority order.
 
@@ -10,7 +11,10 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, Comment, NavigableString
+
+from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
@@ -19,12 +23,39 @@ from canonical.testing import PageTestLayer
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+class UnstickyCookieHTTPCaller(HTTPCaller):
+    """HTTPCaller subclass that do not carry cookies across requests.
+
+    HTTPCaller propogates cookies between subsequent requests.
+    This is a nice feature, except it triggers a bug in Launchpad where
+    sending both Basic Auth and cookie credentials raises an exception
+    (Bug 39881).
+    """
+    def __init__(self, *args, **kw):
+        if kw.get('debug'):
+            self._debug = True
+            del kw['debug']
+        else:
+            self._debug = False
+        HTTPCaller.__init__(self, *args, **kw)
+    def __call__(self, *args, **kw):
+        if self._debug:
+            import pdb; pdb.set_trace()
+        try:
+            return HTTPCaller.__call__(self, *args, **kw)
+        finally:
+            self.resetCookies()
+
+    def resetCookies(self):
+        self.cookies = SimpleCookie()
+
+
 class DuplicateIdError(Exception):
     """Raised by find_tag_by_id if more than one element has the given id."""
 
 
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
+    """Find and return the tag with the given ID"""
     soup = BeautifulSoup(content)
     elements_with_id = soup.findAll(attrs={'id': id})
     if not elements_with_id:
@@ -55,9 +86,10 @@ def find_portlet(content, name):
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h2').renderContents()
-        if name == whitespace_re.sub(' ', portlet_title.strip()):
-            return portlet
+        if portlet.find('h2'):
+            portlet_title = portlet.find('h2').renderContents()
+            if name == whitespace_re.sub(' ', portlet_title.strip()):
+                return portlet
     return None
 
 
@@ -70,11 +102,76 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
+def extract_text(soup):
+    """Return the text stripped of all tags.
+
+    >>> soup = BeautifulSoup(
+    ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
+    >>> extract_text(soup)
+    u'Titlefoo bar'
+    """
+    # XXX Tim Penhey 22-01-2007
+    # At the moment this does not nicely give whitespace between
+    # tags that would have visual separation when rendered.
+    # eg. <p>foo</p><p>bar</p>
+    result = u''
+    for node in soup:
+        if isinstance(node, Comment):
+            pass
+        elif isinstance(node, NavigableString):
+            result = result + unicode(node)
+        else:
+            result = result + extract_text(node)
+    return result
+
+
+# XXX cprov 20070207: This function seems to be more specific to a particular
+# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+def parse_relationship_section(content):
+    """Parser package relationship section.
+
+    See package-relationship-pages.txt and related.
+    """
+    soup = BeautifulSoup(content)
+    section = soup.find('ul')
+    whitespace_re = re.compile('\s+')
+    for li in section.findAll('li'):
+        if li.a:
+            link = li.a
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
+            print 'LINK: "%s" -> %s' % (content, url)
+        else:
+            content = whitespace_re.sub(' ', li.string.strip())
+            print 'TEXT: "%s"' % content
+
+
 def setUpGlobs(test):
+    # Our tests report being on a different port.
+    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    def setupBrowser(auth=None):
+        browser = Browser()
+        browser.handleErrors = False
+        if auth is not None:
+            browser.addHeader("Authorization", auth)
+        return browser
+
+    test.globs['browser'] = setupBrowser()
+    test.globs['anon_browser'] = setupBrowser()
+    test.globs['user_browser'] = setupBrowser(
+        auth="Basic no-priv@canonical.com:test")
+    test.globs['admin_browser'] = setupBrowser(
+        auth="Basic foo.bar@canonical.com:test")
+
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['extract_text'] = extract_text
+    test.globs['parse_relationship_section'] = parse_relationship_section
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -205,6 +302,7 @@ def test_suite():
 
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
+    suite.addTest(doctest.DocTestSuite())
     return suite
 
 if __name__ == '__main__':

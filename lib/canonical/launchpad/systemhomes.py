@@ -33,6 +33,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
+    def searchTasks(self, search_params):
+        """See IMaloneApplication."""
+        return getUtility(IBugTaskSet).search(search_params)
+
     @property
     def bug_count(self):
         user = getUtility(ILaunchBag).user
@@ -72,15 +76,6 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
-
-    @property
-    def all(self):
-        branches = getUtility(IBranchSet).all
-        return branches
-
-    def getMatchingBranches(self):
-        """See IBazaarApplication."""
-        return self.branches
 
 
 class RosettaApplication:

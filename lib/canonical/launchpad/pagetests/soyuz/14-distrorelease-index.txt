@@ -1,4 +1,57 @@
-Check if the DistroRelease page is not broken.
+DistroRelease page is reached by traversing the Distribution page with
+a given name.
 
-  >>> browser.open("http://localhost/ubuntu/warty")
+As it's main functionality this page allow users to search for binary
+packages within the distrorelease in context:
 
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
+  >>> anon_browser.getControl(name="text").value = "firefox"
+  >>> anon_browser.getControl("Find a Package").click()
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/warty/+search?text=firefox'
+  >>> anon_browser.contents
+  '...Mozilla Firefox Web Browser...'
+
+
+== Latest uploads page ==
+
+This page provides raw list of the last five source packages uploaded
+and published for a given distrorelease.
+
+Each entry contains:
+
+ * source name & source version, linking to the LP page for this package
+ * ubuntu maintainer, linking to a valid LP user
+ * age, as approximateduration representation of the time passed since
+   the upload was done.
+
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty/+latest-uploads")
+  >>> find_tag_by_id(anon_browser.contents, "latest-uploads")
+  <ul id="latest-uploads" class="binary package">
+  <li>
+  <a href="http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9">
+  mozilla-firefox 0.9
+  </a>
+  by
+  <a href="http://launchpad.dev/~sabdfl">
+  Mark Shuttleworth
+  </a>
+  ... ago
+  </li>
+  </ul>
+
+The link presented points to the SourcePackageRelease inside the
+DistroRelease in question (a IDRSPR), we can check for consistency
+clicking on it:
+
+  >>> anon_browser.getLink("mozilla-firefox 0.9").click()
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9'
+
+Empty results are also presented properly (even if they are quite rare
+in production environment):
+
+  >>> anon_browser.open(
+  ...     "http://launchpad.dev/ubuntu/breezy-autotest/+latest-uploads")
+  >>> "<ul" in anon_browser.contents
+  False

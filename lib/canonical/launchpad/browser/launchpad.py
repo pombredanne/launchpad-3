@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -18,6 +18,8 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
+    'DefaultShortLink',
+    'BrowserWindowDimensions'
     ]
 
 import cgi
@@ -38,6 +40,7 @@ from zope.app.content_types import guess_content_type
 from zope.app.traversing.interfaces import ITraversable
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import isinstance as zope_isinstance
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
@@ -50,7 +53,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
     IStructuralObjectPresentation, ITranslationImportQueue,
     ITranslationGroupSet, NotFoundError)
@@ -235,7 +238,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations', 'branches']
 
     def overview(self):
@@ -253,10 +256,10 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
-    def support(self):
+    def answers(self):
         target = ''
         text = 'Answers'
-        summary = 'Launchpad technical support tracker.'
+        summary = 'Launchpad Answer Tracker'
         return Link(target, text, summary)
 
     def specifications(self):
@@ -288,7 +291,7 @@ class MaloneContextMenu(ContextMenu):
     links = ['cvetracker']
 
     def cvetracker(self):
-        text = 'CVE Tracker'
+        text = 'CVE tracker'
         return Link('cve/', text, icon='cve')
 
 
@@ -416,7 +419,7 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': ITicketSet,
+        'support': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
@@ -647,57 +650,47 @@ class StructuralObjectPresentationView(LaunchpadView):
     # Object attributes used by the page template:
     #   num_lists: 0, 1 or 2
     #   children: []
-    #   more_children: 0
-    #   altchildren: []
-    #   more_altchildren: 0
+    #   has_more_children: True/False
+    #   alt_children: []
+    #   has_more_altchildren: True/False
 
     def initialize(self):
         self.structuralpresentation = IStructuralObjectPresentation(
             self.context)
+        sop = self.structuralpresentation
 
-        max_altchildren = 4
-        altchildren = self.structuralpresentation.listAltChildren(
-            max_altchildren)
-        if not altchildren:
-            max_children = 8
-            children = self.structuralpresentation.listChildren(max_children)
-            altchildcount = 0
+        max_alt_children_to_present = 4
+
+        # First, see if listAltChildren returns None.  If so, we have
+        # just children.  If not, we have both alt-children and children.
+        alt_children = sop.listAltChildren(max_alt_children_to_present + 1)
+        if alt_children is None:
+            max_children_to_present = 8
+
+            # Note that self.has_more_alt_children and self.alt_children is
+            # undefined when we have no alt_children.
+            # The page template needs to check num_lists is 2 before reading
+            # these attributes.
         else:
-            max_children = 4
-            children = self.structuralpresentation.listChildren(max_children)
-            altchildcount = self.structuralpresentation.countAltChildren()
+            max_children_to_present = 4
 
-        if children:
-            childcount = self.structuralpresentation.countChildren()
-        else:
-            childcount = 0
+            assert zope_isinstance(alt_children, list)
+            self.has_more_alt_children = len(alt_children) > max_alt_children_to_present
+            self.alt_children = children[:max_alt_children_to_present]
 
-        if altchildren:
-            altchildren = list(altchildren)
-            assert len(altchildren) <= max_altchildren
-            if altchildcount > max_altchildren:
-                self.altchildren = altchildren[:-1]
+        children = sop.listChildren(max_children_to_present + 1)
+        assert zope_isinstance(children, list)
+
+        self.has_more_children = len(children) > max_children_to_present
+        self.children = children[:max_children_to_present]
+
+        if alt_children is None:
+            if not children:
+                self.num_lists = 0
             else:
-                self.altchildren = altchildren
-            self.more_altchildren = altchildcount - len(self.altchildren)
+                self.num_lists = 1
         else:
-            self.more_altchildren = 0
-            self.altchildren = []
-
-        children = list(children)
-        assert len(children) <= max_children
-        if childcount > max_children:
-            self.children = children[:-1]
-        else:
-            self.children = children
-        self.more_children = childcount - len(self.children)
-
-        if not children and not altchildren:
-            self.num_lists = 0
-        elif altchildren:
             self.num_lists = 2
-        else:
-            self.num_lists = 1
 
     def getIntroHeading(self):
         return self.structuralpresentation.getIntroHeading()
@@ -727,7 +720,7 @@ class StructuralObjectPresentation:
         return []
 
     def countChildren(self):
-        return 0
+        raise NotImplementedError()
 
     def listAltChildren(self, num):
         return None
@@ -745,19 +738,14 @@ class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
             return 'no title'
 
     def listChildren(self, num):
-        return ['name%s' % n for n in range(num)]
-
-    def countChildren(self):
-        return 50
+        return []
 
     def listAltChildren(self, num):
-        return ['altname%s' % n for n in range(num)]
-
-    def countAltChildren(self):
-        return 4
+        return None
 
 
 class Button:
+
     def __init__(self, **kw):
         assert len(kw) == 1
         self.name = kw.keys()[0]
@@ -773,24 +761,44 @@ class Button:
     def renderActive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.large.gif" />\n'
-            '%(text)s\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
     def renderInactive(self):
         return (
             '<a href="%(url)s">\n'
-            '  <img alt="" src="/+icing/app-%(buttonname)s.mono.gif" />\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s-sml.gif"'
+            '    title="%(text)s"'
+            '  />\n'
             '</a>\n' % self.replacement_dict)
 
-    def renderButton(self, is_active):
-        if is_active:
+    def renderFrontPage(self):
+        return (
+            '<a href="%(url)s">\n'
+            '  <img'
+            '    alt=""'
+            '    src="/+icing/app-%(buttonname)s.gif"'
+            '    title="%(text)s"'
+            '  />\n'
+            '</a>\n' % self.replacement_dict)
+
+    def renderButton(self, is_active, is_front_page):
+        if (is_front_page):
+            return self.renderFrontPage()
+        elif is_active:
             return self.renderActive()
         else:
             return self.renderInactive()
 
 
 class ProductsButton(Button):
+
     def makeReplacementDict(self):
         return dict(
             url='%sproducts/' % allvhosts.configs['mainsite'].rooturl,
@@ -808,12 +816,15 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(register="Register your project."),
-        Button(code="Publish your code."),
+        ProductsButton(
+            register="Register your project so it can benefit from "
+                     "Launchpad&rsquo;s features."),
+        Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track specifications."),
-        Button(translations="Localize your software."),
-        Button(answers="Help your users.")
+        Button(
+            blueprints="Track specifications to approval and implementation."),
+        Button(translations="Localize software into your favorite language."),
+        Button(answers="Ask and answer questions about software.")
         ]
 
     def render(self):
@@ -823,7 +834,8 @@ class ApplicationButtons(LaunchpadView):
                 is_active = button.name == self.name
             else:
                 is_active = True
-            L.append(button.renderButton(is_active))
+            is_front_page = self.name == 'main'
+            L.append(button.renderButton(is_active, is_front_page))
         return u'\n'.join(L)
 
     def traverse(self, name, furtherPath):
@@ -848,17 +860,6 @@ class SearchProjectsView(LaunchpadView):
             return
 
         search_string = self.search_string.lower()
-        if form.get('go') is not None:
-            try:
-                pillar = getUtility(IPillarNameSet)[search_string]
-            except NotFoundError:
-                pass
-            else:
-                self.request.response.redirect(canonical_url(pillar))
-                # No need to do the search, since we're going to teleport the
-                # user.
-                return
-
         # We use a limit bigger than self.max_results_to_display so that we
         # know when we had too many results and we can tell the user that some
         # of them are not being displayed.
@@ -866,7 +867,32 @@ class SearchProjectsView(LaunchpadView):
         self.results = getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
-        if len(self.results) > self.max_results_to_display:
-            return True
-        else:
-            return False
+        return len(self.results) > self.max_results_to_display
+
+
+class DefaultShortLink(LaunchpadView):
+    """Render a short link to an object.
+
+    This is a default implementation that assumes that context.title exists
+    and is what we want.
+
+    This class can be used as a base class for simple short links by
+    overriding the getLinkText() method.
+    """
+
+    def getLinkText(self):
+        return self.context.title
+
+    def render(self):
+        L = []
+        L.append('<a href="%s">' % canonical_url(self.context))
+        L.append(cgi.escape(self.getLinkText()).replace(' ', '&nbsp;'))
+        L.append('</a>')
+        return u''.join(L)
+
+
+class BrowserWindowDimensions(LaunchpadView):
+    """Allow capture of browser window dimensions."""
+
+    def render(self):
+        return u'Thanks.'

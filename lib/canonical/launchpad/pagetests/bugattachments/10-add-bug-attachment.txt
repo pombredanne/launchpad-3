@@ -1,7 +1,7 @@
 We need to login in order to add attachments.
 
   >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> anon_browser.getLink('Comment/Attach File').click()
+  >>> anon_browser.getLink('Comment or attach file').click()
   Traceback (most recent call last):
   ...
   Unauthorized:...
@@ -9,7 +9,7 @@ We need to login in order to add attachments.
 When we're logged in we can access the page.
 
   >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink('Comment/Attach File').click()
+  >>> user_browser.getLink('Comment or attach file').click()
 
   >>> user_browser.url
   'http://launchpad.dev/firefox/+bug/1/+addcomment'

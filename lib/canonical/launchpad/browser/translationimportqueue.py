@@ -22,17 +22,19 @@ from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, ICanonicalUrlData, IPOTemplateSet,
-    ILanguageSet, NotFoundError, UnexpectedFormData)
+    ITranslationImportQueue, IPOTemplateSet,
+    ILanguageSet, NotFoundError, UnexpectedFormData, IPOFileSet)
+
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, canonical_url, LaunchpadFormView, action
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from canonical.lp.dbschema import RosettaImportStatus
 
@@ -384,17 +386,17 @@ class TranslationImportQueueView(LaunchpadView):
             # Only the importer, launchpad admins or Rosetta experts have
             # special permissions to change status.
             if (new_status_name == RosettaImportStatus.DELETED.name and
-                helpers.check_permission('launchpad.Edit', entry)):
+                check_permission('launchpad.Edit', entry)):
                 entry.status = RosettaImportStatus.DELETED
             elif (new_status_name == RosettaImportStatus.BLOCKED.name and
-                  helpers.check_permission('launchpad.Admin', entry)):
+                  check_permission('launchpad.Admin', entry)):
                 entry.status = RosettaImportStatus.BLOCKED
             elif (new_status_name == RosettaImportStatus.APPROVED.name and
-                  helpers.check_permission('launchpad.Admin', entry) and
+                  check_permission('launchpad.Admin', entry) and
                   entry.import_into is not None):
                 entry.status = RosettaImportStatus.APPROVED
             elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
-                  helpers.check_permission('launchpad.Admin', entry)):
+                  check_permission('launchpad.Admin', entry)):
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
             else:
                 # The user was not the importer or we are trying to set a
@@ -469,7 +471,7 @@ class TranslationImportQueueView(LaunchpadView):
 
         :arg entry: An ITranslationImportQueueEntry.
         """
-        assert helpers.check_permission('launchpad.Edit', entry), (
+        assert check_permission('launchpad.Edit', entry), (
             'You can only change the status if you have rights to do it')
 
         deleted_html = self.renderOption(RosettaImportStatus.DELETED,
@@ -489,7 +491,7 @@ class TranslationImportQueueView(LaunchpadView):
         if entry.status == RosettaImportStatus.APPROVED:
             approved_html = self.renderOption(RosettaImportStatus.APPROVED,
                                               selected=True)
-        elif (helpers.check_permission('launchpad.Admin', entry) and
+        elif (check_permission('launchpad.Admin', entry) and
               entry.import_into is not None):
             # We also need to check here if we know where to import this
             # entry; if not, there's no sense in allowing this to be set
@@ -503,7 +505,7 @@ class TranslationImportQueueView(LaunchpadView):
             blocked_html = renderElement('option', selected='yes',
                 value=RosettaImportStatus.BLOCKED.name,
                 contents=RosettaImportStatus.BLOCKED.title)
-        elif helpers.check_permission('launchpad.Admin', entry):
+        elif check_permission('launchpad.Admin', entry):
             blocked_html = renderElement('option',
                 value=RosettaImportStatus.BLOCKED.name,
                 contents=RosettaImportStatus.BLOCKED.title)

@@ -167,12 +167,13 @@ class AbstractUploadPolicy:
         return interpolations
 
     def getDefaultPermittedComponents(self):
-        """Return a default set of permitted components.
+        """Return the set of components this distrorelease permits.
 
-        Normally empty, this method can be overridden to return a set of
-        components permitted (E.g. for the buildd uploads)
+        By default all components registered since the upload will pass
+        through the 'override engine' later.
         """
-        return []
+        return set(
+            component.name for component in getUtility(IComponentSet))
 
     def autoApprove(self, upload):
         """Return whether or not the policy approves of the upload.
@@ -217,10 +218,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
@@ -239,7 +236,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 return True
         return False
 
-# Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
 
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
@@ -266,18 +262,11 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # bug 3135
         pass
 
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
-
-# Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 
+
 class SyncUploadPolicy(AbstractUploadPolicy):
-    """The sync upload policy is invoked when processing uploads from
-    the sync process.
-    """
+    """This policy is invoked when processing uploads from the sync process."""
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
@@ -289,23 +278,17 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         self.can_upload_mixed = False
         self.can_upload_binaries = False
 
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
-
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""
         # XXX: dsilvers: 20051014: Implement this to check the sync
         # bug 3135
         pass
 
-
 AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
 
+
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
-    """The anything goes upload policy is invoked when processing uploads
-    from the test process.
+    """This policy is invoked when processing uploads from the test process.
 
     We require a signed changes file but that's it.
     """
@@ -316,21 +299,15 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
-
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
+
 class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy allows binary uploads and doesn't mail
-    anyone when we use it.
-    """
+    """The security-upload policy allows unsigned changes and binary uploads."""
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
@@ -340,20 +317,10 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
         self.can_upload_mixed = False
         self.can_upload_binaries = True
 
-    def filterRecipients(self, upload, recipients):
-        """Do not mail *ANYONE* on security uploads."""
-        return []
-
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits."""
-        return set(
-            component.name for component in getUtility(IComponentSet))
-
     def policySpecificChecks(self, upload):
-        """The security policy does not allow uploads to any pocket other than
-        the security pocket."""
+        """Deny uploads to any pocket other than the security pocket."""
         if self.pocket != PackagePublishingPocket.SECURITY:
-            upload.reject("Not permitted to do security upload to non "
-                          "SECURITY pocket")
+            upload.reject(
+                "Not permitted to do security upload to non SECURITY pocket")
 
 AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)

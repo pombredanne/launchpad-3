@@ -14,7 +14,7 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latesttickets" />
+    <div tal:replace="structure context/@@+portlet-latestquestions" />
     <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:rightportlets>
@@ -92,7 +92,7 @@
       <ul class="download" tal:condition="files">
         <li tal:repeat="file files">
           <a tal:content="file/libraryfile/filename"
-             tal:attributes="href file/libraryfile/url">foo-bar_2.dsc</a>
+             tal:attributes="href file/libraryfile/http_url">foo-bar_2.dsc</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
       </ul>
@@ -123,29 +123,16 @@
 
     <table width="100%" valign="top">
       <tr>
-        <td tal:condition="view/builddepends">
-          <h3>Build dependencies</h3>
-          <ul>
-            <li tal:repeat="dep view/builddepends">
-              <a tal:content="dep/name"
-                 tal:attributes="href string:../../i386/${dep/name}" />
-              <span tal:condition="dep/signal"
-                    tal:content="string:(${dep/signal} ${dep/version})" />
-            </li>
-          </ul>
-        </td>
-
-        <td tal:condition="view/builddependsindep">
-          <h3>Platform-independent build dependencies</h3>
-          <ul>
-            <li tal:repeat="dep view/builddependsindep">
-              <a tal:content="dep/name"
-                 tal:attributes="href string:../../i386/${dep/name}" />
-              <span tal:condition="dep/signal"
-                    tal:content="string:(${dep/signal} ${dep/version})" />
-            </li>
-          </ul>
-        </td>
+          <td id="depends" tal:define="relationships view/builddepends"
+              tal:condition="relationships/has_items">
+              <h3>Build dependencies</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
+          <td id="dependsindep" tal:define="relationships view/builddependsindep"
+              tal:condition="relationships/has_items">
+              <h3>Platform-independent build dependencies</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
       </tr>
     </table>
 

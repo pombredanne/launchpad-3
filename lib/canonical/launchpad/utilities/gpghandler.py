@@ -100,6 +100,22 @@ class GPGHandler:
             pass
         return None
 
+    def getVerifiedSignatureResilient(self, content, signature=None):
+        """See IGPGHandler."""
+        errors = []
+
+        for i in range(3):
+            try:
+                signature = self.getVerifiedSignature(content, signature)
+            except GPGVerificationError, info:
+                errors.append(info)
+            else:
+                return signature
+
+        stored_errors = [str(err) for err in errors]
+
+        raise GPGVerificationError(
+            "Verification failed 3 times: %s " % stored_errors)
 
     def getVerifiedSignature(self, content, signature=None):
         """See IGPGHandler."""
@@ -160,7 +176,7 @@ class GPGHandler:
 
         # signature.status == 0 means "Ok"
         if signature.status is not None:
-            raise GPGVerificationError(signature.status.message)
+            raise GPGVerificationError(signature.status.args)
 
         # supporting subkeys by retriving the full key from the
         # keyserver and use the master key fingerprint.
@@ -274,15 +290,19 @@ class GPGHandler:
             key = self.importPublicKey(pubkey)
         return key
 
-    def getURLForKeyInServer(self, fingerprint, action='index'):
+    def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
         params = {
             'search': '0x%s' % fingerprint[-8:],
             'op': action
         }
-        return 'http://%s:%s/pks/lookup?%s' % (config.gpghandler.host,
-                                               config.gpghandler.port,
+        if public:
+            host = config.gpghandler.public_host
+        else:
+            host = config.gpghandler.host
+        return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
                                                urllib.urlencode(params))
+
 
     def _getKeyIndex(self, fingerprint):
         """See IGPGHandler for further information."""

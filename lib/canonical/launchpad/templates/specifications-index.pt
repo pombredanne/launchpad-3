@@ -5,10 +5,14 @@
       i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/blueprints"
-      ></div>
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Blueprint tracking</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/blueprints" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-features">
         <div class="t">
           <div class="u">
@@ -18,15 +22,26 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-
+                      <ul class="buttons">
+                        <li>
+                          <a href="+tour">
+                            <img
+                              alt="Take a tour"
+                              src="/+icing/but-lrg-takeatour.gif"
+                            />
+                          </a>
+                        </li>
+                        <li>
+                          <a href="+addspec">
+                            <img
+                              alt="Register a specification"
+                              src="/+icing/but-lrg-registeraspec.gif"
+                            />
+                          </a>
+                        </li>
+                      </ul>
                       <form class="central" name="spec_search" method="get">
-                        <h1 tal:condition="not:view/searchrequested"
-                        >Search specifications</h1>
-                        <h1 tal:condition="view/searchrequested">
-                          Specifications matching
-                          &ldquo;<tal:query replace="view/searchtext" />&rdquo;
-                        </h1>
-                        <table style="margin-left: 0;">
+                        <table>
                           <tbody>
                             <tr>
                               <td style="text-align: right;">
@@ -42,7 +57,7 @@
                                 <input
                                   tal:condition="not:view/searchrequested"
                                   type="submit"
-                                  value="Search Specifications"
+                                  value="Search Blueprints"
                                 />
                                 <input
                                   tal:condition="view/searchrequested"
@@ -86,11 +101,10 @@
                         condition="view/searchrequested"
                         define="specs view/specs"
                       >
-                        <p
-                          xtal:condition="view/error_message"
-                          xtal:content="view/error_message"
-                          class="error message"
-                        >Error message.</p>
+                        <p tal:condition="specs">
+                          Blueprints matching
+                          &#8220;<tal:string replace="view/searchtext" />&#8221:
+                        </p>
 
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
@@ -102,53 +116,46 @@
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">
                         <p id="application-summary">
-                          With Launchpad you can track specifications
-                          from the drafting process through to
-                          review, approval, scheduling, and implementation.
+                          With Launchpad you can track blueprints
+                          (feature specifications) from discussion through to
+                          review, approval, and implementation.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
-                        <ul class="buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="+addspec">
-                              <img
-                                alt="Register a specification"
-                                src="/+icing/but_lrg_registeraspec.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recently registered</h2>
                             <ul
-                              tal:condition="context/latest_specs"
+                              tal:define="speclist context/latest_specifications"
+                              tal:condition="speclist"
                               class="blueprint"
                             >
                               <li
-                                tal:repeat="spec context/latest_specs"
+                                tal:repeat="spec speclist"
                                 tal:replace="structure spec/@@+listing-compact"
                               />
                             </ul>
                           </div>
-                          <div class="three column center">
-                            <h2>Recently implemented</h2>
+                          <div class="three column middle">
+                            <h2>Recently completed</h2>
+                            <ul
+                              tal:define="speclist context/latest_completed_specifications"
+                              tal:condition="speclist"
+                              class="blueprint"
+                            >
+                              <li
+                                tal:repeat="spec speclist"
+                                tal:replace="structure spec/@@+listing-compact"
+                              />
+                            </ul>
                           </div>
                           <div
                             class="three column right"
                             tal:content="structure context/@@+portlet-sprints"
                           />
                         </div>
-                        <p id="application-footer">
-                          <strong>XXX</strong>
-                          specifications registered
-                        </p>
+                        <div id="application-footer">
+                          <tal:stats replace="structure context/@@+portlet-stats" />
+                        </div>
                       </tal:nosearchresults>
 
                       </div><!--container-->
@@ -164,4 +171,4 @@
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Needs "Recently implemented" list, specifications count -->
+<!-- 1-0 inprogress Needs "Recently implemented" list, blueprints count -->

@@ -205,6 +205,19 @@ one.)
 >>> check("/firefox/+bug/1/+addurl", auth=True)
 >>> check("/firefox/+bug/1/+activity", auth=True)
 
+Viewing a bug in a distribution context where the current development
+release is targeted.
+
+>>> check("/ubuntu/+bug/2", auth=True)
+>>> check("/ubuntu/+bug/2/+edit", auth=True)
+>>> check("/ubuntu/+bug/2/+secrecy", auth=True)
+>>> check("/ubuntu/+bug/2/+duplicate", auth=True)
+>>> check("/ubuntu/+bug/2/+subscribe", auth=True)
+>>> check("/ubuntu/+bug/2/+addsubscriber", auth=True)
+>>> check("/ubuntu/+bug/2/+addcomment", auth=True)
+>>> check("/ubuntu/+bug/2/+addurl", auth=True)
+>>> check("/ubuntu/+bug/2/+activity", auth=True)
+
 Viewing a bug comment.
 
 >>> check("/firefox/+bug/1/comments/1", auth=True)
@@ -327,8 +340,10 @@ And this is for a person:
 
 >>> check("/~name16/+edit", auth=True)
 >>> check("/~name16/+branches")
->>> check("/~name12/+branch/gnome-terminal/pushed/")
->>> check("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True)
+>>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
+>>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
+>>> check("/~name12/gnome-terminal/pushed/")
+>>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
 >>> check_redirect("/~name16/+bugs")
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
@@ -341,7 +356,6 @@ And this is for a person:
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
->>> check("/~name16/+edithackergotchi", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")

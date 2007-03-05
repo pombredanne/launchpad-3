@@ -25,11 +25,15 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build check importdcheck hctcheck
+check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+dbfreeze_check:
+	[ ! -f database-frozen.txt \
+	    -o `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -151,7 +155,7 @@ iharness:
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
-	database/schema/fti.py -d launchpad_dev --force
+	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

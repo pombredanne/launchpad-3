@@ -121,9 +121,11 @@ chosen.
     >>> factory.canHandle(environment)
     True
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadXMLRPCRequest
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadXMLRPCRequest, XMLRPCLaunchpadPublication
+    ...     )
     >>> requestfactory, publicationfactory = factory()
-    >>> publicationfactory is MainLaunchpadPublication
+    >>> publicationfactory is XMLRPCLaunchpadPublication
     True
     >>> requestfactory.requestfactory is LaunchpadXMLRPCRequest
     True

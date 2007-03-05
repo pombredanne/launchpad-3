@@ -31,21 +31,25 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICanonicalUrlData, ICveSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, ILaunchpadCelebrities,
-    IProductSet, IUpstreamBugTask, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL, valid_distrotask, valid_upstreamtask)
+    IBugWatchSet, ICveSet, IDistributionSourcePackage, IFrontPageBugTaskSearch,
+    ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
+    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
+    valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -89,23 +93,23 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Edit Description/Tags'
+        text = 'Edit description/tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Visibility/Security'
+        text = 'Visibility/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
-        text = 'Mark as Duplicate'
+        text = 'Mark as duplicate'
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
-        text = 'Also Affects Upstream'
+        text = 'Also affects upstream'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
-        text = 'Also Affects Distribution'
+        text = 'Also affects distribution'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):
@@ -131,25 +135,25 @@ class BugContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
-        text = 'Subscribe Someone Else'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to Release"
+            text = "Target to release"
         else:
-            text = 'Nominate for Release'
+            text = 'Nominate for release'
 
         return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
-        text = 'Comment/Attach File'
+        text = 'Comment or attach file'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
-        text = 'Add Branch'
+        text = 'Add branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -162,30 +166,55 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
-        text = 'Remove CVE Link'
+        text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target
         linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a Bug in %s' % bugtarget.displayname
+        text = 'Report a bug in %s' % bugtarget.displayname
         return Link(linktarget, text, icon='add')
 
     def activitylog(self):
-        text = 'Activity Log'
+        text = 'View activity log'
         return Link('+activity', text, icon='list')
 
 
 
-class MaloneView(LaunchpadView):
+class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
+
+    custom_widget('searchtext', TextWidget, displayWidth=50)
+    custom_widget('scope', ProjectScopeWidget)
+    schema = IFrontPageBugTaskSearch
+    field_names = ['searchtext', 'scope']
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    @property
+    def target_css_class(self):
+        """The CSS class for used in the target widget."""
+        if self.target_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def target_error(self):
+        """The error message for the target widget."""
+        return self.getWidgetError('scope')
+
     def initialize(self):
+        LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
-        if not bug_id:
-            return
+        if bug_id:
+            self._redirectToBug(bug_id)
+        elif self.widgets['scope'].hasInput():
+            self._validate(action=None, data={})
+
+    def _redirectToBug(self, bug_id):
+        """Redirect to the specified bug id."""
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
@@ -224,7 +253,16 @@ class MaloneView(LaunchpadView):
 
 
 class BugView:
-    """View class for presenting information about an IBug."""
+    """View class for presenting information about an IBug.
+
+    Since all bug pages are registered on IBugTask, the context will be
+    adapted to IBug in order to make the security declarations work
+    properly. This has the effect that the context in the pagetemplate
+    changes as well, so the bugtask (which is often used in the pages)
+    is available as currentBugTask(). This may not be all that pretty,
+    but it was the best solution we came up with when deciding to hang
+    all the pages off IBugTask instead of IBug.
+    """
 
     def __init__(self, context, request):
         self.current_bugtask = context

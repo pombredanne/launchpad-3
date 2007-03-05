@@ -206,15 +206,15 @@ of a given distrorelease (or both, obviously).
   ...  for shipreq in requestset.search(distrorelease=dapper)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
    (u'Celso Providelo', 6), (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
-   (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-   (u'David Allouche', 18), (u'Jeff Waugh', 12),
+   (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
+   (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
    (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
    (u'Stuart Bishop', 2), (u'Foo Bar', 20L)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
   ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
-  [(u'Jordi Mallach', 16), (u'David Allouche', 18),
+  [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
 
 

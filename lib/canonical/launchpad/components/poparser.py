@@ -487,7 +487,16 @@ class POHeader(dict, POMessage):
                         POSyntaxWarning(self._lineno, 'Invalid header entry.'))
                     continue
                 field = field.strip()
-                value = self[field]
+                try:
+                    value = self[field]
+                except KeyError:
+                    # The header has an entry with ':' but otherwise
+                    # unrecognized: it happens with plural form formulae
+                    # split into two lines, yet containing C-style ':' operator
+                    # log it and continue with next entry.
+                    logging.warning(
+                        POSyntaxWarning(self._lineno, 'Invalid header entry.'))
+                    continue
                 text.append(u'%s: %s' % (field, self[field]))
                 printed.add(field)
             for field in self.keys():
@@ -732,6 +741,42 @@ class POParser(object):
           u'abc'
           >>> parser._parse_quoted_string(u'\"ab\143\"')
           u'abc'
+
+          After the string has been converted to unicode, the backslash
+          escaped sequences are still in the encoding that the charset header
+          specifies. Such quoted sequences will be converted to unicode by
+          this method.
+
+          We don't know the encoding of the escaped characters and cannot be
+          just recoded as Unicode so it's a POInvalidInputError
+          >>> utf8_string = u'"view \\302\\253${version_title}\\302\\273"'
+          >>> parser._parse_quoted_string(utf8_string)
+          Traceback (most recent call last):
+          ...
+          POInvalidInputError: could not decode escaped string: (\302\253)
+
+          Now, we note the original encoding so we get the right Unicode
+          string.
+
+          >>> class FakeHeader:
+          ...     charset = 'UTF-8'
+          >>> parser.header = FakeHeader()
+          >>> parser._parse_quoted_string(utf8_string)
+          u'view \xab${version_title}\xbb'
+
+          Let's see that we raise a POInvalidInputError exception when we
+          have an escaped char that is not valid in the declared encoding
+          of the original string:
+
+          >>> iso8859_1_string = u'"foo \\xf9"'
+          >>> parser._parse_quoted_string(iso8859_1_string)
+          Traceback (most recent call last):
+          ...
+          POInvalidInputError: could not decode escaped string as UTF-8: (\xf9)
+
+          An error will be raised if the entire string isn't contained in
+          quotes properly:
+
           >>> parser._parse_quoted_string(u'abc')
           Traceback (most recent call last):
             ...
@@ -743,12 +788,11 @@ class POParser(object):
           >>> parser._parse_quoted_string(u'\"ab\"x')
           Traceback (most recent call last):
             ...
-          POSyntaxError: extra content found after string
+          POSyntaxError: extra content found after string: (x)
         """
         if string[0] != '"':
             raise POSyntaxError(self._lineno, "string is not quoted")
-        output = ''
-        string = string[1:]
+
         escape_map = {
             'a': '\a',
             'b': '\b',
@@ -761,44 +805,89 @@ class POParser(object):
             '\'': '\'',
             '\\': '\\',
             }
+
+        # Remove initial quote char
+        string = string[1:]
+        output = ''
         while string:
-            if string[0] == '\\':
-                if string[1] in escape_map:
-                    output += escape_map[string[1]]
-                    string = string[2:]
-                elif string[1] == 'x':
+            if string[0] == '"':
+                # Reached the end of the quoted string.
+                string = string[1:]
+                # if there is any non-string data afterwards, raise an
+                # exception
+                if string and not string.isspace():
+                    raise POSyntaxError(self._lineno,
+                        "extra content found after string: (%s)" % string)
+                break
+            elif string[0] == '\\' and string[1] in escape_map:
+                # We got one of the special escaped chars we know about, we
+                # unescape them using the mapping table we have.
+                output += escape_map[string[1]]
+                string = string[2:]
+                continue
+
+            escaped_string = ''
+            while string[0] == '\\':
+                # Let's handle any normal char escaped. This kind of chars are
+                # still in the original encoding so we need to extract the
+                # whole block of escaped chars to recode them later into
+                # Unicode.
+                if string[1] == 'x':
                     # hexadecimal escape
-                    output += chr(int(string[2:4], 16))
+                    escaped_string += string[:4]
                     string = string[4:]
                 elif string[1].isdigit():
                     # octal escape
-                    digits = string[1]
+                    escaped_string += string[:2]
                     string = string[2:]
                     # up to two more octal digits
                     for i in range(2):
                         if string[0].isdigit():
-                            digits += string[0]
+                            escaped_string += string[0]
                             string = string[1:]
                         else:
                             break
-                    output += chr(int(digits, 8))
+                elif string[1] in escape_map:
+                    # It's part of our mapping table, we ignore it here.
+                    break
                 else:
                     raise POSyntaxError(self._lineno,
                                         "unknown escape sequence %s"
                                         % string[:2])
-            elif string[0] == '"':
-                string = string[1:]
-                break
+            if escaped_string:
+                # We found some text escaped that should be recoded to
+                # Unicode.
+                # First, we unescape it.
+                unescaped_string = escaped_string.decode('string-escape')
+
+                if self.header is not None:
+                    # There is a header, so we know the original encoding for
+                    # the given string.
+                    try:
+                        output += unescaped_string.decode(self.header.charset)
+                    except UnicodeDecodeError:
+                        raise POInvalidInputError(self._lineno,
+                            "could not decode escaped string as %s: (%s)" %
+                                (self.header.charset, escaped_string))
+                else:
+                    # We don't know the original encoding of the imported file
+                    # so we cannot get the right values. We store the string
+                    # assuming that is a valid ASCII escape sequence.
+                    try:
+                        output += unescaped_string.decode('ascii')
+                    except UnicodeDecodeError:
+                        raise POInvalidInputError(self._lineno,
+                            "could not decode escaped string: (%s)" %
+                                escaped_string)
             else:
+                # It's a normal char, we just store it and jump to next one.
                 output += string[0]
                 string = string[1:]
         else:
-            raise POSyntaxError(self._lineno,
-                                "string not terminated")
-        # if there is any non-string data afterwards, raise an exception
-        if string and not string.isspace():
-            raise POSyntaxError(self._lineno,
-                                "extra content found after string")
+            # We finished parsing the string without finding the ending quote
+            # char.
+            raise POSyntaxError(self._lineno, "string not terminated")
+
         return output
 
     def parse_line(self, l):

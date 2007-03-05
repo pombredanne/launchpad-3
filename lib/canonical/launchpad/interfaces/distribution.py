@@ -9,18 +9,19 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Bytes, Choice, Int, Text, TextLine, Bool
+from zope.schema import Choice, Int, Text, TextLine, Bool
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi)
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class DistributionNameField(PillarNameField):
@@ -30,8 +31,9 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, IKarmaContext):
+class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                    ISpecificationTarget, IHasSecurityContact,
+                    IKarmaContext, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -58,19 +60,25 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "The content of this distribution's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = Bytes(
+    emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this distribution."),
-        constraint=valid_emblem)
-    gotchi = Bytes(
-        title=_("Gotchi"), required=False,
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this distribution."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "this distribution's home page. It should be no bigger than 50k "
-            "in size. "),
-        constraint=valid_gotchi)
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this distribution. It should "
+            "be no bigger than 50k in size."))
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on "
+            "this distribution's home page. It should be no bigger than 100k "
+            "in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),
@@ -188,10 +196,6 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             ),
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
-
-    def traverse(name):
-        """Traverse the distribution. Check for special names, and return
-        appropriately, otherwise use __getitem__"""
 
     def __getitem__(name):
         """Returns a DistroRelease that matches name, or raises and
@@ -319,6 +323,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner):
+            members, owner, gotchi, gotchi_heading, emblem):
         """Creaste a new distribution."""
 

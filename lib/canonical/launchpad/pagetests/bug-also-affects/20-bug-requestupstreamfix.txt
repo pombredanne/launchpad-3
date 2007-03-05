@@ -101,7 +101,7 @@ about this and ask him to search for the product.
 
     >>> search_link = user_browser.getLink('search for it')
     >>> search_link.url
-    "javascript:popup_window('@@popup-window?vocabulary=Product&field=field.product','500','400')"
+    "javascript:popup_window('@@popup-window?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'500','400')"
 
 Since the link is a javascript popup, we can't follow the link directly,
 so let's extract the real URL and open it manually.
@@ -128,7 +128,7 @@ to register the product if he doesn't find it.
 
     >>> user_browser.getLink('register it').click()
     >>> user_browser.title
-    'Register a product in the Launchpad'
+    'Register a project in Launchpad'
 
 Since we don't restrict the input, the user can write anything, so we
 need to make sure that everything is quoted before displaying the input.

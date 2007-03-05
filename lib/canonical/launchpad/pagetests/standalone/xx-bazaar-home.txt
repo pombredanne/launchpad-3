@@ -1,9 +1,0 @@
-Check that the Bazaar home page works.
-
-  >>> browser.open('http://code.launchpad.dev/')
-  >>> browser.url
-  'http://code.launchpad.dev/'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...<h1>Code</h1>...
-  ...

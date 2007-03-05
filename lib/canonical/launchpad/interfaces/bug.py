@@ -11,14 +11,18 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IFrontPageBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -31,7 +35,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None):
+                 binarypackagename=None, tags=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -48,6 +52,7 @@ class CreateBugParams:
         self.distribution = None
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
+        self.tags = tags
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -130,19 +135,6 @@ class IBug(IMessageTarget):
     owner = Attribute("The owner's IPerson")
     duplicateof = BugField(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
-    communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True, default=0)
-    communitytimestamp = Datetime(
-        title=_('Community Timestamp'), required=True, readonly=True)
-    hits = Int(
-        title=_('Hits'), required=True, readonly=True, default=0)
-    hitstimestamp = Datetime(
-        title=_('Hits Timestamp'), required=True, readonly=True)
-    activityscore = Int(
-        title=_('Activity Score'), required=True, readonly=True,
-        default=0)
-    activitytimestamp = Datetime(
-        title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -159,6 +151,11 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
+    pillar_bugtasks = Attribute(
+        'The bugtasks which relate only to "pillars", products or '
+        'distributions, the major structural objects in Launchpad. '
+        'This leaves out the tasks relating to more detailed release '
+        'related things like distroreleases and product series.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -169,7 +166,7 @@ class IBug(IMessageTarget):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
-    tickets = Attribute("List of support tickets related to this bug.")
+    questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
@@ -393,6 +390,21 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
+        required=True)
+
+
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Product"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
+
+
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 
 

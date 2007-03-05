@@ -38,7 +38,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.RequestExpiredView"
       />
 
   <!-- UnexpectedFormData -->
@@ -92,7 +92,7 @@
 
   <!-- Login and logout pages, and login status. -->
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.BasicLoginPage"
       name="+basiclogin"
       permission="zope.Public"
@@ -101,7 +101,7 @@
       />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       template="../templates/launchpad-login.pt"
       class="canonical.launchpad.webapp.login.LoginOrRegister"
       permission="zope.Public"
@@ -109,7 +109,7 @@
       />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       template="../templates/launchpad-forgottenpassword.pt"
       class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
       permission="zope.Public"
@@ -118,13 +118,13 @@
 
   <browser:page
       name="+search"
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.browser.SearchProjectsView"
       template="../templates/launchpad-search.pt"
       permission="zope.Public" />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.RedirectToEditLanguagesView"
       name="+editmylanguages"
@@ -165,7 +165,7 @@
 
   <!-- A page to list all the icons in LP -->
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
@@ -214,7 +214,7 @@
 
   <!-- one-zero status page -->
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+1-0-templates"
       class="canonical.launchpad.browser.OneZeroTemplateStatus"
       template="../templates/launchpad-onezerostatus.pt"
@@ -234,6 +234,25 @@
 
 </facet>
 
+<!--
+Operational statistics. Note that these are publicly available, 
+and if we want to restrict access to the LAN then we need to block
+these URLs in Apache.
+-->
+<browser:page
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    name="+opstats"
+    permission="zope.Public"
+    class="canonical.launchpad.webapp.opstats.OpStats"
+    />
+<xmlrpc:view
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    class="canonical.launchpad.webapp.opstats.OpStats"
+    methods="opstats"
+    permission="zope.Public"
+    name="+opstats"
+    />
+
 <!-- self-test xmlrpc api -->
 <xmlrpc:view
   for="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -250,7 +269,7 @@
 
 <!-- icing resources -->
 <browser:page
-  for="canonical.launchpad.interfaces.ILaunchpadApplication"
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
   attribute="__call__"
@@ -279,18 +298,28 @@
     template="../templates/launchpad-structuralfooter.pt"
   />
 </browser:pages>
-<browser:page
-  for="canonical.launchpad.interfaces.ILaunchpadApplication"
-  name="+applications"
-  permission="zope.Public"
-  template="../templates/app-buttons.pt"
-  />
 
 <browser:page
   for="*"
   name="+applicationbuttons"
   permission="zope.Public"
   class="canonical.launchpad.browser.ApplicationButtons"
+  attribute="__call__"
+  />
+
+<browser:page
+  for="*"
+  name="+shortlink"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.DefaultShortLink"
+  attribute="__call__"
+  />
+
+<browser:page
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  name="+dims"
+  permission="zope.Public"
+  class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
 

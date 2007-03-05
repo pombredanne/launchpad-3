@@ -6,10 +6,14 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/translations"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Software translations</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/translations" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-translations">
         <div class="t">
           <div class="u">
@@ -19,124 +23,67 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <p id="application-summary">
-                          With Launchpad you can translation Free Software
-                          into your own language.
-                        </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>
                         </ul>
-                        <div class="columns">
-                          <div class="three column left">
+                        <p id="application-summary">
+                          With Launchpad you can translate Free Software
+                          into your own language.
+                          <a href="/+tour">Learn more&#8230;</a>
+                        </p>
+                        <div class="three column left">
+
                             <h2>Translatable operating systems</h2>
-                          </div>
-                          <div class="three column middle">
-                            <h2>Translatable products</h2>
-                          </div>
-                          <div class="three column right">
-                            <h2>Languages</h2>
-                          </div>
+                            <ul class="distrorelease">
+                              <li tal:repeat="distrorelease context/translatable_distroreleases">
+                                <a tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations">
+                                  <tal:distroname replace="distrorelease/distribution/displayname" />
+                                  <tal:version
+                                    condition="distrorelease/version"
+                                    replace="distrorelease/version"
+                                  />
+                                  <tal:codename
+                                    condition="not:distrorelease/version"
+                                    replace="distrorelease/title"
+                                  />
+                                </a>
+                              </li>
+                            </ul>
+
                         </div>
+                        <div class="three column middle">
 
+                            <h2>Translatable products</h2>
+                            <ul class="product">
+                              <li tal:repeat="product context/translatable_products">
+                                <a
+                                  tal:attributes="href string:/${product/name}/+translations"
+                                  tal:content="product/title"
+                                />
+                              </li>
+                            </ul>
 
-    <div tal:replace="structure context/@@+portlet-stats" />
+                        </div>
+                        <div class="three column right demo">
 
-    <h1>Welcome to Rosetta</h1>
+                            <h2>Languages</h2>
 
-    <p>
-      Rosetta is a Web-based system for translating open source software into
-      any language. <a href="+about">More about Rosetta.</a>
-    </p>
-
-      <h2>Translation groups</h2>
-    
-      <p>
-        Most translators in Rosetta are organized into translation teams by language,
-        and then into <a href="groups">translation groups</a>.
-        If the software you want to translate has a translation group already,
-        join or create that group&#8217;s team for your language.
-      </p>
-
-      <h2>Translations in Ubuntu</h2>
-
-      <p>
-        Rosetta is the primary translation system for the Ubuntu distribution.
-        You can help translate any application in Ubuntu, or any of the Ubuntu
-        derivative distributions, using this Web interface. Select a release
-        to start translating.
-      </p>
-      <table>
-        <tbody>
-          <tal:release
-            repeat="distrorelease context/translatable_distroreleases"
-          >
-            <tr>
-              <td class="icon left">
-                <img alt="" src="/@@/product" />
-              </td>
-              <td>
-                <a
-                  tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations"
-                >
-                  <span tal:replace="distrorelease/version">5.04</span>:
-                  <span tal:replace="distrorelease/title">Hoary Hedgehog</span>
-                </a>
-              </td>
-            </tr>
-            <tr class="secondary">
-              <td></td>
-              <td>
-                <p
-                  class="discreet"
-                  tal:content="distrorelease/summary"
-                >Summary here.</p>
-              </td>
-            </tr>
-          </tal:release>
-        </tbody>
-      </table>
-
-    <h2>Translatable applications</h2>
-
-    <p>
-      Select an application to begin translating it into your own language.
-      If your favourite open-source application is not listed here,
-      check that it&#8217;s <a href="/products">registered with Launchpad</a>,
-      and follow the instructions described at
-      <a href="https://wiki.ubuntu.com/RosettaFAQ">RosettaFAQ</a>
-    </p>
-
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Application</th>
-          <th>Title</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="product context/translatable_products">
-          <td>
-            <img alt="" src="/@@/product" />
-            <span tal:replace="product/name">product</span>
-          </td>
-          <td><a href="." tal:content="product/title"
-                 tal:attributes="href
-                     string:/products/${product/name}/+translations">
-                     Product Title here</a></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p>Find or register <a href="/products/">any other open source
-    application</a> for translation.</p>
-
+                        </div>
+                        <form class="central" action="/+search" method="get">
+                          <input id="text" name="q" size="50" type="text" />
+                          <input type="submit" value="Search Projects" />
+                        </form>
+                        <div
+                          id="application-footer"
+                          tal:content="structure context/@@+portlet-stats"
+                        />
                       </div><!--container-->
                     </div><!--z-->
                   </div><!--y-->
@@ -147,7 +94,21 @@
         </div><!--t-->
       </div><!--mainarea-->
     </div><!--main-->
+    <div metal:fill-slot="help">
+      <p>
+        Read more <a href="+about">about Rosetta</a>, a Web-based system for
+        translating open source software into any language. All you need to
+        start translating is a Web browser, a good knowledge of the
+        application you are translating, and a knowledge of English.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequent asked questions</a>
+        </li>
+      </ul>
+    </div>
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress -->
+<!-- 1-0 inprogress Missing sample of translatable upstreams (bug 79674). -->

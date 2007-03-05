@@ -14,11 +14,12 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet, IPublishing)
+    IBuildSet, IPublishing)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -31,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
@@ -227,7 +228,30 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, is_careful=False):
+    def getPendingPublications(self, pocket, is_careful):
+        """See IPublishing."""
+        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+
+        target_status = [PackagePublishingStatus.PENDING]
+        if is_careful:
+            target_status.append(PackagePublishingStatus.PUBLISHED)
+        queries.append("status IN %s" % sqlvalues(target_status))
+
+        # restrict to a specific pocket.
+        queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if not self.distrorelease.isUnstable():
+            queries.append(
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        publications = BinaryPackagePublishingHistory.select(
+                    " AND ".join(queries), orderBy=["-id"])
+
+        return publications
+
+    def publish(self, diskpool, log, pocket, is_careful=False):
         """See IPublishing."""
         # XXX: this method shares exactly the same pattern as
         # DistroRelease.publish(); they could be factored if API was
@@ -237,18 +261,10 @@ class DistroArchRelease(SQLBase):
               % self.architecturetag)
 
         dirty_pockets = set()
-        queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
-        target_status = [PackagePublishingStatus.PENDING]
-        if is_careful:
-            target_status.append(PackagePublishingStatus.PUBLISHED)
-        queries.append("status in %s" % sqlvalues(target_status))
-
-        is_unstable = self.distrorelease.isUnstable()
-        publications = BinaryPackagePublishingHistory.select(
-                    " AND ".join(queries), orderBy=["-id"])
-        for bpph in publications:
-            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
+        for bpph in self.getPendingPublications(pocket, is_careful):
+            if not is_careful and self.distrorelease.checkLegalPocket(
+                bpph, log):
                 continue
             bpph.publish(diskpool, log)
             dirty_pockets.add((self.distrorelease.name, bpph.pocket))

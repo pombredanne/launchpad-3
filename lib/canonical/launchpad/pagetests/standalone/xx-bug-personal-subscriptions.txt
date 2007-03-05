@@ -79,7 +79,7 @@ the user this time, and inform the user.
 Users can unsubscribe teams to which they belong. Let's demonstrate by
 first subscribing one of Foo Bar's teams.
 
-  >>> browser.getLink('Subscribe Someone Else').click()
+  >>> browser.getLink('Subscribe someone else').click()
   >>> browser.url
   'http://localhost/firefox/+bug/1/+addsubscriber'
 
@@ -269,7 +269,7 @@ include that team.
   ...     "Authorization", "Basic foo.bar@canonical.com:test")
 
   >>> foobar_browser.open("http://launchpad.dev/bugs/2")
-  >>> foobar_browser.getLink("Subscribe Someone Else").click()
+  >>> foobar_browser.getLink("Subscribe someone else").click()
   >>> foobar_browser.getControl("Person").value = "ubuntu-team"
   >>> foobar_browser.getControl("Add").click()
 
