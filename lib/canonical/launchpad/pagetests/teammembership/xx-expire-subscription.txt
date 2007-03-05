@@ -37,8 +37,8 @@ Persist the change:
   >>> import transaction
   >>> transaction.commit()
 
-And make sure that 'name16' is now an EXPIRED member of this team.
+And make sure that Sample Person is now an EXPIRED member of this team.
 
-  >>> sampleperson.inTeam(team)
-  False
+  >>> sampleperson in team.expiredmembers
+  True
 
