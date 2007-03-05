@@ -119,6 +119,13 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
+    source_file = Attribute("Source file for this template, if needed.")
+
+    source_file_format = Choice(
+        title=_("File format for the source file"),
+        required=False,
+        vocabulary="RosettaFileFormat")
+
     priority = Int(
         title=_('Priority'),
         required=True,
@@ -182,6 +189,18 @@ class IPOTemplate(IRosettaStats):
 
         If the key is a string or a unicode object, returns the
         IPOTMsgSet in this template that has a primary message ID
+        with the given text.
+
+        If only_current is True, then get only current message sets.
+
+        If no IPOTMsgSet is found, return None.
+        """
+
+    def getPOTMsgSetByAlternativeMsgID(key, only_current=False):
+        """Return the IPOTMesgSet indexed by key as alternative msgid.
+
+        If the key is a string or a unicode object, returns the
+        IPOTMsgSet in this template that has an alternative message ID
         with the given text.
 
         If only_current is True, then get only current message sets.
@@ -286,20 +305,22 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid):
+    def createMessageSetFromMessageID(msgid, altKey=None):
         """Creates in the database a new message set.
 
         As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
+        new set's prime message ID. Also accepts optional alternative message
+        key (unicode or string).
 
         Returns the newly created message set.
         """
 
-    def createMessageSetFromText(text):
+    def createMessageSetFromText(text, altKey=None):
         """Creates in the database a new message set.
 
         Similar to createMessageSetFromMessageID, but takes a text object
-        (unicode or string) rather than a message ID.
+        (unicode or string) rather than a message ID. Also accepts optional
+        alternative message key (unicode or string).
 
         Returns the newly created message set.
         """

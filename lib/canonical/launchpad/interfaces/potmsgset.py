@@ -22,6 +22,8 @@ class IPOTMsgSet(Interface):
 
     primemsgid_ = Attribute("The primary msgid for this set.")
 
+    alternative_msgid_ = Attribute("The alternative msgid for this set.")
+
     sequence = Attribute("The ordering of this set within its file.")
 
     potemplate = Attribute("The template this set is associated with.")

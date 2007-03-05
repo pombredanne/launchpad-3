@@ -28,6 +28,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lp.dbschema import RosettaFileFormat
 
 
 class POTemplateNavigation(Navigation):
@@ -221,7 +222,8 @@ class POTemplateView(LaunchpadView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        if (filename.endswith('.pot') or filename.endswith('.po')
+            or filename=='en-US.xpi'):
             # Add it to the queue.
             if filename.endswith('.po'):
                 # It's a .po file attached to the template at self.context,
@@ -236,7 +238,8 @@ class POTemplateView(LaunchpadView):
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries,
-                potemplate=self.context)
+                potemplate=self.context,
+                format=RosettaFileFormat.XPI)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'

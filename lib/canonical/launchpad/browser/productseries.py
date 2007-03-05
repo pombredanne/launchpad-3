@@ -49,6 +49,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
+from canonical.launchpad.components.rosettaformats import *
+
 from canonical.launchpad import _
 
 
@@ -350,19 +352,30 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        if (filename.endswith('.pot') or filename.endswith('.po') or
+            filename=='en-US.xpi'):
             # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                filename, content, True, self.user,
-                productseries=self.context)
+            if filename == 'en-US.xpi':
+                newimport = MozillaSupport(path=filename,
+                                           productseries=self.context,
+                                           file=file)
+            else:
+                newimport = PoSupport(path=filename,
+                                      productseries=self.context,
+                                      file=file)
+            entries = newimport.allentries
+            for entry in entries:
+                translation_import_queue_set.addOrUpdateEntry(
+                    entry['path'], content, True, self.user,
+                    productseries=entry['productseries'],
+                    format=entry['format'])
 
             self.request.response.addInfoNotification(
-                'Thank you for your upload. The file content will be'
+                'Thank (really) you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Rosetta.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
-
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             num = translation_import_queue_set.addOrUpdateEntriesFromTarball(

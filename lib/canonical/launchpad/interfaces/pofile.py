@@ -124,6 +124,14 @@ class IPOFile(IRosettaStats):
         :only_current: Whether we should look only on current entries.
         """
 
+    def getPOMsgSetFromPOTMsgSet(potmsgset, onlyCurrent=False):
+        """Return the IPOMsgSet in this IPOFile identified by potmsgset or
+        None.
+
+        :potmsgset: is an instance of POTMsgSet.
+        :only_current: Whether we should look only on current entries.
+        """
+
     def __getitem__(msgid_text):
         """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
 

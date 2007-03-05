@@ -24,6 +24,7 @@ class Language(SQLBase):
 
     code = StringCol(dbName='code', notNull=True, unique=True,
             alternateID=True)
+    uuid = StringCol(dbName='uuid')
     nativename = StringCol(dbName='nativename')
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')

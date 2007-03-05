@@ -52,7 +52,8 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import (
-    import_po, OldPOImported, NotExportedFromRosetta)
+    translation_import, OldPOImported, NotExportedFromRosetta)
+from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
@@ -281,14 +282,24 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSet(self, msgid_text, only_current=False):
+    def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
         """See IPOFile."""
+        if potmsgset is None or (only_current and potmsgset.sequence <= 0):
+            # There is no IPOTMsgSet for this id.
+            return None
+
+        return POMsgSet.selectOneBy(
+            potmsgset=potmsgset, pofile=self)
+
+    def getPOMsgSet(self, msgid_text, only_current=False):
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
 
-        assert isinstance(msgid_text, unicode), (
-            "Can't index with type %s. (Must be unicode.)" % type(msgid_text))
+        if not isinstance(msgid_text, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode or POTMsgSet.)"
+                % type(msgid_text))
 
         # Find a message ID with the given text.
         try:
@@ -536,6 +547,9 @@ class POFile(SQLBase, RosettaStats):
 
     def updateHeader(self, new_header):
         """See IPOFile."""
+        if not new_header:
+            return
+
         # check that the plural forms info is valid
         new_plural_form = new_header.get('Plural-Forms', None)
         if new_plural_form is None:
@@ -619,8 +633,30 @@ class POFile(SQLBase, RosettaStats):
         #   list of faulty messages.
         import_rejected = False
         try:
-            errors = import_po(self, file, entry_to_import.importer,
-                               entry_to_import.is_published)
+            if entry_to_import.path.lower().endswith('.xpi'):
+                importer = MozillaSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file,
+                    logger=logger)
+            else:
+                importer = PoSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file,
+                    logger=logger)
+            newtranslation = importer.getTranslation(entry_to_import.
+                                                     path,
+                                                     self.language)
+            errors = translation_import(self, newtranslation,
+                                        entry_to_import.importer,
+                                        entry_to_import.is_published)
         except NotExportedFromRosetta:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
@@ -897,26 +933,37 @@ class DummyPOFile(RosettaStats):
         """See IPOFile."""
         return _can_edit_translations(self, person)
 
+    def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
+        """See IPOFile."""
+        if potmsgset is None or (only_current and potmsgset.sequence <= 0):
+            # There is no IPOTMsgSet for this id.
+            return None
+
+        return DummyPOMsgSet(self, potmsgset)
+
     def getPOMsgSet(self, key, only_current=False):
         """See IPOFile."""
+        if not isinstance(key, POTMsgSet) and not isinstance(key, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode or POTMsgSet.)" % type(key))
+
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(key, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode.)" % type(key))
+        if isinstance(key, POTMsgSet):
+            potmsgset = key
+        else:
+            # Find a message ID with the given text.
+            try:
+                pomsgid = POMsgID.byMsgid(key)
+            except SQLObjectNotFound:
+                return None
 
-        # Find a message ID with the given text.
-        try:
-            pomsgid = POMsgID.byMsgid(key)
-        except SQLObjectNotFound:
-            return None
+            # Find a message set with the given message ID.
 
-        # Find a message set with the given message ID.
-
-        potmsgset = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % pomsgid.id))
+            potmsgset = POTMsgSet.selectOne(query +
+                (' AND primemsgid = %d' % pomsgid.id))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.

@@ -3276,6 +3276,17 @@ class RosettaFileFormat(DBSchema):
         The .qm format as used by programs using the QT toolkit.
         """)
 
+    XPI = Item(8, """
+        Mozilla XPI format
+
+        The .xpi format as used by programs from Mozilla foundation.
+        """)
+
+    KDEPO = Item(9, """
+        KDE-style PO format
+
+        PO files in non-standard KDE <4.0 format (plural forms and context).
+        """)
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status

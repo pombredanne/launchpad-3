@@ -13,9 +13,9 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
+from canonical.lp.dbschema import (
+    RosettaImportStatus, EnumCol, RosettaFileFormat)
 from canonical.config import config
-
-from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
@@ -42,7 +42,8 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po
+from canonical.launchpad.components.poimport import translation_import
+from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
@@ -82,6 +83,10 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
+    source_file = ForeignKey(foreignKey='LibraryFileAlias',
+        dbName='source_file', notNull=False, default=None)
+    source_file_format = EnumCol(dbName='source_file_format',
+        schema=RosettaFileFormat, default=RosettaFileFormat.PO, notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -272,6 +277,16 @@ class POTemplate(SQLBase, RosettaStats):
         return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
 
+    def getPOTMsgSetByAlternativeMsgID(self, key, only_current=False):
+        """See IPOTemplate."""
+        query = 'potemplate = %s' % sqlvalues(self.id)
+        if only_current:
+            query += ' AND sequence > 0'
+
+        # Find a message set with the given alternative message ID.
+        return POTMsgSet.selectOne(query +
+            (' AND alternative_msgid = %s' % quote(key)))
+
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
         assert sequence > 0, ('%r is out of range')
@@ -390,10 +405,10 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
-    def hasMessageID(self, messageID):
+    def hasMessageID(self, messageID, altKey=None):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplate=self, primemsgid_=messageID)
+            potemplate=self, primemsgid_=messageID, alternative_msgid_=altKey)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -510,10 +525,11 @@ class POTemplate(SQLBase, RosettaStats):
             inlastrevision=True,
             pluralform=0)
 
-    def createMessageSetFromMessageID(self, messageID):
+    def createMessageSetFromMessageID(self, messageID, altKey = None):
         """See IPOTemplate."""
         messageSet = POTMsgSet(
             primemsgid_=messageID,
+            alternative_msgid_=altKey,
             sequence=0,
             potemplate=self,
             commenttext=None,
@@ -523,7 +539,7 @@ class POTemplate(SQLBase, RosettaStats):
         self.createMessageIDSighting(messageSet, messageID)
         return messageSet
 
-    def createMessageSetFromText(self, text):
+    def createMessageSetFromText(self, text, altKey=None):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
@@ -533,11 +549,11 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
         else:
-            assert not self.hasMessageID(messageID), (
+            assert not self.hasMessageID(messageID, altKey), (
                 "There is already a message set for this template, file and"
                 " primary msgid")
 
-        return self.createMessageSetFromMessageID(messageID)
+        return self.createMessageSetFromMessageID(messageID, altKey)
 
     def invalidateCache(self):
         """See IPOTemplate."""
@@ -566,7 +582,29 @@ class POTemplate(SQLBase, RosettaStats):
 
         template_mail = None
         try:
-            import_po(self, file, entry_to_import.importer)
+            if entry_to_import.path.lower().endswith('.xpi'):
+                importer = MozillaSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file,
+                    logger=logger)
+                self.source_file = entry_to_import.content
+                self.source_file_format = entry_to_import.format
+            else:
+                importer = PoSupport(
+                    path=entry_to_import.path,
+                    productseries=entry_to_import.productseries,
+                    distrorelease=entry_to_import.distrorelease,
+                    sourcepackagename=entry_to_import.sourcepackagename,
+                    is_published=entry_to_import.is_published,
+                    file=file,
+                    logger=logger)
+            translation_import(self,
+                               importer.getTemplate(entry_to_import.path),
+                               entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.

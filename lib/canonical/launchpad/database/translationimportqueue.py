@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
     IPOTemplateSet, ILanguageSet, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+from canonical.lp.dbschema import RosettaFileFormat
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
@@ -55,6 +57,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
         dbName='potemplate', notNull=False, default=None)
+    format = EnumCol(dbName='format', schema=RosettaFileFormat,
+        default=RosettaFileFormat.PO, notNull=True)
     status = EnumCol(dbName='status', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
@@ -74,8 +78,9 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def guessed_potemplate(self):
         """See ITranslationImportQueueEntry."""
-        assert self.path.endswith('.pot'), (
-            "We cannot handle the file %s here." % self.path)
+        if self.path != 'en-US.xpi':
+            assert self.path.endswith('.pot'), (
+                "We cannot handle the file %s here." % self.path)
 
         # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
@@ -170,7 +175,8 @@ class TranslationImportQueueEntry(SQLBase):
         if self.pofile is not None:
             # The entry has an IPOFile associated where it should be imported.
             return self.pofile
-        elif self.potemplate is not None and self.path.endswith('.pot'):
+        elif (self.potemplate is not None and
+              (self.path.endswith('.pot') or self.path == 'en-US.xpi')):
             # The entry has an IPOTemplate associated where it should be
             # imported.
             return self.potemplate
@@ -527,7 +533,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None, pofile=None):
+        potemplate=None, pofile=None, format=RosettaFileFormat.PO):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
@@ -550,11 +556,16 @@ class TranslationImportQueue:
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
+        if filename.endswith('.xpi'):
+            # using "application/x-xpinstall" would trigger installation in ff
+            ctype = 'application/zip'
+        else:
+            ctype = 'application/x-po'
         alias = client.addFile(
             name=filename,
             size=size,
             file=file,
-            contentType='application/x-po')
+            contentType=ctype)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:
@@ -609,7 +620,7 @@ class TranslationImportQueue:
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
-                pofile=pofile)
+                pofile=pofile, format=format)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,

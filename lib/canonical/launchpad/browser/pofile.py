@@ -183,6 +183,7 @@ class BaseExportView(LaunchpadView):
         formats = [
             RosettaFileFormat.PO,
             RosettaFileFormat.MO,
+            RosettaFileFormat.XPI,
         ]
 
         for format in formats:
@@ -242,11 +243,11 @@ class POFileUploadView(POFileView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if not filename.endswith('.po'):
+        if not filename.endswith('.po') and not filename.endswith('.xpi'):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
+                " end with the '.po' or '.xpi' suffix.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -256,7 +257,7 @@ class POFileUploadView(POFileView):
         else:
             published = False
 
-        if self.context.path is None:
+        if self.context.path is None or filename.endswith('.xpi'):
             # The POFile is a dummy one, we use the filename as the path.
             path = filename
         else:
@@ -342,9 +343,10 @@ class POFileTranslateView(BaseTranslationView):
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
+                                                            only_current=False)
             if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 
             error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence != 0:

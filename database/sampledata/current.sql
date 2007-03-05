@@ -1958,10 +1958,10 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (6, 'ady', 'Adyghe; Adygei', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (7, 'afa', 'Afro-Asiatic (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (8, 'afh', 'Afrihili', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (9, 'af', 'Afrikaans', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (9, 'af', 'Afrikaans', NULL, 2, 'n != 1', true, 0, '{95a05dab-bf44-4804-bb97-be2a3ee83acd}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (10, 'ak', 'Akan', NULL, 2, 'n > 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (11, 'akk', 'Akkadian', NULL, 2, 'n > 1', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (12, 'sq', 'Albanian', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (12, 'sq', 'Albanian', NULL, 2, 'n != 1', true, 0, '{5ea95deb-8819-4960-837f-46de0f22bf81}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (13, 'ale', 'Aleut', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (14, 'alg', 'Algonquian languages', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (15, 'am', 'Amharic', NULL, 2, 'n > 1', true, 0, NULL);
@@ -1976,7 +1976,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (24, 'art', 'Artificial (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (25, 'arw', 'Arawak', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (26, 'as', 'Assamese', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (27, 'ast', 'Asturian; Bable', NULL, 1, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (27, 'ast', 'Asturian; Bable', NULL, 1, 'n != 1', true, 0, '{b5cfaf65-895d-4d69-ba92-99438d6003e9}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (28, 'ath', 'Athapascan language', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (29, 'aus', 'Australian languages', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (30, 'av', 'Avaric', NULL, NULL, NULL, true, 0, NULL);
@@ -2011,13 +2011,13 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (59, 'btk', 'Batak (Indonesia)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (60, 'bua', 'Buriat', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (61, 'bug', 'Buginese', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (62, 'bg', 'Bulgarian', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (62, 'bg', 'Bulgarian', NULL, 2, 'n != 1', true, 0, '{b5962da4-752e-416c-9934-f97724f07051}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (63, 'my', 'Burmese', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (64, 'byn', 'Blin; Bilin', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (65, 'cad', 'Caddo', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (66, 'cai', 'Central American Indian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (67, 'car', 'Carib', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (68, 'ca', 'Catalan', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (68, 'ca', 'Catalan', NULL, 2, 'n != 1', true, 0, '{f3b38190-f8e0-4e8b-bf29-451fb95c0cbd}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (69, 'cau', 'Caucasian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (70, 'ceb', 'Cebuano', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (71, 'cel', 'Celtic (Other)', NULL, NULL, NULL, true, 0, NULL);
@@ -2047,9 +2047,9 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (96, 'csb', 'Kashubian', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, '{37b3f2ec-1229-4289-a6d9-e94d2948ae7e}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (100, 'da', 'Danish', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (100, 'da', 'Danish', NULL, 2, 'n != 1', true, 0, '{1f391bb4-a820-4e44-8b68-01b385d13f94}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (101, 'dar', 'Dargwa', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (102, 'del', 'Delaware', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (103, 'den', 'Slave (Athapascan)', NULL, NULL, NULL, true, 0, NULL);
@@ -2061,14 +2061,14 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (109, 'dsb', 'Lower Sorbian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (110, 'dua', 'Duala', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (111, 'dum', 'Dutch, Middle (ca. 1050-1350)', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true, 0, '{83532d50-69a7-46d7-9873-ed232d5b246b}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (113, 'dyu', 'Dyula', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (114, 'dz', 'Dzongkha', NULL, 1, '0', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (115, 'efi', 'Efik', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (118, 'elx', 'Elamite', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false, 0, '{6c3a4023-ca27-4847-a410-2fe8a2401654}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (120, 'enm', 'English, Middle (1100-1500)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (121, 'eo', 'Esperanto', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (122, 'et', 'Estonian', NULL, 2, 'n != 1', true, 0, NULL);
@@ -2078,10 +2078,10 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (126, 'fo', 'Faroese', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (127, 'fat', 'Fanti', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (128, 'fj', 'Fijian', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (129, 'fi', 'Finnish', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (129, 'fi', 'Finnish', NULL, 2, 'n != 1', true, 0, '{c5e1e759-ba2e-44b1-9915-51239d89c492}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (130, 'fiu', 'Finno-Ugrian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (131, 'fon', 'Fon', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (132, 'fr', 'French', NULL, 2, 'n > 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (132, 'fr', 'French', NULL, 2, 'n > 1', true, 0, '{5102ddd3-a33f-436f-b43c-f9468a8f8b32}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (133, 'frm', 'French, Middle (ca.1400-1600)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (134, 'fro', 'French, Old (842-ca.1400)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (135, 'fy', 'Frisian', NULL, NULL, NULL, true, 0, NULL);
@@ -2092,11 +2092,11 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (140, 'gba', 'Gbaya', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (141, 'gem', 'Germanic (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (142, 'ka', 'Georgian', NULL, 1, '0', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (143, 'de', 'German', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (143, 'de', 'German', NULL, 2, 'n != 1', true, 0, '{69C47786-9BEF-49BD-B99B-148C9264AF72}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (144, 'gez', 'Geez', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (145, 'gil', 'Gilbertese', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (146, 'gd', 'Gaelic; Scottish', NULL, 3, 'n < 2 ? 0 : n == 2 ? 1 : 2', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (147, 'ga', 'Irish', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (147, 'ga', 'Irish', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true, 0, '{906b5382-9a34-4ab1-a627-39487b0678a9}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (148, 'gl', 'Galician', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (149, 'gv', 'Manx', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (150, 'gmh', 'German, Middle High (ca.1050-1500)', NULL, NULL, NULL, true, 0, NULL);
@@ -2106,15 +2106,15 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (154, 'got', 'Gothic', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (155, 'grb', 'Grebo', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (156, 'grc', 'Greek, Ancient (to 1453)', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (157, 'el', 'Greek, Modern (1453-)', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (157, 'el', 'Greek, Modern (1453-)', NULL, 2, 'n != 1', true, 0, '{eb0c5e26-c8a7-4873-b633-0f453cb1debc}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (158, 'gn', 'Guarani', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (159, 'gu', 'Gujarati', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (159, 'gu', 'Gujarati', NULL, 2, 'n != 1', true, 0, '{16baab125756b023981bc4a14bd77b5c}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (160, 'gwi', 'Gwichin', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (161, 'hai', 'Haida', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (162, 'ht', 'Haitian; Haitian Creole', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (163, 'ha', 'Hausa', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (164, 'haw', 'Hawaiian', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (165, 'he', 'Hebrew', NULL, 2, 'n != 1', true, 1, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (165, 'he', 'Hebrew', NULL, 2, 'n != 1', true, 1, '{9818f84c-1be1-4eea-aded-55f406c70e37}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (166, 'hz', 'Herero', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (167, 'hil', 'Hiligaynon', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (168, 'him', 'Himachali', NULL, NULL, NULL, true, 0, NULL);
@@ -2123,7 +2123,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (171, 'hmn', 'Hmong', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (172, 'ho', 'Hiri', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (173, 'hsb', 'Upper Sorbian', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (174, 'hu', 'Hungarian', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (174, 'hu', 'Hungarian', NULL, 1, '0', true, 0, '{cacb8e15-7f1b-4e71-a3c0-d63ce907366f}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (175, 'hup', 'Hupa', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (176, 'iba', 'Iban', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (177, 'ig', 'Igbo', NULL, NULL, NULL, true, 0, NULL);
@@ -2142,10 +2142,10 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (190, 'ik', 'Inupiaq', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (191, 'ira', 'Iranian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (192, 'iro', 'Iroquoian languages', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (193, 'it', 'Italian', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (193, 'it', 'Italian', NULL, 2, 'n != 1', true, 0, '{9db167da-cba5-4d12-b045-5d2a5a36a88a}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (194, 'jv', 'Javanese', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (195, 'jbo', 'Lojban', NULL, 1, '0', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (196, 'ja', 'Japanese', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (196, 'ja', 'Japanese', NULL, 1, '0', true, 0, '{02d61967-84bb-455b-a14b-76abc5864739}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (197, 'jpr', 'Judeo-Persian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (198, 'jrb', 'Judeo-Arabic', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (199, 'kaa', 'Kara-Kalpak', NULL, NULL, NULL, true, 0, NULL);
@@ -2171,7 +2171,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (219, 'kok', 'Konkani', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (220, 'kv', 'Komi', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (221, 'kg', 'Kongo', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (222, 'ko', 'Korean', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (222, 'ko', 'Korean', NULL, 1, '0', true, 0, '{dcff4b08-a6cc-4588-a941-852609855803}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (223, 'kos', 'Kosraean', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (224, 'kpe', 'Kpelle', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (225, 'krc', 'Karachay-Balkar', NULL, NULL, NULL, true, 0, NULL);
@@ -2201,7 +2201,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (249, 'lun', 'Lunda', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (250, 'luo', 'Luo (Kenya and Tanzania)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (251, 'lus', 'Lushai', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (252, 'mk', 'Macedonian', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (252, 'mk', 'Macedonian', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true, 0, '{376b068c-4aff-4f66-bb4c-fde345b63073}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (253, 'mad', 'Madurese', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (254, 'mag', 'Magahi', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (255, 'mh', 'Marshallese', NULL, NULL, NULL, true, 0, NULL);
@@ -2251,7 +2251,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (299, 'nic', 'Niger-Kordofanian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (300, 'niu', 'Niuean', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (301, 'nn', 'Norwegian Nynorsk', NULL, 2, 'n != 1', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true, 0, '{4CD2763D-5532-4ddc-84D9-2E094695A680}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (303, 'nog', 'Nogai', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (304, 'non', 'Norse, Old', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (305, 'no', 'Norwegian', NULL, 2, 'n != 1', false, 0, NULL);
@@ -2274,7 +2274,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (322, 'pag', 'Pangasinan', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (323, 'pal', 'Pahlavi', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (324, 'pam', 'Pampanga', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (325, 'pa', 'Punjabi', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (325, 'pa', 'Punjabi', NULL, 2, 'n != 1', true, 0, '{96f366b1-5194-4e30-9415-1f6fcaaaa583}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (326, 'pap', 'Papiamento', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (327, 'pau', 'Palauan', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (328, 'peo', 'Persian, Old (ca.600-400 B.C.)', NULL, NULL, NULL, true, 0, NULL);
@@ -2282,8 +2282,8 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (330, 'phi', 'Philippine (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (331, 'phn', 'Phoenician', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (332, 'pi', 'Pali', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (333, 'pl', 'Polish', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (334, 'pt', 'Portuguese', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (333, 'pl', 'Polish', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, '{cbfb6154-47f6-47ea-b888-6440a4ba44e8}');
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (334, 'pt', 'Portuguese', NULL, 2, 'n != 1', true, 0, '{6e528a74-5cca-40d1-mozia152-d1b2d415210b}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (335, 'pon', 'Pohnpeian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (336, 'pra', 'Prakrit languages', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (337, 'pro', 'Provençal, Old (to 1500)', NULL, NULL, NULL, true, 0, NULL);
@@ -2295,9 +2295,9 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (343, 'roa', 'Romance (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (344, 'rm', 'Raeto-Romance', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (345, 'rom', 'Romany', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true, 0, '{93ead120-1d61-4663-852d-ee631493168f}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, '{9E20245A-B2EE-4ee6-815B-99C30B35D0D2}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (350, 'sg', 'Sango', NULL, 2, 'n > 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (351, 'sah', 'Yakut', NULL, NULL, NULL, true, 0, NULL);
@@ -2321,7 +2321,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (369, 'sit', 'Sino-Tibetan (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (370, 'sla', 'Slavic (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (371, 'sk', 'Slovak', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (372, 'sl', 'Slovenian', NULL, 4, 'n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (372, 'sl', 'Slovenian', NULL, 4, 'n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3', true, 0, '{ac25d192-0004-4228-8dc3-13a5461ca1c6}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (373, 'sma', 'Southern Sami', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (374, 'se', 'Northern Sami', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (375, 'smi', 'Sami languages (Other)', NULL, NULL, NULL, true, 0, NULL);
@@ -2336,7 +2336,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (384, 'so', 'Somali', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0, '{e4d01067-3443-405d-939d-a200ed3db577}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (388, 'sc', 'Sardinian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (389, 'srr', 'Serer', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (390, 'ssa', 'Nilo-Saharan (Other)', NULL, NULL, NULL, true, 0, NULL);
@@ -2346,7 +2346,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (394, 'sus', 'Susu', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (395, 'sux', 'Sumerian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (396, 'sw', 'Swahili', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (397, 'sv', 'Swedish', NULL, 2, 'n != 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (397, 'sv', 'Swedish', NULL, 2, 'n != 1', true, 0, '{A3E7CC55-B6E4-4a87-BD2E-657CA489F23A}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (398, 'syr', 'Syriac', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (399, 'ty', 'Tahitian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (400, 'tai', 'Tai (Other)', NULL, NULL, NULL, true, 0, NULL);
@@ -2376,7 +2376,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (424, 'tk', 'Turkmen', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (425, 'tum', 'Tumbuka', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (426, 'tup', 'Tupi languages', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (427, 'tr', 'Turkish', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (427, 'tr', 'Turkish', NULL, 1, '0', true, 0, '{08c0f953-0736-4989-b921-3e7ddfaf556a}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (428, 'tut', 'Altaic (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (429, 'tvl', 'Tuvalu', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (430, 'tw', 'Twi', NULL, NULL, NULL, true, 0, NULL);
@@ -2384,7 +2384,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (432, 'udm', 'Udmurt', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (433, 'uga', 'Ugaritic', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (434, 'ug', 'Uighur', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0, '{f68df430-4534-4473-8ca4-d5de32268a8d}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (438, 'ur', 'Urdu', NULL, 2, 'n != 1', true, 0, NULL);
@@ -2438,10 +2438,10 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (486, 'en_US', 'English (United States)', NULL, 2, 'n != 1', false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (487, 'en_ZA', 'English (South Africa)', NULL, 2, 'n != 1', false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (488, 'en_ZW', 'English (Zimbabwe)', NULL, 2, 'n != 1', false, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (489, 'zh_CN', 'Chinese (China)', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (489, 'zh_CN', 'Chinese (China)', NULL, 1, '0', true, 0, '{74d253f5-1463-4de4-bc6e-a7127c066416}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (490, 'zh_HK', 'Chinese (Hong Kong)', NULL, 1, '0', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (491, 'zh_SG', 'Chinese (Singapore)', NULL, 1, '0', false, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (492, 'zh_TW', 'Chinese (Taiwan)', NULL, 1, '0', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (492, 'zh_TW', 'Chinese (Taiwan)', NULL, 1, '0', true, 0, '{0c7ce36c-a092-4a3d-9ac3-9891d2f2727e}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (493, 'eu_ES', 'Basque (Spain)', NULL, 2, 'n != 1', false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (494, 'eu_FR', 'Basque (France)', NULL, 2, 'n != 1', false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (495, 'es_AR', 'Spanish (Argentina)', NULL, 2, 'n != 1', false, 0, NULL);
@@ -2470,7 +2470,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (518, 'bn_IN', 'Bengali (India)', NULL, NULL, NULL, false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (519, 'om_ET', 'Oromo (Ethiopia)', NULL, NULL, NULL, false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (520, 'om_KE', 'Oromo (Kenya)', NULL, NULL, NULL, false, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (521, 'pt_BR', 'Portuguese (Brazil)', NULL, 2, 'n > 1', true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (521, 'pt_BR', 'Portuguese (Brazil)', NULL, 2, 'n > 1', true, 0, '{8cb7341c-bcb6-43ca-b214-c48967f2a77e}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (522, 'pt_PT', 'Portuguese (Portugal)', NULL, 2, 'n != 1', false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (523, 'aa_DJ', 'Afar (Djibouti)', NULL, NULL, NULL, false, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (524, 'aa_ER', 'Afar (Eritrea)', NULL, NULL, NULL, false, 0, NULL);
@@ -5927,6 +5927,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (8, 'disabled-template', 'disabled-template', NULL, 'disabled-template');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (9, 'firefox', 'Firefox', NULL, 'firefox');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;

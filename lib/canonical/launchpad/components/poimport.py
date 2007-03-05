@@ -7,6 +7,8 @@ import datetime
 import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
+from sqlobject import SQLObjectNotFound
+#from canonical.launchpad.database.pomsgid import POMsgID
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -19,36 +21,15 @@ from canonical.launchpad.webapp import canonical_url
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
 
-
 class NotExportedFromRosetta(Exception):
     """Raised when a PO file imported lacks the export time from Rosetta."""
 
-
-def getLastTranslator(parser, pofile):
-    """Return the person that appears as Last-Translator in a parsed PO file.
+def getPersonByEmail(pofile, email, name=None):
+    """Return the person for given email.
 
     If the person is unknown in launchpad, the account will be created.
-    If the parser does not have a IPOHeader, the return value will be None.
     """
-    if parser.header is None:
-        # The file does not have a header field.
-        return None
-
-    try:
-        last_translator = parser.header['Last-Translator']
-    except KeyError:
-        # Usually we should only get a KeyError exception but if we get
-        # any other exception we should do the same, use the importer name
-        # as the person who owns the imported po file.
-        return None
-
-    name, email = parseaddr(last_translator)
-
-    if email == 'EMAIL@ADDRESS' or not '@' in email:
-        # Gettext (and Rosetta) sets by default the email address to
-        # EMAIL@ADDRESS unless we know the real address, thus, we know this
-        # isn't a real account and we use the person that imported the file
-        # as the owner.
+    if not email or email == 'EMAIL@ADDRESS' or not '@' in email:
         return None
     else:
         personset = getUtility(IPersonSet)
@@ -65,12 +46,12 @@ def getLastTranslator(parser, pofile):
 
         return person
 
-def import_po(pofile_or_potemplate, file, importer, published=True):
+def translation_import(pofile_or_potemplate, file, importer, published=True):
     """Convert a .pot or .po file into DB objects.
 
     :arg pofile_or_potemplate: is the IPOFile or IPOTemplate object where the
         import will be done.
-    :arg file: is a file-like object with the content we are importing.
+    :arg file: is dict containing header and messages we are importing.
     :arg importer: is the person who requested this import.
     :arg published: indicates if the file being imported is published or just a
         translation update. With template files should be always published.
@@ -85,15 +66,14 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
     """
     assert importer is not None, "The importer cannot be None."
 
-    parser = POParser()
-    parser.write(file.read())
-    parser.finish()
+    header = file['header']
+    messages = file['messages']
 
     if IPOFile.providedBy(pofile_or_potemplate):
         pofile = pofile_or_potemplate
         potemplate = pofile.potemplate
         # Check if we are importing a new version.
-        if pofile.isPORevisionDateOlder(parser.header):
+        if header and pofile.isPORevisionDateOlder(header):
             # The new imported file is older than latest one imported, we
             # don't import it, just ignore it as it could be a mistake and
             # would make us lose translations.
@@ -110,9 +90,11 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             # Expire old messages
             pofile.expireAllMessages()
             # Update the header
-            pofile.updateHeader(parser.header)
+            pofile.updateHeader(header)
             # Get last translator.
-            last_translator = getLastTranslator(parser, pofile)
+            last_translator = getPersonByEmail(pofile,
+                                               file['lasttranslatoremail'],
+                                               file['lasttranslatorname'])
             if last_translator is None:
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
@@ -123,9 +105,9 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
         potemplate = pofile_or_potemplate
         # Expire old messages
         potemplate.expireAllMessages()
-        if parser.header is not None:
+        if header is not None:
             # Update the header
-            potemplate.header = parser.header.msgstr
+            potemplate.header = header.msgstr
         UTC = pytz.timezone('UTC')
         potemplate.date_last_updated = datetime.datetime.now(UTC)
     else:
@@ -136,27 +118,53 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
     count = 0
 
     errors = []
-    for pomessage in parser.messages:
+    import sys
+    for pomsg in messages:
         # Add the English msgid.
-        potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomessage.msgid)
+        if pomsg['alt_msgid']:
+            potmsgset = potemplate.getPOTMsgSetByAlternativeMsgID(
+                pomsg['alt_msgid'])
+            if pofile and not potmsgset:
+                continue
+            if potmsgset and not pomsg['msgid']:
+                pomsg['msgid'] = potmsgset.getPOMsgIDs()[0].msgid
+        else:
+            potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
+
         if potmsgset is None:
             # It's the first time we see this msgid.
-            potmsgset = potemplate.createMessageSetFromText(pomessage.msgid)
+            if not pomsg['msgid']:
+                continue
+            potmsgset = potemplate.createMessageSetFromText(pomsg['msgid'],
+                                                            pomsg['alt_msgid'])
         else:
+            # XXX: set fuzzy marker if primemsgid actually changes
             # Note that we saw it.
-            potmsgset.makeMessageIDSighting(
-                pomessage.msgid, TranslationConstants.SINGULAR_FORM,
-                update=True)
+            if pomsg['msgid']:
+#                 if pomsg['msgid'] != potmsgset.primemsgid_.msgid:
+#                     try:
+#                         messageID = POMsgID.byMsgid(pomsg['msgid'])
+#                     except SQLObjectNotFound:
+#                         # If there are no existing message ids,
+#                         # create a new one.
+#                         messageID = POMsgID(msgid=text)
+#                     potmsgset.primemsgid_ = messageID
+#                     if not 'fuzzy' in pomsg['flags']:
+#                         pomsg['flags'].append('fuzzy')
+
+                potmsgset.makeMessageIDSighting(
+                    pomsg['msgid'], TranslationConstants.SINGULAR_FORM,
+                    update=True)
 
         # Add the English plural form.
-        if pomessage.msgidPlural is not None and pomessage.msgidPlural != '':
+        if pomsg['msgid_plural']:
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
             msgids = list(potmsgset.getPOMsgIDs())
             if len(msgids) > 1:
                 pomsgidsighting = potmsgset.getPOMsgIDSighting(
                     TranslationConstants.PLURAL_FORM)
-                if (pomsgidsighting.pomsgid_.msgid != pomessage.msgidPlural and
+                if (pomsgidsighting.pomsgid_.msgid != pomsg['msgid_plural'] and
                     pofile is not None):
                     # The PO file wants to change the msgidPlural from the PO
                     # template, that's broken and not usual, so we raise an
@@ -168,8 +176,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
                         'pomsgset': pomsgset,
-                        'pomessage': pomessage,
-                        'error-message': ("The msgid_Plural field has changed"
+                        'pomessage': pomsg,
+                        'error-message': ("The msgid_plural field has changed"
                             " since last time this .po file was\ngenerated,"
                             " please report this error to %s" %
                                           config.rosetta.rosettaadmin.email)
@@ -184,31 +192,28 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 pomsgidsighting.sync()
 
             potmsgset.makeMessageIDSighting(
-                pomessage.msgidPlural, TranslationConstants.PLURAL_FORM,
+                pomsg['msgid_plural'], TranslationConstants.PLURAL_FORM,
                 update=True)
 
         # Update the position
         count += 1
 
-        commenttext = pomessage.commentText
-        if commenttext is not None:
-            commenttext = commenttext.rstrip()
+        for commentfield in ['comment', 'sourcecomment', 'filerefs']:
+            if pomsg[commentfield] is not None:
+                pomsg[commentfield] = pomsg[commentfield].rstrip()
 
-        sourcecomment = pomessage.sourceComment
-        if sourcecomment is not None:
-            sourcecomment = sourcecomment.rstrip()
+        commenttext = pomsg['comment']
+        sourcecomment = pomsg['sourcecomment']
+        filereferences = pomsg['filerefs']
 
-        filereferences = pomessage.fileReferences
-        if filereferences is not None:
-            filereferences = filereferences.rstrip()
-
-        if 'fuzzy' in pomessage.flags:
-            pomessage.flags.remove('fuzzy')
+        if 'fuzzy' in pomsg['flags']:
+            pomsg['flags'].remove('fuzzy')
             fuzzy = True
+            flagscomment = u", fuzzy"
         else:
             fuzzy = False
-
-        flagscomment = pomessage.flagsText(withHash=False)
+            flagscomment = u""
+        flagscomment += u", ".join(pomsg['flags'])
 
         if pofile is None:
             # The import is a .pot file
@@ -238,16 +243,11 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 potmsgset.filereferences = filereferences
                 pomsgset.flagscomment = flagscomment
 
-            pomsgset.obsolete = pomessage.obsolete
+            pomsgset.obsolete = pomsg['obsolete']
 
             # Store translations
-            if pomessage.msgstrPlurals:
-                translations = {}
-                for i, plural in enumerate(pomessage.msgstrPlurals):
-                    translations[i] = plural
-            elif pomessage.msgstr is not None:
-                translations = { 0: pomessage.msgstr }
-            else:
+            translations = pomsg['msgstr']
+            if not translations:
                 # We don't have anything to import.
                 continue
 
@@ -284,7 +284,7 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': pomessage,
+                    'pomessage': pomsg,
                     'error-message': e
                 }
 
