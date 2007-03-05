@@ -143,8 +143,7 @@ And the active translation is not the one we suggested.
 
 And previous reviewer was
 
-  >>> selection = pomsgset.getSelection(0)
-  >>> selection.reviewer.name
+  >>> pomsgset.reviewer.name
   u'carlos'
 
 Now, Foo Bar, a translator with permissions, is going to approve that new
@@ -170,8 +169,7 @@ And the active translation is now the one from no-priv user.
 
 Also, we should have Foo Bar as the reviewer of that translation.
 
-  >>> selection = pomsgset.getSelection(0)
-  >>> selection.reviewer.displayname
+  >>> pomsgset.reviewer.displayname
   u'Foo Bar'
 
 
@@ -235,8 +233,7 @@ given timestamp.
   >>> from pytz import UTC
   >>> from canonical.launchpad.interfaces import TranslationConstants
   >>> pomsgset = POMsgSet.get(2)
-  >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
-  >>> selection.date_reviewed.isoformat()
+  >>> pomsgset.date_reviewed.isoformat()
   '2005-04-07T13:19:17.601068+00:00'
   >>> pomsgset.isNewerThan(datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
   True

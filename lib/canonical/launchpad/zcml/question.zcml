@@ -183,8 +183,9 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestionSet"
-    path_expression="string:tickets"
+    path_expression="string:support"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    rootsite="answers"
     />
 
   <browser:defaultView

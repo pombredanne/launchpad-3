@@ -62,7 +62,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    get_supported_languages)
+    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from sourcerer.deb.version import Version
 
@@ -276,6 +276,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distribution = %s' % sqlvalues(self)
+
     @property
     def currentrelease(self):
         # XXX: this should be just a selectFirst with a case in its
@@ -485,10 +489,17 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
         return question
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
-            distribution=self, **search_criteria).getResults()
+            distribution=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
+
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
