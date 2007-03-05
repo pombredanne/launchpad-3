@@ -7,6 +7,7 @@ On this section, we are going to test the view class for an IPOMsgSet object.
     >>> from canonical.launchpad.database import POMsgSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.interfaces import TranslationConstants
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
 that we are going to edit.
@@ -135,51 +136,62 @@ First, msg_id_has_tab() determines whether a message set contains any tabs.
 
 When we change the set to include a tab character, the function detects it.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\tBar'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Foo\tBar', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_tab
     True
 
 Similarly, msgid_has_newline() determines whether a message contains newlines.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_newline
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\nBar'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Foo\nBar', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_newline
     True
 
 And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u' Leading space'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u' Leading space', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'  Leading space', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Trailing space ', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Trailing space  ', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Leading\n Space  ', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Trailing \nSpace  ', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \r\nSpace'
+    >>> subview.context.potmsgset.makeMessageIDSighting(
+    ...     u'Trailing \r\nspace', TranslationConstants.SINGULAR_FORM , update=True)
     >>> subview.msgid_has_leading_or_trailing_space
     True
 

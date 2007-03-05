@@ -17,13 +17,6 @@ class IPOTMsgSet(Interface):
 
     id = Attribute("""An identifier for this POTMsgSet""")
 
-    # The primary message ID is the same as the message ID with plural
-    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
-
-    primemsgid_ = Attribute("The primary msgid for this set.")
-
-    alternative_msgid_ = Attribute("The alternative msgid for this set.")
-
     sequence = Attribute("The ordering of this set within its file.")
 
     potemplate = Attribute("The template this set is associated with.")
@@ -35,6 +28,9 @@ class IPOTMsgSet(Interface):
     sourcecomment = Attribute("The source code comments this set has.")
 
     flagscomment = Attribute("The flags this set has.")
+
+    msgid = Field(title=_("The singular IPOMsgID.", readonly=True)
+    msgid_plural = Field(title=_("The plural IPOMsgID or None.", readonly=True)
 
     def getCurrentSubmissions(language, pluralform):
         """Return a selectresults for the submissions that are currently
@@ -49,11 +45,6 @@ class IPOTMsgSet(Interface):
         """Return an iterator over this set's IPOMsgID.
 
         The maximum number of items this iterator returns is 2.
-        """
-
-    def getPOMsgIDSighting(pluralForm):
-        """Return the IPOMsgIDSighting that is current and has the plural
-        form provided.
         """
 
     def translationsForLanguage(language):

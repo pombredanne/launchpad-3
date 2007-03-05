@@ -26,8 +26,6 @@ class POTMsgSet(SQLBase):
 
     primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
         notNull=True)
-    alternative_msgid_ = StringCol(dbName='alternative_msgid',
-                                   notNull=False)
     sequence = IntCol(dbName='sequence', notNull=True)
     potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
         notNull=True)
@@ -35,6 +33,22 @@ class POTMsgSet(SQLBase):
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
+
+    @property
+    def msgid(self):
+        """See IPOTMsgSet."""
+        return self.primemsgid_
+
+    @property
+    def msgid_plural(self):
+        """See IPOTMsgSet."""
+        return POMsgID.selectOne('''
+            POMsgIDSighting.potmsgset = %s AND
+            POMsgIDSighting.pomsgid = POMsgID.id AND
+            POMsgIDSighting.pluralform = 1 AND
+            POMsgIDSighting.inlastrevision = TRUE
+            ''' % sqlvalues(self),
+            clauseTables=['POMsgIDSighting'])
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
@@ -60,26 +74,6 @@ class POTMsgSet(SQLBase):
                     for flag in self.flagscomment.replace(' ', '').split(',')
                     if flag != '']
 
-    def getPOMsgIDs(self):
-        """See IPOTMsgSet."""
-        return POMsgID.select('''
-            POMsgIDSighting.potmsgset = %d AND
-            POMsgIDSighting.pomsgid = POMsgID.id AND
-            POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id,
-            clauseTables=['POMsgIDSighting'],
-            orderBy='POMsgIDSighting.pluralform')
-
-    def getPOMsgIDSighting(self, pluralForm):
-        """See IPOTMsgSet."""
-        sighting = POMsgIDSighting.selectOneBy(
-            potmsgset=self,
-            pluralform=pluralForm,
-            inlastrevision=True)
-        if sighting is None:
-            raise NotFoundError(pluralForm)
-        else:
-            return sighting
 
     def getPOMsgSet(self, language_code, variant=None):
         """See IPOTMsgSet."""
@@ -125,7 +119,7 @@ class POTMsgSet(SQLBase):
 
         assert existing_pomsgset is None, (
             "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
-                self.primemsgid_.msgid, pofile.title))
+                self.msgid.msgid, pofile.title))
 
         return DummyPOMsgSet(pofile, self)
 
@@ -173,12 +167,25 @@ class POTMsgSet(SQLBase):
         except SQLObjectNotFound:
             messageID = POMsgID(msgid=text)
 
+        # Get current sighting so we can deactivate it, if needed.
+        current_sighting = POMsgIDSighting.selectOneBy(
+            potmsgset=self,
+            pluralform=pluralForm,
+            inlastrevision=True)
+
         existing = POMsgIDSighting.selectOneBy(
             potmsgset=self,
             pomsgid_=messageID,
             pluralform=pluralForm)
 
         if existing is None:
+            if current_sighting is not None:
+                current_sighting.inlastrevision = False
+                # We need to flush this change to prevent that the new one
+                # that we are going to create conflicts with this due a race
+                # condition applying the changes to the DB.
+                current_sighting.updateSync()
+
             return POMsgIDSighting(
                 potmsgset=self,
                 pomsgid_=messageID,
@@ -187,11 +194,18 @@ class POTMsgSet(SQLBase):
                 inlastrevision=True,
                 pluralform=pluralForm)
         else:
-            if not update:
-                raise NameNotAvailable(
-                    "There is already a message ID sighting for this "
-                    "message set, text, and plural form")
-            existing.set(datelastseen=UTC_NOW, inlastrevision=True)
+            assert (current_sighting is None or
+                    current_sighting == existing or update), (
+                "There is already a message ID sighting for this "
+                "message set, text, and plural form")
+            if current_sighting is not None and current_sighting != existing:
+                current_sighting.inlastrevision = False
+                # We need to flush this change to prevent that the new one
+                # that we are going to create conflicts with this due a race
+                # condition applying the changes to the DB.
+                current_sighting.updateSync()
+            existing.datelastseen = UTC_NOW
+            existing.inlastrevision = True
             return existing
 
     def applySanityFixes(self, text):
@@ -208,7 +222,7 @@ class POTMsgSet(SQLBase):
 
     def convertDotToSpace(self, text):
         """See IPOTMsgSet."""
-        if u'\u2022' in self.primemsgid_.msgid or u'\u2022' not in text:
+        if u'\u2022' in self.msgid.msgid or u'\u2022' not in text:
             return text
 
         return text.replace(u'\u2022', ' ')
@@ -218,7 +232,7 @@ class POTMsgSet(SQLBase):
         if text is None:
             return text
 
-        msgid = self.primemsgid_.msgid
+        msgid = self.msgid.msgid
         stripped_msgid = msgid.strip()
         stripped_text = text.strip()
         new_text = None
@@ -244,7 +258,7 @@ class POTMsgSet(SQLBase):
 
     def normalizeNewLines(self, text):
         """See IPOTMsgSet."""
-        msgid = self.primemsgid_.msgid
+        msgid = self.msgid.msgid
         # There are three different kinds of newlines:
         windows_style = '\r\n'
         mac_style = '\r'

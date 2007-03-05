@@ -342,7 +342,7 @@ class POFileTranslateView(BaseTranslationView):
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
+            msgid_text = potmsgset.msgid.msgid
             pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
                                                             only_current=False)
             if pomsgset is None:

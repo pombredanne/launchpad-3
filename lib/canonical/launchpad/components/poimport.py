@@ -162,9 +162,8 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             # available in the file being imported.
             msgids = list(potmsgset.getPOMsgIDs())
             if len(msgids) > 1:
-                pomsgidsighting = potmsgset.getPOMsgIDSighting(
-                    TranslationConstants.PLURAL_FORM)
-                if (pomsgidsighting.pomsgid_.msgid != pomsg['msgid_plural'] and
+                msgid_plural = potmsgset.msgid_plural
+                if (msgid_plural.msgid != pomsg['msgid_plural'] and
                     pofile is not None):
                     # The PO file wants to change the msgidPlural from the PO
                     # template, that's broken and not usual, so we raise an
@@ -185,11 +184,6 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
 
                     errors.append(error)
                     continue
-
-                pomsgidsighting.inlastrevision = False
-                # Sync needed to be sure that we don't have two
-                # pomsgidsightings set as in last revision
-                pomsgidsighting.sync()
 
             potmsgset.makeMessageIDSighting(
                 pomsg['msgid_plural'], TranslationConstants.PLURAL_FORM,

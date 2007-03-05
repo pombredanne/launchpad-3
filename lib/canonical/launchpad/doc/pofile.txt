@@ -365,7 +365,7 @@ Is time to create it.
 
 As we can see, is the msgid we were looking for.
 
-  >>> pomsgset.potmsgset.primemsgid_.msgid == msgid
+  >>> pomsgset.potmsgset.msgid.msgid == msgid
   True
 
 This entry is in fact one that is not used anymore, that means, its sequence

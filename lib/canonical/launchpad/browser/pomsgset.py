@@ -919,7 +919,7 @@ class POMsgSetView(LaunchpadView):
             second_lang_pofile = potemplate.getPOFileByLang(second_lang_code)
             if second_lang_pofile:
                 self.sec_lang = second_lang_pofile.language
-                msgid = self.context.potmsgset.primemsgid_.msgid
+                msgid = self.context.potmsgset.msgid.msgid
                 try:
                     self.second_lang_potmsgset = second_lang_pofile[msgid].potmsgset
                 except NotFoundError:

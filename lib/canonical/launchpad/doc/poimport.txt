@@ -182,7 +182,7 @@ The last update date is the one we got.
 Once we've done this, the correct message IDs should show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
-    >>> [potmsgset.primemsgid_.msgid for potmsgset in potmsgsets]
+    >>> [potmsgset.msgid.msgid for potmsgset in potmsgsets]
     [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
 
 The file references field should be there
@@ -293,7 +293,7 @@ Here's a current message set: i.e. it has a corresponding current message set
 in the PO template. It should not be publishedfuzzy.
 
     >>> messageSets = list(pofile.currentMessageSets())
-    >>> messageSets[0].potmsgset.primemsgid_.msgid
+    >>> messageSets[0].potmsgset.msgid.msgid
     u'foo'
     >>> messageSets[0].publishedfuzzy
     False
@@ -307,7 +307,7 @@ And should be accepted by our validator.
 And here's a non-current message set. It shouldn't be fuzzy either.
 
     >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
-    >>> messageSets[0].potmsgset.primemsgid_.msgid
+    >>> messageSets[0].potmsgset.msgid.msgid
     u'balloon'
     >>> messageSets[0].publishedfuzzy
     False

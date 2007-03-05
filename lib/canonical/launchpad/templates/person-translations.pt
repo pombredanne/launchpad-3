@@ -36,7 +36,7 @@
                    tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
             </td>
             <td tal:content="record/pofile/language/englishname">Spanish</td>
-            <td tal:content="record/latest_posubmission/pomsgset/potmsgset/primemsgid_/msgid" />
+            <td tal:content="record/latest_posubmission/pomsgset/potmsgset/msgid/msgid" />
             <td tal:content="record/latest_posubmission/potranslation/translation" />
             <td tal:content="record/date_last_touched/fmt:date" />
           </tr>
