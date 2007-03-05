@@ -252,7 +252,6 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
-    # revision number manipulation
     def getBranchRevision(sequence):
         """Gets the BranchRevision for the given sequence number.
 
@@ -261,15 +260,6 @@ class IBranch(IHasOwner):
 
     def createBranchRevision(sequence, revision):
         """Create a BranchRevision mapping sequence to revision."""
-
-    def truncateHistory(from_rev):
-        """Truncate the history of the given branch.
-
-        BranchRevision objects with sequence numbers greater than or
-        equal to from_rev are destroyed.
-
-        Returns True if any BranchRevision objects were destroyed.
-        """
 
     def updateScannedDetails(revision_id, revision_count):
         """Updates attributes associated with the scanning of the branch.
