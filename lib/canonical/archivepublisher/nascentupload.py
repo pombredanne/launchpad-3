@@ -1550,7 +1550,7 @@ class NascentUpload:
                 return candidates[0]
         return None
 
-    def getBinaryAncestry(self, uploaded_file):
+    def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -1578,6 +1578,10 @@ class NascentUpload:
                 uploaded_file.package, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
+
+            if not try_other_archs:
+                continue
+
             # Try the other architectures...
             dars = self.distrorelease.architectures
             other_dars = [other_dar for other_dar in dars
@@ -1609,27 +1613,7 @@ class NascentUpload:
         """Check if the uploaded binary version is higher than the ancestry.
 
         Automatically mark the package as 'rejected' using _checkVersion().
-
-        It skips version checks for ancestries found in other architectures.
         """
-        # XXX cprov 20070305: it would be nice if we can enhance NFU to
-        # be LP-aware, i.e., embed the LP content classes related lookup.
-        # This way we could compare than directly instead of repeating this
-        # chunk of code to fix 'architecture'.
-        proposed_archtag = uploaded_file.architecture
-        if proposed_archtag == "all":
-            arch_indep = self.distrorelease.nominatedarchindep
-            proposed_archtag = arch_indep.architecturetag
-
-        # XXX cprov 20070305: We should not verify version for first binary
-        # coming in a architecture. Those binaries must be delayed during the
-        # building process and if we compare than with the currently published
-        # version in another archive they might be considered OLD (in fact,
-        # they will have the same version.). See further info in #89846.
-        found_archtag = ancestry.distroarchrelease.architecturetag
-        if proposed_archtag != found_archtag:
-            return
-
         proposed_version = uploaded_file.version
         archive_version = ancestry.binarypackagerelease.version
         filename = uploaded_file.filename
@@ -1712,10 +1696,18 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    self.checkBinaryVersion(uploaded_file, ancestry)
                     # XXX cprov 20070212: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
+                    # Fo binary versions verification we should only
+                    # use ancestries in the same architecture. If none
+                    # was found we can go w/o any checks, since it's
+                    # a NEW binary in this architecture, any version is
+                    # fine. See bug #89846 for further info.
+                    ancestry = self.getBinaryAncestry(
+                        uploaded_file, try_other_archs=False)
+                    if ancestry is not None:
+                        self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
