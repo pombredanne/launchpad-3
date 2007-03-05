@@ -5,7 +5,7 @@ Launchpad.
 
     >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> browser.getLink('Personal Details').click()
+    >>> browser.getLink('Change details').click()
 
     >>> browser.getControl('Display Name').value
     'Foo Bar'
@@ -61,7 +61,7 @@ He will also change his timezone and hackergotchi:
 
     >>> browser.url
     'http://launchpad.dev/~foobar'
-    >>> browser.getLink('Personal Details').click()
+    >>> browser.getLink('Change details').click()
     >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
     u'.../hackergotchi.png'
     >>> browser.getControl('Timezone').value

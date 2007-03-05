@@ -28,7 +28,7 @@
       <p i18n:translate="">If you don't know the bug number, you can search for it
         on the <a href=""
                   tal:attributes="href string:${context/target/fmt:url}/+bugs"
-                  >Bugs Listing</a> page.
+                  >Bug listing</a> page.
       </p>
     </div>
   </div>

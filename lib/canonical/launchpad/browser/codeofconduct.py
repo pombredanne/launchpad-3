@@ -50,7 +50,7 @@ class CodeOfConductContextMenu(ContextMenu):
     links = ['sign', 'download']
 
     def sign(self):
-        text = 'Sign This Version'
+        text = 'Sign this version'
         if self.context.current and self.user and not self.user.is_ubuntero:
             enabled = True
         else:
@@ -58,7 +58,7 @@ class CodeOfConductContextMenu(ContextMenu):
         return Link('+sign', text, enabled=enabled, icon='edit')
 
     def download(self):
-        text = 'Download This Version'
+        text = 'Download this version'
         is_current=self.context.current
         return Link('+download', text, enabled=is_current, icon='download')
 
@@ -70,7 +70,7 @@ class CodeOfConductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('console', text, icon='edit')
 
 
@@ -98,7 +98,7 @@ class SignedCodeOfConductContextMenu(ContextMenu):
             return Link('+activate', text, icon='edit')
 
     def adminconsole(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('../', text, icon='info')
 
 
