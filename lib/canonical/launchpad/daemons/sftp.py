@@ -42,7 +42,8 @@ class SFTPService(service.Service):
         homedirs = config.supermirrorsftp.branches_root
         authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
         portal = Portal(self.makeRealm())
-        p.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))
+        portal.registerChecker(
+            sftponly.PublicKeyFromLaunchpadChecker(authserver))
         sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory

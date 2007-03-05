@@ -57,18 +57,20 @@ def deferToThread(f):
             return threads._putResultInDeferred(d, f, args, kwargs)
 
         t = threading.Thread(target=runInThread)
-
-        def joinThread(passedThrough):
-            t.join()
-            return passedThrough
-
-        d.addBoth(joinThread)
         t.start()
         return d
     return decorated
 
 
 class TestSFTPService(SFTPService):
+    """SFTP service that uses the the TestSFTPOnlyAvatar and installs the test
+    keys in a place that the SFTP server can find them.
+
+    This class, TestSFTPOnlyAvatar and TestBazaarFileTransferServer work
+    together to provide a threading event which is set when the first
+    connecting client closes its connection to the SFTP server.
+    """
+
     root = '/tmp/sftp-test'
     _event = None
 
@@ -99,6 +101,8 @@ class TestSFTPService(SFTPService):
 
 
 class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
+    """SFTP avatar that uses the TestBazaarFileTransferServer.
+    """
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
                                 launchpad)
@@ -109,6 +113,9 @@ class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
 
 
 class TestBazaarFileTransferServer(BazaarFileTransferServer):
+    """BazaarFileTransferServer that sets a threading event when it loses its
+    first connection.
+    """
     def __init__(self, event, data=None, avatar=None):
         BazaarFileTransferServer.__init__(self, data=data, avatar=avatar)
         self.connectionLostEvent = event
