@@ -14,6 +14,7 @@ from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
+from canonical.launchpad.database.bugbranchrevision import *
 from canonical.launchpad.database.bugcve import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
