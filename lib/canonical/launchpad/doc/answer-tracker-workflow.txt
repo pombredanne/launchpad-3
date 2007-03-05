@@ -1,6 +1,6 @@
-= Support Tracker Workflow =
+= Answer Tracker Workflow =
 
-The state of a support question is tracked through its status attribute.
+The state of a question is tracked through its status attribute.
 Six statuses are used to model a question lifecycle. These are defined
 in the QuestionStatus enumeration.
 
@@ -31,8 +31,8 @@ actions are defined in the QuestionAction enumeration.
 There is a method available to execute each of these defined actions.
 
 Let's define the actors that we are going to use to demonstrate the
-support tracker workflow. The 'No Privileges Person' will be the
-submitter of requests, 'Sample Person' will be a support contact for
+Answer Tracker workflow. The 'No Privileges Person' will be the
+submitter of questions, 'Sample Person' will be an answer contact for
 the Ubuntu distribution, and 'Marilize Coetze' will be another user
 providing support. Stub is a launchpad administrator that isn't also in
 the Ubuntu Team that owns the distribution.
@@ -73,16 +73,16 @@ A question starts its lifecycle in the Open state.
 
 From there, we have four representative scenarios.
 
-== 1) Another user helps the submitter with his request ==
+== 1) Another user helps the submitter with his question ==
 
 The most common scenario is where another user comes to help the
-submitter and answers his support request. This may involve exchanging
-information with the submitter to clarify the request.
+submitter and answers his question. This may involve exchanging
+information with the submitter to clarify the question.
 
 The requestInfo() method is used to ask the user for more information.
-This method takes two mandatory parameters: the user making the request
+This method takes two mandatory parameters: the user making the question
 and his question. It can also takes a 'datecreated' parameter specifying
-the creation date of the request (which defaults to now).
+the creation date of the question (which defaults to now).
 
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> now_plus_one_hour = now + timedelta(hours=1)
@@ -155,8 +155,8 @@ attribute is updated to the message's creation date:
     True
 
 The other user has now enough information to give an answer to the
-support request. The giveAnswer() method is used for that purpose. Like
-the requestInfo() method, it takes two mandatory parameters: the user
+question. The giveAnswer() method is used for that purpose. Like the
+requestInfo() method, it takes two mandatory parameters: the user
 providing the answer and the answer itself.
 
     >>> login('test@canonical.com')
@@ -179,9 +179,9 @@ datelastresponse is updated to contain the date of the message.
     >>> question.datelastresponse == now_plus_three_hours
     True
 
-At that point, the support request is considered answered, but we don't
-have feedback from the user on whether it solved his problem or not. If
-it doesn't the user can reopen the request. The reopen() method is used
+At that point, the question is considered answered, but we don't have
+feedback from the user on whether it solved his problem or not. If it
+doesn't the user can reopen the question. The reopen() method is used
 for that purpose.
 
     >>> login('no-priv@canonical.com')
@@ -238,7 +238,7 @@ problem. The confirmAnswer() method is used for that purpose.
     No Privileges Person
 
 The question is moved to the SOLVED state, the message that
-solved the request is saved in the answer attribute, the dateanswered
+solved the question is saved in the answer attribute, the dateanswered
 and answerer attributes are also updated.
 
     >>> print question.status.name
@@ -253,7 +253,7 @@ and answerer attributes are also updated.
 == 2) Self-answer ==
 
 Another scenario is for the case when the user comes back to answer the
-request himself. The giveAnswer() method is also used for that case.
+question himself. The giveAnswer() method is also used for that case.
 
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> self_answer_message = question.giveAnswer(
@@ -268,7 +268,7 @@ In that case, the user is considered to have confirmed that the problem
 is solved and the question is moved straight to the SOLVED state. The
 'dateanswered' attribute will contain the date of the message,
 the 'answerer' attribute will be identical to the question owner and
-the 'answer' attribute will contain the message that closed the request.
+the 'answer' attribute will contain the message that closed the question.
 
     >>> print self_answer_message.action.name
     CONFIRM
@@ -283,11 +283,11 @@ the 'answer' attribute will contain the message that closed the request.
     >>> question.answer == self_answer_message
     True
 
-== 3) The request expires ==
+== 3) The question expires ==
 
 Another case is when nobody comes to answer the message, either because
-the request is too complex or too vague. These requests can be expired
-by using the expireQuestion() method. (See support-tracker-expiration.txt
+the question is too complex or too vague. These questions can be expired
+by using the expireQuestion() method. (See answer-tracker-expiration.txt
 for the documentation of the cron script handling this task.)
 
     >>> login('no-priv@canonical.com')
@@ -295,7 +295,7 @@ for the documentation of the cron script handling this task.)
     >>> expire_message = question.expireQuestion(
     ...     sample_person, "There was no activity on this question for two "
     ...     "weeks and this question was expired. If you are still having "
-    ...     "this problem you should reopen the request and provide more "
+    ...     "this problem you should reopen the question and provide more "
     ...     "information about your problem.",
     ...     datecreated=two_weeks_from_now)
     >>> print expire_message.action.name
@@ -332,29 +332,29 @@ attribute is updated.
     True
 
 
-== 4) The request is invalid ==
+== 4) The question is invalid ==
 
 Another scenario to handle is the case where the user posts a message
-that isn't really appropriate for the support tracker like a SPAM
+that isn't really appropriate for the Answer Tracker like a SPAM
 message or a request for Ubuntu CDs.
 
     >>> spam_question = ubuntu.newQuestion(
     ...     no_priv, 'CDs', 'Please send 10 Ubuntu Dapper CDs.',
     ...     datecreated=now)
 
-The reject() method is used for such purpose. Only a support contact,
+The reject() method is used for such purpose. Only an answer contact,
 a product or distribution owner, or an administrator can reject a question.
 
 The canReject() method can be used to test if a user is allowed to
-reject the request. It takes as parameter the user who would reject the
-request:
+reject the question. It takes as parameter the user who would reject the
+question:
 
     >>> spam_question.canReject(no_priv)
     False
     >>> spam_question.canReject(marilize)
     False
 
-    # Support contact
+    # Answer contact
     >>> spam_question.canReject(sample_person)
     True
     >>> spam_question.canReject(ubuntu.owner)
@@ -405,10 +405,10 @@ dateanswered, answerer and answer attributes are also updated.
 
 Many other scenarios are possible and some of those are probably more
 common than the ones we exposed. For example, it is likely that a user
-will answer directly a support request (without asking for other
+will answer directly a question (without asking for other
 information first). Or that the question user won't come back to confirm
 that an answer solved his problem. Another likely scenario is where
-the request will expire in the NEEDSINFO state when the question owner
+the question will expire in the NEEDSINFO state when the question owner
 doesn't reply to the request for more information. All of these
 scenarios are covered by this API. It is not necessary to cover all
 these various possibilities here.
@@ -469,7 +469,7 @@ the answer and dateanswered attributes.
 
     >>> login(stub.preferredemail.email)
     >>> status_change_message = question.setStatus(
-    ...     stub, QuestionStatus.OPEN, 'Reopen the request',
+    ...     stub, QuestionStatus.OPEN, 'Reopen the question',
     ...     datecreated=now_plus_one_hour)
 
     >>> question.dateanswered is None
@@ -619,7 +619,7 @@ back to OPEN after having been rejected.
     >>> login('test@canonical.com')
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> reject_message = question.reject(
-    ...     sample_person, 'This is a frivoulous request.',
+    ...     sample_person, 'This is a frivoulous question.',
     ...     datecreated=now_plus_one_hour)
 
     >>> login(stub.preferredemail.email)

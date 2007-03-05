@@ -249,6 +249,7 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
