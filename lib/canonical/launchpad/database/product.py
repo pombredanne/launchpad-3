@@ -14,6 +14,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -641,6 +642,17 @@ class ProductSet:
             clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
             distinct=True)
         return upstream.union(distro)
+
+    def featured_translatables(self):
+        """See IProductSet"""
+        upstream = Product.select('''
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id AND
+            Product.official_rosetta
+            ''',
+            clauseTables=['ProductSeries', 'POTemplate'],
+            orderBy=SQLConstant('random()'))[:10]
+        return upstream
 
     def count_all(self):
         return Product.select().count()

@@ -376,6 +376,10 @@ class IProductSet(Interface):
         """Return an iterator over products that have resources translatables.
         """
 
+    def featured_translatables():
+        """Return an iterator over products that are using Rosetta officially.
+        """
+
     def count_all():
         """Return a count of the total number of products registered in
         Launchpad."""
