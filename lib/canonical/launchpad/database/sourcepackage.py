@@ -22,7 +22,8 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, IQuestionTarget, get_supported_languages)
+    ISourcePackage, IHasBuildRecords, IQuestionTarget,
+    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -68,12 +69,17 @@ class SourcePackageQuestionTargetMixin:
             return None
         return question
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
-            **search_criteria).getResults()
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
@@ -476,6 +482,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             "distribution release source package in the not-too-distant "
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not release-specific) source package.")
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distrorelease, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging

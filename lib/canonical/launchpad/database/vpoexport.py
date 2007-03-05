@@ -123,9 +123,9 @@ class VPOExportSet:
         if date is not None:
             join += '''
                   JOIN POMsgSet ON POMsgSet.pofile = POFile.id
-                  JOIN POSelection ON POSelection.pomsgset = POMsgSet.id
                   JOIN POSubmission ON
-                    POSubmission.id = POSelection.activesubmission'''
+                    POSubmission.pomsgset = POMsgset.id AND
+                    POSubmission.active'''
 
             where += ''' AND
                   POSubmission.datecreated > %s
@@ -244,9 +244,9 @@ class VPOExportSet:
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
                 'POMsgSet ON POMsgSet.pofile = POFile.id',
-                'POSelection ON POMsgSet.id = POSelection.pomsgset',
                 'POSubmission ON '
-                    'POSubmission.id = POSelection.activesubmission',
+                    'POSubmission.pomsgset = POMsgSet.id AND'
+                    'POSubmission.active',
             ]
             where = '''
                  POSubmission.datecreated > %s AND

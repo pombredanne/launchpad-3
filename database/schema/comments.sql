@@ -396,23 +396,6 @@ COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 
--- POSelection
-COMMENT ON TABLE POSelection IS 'This table captures the full set
-of all the translations ever submitted for a given pomsgset and pluralform.
-It also indicates which of those is currently active.';
-COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
-which we are recording a selection.';
-COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
-this selected translation.';
-COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
-this the active translation in rosetta for this pomsgset and pluralform.';
-COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
-we noted this as the current translation published in revision control (or
-in the public po files for this translation template, in the package or
-tarball or branch which is considered the source of it).';
-COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
-COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
-
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
 that we saw, or someone submitted, a particular translation for a particular
@@ -433,6 +416,8 @@ translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
 COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
+COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
+COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -451,7 +436,8 @@ same status for the last published pofile we pulled in.';
 COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
-
+COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
+COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';

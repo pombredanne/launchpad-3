@@ -535,6 +535,13 @@ k            </description>
                 Host running PKS-like (SKS) keyserver Application.
             </description>
         </key>
+        <key name="public_host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                A public host running PKS-like (SKS) keyserver Application.
+                This option is used to display links in the UI referring to
+                the public keyserver.
+            </description>
+        </key>
         <key name="port" datatype="port-number" required="yes">
             <description>
                 Port number on Host to access the keyserver

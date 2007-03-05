@@ -50,7 +50,7 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu,
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
@@ -90,22 +90,19 @@ class DistributionNavigation(
         return self.context.getSpecification(name)
 
 
-class DistributionSetNavigation(RedirectionNavigation):
+class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
-        if self.context.getByName(name) is None:
+        distribution = self.context.getByName(name)
+        if distribution is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(distribution))
 
 
 class DistributionSOP(StructuralObjectPresentation):

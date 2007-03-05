@@ -164,6 +164,7 @@ Iterating over IPackageUploads via iPackageUploadSet:
   10
   11
   12
+  13
 
 Retrieving an IPackageUpload by its id:
 
@@ -176,7 +177,7 @@ Retrieving an IPackageUpload by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  12
+  13
 
   >>> qset.count(PackageUploadStatus.ACCEPTED)
   1
@@ -192,7 +193,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  10
+  11
 
   >>> qset.count(status=PackageUploadStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -345,7 +346,7 @@ custom upload in UNAPPROVED queue.
   >>> items = breezy_autotest.getQueueItems(
   ...      PackageUploadStatus.UNAPPROVED)
   >>> items.count()
-  4
+  5
 
 We can't retrieve it with a 'what' substring:
 
