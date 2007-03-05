@@ -17,3 +17,10 @@ also be nice if the bug is on the product that the branch is on.
 >>> bbr.revision.id
 1
 
+
+== Loading a BugBranchRevision link ==
+
+>>> bbr2 = BugBranchRevision.get(bbr.id)
+>>> bbr is bbr2
+True
+
