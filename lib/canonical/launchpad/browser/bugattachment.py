@@ -51,7 +51,7 @@ class BugAttachmentEditView(LaunchpadFormView):
         if data['patch']:
             new_type = BugAttachmentType.PATCH
         else:
-            new_type= BugAttachmentType.UNSPECIFIED
+            new_type = BugAttachmentType.UNSPECIFIED
         if new_type != self.context.type:
             self.context.type = new_type
 
@@ -70,7 +70,9 @@ class BugAttachmentEditView(LaunchpadFormView):
     @action('Delete attachment', name='delete')
     def delete_action(self, action, data):
         self.request.response.addInfoNotification(
-            'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.',
+            'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.'
+            ' It will be possible to download it until it has been'
+            ' automatically removed from the server.',
             url=self.context.libraryfile.http_url, name=self.context.title)
         self.context.removeFromBug()
         self.next_url = canonical_url(self.current_bugtask)
