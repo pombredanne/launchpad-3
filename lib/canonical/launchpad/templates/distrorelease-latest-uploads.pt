@@ -1,7 +1,7 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/getLastUploads">
   <h2>Latest uploads</h2>
   <div class="portletBody">
-    <ul id="last-uploads" class="binary package">
+    <ul id="latest-uploads" class="binary package">
 
   <li tal:repeat="source context/getLastUploads">
     <a tal:attributes="href source/fmt:url">

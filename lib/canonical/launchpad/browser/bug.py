@@ -33,7 +33,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistributionSourcePackage,
+    IBugWatchSet, ICveSet, IDistributionSourcePackage, IFrontPageBugTaskSearch,
     ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
     NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
     valid_distrotask, valid_upstreamtask)
@@ -49,6 +49,7 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -180,15 +181,40 @@ class BugContextMenu(ContextMenu):
 
 
 
-class MaloneView(LaunchpadView):
+class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
+
+    custom_widget('searchtext', TextWidget, displayWidth=50)
+    custom_widget('scope', ProjectScopeWidget)
+    schema = IFrontPageBugTaskSearch
+    field_names = ['searchtext', 'scope']
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    @property
+    def target_css_class(self):
+        """The CSS class for used in the target widget."""
+        if self.target_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def target_error(self):
+        """The error message for the target widget."""
+        return self.getWidgetError('scope')
+
     def initialize(self):
+        LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
-        if not bug_id:
-            return
+        if bug_id:
+            self._redirectToBug(bug_id)
+        elif self.widgets['scope'].hasInput():
+            self._validate(action=None, data={})
+
+    def _redirectToBug(self, bug_id):
+        """Redirect to the specified bug id."""
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
