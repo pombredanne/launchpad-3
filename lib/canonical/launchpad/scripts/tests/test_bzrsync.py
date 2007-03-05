@@ -17,7 +17,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    Bug, BranchRevision, Revision, RevisionAuthor, RevisionParent)
+    BranchRevision, BugBranchRevision, Revision, RevisionAuthor,
+    RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
@@ -66,6 +67,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         TestCaseWithTransport.setUp(self)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
+        print config.branchscanner.dbuser
         self.zopeless_helper = LaunchpadZopelessTestSetup(
             dbuser=config.branchscanner.dbuser)
         self.zopeless_helper.setUp()
@@ -651,8 +653,14 @@ class TestBugLinking(BzrSyncTestCase):
         # XXX - commit something that refers to a bug
         # XXX - scan that branch
         # XXX - check that we have a row in BugBranchRevision
-        self.commitRevision(revprops={'launchpad:bug': '1'})
+        self.commitRevision(rev_id='rev1',
+                            revprops={'launchpad:bug': '1'})
         self.syncBranch()
+        bbr = BugBranchRevision.selectOne()
+        self.assertNotEqual(bbr, None)
+        self.assertEqual(bbr.revision.revision_id, 'rev1')
+        self.assertEqual(bbr.branch, self.db_branch)
+        self.assertEqual(bbr.bug.id, 1)
 
 
 def test_suite():

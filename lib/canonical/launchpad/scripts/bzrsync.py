@@ -20,6 +20,7 @@ from bzrlib.errors import NoSuchRevision
 
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
+from canonical.launchpad.database import BugBranchRevision
 
 UTC = pytz.timezone('UTC')
 
@@ -257,6 +258,16 @@ class BzrSync:
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
                 parent_ids=bzr_revision.parent_ids)
+            self._makeBugRevisionLink(db_revision, bzr_revision)
+
+    def _makeBugRevisionLink(self, db_revision, bzr_revision):
+        try:
+            bug_id = bzr_revision.properties['launchpad:bug']
+        except KeyError:
+            return
+        return BugBranchRevision(bug=Bug.get(bug_id),
+                                 branch=self.db_branch,
+                                 revision=db_revision)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.
