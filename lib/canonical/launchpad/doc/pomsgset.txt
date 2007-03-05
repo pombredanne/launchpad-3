@@ -187,8 +187,8 @@ We get a POMsgSet and verify it's a singular form:
 
   >>> pt_BR_dummypomsgset = pt_BR_dummypofile.getPOMsgSet(
   ...     u'evolution addressbook')
-  >>> pt_BR_dummypomsgset.potmsgset.getPOMsgIDs().count()
-  1
+  >>> pt_BR_dummypomsgset.potmsgset.msgid_plural is None
+  True
 
   >>> pt_BR_dummypomsgset.pluralforms
   1
@@ -249,7 +249,7 @@ same msgid as the given IPOMsgSet across the whole system.
   >>> pomsgset_translated = POMsgSet.get(752)
   >>> print pomsgset_translated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-  >>> pomsgid = pomsgset_translated.potmsgset.getPOMsgIDs()[0]
+  >>> pomsgid = pomsgset_translated.potmsgset.msgid
   >>> print pomsgid.msgid
   test man page
   >>> pomsgset_translated.active_texts
@@ -271,7 +271,7 @@ space is for any submission done outside that IPOMsgSet.
   >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
   >>> print pomsgset_untranslated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "pmount"
-  >>> pomsgid = potmsgset.getPOMsgIDs()[0]
+  >>> pomsgid = potmsgset.msgid
   >>> print pomsgid.msgid
   test man page
 

@@ -41,12 +41,6 @@ class IPOTMsgSet(Interface):
     def flags():
         """Return a list of flags on this set."""
 
-    def getPOMsgIDs():
-        """Return an iterator over this set's IPOMsgID.
-
-        The maximum number of items this iterator returns is 2.
-        """
-
     def translationsForLanguage(language):
         """Return an iterator over the active translation strings for this
         set in the given language.

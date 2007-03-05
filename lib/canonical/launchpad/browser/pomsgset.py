@@ -881,7 +881,6 @@ class POMsgSetView(LaunchpadView):
     #   self.error
     #   self.sec_lang
     #   self.second_lang_potmsgset
-    #   self.msgids
     #   self.suggestion_blocks
     #   self.pluralform_indices
 
@@ -933,15 +932,8 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form. -- kiko, 2006-09-27
-
-        # This code is where we hit the database collecting message IDs
-        # and suggestions for this POMsgSet.
-        self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
-        assert len(self.msgids) > 0, (
-            'Found a POTMsgSet without any POMsgIDSighting')
+        # This code is where we hit the database collecting suggestions for
+        # this IPOMsgSet.
 
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
@@ -1110,7 +1102,7 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def is_plural(self):
         """Return whether there are plural forms."""
-        return len(self.msgids) > 1
+        return self.context.potmsgset.msgid_plural is not None
 
     @cachedproperty
     def sequence(self):
@@ -1120,8 +1112,9 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def msgid(self):
         """Return a msgid string prepared to render in a web page."""
-        msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return text_to_html(msgid, self.context.potmsgset.flags())
+        return text_to_html(
+            self.context.potmsgset.msgid.msgid,
+            self.context.potmsgset.flags())
 
     @property
     def msgid_plural(self):
@@ -1129,18 +1122,19 @@ class POMsgSetView(LaunchpadView):
 
         If there is no plural form, return None.
         """
-        if self.is_plural:
-            msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return text_to_html(msgid, self.context.potmsgset.flags())
-        else:
-            return None
+        return text_to_html(
+            self.context.potmsgset.msgid_plural.msgid,
+            self.context.potmsgset.flags())
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
     # is being done one way here, and another way in the functions above.
     @property
     def msgid_has_tab(self):
         """Determine whether any of the messages contain tab characters."""
-        for msgid in self.msgids:
+        msgids = [self.context.potmsgset.msgid]
+        if self.context.potmsgset.msgid_plural is not None:
+            msgids.append(self.context.potmsgset.msgid_plural)
+        for msgid in msgids:
             if '\t' in msgid.msgid:
                 return True
         return False
@@ -1148,7 +1142,10 @@ class POMsgSetView(LaunchpadView):
     @property
     def msgid_has_newline(self):
         """Determine whether any of the messages contain newline characters."""
-        for msgid in self.msgids:
+        msgids = [self.context.potmsgset.msgid]
+        if self.context.potmsgset.msgid_plural is not None:
+            msgids.append(self.context.potmsgset.msgid_plural)
+        for msgid in msgids:
             if '\n' in msgid.msgid:
                 return True
         return False
@@ -1156,7 +1153,10 @@ class POMsgSetView(LaunchpadView):
     @property
     def msgid_has_leading_or_trailing_space(self):
         """Determine whether any messages contain leading or trailing spaces."""
-        for msgid in self.msgids:
+        msgids = [self.context.potmsgset.msgid]
+        if self.context.potmsgset.msgid_plural is not None:
+            msgids.append(self.context.potmsgset.msgid_plural)
+        for msgid in msgids:
             for line in msgid.msgid.splitlines():
                 if line.startswith(' ') or line.endswith(' '):
                     return True

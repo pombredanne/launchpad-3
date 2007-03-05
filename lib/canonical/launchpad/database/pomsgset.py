@@ -32,7 +32,7 @@ class POMsgSetMixIn:
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if self.potmsgset.getPOMsgIDs().count() > 1:
+        if self.potmsgset.msgid_plural is not None:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
             else:
@@ -267,8 +267,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
-        msgids_text = [messageid.msgid
-                       for messageid in potmsgset.getPOMsgIDs()]
+        msgids_text = [potmsgset.msgid.msgid]
+        if potmsgset.msgid_plural is not None:
+            msgids_text.append(potmsgset.msgid_plural.msgid)
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK

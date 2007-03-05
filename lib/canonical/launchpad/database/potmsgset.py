@@ -137,7 +137,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if len(list(self.getPOMsgIDs())) == 1:
+        if self.msgid_plural is None:
             pluralforms = 1
 
         assert pluralforms != None, (

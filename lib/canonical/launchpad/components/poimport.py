@@ -127,7 +127,7 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             if pofile and not potmsgset:
                 continue
             if potmsgset and not pomsg['msgid']:
-                pomsg['msgid'] = potmsgset.getPOMsgIDs()[0].msgid
+                pomsg['msgid'] = potmsgset.msgid.msgid
         else:
             potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
 
@@ -160,8 +160,7 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
         if pomsg['msgid_plural']:
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
-            msgids = list(potmsgset.getPOMsgIDs())
-            if len(msgids) > 1:
+            if potmsgset.msgid_plural is not None:
                 msgid_plural = potmsgset.msgid_plural
                 if (msgid_plural.msgid != pomsg['msgid_plural'] and
                     pofile is not None):
