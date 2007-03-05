@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    BranchRevision, Revision, RevisionAuthor, RevisionParent)
+    Bug, BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
@@ -174,7 +174,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None):
+                       timestamp=None, timezone=None, revprops=None):
         if message is None:
             message = self.LOG
         if committer is None:
@@ -183,7 +183,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
             message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True)
+            timestamp=timestamp, timezone=timezone, allow_pointless=True,
+            revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
@@ -638,6 +639,20 @@ class TestBzrSyncModified(BzrSyncTestCase):
         FakeRevision.parent_ids = ['rev2', 'rev1']
         self.assertRaises(RevisionModifiedError,
                           self.bzrsync.syncOneRevision, FakeRevision)
+
+
+class TestBugLinking(BzrSyncTestCase):
+
+    # XXX - Spec out the revision properties to use!
+    # - launchpad:bug
+    # - launchpad:bug-relation
+
+    def test_bug_branch(self):
+        # XXX - commit something that refers to a bug
+        # XXX - scan that branch
+        # XXX - check that we have a row in BugBranchRevision
+        self.commitRevision(revprops={'launchpad:bug': '1'})
+        self.syncBranch()
 
 
 def test_suite():
