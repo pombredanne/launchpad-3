@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
     IPOTemplateSet, ILanguageSet, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+from canonical.lp.dbschema import RosettaImportStatus
 from canonical.lp.dbschema import RosettaFileFormat
 
 # Number of days when the DELETED and IMPORTED entries are removed from the

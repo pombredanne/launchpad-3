@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Field
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -29,8 +31,11 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
-    msgid = Field(title=_("The singular IPOMsgID.", readonly=True)
-    msgid_plural = Field(title=_("The plural IPOMsgID or None.", readonly=True)
+    singular_text = Field(
+        title=_("The singular text for this message."), readonly=True)
+
+    plural_text = Field(
+        title=_("The plural text for this message or None."), readonly=True)
 
     def getCurrentSubmissions(language, pluralform):
         """Return a selectresults for the submissions that are currently

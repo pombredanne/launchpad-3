@@ -14,13 +14,14 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.lp.dbschema import (
-    RosettaImportStatus, EnumCol, RosettaFileFormat)
+    RosettaImportStatus, RosettaFileFormat)
 from canonical.config import config
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 import canonical.launchpad
 from canonical.launchpad import helpers
@@ -277,16 +278,6 @@ class POTemplate(SQLBase, RosettaStats):
         return POTMsgSet.selectOne(query +
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
 
-    def getPOTMsgSetByAlternativeMsgID(self, key, only_current=False):
-        """See IPOTemplate."""
-        query = 'potemplate = %s' % sqlvalues(self.id)
-        if only_current:
-            query += ' AND sequence > 0'
-
-        # Find a message set with the given alternative message ID.
-        return POTMsgSet.selectOne(query +
-            (' AND alternative_msgid = %s' % quote(key)))
-
     def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
         assert sequence > 0, ('%r is out of range')
@@ -405,10 +396,9 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
-    def hasMessageID(self, messageID, altKey=None):
+    def hasMessageID(self, messageID):
         """See IPOTemplate."""
-        results = POTMsgSet.selectBy(
-            potemplate=self, primemsgid_=messageID, alternative_msgid_=altKey)
+        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -525,11 +515,10 @@ class POTemplate(SQLBase, RosettaStats):
             inlastrevision=True,
             pluralform=0)
 
-    def createMessageSetFromMessageID(self, messageID, altKey = None):
+    def createMessageSetFromMessageID(self, messageID):
         """See IPOTemplate."""
         messageSet = POTMsgSet(
             primemsgid_=messageID,
-            alternative_msgid_=altKey,
             sequence=0,
             potemplate=self,
             commenttext=None,
@@ -539,7 +528,7 @@ class POTemplate(SQLBase, RosettaStats):
         self.createMessageIDSighting(messageSet, messageID)
         return messageSet
 
-    def createMessageSetFromText(self, text, altKey=None):
+    def createMessageSetFromText(self, text):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
@@ -549,11 +538,11 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
         else:
-            assert not self.hasMessageID(messageID, altKey), (
+            assert not self.hasMessageID(messageID), (
                 "There is already a message set for this template, file and"
                 " primary msgid")
 
-        return self.createMessageSetFromMessageID(messageID, altKey)
+        return self.createMessageSetFromMessageID(messageID)
 
     def invalidateCache(self):
         """See IPOTemplate."""

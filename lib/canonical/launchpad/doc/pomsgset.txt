@@ -249,8 +249,7 @@ same msgid as the given IPOMsgSet across the whole system.
   >>> pomsgset_translated = POMsgSet.get(752)
   >>> print pomsgset_translated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-  >>> pomsgid = pomsgset_translated.potmsgset.msgid
-  >>> print pomsgid.msgid
+  >>> print pomsgset_translated.potmsgset.msgid
   test man page
   >>> pomsgset_translated.active_texts
   [u'just a translation']
@@ -271,8 +270,7 @@ space is for any submission done outside that IPOMsgSet.
   >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
   >>> print pomsgset_untranslated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "pmount"
-  >>> pomsgid = potmsgset.msgid
-  >>> print pomsgid.msgid
+  >>> print potmsgset.msgid
   test man page
 
   # As expected, is not translated.

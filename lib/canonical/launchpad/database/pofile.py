@@ -291,19 +291,19 @@ class POFile(SQLBase, RosettaStats):
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getPOMsgSet(self, msgid_text, only_current=False):
+    def getPOMsgSet(self, key, only_current=False):
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(msgid_text, unicode):
+        if not isinstance(key, unicode):
             raise AssertionError(
                 "Can't index with type %s. (Must be unicode or POTMsgSet.)"
-                % type(msgid_text))
+                % type(key))
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(msgid_text)
+            pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
             return None
 

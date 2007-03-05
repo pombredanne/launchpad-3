@@ -35,20 +35,24 @@ class POTMsgSet(SQLBase):
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
     @property
-    def msgid(self):
+    def singular_text(self):
         """See IPOTMsgSet."""
-        return self.primemsgid_
+        return self.primemsgid_.msgid
 
     @property
-    def msgid_plural(self):
+    def plural_text(self):
         """See IPOTMsgSet."""
-        return POMsgID.selectOne('''
+        plural = POMsgID.selectOne('''
             POMsgIDSighting.potmsgset = %s AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.pluralform = 1 AND
             POMsgIDSighting.inlastrevision = TRUE
             ''' % sqlvalues(self),
             clauseTables=['POMsgIDSighting'])
+        if plural is not None:
+            return plural.msgid
+        else:
+            return None
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
@@ -119,7 +123,7 @@ class POTMsgSet(SQLBase):
 
         assert existing_pomsgset is None, (
             "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
-                self.msgid.msgid, pofile.title))
+                self.msgid, pofile.title))
 
         return DummyPOMsgSet(pofile, self)
 
@@ -137,7 +141,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if self.msgid_plural is None:
+        if self.plural_text is None:
             pluralforms = 1
 
         assert pluralforms != None, (
@@ -222,90 +226,94 @@ class POTMsgSet(SQLBase):
 
     def convertDotToSpace(self, text):
         """See IPOTMsgSet."""
-        if u'\u2022' in self.msgid.msgid or u'\u2022' not in text:
+        if u'\u2022' in self.singular_text or u'\u2022' not in text:
             return text
 
         return text.replace(u'\u2022', ' ')
 
-    def normalizeWhitespaces(self, text):
+    def normalizeWhitespaces(self, translation_text):
         """See IPOTMsgSet."""
-        if text is None:
-            return text
+        if translation_text is None:
+            return None
 
-        msgid = self.msgid.msgid
-        stripped_msgid = msgid.strip()
-        stripped_text = text.strip()
-        new_text = None
+        stripped_singular_text = self.singular_text.strip()
+        stripped_translation_text = translation_text.strip()
+        new_translation_text = None
 
-        if len(stripped_msgid) > 0 and len(stripped_text) == 0:
+        if (len(stripped_singular_text) > 0 and
+            len(stripped_translation_text) == 0):
             return ''
 
-        if len(stripped_msgid) != len(msgid):
+        if len(stripped_singular_text) != len(self.singular_text):
             # There are whitespaces that we should copy to the 'text'
             # after stripping it.
-            prefix = msgid[:-len(msgid.lstrip())]
-            postfix = msgid[len(msgid.rstrip()):]
-            new_text = '%s%s%s' % (prefix, stripped_text, postfix)
-        elif len(stripped_text) != len(text):
+            prefix = self.singular_text[:-len(self.singular_text.lstrip())]
+            postfix = self.singular_text[len(self.singular_text.rstrip()):]
+            new_translation_text = '%s%s%s' % (
+                prefix, stripped_translation_text, postfix)
+        elif len(stripped_translation_text) != len(translation_text):
             # msgid does not have any whitespace, we need to remove
             # the extra ones added to this text.
-            new_text = stripped_text
+            new_translation_text = stripped_translation_text
         else:
             # The text is not changed.
-            new_text = text
+            new_translation_text = translation_text
 
-        return new_text
+        return new_translation_text
 
-    def normalizeNewLines(self, text):
+    def normalizeNewLines(self, translation_text):
         """See IPOTMsgSet."""
-        msgid = self.msgid.msgid
         # There are three different kinds of newlines:
         windows_style = '\r\n'
         mac_style = '\r'
         unix_style = '\n'
         # We need the stripped variables because a 'windows' style will be at
         # the same time a 'mac' and 'unix' style.
-        stripped_text = text.replace(windows_style, '')
-        stripped_msgid = msgid.replace(windows_style, '')
+        stripped_translation_text = translation_text.replace(
+            windows_style, '')
+        stripped_singular_text = self.singular_text.replace(windows_style, '')
 
-        # Get the style that uses the msgid.
-        msgid_style = None
-        if windows_style in msgid:
-            msgid_style = windows_style
+        # Get the style that uses singular_text.
+        original_style = None
+        if windows_style in self.singular_text:
+            original_style = windows_style
 
-        if mac_style in stripped_msgid:
-            if msgid_style is not None:
-                raise BrokenTextError(
-                    "msgid (%r) mixes different newline markers" % msgid)
-            msgid_style = mac_style
+        if (mac_style in stripped_singular_text and
+            original_style is not None):
+            raise BrokenTextError(
+                "original text (%r) mixes different newline markers" %
+                    self.singular_text)
+            original_style = mac_style
 
-        if unix_style in stripped_msgid:
-            if msgid_style is not None:
-                raise BrokenTextError(
-                    "msgid (%r) mixes different newline markers" % msgid)
-            msgid_style = unix_style
+        if (unix_style in stripped_singular_text and
+            original_style is not None):
+            raise BrokenTextError(
+                "original text (%r) mixes different newline markers" %
+                    self.singular_text)
+            original_style = unix_style
 
         # Get the style that uses the given text.
-        text_style = None
-        if windows_style in text:
-            text_style = windows_style
+        translation_style = None
+        if windows_style in translation_text:
+            translation_style = windows_style
 
-        if mac_style in stripped_text:
-            if text_style is not None:
-                raise BrokenTextError(
-                    "text (%r) mixes different newline markers" % text)
-            text_style = mac_style
+        if (mac_style in stripped_translation_text and
+            translation_style is not None):
+            raise BrokenTextError(
+                "translation text (%r) mixes different newline markers" %
+                    translation_text)
+            translation_style = mac_style
 
-        if unix_style in stripped_text:
-            if text_style is not None:
-                raise BrokenTextError(
-                    "text (%r) mixes different newline markers" % text)
-            text_style = unix_style
+        if (unix_style in stripped_translation_text and
+            translation_style is not None):
+            raise BrokenTextError(
+                "translation text (%r) mixes different newline markers" %
+                    translation_text)
+            translation_style = unix_style
 
-        if msgid_style is None or text_style is None:
+        if original_style is None or translation_style is None:
             # We don't need to do anything, the text is not changed.
-            return text
+            return translation_text
 
         # Fix the newline chars.
-        return text.replace(text_style, msgid_style)
-
+        return translation_text.replace(translation_style, original_style)

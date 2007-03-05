@@ -32,7 +32,7 @@ class POMsgSetMixIn:
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if self.potmsgset.msgid_plural is not None:
+        if self.potmsgset.plural_text is not None:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
             else:
@@ -267,9 +267,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
-        msgids_text = [potmsgset.msgid.msgid]
-        if potmsgset.msgid_plural is not None:
-            msgids_text.append(potmsgset.msgid_plural.msgid)
+        original_texts = [potmsgset.singular_text]
+        if potmsgset.plural_text is not None:
+            original_texts.append(potmsgset.plural_text)
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
@@ -286,8 +286,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(msgids_text, fixed_new_translations,
-                                         potmsgset.flags())
+            helpers.validate_translation(
+                original_texts, fixed_new_translations, potmsgset.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as

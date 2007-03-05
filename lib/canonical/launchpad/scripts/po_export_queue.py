@@ -142,7 +142,6 @@ class XPIFormatHandler(Handler):
 
     def get_contents(self):
         """Return the contents of the exported file."""
-        import sys
 
         if is_potemplate(self.obj):
             return self.obj.source_file.read()
@@ -185,7 +184,7 @@ class MozillaLocalizableFile:
 
     def get_pofile_translation(self, pofile, key):
         if not key: return None
-        potmsgset = pofile.potemplate.getPOTMsgSetByAlternativeMsgID(key)
+        potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(key)
         if not potmsgset:
             return None
         pomsgset = potmsgset.getPOMsgSet(
@@ -254,7 +253,7 @@ class MozillaZipFile (MozillaLocalizableFile):
                em:type="8"
                em:creator="Rosetta">
     <em:contributor>Данило Шеган</em:contributor> 
-    <em:contributor>Carlos Perelló Marín</em:contributor>
+    <em:contributor>Carlos Perell\xc3\xb3 Mar\xc3\xadn</em:contributor>
 
     <em:targetApplication>
       <Description>

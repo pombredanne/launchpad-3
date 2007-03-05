@@ -80,7 +80,7 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             raise OldPOImported(
                 'Previous imported file is newer than this one.')
         else:
-            lock_timestamp = parser.header.getRosettaExportDate()
+            lock_timestamp = header.getRosettaExportDate()
 
             if not published and lock_timestamp is None:
                 # We got a .po file from offline translation (not published)
@@ -120,23 +120,14 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
     errors = []
     import sys
     for pomsg in messages:
-        # Add the English msgid.
-        if pomsg['alt_msgid']:
-            potmsgset = potemplate.getPOTMsgSetByAlternativeMsgID(
-                pomsg['alt_msgid'])
-            if pofile and not potmsgset:
-                continue
-            if potmsgset and not pomsg['msgid']:
-                pomsg['msgid'] = potmsgset.msgid.msgid
-        else:
-            potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
+        # Add the msgid.
+        potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsg['msgid'])
 
         if potmsgset is None:
             # It's the first time we see this msgid.
             if not pomsg['msgid']:
                 continue
-            potmsgset = potemplate.createMessageSetFromText(pomsg['msgid'],
-                                                            pomsg['alt_msgid'])
+            potmsgset = potemplate.createMessageSetFromText(pomsg['msgid'])
         else:
             # XXX: set fuzzy marker if primemsgid actually changes
             # Note that we saw it.
@@ -161,8 +152,7 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
             if potmsgset.msgid_plural is not None:
-                msgid_plural = potmsgset.msgid_plural
-                if (msgid_plural.msgid != pomsg['msgid_plural'] and
+                if (potmsgset.msgid_plural != pomsg['msgid_plural'] and
                     pofile is not None):
                     # The PO file wants to change the msgidPlural from the PO
                     # template, that's broken and not usual, so we raise an
