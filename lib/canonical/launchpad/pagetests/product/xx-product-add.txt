@@ -196,7 +196,7 @@ It's also possible to set the product's icon/emblem at creation time.
 
 The uploaded icon and emblem can be seen on the product's edit page:
 
->>> user_browser.getLink('Edit Product Details').click()
+>>> user_browser.getLink('Change details').click()
 >>> user_browser.url
 'http://launchpad.dev/testing3/+edit'
 >>> find_tag_by_id(
