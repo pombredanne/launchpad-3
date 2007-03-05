@@ -1609,7 +1609,27 @@ class NascentUpload:
         """Check if the uploaded binary version is higher than the ancestry.
 
         Automatically mark the package as 'rejected' using _checkVersion().
+
+        It skips version checks for ancestries found in other architectures.
         """
+        # XXX cprov 20070305: it would be nice if we can enhance NFU to
+        # be LP-aware, i.e., embed the LP content classes related lookup.
+        # This way we could compare than directly instead of repeating this
+        # chunk of code to fix 'architecture'.
+        proposed_archtag = uploaded_file.architecture
+        if proposed_archtag == "all":
+            arch_indep = self.distrorelease.nominatedarchindep
+            proposed_archtag = arch_indep.architecturetag
+
+        # XXX cprov 20070305: We should not verify version for first binary
+        # coming in a architecture. Those binaries must be delayed during the
+        # building process and if we compare than with the currently published
+        # version in another archive they might be considered OLD (in fact,
+        # they will have the same version.). See further info in #89846.
+        found_archtag = ancestry.distroarchrelease.architecturetag
+        if proposed_archtag != found_archtag:
+            return
+
         proposed_version = uploaded_file.version
         archive_version = ancestry.binarypackagerelease.version
         filename = uploaded_file.filename

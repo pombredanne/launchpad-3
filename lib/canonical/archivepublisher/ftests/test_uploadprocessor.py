@@ -72,17 +72,6 @@ class TestUploadProcessorBase(unittest.TestCase):
         """Assert if a given line is present in the log messages."""
         self.assertTrue(line in self.log.lines)
 
-
-class TestUploadProcessor(TestUploadProcessorBase):
-    """Basic tests on uploadprocessor class.
-
-    * Check if the rejection message is send even when an unexpected
-      exception occur when processing the upload.
-    * Check if known uploads targeted to a FROZEN distrorelease
-      end up in UNAPPROVED queue.
-
-    This test case is able to setup a fresh distrorelease in Ubuntu.
-    """
     def setupBreezy(self):
         """Create a fresh distrorelease in ubuntu.
 
@@ -104,6 +93,18 @@ class TestUploadProcessor(TestUploadProcessorBase):
         breezy.changeslist = 'breezy-changes@ubuntu.com'
         breezy.initialiseFromParent()
         self.breezy = breezy
+
+
+class TestUploadProcessor(TestUploadProcessorBase):
+    """Basic tests on uploadprocessor class.
+
+    * Check if the rejection message is send even when an unexpected
+      exception occur when processing the upload.
+    * Check if known uploads targeted to a FROZEN distrorelease
+      end up in UNAPPROVED queue.
+
+    This test case is able to setup a fresh distrorelease in Ubuntu.
+    """
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.

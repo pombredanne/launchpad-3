@@ -20,7 +20,146 @@ from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingStatus, PackagePublishingPocket)
 
 
-class TestStagedSecurityUploads(TestUploadProcessorBase):
+class TestStagedBinaryUploadBase(TestUploadProcessorBase):
+    """ """
+    name = 'baz'
+    version = '1.0-1'
+    distribution_name = None
+    distrorelease_name = None
+    pocket = None
+    policy = 'buildd'
+    no_mails = True
+
+    @property
+    def distribution(self):
+        return getUtility(IDistributionSet)[self.distribution_name]
+
+    @property
+    def distrorelease(self):
+        return self.distribution[self.distrorelease_name]
+
+    @property
+    def package_name(self):
+        return "%s_%s" % (self.name, self.version)
+
+    @property
+    def source_dir(self):
+        return self.package_name
+
+    @property
+    def source_changesfile(self):
+        return "%s_source.changes" % self.package_name
+
+    @property
+    def binary_dir(self):
+        return "%s_binary" % self.package_name
+
+    def getBinaryChangesfileFor(self, archtag):
+        return "%s_%s.changes" % (self.package_name, archtag)
+
+    def setUp(self):
+        """Setup environment for staged binaries upload via security policy.
+
+        1. Setup queue directory and other basic attributes
+        2. Override policy options to get security policy and to not send emails
+        3. Setup a common UploadProcessor with the overridden options
+        4. Store number of build present before issuing any upload
+        5. Upload the source package via security policy
+        6. Clean log messages.
+        7. Commit transaction, so the upload source can be seen.
+        """
+        TestUploadProcessorBase.setUp(self)
+        self.options.context = self.policy
+        self.options.nomails = self.no_mails
+        # Set up the uploadprocessor with appropriate options and logger
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+        self.builds_before_upload = Build.select().count()
+        self._uploadSource()
+        self.log.lines = []
+        self.layer.txn.commit()
+
+    def assertBuildsCreated(self, amount):
+        """Assert that a given 'amount' of build records was created."""
+        builds_count = Build.select().count()
+        self.assertEqual(
+            self.builds_before_upload + amount, builds_count)
+
+    def _prepareUpload(self, upload_dir):
+        """Place a copy of the upload directory into incoming queue."""
+        os.system("cp -a %s %s" %
+            (os.path.join(self.test_files_dir, upload_dir),
+             os.path.join(self.queue_folder, "incoming")))
+
+    def _findQueue(self):
+        """Return the corresponding queue item.
+
+        Look for exatch (name,version) matches in NEW, UNAPPROVED or ACCEPTED
+        queues.
+        """
+        available_statuses = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            DistroReleaseQueueStatus.ACCEPTED,
+            ]
+        for status in available_statuses:
+            queue_items = self.distrorelease.getQueueItems(
+                status=status, name=self.name,
+                version=self.version, exact_match=True)
+            if queue_items.count() > 0:
+                return queue_items[0]
+        return None
+
+    def _publishSourceQueueItem(self, queue_item, accept=True):
+        """Publish the source part of the given queue item."""
+        if accept:
+            queue_item.setAccepted()
+        pubrec = queue_item.sources[0].publish(self.log)
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
+        queue_item.setDone()
+
+    def _uploadSource(self):
+        """Upload, Accept and Publish the base source."""
+        self._prepareUpload(self.source_dir)
+        self.uploadprocessor.processChangesFile(
+            os.path.join(self.queue_folder, "incoming", self.source_dir),
+            self.source_changesfile)
+        queue_item = self._findQueue()
+        self.assertTrue(
+            queue_item is not None,
+            "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+        self._publishSourceQueueItem(queue_item)
+
+    def _uploadBinary(self, archtag):
+        """Upload the base binary.
+
+        Ensure it got processed and waits in NEW queue.
+        Return the IBuild attached to upload.
+        """
+        self._prepareUpload(self.binary_dir)
+        self.uploadprocessor.processChangesFile(
+            os.path.join(self.queue_folder, "incoming", self.binary_dir),
+            self.getBinaryChangesfileFor(archtag))
+        queue_item = self._findQueue()
+        self.assertTrue(
+            queue_item is not None,
+            "Binary Upload Failed\nGot: %s" % "\n".join(self.log.lines))
+        self.assertEqual(queue_item.builds.count(), 1)
+        return queue_item.builds[0].build
+
+    def _createBuild(self, archtag):
+        """Create a build record attached to the base source."""
+        sp = self.distrorelease.getSourcePackage(self.name)
+        spr = sp[self.version]
+        build = spr.createBuild(
+            distroarchrelease=self.distrorelease[archtag],
+            pocket=self.pocket)
+        self.layer.txn.commit()
+        return build
+
+
+class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     """Test how security uploads behave inside Soyuz.
 
     Security uploads still coming from dak system, we have special upload
@@ -39,112 +178,11 @@ class TestStagedSecurityUploads(TestUploadProcessorBase):
     """
     name = 'baz'
     version = '1.0-1'
-
-    @property
-    def package_name(self):
-        return "%s_%s" % (self.name, self.version)
-
-    @property
-    def source_dir(self):
-        return self.package_name
-
-    @property
-    def source_changesfile(self):
-        return "%s_source.changes" % self.package_name
-
-    @property
-    def binary_dir(self):
-        return "%s_binary" % self.package_name
-
-    @property
-    def binary_changesfile(self):
-        return "%s_i386.changes" % self.package_name
-
-    def setUp(self):
-        """Setup environment for staged binaries upload via security policy.
-
-        1. Setup queue directory and other basic attributes
-        2. Override policy options to get security policy and to not send emails
-        3. Setup a common UploadProcessor with the overridden options
-        4. Store number of build present before issuing any upload
-        5. Upload the source package via security policy
-        6. Clean log messages.
-        7. Commit transaction, so the upload source can be seen.
-        """
-        TestUploadProcessorBase.setUp(self)
-        self.options.context = 'security'
-        self.options.nomails = True
-
-        # Set up the uploadprocessor with appropriate options and logger
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
-        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        self.warty = self.ubuntu['warty']
-        self.builds_before_upload = Build.select().count()
-        self._uploadSource()
-        self.log.lines = []
-        self.layer.txn.commit()
-
-    def assertBuildsCreated(self, amount):
-        """Assert that a given 'amount' of build records was created."""
-        builds_count = Build.select().count()
-        self.assertEqual(
-            self.builds_before_upload + amount, builds_count)
-
-    def _prepareUpload(self, upload_dir):
-        """Place a copy of the upload directory into incoming queue."""
-        os.system("cp -a %s %s" %
-            (os.path.join(self.test_files_dir, upload_dir),
-             os.path.join(self.queue_folder, "incoming")))
-
-    def _findNEW(self):
-        """Return the corresponding NEW queue item."""
-        queue_items = self.warty.getQueueItems(
-            status=DistroReleaseQueueStatus.NEW, name=self.name,
-            version=self.version, exact_match=True)
-        self.assertEqual(queue_items.count(), 1)
-        return queue_items[0]
-
-    def _publishQueueItem(self, queue_item):
-        """Publish the given queue item."""
-        queue_item.setAccepted()
-        pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
-
-    def _uploadSource(self):
-        """Upload, Accept and Publish the base source."""
-
-        self._prepareUpload(self.source_dir)
-        self.uploadprocessor.processChangesFile(
-            os.path.join(self.queue_folder, "incoming", self.source_dir),
-            self.source_changesfile)
-        queue_item = self._findNEW()
-        self._publishQueueItem(queue_item)
-
-    def _uploadBinary(self):
-        """Upload the base binary.
-
-        Ensure it got processed and waits in NEW queue.
-        Return the IBuild attached to upload.
-        """
-        self._prepareUpload(self.binary_dir)
-        self.uploadprocessor.processChangesFile(
-            os.path.join(self.queue_folder, "incoming", self.binary_dir),
-            self.binary_changesfile)
-        queue_item = self._findNEW()
-        self.assertEqual(queue_item.builds.count(), 1)
-        return queue_item.builds[0].build
-
-    def _createBuild(self, archtag):
-        """Create a build record attached to the base source."""
-        sp = self.warty.getSourcePackage(self.name)
-        spr = sp[self.version]
-        build = spr.createBuild(
-            distroarchrelease=self.warty[archtag],
-            pocket=PackagePublishingPocket.SECURITY)
-        self.layer.txn.commit()
-        return build
+    distribution_name = 'ubuntu'
+    distrorelease_name = 'warty'
+    pocket = PackagePublishingPocket.SECURITY
+    policy = 'security'
+    no_mails = True
 
     def testBuildCreation(self):
         """Check if a build get created for an binary security upload.
@@ -154,7 +192,7 @@ class TestStagedSecurityUploads(TestUploadProcessorBase):
         NascentUpload should create an appropriate build attached to the
         correct source for the incoming binary.
         """
-        build_used = self._uploadBinary()
+        build_used = self._uploadBinary('i386')
 
         self.assertBuildsCreated(1)
         self.assertEqual(
@@ -175,7 +213,7 @@ class TestStagedSecurityUploads(TestUploadProcessorBase):
         """
         build_right_candidate = self._createBuild('i386')
         build_wrong_candidate = self._createBuild('hppa')
-        build_used = self._uploadBinary()
+        build_used = self._uploadBinary('i386')
 
         self.assertEqual(build_right_candidate.id, build_used.id)
         self.assertNotEqual(build_wrong_candidate.id, build_used.id)
@@ -200,7 +238,7 @@ class TestStagedSecurityUploads(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-        build_used = self._uploadBinary()
+        build_used = self._uploadBinary('i386')
 
         self.assertEqual(build_candidate.id, build_used.id)
         self.assertBuildsCreated(1)
@@ -224,7 +262,7 @@ class TestStagedSecurityUploads(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-        self.assertRaises(AssertionError, self._uploadBinary)
+        self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 
         self.assertLogContains(
             "Exception while accepting: Attempt to upload binaries "
