@@ -147,6 +147,8 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
 class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
 
     def setUp(self):
+        # Install the default SIGCHLD handler so that read() calls don't get
+        # EINTR errors when child processes exit.
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         super(SFTPTestCase, self).setUp()
 
