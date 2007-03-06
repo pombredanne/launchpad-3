@@ -17,12 +17,14 @@ from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
 
 
 class DistroMirrorProber(LaunchpadScript):
-    usage = '%prog --content-type=(archive|release) [--force]'
+    usage = ('%prog --content-type=(archive|release) [--force] '
+             '[--no-owner-notification]')
 
     def _sanity_check_mirror(self, mirror):
         """Check that the given mirror is official and has an http_base_url."""
@@ -50,6 +52,12 @@ class DistroMirrorProber(LaunchpadScript):
         self.parser.add_option('--force',
             dest='force', default=False, action='store_true',
             help='Force the probing of mirrors that have been probed recently')
+        self.parser.add_option('--no-owner-notification',
+            dest='no_owner_notification', default=False, action='store_true',
+            help='Do not send failure notification to mirror owners.')
+        self.parser.add_option('--no-remote-hosts',
+            dest='no_remote_hosts', default=False, action='store_true',
+            help='Do not try to connect to any host other than localhost.')
 
     def main(self):
         if self.options.content_type == 'archive':
@@ -62,6 +70,13 @@ class DistroMirrorProber(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
+
+        # Using a script argument to control a config variable is not a great
+        # idea, but to me this seems better than passing the no_remote_hosts
+        # value through a lot of method/function calls, until it reaches the
+        # probe() method.
+        if self.options.no_remote_hosts:
+            config.distributionmirrorprober.localhost_only = True
 
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
@@ -106,33 +121,23 @@ class DistroMirrorProber(LaunchpadScript):
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
-        disabled_mirrors_count = 0
-        reenabled_mirrors_count = 0
         self.txn.begin()
         expected_iso_images_count = len(get_expected_cdimage_paths())
+        notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
             self._create_probe_record(mirror, logfiles[mirror.id])
             if mirror.shouldDisable(expected_iso_images_count):
                 if mirror.enabled:
-                    disabled_mirrors_count += 1
-                mirror.disableAndNotifyOwner()
+                    mirror.disable(notify_owner)
+                    self.logger.info('Disabled %s' % canonical_url(mirror))
             else:
                 # Ensure the mirror is enabled, so that it shows up on public
                 # mirror listings.
                 if not mirror.enabled:
                     mirror.enabled = True
-                    reenabled_mirrors_count += 1
+                    self.logger.info('Enabled %s' % canonical_url(mirror))
 
         self.txn.commit()
-
-        if disabled_mirrors_count > 0:
-            self.logger.info(
-                'Disabled %d mirror(s) that were previously enabled.'
-                % disabled_mirrors_count)
-        if reenabled_mirrors_count > 0:
-            self.logger.info(
-                'Enabled %d mirror(s) that were previously disabled.'
-                % reenabled_mirrors_count)
         self.logger.info('Done.')
 
 

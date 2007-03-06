@@ -213,15 +213,75 @@ ensures we'll never have teams which can't be managed.
     True
 
 
+== Changing membership statuses ==
+
+TeamMembership.status is a read only attribute, so all status changes must be
+made using the setStatus() method.
+
+    # Foo Bar is a launchpad admin, but even so he can't change a membership's
+    # status by hand.
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> membership = foobar.myactivememberships[0]
+    >>> membership.status = None
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Foo Bar asked to join Warty Security Team on 2006-01-26 and he's been doing
+good work, so we'll approve his membership.
+
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> warty_team = getUtility(IPersonSet).getByName('name20')
+    >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
+    >>> print membership.status.title
+    Proposed
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-01-26
+
+When we approve his membership, the datejoined will contain the date that it
+was approved.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print membership.status.title
+    Approved
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> membership.datejoined.date() == utc_now.date()
+    True 
+
+On the other hand, when we deactivate an active membership, the datejoined is
+not changed.
+
+    >>> buildd_admins = getUtility(IPersonSet).getByName(
+    ...     'launchpad-buildd-admins')
+    >>> membership = membershipset.getByPersonAndTeam(foobar, buildd_admins)
+    >>> print membership.status.title
+    Administrator
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
+    >>> print membership.status.title
+    Deactivated
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+Finally, if we reactivate his membership, the datejoined will once again be
+updated.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print membership.status.title
+    Approved
+    >>> membership.datejoined.date() == utc_now.date()
+    True 
+
+
 == Flagging expired memberships ==
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
-
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
-    >>> membershipset = getUtility(ITeamMembershipSet)
-    >>> from canonical.launchpad.ftests import login
 
 To find out which memberships are already expired, we use
 TeamMembershipSet.getMembershipsToExpire(). As you can see, we don't have any
@@ -339,25 +399,50 @@ And you can check which direct memberships a team has by using activememberships
     ...  for membership in t3.activememberships]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
-A team has a number of other methods that return what people are members
-of it, all based on Person._getMembersByStatus:
+A team has a number of other methods that return the people which are members
+of it, all based on Person.getMembersByStatus:
 
-    >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3.declinedmembers]
-    []
+    >>> [person.unique_displayname for person in t3.approvedmembers]
+    [u'Celso Providelo (cprov)']
 
 (which is the same as saying
 
-    # We want to use a private method here, so we'll remove the security
-    # proxy from t3
-    >>> naked_t3 = removeSecurityProxy(t3)
-    >>> declined = TeamMembershipStatus.DECLINED
-    >>> [(membership.person.name, membership.status.title)
-    ...  for membership in naked_t3._getMembersByStatus(declined)]
-    []
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(TeamMembershipStatus.APPROVED)]
+    [u'Celso Providelo (cprov)']
 
 except shorter)
 
+We can also change the sort order of the results of getMembersByStatus.
+
+    >>> cprov.leave(t3)
+    >>> flush_database_updates()
+
+    >>> deactivated = TeamMembershipStatus.DEACTIVATED
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated)]
+    [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
+
+    >>> orderBy = '-TeamMembership.datejoined'
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
+    [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
+
+Another convenient method is getEffectiveAdministrators(), which returns the
+admin members plus the owner in case he is not one of the admin members.
+
+    >>> [admin.unique_displayname for admin in t3.adminmembers]
+    [u'Foo Bar (name16)']
+    >>> list(t3.getEffectiveAdministrators()) == list(t3.adminmembers)
+    True
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.adminmembers.count() == 0
+    True
+    >>> owner = shipit_admins.teamowner
+    >>> list(shipit_admins.getEffectiveAdministrators()) == [owner]
+    True
+    
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
@@ -365,7 +450,7 @@ participants of teams by virtue of being members of other teams which are in
 turn members of these teams.
 
 We can ask a person what teams they participate in. The
-teams_participated_in attribute works recusively, listing all teams the
+teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 

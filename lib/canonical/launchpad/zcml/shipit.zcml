@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -110,8 +109,7 @@
         permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
-        lp:url="/shipit/requests/+portlet-navigation">
-    </browser:page>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
@@ -126,7 +124,7 @@
         permission="zope.Public"
         name="login"
         template="../templates/shipit-index.pt"
-        lp:url="/shipit/login" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
@@ -249,16 +247,14 @@
         permission="launchpad.Admin"
         name="+edit"
         template="../templates/shipitrequest-edit.pt"
-        lp:url="/shipitrequests/$request.id/+edit">
-    </browser:generalform>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequest"
         permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
-        lp:url="/shipit/requests/+portlet-navigation">
-    </browser:page>
+        />
 
     <!-- ShippingRequestSet -->
     <content class="canonical.launchpad.database.ShippingRequestSet">
@@ -282,16 +278,14 @@
         permission="launchpad.Admin"
         name="+index"
         template="../templates/shipitrequests-index.pt"
-        lp:url="shipitrequests/+index">
-    </browser:page>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
-        lp:url="/shipit/requests/+portlet-navigation">
-    </browser:page>
+        />
 
 
     <!-- StandardShipItRequest -->
@@ -322,16 +316,14 @@
         label="Edit standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
-        lp:url="standardshipitrequests/$request.id/+index">
-    </browser:editform>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
         permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
-        lp:url="/shipit/requests/+portlet-navigation">
-    </browser:page>
+        />
 
 
     <!-- StandardShipItRequestSet -->
@@ -356,15 +348,14 @@
         facet="overview"
         permission="launchpad.Admin" 
         template="../templates/standardshipitrequests-index.pt"
-        lp:url="standardshipitrequests/$request.id/+index" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
-        lp:url="/shipit/requests/+portlet-navigation">
-    </browser:page>
+        />
 
     <browser:addform
         name="+new"
@@ -376,7 +367,7 @@
         label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"
-        lp:url="standardshipitrequests/$request.id/+new" />
+        />
 
 
     <!-- RequestedCDs -->

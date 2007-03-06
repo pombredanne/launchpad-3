@@ -23,17 +23,25 @@
           <div tal:replace="structure pf/@@+barchart" />
         </td>
         <td>
-          <span tal:condition="pf/latestsubmission"
-                tal:replace="pf/latestsubmission/datecreated/fmt:date" />
-          <tal:block condition="not: pf/latestsubmission">
+          <tal:block
+            condition="pf/last_touched_pomsgset"
+            replace="pf/last_touched_pomsgset/date_reviewed/fmt:date">
+            2007-02-10
+          </tal:block>
+          <tal:block condition="not: pf/last_touched_pomsgset">
               &mdash;
           </tal:block>
         </td>
         <td>
-        <span
-           tal:condition="pf/latestsubmission"
-           tal:replace="pf/latestsubmission/person/browsername/fmt:shorten/25" />
-          <tal:block condition="not: pf/latestsubmission">
+          <tal:comment condition="nothing">
+              XXX CarlosPerelloMarin 20070212: This code is exactly the same
+              as in distroreleaselanguage-index.pt
+          </tal:comment>
+          <tal:block condition="pf/last_touched_pomsgset">
+            <a tal:attributes="href pf/last_touched_pomsgset/reviewer/fmt:url"
+               tal:content="pf/last_touched_pomsgset/reviewer/browsername/fmt:shorten/25"></a>
+          </tal:block>
+          <tal:block condition="not: pf/last_touched_pomsgset">
               &mdash;
           </tal:block>
         </td>

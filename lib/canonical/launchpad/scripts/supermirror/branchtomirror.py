@@ -13,6 +13,7 @@ import bzrlib.branch
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
 
@@ -33,19 +34,19 @@ def identical_formats(branch_one, branch_two):
 class BranchToMirror:
     """This class represents a single branch that needs mirroring.
 
-    It has a source URL, a destination URL, a database id and a 
+    It has a source URL, a destination URL, a database id, a unique name and a
     status client which is used to report on the mirror progress.
     """
 
-    def __init__(self, src, dest, branch_status_client, branch_id):
+    def __init__(self, src, dest, branch_status_client, branch_id,
+                 branch_unique_name):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
+        self.branch_unique_name = branch_unique_name
         self._source_branch = None
         self._dest_branch = None
-        assert self.dest is not None
-        assert self.source is not None
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
@@ -107,6 +108,10 @@ class BranchToMirror:
         """Record an oops for the current exception.
 
         This must only be called while handling an exception.
+
+        :param message: custom explanatory error message. Do not use
+            str(exception) to fill in this parameter, it should only be set
+            when a human readable error has been explicitely generated.
         """
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
@@ -153,16 +158,8 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
-            if len(e.args) == 0:
-                self._record_oops(logger)
-                self._mirrorFailed(logger, e)
-            else:
-                if e.args[0].count('\n') >= 2:
-                    msg = 'Not a branch'
-                else:
-                    msg = 'Unknown branch format: %s' % e.args[0]
-                self._record_oops(logger, msg)
-                self._mirrorFailed(logger, msg)
+            self._record_oops(logger)
+            self._mirrorFailed(logger, e)
 
         except bzrlib.errors.ParamikoNotPresent, e:
             msg = ("The supermirror does not support mirroring branches "
@@ -173,7 +170,9 @@ class BranchToMirror:
 
         except bzrlib.errors.NotBranchError, e:
             self._record_oops(logger)
-            self._mirrorFailed(logger, e)
+            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
+                   % self.branch_unique_name)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.BzrError, e:
             self._record_oops(logger)
@@ -202,3 +201,16 @@ class BranchToMirror:
         return ("<BranchToMirror source=%s dest=%s at %x>" % 
                 (self.source, self.dest, id(self)))
 
+    def isUploadBranch(self):
+        """Whether this branch is pulled from the private SFTP area."""
+        upload_source_prefix = config.supermirrorsftp.branches_root
+        return self.source.startswith(upload_source_prefix)
+
+    def isImportBranch(self):
+        """Whether this branch is pulled from importd."""
+        import_source_prefix = config.launchpad.bzr_imports_root_url
+        return self.source.startswith(import_source_prefix)
+
+    def isMirrorBranch(self):
+        """Whether this branch is pulled from the internet."""
+        return not self.isUploadBranch() and not self.isImportBranch()

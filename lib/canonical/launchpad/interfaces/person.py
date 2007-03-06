@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Person interfaces."""
 
@@ -28,12 +28,12 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, LargeImageUpload, PasswordField,
-    SmallImageUpload, StrippedTextLine)
+    BaseImageUpload, SmallImageUpload, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.tickettarget import (
-    TICKET_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.question import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -85,7 +85,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications):
+class IPerson(IHasSpecifications, IQuestionCollection):
     """A Person."""
 
     id = Int(
@@ -123,6 +123,15 @@ class IPerson(IHasSpecifications):
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to you. It should be no bigger "
+            "than 50k in size. Traditionally this is a great big grinning "
+            "image of your mug. Make the most of it."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         description=_(
@@ -207,7 +216,7 @@ class IPerson(IHasSpecifications):
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
-        'The caches of karma scores, by ' 'karma category.')
+        'The caches of karma scores, by karma category.')
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
@@ -235,7 +244,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
@@ -261,7 +269,7 @@ class IPerson(IHasSpecifications):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -278,6 +286,9 @@ class IPerson(IHasSpecifications):
         "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
+    assigned_specs_in_progress = Attribute(
+        "Specifications assigned to this person whose implementation is "
+        "started but not yet completed, sorted newest first.")
     drafted_specs = Attribute(
         "Specifications being drafted by this person, sorted newest first.")
     created_specs = Attribute(
@@ -557,11 +568,22 @@ class IPerson(IHasSpecifications):
         Set the status, dateexpires, reviewer and comment, where reviewer is
         the user responsible for this status change and comment is the comment
         left by the reviewer for the change.
-        
+
         This method will ensure that we only allow the status transitions
         specified in the TeamMembership spec. It's also responsible for
         filling/cleaning the TeamParticipation table when the transition
         requires it.
+        """
+
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
+        """
+
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
         """
 
     def getTeamAdminsEmailAddresses():
@@ -627,42 +649,25 @@ class IPerson(IHasSpecifications):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, participation=None,
-                      needs_attention=False, sort=None):
-        """Search the person's tickets.
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
+        """Search the person's questions.
 
-        :search_text: A string that is matched against the ticket
-        title and description. If None, the search_text is not included as
-        a filter criteria.
+        See IQuestionCollection for the description of the standard search
+        parameters.
 
-        :status: A sequence of TicketStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
-
-        :language: An ILanguage or a sequence of ILanguage objects to match
-        against the ticket's language. If None or an empty sequence,
-        the language is not included as a filter criteria.
-
-        :participation: A list of TicketParticipation that defines the set
-        of relationship to tickets that will be searched. If None or an empty
+        :participation: A list of QuestionParticipation that defines the set
+        of relationship to questions that will be searched. If None or an empty
         sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only tickets needing attention
-        from the person will be included. Tickets needing attention are those
+        :needs_attention: If this flag is true, only questions needing attention
+        from the person will be included. Questions needing attention are those
         owned by the person in the ANSWERED or NEEDSINFO state, as well as,
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN
         state.
-
-        :sort:  An attribute of TicketSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
-
-        """
-
-    def getTicketLanguages():
-        """Return a set of ILanguage used by the tickets in which this person "
-        is involved.
         """
 
 

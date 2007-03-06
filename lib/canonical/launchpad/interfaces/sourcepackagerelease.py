@@ -74,7 +74,7 @@ class ISourcePackageRelease(Interface):
     manifest = Attribute("Manifest of branches imported for this release")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
-    
+
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
@@ -87,10 +87,6 @@ class ISourcePackageRelease(Interface):
         "failures that happened for this source package " "release, or None")
     needs_building = Attribute("A boolean that indicates whether this package "
         "still needs to be built (on any architecture)")
-
-    open_ticket_count = Attribute(
-        "The number of open support tickets on the distrorelease and "
-        "sourcepackagename of this SourcePackageRelease")
 
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "

@@ -33,6 +33,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
+    'person_team_participations_vocabulary_factory',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -41,6 +42,7 @@ __all__ = [
     'ProductVocabulary',
     'ProjectVocabulary',
     'project_products_vocabulary_factory',
+    'project_products_using_malone_vocabulary_factory',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
@@ -325,6 +327,15 @@ def project_products_vocabulary_factory(context):
         for product in project.products])
 
 
+def project_products_using_malone_vocabulary_factory(context):
+    """Return a vocabulary containing a project's products using Malone."""
+    project = IProject(context)
+    return SimpleVocabulary([
+        SimpleTerm(product, product.name, title=product.displayname)
+        for product in project.products
+        if product.official_malone])
+
+
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
@@ -552,6 +563,17 @@ class PersonActiveMembershipVocabulary:
             raise LookupError(token)
 
 
+def person_team_participations_vocabulary_factory(context):
+    """Return a SimpleVocabulary containing the teams a person
+    participate in.
+    """
+    assert context is not None
+    person= IPerson(context)
+    return SimpleVocabulary([
+        SimpleTerm(team, team.name, title=team.displayname)
+        for team in person.teams_participated_in])
+
+
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -767,6 +789,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
             target = milestone_context.distrorelease
+        elif ISpecification.providedBy(milestone_context):
+            target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
@@ -1170,6 +1194,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
         return SimpleTerm(obj, obj.name, title)
 
+    def __contains__(self, obj):
+        raise NotImplementedError
+
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution or product'
@@ -1178,7 +1205,21 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             PillarName.q.productID != None
             ), PillarName.q.active == True)
 
+    def __contains__(self, obj):
+        if IProduct.providedBy(obj):
+            # Only active products are in the vocabulary.
+            return obj.active
+        else:
+            return IDistribution.providedBy(obj)
+
+
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution, product or project'
     _filter = PillarName.q.active == True
 
+    def __contains__(self, obj):
+        if IProduct.providedBy(obj) or IProject.providedBy(obj):
+            # Only active products and projects are in the vocabulary.
+            return obj.active
+        else:
+            return IDistribution.providedBy(obj)

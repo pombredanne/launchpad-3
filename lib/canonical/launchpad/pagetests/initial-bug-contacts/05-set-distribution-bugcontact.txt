@@ -6,7 +6,7 @@ of that distribution:
 But the link is not available if you are not logged in with permission
 to change the bug contact.
 
-  >>> browser.getLink("Change Bug Contact")
+  >>> browser.getLink("Change bug contact")
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -20,7 +20,7 @@ Now we login as Mark...
 
 ...and we can see that the link is there.
 
-  >>> bugcontact_link = browser.getLink("Change Bug Contact")
+  >>> bugcontact_link = browser.getLink("Change bug contact")
   >>> bugcontact_link.url
   'http://launchpad.dev/ubuntu/+bugcontact'
 

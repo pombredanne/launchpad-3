@@ -17,10 +17,12 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import (
-    Revision, RevisionNumber, RevisionParent, RevisionAuthor)
+    Revision, BranchRevision, RevisionParent, RevisionAuthor)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+from canonical.launchpad.scripts.importd.tests.helpers import (
+    instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import ZopelessLayer
 
@@ -84,7 +86,7 @@ class BzrSyncTestCase(unittest.TestCase):
 
     def getCounts(self):
         return (Revision.select().count(),
-                RevisionNumber.select().count(),
+                BranchRevision.select().count(),
                 RevisionParent.select().count(),
                 RevisionAuthor.select().count())
 
@@ -110,7 +112,7 @@ class BzrSyncTestCase(unittest.TestCase):
                          "Wrong Revision count (should be %d, not %d)"
                          % revision_pair)
         self.assertEqual(revisionnumber_pair[0], revisionnumber_pair[1],
-                         "Wrong RevisionNumber count (should be %d, not %d)"
+                         "Wrong BranchRevision count (should be %d, not %d)"
                          % revisionnumber_pair)
         self.assertEqual(revisionparent_pair[0], revisionparent_pair[1],
                          "Wrong RevisionParent count (should be %d, not %d)"
@@ -119,13 +121,23 @@ class BzrSyncTestCase(unittest.TestCase):
                          "Wrong RevisionAuthor count (should be %d, not %d)"
                          % revisionauthor_pair)
 
+    def makeBzrSync(self):
+        """Create a BzrSync instance for the test branch.
 
-class TestBzrSync(BzrSyncTestCase):
+        This method allow subclasses to instrument the BzrSync instance used in
+        syncBranch.
+        """
+        return BzrSync(self.txn, self.db_branch)
+
+    def syncBranch(self):
+        """Run BzrSync on the test branch."""
+        self.makeBzrSync().syncHistoryAndClose()
 
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
+        """Run BzrSync and assert the number of rows added to each table."""
         counts = self.getCounts()
-        BzrSync(self.txn, self.db_branch).syncHistoryAndClose()
+        self.syncBranch()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -147,6 +159,9 @@ class TestBzrSync(BzrSyncTestCase):
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(message, committer=committer, rev_id=rev_id,
                              timestamp=timestamp, timezone=timezone)
+
+
+class TestBzrSync(BzrSyncTestCase):
 
     def uncommitRevision(self):
         self.bzr_tree = self.bzr_branch.bzrdir.open_workingtree()
@@ -258,6 +273,40 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(rev_2.revision_date, dt)
 
 
+
+
+class TestBzrSyncPerformance(BzrSyncTestCase):
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.syncrevision_calls = []
+
+    def makeBzrSync(self):
+        def syncRevision_called(name, args, kwargs):
+            (bzr_revision,) = args
+            self.assertEqual(kwargs, {})
+            self.syncrevision_calls.append(bzr_revision.revision_id)
+        bzrsync = BzrSyncTestCase.makeBzrSync(self)
+        observer = InstrumentedMethodObserver(called=syncRevision_called)
+        instrument_method(observer, bzrsync, 'syncRevision')
+        return bzrsync
+
+    def test_one_more_commit(self):
+        # Scanning a branch which has already been scanned, and to which a
+        # single simple commit was added, only runs syncRevision once, for the
+        # new revision.
+        self.commitRevision(rev_id='rev-1')
+        # First scan checks the full ancestry, which is only one revision.
+        self.syncBranch()
+        self.assertEqual(self.syncrevision_calls, ['rev-1'])
+        # Add a single simple revision to the branch.
+        self.commitRevision(rev_id='rev-2')
+        # Second scan only checks the added revision.
+        self.syncrevision_calls = []
+        self.syncBranch()
+        self.assertEqual(self.syncrevision_calls, ['rev-2'])
+
+
 class TestBzrSyncModified(BzrSyncTestCase):
 
     def setUp(self):
@@ -267,6 +316,50 @@ class TestBzrSyncModified(BzrSyncTestCase):
     def tearDown(self):
         self.bzrsync.close()
         BzrSyncTestCase.tearDown(self)
+
+    def test_timestampToDatetime_with_negative_fractional(self):
+        # timestampToDatetime should convert a negative, fractional timestamp
+        # into a valid, sane datetime object.
+        UTC = pytz.timezone('UTC')
+        timestamp = -0.5
+        date = self.bzrsync._timestampToDatetime(timestamp)
+        self.assertEqual(
+            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
+
+    def test_timestampToDatetime(self):
+        # timestampTODatetime should convert a regular timestamp into a valid,
+        # sane datetime object.
+        UTC = pytz.timezone('UTC')
+        timestamp = time.time()
+        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+        self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
+
+    def test_ancient_revision(self):
+        # Test that we can sync revisions with negative, fractional timestamps.
+
+        # Make a negative, fractional timestamp and equivalent datetime
+        UTC = pytz.timezone('UTC')
+        old_timestamp = -0.5
+        old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
+
+        class FakeRevision:
+            """A revision with a negative, fractional timestamp.
+            """
+            revision_id = 'rev42'
+            parent_ids = ['rev1', 'rev2']
+            committer = self.AUTHOR
+            message = self.LOG
+            timestamp = old_timestamp
+            timezone = 0
+
+        # sync the revision
+        self.bzrsync.syncRevision(FakeRevision)
+
+        # Find the revision we just synced and check that it has the correct
+        # date.
+        revision = getUtility(IRevisionSet).getByRevisionId(
+            FakeRevision.revision_id)
+        self.assertEqual(old_date, revision.revision_date)
 
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.

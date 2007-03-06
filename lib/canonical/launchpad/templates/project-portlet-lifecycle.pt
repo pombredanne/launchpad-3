@@ -1,0 +1,20 @@
+<div class="portlet">
+  <h2>Lifecycle</h2>
+  <table class="portletBody">
+    <tbody>
+      <tr>
+        <th>Registered:</th>
+        <td tal:content="context/datecreated/fmt:date">2006-07-21</td>
+      </tr>
+      <tr>
+        <th>by:</th>
+        <td>
+          <a
+            tal:content="context/owner/browsername"
+            tal:attributes="href context/owner/fmt:url"
+          >Foo Bar</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

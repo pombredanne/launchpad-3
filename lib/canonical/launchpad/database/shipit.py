@@ -22,18 +22,22 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
+
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour,
+    ShippingService, ShippingRequestStatus)
+
 from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
-    ShippingService, ShippingRequestStatus)
 from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
@@ -456,21 +460,21 @@ class ShippingRequestSet:
                recipient_text=None, orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
-        clauseTables = set()
 
+        # We use subqueries To filter based on distrorelease/flavour so that
+        # we don't have to join the RequestedCDs table with a DISTINCT, which
+        # causes the query to run a _lot_ slower.
         if distrorelease is not None:
             queries.append("""
-                (RequestedCDs.request = ShippingRequest.id
-                 AND RequestedCDs.distrorelease = %s)
+                ShippingRequest.id IN (
+                    SELECT request FROM RequestedCDs WHERE distrorelease = %s)
                 """ % sqlvalues(distrorelease))
-            clauseTables.add('RequestedCDs')
 
         if flavour is not None:
             queries.append("""
-                (RequestedCDs.request = ShippingRequest.id
-                 AND RequestedCDs.flavour = %s)
+                ShippingRequest.id IN (
+                    SELECT request FROM RequestedCDs WHERE flavour = %s)
                 """ % sqlvalues(flavour))
-            clauseTables.add('RequestedCDs')
 
         if recipient_text:
             recipient_text = recipient_text.lower()
@@ -491,8 +495,7 @@ class ShippingRequestSet:
 
         query = " AND ".join(queries)
         return ShippingRequest.select(
-            query, clauseTables=clauseTables, distinct=True, orderBy=orderBy,
-            prejoins=["recipient"])
+            query, orderBy=orderBy, prejoins=["recipient"])
 
     def exportRequestsToFiles(
             self, priority, ztm,

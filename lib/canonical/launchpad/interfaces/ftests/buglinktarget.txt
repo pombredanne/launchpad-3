@@ -3,7 +3,7 @@
 Launchpad includes Malone, the powerful bug tracker. One of the best
 features of Malone is the ability to track a bug in multiple products
 and/or packages. A bug can also be linked to other non-bug tracking
-objects like tickets, CVEs or specifications.
+objects like questions, CVEs or specifications.
 
 The IBugLinkTarget interface is used for that general purpose linking.
 This file documents that interface and can be used to validate

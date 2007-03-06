@@ -48,6 +48,11 @@ class BranchURIField(URIField):
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
@@ -226,6 +231,9 @@ class IBranch(IHasOwner):
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
     def has_subscription(person):
         """Is this person subscribed to the branch?"""
 
@@ -245,22 +253,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     # revision number manipulation
-    def getRevisionNumber(sequence):
-        """Gets the RevisionNumber for the given sequence number.
+    def getBranchRevision(sequence):
+        """Gets the BranchRevision for the given sequence number.
 
-        If no such RevisionNumber exists, None is returned.
+        If no such BranchRevision exists, None is returned.
         """
 
-    def createRevisionNumber(sequence, revision):
-        """Create a RevisionNumber mapping sequence to revision."""
+    def createBranchRevision(sequence, revision):
+        """Create a BranchRevision mapping sequence to revision."""
 
     def truncateHistory(from_rev):
         """Truncate the history of the given branch.
 
-        RevisionNumber objects with sequence numbers greater than or
+        BranchRevision objects with sequence numbers greater than or
         equal to from_rev are destroyed.
 
-        Returns True if any RevisionNumber objects were destroyed.
+        Returns True if any BranchRevision objects were destroyed.
         """
 
     def updateScannedDetails(revision_id, revision_count):
@@ -269,6 +277,7 @@ class IBranch(IHasOwner):
         A single entry point that is called solely from the branch scanner
         script.
         """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -282,7 +291,11 @@ class IBranchSet(Interface):
     def __iter__():
         """Return an iterator that will go through all branches."""
 
-    all = Attribute("All branches in the system.")
+    def count():
+        """Return the number of branches in the database."""
+
+    def countBranchesWithAssociatedBugs():
+        """Return the number of branches that have bugs associated."""
 
     def get(branch_id, default=None):
         """Return the branch with the given id.
@@ -292,7 +305,7 @@ class IBranchSet(Interface):
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None):
+            summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
     def getByUniqueName(self, unique_name, default=None):
@@ -312,6 +325,42 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getProductDevelopmentBranches(products):
+        """Return branches that are associated with the products dev series.
+
+        The branches will be either the import branches if imported, or
+        the user branches if native.
+        """
+
+    def getBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products."""
+
+    def getRecentlyChangedBranches(branch_count):
+        """Return a list of branches that have been recently updated.
+
+        The list will contain at most branch_count items, and excludes
+        branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyImportedBranches(branch_count):
+        """Return a list of branches that have been recently imported.
+
+        The list will contain at most branch_count items, and only
+        has branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyRegisteredBranches(branch_count):
+        """Return a list of branches that have been recently registered.
+
+        The list will contain at most branch_count items.
+        """
+
+    def getLastCommitForBranches(branches):
+        """Return a map of branch to last commit time."""
+
+    def getBranchesForOwners(people):
+        """Return the branches that are owned by the people specified."""
 
 
 class IBranchLifecycleFilter(Interface):

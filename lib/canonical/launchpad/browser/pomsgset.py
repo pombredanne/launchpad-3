@@ -277,6 +277,9 @@ class CustomDropdownWidget(DropdownWidget):
 #
 
 class POMsgSetFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
+    # inherit all navigation from its product or distro release.
+
     usedfor = IPOMsgSet
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']
@@ -319,11 +322,11 @@ class POMsgSetAppMenus(ApplicationMenu):
         return Link('../+translate', text, icon='languages')
 
     def switchlanguages(self):
-        text = 'Switch Languages'
+        text = 'Switch languages'
         return Link('../../', text, icon='languages')
 
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
 
     def download(self):
@@ -331,7 +334,7 @@ class POMsgSetAppMenus(ApplicationMenu):
         return Link('../+export', text, icon='download')
 
     def viewtemplate(self):
-        text = 'View Template'
+        text = 'View template'
         return Link('../../', text, icon='languages')
 
 #
@@ -695,8 +698,13 @@ class BaseTranslationView(LaunchpadView):
                 msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton = (
                     '%s%d_radiobutton' % (
                         msgset_ID_LANGCODE_translation_, pluralform))
-                selected_translation_key = form[
-                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton]
+                selected_translation_key = form.get(
+                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton)
+                if selected_translation_key is None:
+                    # The radiobutton was missing from the form; either
+                    # it wasn't rendered to the end-user or no buttons
+                    # were selected.
+                    continue
 
                 # We are going to check whether the radio button is for
                 # current translation, suggestion or the new translation
@@ -972,7 +980,7 @@ class POMsgSetView(LaunchpadView):
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
-                'selection': self.context.getSelection(index),
+                'active_submission': self.context.getActiveSubmission(index),
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line

@@ -249,6 +249,7 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
@@ -267,7 +268,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+  [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
+   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
    u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
@@ -287,7 +289,8 @@ and ILanguage.
   >>> hoary = DistroRelease.selectOneBy(name="hoary")
   >>> spanish = Language.selectOneBy(code="es")
   >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
-  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
+   u'name12', u'tsukimi']
 
   # We can see that there is another translator that doesn't appear in
   # previous list because the template he translated is not current.
@@ -326,11 +329,16 @@ Next, Carlos has three incomplete specs *related* to him:
 
 Carlos has 2 specifications assigned to him:
 
-    >>> filter = [SpecificationFilter.ASSIGNEE]
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
+
+But from these two, only one has started.
+
+    >>> [(spec.name, spec.is_started)
+    ...  for spec in carlos.assigned_specs_in_progress]
+    [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.
