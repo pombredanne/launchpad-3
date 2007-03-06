@@ -25,6 +25,20 @@ It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
 
+== Interfaces ==
+
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IBranch, IBranchSet, IBranchSubscription)
+>>> from canonical.launchpad.database import (
+...     Branch, BranchSet, BranchSubscription,)
+>>> verifyObject(IBranch, Branch.get(1))
+True
+>>> verifyObject(IBranchSet, BranchSet())
+True
+>>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
+True
+
 == Creating branches ==
 
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
@@ -34,12 +48,6 @@ utility.
 >>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
 >>> from canonical.launchpad.ftests import syncUpdate
 >>> branchset = getUtility(IBranchSet)
-
-It must define the IBranchSet interface.
-
->>> from zope.interface.verify import verifyObject
->>> verifyObject(IBranchSet, branchset)
-True
 
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> productset = getUtility(IProductSet)
@@ -121,7 +129,7 @@ None
 None
 
 
-== Determing the number of branches ==
+== Determining the number of branches ==
 
 The IBranchSet can tell us how many branches there are registered.
 

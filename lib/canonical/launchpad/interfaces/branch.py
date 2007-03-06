@@ -308,7 +308,7 @@ class IBranchSet(Interface):
             summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
