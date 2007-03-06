@@ -5,7 +5,7 @@ It is possible to ask questions in a language other than English. The
 of the question. By default, the question language is 'English'.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
-    >>> user_browser.getLink('Ask Question').click()
+    >>> user_browser.getLink('Ask question').click()
     >>> user_browser.getControl('Language').value
     ['en']
 
@@ -14,9 +14,9 @@ link to enable to change his preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
-    Sample Person's preferred languages
+    No Privileges Person's preferred languages
     >>> user_browser.url
-    '.../~name12/+editlanguages'
+    '.../~no-priv/+editlanguages'
 
 Although it's possible to ask questions in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using

@@ -21,7 +21,7 @@ This link is only available to registered user:
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2')
-    >>> user_browser.getLink('Link Existing Bug').click()
+    >>> user_browser.getLink('Link existing bug').click()
 
 To link the bug, the user enters the bug ID and clicks the 'Add'
 button.
@@ -40,7 +40,7 @@ message is displayed:
 The user is offered a link to search for bug in case he doesn't know the
 bug number.
 
-    >>> user_browser.getLink('Bugs Listing').click()
+    >>> user_browser.getLink('Bug listing').click()
     >>> user_browser.url
     '.../firefox/+bugs'
 
@@ -72,7 +72,7 @@ A notification is also displayed.
 
 To remove bug links, the user uses the 'Remove Bug Link' action.
 
-    >>> user_browser.getLink('Remove Bug Link').click()
+    >>> user_browser.getLink('Remove bug link').click()
     >>> user_browser.title
     'Remove bug links from question #2'
 
@@ -116,7 +116,7 @@ have access to:
     # and thus has access to the private bug.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> browser.getLink('Link Existing Bug').click()
+    >>> browser.getLink('Link existing bug').click()
     >>> browser.getControl('Bug ID').value = '6'
     >>> browser.getControl('Link').click()
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
@@ -129,7 +129,7 @@ able to link to that bug.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/firefox/+ticket/2')
-    >>> admin_browser.getLink('Link Existing Bug').click()
+    >>> admin_browser.getLink('Link existing bug').click()
     >>> admin_browser.getControl('Bug ID').value = '6'
     >>> admin_browser.getControl('Link').click()
     >>> soup = BeautifulSoup(admin_browser.contents)
@@ -153,13 +153,13 @@ will only see that a private bug is linked.
 Only the administrator will be able to unlink the bug.
 
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> browser.getLink('Remove Bug Link').click()
+    >>> browser.getLink('Remove bug link').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('p', 'informational message')
     <p class="informational message">
       There are no links that you are allowed to remove.
     </p>
 
-    >>> admin_browser.getLink('Remove Bug Link').click()
+    >>> admin_browser.getLink('Remove bug link').click()
     >>> admin_browser.getControl('#6: Firefox').selected = True
     >>> admin_browser.getControl('Remove').click()

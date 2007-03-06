@@ -14,7 +14,8 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks subscriptions syncUpdate
+        <allow attributes="id private bugtasks pillar_bugtasks
+                           subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers" />
         <require
@@ -154,13 +155,6 @@
         path_expression="string:bugs"
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
-
-    <browser:page
-        name="+package"
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.FileBugInPackageView"
-        facet="bugs"
-        permission="launchpad.AnyPerson" />
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

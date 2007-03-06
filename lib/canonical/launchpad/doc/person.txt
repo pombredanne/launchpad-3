@@ -249,6 +249,7 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
@@ -328,11 +329,16 @@ Next, Carlos has three incomplete specs *related* to him:
 
 Carlos has 2 specifications assigned to him:
 
-    >>> filter = [SpecificationFilter.ASSIGNEE]
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
+
+But from these two, only one has started.
+
+    >>> [(spec.name, spec.is_started)
+    ...  for spec in carlos.assigned_specs_in_progress]
+    [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.

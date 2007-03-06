@@ -22,25 +22,25 @@
     <p>
       Launchpad lets projects track the features they intend to implement over
       the next few releases. It can generate reports of the project roadmap, as
-      well as notifying developers of specification status changes.
+      well as notifying developers of status changes in those blueprints.
       Examples:
-      <a href="/ubuntu/+specs">Ubuntu specifications</a>,
-      <a href="/bzr/+specs">Bazaar specifications</a>.
+      <a href="/ubuntu/">Ubuntu</a>,
+      <a href="/bzr/">Bazaar</a>.
     </p>
 
     <tal:not_person condition="not: view/is_person">
       <ul class="menu">
         <li class="add">
-          <a href="+addspec">Register the first specification</a>
-          for <span tal:replace="context/displayname">Firefox</span>
+          <a href="+addspec">Register the first blueprint
+          for <span tal:replace="context/displayname">Firefox</span></a>
         </li>
       </ul>
     </tal:not_person>
 
     <p>
-      Launchpad lets you plan releases, and keep track of who is responsible
-      for what. You can approve
-      feature specifications as goals for a particular release, and then
+      Once you have a few blueprints in the system you can plan releases,
+      and keep track of who is responsible for what. You can approve
+      blueprints as goals for a particular release, and then
       generate a simple report of progress towards feature
       completion for that release.
     </p>
@@ -48,7 +48,7 @@
       <ul class="menu">
         <li class="info">
           <a href="https://help.launchpad.net/BlueprintDocumentation"
-          >More about tracking features</a>
+          >Read more about tracking blueprints</a>
         </li>
       </ul>
 
@@ -56,19 +56,23 @@
 
   <tal:has_any_specs condition="has_any_specs">
 
-    <form name="spec_search" method="GET">
+    <div>
+      <form name="spec_search" method="GET">
 
-      <input type="text" name="searchtext"
-             tal:attributes="value view/searchtext" />
-      <input tal:condition="view/searchrequested"
-        type="submit"
-        value="Search Again"
-        />
-      <input tal:condition="not: view/searchrequested"
-        type="submit"
-        value="Search"
-        />
-    </form>
+        Show only blueprints containing:
+
+        <input type="text" name="searchtext"
+               tal:attributes="value view/searchtext" />
+        <input tal:condition="view/searchrequested"
+          type="submit"
+          value="Search again"
+          />
+        <input tal:condition="not: view/searchrequested"
+          type="submit"
+          value="Search blueprints"
+          />
+      </form>
+    </div>
 
     <table class="listing sortable" id="speclisting"
           tal:condition="specs">
@@ -131,11 +135,9 @@
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
 
-    <p class="discreet">
+    <p>
       <span tal:replace="specs/count:len">7</span> specification(s) listed.
     </p>
-
-    <div tal:replace="structure context/@@+blueprint-legend" />
 
   </tal:has_any_specs>
 

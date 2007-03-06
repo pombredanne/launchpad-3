@@ -74,6 +74,8 @@
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="info" file="../images/info.png" />
     <resource name="info-large" file="../images/info-large.png" />
+    <resource name="involved-no" file="../images/involved-no-mini.png" />
+    <resource name="involved-yes" file="../images/involved-yes-mini.png" />
     <resource name="launchpad" file="../images/launchpad.png" />
     <resource name="launchpad-large" file="../images/launchpad-large.png" />
     <resource name="launchpad-heading" file="../images/launchpad-heading.png" />
@@ -83,7 +85,10 @@
     <resource name="locked" file="../images/locked.png" />
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
+    <resource name="maybe" file="../images/maybe.png" />
     <resource name="milestone" file="../images/milestone.png" />
+    <resource name="news" file="../images/news.png" />
+    <resource name="no" file="../images/no.png" />
     <resource name="pkg-binary" file="../images/package-binary.png" />
     <resource name="pkg-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
@@ -114,6 +119,8 @@
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/meeting.png" />
+    <resource name="favourite-yes" file="../images/fav-yes.png" />
+    <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/team.png" />
@@ -130,6 +137,7 @@
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
     <resource name="warning" file="../images/warning.png" />
     <resource name="warning-large" file="../images/warning-large.png" />
+    <resource name="yes" file="../images/yes.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
     <resource name="zoom-out" file="../images/zoom-out.png" />
 

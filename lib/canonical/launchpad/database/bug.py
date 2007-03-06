@@ -184,6 +184,17 @@ class Bug(SQLBase):
         return sorted(result, key=bugtask_sort_key)
 
     @property
+    def pillar_bugtasks(self):
+        """See IBug."""
+        result = BugTask.select(
+            """BugTask.bug = %d AND (
+                 BugTask.product IS NOT NULL OR
+                 BugTask.distribution IS NOT NULL)
+            """ % self.id)
+        result.prejoin(["assignee"])
+        return sorted(result, key=bugtask_sort_key)
+
+    @property
     def initial_message(self):
         """See IBug."""
         messages = sorted(self.messages, key=lambda ob: ob.id)
@@ -683,7 +694,7 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers"])
+                "product", "status", "subscribers", "tags"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -731,6 +742,8 @@ class BugSet:
             security_related=params.security_related)
 
         bug.subscribe(params.owner)
+        if params.tags:
+            bug.tags = params.tags
 
         if params.product == celebs.landscape:
             # Subscribe the Landscape bugcontact to all Landscape bugs,

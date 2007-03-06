@@ -290,6 +290,14 @@ class IDistributionMirrorSet(Interface):
         PROBE_INTERVAL hours.
         """
 
+    def getBestMirrorsForCountry(country, mirror_type):
+        """Return the best mirrors to be used by someone in the given country.
+
+        The list of mirrors is composed by the official mirrors located in
+        the given country (or in the country's continent if the country
+        doesn't have any) plus the main mirror of that type.
+        """
+
     def getByName(name):
         """Return the mirror with the given name or None."""
 

@@ -39,7 +39,7 @@ class BountiesAppMenu(ApplicationMenu):
     links = ['new']
 
     def new(self):
-        text = "Register a Bounty"
+        text = "Register a bounty"
         return Link('+new', text, icon="add")
 
 
@@ -48,7 +48,7 @@ class BountyContextMenu(ContextMenu):
     links = ['edit', 'subscription', 'administer']
 
     def edit(self):
-        text = 'Edit Bounty'
+        text = 'Edit bounty'
         return Link('+edit', text, icon='edit')
 
     def subscription(self):

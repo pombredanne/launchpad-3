@@ -38,37 +38,38 @@ and another one listing those of the distribution.
 To register himself as anwer contact, the user clicks on the
 'Answer Contact' link. He needs to login to access that function.
 
-    >>> anon_browser.getLink('Answer Contact').click()
+    >>> anon_browser.getLink('Answer contact').click()
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
-    >>> user_browser.open(
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+tickets')
-    >>> user_browser.getLink('Answers').click()
-    >>> user_browser.getLink('Answer Contact').click()
-    >>> print user_browser.title
+    >>> browser.getLink('Answers').click()
+    >>> browser.getLink('Answer contact').click()
+    >>> print browser.title
     Answer contact for Source Package "mozilla-firefox" in Ubuntu Linux
 
 On this page, the user can choose to become an answer contact by
 clicking a checkbox. All the teams, he's a member of are also displayed
 and he can register these teams as well.
 
-    >>> user_browser.getControl(
+    >>> browser.getControl(
     ...     "I want to be an answer contact for mozilla-firefox").selected
     False
-    >>> user_browser.getControl(
+    >>> browser.getControl(
     ...     "I want to be an answer contact for "
     ...     "mozilla-firefox").selected = True
-    >>> user_browser.getControl("Landscape Developers").selected
+    >>> browser.getControl("Landscape Developers").selected
     False
-    >>> user_browser.getControl("Landscape Developers").selected = True
+    >>> browser.getControl("Landscape Developers").selected = True
 
 To save his choices, the user clicks on the 'Continue' button and
 a message is displayed to confirm the changes:
 
-    >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     You have been added as an answer contact for mozilla-firefox in ubuntu.
     Landscape Developers has been added as an answer contact for
@@ -77,7 +78,7 @@ a message is displayed to confirm the changes:
 The answer contacts porlet for the source package was updated:
 
     >>> for answer_contact in find_portlet(
-    ...     user_browser.contents,
+    ...     browser.contents,
     ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
     ...     print answer_contact.renderContents()
     Landscape Developers
@@ -86,24 +87,24 @@ The answer contacts porlet for the source package was updated:
 To unregister as answer contact, the same page is used. Instead this
 time, we unselect the checkboxes:
 
-    >>> user_browser.getLink('Answer Contact').click()
-    >>> user_browser.getControl(
+    >>> browser.getLink('Answer contact').click()
+    >>> browser.getControl(
     ...     "I want to be an answer contact for mozilla-firefox").selected
     True
-    >>> user_browser.getControl(
+    >>> browser.getControl(
     ...     "I want to be an answer contact for "
     ...     "mozilla-firefox").selected = False
 
 Again a confirmation message is displayed and the answer contacts
 portlet for the source package is updated.
 
-    >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     You have been removed as an answer contact for mozilla-firefox in ubuntu.
 
     >>> for answer_contact in find_portlet(
-    ...     user_browser.contents,
+    ...     browser.contents,
     ...     'Answer contacts for mozilla-firefox in ubuntu').fetch('a'):
     ...     print answer_contact.renderContents()
     Landscape Developers

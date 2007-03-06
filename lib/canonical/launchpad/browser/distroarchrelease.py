@@ -49,7 +49,7 @@ class DistroArchReleaseContextMenu(ContextMenu):
     # Search link not necessary, because there's a search form on the overview page.
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
 
