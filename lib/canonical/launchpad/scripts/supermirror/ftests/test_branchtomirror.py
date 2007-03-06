@@ -326,7 +326,7 @@ class TestErrorHandling(unittest.TestCase):
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support branches'
+        expected_msg = 'Launchpad does not support branches '
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnknownFormatError(self):
@@ -342,7 +342,7 @@ class TestErrorHandling(unittest.TestCase):
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support mirroring branches'
+        expected_msg = 'Launchpad cannot mirror branches from SFTP '
         self._runMirrorAndCheckError(expected_msg)
 
     def testNotBranchError(self):

@@ -150,7 +150,7 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnsupportedFormatError, e:
-            msg = ("The supermirror does not support branches from before "
+            msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
@@ -160,9 +160,8 @@ class BranchToMirror:
             self._mirrorFailed(logger, e)
 
         except bzrlib.errors.ParamikoNotPresent, e:
-            msg = ("The supermirror does not support mirroring branches "
-                   "from SFTP URLs. Please register a HTTP location for "
-                   "this branch.")
+            msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
+                   " Please register a HTTP location for this branch.")
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
