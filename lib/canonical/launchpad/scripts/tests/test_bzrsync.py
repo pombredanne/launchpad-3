@@ -67,7 +67,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         TestCaseWithTransport.setUp(self)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        print config.branchscanner.dbuser
         self.zopeless_helper = LaunchpadZopelessTestSetup(
             dbuser=config.branchscanner.dbuser)
         self.zopeless_helper.setUp()
@@ -650,16 +649,13 @@ class TestBugLinking(BzrSyncTestCase):
     # - launchpad:bug-relation
 
     def test_bug_branch(self):
-        # XXX - commit something that refers to a bug
-        # XXX - scan that branch
-        # XXX - check that we have a row in BugBranchRevision
         self.commitRevision(rev_id='rev1',
                             revprops={'launchpad:bug': '1'})
         self.syncBranch()
         bbr = BugBranchRevision.selectOne()
         self.assertNotEqual(bbr, None)
         self.assertEqual(bbr.revision.revision_id, 'rev1')
-        self.assertEqual(bbr.branch, self.db_branch)
+        self.assertEqual(bbr.branch.id, self.db_branch.id)
         self.assertEqual(bbr.bug.id, 1)
 
 
