@@ -9,7 +9,7 @@ teams that the person is participating in.
 
 First, check that the condensed branch listing page works:
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
+  >>> browser.open('http://code.launchpad.dev/~name12')
   >>> print browser.contents
   <!DOCTYPE...
   ...Sample Person...
@@ -19,7 +19,7 @@ First, check that the condensed branch listing page works:
 Then get the detailed branch listing (related branches) for an user which has
 branches in each lifecycle.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branchlisting')
+  >>> browser.open('http://code.launchpad.dev/~name12/+branchlisting')
   >>> print browser.contents
   <!DOCTYPE...
   ...<h2>Mature</h2>...
@@ -32,14 +32,14 @@ branches in each lifecycle.
 If a person does not have any related branches, we should print an informative
 message.
 
-  >>> browser.open('http://launchpad.dev/~kinnison/+branches')
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print browser.contents
   <!DOCTYPE...
   ...There are no branches related to Daniel Silverstone...
 
 This informative message should also appear in the detailed branch listing.
 
-  >>> browser.open('http://launchpad.dev/~kinnison/+branchlisting')
+  >>> browser.open('http://code.launchpad.dev/~kinnison/+branchlisting')
   >>> print browser.contents
   <!DOCTYPE...
   ...There are no branches related to Daniel Silverstone...
@@ -71,23 +71,23 @@ shown as 'Team Branch'.
 There should be a link in the branch context menu for person which points to
 the authored branches page.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Authored')
+  >>> browser.open('http://code.launchpad.dev/~name12')
+  >>> link = browser.getLink('Show authored branches')
   >>> print link.url
-  http://launchpad.dev/~name12/+authoredbranches
+  http://code.launchpad.dev/~name12/+authoredbranches
 
 And we can load the authored branches page.
 
   >>> link.click()
   >>> browser.url
-  'http://launchpad.dev/~name12/+authoredbranches'
+  'http://code.launchpad.dev/~name12/+authoredbranches'
 
 == Registered Branches ==
 
 There should also be a link which points to the registered branches page.
 
   >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Registered')
+  >>> link = browser.getLink('Show registered branches')
   >>> print link.url
   http://launchpad.dev/~name12/+registeredbranches
 
@@ -99,16 +99,16 @@ And we can load the registered branches page.
 
 == Subscribed branches ==
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Subscribed')
+  >>> browser.open('http://code.launchpad.dev/~name12')
+  >>> link = browser.getLink('Show subscribed branches')
   >>> print link.url
-  http://launchpad.dev/~name12/+subscribedbranches
+  http://code.launchpad.dev/~name12/+subscribedbranches
 
 And we can load the subscribed branches page.
 
   >>> link.click()
   >>> browser.url
-  'http://launchpad.dev/~name12/+subscribedbranches'
+  'http://code.launchpad.dev/~name12/+subscribedbranches'
 
 == Branch filtering ==
 
@@ -129,7 +129,7 @@ branches are shown.  Current branches are those that have a
 lifecycle status of New, Development, Experimental or Mature.
 Merged or Abandoned branches are not shown.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
+  >>> browser.open('http://code.launchpad.dev/~name12')
   >>> visible_branches(browser.contents)
   junk.dev     Experimental
   junk.contrib New
@@ -231,14 +231,14 @@ We are wanting to have badges for associated bugs and blueprints.
 
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> names_and_bugs(browser.contents)
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.dev
-  http://code.launchpad.dev/~name12/+branch/+junk/junk.contrib
-  http://code.launchpad.dev/~name12/+branch/firefox/main
+  http://code.launchpad.dev/~name12/+junk/junk.dev
+  http://code.launchpad.dev/~name12/+junk/junk.contrib
+  http://code.launchpad.dev/~name12/firefox/main
     Bug: http://launchpad.dev/bugs/4
     Bug: http://launchpad.dev/bugs/5
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/pushed
-  http://code.launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad
+  http://code.launchpad.dev/~name12/gnome-terminal/2.6
+  http://code.launchpad.dev/~name12/gnome-terminal/main
+  http://code.launchpad.dev/~name12/gnome-terminal/klingon
+  http://code.launchpad.dev/~name12/gnome-terminal/pushed
+  http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
 

@@ -17,12 +17,14 @@ from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.ftests import (
+    import_public_test_keys, syncUpdate)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IDistroReleaseSet)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
     DistributionReleaseStatus, DistroReleaseQueueStatus,
-    PackagePublishingStatus)
+    PackagePublishingStatus, PackagePublishingPocket)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -40,8 +42,8 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessor(unittest.TestCase):
-    """Functional tests for uploadprocessor.py."""
+class TestUploadProcessorBase(unittest.TestCase):
+    """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -66,20 +68,43 @@ class TestUploadProcessor(unittest.TestCase):
     def tearDown(self):
         rmtree(self.queue_folder)
 
+    def assertLogContains(self, line):
+        """Assert if a given line is present in the log messages."""
+        self.assertTrue(line in self.log.lines)
+
     def setupBreezy(self):
+        """Create a fresh distrorelease in ubuntu.
+
+        Use *initialiseFromParent* procedure to create 'breezy'
+        on ubuntu based on the last 'breezy-autotest'.
+
+        Also sets 'changeslist' and 'nominatedarchindep' properly.
+        """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = ubuntu['breezy-autotest']
-        from canonical.launchpad.database import DistroReleaseSet
-        drs = DistroReleaseSet()
-        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger',
-                         'The Breezy Badger', 'Black and White', 'Someone',
-                         '5.10', bat, bat.owner)
+        dr_set = getUtility(IDistroReleaseSet)
+        breezy = dr_set.new(
+            ubuntu, 'breezy', 'Breezy Badger',
+            'The Breezy Badger', 'Black and White', 'Someone',
+            '5.10', bat, bat.owner)
         breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
                                      True, breezy.owner)
         breezy.nominatedarchindep = breezy_i386
         breezy.changeslist = 'breezy-changes@ubuntu.com'
         breezy.initialiseFromParent()
         self.breezy = breezy
+
+
+class TestUploadProcessor(TestUploadProcessorBase):
+    """Basic tests on uploadprocessor class.
+
+    * Check if the rejection message is send even when an unexpected
+      exception occur when processing the upload.
+    * Check if known uploads targeted to a FROZEN distrorelease
+      end up in UNAPPROVED queue.
+
+    This test case is able to setup a fresh distrorelease in Ubuntu.
+    """
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -182,7 +207,6 @@ class TestUploadProcessor(unittest.TestCase):
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
         self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
-
         self.layer.txn.commit()
 
         # Place a newer version of bar into the queue.

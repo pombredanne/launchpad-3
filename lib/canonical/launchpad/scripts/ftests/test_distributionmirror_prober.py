@@ -30,7 +30,8 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
     RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
-    should_skip_host, PER_HOST_REQUESTS)
+    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -257,8 +258,8 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         """Test that only a small ratio is not enough to cause a host to be
         skipped; we also need to have a considerable number of requests.
         """
-        requests = 5
-        timeouts = 5
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO - 1
+        timeouts = requests
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failUnless(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -271,8 +272,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         """
         # If the ratio is small enough and we have a considerable number of
         # requests, we won't issue more connections on that host.
-        requests = 15
-        timeouts = 8
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failIf(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -282,8 +284,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
     def test_connect_is_called_if_not_many_timeouts(self):
         # If the ratio is not too small we consider it's safe to keep 
         # issuing connections on that host.
-        requests = 15
-        timeouts = 5
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) - 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failUnless(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -347,8 +350,9 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
 
     def test_failure_after_too_many_timeouts(self):
         host = 'foo.bar'
-        requests = 15
-        timeouts = 8
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
         distributionmirror_prober.host_requests = {host: requests}
         distributionmirror_prober.host_timeouts = {host: timeouts}
         # Ensure the number of requests and timeouts we're using should
@@ -378,6 +382,24 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
             prober.connectCalled = True
         prober.connect = connect
         return prober
+
+    def test_connect_depends_on_localhost_only_config(self):
+        # If localhost_only is True and the host to which we would connect is
+        # not localhost, the connect() method is not called.
+        orig_config = config.distributionmirrorprober.localhost_only
+        config.distributionmirrorprober.localhost_only = True
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        self.failUnless(prober.connect_host != 'localhost')
+        prober.probe()
+        self.failIf(prober.connectCalled)
+
+        # If localhost_only is False, then it doesn't matter the host to which
+        # we'll connect to --the connect() method will be called.
+        config.distributionmirrorprober.localhost_only = False
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.probe()
+        self.failUnless(prober.connectCalled)
+        config.distributionmirrorprober.localhost_only = orig_config
 
     def test_noconnection_is_made_when_infiniteloop_detected(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()

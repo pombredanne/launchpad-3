@@ -11,10 +11,10 @@ from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
-from canonical.launchpad.interfaces.tickettarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
@@ -98,7 +98,6 @@ from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *
-from canonical.launchpad.interfaces.poselection import *
 from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
@@ -130,14 +129,14 @@ from canonical.launchpad.interfaces.sprint import *
 from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
-from canonical.launchpad.interfaces.supportcontact import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
-from canonical.launchpad.interfaces.ticket import *
-from canonical.launchpad.interfaces.ticketbug import *
-from canonical.launchpad.interfaces.ticketmessage import *
-from canonical.launchpad.interfaces.ticketreopening import *
-from canonical.launchpad.interfaces.ticketsubscription import *
+from canonical.launchpad.interfaces.question import *
+from canonical.launchpad.interfaces.questionbug import *
+from canonical.launchpad.interfaces.questionmessage import *
+from canonical.launchpad.interfaces.questionreopening import *
+from canonical.launchpad.interfaces.questionsubscription import *
+from canonical.launchpad.interfaces.questiontarget import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *

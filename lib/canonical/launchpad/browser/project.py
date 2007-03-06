@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -6,9 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'ProjectAddProductView',
-    'ProjectAddTicketView',
+    'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestTicketsView',
+    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
@@ -18,7 +18,7 @@ __all__ = [
     'ProjectOverviewMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
-    'ProjectSupportMenu',
+    'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
     'ProjectEditView',
@@ -42,13 +42,13 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot, NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.ticket import TicketAddView
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketCollectionSupportMenu)
+from canonical.launchpad.browser.question import QuestionAddView
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, structured)
 from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
@@ -66,22 +66,19 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(RedirectionNavigation):
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
-        if self.context.getByName(name) is None:
+        project = self.context.getByName(name)
+        if project is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(project))
 
 
 class ProjectSOP(StructuralObjectPresentation):
@@ -107,21 +104,21 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a Project'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Projects'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
     enable_only = [
-        'overview', 'bugs', 'specifications', 'support', 'translations']
+        'overview', 'bugs', 'specifications', 'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -139,11 +136,11 @@ class ProjectOverviewMenu(ApplicationMenu):
         'edit', 'driver', 'reassign', 'administer', 'top_contributors', 'rdf']
 
     def edit(self):
-        text = 'Edit Project Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
     def driver(self):
@@ -152,13 +149,13 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
-        text = 'Top Contributors'
+        text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
 
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
-            'RDF</abbr> Metadata')
+            'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
@@ -174,11 +171,11 @@ class ProjectBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'Register a bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -189,11 +186,11 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'doc', 'roadmap', 'assignments',]
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def doc(self):
-        text = 'Documentation'
+        text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
 
@@ -206,15 +203,15 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
-class ProjectSupportMenu(TicketCollectionSupportMenu):
-    """Menu for the support facet of projects."""
+class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
+    """Menu for the answers facet of projects."""
 
     usedfor = IProject
-    facet = 'support'
-    links = TicketCollectionSupportMenu.links + ['new']
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
-        text = 'Ask Question'
+        text = 'Ask question'
         return Link('+addticket', text, icon='add')
 
 
@@ -225,7 +222,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
     links = ['changetranslators']
 
     def changetranslators(self):
-        text = 'Change Translators'
+        text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
 
@@ -408,14 +405,14 @@ class ProjectRdfView(object):
         return encodeddata
 
 
-class ProjectAddTicketView(TicketAddView):
-    """View that handles creation of a ticket from an IProject context."""
+class ProjectAddQuestionView(QuestionAddView):
+    """View that handles creation of a question from an IProject context."""
 
-    search_field_names = ['product'] + TicketAddView.search_field_names
+    search_field_names = ['product'] + QuestionAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        TicketAddView.setUpFields(self)
+        QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
@@ -436,8 +433,8 @@ class ProjectAddTicketView(TicketAddView):
                  mapping=dict(project=self.context.displayname))
 
     @property
-    def ticket_target(self):
-        """The ITicketTarget to use is the selected product."""
+    def question_target(self):
+        """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()
         else:
@@ -445,12 +442,12 @@ class ProjectAddTicketView(TicketAddView):
 
 
 # XXX flacoste 2006-12-13 This should be removed and the
-# TicketTargetLatestTicketsView used instead once we add a
-# searchTickets() method to IProject. This will happen when
+# QuestionTargetLatestQuestionsView used instead once we add a
+# searchQuestions() method to IProject. This will happen when
 # fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestTicketsView:
+class ProjectLatestQuestionsView:
     """Empty view to allow rendering of the default template used by
-    TicketAddView.
+    QuestionAddView.
     """
 
     def __call__(self):

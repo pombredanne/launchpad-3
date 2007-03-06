@@ -8,7 +8,7 @@ The Features link shows an overview of all the specifications
 involving that person.
 
   >>> browser.open('http://blueprints.launchpad.dev/~name16')
-  >>> browser.getLink('Features').click()
+  >>> browser.getLink('Blueprints').click()
   >>> browser.url
   '.../~name16/+specs'
   >>> browser.title
@@ -71,7 +71,7 @@ in the workload of that person.
   >>> browser.url
   '.../~name16/+specworkload'
   >>> browser.title
-  'Specification workload for Foo Bar'
+  'Blueprint workload for Foo Bar'
 
 The 'Feedback requests' link displays a list of the specifications that
 the person was asked to review.

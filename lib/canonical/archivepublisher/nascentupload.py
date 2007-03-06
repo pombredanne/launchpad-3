@@ -495,7 +495,7 @@ class NascentUpload:
                 return candidates[0]
         return None
 
-    def getBinaryAncestry(self, uploaded_file):
+    def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -529,6 +529,10 @@ class NascentUpload:
                 binary_name, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
+
+            if not try_other_archs:
+                continue
+
             # Try the other architectures...
             dars = self.policy.distrorelease.architectures
             other_dars = [other_dar for other_dar in dars
@@ -631,10 +635,18 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    self.checkBinaryVersion(uploaded_file, ancestry)
                     # XXX cprov 20070212: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
+                    # Fo binary versions verification we should only
+                    # use ancestries in the same architecture. If none
+                    # was found we can go w/o any checks, since it's
+                    # a NEW binary in this architecture, any version is
+                    # fine. See bug #89846 for further info.
+                    ancestry = self.getBinaryAncestry(
+                        uploaded_file, try_other_archs=False)
+                    if ancestry is not None:
+                        self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
@@ -672,7 +684,8 @@ class NascentUpload:
                 "ARCH": self.changes.architecture_line,
                 }
             if self.changes.signer:
-                interpolations['MAINTAINERFROM'] = self.changes.changed_by['rfc2047']
+                interpolations['MAINTAINERFROM'] = self.changes.changed_by[
+                    'rfc2047']
 
             recipients = self.build_recipients()
 
@@ -680,6 +693,14 @@ class NascentUpload:
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
             self.store_objects_in_database()
+
+            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
+            # section 'translations' should not generate any emails.
+            if (self.sourceful and self._find_dsc().section == 'translations'):
+                self.logger.debug(
+                    "Skipping acceptance and announcement, it is a language-"
+                    "package upload.")
+                return True, []
 
             # Unknown uploads
             if self.is_new:
