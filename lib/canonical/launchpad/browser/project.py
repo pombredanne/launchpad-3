@@ -420,16 +420,18 @@ class ProjectAddQuestionView(QuestionAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'),
+                title=_('Project'),
                 description=_(
-                    'Choose the product for which you have a question.'),
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Ask a question about a product from ${project}',
+        return _('Ask a question about a project from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
