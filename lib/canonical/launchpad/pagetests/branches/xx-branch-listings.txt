@@ -37,8 +37,10 @@ Luckily for us, many is 5 in the tests.
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
    pushed                     New          gnome-terminal Registrant
-   junk.dev     Ubuntu Team   Experimental                Registrant
-   junk.contrib Sample Person New                         Author
+   junk.dev     Ubuntu Team   Experimental                
+      2005-10-31 12:03:57 ... weeks ago  Registrant
+   junk.contrib Sample Person New                         
+      2005-10-31 12:03:57 ... weeks ago  Author
 
 If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
@@ -113,8 +115,10 @@ Now all types of branches should be shown.
    klingon      Sample Person        Experimental gnome-terminal Author
    launchpad    Launchpad Developers New          gnome-terminal Subscriber
    pushed                            New          gnome-terminal Registrant
-   junk.dev     Ubuntu Team          Experimental                Registrant
-   junk.contrib Sample Person        New                         Author
+   junk.dev     Ubuntu Team          Experimental                
+      2005-10-31 12:03:57 ... weeks ago  Registrant
+   junk.contrib Sample Person        New                         
+      2005-10-31 12:03:57 ... weeks ago  Author
 
 
 Selecting an individual lifecycle status from the select control 
@@ -171,11 +175,11 @@ We are wanting to have badges for associated bugs and blueprints.
   ...     print anchors[0].get('href')
   ...     for anchor in anchors[1:]:
   ...        print "  Bug:", anchor.get('href')
-  http://code.launchpad.dev/~name12/+branch/firefox/main
+  http://code.launchpad.dev/~name12/firefox/main
     Bug: http://launchpad.dev/bugs/4
     Bug: http://launchpad.dev/bugs/5
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/2.6
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/main
-  http://code.launchpad.dev/~name12/+branch/gnome-terminal/klingon
-  http://code.launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad
+  http://code.launchpad.dev/~name12/gnome-terminal/2.6
+  http://code.launchpad.dev/~name12/gnome-terminal/main
+  http://code.launchpad.dev/~name12/gnome-terminal/klingon
+  http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
 
