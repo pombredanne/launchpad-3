@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
     IBinaryPackageNameSet)
 from canonical.lp.dbschema import (
-    PackagePublishingPriority, DistroReleaseQueueCustomFormat, 
+    PackagePublishingPriority, DistroReleaseQueueCustomFormat,
     DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
 
 
@@ -108,13 +108,14 @@ class NascentUploadFile:
     @property
     def content_type(self):
         """The content type for this file ready for adding to the librarian."""
-        for ending, content_type in self.filename_ending_content_type_map.items():
+        for content_type_map in self.filename_ending_content_type_map.items():
+            ending, content_type = content_type_map
             if self.filename.endswith(ending):
                 return content_type
         return "application/octet-stream"
 
     #
-    #
+    # Useful properties.
     #
 
     @property
@@ -129,7 +130,7 @@ class NascentUploadFile:
         return component_and_section.split("/", 1)
 
     #
-    #
+    # DB storage helpers
     #
 
     def store_in_database(self):
@@ -190,7 +191,14 @@ class NascentUploadFile:
 
 
 class CustomUploadFile(NascentUploadFile):
-    """XXX"""
+    """NascentUpload file for Custom uploads.
+
+    Custom uploads are anything else than source or binaries that are meant
+    to be published in the archive.
+
+    They are usually Tarballs which are processed according its type and
+    results in new archive files.
+    """
 
     # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
     # Essentially if you change anything to do with custom formats, grep for
@@ -210,7 +218,8 @@ class CustomUploadFile(NascentUploadFile):
 
     def verify(self):
         if self.section not in self.custom_sections:
-            yield UploadError("Unsupported custom section name %r" % self.section)
+            yield UploadError(
+                "Unsupported custom section name %r" % self.section)
 
     def store_in_database(self):
         libraryfile = self.librarian.create(
@@ -221,15 +230,12 @@ class CustomUploadFile(NascentUploadFile):
 
 
 class PackageUploadFile(NascentUploadFile):
-    """XXX"""
+    """Base class to model sources and binary files contained in a upload. """
 
     def __init__(self, filename, digest, size, component_and_section,
                  priority, package, version, changes, fsroot, policy,
                  logger):
-        """
-        XXX
-
-        Check presence of the component and section from an uploaded_file.
+        """Check presence of the component and section from an uploaded_file.
 
         They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
@@ -275,9 +281,12 @@ class PackageUploadFile(NascentUploadFile):
 
 
 class SourceUploadFile(PackageUploadFile):
-    """XXX
+    """Files mentioned in changesfile as source (orig, diff, tar).
 
-    XXX: compare to DSCUploadFile
+    This class only check consistency on information contained in
+    changesfile (CheckSum, Size, component, section, filename).
+    Further checks on file contents and package consistency are done
+    in DSCFile.
     """
     def verify(self):
         """Verify the uploaded source file.
@@ -304,6 +313,7 @@ class SourceUploadFile(PackageUploadFile):
 
 class UBinaryUploadFile(PackageUploadFile):
     """Represents an uploaded binary package file."""
+
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
 
@@ -344,7 +354,7 @@ class UBinaryUploadFile(PackageUploadFile):
         self.architecture = binary_match.group(3)
 
     #
-    #
+    # Useful properties.
     #
 
     @property
@@ -364,7 +374,7 @@ class UBinaryUploadFile(PackageUploadFile):
         return self.priority_map[self.priority]
 
     #
-    #
+    # Binary file checks
     #
 
     def verify(self):
@@ -569,14 +579,23 @@ class UBinaryUploadFile(PackageUploadFile):
         # That's all folks.
 
     def find_sourcepackagerelease(self):
-        """XXX
+        """Return the respective ISourcePackagRelease for this binary upload.
 
-        Explain why this is separate from verify.
+        It inspect publicationin the targeted DistroRelease and also the
+        ACCEPTED queue for sources matching stored (source_name, source_version).
+
+        It raises UploadError if the source was not found.
+
+        Verifications on the designed source are delayed because for
+        mixed_uploads (source + binary) we do not have the source stored
+        in DB yet (see verify_sourcepackagerelease).
         """
         distrorelease = self.policy.distrorelease
         spphs = distrorelease.getPublishedReleases(
-                        self.source_name, version=self.source_version, 
+                        self.source_name, version=self.source_version,
                         include_pending=True)
+
+        sourcepackagerelease = None
         if spphs:
             # We know there's only going to be one release because
             # version is unique.
@@ -608,10 +627,7 @@ class UBinaryUploadFile(PackageUploadFile):
         return sourcepackagerelease
 
     def verify_sourcepackagerelease(self, sourcepackagerelease):
-        """XXX
-
-        Explain mixed-mode.
-        """
+        """Check if the given ISourcePackageRelease matches the context."""
         assert 'source' in self.changes.architectures
         if self.source_version != sourcepackagerelease.version:
             raise UploadError(
@@ -634,32 +650,44 @@ class UBinaryUploadFile(PackageUploadFile):
         - Try to locate an existing suitable build, and use that. We also,
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
+
+        If by any chance an inconsistent build was found this method will
+        raise UploadError resulting in a upload rejection.
         """
         build_id = getattr(self.policy.options, 'buildid', None)
-        if build_id is None:
-            dar = self.policy.distrorelease[self.archtag]
+        dar = self.policy.distrorelease[self.archtag]
 
+        if build_id is None:
             # Check if there's a suitable existing build.
             build = sourcepackagerelease.getBuildByArch(dar)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
+                self.logger.debug("Updating build for %s: %s" % (
+                    dar.architecturetag, build.id))
             else:
                 # No luck. Make one.
-                # XXX: how can this happen?! oh, security?
+                # Usually happen for security binary uploads.
                 build = sourcepackagerelease.createBuild(
                     dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
-
-            # Sanity check; raise an error if the build we've been
-            # told to link to makes no sense (ie. is not for the right
-            # source package).
-            if (build.sourcepackagerelease != sourcepackagerelease or
-                build.pocket != self.policy.pocket):
-                raise UploadError("Attempt to upload binaries specifying "
-                                  "build %s, where they don't fit" % build_id)
+            # XXX cprov 20070302: builddmaster will update the build.
+            # This is unfortunate because doing it here would fix the
+            # the problem mentioned #32261, since it would be only updated
+            # if this transaction got commited.
             self.logger.debug("Build %s found" % build.id)
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense (ie. is not for the right
+        # source package).
+        if (build.sourcepackagerelease != sourcepackagerelease or
+            build.pocket != self.policy.pocket or
+            build.distroarchrelease != dar):
+            raise UploadError(
+                "Attempt to upload binaries specifying "
+                "build %s, where they don't fit.\n%s"
+                % (build.id, "\n".join(info)))
 
         return build
 
@@ -705,7 +733,7 @@ class UBinaryUploadFile(PackageUploadFile):
             conflicts=encoded.get('Conflicts', ''),
             replaces=encoded.get('Replaces', ''),
             provides=encoded.get('Provides', ''),
-            essential=is_essential, 
+            essential=is_essential,
             installedsize=installedsize,
             copyright=copyright,
             licence=licence,

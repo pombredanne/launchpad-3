@@ -31,16 +31,9 @@ First, test the rejection of a missapplied changesfile name:
   >>> upload = NascentUpload(findPolicyByName('sync'),
   ...     datadir(''), "dist-upgrader_20060302.0120.changes",
   ...     logging.getLogger())
-  >>> mock_options = MockOptions()
-  >>> upload.policy.setOptions(mock_options)
-
-  >>> from canonical.archivepublisher.nascentupload import UploadError
-  >>> try:
-  ...    upload.process()
-  ... except UploadError, info:
-  ...    print 'BOOM:', info
-  BOOM: dist-upgrader_20060302.0120.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
-
+  Traceback (most recent call last):
+  ...
+  FatalUploadError: dist-upgrader_20060302.0120.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 Now do a proper upload into the system.
 
@@ -51,34 +44,27 @@ Now do a proper upload into the system.
   >>> upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
   ...     MockLogger())
-
-
-  >>> upload.changes_filename == datadir(
-  ...     "dist-upgrader_20060302.0120_all.changes")
-  True
+  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
 
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
-  DEBUG: Checking signature on changes file.
-  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Finding and applying overrides.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.
 
-  >>> upload.rejected
+  >>> upload.is_rejected
   False
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
 
 And all things worked.

@@ -266,7 +266,7 @@ Inspect the uploader log to find the rejection message.
   INFO       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO       Body:
   INFO    Rejected:
-  INFO    SHA1 sum of uploaded file does not match extant file in archive
+  INFO    SHA1 sum of uploaded file does not match existent file in archive
   ...
   <BLANKLINE>
 

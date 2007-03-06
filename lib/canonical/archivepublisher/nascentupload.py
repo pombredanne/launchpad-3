@@ -87,9 +87,11 @@ class NascentUpload:
     queue_root = None
 
     def __init__(self, policy, fsroot, changes_filename, logger):
-        """XXX
+        """Setup a ChangesFile based on given changesfile path.
 
-        May raise FatalUploadError.
+        May raise FatalUploadError due to unrecoverable problems building
+        the ChangesFile object.
+        Also store given utilities like policy, logger and fsroot.
         """
         self.fsroot = fsroot
         self.policy = policy
@@ -143,7 +145,7 @@ class NascentUpload:
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
 
-        if (len(self.changes.files) == 1 and 
+        if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
         else:
@@ -161,7 +163,8 @@ class NascentUpload:
                     "Upload is source/binary but policy refuses mixed uploads.")
 
             if self.sourceful and not self.changes.dsc:
-                self.reject("Unable to find the dsc file in the sourceful upload?")
+                self.reject(
+                    "Unable to find the dsc file in the sourceful upload?")
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -173,7 +176,12 @@ class NascentUpload:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
-        if not self.policy.distrorelease.canUploadToPocket(self.policy.pocket):
+        # Check if the policy distrorelese is already defined first.
+        # If it's not, skip pocket upload rights check, the upload
+        # is already rejected at this point.
+        distrorelease = self.policy.distrorelease
+        pocket = self.policy.pocket
+        if distrorelease and not distrorelease.canUploadToPocket(pocket):
             self.reject(
                 "Not permitted to upload to the %s pocket in a "
                 "release in the '%s' state." % (
@@ -182,7 +190,6 @@ class NascentUpload:
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")
-
 
     #
     # Minor helpers
@@ -212,8 +219,7 @@ class NascentUpload:
     #
 
     def _check_overall_consistency(self):
-        """
-        XXX
+        """Heuristics checks on upload contents and declared architecture.
 
         An upload may list 'powerpc' and 'all' in its architecture line
         and yet only upload 'powerpc' because of being built -B by a
@@ -281,7 +287,20 @@ class NascentUpload:
         self.archdep = think_archdep
 
     def _check_sourceful_consistency(self):
-        """XXX"""
+        """Heuristic checks on a sourceful upload.
+
+        Raises AssertionError when called for a non-sourceful upload.
+        Ensures a sourceful upload has, at least:
+
+         * One DSC
+         * One or none DIFF
+         * One or none ORIG
+         * One or none TAR
+         * If no DIFF is present it must have a TAR (native)
+
+        'hasorig' and 'native' attributes are set when an ORIG and/or an
+        TAR file, respectively, are present.
+        """
         assert self.sourceful
 
         dsc = 0
@@ -320,7 +339,13 @@ class NascentUpload:
         self.hasorig = bool(orig)
 
     def _check_binaryful_consistency(self):
-        """XXX"""
+        """Heuristic checks on a binaryful upload.
+
+        It copes with mixed_uploads (source + binaries).
+
+        Check if the declared number of architectures corresponds to the
+        upload contents.
+        """
         # Currently the only check we make is that if the upload is binaryful
         # we don't allow more than one build.
         # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
@@ -347,6 +372,10 @@ class NascentUpload:
     #
 
     def run_and_check_error(self, callable):
+        """Run the given callable and process errors and warnings.
+
+        UploadError(s) and UploadWarnings(s) are processed.
+        """
         try:
             callable()
         except UploadError, error:
@@ -355,7 +384,21 @@ class NascentUpload:
             self.warn(str(error))
 
     def run_and_collect_errors(self, callable):
-        """XXX"""
+        """Run 'special' callable that generates a list of errors/warnings.
+
+        The so called 'special' callables returns a generator containing all
+        exceptions occurred during it's process.
+
+        Currently it is used for {NascentUploadFile, ChangesFile}.verify()
+        method.
+
+        The rationale for this is that we want to collect as many
+        errors/warnings as possible, instead of interrupt the checks when we
+        find the first problem, when processing an upload.
+
+        This methodology helps to avoids multiple upload retires to fix
+        multiple problems.
+        """
         errors = callable()
         for error in errors:
             if isinstance(error, UploadError):
@@ -555,7 +598,7 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = self.changes['version']
+        proposed_version = self.changes.version
         archive_version = ancestry.sourcepackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
@@ -613,8 +656,8 @@ class NascentUpload:
                     # XXX cprov 20070212: The current override mechanism is
                     # broken, since it modifies original contents of SPR/BPR.
                     # We could do better by having a specific override table
-                    # that relates a SPN/BPN to a especific DR/DAR and carries
-                    # the respecitive information to be overrriden.
+                    # that relates a SPN/BPN to a specific DR/DAR and carries
+                    # the respective information to be overridden.
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
@@ -638,7 +681,7 @@ class NascentUpload:
                     # XXX cprov 20070212: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
-                    # Fo binary versions verification we should only
+                    # For binary versions verification we should only
                     # use ancestries in the same architecture. If none
                     # was found we can go w/o any checks, since it's
                     # a NEW binary in this architecture, any version is
@@ -696,7 +739,7 @@ class NascentUpload:
 
             # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
             # section 'translations' should not generate any emails.
-            if (self.sourceful and self._find_dsc().section == 'translations'):
+            if (self.sourceful and self.changes.dsc.section == 'translations'):
                 self.logger.debug(
                     "Skipping acceptance and announcement, it is a language-"
                     "package upload.")
@@ -866,8 +909,8 @@ class NascentUpload:
                 #
                 # We cannot rely on the distrorelease coming in for a binary
                 # release because it is always set to 'autobuild' by the builder.
-                # We instead have to take it from the policy which gets instructed
-                # by the buildd master during the upload.
+                # We instead have to take it from the policy which gets
+                # instructed by the buildd master during the upload.
                 queue_root.pocket = build.pocket
                 queue_root.addBuild(build)
 

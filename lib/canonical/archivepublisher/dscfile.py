@@ -36,9 +36,11 @@ from canonical.archivepublisher.utils import (
 
 
 class SignableTagFile:
+
     fingerprint = None
     signingkey = None
     signer = None
+
     def process_signature(self):
         """Verify the signature on the filename.
 
@@ -126,7 +128,7 @@ class SignableTagFile:
 
 
 class DSCFile(SourceUploadFile, SignableTagFile):
-    """XXX"""
+    """Models a given DSC file and its content."""
 
     mandatory_fields = set([
         "source",
@@ -178,7 +180,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
 
     #
-    #
+    # Useful properties.
     #
 
     @property
@@ -186,7 +188,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         return self._dict['source']
 
     #
-    #
+    # DSC file checks.
     #
 
     def verify(self):
@@ -211,7 +213,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 continue
             try:
                 file_instance = DSCUploadedFile(
-                    filename, digest, size, self.fsroot, self.policy, self.logger)
+                    filename, digest, size, self.fsroot,
+                    self.policy, self.logger)
             except UploadError, e:
                 yield e
             else:
@@ -221,9 +224,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source = self._dict['source']
         version = self._dict['version']
         if not re_valid_pkg_name.match(source):
-            yield UploadError("%s: invalid source name %s" % (self.filename, source))
+            yield UploadError(
+                "%s: invalid source name %s" % (self.filename, source))
         if not re_valid_version.match(version):
-            yield UploadError("%s: invalid version %s" % (self.filename, version))
+            yield UploadError(
+                "%s: invalid version %s" % (self.filename, version))
 
         if self._dict['format'] != "1.0":
             yield UploadError("%s: Format is not 1.0. This is incompatible with "
@@ -251,9 +256,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Verify the filename matches appropriately
         epochless_dsc_version = re_no_epoch.sub('', self._dict["version"])
         if epochless_dsc_version != self.version:
-            yield UploadError("%s: version ('%s') in .dsc does not match version "
-                             "('%s') in .changes." % (self.filename,
-                                epochless_dsc_version, self.version))
+            yield UploadError(
+                "%s: version ('%s') in .dsc does not match version "
+                "('%s') in .changes."
+                % (self.filename, epochless_dsc_version, self.version))
 
         for error in self.check_files():
             yield error
@@ -284,9 +290,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             if not sub_dsc_file.exists_on_disk:
                 if library_file is None:
-                    # XXX: explain
-                    yield UploadError("Unable to find %s in upload or distribution."
-                                      % (sub_dsc_file.filename))
+                    # Raises an error if the mentioned DSC file isn't
+                    # included in the upload neither published in the
+                    # context Distribution.
+                    yield UploadError(
+                        "Unable to find %s in upload or distribution."
+                        % (sub_dsc_file.filename))
                     files_missing = True
                     continue
 
@@ -304,13 +313,13 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 files_missing = True
                 continue
 
-
             # XXX: we don't call verify on the sub_dsc_file. I'm not
             # sure that's a good or a bad thing, but it's the truth.
 
         if not has_tar:
             yield UploadError(
-                "%s: does not mention any tar.gz or orig.tar.gz." % self.filename)
+                "%s: does not mention any tar.gz or orig.tar.gz."
+                % self.filename)
 
         if files_missing:
             yield UploadError(
@@ -322,6 +331,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
 
     def unpack_and_check_source(self):
+        """Verify uploaded source using dpkg-source."""
+
         self.logger.debug("Verifying uploaded source package by unpacking it.")
 
         # Get a temporary dir together.
@@ -363,8 +374,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield UploadError("%s: couldn't remove tmp dir %s: code %s" % (
                                   self.filename, tmpdir, e.errno))
             else:
-                yield UploadWarning("%s: Couldn't remove tree, fixing up permissions." %
-                                    self.filename)
+                yield UploadWarning(
+                    "%s: Couldn't remove tree, fixing up permissions." %
+                    self.filename)
                 result = os.system("chmod -R u+rwx " + tmpdir)
                 if result != 0:
                     yield UploadError("chmod failed with %s" % result)
@@ -405,7 +417,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             # dateuploaded by default is UTC:now in the database
             )
 
-        for uploaded_file in self.files:
+        # SourcePackageFiles should contain also the DSC
+        source_files = self.files + [self]
+        for uploaded_file in source_files:
             library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,

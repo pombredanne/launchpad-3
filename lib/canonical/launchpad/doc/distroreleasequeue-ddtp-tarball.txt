@@ -36,6 +36,7 @@ For further info about DDTP see:
   >>> class MockOptions:
   ...     distro = "ubuntutest"
   ...     distrorelease = None
+  >>> mock_options = MockOptions()
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -52,16 +53,9 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
   ...     findPolicyByName('sync'), datadir(''),
   ...     "translations-main_20060728.changes",
   ...     logging.getLogger())
-  >>> mock_options = MockOptions()
-  >>> upload.policy.setOptions(mock_options)
-
-  >>> from canonical.archivepublisher.nascentupload import UploadError
-  >>> try:
-  ...    upload.process()
-  ... except UploadError, info:
-  ...    print 'BOOM:', info
-  BOOM: translations-main_20060728.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
-
+  Traceback (most recent call last):
+  ...
+  FatalUploadError: translations-main_20060728.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 Now do a proper upload into the system.
 
@@ -73,33 +67,26 @@ Now do a proper upload into the system.
   ...     findPolicyByName('insecure'), datadir(''),
   ...     "translations-main_20060728_all.changes",
   ...     MockLogger())
-
-
-  >>> upload.changes_filename == datadir(
-  ...     "translations-main_20060728_all.changes")
-  True
+  DEBUG: Verifying signature on translations-main_20060728_all.changes
 
   >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
-  DEBUG: Checking signature on changes file.
-  DEBUG: Verifying signature on translations-main_20060728_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Finding and applying overrides.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.
 
-  >>> upload.rejected
+  >>> upload.is_rejected
   False
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
 
 And all things worked.
@@ -219,7 +206,7 @@ language indexes or adding new ones:
   ...     QuietLogger())
   >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
-  >>> upload.rejected
+  >>> upload.is_rejected
   False
   >>> success, msgs = upload.do_accept()
   >>> success

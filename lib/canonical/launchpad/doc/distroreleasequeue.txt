@@ -69,8 +69,6 @@ Construct an upload.
 
   >>> ed_upload = NascentUpload(findPolicyByName('anything'),
   ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
-  >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
-  True
   >>> ed_upload.policy.setOptions(MockOptions())
   >>> ed_upload.policy.can_upload_binaries = True
   >>> ed_upload.policy.can_upload_mixed = True
@@ -584,9 +582,7 @@ Construct a new upload for universe/misc and a lot of errors ;)
   Subject: usplash_0.1-22_powerpc.changes Rejected
   <BLANKLINE>
   Rejected:
-  usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
-  Unable to find source package usplash/0.1-22 in hoary
-  usplash: Unable to find arch: powerpc
+  usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'
   Signer has no upload rights at all to this distribution.
   Alas, someone called do_accept when we're rejected
   <BLANKLINE>

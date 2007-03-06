@@ -258,8 +258,10 @@ Finally we can ask the upload to process itself.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Creating queue entry
   DEBUG: Build ... created
-  >>> print success
+
+  >>> success
   True
+
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
@@ -520,6 +522,7 @@ case, see further info in bug #55774.
 
   >>> ed_bin.is_rejected
   False
+
   >>> success, msgs = ed_bin.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
@@ -549,11 +552,9 @@ to upload to -UPDATES in a DEVELOPMENT release.
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
-  >>> ed_src.rejection_message
-  ''
+
   >>> success, msgs = ed_src.do_accept()
-  >>> success
-  True
+
   >>> print ed_src.queue_root.pocket.name
   UPDATES
 
