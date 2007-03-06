@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams)
+        CreateBugParams, IPillarNameSet, BugTargetNotFound)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -321,6 +321,109 @@ class AffectsEmailCommand(EmailCommand):
 
     implements(IBugTaskEmailCommand)
     _numberOfArguments = 1
+
+    @classmethod
+    def _splitPath(cls, path):
+        """Split the path part into two.
+
+        The first part is the part before any slash, and the other is
+        the part behind the slash:
+
+            >>> AffectsEmailCommand._splitPath('foo/bar/baz')
+            ('foo', 'bar/baz')
+
+        If No slash is in the path, the other part will be empty.
+
+            >>> AffectsEmailCommand._splitPath('foo')
+            ('foo', '')
+        """
+        if '/' not in path:
+            return path, ''
+        else:
+            return tuple(path.split('/', 1))
+
+    @classmethod
+    def _normalizePath(cls, path):
+        """Normalize the path.
+
+        Previously the path had to start with either /distros/ or
+        /products/. Simply remove any such prefixes to stay backward
+        compatible.
+
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+
+        Also remove a starting slash, since that's a common mistake.
+
+            >>> AffectsEmailCommand._normalizePath('/foo/bar')
+            'foo/bar'
+        """
+        for prefix in ['/distros/', '/products/', '/']:
+            if path.startswith(prefix):
+                path = path[len(prefix):]
+                break
+        return path
+
+    @classmethod
+    def getBugTarget(cls, path):
+        """Return the IBugTarget with the given path.
+
+        Path should be in any of the following forms:
+
+            $product
+            $product/$product_series
+            $distribution
+            $distribution/$source_package
+            $distribution/$distro_release
+            $distribution/$distro_release/$source_package
+        """
+        path = cls._normalizePath(path)
+        name, rest = cls._splitPath(path)
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=True)
+        if pillar is None:
+            raise BugTargetNotFound(
+                "There is no project named '%s' registered in Launchpad." % 
+                    name)
+        elif (not rest and (IDistribution.providedBy(pillar) or
+                            IProduct.providedBy(pillar))):
+            return pillar
+        elif IProduct.providedBy(pillar):
+            series_name, rest = cls._splitPath(rest)
+            product_series = pillar.getSeries(series_name)
+            if product_series is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a series named '%s'." % (
+                        pillar.displayname, series_name))
+            elif not rest:
+                return product_series
+        elif IDistribution.providedBy(pillar):
+            release_name, rest = cls._splitPath(rest)
+            try:
+                release = pillar.getRelease(release_name)
+            except NotFoundError:
+                package_name = release_name
+            else:
+                if not rest:
+                    return release
+                else:
+                    pillar = release
+                    package_name, rest = cls._splitPath(rest)
+            package = pillar.getSourcePackage(package_name)
+            if package is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a release or source package named '%s'."
+                    % (pillar.displayname, package_name))
+            elif not rest:
+                return package
+        else:
+            raise BugTargetNotFound(
+                "It's not possible to file bugs on '%s'." % pillar.name)
+
+        assert rest, "This is the fallback for unexpected path components."
+        raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
     def execute(self, bug):
         """See IEmailCommand."""
