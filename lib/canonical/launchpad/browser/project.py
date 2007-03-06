@@ -8,7 +8,6 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
@@ -441,16 +440,3 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
-
-
-# XXX flacoste 2006-12-13 This should be removed and the
-# QuestionTargetLatestQuestionsView used instead once we add a
-# searchQuestions() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestQuestionsView:
-    """Empty view to allow rendering of the default template used by
-    QuestionAddView.
-    """
-
-    def __call__(self):
-        return u''
