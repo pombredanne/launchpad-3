@@ -1977,8 +1977,8 @@ class NascentUpload:
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
             # XXX cprov 20070302: builddmaster will update the build.
-            # This is unfortunate because doing ti here would fix the
-            # the problem mentioned #32261 since it would be only updated
+            # This is unfortunate because doing it here would fix the
+            # the problem mentioned #32261, since it would be only updated
             # if this transaction got commited.
             self.logger.debug("Build %s found" % build.id)
 
