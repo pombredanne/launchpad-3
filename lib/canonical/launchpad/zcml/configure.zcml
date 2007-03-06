@@ -20,6 +20,7 @@
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
+    <include file="bugbranchrevision.zcml" />
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />

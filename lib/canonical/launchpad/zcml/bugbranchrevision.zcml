@@ -4,4 +4,15 @@
     <allow interface="canonical.launchpad.interfaces.IBugBranchRevision" />
   </content>
 
+  <!-- BugBranchRevisionSet -->
+  <content class="canonical.launchpad.database.BugBranchRevisionSet">
+    <allow interface="canonical.launchpad.interfaces.IBugBranchRevisionSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.BugBranchRevisionSet"
+      provides="canonical.launchpad.interfaces.IBugBranchRevisionSet" >
+    <allow interface="canonical.launchpad.interfaces.IBugBranchRevisionSet" />
+  </securedutility>
+
 </configure>

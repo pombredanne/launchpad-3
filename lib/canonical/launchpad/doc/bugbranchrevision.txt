@@ -1,5 +1,11 @@
 = Linking Revisions to Bugs =
 
+XXX - rationale
+XXX - explain database layout
+XXX - explain how relation is created
+XXX - explain 'superfluous' branch reference
+
+It's very common for coders to want to say that a revision fixes a bug.
 
 == Creating a link from a revision to a bug ==
 
@@ -7,20 +13,22 @@ XXX - We want to make this sample data actually be consistent. The revision
 number we give should actually be a revision in the branch we give. It would
 also be nice if the bug is on the product that the branch is on.
 
-
->>> from canonical.launchpad.database import BugBranchRevision
->>> bbr = BugBranchRevision(bug=1, branch=1, revision=1)
->>> bbr.bug.id
-1
->>> bbr.branch.id
-1
->>> bbr.revision.id
-1
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IBugBranchRevisionSet
+  >>> bug_revisions = getUtility(IBugBranchRevisionSet)
+  >>> bbr = bug_revisions.new(bug=1, branch=1, revision=1)
+  >>> bbr.bug.id
+  1
+  >>> bbr.branch.id
+  1
+  >>> bbr.revision.id
+  1
 
 
 == Loading a BugBranchRevision link ==
 
->>> bbr2 = BugBranchRevision.get(bbr.id)
->>> bbr is bbr2
-True
+  >>> from canonical.launchpad.database import BugBranchRevision
+  >>> bbr2 = BugBranchRevision.get(bbr.id)
+  >>> bbr == bbr2
+  True
 
