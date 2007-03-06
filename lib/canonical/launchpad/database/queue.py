@@ -15,33 +15,28 @@ import shutil
 import tempfile
 
 from zope.interface import implements
-
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.librarian.utils import copy_and_close
-
+from canonical.archivepublisher.custom_upload import CustomUploadError
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus)
-
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
     QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
-
-from canonical.librarian.interfaces import DownloadFailed
-
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.librarian.interfaces import DownloadFailed
+from canonical.librarian.utils import copy_and_close
+from canonical.lp.dbschema import (
+    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    PackagePublishingPocket, PackagePublishingStatus)
 
-from canonical.cachedproperty import cachedproperty
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
@@ -291,7 +286,11 @@ class DistroReleaseQueue(SQLBase):
         for queue_build in self.builds:
             queue_build.publish(logger)
         for customfile in self.customfiles:
-            customfile.publish(logger)
+            try:
+                customfile.publish(logger)
+            except CustomUploadError, e:
+                logger.error("Queue item ignored: %s" % e)
+                return
 
         self.setDone()
 

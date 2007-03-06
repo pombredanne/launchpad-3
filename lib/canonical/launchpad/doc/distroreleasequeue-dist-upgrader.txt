@@ -47,6 +47,8 @@ Now do a proper upload into the system.
   >>> class MockLogger:
   ...     def debug(self, s):
   ...         print "DEBUG:", s
+  ...     def error(self, s):
+  ...         print "ERROR:", s
 
   >>> upload = NascentUpload(
   ...     findPolicyByName('insecure'), datadir('dist-upgrader'),
@@ -230,6 +232,12 @@ the 'current' symbolic link.
 
 == Pre-publication version checks ==
 
+Dist-Upgrader version is checked before installing any files in the
+archive.
+
+If any problem happen during the custom publication, the error will be
+printed and the queue item will remain in ACCEPTED queue waiting for
+manual intervention.
 
   >>> upload = NascentUpload(
   ...     findPolicyByName('insecure'), datadir('dist-upgrader'),
@@ -258,19 +266,27 @@ Make the just-uploaded librarian file visible:
 
   >>> transaction.commit()
 
-Publish the custom upload:
+Check current archive status:
 
-  >>> upload.queue_root.realiseUpload()
-  Traceback (most recent call last):
-  ...
-  DistUpgraderBadVersion: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
-
-Check the results.
-
-  >>> content = sorted(os.listdir(target_dir))
-  >>> content
+  >>> previous_content = sorted(os.listdir(target_dir))
+  >>> previous_content
   ['20060302.0120', 'current']
 
+Publish the custom upload:
+
+  >>> upload.queue_root.realiseUpload(MockLogger())
+  DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
+  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
+
+Check if the queue item remained in ACCEPTED and not cruft was
+inserted in the archive:
+
+  >>> upload.queue_root.status.name
+  'ACCEPTED'
+
+  >>> content = sorted(os.listdir(target_dir))
+  >>> content == previous_content
+  True
 
 Remove the directory to keep the test working.
 

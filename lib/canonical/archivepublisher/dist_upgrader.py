@@ -56,7 +56,7 @@ class DistUpgraderUpload(CustomUpload):
             raise DistUpgraderBadVersion(self.tarfile_path, exc)
         return version and not filename.startswith('current')
 
-        
+
 def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
     """Process a raw-dist-upgrader tarfile.
 
