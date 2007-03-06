@@ -189,8 +189,8 @@ Verify the 'meta_binary' attribute:
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
 
-Counting bugs and questions
--------------------------
+Counting bugs
+-------------
 
 The SourcePackageRelease offers a convenient way of checking how many
 bugs are open against this package in the distribution to which it was
@@ -203,14 +203,6 @@ uploaded. Because of bug privacy, this method needs a user supplied.
    >>> no_priv = getUtility(ILaunchBag).user
    >>> print spr.countOpenBugsInUploadedDistro(no_priv)
    1
-
-It also offers an easy way of checking the number of questions open on the
-package in the distribution:
-
-   >>> print spr.open_ticket_count
-   0
-
-Nobody's having trouble with firefox!
 
 Uploading translations
 ----------------------
