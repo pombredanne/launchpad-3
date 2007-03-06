@@ -21,7 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import RevisionNumber
+from canonical.launchpad.database.revision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -41,7 +41,7 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber',
+    started_at = ForeignKey(dbName='started_at', foreignKey='BranchRevision',
                             default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -90,9 +90,9 @@ class Branch(SQLBase):
         # Transitional helper for revision_history and latest_revisions.
         # Will be moved to BranchRevisionSet by the full implementation of
         # CompleteBranchRevisions.
-        return RevisionNumber.select('''
-            RevisionNumber.branch = %s AND
-            RevisionNumber.sequence IS NOT NULL
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
             ''' % sqlvalues(self), orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
@@ -171,10 +171,10 @@ class Branch(SQLBase):
 
     def revisions_since(self, timestamp):
         """See IBranch."""
-        return RevisionNumber.select(
-            'Revision.id=RevisionNumber.revision AND '
-            'RevisionNumber.branch = %d AND '
-            'RevisionNumber.sequence IS NOT NULL AND '
+        return BranchRevision.select(
+            'Revision.id=BranchRevision.revision AND '
+            'BranchRevision.branch = %d AND '
+            'BranchRevision.sequence IS NOT NULL AND '
             'Revision.revision_date > %s' %
             (self.id, quote(timestamp)),
             orderBy='-sequence',
@@ -209,25 +209,25 @@ class Branch(SQLBase):
         return subscription is not None
 
     # revision number manipulation
-    def getRevisionNumber(self, sequence):
-        """See IBranch.getRevisionNumber()"""
+    def getBranchRevision(self, sequence):
+        """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
-        return RevisionNumber.selectOneBy(
+        return BranchRevision.selectOneBy(
             branch=self, sequence=sequence)
 
-    def createRevisionNumber(self, sequence, revision):
-        """See IBranch.createRevisionNumber()"""
-        return RevisionNumber(branch=self, sequence=sequence, revision=revision)
+    def createBranchRevision(self, sequence, revision):
+        """See IBranch.createBranchRevision()"""
+        return BranchRevision(branch=self, sequence=sequence, revision=revision)
 
     def truncateHistory(self, from_rev):
         """See IBranch.truncateHistory()"""
-        revnos = RevisionNumber.select(AND(
-            RevisionNumber.q.branchID == self.id,
-            RevisionNumber.q.sequence >= from_rev))
+        revnos = BranchRevision.select(AND(
+            BranchRevision.q.branchID == self.id,
+            BranchRevision.q.sequence >= from_rev))
         did_something = False
         # Since in the future we may not be storing the entire
-        # revision history, a simple count against RevisionNumber
+        # revision history, a simple count against BranchRevision
         # may not be sufficient to adjust the revision_count.
         for revno in revnos:
             revno.destroySelf()

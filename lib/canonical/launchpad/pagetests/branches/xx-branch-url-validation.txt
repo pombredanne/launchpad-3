@@ -55,7 +55,7 @@ Try to create a branch using the bzr+ssh URL scheme. Bug 76854 (see also 5573)
 
 >>> add_branch('bzr+ssh://example.com/code/branch')
 >>> print user_browser.url
-http://launchpad.dev/~no-priv/+branch/+junk/pyresources
+http://code.launchpad.dev/~no-priv/+junk/pyresources
 >>> user_browser.contents
 '...These URLs are intended for use with the...'
 

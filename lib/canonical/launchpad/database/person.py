@@ -48,7 +48,8 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
-    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
+    ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -185,6 +186,18 @@ class Person(SQLBase, HasSpecificationsMixin):
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
             assignee=self, orderBy=['-datecreated']))
+
+    @property
+    def assigned_specs_in_progress(self):
+        replacements = sqlvalues(assignee=self)
+        replacements['started_clause'] = Specification.started_clause
+        replacements['completed_clause'] = Specification.completeness_clause
+        query = """
+            (assignee = %(assignee)s)
+            AND (%(started_clause)s)
+            AND NOT (%(completed_clause)s)
+            """ % replacements
+        return Specification.select(query, orderBy=['-date_started'], limit=5)
 
     @property
     def created_specs(self):
@@ -368,9 +381,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """See IPerson."""
-        return QuestionPersonSearch(person=self, **search_criteria).getResults()
+        return QuestionPersonSearch(
+                person=self,
+                search_text=search_text,
+                status=status, language=language, sort=sort,
+                participation=participation,
+                needs_attention=needs_attention
+                ).getResults()
 
     def getSupportedLanguages(self):
         """See IPerson."""

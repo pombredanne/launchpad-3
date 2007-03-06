@@ -28,10 +28,10 @@ Now we'll go back to the edit source form and add some CVS details:
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
   >>> browser.getControl('CVS').click()
-  >>> browser.getControl('Repository root').value = (
+  >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'main'
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk
@@ -51,10 +51,10 @@ another product
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('CVS').click()
-  >>> browser.getControl('Repository root').value = (
+  >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'main'
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
@@ -65,7 +65,7 @@ Now we test if we can edit again changing the RCS to Subversion:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
   >>> browser.getControl('Subversion').click()
-  >>> browser.getControl('Repository', index=1).value = (
+  >>> browser.getControl(name='field.svnrepository').value = (
   ...     'svn://svn.mozilla.org/firefox/trunk')
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
@@ -84,11 +84,11 @@ After changing to over to Subversion, the CVS details are unset in the
 form:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
-  >>> browser.getControl('Repository root').value
+  >>> browser.getControl('Repository').value
   ''
   >>> browser.getControl('Module').value
   ''
-  >>> browser.getControl('Branch name').value
+  >>> browser.getControl(name='field.cvsbranch').value
   ''
 
 
@@ -97,7 +97,7 @@ svnrepository to another ProductSeries
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('Subversion').click()
-  >>> browser.getControl('Repository', index=1).value = (
+  >>> browser.getControl(name='field.svnrepository').value = (
   ...     'svn://svn.mozilla.org/firefox/trunk')
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
@@ -118,5 +118,5 @@ details are blanked:
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
   >>> browser.getControl('No revision control system, or Bazaar').selected
   True
-  >>> browser.getControl('Repository', index=1).value
+  >>> browser.getControl(name='field.svnrepository').value
   ''

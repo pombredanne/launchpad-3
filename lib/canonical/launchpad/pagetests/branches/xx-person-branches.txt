@@ -9,7 +9,7 @@ teams that the person is participating in.
 
 First, check that the condensed branch listing page works:
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
+  >>> browser.open('http://code.launchpad.dev/~name12')
   >>> print browser.contents
   <!DOCTYPE...
   ...Sample Person...
@@ -18,7 +18,7 @@ First, check that the condensed branch listing page works:
 If a person does not have any related branches, we should print an informative
 message.
 
-  >>> browser.open('http://launchpad.dev/~kinnison/+branches')
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print browser.contents
   <!DOCTYPE...
   ...There may be branches related to Daniel Silverstone but none 
