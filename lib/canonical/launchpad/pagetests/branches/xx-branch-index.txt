@@ -1,8 +1,6 @@
-Branch Details
-==============
+= Branch Details =
 
-Recent Revisions
-----------------
+== Recent Revisions ==
 
 On the Code site, registered branches are reached by
 /<owner>/<product>/<branch-name>.
@@ -11,8 +9,7 @@ On the Code site, registered branches are reached by
   >>> main = find_tag_by_id(browser.contents, 'mainarea')
 
 
-Heading
-~~~~~~~
+=== Heading ===
 
 We display the recent revisions of a branch if it has been scanned. There's a
 "Recent revisions" heading:
@@ -23,8 +20,7 @@ We display the recent revisions of a branch if it has been scanned. There's a
   ...
 
 
-Revision information
-~~~~~~~~~~~~~~~~~~~~
+=== Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
 reverse-chronological order.
@@ -39,8 +35,7 @@ reverse-chronological order.
   Revision 1 by Sample Committer &lt;test@canonical.com&gt; (2005-10-31)
 
 
-Excursis
-~~~~~~~~
+=== Excursis ===
 
 In terms of HTML, each commit is contained in a <div> with an id of "revN",
 where "N" is the revision sequence number.
@@ -53,25 +48,26 @@ the commit message follows as a number of paragraphs.
   ...     return revision.fetch('p')
 
 
-Commit messages
-~~~~~~~~~~~~~~~
+=== Commit messages ===
 
-The commit message for revision 6 should match what's in the database. There's
-only one paragraph, so it's OK to check the first item of the list.
+The commit message is displayed in paragraphs underneath the revision id and
+author.
 
-  >>> commit_message = get_commit_message(6)
-  >>> print len(commit_message)
-  1
-  >>> print commit_message[0].renderContents()
+  >>> for paragraph in get_commit_message(6):
+  ...     print paragraph.renderContents()
   fix bug in bar
 
 
-If a commit messages refers to a bug by including "bug 1", then we should turn
-that into a link to the Launchpad bug of the same number.
+When a commit message refers to a bug using the form "bug <bugnumber>", a link
+to that bug is created.
 
-  >>> commit_message = get_commit_message(3)
-  >>> print len(commit_message)
-  1
-  >>> print commit_message[0]
-  <p>fix <a href="/bugs/1" title="...">bug 1</a></p>
+  >>> for paragraph in get_commit_message(3):
+  ...     print paragraph.renderContents()
+  fix <a ...>bug 1</a>
 
+
+This link can be followed to the bug's details page.
+
+  >>> browser.getLink('bug 1').click()
+  >>> print browser.title
+  Bug #1 in firefox (upstream)...
