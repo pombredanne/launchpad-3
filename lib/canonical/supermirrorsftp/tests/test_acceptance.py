@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import atexit
 import unittest
 import tempfile
 import os
@@ -40,11 +39,29 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.supermirrorsftp.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.database.sqlbase import sqlvalues
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
 
-# XXX - We need to run TrialSuite()._bail once at the exit if we are
-_bail_registered = False
+class TwistedLayer(LaunchpadZopelessLayer, DatabaseLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # TrialSuite._bail cleans up the threadpool and initiates a reactor
+        # shutdown event. This ensures that the process will terminate cleanly.
+        TrialSuite()._bail()
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
 
 
 def deferToThread(f):
@@ -128,11 +145,8 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
 
 
 class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        if not _bail_registered:
-            atexit.register(TrialSuite()._bail)
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         super(SFTPTestCase, self).setUp()
 
@@ -216,7 +230,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = LaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
