@@ -592,6 +592,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = old_timestamp
             timezone = 0
+            properties = {}
 
         # sync the revision
         self.bzrsync.syncOneRevision(FakeRevision)
@@ -611,6 +612,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = 1000000000.0
             timezone = 0
+            properties = {}
         # synchronise the fake revision:
         counts = self.getCounts()
         self.bzrsync.syncOneRevision(FakeRevision)
@@ -644,19 +646,26 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
 class TestBugLinking(BzrSyncTestCase):
 
-    # XXX - Spec out the revision properties to use!
-    # - launchpad:bug
-    # - launchpad:bug-relation
-
     def test_bug_branch(self):
-        self.commitRevision(rev_id='rev1',
-                            revprops={'launchpad:bug': '1'})
+        # When we scan a revision that has the launchpad:bug property set to a
+        # valid LP bug, we should create a link in the BugBranchRevision table.
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': '1'})
         self.syncBranch()
         bbr = BugBranchRevision.selectOne()
         self.assertNotEqual(bbr, None)
         self.assertEqual(bbr.revision.revision_id, 'rev1')
         self.assertEqual(bbr.branch.id, self.db_branch.id)
         self.assertEqual(bbr.bug.id, 1)
+
+    def test_bug_branch_twice(self):
+        # When we scan a branch twice, we should only create one link.
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': '1'})
+        self.syncBranch()
+        self.syncBranch()
+        bbrs = list(BugBranchRevision.select())
+        self.assertEqual(len(bbrs), 1)
 
 
 def test_suite():
