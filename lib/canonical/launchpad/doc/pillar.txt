@@ -105,7 +105,7 @@ Right now this search is done across Products, Projects and Distributions.
     project: The Ubuntu Project (ubuntu-project) [relevance: high]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     product: The Evolution Groupware Application (evolution) [relevance: low]
-    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+    product: The Gnome Panel Applets (applets) [relevance: low]
 
 Note that inactive products and projects won't be included in the results.
 
