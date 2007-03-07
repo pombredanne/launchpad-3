@@ -27,7 +27,6 @@ from bzrlib.builtins import cmd_push
 from twisted.internet import defer, threads
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
-from twisted.trial.runner import TrialSuite
 
 import canonical
 from canonical.config import config
@@ -39,29 +38,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.supermirrorsftp.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.database.sqlbase import sqlvalues
-from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
-
-
-class TwistedLayer(LaunchpadZopelessLayer, DatabaseLayer):
-    """A layer for cleaning up the Twisted thread pool."""
-
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        # TrialSuite._bail cleans up the threadpool and initiates a reactor
-        # shutdown event. This ensures that the process will terminate cleanly.
-        TrialSuite()._bail()
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
+from canonical.testing import TwistedLayer
 
 
 def deferToThread(f):
@@ -148,6 +125,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
     def setUp(self):
         # Install the default SIGCHLD handler so that read() calls don't get
         # EINTR errors when child processes exit.
+        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         super(SFTPTestCase, self).setUp()
 
@@ -223,6 +201,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         # have to manually clean up the test????.tmp dirs.
         shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
         TestCaseInTempDir.TEST_ROOT = None
+        signal.signal(signal.SIGCHLD, self._oldSigChld)
 
 
 class AcceptanceTests(SFTPTestCase):
