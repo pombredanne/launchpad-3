@@ -221,12 +221,6 @@
             permission="launchpad.AnyPerson"
             />
         <browser:page
-            name="+portlet-latestquestions"
-            for="canonical.launchpad.interfaces.IProject"
-            class="canonical.launchpad.browser.ProjectLatestQuestionsView"
-            permission="zope.Public"
-            />
-        <browser:page
             name="+ask-a-question-button"
             for="canonical.launchpad.interfaces.IProject"
             class="canonical.launchpad.browser.AskAQuestionButtonView"

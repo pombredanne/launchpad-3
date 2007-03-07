@@ -55,6 +55,9 @@ class DistroMirrorProber(LaunchpadScript):
         self.parser.add_option('--no-owner-notification',
             dest='no_owner_notification', default=False, action='store_true',
             help='Do not send failure notification to mirror owners.')
+        self.parser.add_option('--no-remote-hosts',
+            dest='no_remote_hosts', default=False, action='store_true',
+            help='Do not try to connect to any host other than localhost.')
 
     def main(self):
         if self.options.content_type == 'archive':
@@ -67,6 +70,13 @@ class DistroMirrorProber(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
+
+        # Using a script argument to control a config variable is not a great
+        # idea, but to me this seems better than passing the no_remote_hosts
+        # value through a lot of method/function calls, until it reaches the
+        # probe() method.
+        if self.options.no_remote_hosts:
+            config.distributionmirrorprober.localhost_only = True
 
         self.logger.info('Probing %s Mirrors' % content_type.title)
 

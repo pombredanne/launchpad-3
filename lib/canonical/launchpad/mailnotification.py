@@ -241,6 +241,9 @@ def generate_bug_add_email(bug):
             bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
         bug_info += u"         Status: %s\n" % bugtask.status.title
 
+    if bug.tags:
+        bug_info += '\n** Tags: %s\n' % ' '.join(bug.tags)
+
     mailwrapper = MailWrapper(width=72)
     contents = get_email_template('bug-add-notification-contents.txt') % {
         'visibility' : visibility, 'bugurl' : canonical_url(bug),
@@ -851,6 +854,17 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    # Include the URL, since it will still be downloadable until the
+    # Librarian garbage collector removes it.
+    change_info = '\n'.join([
+        '** Attachment removed: "%s"\n' % bugattachment.title,
+        '   %s' %  bugattachment.libraryfile.http_url])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
 
@@ -1157,10 +1171,12 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """
         prefix = '[Question #%s]: ' % self.question.id
         if self.new_message:
-            subject = self.new_message.subject
-            if prefix in self.new_message.subject:
+            # Migrate old prefix.
+            subject = self.new_message.subject.replace(
+                '[Support #%s]: ' % self.question.id, prefix)
+            if prefix in subject:
                 return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're']:
+            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
                 # Place prefix after possible reply prefix.
                 return subject[0:4] + prefix + subject[4:]
             else:

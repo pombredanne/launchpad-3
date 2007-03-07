@@ -8,7 +8,6 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
@@ -48,7 +47,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, structured)
 from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
 
 
@@ -66,22 +65,19 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(RedirectionNavigation):
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
-        if self.context.getByName(name) is None:
+        project = self.context.getByName(name)
+        if project is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(project))
 
 
 class ProjectSOP(StructuralObjectPresentation):
@@ -423,16 +419,18 @@ class ProjectAddQuestionView(QuestionAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'),
+                title=_('Project'),
                 description=_(
-                    'Choose the product for which you have a question.'),
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Ask a question about a product from ${project}',
+        return _('Ask a question about a project from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
@@ -442,16 +440,3 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
-
-
-# XXX flacoste 2006-12-13 This should be removed and the
-# QuestionTargetLatestQuestionsView used instead once we add a
-# searchQuestions() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestQuestionsView:
-    """Empty view to allow rendering of the default template used by
-    QuestionAddView.
-    """
-
-    def __call__(self):
-        return u''

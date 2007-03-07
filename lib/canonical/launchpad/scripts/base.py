@@ -158,7 +158,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.error('Lockfile %s in use' % self.lockfilename)
+            self.logger.error('Lockfile %s in use' % self.lockfile)
             sys.exit(1)
 
     # XXX: I'm not sure this is actually necessary; if it is remove the
@@ -173,7 +173,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.info('Lockfile %s in use' % self.lockfilename)
+            self.logger.info('Lockfile %s in use' % self.lockfile)
             sys.exit(0)
 
     def unlock(self, skip_delete=False):

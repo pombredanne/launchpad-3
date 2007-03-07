@@ -51,7 +51,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
