@@ -57,32 +57,31 @@
       replace="structure context/teamdescription/fmt:text-to-html" />
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">
-  <div class="left">
-    <div tal:condition="not:context/isTeam" class="demo section">
+  <div class="left" tal:define="contributions view/contributions">
+    <tal:is-team condition="not:context/isTeam">
+    <div tal:condition="contributions" class="section">
     <div class="portlet">
-      <h2>Contributions</h2>
-      <table class="contributions">
+      <h2>Most active in</h2>
+      <table class="contributions" id="contributions">
         <tbody>
-          <tr class="odd">
-            <th>Example project 1</th>
-            <td><img alt="Code" src="/@@/branch" /></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td><img alt="Answers" src="/@@/question" /></td>
+          <tal:contributions repeat="contribution contributions">
+          <tr tal:define="project contribution/project;
+                          project_categories contribution/categories">
+            <th>
+              <a tal:attributes="href project/fmt:url"
+                 tal:content="project/title">Project</a>
+            </th>
+            <td tal:repeat="category view/contributed_categories">
+              <tal:icon condition="python: category in project_categories"
+                        replace="structure category/fmt:icon" />
+            </td>
           </tr>
-          <tr class="even">
-            <th>Example project 2</th>
-            <td></td>
-            <td></td>
-            <td><img alt="Blueprints" src="/@@/blueprint" /></td>
-            <td><img alt="Translations" src="/@@/translation" /></td>
-            <td><img alt="Answers" src="/@@/question" /></td>
-          </tr>
+          </tal:contributions>
         </tbody>
       </table>
     </div>
     </div>
+    </tal:is-team>
     <div tal:condition="not:context/isTeam" class="section">
     <div class="portlet">
       <h2>Team memberships</h2>
@@ -94,6 +93,7 @@
               tal:content="membership/team/browsername"
             >Team name</a>
           </div>
+          <br tal:condition="not: membership/team/teamdescription" />
           <div
             tal:condition="membership/team/teamdescription"
             tal:replace="structure membership/team/teamdescription/fmt:text-to-html"
@@ -206,10 +206,11 @@
     </div>
 
     <tal:not-team condition="not:context/isTeam">
-    <div id="working-on" class="section"
+    <div id="working-on"
          tal:define="bugtasks view/getBugsInProgress;
                      specs context/assigned_specs_in_progress"
          tal:condition="python: bugtasks or specs">
+    <div class="section">
     <div class="portlet">
       <h2>Working on&#8230;</h2>
       <ul class="bug">
@@ -226,6 +227,10 @@
           Show all bugs in progress 
         </a>
       </div>
+    </div>
+    </div>
+    <div class="section">
+    <div class="portlet">
       <ul class="blueprint">
         <li tal:repeat="spec specs">
           <div>
@@ -242,9 +247,10 @@
           to the person. -- Guilherme Salgado, 2007-02-12
         </tal:comment>
         <a tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
-          Show all assigned specs
+          Show all assigned blueprints
         </a>
       </div>
+    </div>
     </div>
     </div>
     </tal:not-team>
