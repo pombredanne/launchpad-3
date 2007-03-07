@@ -21,7 +21,7 @@ from canonical.launchpad.database import (
     RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
-    IBranchSet, IRevisionSet)
+    IBranchSet, IBugSet, IRevisionSet)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
@@ -646,7 +646,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
 class TestBugLinking(BzrSyncTestCase):
 
-    def test_bug_branch(self):
+    def test_bug_branch_revision(self):
         # When we scan a revision that has the launchpad:bug property set to a
         # valid LP bug, we should create a link in the BugBranchRevision table.
         self.commitRevision(
@@ -658,7 +658,7 @@ class TestBugLinking(BzrSyncTestCase):
         self.assertEqual(bbr.branch.id, self.db_branch.id)
         self.assertEqual(bbr.bug.id, 1)
 
-    def test_bug_branch_twice(self):
+    def test_bug_branch_revision_twice(self):
         # When we scan a branch twice, we should only create one link.
         self.commitRevision(
             rev_id='rev1', revprops={'launchpad:bug': '1'})
@@ -666,6 +666,15 @@ class TestBugLinking(BzrSyncTestCase):
         self.syncBranch()
         bbrs = list(BugBranchRevision.select())
         self.assertEqual(len(bbrs), 1)
+
+    def test_makes_bug_branch(self):
+        # If no BugBranch relation exists for the branch and bug, a scan of
+        # the branch should create one.
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': '1'})
+        self.syncBranch()
+        bug = getUtility(IBugSet).get(1)
+        self.assertEqual(True, bug.hasBranch(self.db_branch))
 
 
 def test_suite():
