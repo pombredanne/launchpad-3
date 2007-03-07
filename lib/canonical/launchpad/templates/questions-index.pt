@@ -91,7 +91,7 @@
                         </form>
                         <p id="application-summary">
                           Launchpad&rsquo;s Answers system lets people
-                          ask questions about projects in Launchpad,
+                          ask questions about projects,
                           and lets anyone help answer those questions.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
@@ -140,8 +140,8 @@
     activity in the Launchpad Answer Tracker.
     </p>
     <p>To post a new question, navigate to the project
-      you are having a problem with and use the <emph>Ask Question</emph>
-      menu item.
+      you are having a problem with and use the <emph>Ask a Question</emph>
+      button.
     </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the
