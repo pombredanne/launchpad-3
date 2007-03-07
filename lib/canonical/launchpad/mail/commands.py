@@ -385,10 +385,18 @@ class AffectsEmailCommand(EmailCommand):
             raise BugTargetNotFound(
                 "There is no project named '%s' registered in Launchpad." % 
                     name)
-        elif (not rest and (IDistribution.providedBy(pillar) or
-                            IProduct.providedBy(pillar))):
+
+        # We can't check for IBugTarget, since Project is an IBugTarget
+        # we don't allow bugs to be filed against.
+        if not (IDistribution.providedBy(pillar)
+                or IProduct.providedBy(pillar)):
+            raise BugTargetNotFound(
+                "It's not possible to file bugs on '%s'." % pillar.name)
+
+        if not rest:
             return pillar
-        elif IProduct.providedBy(pillar):
+        # Resolve the path that is after the pillar name.
+        if IProduct.providedBy(pillar):
             series_name, rest = cls._splitPath(rest)
             product_series = pillar.getSeries(series_name)
             if product_series is None:
@@ -397,7 +405,10 @@ class AffectsEmailCommand(EmailCommand):
                         pillar.displayname, series_name))
             elif not rest:
                 return product_series
-        elif IDistribution.providedBy(pillar):
+        else:
+            assert IDistribution.providedBy(pillar)
+            # The next step can be either a distro release or a source
+            # package.
             release_name, rest = cls._splitPath(rest)
             try:
                 release = pillar.getRelease(release_name)
@@ -416,9 +427,6 @@ class AffectsEmailCommand(EmailCommand):
                     % (pillar.displayname, package_name))
             elif not rest:
                 return package
-        else:
-            raise BugTargetNotFound(
-                "It's not possible to file bugs on '%s'." % pillar.name)
 
         assert rest, "This is the fallback for unexpected path components."
         raise BugTargetNotFound("Unexpected path components: %s" % rest)
