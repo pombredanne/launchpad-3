@@ -19,6 +19,14 @@ Luckily for us, many is 5 in the tests.
    ...1...&rarr;...5...of 8 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.thead.fetch('tr'):
+   ...     print extract_text(row)
+   Name      Author               Status  Last Commit  Product Role
+
+Unfortunately our sample data is somewhat lacking in the last commit
+fields.  There are a couple of branches that have them, but most don't
+and are really just branch metadata without the revisions behind them.
+
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
    main      Sample Person        New          firefox         Author
@@ -71,7 +79,7 @@ Merged or Abandoned branches are not shown.
 There is a select control that is used to define which
 subset of the branches are shown.
   
-   >>> filter_control = browser.getControl(name='field.lifecycle')
+   >>> filter_control = browser.getControl('Show branches with status of')
    >>> filter_control
    <ListControl name='field.lifecycle' type='select'>
    >>> filter_control.value
@@ -124,7 +132,7 @@ Now all types of branches should be shown.
 Selecting an individual lifecycle status from the select control 
 will cause only branches with that status to be listed.
 
-   >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+   >>> browser.getControl('Show branches with status of').displayValue = ['Abandoned']
    >>> browser.getControl('Filter').click()
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
@@ -136,7 +144,7 @@ status value, it will default to current branches.
 
    >>> browser.open(
    ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
-   >>> browser.getControl(name='field.lifecycle').displayValue
+   >>> browser.getControl('Show branches with status of').displayValue
    ['New, Experimental, Development or Mature']
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
@@ -153,11 +161,10 @@ helpful message supplied.
 
   >>> browser.open('http://code.launchpad.dev/'
   ...   '~launchpad/+branches?field.lifecycle=Mature')
-  >>> browser.getControl(name='field.lifecycle').displayValue
+  >>> browser.getControl('Show branches with status of').displayValue
   ['Mature']
-  >>> table = find_tag_by_id(browser.contents, 'branchtable')
-  >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
-  >>> print cell.renderContents()
+  >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+  >>> print message.renderContents()
   There may be branches related to Launchpad Developers but none of
   them match the current filter criteria for this page.
   Try filtering on "Any Status".
@@ -165,12 +172,12 @@ helpful message supplied.
 
 == Branch Badge Decoration ==
 
-We are wanting to have badges for associated bugs and blueprints.
+We display badges for associated bugs.
 
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> table = find_tag_by_id(browser.contents, 'branchtable')
   >>> for row in table.tbody.fetch('tr'):
-  ...     first_cell = row.fetch('td')[0]
+  ...     first_cell = row.find('td')
   ...     anchors = first_cell.fetch('a')
   ...     print anchors[0].get('href')
   ...     for anchor in anchors[1:]:

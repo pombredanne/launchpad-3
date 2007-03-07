@@ -1,19 +1,14 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
-"""IBranchTarget browser views."""
+"""Base class view for branch listings."""
 
 __metaclass__ = type
 
 __all__ = [
-    'PersonBranchesView',
-    'PersonAuthoredBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
-    'ProductBranchesView',
+    'BranchListingView',
     ]
 
 from datetime import datetime
-import operator
 
 from zope.component import getUtility
 
@@ -23,11 +18,7 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchLifecycleFilter, IBranchSet, IBugBranchSet,
-    IPerson, IProduct)
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    IBranchLifecycleFilter, IBranchSet, IPerson, IProduct)
+    IBranch, IBranchLifecycleFilter, IBranchSet, IBugBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -145,10 +136,12 @@ class BranchListingView(LaunchpadFormView):
         return BranchListingBatchNavigator(self)
 
     def roleForBranch(self, branch):
+        """Overridden by derived classes to display something useful."""
         return None
 
     @property
     def no_branch_message(self):
+        """This may also be overridded i derived classes."""
         if self.selected_lifecycle_status:
             message = (
                 'There may be branches related to %s '
@@ -164,86 +157,3 @@ class BranchListingView(LaunchpadFormView):
         return message % self.context.displayname
 
 
-class ProductBranchesView(BranchListingView):
-    """View for branch listing for a product."""
-    
-    extra_columns = ('author',)
-
-    def _branches(self):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status)
-
-    @property
-    def no_branch_message(self):
-        if self.selected_lifecycle_status:
-            message = (
-                'There may be branches registered for %s '
-                'but none of them match the current filter criteria '
-                'for this page. Try filtering on "Any Status".')
-        else:
-            message = (
-                'There are no branches registered for %s '
-                'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
-                'for more information about how you can use the Bazaar '
-                'revision control system to improve community participation '
-                'in this product.')
-        return message % self.context.displayname
-
-
-class PersonBranchesView(BranchListingView):
-    """View for branch listing for a person."""
-
-    extra_columns = ('author', 'product', 'role')
-    
-    def _branches(self):
-        return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status)
-
-    @cachedproperty
-    def _subscribed_branches(self):
-        return set(self.context.subscribed_branches)
-
-    def roleForBranch(self, branch):
-        person = self.context
-        if branch.author == person:
-            return 'Author'
-        elif branch.owner == person:
-            return 'Registrant'
-        elif branch in self._subscribed_branches:
-            return 'Subscriber'
-        else:
-            return 'Team Branch'
-
-
-class PersonAuthoredBranchesView(BranchListingView):
-    """View for branch listing for a person's authored branches."""
-
-    extra_columns = ('product',)
-    title_prefix = 'Authored'
-    
-    def _branches(self):
-        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status)
-
-
-class PersonRegisteredBranchesView(BranchListingView):
-    """View for branch listing for a person's registered branches."""
-
-    extra_columns = ('author', 'product')
-    title_prefix = 'Registered'
-    
-    def _branches(self):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status)
-
-
-class PersonSubscribedBranchesView(BranchListingView):
-    """View for branch listing for a subscribed's authored branches."""
-
-    extra_columns = ('author', 'product')
-    title_prefix = 'Subscribed'
-    
-    def _branches(self):
-        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status)

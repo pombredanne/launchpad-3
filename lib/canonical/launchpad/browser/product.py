@@ -28,6 +28,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchesView',
     ]
 
 from operator import attrgetter
@@ -47,8 +48,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot)
+    ILaunchpadRoot, IBranchSet)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -879,3 +881,32 @@ class ProductShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductBranchesView(BranchListingView):
+    """View for branch listing for a product."""
+    
+    extra_columns = ('author',)
+
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForProduct(
+            self.context, self.selected_lifecycle_status)
+
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status:
+            message = (
+                'There may be branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this product.')
+        return message % self.context.displayname
+
+

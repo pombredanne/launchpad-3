@@ -2,7 +2,7 @@
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">
-    Show branches with status of
+    <label for="field.lifecycle">Show branches with status of</label>
     <div tal:replace="structure context/view/widgets/lifecycle"/>
     <noscript>
       <input type="submit" value="Filter"/>
@@ -47,26 +47,23 @@ field.focus();
     <tbody>
       <tr tal:repeat="branch context/branches">
         <td>
-          <!-- Name -->
           <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
-          <!-- BugBranch badges -->
           <tal:bugbranch repeat="bugbranch branch/bugbranches">
             <tal:visible 
                 define="bug bugbranch/bug"
                 condition="bug/required:launchpad.View">
               <a tal:attributes="href bug/fmt:url;
                                  title string:Bug ${bug/id} - ${bug/title} (${bugbranch/status/title})">
-                <img src="/@@/bug" />
+                <img src="/@@/bug" alt="bug" />
               </a>
             </tal:visible>
           </tal:bugbranch>
         </td>
         <td tal:condition="context/show_column/author|nothing">
-          <!-- Author -->
           <a tal:condition="branch/author"
              tal:attributes="href branch/author/fmt:url"
              tal:content="branch/author/browsername">
@@ -74,7 +71,6 @@ field.focus();
           </a>
         </td>
         <td>
-          <!-- Status -->
           <span tal:condition="not:context/multiple_pages" 
                 tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
@@ -84,7 +80,6 @@ field.focus();
                   Status</span>
         </td>
         <td>
-          <!-- Last Commit -->
           <tal:has_commit condition="branch/last_commit">
             <span class="sortkey" 
                   tal:content="branch/last_commit/fmt:datetime">
@@ -96,7 +91,6 @@ field.focus();
           </tal:has_commit>
         </td>
         <td tal:condition="context/show_column/product|nothing">
-          <!-- Product -->
           <a tal:condition="branch/product"
              tal:attributes="href branch/product/fmt:url"
              tal:content="branch/product/name">
@@ -104,13 +98,14 @@ field.focus();
           </a>
         </td>
         <td tal:condition="context/show_column/role|nothing">
-          <!-- Role -->
           <span tal:replace="branch/role">Role of the person</span>
         </td>
       </tr>
       <tr tal:condition="not:context/batch/total">
-        <td tal:attributes="colspan context/column_count"
-            tal:content="structure context/view/no_branch_message" />
+        <td tal:attributes="colspan context/column_count">
+          <div id="no-branch-message"
+               tal:content="structure context/view/no_branch_message" />
+        </td>
       </tr>
     </tbody>
   </table>
