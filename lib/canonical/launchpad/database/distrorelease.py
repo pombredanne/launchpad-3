@@ -68,13 +68,15 @@ from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.queue import (
+    DistroReleaseQueue, PackageUploadQueue)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase, BugTargetBase):
+class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
 
@@ -922,6 +924,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   pocket=pocket,
                                   changesfile=changes_file)
 
+    def getPackageUploadQueue(self, state):
+        """See IDistroRelease."""
+        return PackageUploadQueue(self, state)
+
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
         """See IDistroRelease."""
@@ -1072,6 +1078,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             "allow filing a bug on a distribution release in the "
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distrorelease = %s' % sqlvalues(self)
 
     def initialiseFromParent(self):
         """See IDistroRelease."""

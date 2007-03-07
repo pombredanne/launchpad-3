@@ -44,9 +44,11 @@ class IGPGHandler(Interface):
         :signature: The signature (or None if content is clearsigned)
         """
 
-    def getURLForKeyInServer(fingerprint, action=None):
+    def getURLForKeyInServer(fingerprint, action=None, public=False):
         """Return the URL for that fingerprint on the configured keyserver.
 
+        If public is True, return a URL for the public keyserver; otherwise,
+        references the default (internal) keyserver.
         If action is provided, will attach that to the URL.
         """
 

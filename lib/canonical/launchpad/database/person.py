@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -48,7 +48,8 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
-    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
+    ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -64,14 +65,15 @@ from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.specificationfeedback import (
     SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation, TeamMembershipSet)
-from canonical.launchpad.database.ticket import TicketPersonSearch
+from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
 
@@ -85,7 +87,7 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class Person(SQLBase):
+class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
     implements(IPerson, ICalendarOwner)
@@ -102,6 +104,8 @@ class Person(SQLBase):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -182,6 +186,18 @@ class Person(SQLBase):
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
             assignee=self, orderBy=['-datecreated']))
+
+    @property
+    def assigned_specs_in_progress(self):
+        replacements = sqlvalues(assignee=self)
+        replacements['started_clause'] = Specification.started_clause
+        replacements['completed_clause'] = Specification.completeness_clause
+        query = """
+            (assignee = %(assignee)s)
+            AND (%(started_clause)s)
+            AND NOT (%(completed_clause)s)
+            """ % replacements
+        return Specification.select(query, orderBy=['-date_started'], limit=5)
 
     @property
     def created_specs(self):
@@ -365,9 +381,18 @@ class Person(SQLBase):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTickets(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """See IPerson."""
-        return TicketPersonSearch(person=self, **search_criteria).getResults()
+        return QuestionPersonSearch(
+                person=self,
+                search_text=search_text,
+                status=status, language=language, sort=sort,
+                participation=participation,
+                needs_attention=needs_attention
+                ).getResults()
 
     def getSupportedLanguages(self):
         """See IPerson."""
@@ -385,8 +410,8 @@ class Person(SQLBase):
         languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
-    def getTicketLanguages(self):
-        """See ITicketTarget."""
+    def getQuestionLanguages(self):
+        """See IQuestionTarget."""
         return set(Language.select(
             '''Language.id = language AND Ticket.id IN (
             SELECT id FROM Ticket
@@ -866,11 +891,15 @@ class Person(SQLBase):
         orderBy = SQLConstant("person_sort_key(displayname, name)")
         return self.adminmembers.union(owner, orderBy=orderBy)
 
-    def _getMembersByStatus(self, status):
+    def getMembersByStatus(self, status, orderBy=None):
+        """See IPerson."""
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
-        return Person.select(query, clauseTables=['TeamMembership'])
+        if orderBy is None:
+            orderBy = Person.sortingColumns
+        return Person.select(
+            query, clauseTables=['TeamMembership'], orderBy=orderBy)
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
@@ -911,32 +940,32 @@ class Person(SQLBase):
     @property
     def deactivatedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+        return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
 
     @property
     def expiredmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
+        return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
     def declinedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
+        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
 
     @property
     def proposedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
+        return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
     def adminmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
+        return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
     @property
     def approvedmembers(self):
         """See IPerson."""
-        return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
+        return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
 
     @property
     def activemembers(self):
@@ -1655,7 +1684,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the SupportContacts that will not conflict
+        # Update only the AnswerContacts that will not conflict
         cur.execute('''
             UPDATE SupportContact
             SET person=%(to_id)d
@@ -1684,7 +1713,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('supportcontact', 'person'))
 
-        # Update only the TicketSubscriptions that will not conflict
+        # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
             UPDATE TicketSubscription
             SET person=%(to_id)d

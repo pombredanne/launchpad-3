@@ -87,7 +87,7 @@ class TestOopsPrune(unittest.TestCase):
                 whiteboard='OOPS-1TicketWhiteboard666'
                 WHERE id=1
             """)
-        # Add a ticket entry with a NULL whiteboard to ensure the SQL query
+        # Add a question entry with a NULL whiteboard to ensure the SQL query
         # copes.
         cur.execute("""
             UPDATE Ticket SET

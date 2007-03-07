@@ -37,7 +37,8 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 
 
 class NoImportBranchError(Exception):
@@ -69,7 +70,7 @@ class ProductSeriesSet:
             raise NotFoundError(productseriesid)
 
 
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -334,6 +335,10 @@ class ProductSeries(SQLBase, BugTargetBase):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.productseries = %s' % sqlvalues(self)
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
@@ -410,18 +415,40 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     def importUpdated(self):
         """See IProductSeries."""
+        # Update the timestamps after an import has successfully completed, so
+        # we can always know at what time the currently published branch was
+        # last imported.
+        #
+        # Importd updates branches to match the foreign VCS, then uploads them
+        # to an internal server. Then the branch-puller copies the branches
+        # from the internal server to the public server.
+        #
+        # * datelastsynced: time when importd last updated the internal branch
+        #   to match the foreign VCS.
+        # * import_branch.last_mirrored: time when branch-puller last updated
+        #   the published branch to match the internal branch.
+        # * datepublishedsync: time when the /published/ branch was last
+        #   updated from the foreign VCS, at the time when the /internal/
+        #   branch was last updated from the foreign VCS.
+        #
+        # Sorry if that breaks your brain.
         if self.import_branch is None:
             raise NoImportBranchError(
                 "importUpdated called for series %d,"
                 " but import_branch is NULL." % (self.id,))
-        if self.datepublishedsync is not None:
-            if self.import_branch.last_mirrored is None:
-                raise DatePublishedSyncError(
-                    "importUpdated called for series %d,"
-                    " where datepublishedsync is set,"
-                    " but import_branch.last_mirror is NULL."
-                    % (self.id,))
-        if self.datelastsynced < self.import_branch.last_mirrored:
+        if (self.import_branch.last_mirrored is None
+                and self.datepublishedsync is not None):
+            raise DatePublishedSyncError(
+                "importUpdated called for series %d,"
+                " where datepublishedsync is set,"
+                " but import_branch.last_mirror is NULL."
+                % (self.id,))
+        if self.datelastsynced is None:
+            # datepublishedsync SHOULD be None, but we reset it just in case.
+            self.datepublishedsync = None
+        if (self.datelastsynced is not None
+                and self.import_branch.last_mirrored is not None
+                and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
 

@@ -8,10 +8,11 @@ __all__ = [
     'QueueItemsView',
     ]
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError,
-    UnexpectedFormData)
+    UnexpectedFormData, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
@@ -53,6 +54,11 @@ class QueueItemsView(LaunchpadView):
                 'No suitable status found for value "%s"' % state_value
                 )
 
+        self.queue = self.context.getPackageUploadQueue(self.state)
+
+        if not check_permission('launchpad.View', self.queue):
+            raise Unauthorized("User don't have permission to see this queue.")
+
         valid_states = [
             DistroReleaseQueueStatus.NEW,
             DistroReleaseQueueStatus.ACCEPTED,
@@ -61,7 +67,7 @@ class QueueItemsView(LaunchpadView):
             DistroReleaseQueueStatus.UNAPPROVED,
             ]
 
-        if not check_permission('launchpad.Edit', self.context):
+        if not check_permission('launchpad.Edit', self.queue):
             # Omit the UNAPPROVED status, which the user is unable to
             # view anyway. If he hand-hacks the URL, all he will get is
             # a Forbidden which is enforced by the security wrapper for
@@ -99,7 +105,7 @@ class QueueItemsView(LaunchpadView):
         # return actions only for supported states and require
         # edit permission
         if (self.state in mutable_states and
-            check_permission('launchpad.Edit', self.context)):
+            check_permission('launchpad.Edit', self.queue)):
             return ['Accept', 'Reject']
 
         # no actions for unsupported states
@@ -114,7 +120,7 @@ class QueueItemsView(LaunchpadView):
         if self.request.method != "POST":
             return
 
-        if not check_permission('launchpad.Edit', self.context):
+        if not check_permission('launchpad.Edit', self.queue):
             self.error = 'You do not have permission to act on queue items.'
             return
 

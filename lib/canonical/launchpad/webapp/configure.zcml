@@ -121,15 +121,17 @@
         name="fmt"
         />
 
-    <!-- The next directive should be registered for 'int' only.
-        However, there's a bug in adapter registration that stops
-        this working.  To be fixed in ZopeX3 RSN.
-        XXX: SteveAlexander, 2005-05-21.
-        -->
     <adapter
-        for="*"
+        for="int"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+        name="lp"
+        />
+
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
         name="lp"
         />
 
@@ -371,28 +373,28 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/notification-test.pt"
+        template="../templates/root-index.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/notification-test.pt"
+        template="../templates/root-index.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/notification-test.pt"
+        template="../templates/root-index.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/notification-test.pt"
+        template="../templates/root-index.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />

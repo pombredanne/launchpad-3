@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'PackageUploadQueue',
     'DistroReleaseQueue',
     'DistroReleaseQueueBuild',
     'DistroReleaseQueueSource',
@@ -31,7 +32,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
-    QueueInconsistentStateError, QueueSourceAcceptError,
+    QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
     QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
@@ -50,6 +51,14 @@ def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
     if logger is not None:
         logger.debug(msg)
+
+class PackageUploadQueue:
+
+    implements(IPackageUploadQueue)
+
+    def __init__(self, distrorelease, status):
+        self.distrorelease = distrorelease
+        self.status = status
 
 
 class DistroReleaseQueue(SQLBase):
@@ -370,6 +379,7 @@ class DistroReleaseQueueBuild(SQLBase):
                     embargo=False
                     )
                 published_binaries.append(sbpph)
+        return published_binaries
 
 
 class DistroReleaseQueueSource(SQLBase):
