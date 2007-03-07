@@ -21,11 +21,12 @@ from canonical.launchpad.database import (
     RevisionParent)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBugSet, IRevisionSet)
+    IBranchSet, IBugSet, IRevisionSet, NotFoundError)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
+from canonical.launchpad.webapp import errorlog
 from canonical.testing import ZopelessLayer
 
 
@@ -644,7 +645,35 @@ class TestBzrSyncModified(BzrSyncTestCase):
                           self.bzrsync.syncOneRevision, FakeRevision)
 
 
-class TestBugLinking(BzrSyncTestCase):
+class OopsLoggingTest(unittest.TestCase):
+    """Test that temporarily disables the default OOPS reporting and instead
+    keeps any OOPSes in a list on the instance.
+
+    :ivar oopses: A list of oopses, [(info, request, now), ...].
+    """
+
+    def setUp(self):
+        self.oopses = []
+        errorlog.globalErrorUtility = self
+        self._globalErrorUtility = errorlog.globalErrorUtility
+
+    def tearDown(self):
+        del self.oopses[:]
+        errorlog.globalErrorUtility = self._globalErrorUtility
+
+    def raising(self, info, request=None, now=None):
+        self.oopses.append((info, request, now))
+
+
+class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        OopsLoggingTest.setUp(self)
+
+    def tearDown(self):
+        BzrSyncTestCase.tearDown(self)
+        OopsLoggingTest.tearDown(self)
 
     def test_bug_branch_revision(self):
         # When we scan a revision that has the launchpad:bug property set to a
@@ -675,6 +704,23 @@ class TestBugLinking(BzrSyncTestCase):
         self.syncBranch()
         bug = getUtility(IBugSet).get(1)
         self.assertEqual(True, bug.hasBranch(self.db_branch))
+
+    def test_oops_on_non_existent_bug(self):
+        # If the bug referred to in the revision properties doesn't actually
+        # exist, then we should generate some sort of OOPS report.
+        self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': '99999'})
+        self.syncBranch()
+        self.assertEqual(len(self.oopses), 1)
+
+    def test_oops_on_dodgy_bug(self):
+        # If the revision properties provide an absurd value for the bug
+        # number, we should generate an OOPS report.
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': 'orange'})
+        self.syncBranch()
+        self.assertEqual(len(self.oopses), 1)
 
 
 def test_suite():

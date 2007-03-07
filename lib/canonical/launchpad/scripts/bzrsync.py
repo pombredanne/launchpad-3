@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import logging
+import sys
 from datetime import datetime, timedelta
 
 import pytz
@@ -20,7 +21,8 @@ from bzrlib.errors import NoSuchRevision
 
 from canonical.launchpad.interfaces import (
     IBugSet, ILaunchpadCelebrities, IBugBranchRevisionSet, IBranchRevisionSet,
-    IRevisionSet)
+    IRevisionSet, NotFoundError)
+from canonical.launchpad.webapp import errorlog
 
 UTC = pytz.timezone('UTC')
 
@@ -262,10 +264,20 @@ class BzrSync:
 
     def _makeBugRevisionLink(self, db_revision, bzr_revision):
         try:
-            bug_id = bzr_revision.properties['launchpad:bug']
+            bug_id = int(bzr_revision.properties['launchpad:bug'])
         except KeyError:
             return
+        except ValueError:
+            errorlog.globalErrorUtility.raising(sys.exc_info())
+            return
         bug_set = getUtility(IBugSet)
+        try:
+            bug = bug_set.get(bug_id)
+        except NotFoundError:
+            errorlog.globalErrorUtility.raising(sys.exc_info())
+            return
+        if not bug.hasBranch(self.db_branch):
+            bug.addBranch(self.db_branch)
         bbr_set = getUtility(IBugBranchRevisionSet)
         return bbr_set.new(
             bug=bug_set.get(bug_id), branch=self.db_branch,
