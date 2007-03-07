@@ -9,8 +9,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from canonical.launchpad.pathlookup import get_object
-from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
@@ -434,12 +432,9 @@ class AffectsEmailCommand(EmailCommand):
             raise EmailProcessingError(
                 get_error_message('affects-no-arguments.txt'))
         try:
-            bug_target = get_object(path, path_only=True)
-        except PathStepNotFoundError, error:
-            raise EmailProcessingError(
-                get_error_message(
-                    'affects-path-not-found.txt',
-                    pathstep_not_found=error.step, path=path))
+            bug_target = self.getBugTarget(path)
+        except BugTargetNotFound, error:
+            raise EmailProcessingError(unicode(error))
         event = None
         bugtask = self.getBugTask(bug, bug_target)
         if (bugtask is None and
