@@ -192,7 +192,7 @@ class BugTargetTraversalMixin:
                 distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         elif IDistroRelease.providedBy(context):
-            null_bugtask = bug.NullBugTask(distrorelease=context)
+            null_bugtask = bug.getNullBugTask(distrorelease=context)
         elif ISourcePackage.providedBy(context):
             null_bugtask = bug.getNullBugTask(
                 distrorelease=context.distrorelease,

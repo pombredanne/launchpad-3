@@ -7,7 +7,7 @@
            tal:content="speclink/specification/title">Spec title</a>
         <a tal:condition="speclink/required:launchpad.AnyPerson"
            tal:attributes="href speclink/fmt:url"
-          ><img src="/@@/edit" title="Change this specification link" /></a><tal:block condition="speclink/summary"><br/>
+          ><img src="/@@/edit" title="Change this blueprint link" /></a><tal:block condition="speclink/summary"><br/>
         <i tal:content="speclink/summary">summary</i></tal:block>
       </li>
     </ul>

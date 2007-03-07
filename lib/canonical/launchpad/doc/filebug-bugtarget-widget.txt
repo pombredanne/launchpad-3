@@ -172,7 +172,7 @@ If a non-existant product name is entered, a widget error is raised.
     >>> selected_product = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no product named 'non-existant'
+    LaunchpadValidationError: There is no project named 'non-existant'
                               registered in Launchpad
 
 If no product name is given at all, a widget error is raised.

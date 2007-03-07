@@ -151,7 +151,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'project' AS otype, id, name, title, description,
+            SELECT 'project group' AS otype, id, name, title, description,
                 9999999 AS rank
             FROM project
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -159,7 +159,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'product' AS otype, id, name, title, description,
+            SELECT 'project' AS otype, id, name, title, description,
                 9999999 AS rank
             FROM product
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))

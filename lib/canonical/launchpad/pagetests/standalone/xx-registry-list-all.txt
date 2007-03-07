@@ -14,5 +14,5 @@ And similarly, one for all products.
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...Projects registered in Launchpad...
+  ...Upstream projects registered in Launchpad...
 

@@ -6,7 +6,7 @@
     <div>
       #<span tal:replace="context/id">4</span>
       <a tal:attributes="href context/fmt:url">
-        <span tal:content="context/title">Bug Title Here</span>
+        <span tal:replace="context/title">Bug Title Here</span>
       </a>
     </div>
     <div class="lesser">
