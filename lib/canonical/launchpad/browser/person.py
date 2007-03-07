@@ -2748,7 +2748,8 @@ class PersonBranchesView(BranchListingView):
 
     @cachedproperty
     def _subscribed_branches(self):
-        return set(self.context.subscribed_branches)
+        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, []))
 
     def roleForBranch(self, branch):
         person = self.context

@@ -4,14 +4,14 @@
 
 BranchView is the general class for displaying Branches.
 
->>> from zope.component import getView
+>>> from zope.component import getMultiAdapter
 >>> from zope.publisher.browser import TestRequest
 >>> from canonical.launchpad.interfaces import IBranchSet
 >>> branchset = getUtility(IBranchSet)
 >>> gterm_dev = branchset[15]
 >>> pushed = branchset[25]
->>> gterm_dev_view = getView(gterm_dev, '+index', TestRequest())
->>> pushed_view = getView(pushed, '+index', TestRequest())
+>>> gterm_dev_view = getMultiAdapter((gterm_dev, TestRequest()), name='+index')
+>>> pushed_view = getMultiAdapter((pushed, TestRequest()), name='+index')
 
 Each branch is associated to an URL on the Supermirror, that includes the name
 of the owner and product of the branch.
@@ -29,25 +29,25 @@ title or summary.
 
 >>> new = branchset.new('ok', ddaa, gterm_product, None,
 ...     title='something', summary='something')
->>> view = getView(new, '+index', TestRequest())
+>>> view = getMultiAdapter((new, TestRequest()), name='+index')
 >>> view.missing_title_or_summary_text() is None
 True
 
 >>> new = branchset.new('no_title', ddaa, gterm_product, None,
 ...     title=None, summary='something')
->>> view = getView(new, '+index', TestRequest())
+>>> view = getMultiAdapter((new, TestRequest()), name='+index')
 >>> view.missing_title_or_summary_text()
 '(this branch has no title)'
 
 >>> new = branchset.new('no_summary', ddaa, gterm_product, None,
 ...     title='something', summary=None)
->>> view = getView(new, '+index', TestRequest())
+>>> view = getMultiAdapter((new, TestRequest()), name='+index')
 >>> view.missing_title_or_summary_text()
 '(this branch has no summary)'
 
 >>> new = branchset.new('no_title_or_summary', ddaa, gterm_product, None,
 ...     title=None, summary=None)
->>> view = getView(new, '+index', TestRequest())
+>>> view = getMultiAdapter((new, TestRequest()), name='+index')
 >>> view.missing_title_or_summary_text()
 '(this branch has neither title nor summary)'
 
@@ -62,7 +62,8 @@ associated to the branch.
 When viewing a branch listing in product context, we should display the link to
 a corresponding person.
 
->>> gterm_dev_product_view = getView(gterm_dev, '+product-summary-listing', TestRequest())
+>>> gterm_dev_product_view = getMultiAdapter(
+...     (gterm_dev, TestRequest()), name='+product-summary-listing')
 >>> gterm_dev_product_view.show_person_link
 True
 >>> gterm_dev_product_view.show_product_link
@@ -70,7 +71,8 @@ False
 
 And when in a person context, we should link to the branch's product.
 
->>> gterm_dev_product_view = getView(gterm_dev, '+person-summary-listing', TestRequest())
+>>> gterm_dev_product_view = getMultiAdapter(
+...     (gterm_dev, TestRequest()), name='+person-summary-listing')
 >>> gterm_dev_product_view.show_person_link
 False
 >>> gterm_dev_product_view.show_product_link
@@ -82,7 +84,8 @@ should display none of those links.
 >>> junk_dev = branchset[20]
 >>> print junk_dev.product
 None
->>> junk_dev_person_view = getView(junk_dev, '+person-summary-listing', TestRequest())
+>>> junk_dev_person_view = getMultiAdapter(
+...     (junk_dev, TestRequest()), name='+person-summary-listing')
 >>> junk_dev_person_view.show_person_link
 False
 >>> junk_dev_person_view.show_product_link
@@ -95,7 +98,7 @@ When a branch has a URL, the user is allowed to modify it. Check that the
 
 >>> gterm_dev.url is not None
 True
->>> view = getView(gterm_dev, '+edit', TestRequest())
+>>> view = getMultiAdapter((gterm_dev, TestRequest()), name='+edit')
 >>> view.setUpFields()
 >>> 'url' in [field.__name__ for field in view.form_fields]
 True
@@ -105,7 +108,7 @@ When a branch's URL is null, the user is not allowed to set it.
 >>> no_url = branchset.new('no_url', ddaa, gterm_product, None)
 >>> no_url.url is None
 True
->>> view = getView(no_url, '+edit', TestRequest())
+>>> view = getMultiAdapter((no_url, TestRequest()), name='+edit')
 >>> view.setUpFields()
 >>> 'url' in [field.__name__ for field in view.form_fields]
 False
@@ -122,8 +125,8 @@ branch appears in the table.
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> sampleperson = getUtility(IPersonSet).getByName('name12')
->>> sampleperson_branches_view = getView(
-...     sampleperson, '+branches', TestRequest())
+>>> sampleperson_branches_view = getMultiAdapter(
+...     (sampleperson, TestRequest()), name='+branches')
 
 The role can be "Author", if the person is pointed to by the 'author' attribute
 of the branch.
@@ -158,23 +161,26 @@ True
 'Subscriber'
 
 
-== BranchTargetView ==
+== BranchListingView ==
 
-When listing the branches for a product we use the BranchTargetView.
+When listing the branches for a product we use a subclass of the
+BranchListingView.
+
 Now we are showing bug badges for branches that have associated bugs 
 (through BugBranch), and we want to check that when constructing
 the view we get all the associated bugs for all the branches so we
 don't issue many queries to the database.
 
 >>> firefox_product = getUtility(IProductSet).getByName('firefox')
->>> view = getView(firefox_product, '+branches', TestRequest())
+>>> view = getMultiAdapter((firefox_product, TestRequest()), name='+branches')
 >>> view.initialize()
 
 The view batches the results.  The method that returns the batch is 'branches'.
 
->>> from canonical.launchpad.webapp.batching import BatchNavigator
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import IBranchBatchNavigator
 >>> branches = view.branches()
->>> isinstance(branches, BatchNavigator)
+>>> verifyObject(IBranchBatchNavigator, branches)
 True
 
 >>> for branch in branches.branches():

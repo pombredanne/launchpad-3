@@ -28,10 +28,4 @@
       template="../templates/bugs-listing-table-without-navlinks.pt"
       permission="zope.Public" />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
-      name="+branch-listing"
-      template="../templates/branch-listing.pt"
-      permission="zope.Public" />
-
 </configure>

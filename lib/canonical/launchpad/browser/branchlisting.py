@@ -11,6 +11,7 @@ __all__ = [
 from datetime import datetime
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.lp import decorates
 from canonical.lp.dbschema import (BranchLifecycleStatus,
@@ -18,7 +19,8 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchLifecycleFilter, IBranchSet, IBugBranchSet)
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchLifecycleFilter,
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -43,6 +45,7 @@ class BranchListingItem:
 
 class BranchListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
+    implements(IBranchBatchNavigator)
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
@@ -100,14 +103,12 @@ class BranchListingView(LaunchpadFormView):
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
+
+    @property
+    def page_title(self):
+        return '%s branches for %s' % (
+            self.title_prefix, self.context.displayname)
     
-    # The default set of statuses to show.
-    CURRENT_SET = (BranchLifecycleStatus.NEW,
-                   BranchLifecycleStatus.EXPERIMENTAL,
-                   BranchLifecycleStatus.DEVELOPMENT,
-                   BranchLifecycleStatus.MATURE)
-
-
     @property
     def initial_values(self):
         return {
@@ -126,7 +127,7 @@ class BranchListingView(LaunchpadFormView):
         if lifecycle_filter == BranchLifecycleStatusFilter.ALL:
             return None
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
-            return self.CURRENT_SET
+            return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
             return (BranchLifecycleStatus.items[lifecycle_filter.value], )
 

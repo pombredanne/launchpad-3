@@ -611,12 +611,10 @@ return all branches associated with that person:
   - person is author of the branch
   - owner is person or team the person is a member of
 
-  >>> default_lifecycle = (BranchLifecycleStatus.NEW,
-  ...                      BranchLifecycleStatus.EXPERIMENTAL,
-  ...                      BranchLifecycleStatus.DEVELOPMENT,
-  ...                      BranchLifecycleStatus.MATURE)
+  >>> from canonical.launchpad.interfaces import (
+  ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> branches = branchset.getBranchesForPerson(
-  ...     personset.getByName('ddaa'), default_lifecycle)
+  ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
   New ~vcs-imports/evolution/main
@@ -666,7 +664,7 @@ extra display information.
 
   >>> gnome_terminal = productset.getByName('gnome-terminal')
   >>> branches = branchset.getBranchesForProduct(
-  ...     gnome_terminal, default_lifecycle)
+  ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
   Mature ~name12/gnome-terminal/2.6

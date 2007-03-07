@@ -1,13 +1,13 @@
 = Branches Overview =
 
-Products should link their branch listing page.
+Products link their branch listing page.
 
    >>> browser.open('http://launchpad.dev/gnome-terminal')
    >>> browser.getLink('Code').click()
    >>> print browser.title
    GNOME Terminal's Bazaar branches registered in Launchpad
 
-We should be able to display a list of branches for a product at +branches.
+We are be able to display a list of branches for a product at +branches.
 
    >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
    >>> print browser.title
@@ -22,23 +22,21 @@ the +branches is the default page shown.
    >>> print browser.title
    Gnome Applets's Bazaar branches registered in Launchpad
 
-If there are not any branches, a relevant message should be shown.
+If there are not any branches, a relevant message is shown.
 
-   >>> print browser.contents
-   <!DOCTYPE...
-   ...There may be branches registered for Gnome Applets but none of
+   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   There may be branches registered for Gnome Applets but none of
    them match the current filter criteria for this page.
-   Try filtering on "Any Status"...
+   Try filtering on "Any Status".
 
 OK, lets follow the advice.
 
    >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
    >>> browser.getControl('Filter').click()
-   >>> print browser.contents
-   <!DOCTYPE...
-   ...There are no branches registered for Gnome Applets in Launchpad today.
+   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   There are no branches registered for Gnome Applets in Launchpad today.
    We recommend you visit
    <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>
    for more information about how you can use
    the Bazaar revision control system to improve community
-   participation in this product...
+   participation in this product.

@@ -32,8 +32,7 @@ class Branch(SQLBase):
 
     implements(IBranch)
     _table = 'Branch'
-
-    sort_order = ['product', '-lifecycle_status', 'author', 'name']
+    _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
@@ -461,15 +460,14 @@ class BranchSet:
             ''' % (owner_ids, person.id, lifecycle_clause))
         
         return subscribed_branches.union(
-            owner_author_branches, orderBy=Branch.sort_order)
+            owner_author_branches, orderBy=Branch._defaultOrder)
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         return Branch.select(
-            'Branch.author = %s %s' % (person.id, lifecycle_clause),
-            orderBy=Branch.sort_order)
+            'Branch.author = %s %s' % (person.id, lifecycle_clause))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
@@ -479,8 +477,7 @@ class BranchSet:
             '''Branch.owner = %s AND
             (Branch.author is NULL OR
              Branch.author != %s) %s''' %
-            (person.id, person.id, lifecycle_clause),
-            orderBy=Branch.sort_order)
+            (person.id, person.id, lifecycle_clause))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
@@ -490,16 +487,14 @@ class BranchSet:
             '''Branch.id = BranchSubscription.branch
             AND BranchSubscription.person = %s %s
             ''' % (person.id, lifecycle_clause),
-            clauseTables=['BranchSubscription'],
-            orderBy=Branch.sort_order)
+            clauseTables=['BranchSubscription'])
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         return Branch.select(
-            'Branch.product = %s %s' % (product.id, lifecycle_clause),
-            orderBy=Branch.sort_order)
+            'Branch.product = %s %s' % (product.id, lifecycle_clause))
 
 
 
