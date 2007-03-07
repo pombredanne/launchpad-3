@@ -74,13 +74,14 @@ active on, including the type of work the person does on each project.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
-    ...     print contrib['project_title'], contrib['categories']
-    The Evolution Groupware Application {2: '/@@/bug', 3: '/@@/translation'}
-    Ubuntu Linux {2: '/@@/bug'}
-    Gnome Baker {2: '/@@/bug'}
-    Mozilla Thunderbird {2: '/@@/bug'}
-    Mozilla Firefox {2: '/@@/bug'}
-    Bazaar {2: '/@@/bug'}
+    ...     categories = sorted(cat.name for cat in contrib['categories'])
+    ...     print contrib['project'].title, categories
+    The Evolution Groupware Application [u'bugs', u'translations']
+    Ubuntu Linux [u'bugs']
+    Gnome Baker [u'bugs']
+    Mozilla Thunderbird [u'bugs']
+    Mozilla Firefox [u'bugs']
+    Bazaar [u'bugs']
 
 As we can see, the results are ordered descending by the karma of the person
 on that project.

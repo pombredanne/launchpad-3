@@ -72,21 +72,20 @@ and also the areas in which (s)he worked on each project.
     ...     for td in tr.findAll('td'):
     ...         img = td.find('img')
     ...         if img is not None:
-    ...             title = [attr[1] for attr in img.attrs if attr[0] == 'alt']
-    ...             print "\t", title[0]
+    ...             print "\t", img['title']
     The Evolution Groupware Application
-        Bug management
-        Translations in rosetta
+        Bug Management
+        Translations in Rosetta
     Ubuntu Linux
-        Bug management
+        Bug Management
     Gnome Baker
-        Bug management
+        Bug Management
     Mozilla Thunderbird
-        Bug management
+        Bug Management
     Mozilla Firefox
-        Bug management
+        Bug Management
     Bazaar
-        Bug management
+        Bug Management
 
 If the person hasn't made any contributions, the table is not present in its
 page.

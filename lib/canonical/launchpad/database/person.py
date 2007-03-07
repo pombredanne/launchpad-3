@@ -6,7 +6,6 @@ __all__ = [
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
-from operator import itemgetter
 import pytz
 import sha
 
@@ -30,7 +29,6 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
@@ -649,14 +647,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         results = self._getProjectsWithTheMostKarma(limit=limit)
         for pillar_name, karma in results:
             pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            categories = {}
-            for cat_name, cat_title in self._getContributedCategories(pillar):
-                categories[cat_title] = self._getIcon(cat_name)
-            contribution = {
-                'project_title': pillar.title,
-                'project_url': canonical_url(pillar),
-                'categories': categories}
-            contributions.append(contribution)
+            contributions.append(
+                {'project': pillar,
+                 'categories': self._getContributedCategories(pillar)})
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
@@ -666,8 +659,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         The results are ordered descending by the karma points and limited to
         the given limit.
         """
+        # We want this person's total karma on a given context (that is,
+        # across all different categories) here; that's why we use a 
+        # "KarmaCache.category IS NULL" clause here.
         query = """
-            SELECT name, karmavalue
+            SELECT PillarName.name, KarmaCache.karmavalue
             FROM KarmaCache
             JOIN PillarName ON 
                 COALESCE(KarmaCache.distribution, -1) =
@@ -683,12 +679,11 @@ class Person(SQLBase, HasSpecificationsMixin):
             """ % sqlvalues(person=self, limit=limit)
         cur = cursor()
         cur.execute(query)
-        # Sort descending by karmavalue.
-        return sorted(cur.fetchall(), key=itemgetter(1), reverse=True)
+        return cur.fetchall()
 
     def _getContributedCategories(self, pillar):
-        """Return the titles of the KarmaCategories to which this person has
-        karma on the given pillar.
+        """Return the KarmaCategories to which this person has karma on the
+        given pillar.
 
         The given pillar must be either an IProduct or an IDistribution.
         """
@@ -697,30 +692,22 @@ class Person(SQLBase, HasSpecificationsMixin):
         elif IDistribution.providedBy(pillar):
             where_clause = "distribution = %s" % sqlvalues(pillar)
         else:
-            raise AssertionError()
+            raise AssertionError(
+                "Pillar must be a product or distro, got %s" % pillar)
         replacements = sqlvalues(person=self)
         replacements['where_clause'] = where_clause
         query = """
-            SELECT DISTINCT name, title
-            FROM KarmaCache
-            JOIN KarmaCategory ON KarmaCache.category = KarmaCategory.id
+            SELECT DISTINCT KarmaCategory.id
+            FROM KarmaCategory
+            JOIN KarmaCache ON KarmaCache.category = KarmaCategory.id
             WHERE %(where_clause)s
                 AND category IS NOT NULL
                 AND person = %(person)s
             """ % replacements
         cur = cursor()
         cur.execute(query)
-        return cur.fetchall()
-        return [title for [title] in cur.fetchall()]
-
-    def _getIcon(self, category_name):
-        icons_for_karma_categories = {
-            'bugs': '/@@/bug',
-            'translations': '/@@/translation',
-            'specs': '/@@/blueprint',
-            'support': '/@@/question'}
-        category = KarmaCategory.byName(category_name)
-        return icons_for_karma_categories[category_name]
+        ids = ",".join(str(id) for [id] in cur.fetchall())
+        return KarmaCategory.select("id IN (%s)" % ids)
 
     @property
     def karma_category_caches(self):

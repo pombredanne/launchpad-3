@@ -66,7 +66,7 @@ __all__ = [
 
 import cgi
 import urllib
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -1281,14 +1281,16 @@ class PersonView(LaunchpadView):
 
     @cachedproperty
     def contributions(self):
+        """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo()
 
     @cachedproperty
     def contributed_categories(self):
+        """Return all karma categories in which this person has some karma."""
         categories = set()
-        for contrib in self.context.getProjectsAndCategoriesContributedTo():
+        for contrib in self.contributions:
             categories.update(category for category in contrib['categories'])
-        return sorted(categories)
+        return sorted(categories, key=attrgetter('title'))
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this

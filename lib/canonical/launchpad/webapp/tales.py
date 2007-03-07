@@ -26,12 +26,9 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IBugSet, NotFoundError, IBug, IBugAttachment,
-    IBugExternalRef
-    )
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
-    )
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -358,6 +355,21 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             icon += image_template % ("", "Private", "/@@/locked")
 
         return icon
+
+
+class KarmaCategoryFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IKarmaCategory objects to a formatted string."""
+
+    icons_for_karma_categories = {
+        'bugs': '/@@/bug',
+        'translations': '/@@/translation',
+        'specs': '/@@/blueprint',
+        'support': '/@@/question'}
+
+    def icon(self):
+        icon = self.icons_for_karma_categories[self._context.name]
+        return ('<img alt="" title="%s" src="%s" />'
+                % (self._context.title, icon))
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
