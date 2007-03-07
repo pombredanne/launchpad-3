@@ -142,7 +142,7 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def no_branch_message(self):
-        """This may also be overridded i derived classes."""
+        """This may also be overridded in derived classes."""
         if self.selected_lifecycle_status:
             message = (
                 'There may be branches related to %s '
