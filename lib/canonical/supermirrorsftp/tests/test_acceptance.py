@@ -118,8 +118,7 @@ class TestSFTPService(SFTPService):
 
 
 class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
-    """SFTP avatar that uses the TestBazaarFileTransferServer.
-    """
+    """SFTP avatar that uses the TestBazaarFileTransferServer."""
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
                                 launchpad)

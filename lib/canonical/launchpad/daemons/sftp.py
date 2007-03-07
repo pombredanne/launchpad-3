@@ -29,8 +29,7 @@ class SFTPService(service.Service):
         self.service = self.makeService()
 
     def makeRealm(self):
-        """Create and return an authentication realm for the authserver.
-        """
+        """Create and return an authentication realm for the authserver."""
         homedirs = config.supermirrorsftp.branches_root
         authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
         return sftponly.Realm(homedirs, authserver)
@@ -72,13 +71,11 @@ class SFTPService(service.Service):
         return hostPublicKey, hostPrivateKey
 
     def startService(self):
-        """Start the SFTP service.
-        """
+        """Start the SFTP service."""
         service.Service.startService(self)
         self.service.startService()
 
     def stopService(self):
-        """Stop the SFTP service.
-        """
+        """Stop the SFTP service."""
         service.Service.stopService(self)
         self.service.stopService()
