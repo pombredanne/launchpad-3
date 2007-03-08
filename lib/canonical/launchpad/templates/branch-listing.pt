@@ -2,7 +2,8 @@
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">
-    <label for="field.lifecycle">Show branches with status of</label>
+    <label tal:attributes="for context/view/widgets/lifecycle/name">
+    Show branches with status of</label>
     <div tal:replace="structure context/view/widgets/lifecycle"/>
     <noscript>
       <input type="submit" value="Filter"/>

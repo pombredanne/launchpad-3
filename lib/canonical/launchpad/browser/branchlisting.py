@@ -137,12 +137,14 @@ class BranchListingView(LaunchpadFormView):
         return BranchListingBatchNavigator(self)
 
     def roleForBranch(self, branch):
-        """Overridden by derived classes to display something useful."""
+        """Overridden by derived classes to display something in
+        the role column if the role column is visible."""
         return None
 
     @property
     def no_branch_message(self):
-        """This may also be overridded in derived classes."""
+        """This may also be overridden in derived classes to provide
+        context relevant messages if there are no branches returned."""
         if self.selected_lifecycle_status:
             message = (
                 'There may be branches related to %s '
