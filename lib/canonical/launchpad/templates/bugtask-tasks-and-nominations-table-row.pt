@@ -6,20 +6,16 @@
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="release_targetname view/getReleaseTargetName">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')" >
-        <img tal:condition="can_edit_bugtask"
-             tal:attributes="id string:${form_row_id}-edit"
-             src="/@@/treeCollapsed" alt="edit" />
-      </a>
+      <metal:edit_expander metal:define-macro="edit_expander">
+        <a tal:condition="can_edit_bugtask"
+           tal:attributes="
+              href tasklink;
+              onclick string:return toggleFormVisibility('${form_row_id}')" >
+          <img tal:attributes="id string:${form_row_id}-edit"
+               src="/@@/treeCollapsed" alt="edit" />
+        </a>
+      </metal:edit_expander>
       <img src="/@@/milestone" alt="Targeted to" />
-      <span tal:condition="context/conjoined_master"
-            tal:content="release_targetname">
-        Edgy
-      </span>
       <tal:not-conjoined-task condition="not: context/conjoined_master">
       <a
         tal:condition="can_edit_bugtask"
@@ -37,15 +33,7 @@
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 0.25em">
-        <a
-          tal:condition="can_edit_bugtask"
-          tal:attributes="
-              href tasklink;
-              onclick string:return toggleFormVisibility('${form_row_id}')" >
-          <img tal:condition="can_edit_bugtask"
-               tal:attributes="id string:${form_row_id}-edit"
-               src="/@@/treeCollapsed" alt="edit" />
-        </a>
+        <metal:edit_expander metal:use-macro="template/macros/edit_expander" />
         <img src="/@@/pkg-source" alt="package"
              tal:condition="view/shouldShowPackageIcon" />
         <img src="/@@/product" alt="product"
