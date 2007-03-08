@@ -147,8 +147,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', prejoins=['product'],
-        orderBy='-id')
+        intermediateTable='BranchSubscription', prejoins=['product'])
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -162,8 +161,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
-        orderBy='-id', prejoins=['product'])
+    authored_branches = SQLMultipleJoin(
+        'Branch', joinColumn='author', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -439,8 +438,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = """Branch.owner = %d AND
                    (Branch.author != %d OR Branch.author is NULL)"""
         return Branch.select(query % (self.id, self.id),
-                             prejoins=["product"],
-                             orderBy='-Branch.id')
+                             prejoins=["product"])
 
 
     def getBugContactPackages(self):
