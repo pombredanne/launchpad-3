@@ -21,6 +21,7 @@ __metatype__ = type
 
 import _pythonpath
 
+import inspect
 from optparse import OptionParser
 import re
 from textwrap import dedent
@@ -83,10 +84,7 @@ class SampleDataVerification:
             if self.table_filter and not include_only_re.search(class_name):
                 continue
             cls = getattr(canonical.launchpad.database, class_name)
-            # Skip non-class.
-            if not isinstance(cls, type):
-                continue
-            if issubclass(cls, SQLBase):
+            if inspect.isclass(cls) and issubclass(cls, SQLBase):
                 yield cls
 
     def fetchTableRowsCount(self):
@@ -99,8 +97,8 @@ class SampleDataVerification:
             class_name = get_class_name(cls)
             try:
                 self.table_rows_count[class_name] = cls.select().count()
-            except ProgrammingError, e:
-                self.classes_with_error[class_name] = str(e)
+            except ProgrammingError, error:
+                self.classes_with_error[class_name] = str(error)
                 # Transaction is borked, start another one.
                 self.txn.begin()
 
@@ -118,8 +116,8 @@ class SampleDataVerification:
                 for object in cls.select():
                     self.checkObjectInterfaces(object)
                     self.validateObjectSchemas(object)
-            except ProgrammingError, e:
-                self.classes_with_error[get_class_name(cls)] = str(e)
+            except ProgrammingError, error:
+                self.classes_with_error[get_class_name(cls)] = str(error)
                 # Transaction is borked, start another one.
                 self.txn.begin()
 
@@ -132,13 +130,13 @@ class SampleDataVerification:
             interface_name = get_class_name(interface)
             try:
                 result = verifyObject(interface, object)
-            except BrokenImplementation, e:
+            except BrokenImplementation, error:
                 self.setInterfaceError(
-                    interface, object, "missing attribute %s" % e.name)
-            except BrokenMethodImplementation, e:
+                    interface, object, "missing attribute %s" % error.name)
+            except BrokenMethodImplementation, error:
                 self.setInterfaceError(
                      interface, object,
-                    "invalid method %s: %s" % (e.method, e.mess))
+                    "invalid method %s: %s" % (error.method, error.mess))
 
     def setInterfaceError(self, interface, object, error_msg):
         """Store an error about an interface in the broken_instances dictionary
@@ -231,7 +229,7 @@ class SampleDataVerification:
     def reportInterfaceErrors(self):
         """Report objects failing the verifyObject and schema validation."""
         if not self.broken_instances:
-            print "All sample data correctly provide its interfaces!!!"
+            print "All sample data comply with its provided interfaces!!!"
             return
         print dedent("""\
             %d Interfaces with broken instances
