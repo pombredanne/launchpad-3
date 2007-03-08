@@ -16,20 +16,9 @@
         </a>
       </metal:edit_expander>
       <img src="/@@/milestone" alt="Targeted to" />
-      <tal:not-conjoined-task condition="not: context/conjoined_master">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')"
-        tal:content="release_targetname"
-      />
-      <a
-        tal:condition="not:can_edit_bugtask"
-        tal:attributes="href tasklink"
-        tal:content="release_targetname"
-      />
-      </tal:not-conjoined-task>
+      <a tal:attributes=" href context/target/fmt:url"
+         tal:content="release_targetname"
+      >Edgy</a>
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 0.25em">
@@ -38,25 +27,9 @@
              tal:condition="view/shouldShowPackageIcon" />
         <img src="/@@/product" alt="product"
              tal:condition="view/shouldShowProductIcon" />
-        <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
-          <a
-            tal:condition="can_edit_bugtask"
-            tal:attributes="
-                href tasklink;
-                onclick string:return toggleFormVisibility('${form_row_id}')"
+          <a tal:attributes="href context/target/fmt:url"
             tal:content="context/targetname"
-          />
-          <a
-            tal:condition="not:can_edit_bugtask"
-            tal:attributes="href tasklink"
-            tal:content="context/targetname"
-          />
-        </tal:not-conjoined-task>
-        <tal:conjoined-task
-            tal:condition="context/conjoined_master"
-            tal:replace="context/targetname">
-          evolution (Ubuntu)
-        </tal:conjoined-task>
+          >evolution (Ubuntu)</a>
       </span>
     </td>
 
