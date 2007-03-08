@@ -854,6 +854,17 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    # Include the URL, since it will still be downloadable until the
+    # Librarian garbage collector removes it.
+    change_info = '\n'.join([
+        '** Attachment removed: "%s"\n' % bugattachment.title,
+        '   %s' %  bugattachment.libraryfile.http_url])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
 

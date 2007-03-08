@@ -426,6 +426,20 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    def getProjectsAndCategoriesContributedTo(limit=10):
+        """Return a list of dicts with projects and the contributions made
+        by this person on that project.
+
+        The list is limited to the :limit: projects this person is most
+        active.
+
+        The dictionaries containing the following keys:
+            - project:    The project, which is either an IProduct or an
+                          IDistribution.
+            - categories: A dictionary mapping KarmaCategory titles to
+                          the icons which represent that category.
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.

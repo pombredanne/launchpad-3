@@ -404,6 +404,21 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
         return icon
 
 
+class KarmaCategoryFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IKarmaCategory objects to a formatted string."""
+
+    icons_for_karma_categories = {
+        'bugs': '/@@/bug',
+        'translations': '/@@/translation',
+        'specs': '/@@/blueprint',
+        'support': '/@@/question'}
+
+    def icon(self):
+        icon = self.icons_for_karma_categories[self._context.name]
+        return ('<img alt="" title="%s" src="%s" />'
+                % (self._context.title, icon))
+
+
 class MilestoneFormatterAPI(ObjectFormatterAPI):
     """Adapter for IMilestone objects to a formatted string.
 

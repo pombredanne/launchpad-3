@@ -72,6 +72,16 @@ person's page, containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a ...><img alt="" src="/@@/team" />Ubuntu Team</a>'
 
+We also have fmt:icon for KarmaCategory:
+
+    >>> from canonical.launchpad.database import KarmaCategory
+    >>> for category in KarmaCategory.select(orderBy='title'):
+    ...     print test_tales("category/fmt:icon", category=category)
+    <img alt="" title="Bug Management" src="/@@/bug" />
+    <img alt="" title="Specification Tracking" src="/@@/blueprint" />
+    <img alt="" title="Support Tracker" src="/@@/question" />
+    <img alt="" title="Translations in Rosetta" src="/@@/translation" />
+
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
 
