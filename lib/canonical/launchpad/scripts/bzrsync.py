@@ -279,6 +279,8 @@ class BzrSync:
         if not bug.hasBranch(self.db_branch):
             bug.addBranch(self.db_branch)
         bbr_set = getUtility(IBugBranchRevisionSet)
+        # XXX - add a record to the bug activity log
+        # XXX - make sure the 'status' field is correct
         return bbr_set.new(
             bug=bug_set.get(bug_id), branch=self.db_branch,
             revision=db_revision)

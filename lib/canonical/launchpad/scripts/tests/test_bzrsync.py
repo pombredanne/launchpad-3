@@ -722,6 +722,10 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         self.syncBranch()
         self.assertEqual(len(self.oopses), 1)
 
+    # CREATE A BRANCH ON FS AND IN DB AND SCAN IT.
+    def test_make_branch_and_scan_it(self):
+        pass
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
