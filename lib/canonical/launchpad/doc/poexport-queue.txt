@@ -324,16 +324,13 @@ And now, check that the attributes have the right values.
   <BLANKLINE>
   >>> first.pluralform
   0
-
-## These tests disabled due to Bug #90309 -- StuartBishop 20070307
-##
-##   >>> first.msgid
-##   u'Found %i invalid file.'
-##   >>> first.commenttext
-##   u''
-##   >>> first.sourcecomment
-##   u''
-##   >>> first.filereferences
-##   u'encfs/encfsctl.cpp:346'
-##   >>> first.flagscomment
-##   u'c-format'
+  >>> first.msgid
+  u'Found %i invalid file.'
+  >>> first.commenttext
+  u''
+  >>> first.sourcecomment
+  u''
+  >>> first.filereferences
+  u'encfs/encfsctl.cpp:346'
+  >>> first.flagscomment
+  u'c-format'

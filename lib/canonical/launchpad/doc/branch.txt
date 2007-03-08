@@ -1,8 +1,7 @@
 = Bazaar Branches =
 
 The Branch table holds information about an Bazaar Branch. It describes the
-Launchpad user model of a branch, and in particular should be able (in the
-future) to support un-committing of revisions.
+Launchpad user model of a branch.
 
 It has a N-N association to the Revision table through the BranchRevision
 table. An association table is required because the sequence of revisions
@@ -602,3 +601,95 @@ arbitrary people.
   ~ddaa/gnome-terminal/dev
   ~launchpad/gnome-terminal/launchpad
  
+== Getting all branches for a person ==
+
+Batching of the branch pages relies (ideally) on a quick simple query
+that can have the result set limited in order to only return a partial
+result set.  The getBranchesForPerson method on IBranchSet will 
+return all branches associated with that person:
+  - subscribed branches by person or team the person is a member of
+  - person is author of the branch
+  - owner is person or team the person is a member of
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
+  >>> branches = branchset.getBranchesForPerson(
+  ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  New ~vcs-imports/evolution/main
+  New ~ddaa/gnome-terminal/dev
+  New ~ddaa/+junk/junkcode
+
+  >>> sample_person = personset.getByName('name12')
+  >>> for branch in branchset.getBranchesForPerson(sample_person):
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  New ~name12/firefox/main
+  Abandoned ~name12/gnome-terminal/2.4
+  Merged ~name12/gnome-terminal/slowness
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  Experimental ~name12/gnome-terminal/klingon
+  New ~launchpad/gnome-terminal/launchpad
+  New ~name12/gnome-terminal/pushed
+  Experimental ~name12/+junk/junk.dev
+  New ~name12/+junk/junk.contrib
+
+  >>> for branch in branchset.getBranchesAuthoredByPerson(sample_person):
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  New ~name12/firefox/main
+  Merged ~name12/gnome-terminal/slowness
+  Experimental ~name12/gnome-terminal/klingon
+  New ~name12/+junk/junk.contrib
+
+  >>> for branch in branchset.getBranchesRegisteredByPerson(sample_person):
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Abandoned ~name12/gnome-terminal/2.4
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  New ~name12/gnome-terminal/pushed
+  Experimental ~name12/+junk/junk.dev
+
+  >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  New ~launchpad/gnome-terminal/launchpad
+  Experimental ~name12/+junk/junk.dev
+
+
+== Getting branches for a product ==
+
+In order to have batched branch listings the database needs to do as much
+of the work as possible.  This way there are optimal database queries for
+extra display information.
+
+  >>> gnome_terminal = productset.getByName('gnome-terminal')
+  >>> branches = branchset.getBranchesForProduct(
+  ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING)
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  Experimental ~name12/gnome-terminal/klingon
+  New ~launchpad/gnome-terminal/launchpad
+  New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/pushed
+
+  >>> branches = branchset.getBranchesForProduct(gnome_terminal)
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Abandoned ~name12/gnome-terminal/2.4
+  Merged ~name12/gnome-terminal/slowness
+  Mature ~name12/gnome-terminal/2.6
+  Development ~name12/gnome-terminal/main
+  Experimental ~name12/gnome-terminal/klingon
+  New ~launchpad/gnome-terminal/launchpad
+  New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/pushed
+
+  >>> branches = branchset.getBranchesForProduct(
+  ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
+  >>> for branch in branches:
+  ...     print branch.lifecycle_status.title, branch.unique_name
+  Development ~name12/gnome-terminal/main
+
+
