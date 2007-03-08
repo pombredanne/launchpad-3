@@ -1,10 +1,6 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-
-<body>
+<tal:layout define="contextless default">
+<html metal:use-macro="template/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -23,6 +19,8 @@
     </div>
   </div>
 </metal:rightportlets>
+
+    <h1 metal:fill-slot="application-heading">Projects in Launchpad</h1>
 
 <div metal:fill-slot="main">
 
@@ -45,8 +43,6 @@
   </div>
 
   <tal:searching condition="view/searchrequested">
-
-    <p></p>
 
     <div class="left">
       <table
@@ -83,7 +79,7 @@
 
       <h2>No luck?</h2>
 
-      <p id="application-summary">
+      <p>
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
@@ -110,7 +106,7 @@
 
       <h2>Why register?</h2>
 
-      <div id="application-summary">
+      <div>
         If a project is registered in Launchpad, people can keep track of the
         status of that project much more easily. You can link a Launchpad
         project to your own bug tracker and improve collaboration with other
@@ -137,3 +133,4 @@
 </div>
 </body>
 </html>
+</tal:layout>

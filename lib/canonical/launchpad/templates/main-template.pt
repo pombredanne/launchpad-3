@@ -62,7 +62,7 @@
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
     
-    <div id="singlecolumn" tal:condition="columns1|nothing">
+    <div id="singlecolumn" tal:condition="columns1|nothing"> <!-- deprecated -->
       <metal:heading define-slot="pageheading" />
       <tal:XXX condition="nothing"
       >20061025 mpt: pageheading deprecated</tal:XXX>
@@ -76,8 +76,20 @@
       </tal:notifications>
       <metal:block define-slot="main" />
     </div>
+
     <tal:layout condition="not:columns1|nothing">
 
+    <table
+      tal:condition="template/macro:page/pillarindex"
+      id="applications"
+    >
+      <tbody>
+        <tr>
+          <th><h1 metal:define-slot="application-heading" /></th>
+          <td tal:content="structure context/@@+applicationbuttons/register" />
+        </tr>
+      </tbody>
+    </table>
     <div
       id="structuralobject"
       tal:define="structuralobject CONTEXTS/lp:structuralobject"
@@ -114,6 +126,12 @@
               <div class="x">
                 <div class="y">
                   <div class="z">
+
+                    <div
+                      tal:condition="contextless|nothing"
+                      id="noapplicationchooser"
+                    >&nbsp;</div>
+
                     <tal:onlyincontexts condition="not:contextless|nothing">
 
                     <ul
@@ -158,10 +176,6 @@
                     </ul>
 
                     </tal:onlyincontexts>
-                    <div
-                      tal:condition="contextless|nothing"
-                      id="noapplicationchooser"
-                    >&nbsp;</div>
 
                     <br class="clear" />
 
@@ -192,7 +206,6 @@
                       <metal:portlets define-slot="portlets_one" />
                     </div>
                     <div class="clear"></div>
-                    </div>
                   </div>
                 </div>
               </div>
