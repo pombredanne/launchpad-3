@@ -1,10 +1,10 @@
 #! /usr/bin/python
-# Copyright 2007 Canonical
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """
 check-sampledata.py - Perform various checks on Sample Data
 
-= Launchpad Content Interfaces =
+= Launchpad Sample Data Consistency Checks =
 
 XXX flacoste 2007/03/08 Once all problems exposed by this script are solved,
 it should be integrated to our automated test suite.
@@ -38,20 +38,23 @@ import canonical.launchpad.database
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-def classname(klass):
+
+def get_class_name(cls):
     """Return the class name without its package prefix."""
-    return klass.__name__.split('.')[-1]
+    return cls.__name__.split('.')[-1]
+
 
 def error_msg(error):
     """Convert an exception to a proper error.
 
-     It make sure that the exception type is in the message and takes care
-     of possible unicode conversion error.
+    It make sure that the exception type is in the message and takes care
+    of possible unicode conversion error.
     """
     try:
-        return "%s: %s" % (classname(error.__class__), str(error))
+        return "%s: %s" % (get_class_name(error.__class__), str(error))
     except UnicodeEncodeError:
         return "UnicodeEncodeError in str(%s)" % error.__class__.__name__
+
 
 class SampleDataVerification:
     """Runs various checks on sample data and report about them."""
@@ -79,54 +82,54 @@ class SampleDataVerification:
         for class_name in dir(canonical.launchpad.database):
             if self.table_filter and not include_only_re.search(class_name):
                 continue
-            klass = getattr(canonical.launchpad.database, class_name)
+            cls = getattr(canonical.launchpad.database, class_name)
             # Skip non-class.
-            if not isinstance(klass, type):
+            if not isinstance(cls, type):
                 continue
-            if issubclass(klass, SQLBase):
-                yield klass
+            if issubclass(cls, SQLBase):
+                yield cls
 
     def fetchTableRowsCount(self):
-        """Fetch the number of rows of each tables and store it in the
-        table_rows_count attribute.
+        """Fetch the number of rows of each tables.
+
+        The count are stored in the table_rows_count attribute.
         """
         self.table_rows_count = {}
-        for klass in self.findSQLBaseClasses():
-            class_name = classname(klass)
+        for cls in self.findSQLBaseClasses():
+            class_name = get_class_name(cls)
             try:
-                self.table_rows_count[class_name] = klass.select().count()
+                self.table_rows_count[class_name] = cls.select().count()
             except ProgrammingError, e:
                 self.classes_with_error[class_name] = str(e)
                 # Transaction is borked, start another one.
                 self.txn.begin()
 
     def checkSampleDataInterfaces(self):
-        """Make sure that the first object in each table provides correctly
-        the interfaces it declares.
+        """Check that all sample data objects complies with the interfaces it
+        declares.
         """
         self.validation_errors = {}
         self.broken_instances= {}
-        for klass in self.findSQLBaseClasses():
-            class_name = classname(klass)
+        for cls in self.findSQLBaseClasses():
+            class_name = get_class_name(cls)
             if class_name in self.classes_with_error:
                 continue
             try:
-                for object in klass.select():
+                for object in cls.select():
                     self.checkObjectInterfaces(object)
                     self.validateObjectSchemas(object)
             except ProgrammingError, e:
-                self.classes_with_error[classname(klass)] = str(e)
+                self.classes_with_error[get_class_name(cls)] = str(e)
                 # Transaction is borked, start another one.
                 self.txn.begin()
 
     def checkObjectInterfaces(self, object):
-        """Check that the object provide every attribute in its declared
-        interface.
+        """Check that object provides every attributes in its declared interfaces.
 
         Collect errors in broken_instances dictionary attribute.
         """
         for interface in providedBy(object):
-            interface_name = classname(interface)
+            interface_name = get_class_name(interface)
             try:
                 result = verifyObject(interface, object)
             except BrokenImplementation, e:
@@ -138,9 +141,7 @@ class SampleDataVerification:
                     "invalid method %s: %s" % (e.method, e.mess))
 
     def setInterfaceError(self, interface, object, error_msg):
-        """
-        Store an error in the broken_instances dictionary about a problem
-        with an interface.
+        """Store an error about an interface in the broken_instances dictionary
 
         The errors data structure looks like:
 
@@ -149,15 +150,14 @@ class SampleDataVerification:
                 class_name: [instance_id...]}}}
         """
         interface_errors = self.broken_instances.setdefault(
-            classname(interface), {})
+            get_class_name(interface), {})
         classes_with_error = interface_errors.setdefault(error_msg, {})
         object_ids_with_error = classes_with_error.setdefault(
-            classname(object.__class__), [])
+            get_class_name(object.__class__), [])
         object_ids_with_error.append(object.id)
 
     def validateObjectSchemas(self, object):
-        """Check that the object validates with the schemas it says it
-        provides.
+        """Check that object validates with the schemas it says it provides.
 
         Collect errors in validation_errors. Data structure format is
         {schema:
@@ -194,9 +194,9 @@ class SampleDataVerification:
                     field_errors.append((name, error_msg(error)))
             if field_errors:
                 schema_errors= self.validation_errors.setdefault(
-                    classname(schema), [])
+                    get_class_name(schema), [])
                 schema_errors.append([
-                    "<%s %s>" % (classname(object.__class__), object.id),
+                    "<%s %s>" % (get_class_name(object.__class__), object.id),
                     field_errors])
 
     def reportShortTables(self):
@@ -216,8 +216,9 @@ class SampleDataVerification:
             print "%-20s: %2d" % (table, rows_count)
 
     def reportErrors(self):
-        """Report about classes with database error. This will usually be
-        classes without a database table.
+        """Report about classes with database error.
+
+        This will usually be classes without a database table.
         """
         if not self.classes_with_error:
             return
