@@ -20,8 +20,8 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
-	    />
+            getQuestionLanguages default_gotchi_heading_resource
+            default_gotchi_resource default_emblem_resource" />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>

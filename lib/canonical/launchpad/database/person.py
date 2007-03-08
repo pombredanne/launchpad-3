@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -91,7 +91,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner)
+    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -175,6 +175,38 @@ class Person(SQLBase, HasSpecificationsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
+
+    # IHasGotchiAndEmblem attributes
+    @property
+    def default_emblem_resource(self):
+        return self._getDefaultIconResource()
+
+    @property
+    def default_gotchi_resource(self):
+        return self._getDefaultIconResource('mugshot')
+
+    @property
+    def default_gotchi_heading_resource(self):
+        return self._getDefaultIconResource('heading')
+
+    def _getDefaultIconResource(self, suffix=''):
+        """Return the zope3 resource for the icon of this person with the
+        given suffix.
+
+        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
+        """
+        assert suffix in ('', 'mini', 'heading', 'mugshot')
+        if self.isTeam():
+            img = '/@@/team'
+        else:
+            if self.is_valid_person:
+                img = '/@@/person'
+            else:
+                img = '/@@/person-inactive'
+        if suffix:
+            return "%s-%s" % (img, suffix)
+        else:
+            return img
 
     # specification-related joins
     @property

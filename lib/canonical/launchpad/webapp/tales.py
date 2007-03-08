@@ -322,6 +322,53 @@ class ObjectFormatterAPI:
         return canonical_url(self._context, request)
 
 
+class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+
+    def icon(self):
+        """Return the appropriate <img> tag for this object's gotchi."""
+        context = self._context
+        if context.gotchi is not None:
+            url = context.gotchi.getURL()
+        else:
+            url = context.default_gotchi_resource
+        return '<img alt="" class="mugshot" src="%s" />' % url
+
+    def heading_icon(self):
+        """Return the appropriate <img> tag for this object's heading img."""
+        context = self._context
+        if context.gotchi_heading is not None:
+            url = context.gotchi_heading.getURL()
+        else:
+            url = context.default_gotchi_heading_resource
+        return '<img alt="" class="mugshot" src="%s" />' % url
+
+    def emblem(self):
+        """Return the appropriate <img> tag for this object's emblem."""
+        context = self._context
+        if context.emblem is not None:
+            url = context.emblem.getURL()
+        else:
+            url = context.default_emblem_resource
+        return '<img alt="" src="%s" />' % url
+
+
+# Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
+# subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
+# when we're adapting a person object.
+class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    def link(self):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        person = self._context
+        resource = person.default_emblem_resource
+        return ('<a href="%s"><img alt="" src="%s" />%s</a>'
+                % (canonical_url(person), resource, person.browsername))
+
+
 class BugTaskFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBugTask objects to a formatted string.
 

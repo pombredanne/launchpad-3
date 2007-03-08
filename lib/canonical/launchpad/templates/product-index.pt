@@ -11,8 +11,8 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Name of product</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+  <h1 tal:content="context/title">Name of product</h1>
+  <span tal:replace="structure context/fmt:icon" />
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -125,4 +125,3 @@
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress needs mugshot (salgado) -->
