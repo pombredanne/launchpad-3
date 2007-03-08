@@ -10,9 +10,12 @@ import _pythonpath
 import sys, os.path, popen2
 from optparse import OptionParser
 import psycopg
-from canonical.database.sqlbase import connect
+
 from canonical import lp
 from canonical.config import config
+from canonical.database.sqlbase import (
+        connect, READ_COMMITTED_ISOLATION, AUTOCOMMIT_ISOLATION,
+        )
 from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
@@ -211,6 +214,29 @@ def nullify(con):
         cur.execute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
     cur.execute("DELETE FROM FtiCache")
     con.commit()
+
+
+def liverebuild(con):
+    """Rebuild the data in all the fti columns against possibly live database.
+    """
+    batch_size = 500 # Update maximum of this many rows per commit
+    cur = con.cursor()
+    for table, ignored in ALL_FTI:
+        table = quote_identifier(table)
+        cur.execute("SELECT max(id) FROM %s" % table)
+        max_id = cur.fetchone()[0]
+        if max_id is None:
+            log.info("No data in %s - skipping", table)
+            continue
+
+        log.info("Rebuilding fti column on %s", table)
+        for id in range(0, max_id, batch_size):
+            query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
+                table, id+1, id + batch_size
+                )
+            log.debug(query)
+            cur.execute(query)
+            # No commit - we are in autocommit mode
 
 
 def setup(con, configuration=DEFAULT_CONFIG):
@@ -563,16 +589,21 @@ def update_dicts(con):
 
 def main():
     con = connect(lp.dbuser)
-    setup(con)
-    if options.null:
-        nullify(con)
-    elif not options.setup:
-        for table, columns in ALL_FTI:
-            if needs_refresh(con, table, columns):
-                log.info("Rebuilding full text index on %s", table)
-                fti(con, table, columns)
-            else:
-                log.info("No need to rebuild full text index on %s", table)
+    if options.liverebuild:
+        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        liverebuild(con)
+    else:
+        con.set_isolation_level(READ_COMMITTED_ISOLATION)
+        setup(con)
+        if options.null:
+            nullify(con)
+        elif not options.setup:
+            for table, columns in ALL_FTI:
+                if needs_refresh(con, table, columns):
+                    log.info("Rebuilding full text index on %s", table)
+                    fti(con, table, columns)
+                else:
+                    log.info("No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':
@@ -592,13 +623,17 @@ if __name__ == '__main__':
             action="store_true", default=False,
             help="Set all full text index column values to NULL.",
             )
+    parser.add_option(
+            "-l", "--live-rebuild", dest="liverebuild",
+            action="store_true", default=False,
+            help="Rebuild all the indexes against a live database.",
+            )
     db_options(parser)
     logger_options(parser)
 
     (options, args) = parser.parse_args()
 
-    if (options.setup and (options.force or options.null)) \
-            or (options.force and options.null) :
+    if options.setup + options.force + options.null + options.liverebuild > 1:
         parser.error("Incompatible options")
 
     log = logger(options)
