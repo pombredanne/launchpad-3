@@ -87,7 +87,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
             "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
-        default_image_resource='/@@/sprint-heading',
+        default_image_resource='/@@/sprint-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this meeting's home page. It should be no bigger than 100k "

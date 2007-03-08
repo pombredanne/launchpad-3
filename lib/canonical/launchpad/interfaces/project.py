@@ -148,7 +148,7 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
-        default_image_resource='/@@/product-heading',
+        default_image_resource='/@@/product-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this project's home page. It should be no bigger than 100k in "

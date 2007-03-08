@@ -77,7 +77,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
-        default_image_resource='/@@/distribution-heading',
+        default_image_resource='/@@/distribution-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this distribution's home page. It should be no bigger than 100k "
