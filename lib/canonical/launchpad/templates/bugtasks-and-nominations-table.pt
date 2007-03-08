@@ -1,9 +1,13 @@
 <script type="text/javascript">
-  function toggleFormVisibility(row) {
+  function toggleFormVisibility(row_id) {
+    row = document.getElementById(row_id)
+    edit_icon = document.getElementById(row_id + "-edit")
     if (row.style.display=="none") {
       row.style.display = "table-row";
+      edit_icon.setAttribute("src","/@@/treeExpanded")
     } else {
       row.style.display = "none";
+      edit_icon.setAttribute("src", "/@@/treeCollapsed")
     }
     return false;
   }
