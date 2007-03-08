@@ -16,7 +16,7 @@
 <table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
   <thead>
     <tr>
-      <th>Affects</th>
+      <th colspan="2">Affects</th>
       <th>Status</th>
       <th>Importance</th>
       <th>Assigned To</th>
