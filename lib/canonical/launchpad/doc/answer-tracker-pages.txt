@@ -1,4 +1,4 @@
-= Support Tracker Pages =
+= Answer Tracker Pages =
 
 Several views are used to handle the various operations on a question.
 
@@ -134,7 +134,7 @@ redirected back to the question page.
 
 Workflow actions like these will send out notifications to subscribers.
 (Complete notifications testing will be found in
-support-tracker-notifications.txt)
+answer-tracker-notifications.txt)
 
     >>> len(pop_notifications())
     1
@@ -213,7 +213,7 @@ Since no confirmation message was given, a default one was used.
     User confirmed that the question is solved.
 
 Once in the SOLVED state, the owner can now only either add a comment
-or reopen the request:
+or reopen the question:
 
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'reopen']
@@ -239,7 +239,7 @@ And the other user can only comment on the question:
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment']
 
-If the question owner reopens the request, its status is changed back to
+If the question owner reopens the question, its status is changed back to
 'OPEN'.
 
     >>> login('test@canonical.com')
@@ -257,7 +257,7 @@ If the question owner reopens the request, its status is changed back to
     >>> workflow_harness.redirectionTarget()
     '.../+ticket/2'
 
-When the question owner answers his own request, it is moved straight to
+When the question owner answers his own question, it is moved straight to
 the SOLVED state.
 
     >>> workflow_harness.submit(
@@ -344,12 +344,12 @@ Linking bug (+linkbug) to the question is managed through the BugLinkView.
 Unlinking bugs from the question is managed through the BugsUnlinkView.
 See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
-'support-tracker-notifications.txt'.
+'answer-tracker-notifications.txt'.
 
 == QuestionRejectView ==
 
-That view is used by administrator and support contacts to reject a
-support request.
+That view is used by administrator and answer contacts to reject a
+question.
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(
@@ -591,7 +591,7 @@ interested.
 The set of languages to use for support is defined in the
 'user_support_languages' attribute.
 
-Like all operations involving languages in the support tracker, we
+Like all operations involving languages in the Answer Tracker, we
 assume that the user is always interested in English and we ignore
 all other English variants.
 
@@ -776,3 +776,14 @@ It works also with user submitted values:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
+
+== QuestionCollectionOpenCountView ==
+
+There is a helper view that is available on all IQuestionCollection
+that returns the number of questions in the Open and Needs information
+states on that target.
+
+    >>> view = getView(
+    ...     firefox, '+open_questions_count', LaunchpadTestRequest())
+    >>> view()
+    u'4'

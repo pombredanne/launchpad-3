@@ -1,6 +1,6 @@
-= Support Tracker Karma =
+= Answer Tracker Karma =
 
-To promote community contributions to support requests in Launchpad, it's
+To promote community contributions in the Launchpad Answer Tracker, it's
 very important that we acknowledge their work and give them some karma
 points.
 
@@ -10,9 +10,9 @@ actions we consider to be a reasonable contribution.
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSet)
     >>> from canonical.launchpad.database.karma import KarmaCategory
-    >>> support_category = KarmaCategory.byName('support')
-    >>> support_karma_actions = support_category.karmaactions
-    >>> sorted([action.title for action in support_karma_actions])
+    >>> answers_category = KarmaCategory.byName('support')
+    >>> answers_karma_actions = answers_category.karmaactions
+    >>> sorted([action.title for action in answers_karma_actions])
     [u'Answered ticket',
      u'Comment made on a ticket.',
      u'Created ticket',
@@ -93,7 +93,7 @@ will usually be called by an automated script.
     ...     datecreated=now.next())
     Karma added: action=ticketgaveinfo, product=firefox, person=name12
 
-- Giving an answer to a question request
+- Giving an answer to a question
 
     >>> msg = firefox_question.giveAnswer(
     ...     foo_bar, "Ok, I see what you mean. You need to install them "
@@ -180,10 +180,10 @@ action to the same person.
     Karma added: action=ticketlinkedtobug, product=firefox, person=name12
     >>> logout()
 
-Now we do a check to make sure all support-tracker-related karma actions have
-been tested.
+Now we do a check to make sure all Answer Tracker  related karma actions
+have been tested.
 
-    >>> karma_helper.added_karma_actions == set(support_karma_actions)
+    >>> karma_helper.added_karma_actions == set(answers_karma_actions)
     True
 
     # Unregister the event listener to make sure we won't interfere in

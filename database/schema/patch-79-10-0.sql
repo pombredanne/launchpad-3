@@ -21,5 +21,5 @@ ALTER TABLE Branch DROP COLUMN started_at;
   -- confirm none not null
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 10, 0);
 

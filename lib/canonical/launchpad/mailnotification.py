@@ -241,6 +241,9 @@ def generate_bug_add_email(bug):
             bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
         bug_info += u"         Status: %s\n" % bugtask.status.title
 
+    if bug.tags:
+        bug_info += '\n** Tags: %s\n' % ' '.join(bug.tags)
+
     mailwrapper = MailWrapper(width=72)
     contents = get_email_template('bug-add-notification-contents.txt') % {
         'visibility' : visibility, 'bugurl' : canonical_url(bug),
@@ -849,6 +852,17 @@ def notify_bug_attachment_added(bugattachment, event):
         attachment={'new' : bugattachment})
 
     add_bug_change_notifications(bug_delta)
+
+
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    # Include the URL, since it will still be downloadable until the
+    # Librarian garbage collector removes it.
+    change_info = '\n'.join([
+        '** Attachment removed: "%s"\n' % bugattachment.title,
+        '   %s' %  bugattachment.libraryfile.http_url])
+    bug.addChangeNotification(change_info, person=event.user)
 
 
 def notify_team_join(event):

@@ -82,7 +82,7 @@ discussion about this question' checkbox:
     ...     "messages appearing?")
     >>> user_browser.getControl(
     ...     'E-mail me future discussion about this question').selected = True
-    >>> user_browser.getControl("Add information request").click()
+    >>> user_browser.getControl("Add Information Request").click()
 
 A notification message is displayed notifying of the subscription:
 

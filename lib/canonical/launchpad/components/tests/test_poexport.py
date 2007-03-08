@@ -37,9 +37,10 @@ class TestPOFile:
             browsername='Kubla Kahn',
             preferredemail=mock_email,
             isTeam=lambda: False)
-        self.latestsubmission = FakeSQLObjectClass(
-            person=mock_person,
-            datecreated = datetime.fromtimestamp(
+        self.last_touched_pomsgset = FakeSQLObjectClass(
+            pofile=self,
+            reviewer=mock_person,
+            date_reviewed = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))
         self.language = FakeSQLObjectClass(
             code=language_code,
