@@ -1,6 +1,10 @@
 <tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en" metal:use-macro="context/@@main_template/master"
+      lang="en" xmetal:use-macro="context/@@main_template/master"
+                metal:use-macro="template/macro:page/applicationhome"
+                xmetal:use-macro="template/macro:page"
+                xmetal:use-macro="template/macro:page/pillarindex"
+                xmetal:use-macro="template/macro:page/freeform"
       i18n:domain="launchpad">
 
 <body>

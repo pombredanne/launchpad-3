@@ -243,8 +243,31 @@
         </tal:block> |
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
+      <br class="clear" />
+      <div>
+        <ul>
+            <li>Has actions menu:
+                <span tal:replace="template/macro:pagehas/actionsmenu" />
+            </li>
+            <li>Has portlet column:
+                <span tal:replace="template/macro:pagehas/portletcolumn" />
+            </li>
+            <li>Has application tabs:
+                <span tal:replace="template/macro:pagehas/applicationtabs" />
+            </li>
+            <li>Has application border:
+                <span tal:replace="template/macro:pagehas/applicationborder" />
+            </li>
+            <li>Has application buttons:
+                <span tal:replace="template/macro:pagehas/applicationbuttons" />
+            </li>
+            <li>Has heading:
+                <span tal:replace="template/macro:pagehas/heading" />
+            </li>
+        </ul>
+      </div>
     </div>
-    <div id="menupreload">
+    <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
         <li class="item"><a href="/products">Products</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
