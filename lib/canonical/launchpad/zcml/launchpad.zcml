@@ -235,7 +235,7 @@
 </facet>
 
 <!--
-Operational statistics. Note that these are publicly available, 
+Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
 these URLs in Apache.
 -->
@@ -322,5 +322,11 @@ these URLs in Apache.
   class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
+
+<class class="canonical.launchpad.webapp.publisher.RenamedView">
+  <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+          attributes="__call__"
+    />
+</class>
 
 </configure>

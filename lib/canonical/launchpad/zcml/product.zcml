@@ -34,7 +34,8 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
+            getQuestionLanguages default_gotchi_heading_resource
+            default_emblem_resource default_gotchi_resource"
 	    />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
@@ -202,18 +203,13 @@
          template="../templates/product-portlet-latestbranches.pt" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.BranchTargetView"
+        class="canonical.launchpad.browser.ProductBranchesView"
         facet="branches"
-        permission="zope.Public">
-        <browser:page
-            name="+branches"
-            template="../templates/product-branches.pt" />
-        <browser:page
-            name="+branchlisting"
-            template="../templates/branchtarget-branchlisting.pt" />
-    </browser:pages>
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/product-branches.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"

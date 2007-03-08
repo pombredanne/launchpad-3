@@ -138,7 +138,7 @@
 
 <metal:help fill-slot="help">
   <p>This listing displays the questions matching the selected
-    criteria in this context (distribution, product, person, sourcepackage).
+    criteria in this context (project, person, sourcepackage).
   </p>
   <p>The search criteria for the current listing can be modified directly at
     the top of the page.

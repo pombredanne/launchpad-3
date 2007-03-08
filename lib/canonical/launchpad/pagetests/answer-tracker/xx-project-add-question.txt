@@ -14,12 +14,12 @@ The user must login to proceed:
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask question').click()
     >>> print user_browser.title
-    Ask a question about a product from the Mozilla Project
+    Ask a question about a project from the Mozilla Project
 
 The workflow is identical to the regular one, except that the user has
-to select the project's product for which a quesiton is asked .
+to select the project's product for which a question is asked .
 
-    >>> print user_browser.getControl('Product').displayValue
+    >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Firefox']
 
 Like for the regular workflow, the user enter a short summary of his
@@ -59,7 +59,7 @@ An error will inform him that the summary is missing:
 The newly selected product is still selected, and when the user enters
 his problem again, similar questions against that product will be shown.
 
-    >>> print user_browser.getControl('Product').displayValue
+    >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
     >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')

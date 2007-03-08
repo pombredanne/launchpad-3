@@ -8,7 +8,6 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestQuestionsView',
     'ProjectNavigation',
     'ProjectEditView',
     'ProjectReviewView',
@@ -420,16 +419,18 @@ class ProjectAddQuestionView(QuestionAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'),
+                title=_('Project'),
                 description=_(
-                    'Choose the product for which you have a question.'),
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Ask a question about a product from ${project}',
+        return _('Ask a question about a project from ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
@@ -439,16 +440,3 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
-
-
-# XXX flacoste 2006-12-13 This should be removed and the
-# QuestionTargetLatestQuestionsView used instead once we add a
-# searchQuestions() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestQuestionsView:
-    """Empty view to allow rendering of the default template used by
-    QuestionAddView.
-    """
-
-    def __call__(self):
-        return u''
