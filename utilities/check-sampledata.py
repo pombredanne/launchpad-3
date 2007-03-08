@@ -61,7 +61,7 @@ class SampleDataVerification:
     """Runs various checks on sample data and report about them."""
 
     def __init__(self, dbname="launchpad_ftest_template", dbuser="launchpad",
-                 table_filter=None, min_rows=10):
+                 table_filter=None, min_rows=10, only_summary=False):
         """Initialize the verification object.
 
         :param dbname: The database which contains the sample data to check.
@@ -73,6 +73,7 @@ class SampleDataVerification:
         self.class_rows = {}
         self.table_filter = table_filter
         self.min_rows = min_rows
+        self.only_summary = only_summary
 
     def findSQLBaseClasses(self):
         """Return an iterator over the classes in canonical.launchpad.database
@@ -159,8 +160,8 @@ class SampleDataVerification:
 
         Collect errors in validation_errors. Data structure format is
         {schema:
-            [[instance_id,
-                (field, error), ...],
+            [[class_name, object_id,
+                [(field, error), ...]],
              ...]}
         """
         for schema in providedBy(object):
@@ -194,14 +195,22 @@ class SampleDataVerification:
                 schema_errors= self.validation_errors.setdefault(
                     get_class_name(schema), [])
                 schema_errors.append([
-                    "<%s %s>" % (get_class_name(object.__class__), object.id),
+                    get_class_name(object.__class__), object.id,
                     field_errors])
+
+    def getShortTables(self):
+        """Return a list of tables which have less rows than self.min_rows.
+
+        :return: [(table, rows_count)...]
+        """
+        return [
+            (table, rows_count)
+            for table, rows_count in self.table_rows_count.items()
+            if rows_count < self.min_rows]
 
     def reportShortTables(self):
         """Report about tables with less than self.min_rows."""
-        short_tables = [(table, rows_count)
-                        for table, rows_count in self.table_rows_count.items()
-                        if rows_count < self.min_rows]
+        short_tables = self.getShortTables()
         if not short_tables:
             print """All tables have more than %d rows!!!""" % self.min_rows
             return
@@ -258,10 +267,51 @@ class SampleDataVerification:
                 self.validation_errors))
         for schema, instances in sorted(self.validation_errors.items()):
             print "%-20s (%d objects with errors):" % (schema, len(instances))
-            for instance_id, errors in sorted(instances):
-                print "    %s (%d errors):" % (instance_id, len(errors))
+            for class_name, object_id, errors in sorted(instances):
+                print "    <%s %s> (%d errors):" % (
+                    class_name, object_id, len(errors))
                 for field, error in sorted(errors):
                     print "        %s: %s" % (field, error)
+
+    def reportSummary(self):
+        """Only report the name of the classes with errors."""
+
+        short_tables = dict(self.getShortTables())
+
+        # Compute number of implementation error by classes.
+        verify_errors_count = {}
+        for interface_errors in self.broken_instances.values():
+            for broken_classes in interface_errors.values():
+                for class_name in broken_classes.keys():
+                    verify_errors_count.setdefault(class_name, 0)
+                    verify_errors_count[class_name] += 1
+
+        # Compute number of instances with validation error.
+        validation_errors_count = {}
+        for instances in self.validation_errors.values():
+            for class_name, object_id, errors in instances:
+                validation_errors_count.setdefault(class_name, 0)
+                validation_errors_count[class_name] += 1
+
+        classes_with_errors = set(short_tables.keys())
+        classes_with_errors.update(verify_errors_count.keys())
+        classes_with_errors.update(validation_errors_count.keys())
+
+        print dedent("""\
+            %d Classes with errors:
+            -----------------------""" % len(classes_with_errors))
+        for class_name in sorted(classes_with_errors):
+            errors = []
+            if class_name in short_tables:
+                errors.append('%d rows' % short_tables[class_name])
+            if class_name in verify_errors_count:
+                errors.append(
+                    '%d verify errors' % verify_errors_count[class_name])
+            if class_name in validation_errors_count:
+                errors.append(
+                    '%d validation errors' %
+                        validation_errors_count[class_name])
+            print "%s: %s" % (class_name, ", ".join(errors))
 
     def run(self):
         """Check and report on sample data."""
@@ -271,11 +321,14 @@ class SampleDataVerification:
             Verified %d content classes.
             ============================
             """ % len(self.table_rows_count))
-        self.reportShortTables()
-        print
-        self.reportInterfaceErrors()
-        print
-        self.reportValidationErrors()
+        if self.only_summary:
+            self.reportSummary()
+        else:
+            self.reportShortTables()
+            print
+            self.reportInterfaceErrors()
+            print
+            self.reportValidationErrors()
         print
         self.reportErrors()
         self.txn.abort()
@@ -295,9 +348,15 @@ if __name__ == '__main__':
     parser.add_option('-m', '--min-rows', dest="min_rows",
                       action="store", type="int", default=10,
                       help="Minimum number of rows a table is expected to have.")
+    parser.add_option('-s', '--summary',
+                      action='store_true', dest="summary", default=False,
+                      help=(
+                        "Only report the name of the classes with "
+                        "validation errors."))
     options, arguments = parser.parse_args()
     SampleDataVerification(
         dbname=options.database,
         dbuser=options.user,
         table_filter=options.table_filter,
-        min_rows=options.min_rows).run()
+        min_rows=options.min_rows,
+        only_summary=options.summary).run()
