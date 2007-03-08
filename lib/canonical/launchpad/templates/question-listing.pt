@@ -109,11 +109,7 @@
             </a>
           </td>
           <td tal:content="question/datecreated/fmt:date">2006-07-17</td>
-          <td><img src="/@@/user" />
-            <a tal:attributes="href string:${question/owner/fmt:url}/+tickets"
-               tal:content="question/owner/browsername"
-              >Foo Bar</a>
-          </td>
+          <td><a tal:replace="structure question/owner/fmt:link">Foo Bar</a></td>
           <td class="question-target"
               tal:condition="view/display_target_column"
               ><a href="#"
