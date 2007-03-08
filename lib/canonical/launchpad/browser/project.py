@@ -237,8 +237,8 @@ class ProjectEditView(LaunchpadEditFormView):
         'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
 
     @action('Change Details', name='change')
@@ -356,8 +356,8 @@ class ProjectAddView(LaunchpadFormView):
     label = _('Register a project with Launchpad')
     project = None
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):

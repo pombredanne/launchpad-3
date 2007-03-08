@@ -232,8 +232,8 @@ class SprintAddView(LaunchpadFormView):
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     sprint = None
 
@@ -289,8 +289,8 @@ class SprintEditView(LaunchpadEditFormView):
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

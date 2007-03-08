@@ -559,8 +559,8 @@ class ProductEditView(LaunchpadEditFormView):
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -790,8 +790,8 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None

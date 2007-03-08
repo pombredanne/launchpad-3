@@ -31,8 +31,8 @@ class TeamEditView(LaunchpadEditFormView):
         'defaultmembershipperiod', 'defaultrenewalperiod',
         'subscriptionpolicy']
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action('Save', name='save')
     def action_save(self, action, data):

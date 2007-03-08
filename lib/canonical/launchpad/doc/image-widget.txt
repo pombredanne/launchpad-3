@@ -13,7 +13,7 @@ back to the default image or change it to an user-uploaded one) and the
 FileWidget gives us the user-uploaded file, in case there is one.
 
 Whenever you have a form in which you want to use the image widget, you have
-to explicitly say whether you want to use its AddStyle or EditStyle
+to explicitly say whether you want to use its ADD_STYLE or EDIT_STYLE
 incarnation, by passing an extra argument to the widget's constructor
 (or to custom_widget(), if you're using it).
 
@@ -25,12 +25,12 @@ yet.
     >>> salgado.gotchi is None
     True
 
-== The AddStyle/EditStyle incarnations ==
+== The ADD_STYLE/EDIT_STYLE incarnations ==
 
-The only difference between them is that the AddStyle has a different
+The only difference between them is that the ADD_STYLE has a different
 set of labels for its options and never returns our special flag to indicate
 that the image should be kept, since there's nothing to be kept. For that
-reason I'll only demonstrate the EditStyle here.
+reason I'll only demonstrate the EDIT_STYLE here.
 
 Since Salgado has no hackergotchi, the widget will display the default
 no-hackergotchi image and the 'Keep' radio button will be selected. The
@@ -38,8 +38,8 @@ other radio button allows the user to upload a new image.
 
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.widgets.image import ImageChangeWidget
-    >>> add_style = ImageChangeWidget.AddStyle
-    >>> edit_style = ImageChangeWidget.EditStyle
+    >>> add_style = ImageChangeWidget.ADD_STYLE
+    >>> edit_style = ImageChangeWidget.EDIT_STYLE
     >>> person_gotchi = IPerson['gotchi'].bind(salgado)
     >>> widget = ImageChangeWidget(person_gotchi, TestRequest(), edit_style)
 

@@ -39,8 +39,8 @@ class ImageChangeWidget(SimpleInputWidget):
 
     implements(IAlwaysSubmittedWidget)
 
-    EditStyle = 'editview'
-    AddStyle = 'addview'
+    EDIT_STYLE = 'editview'
+    ADD_STYLE = 'addview'
 
     # The LibraryFileAlias representing the user-uploaded image, if any.
     _image_file_alias = None
@@ -82,11 +82,11 @@ class ImageChangeWidget(SimpleInputWidget):
         return self.action_widget.hasInput()
 
     def _getActionsVocabulary(self):
-        if self.style == self.AddStyle:
+        if self.style == self.ADD_STYLE:
             action_names = [
                 ('keep', 'Leave as default image (you can change it later)'),
                 ('change', 'Use this one')]
-        elif self.style == self.EditStyle:
+        elif self.style == self.EDIT_STYLE:
             if self.context.getCurrentImage() is not None:
                 action_names = [('keep', 'Keep your selected image'),
                                 ('delete', 'Change back to default image'),
@@ -96,7 +96,7 @@ class ImageChangeWidget(SimpleInputWidget):
                                 ('change', 'Change to')]
         else:
             raise AssertionError(
-                "Style must be one of EditStyle or AddStyle, got %s"
+                "Style must be one of EDIT_STYLE or ADD_STYLE, got %s"
                 % self.style)
         terms = [SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
@@ -112,15 +112,15 @@ class ImageChangeWidget(SimpleInputWidget):
                     _('Please specify the image you want to use.')))
             raise self._error
         if action == "keep":
-            if self.style == self.AddStyle:
+            if self.style == self.ADD_STYLE:
                 # It doesn't make any sense to return KEEP_SAME_IMAGE in this
                 # case, since there's nothing to keep.
                 return None
-            elif self.style == self.EditStyle:
+            elif self.style == self.EDIT_STYLE:
                 return KEEP_SAME_IMAGE
             else:
                 raise AssertionError(
-                    "Style must be one of EditStyle or AddStyle, got %s"
+                    "Style must be one of EDIT_STYLE or ADD_STYLE, got %s"
                     % self.style)
         elif action == "change":
             self._image = form.get(self.image_widget.name)

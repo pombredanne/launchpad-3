@@ -484,9 +484,18 @@ class BaseImageUpload(Bytes):
             Bytes.set(self, object, value)
 
 
+# XXX: This field and its corresponding widget could be made slightly simpler
+# by doing what Francis suggested on
+# https://lists.ubuntu.com/mailman/private/launchpad-reviews/2007-March/004856.html
+# -- Guilherme Salgado, 2007-03-07
 # XXX: I'll rename this field on the following iteration (which is going to
 # hapen before this branch lands); I just don't want to do it now because this
 # branch is quite big already. -- Guilherme Salgado 2007-02-14
+# XXX: When renaming this field, it'll also be necessary to define new
+# attributes in our pillars (named gotchi_and_heading, probably) which will
+# then use this field, which will in turn operate in the gotchi and
+# gotchi_heading attributes (https://launchpad.net/bugs/90613).
+# -- Guilherme Salgado, 2007-03-08
 class LargeImageUpload(BaseImageUpload):
 
     # The max dimensions here is actually a bit bigger than the advertised
@@ -496,15 +505,31 @@ class LargeImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+    def __init__(self, default_image_resource='/@@/nyet',
+                 heading_name='gotchi_heading', **kw):
+        self.default_image_resource = default_image_resource
+        self.heading_name = heading_name
+        Bytes.__init__(self, **kw)
+ 
+    # Ideally this method should get a single image, resize it and store both
+    # images, but we can't do that because the widget gives us a
+    # LibraryFileAlias and we don't have access to its contents before the
+    # transaction is committed.
     def set(self, object, value):
         assert isinstance(value, (list, tuple))
         original_img, small_img = value
         if original_img is not KEEP_SAME_IMAGE:
             assert small_img is not KEEP_SAME_IMAGE
             BaseImageUpload.set(self, object, original_img)
-            object.gotchi_heading = small_img
+            setattr(object, self.heading_name, small_img)
         else:
             assert small_img is KEEP_SAME_IMAGE
+
+    # This method is not necessary on this field since it's used together with
+    # a widget which has two other subwidgets/subfields and the values stored
+    # on the subfields are the ones we actually care about.
+    def get(self, object):
+        return None
 
 
 class SmallImageUpload(BaseImageUpload):

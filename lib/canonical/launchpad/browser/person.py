@@ -1943,7 +1943,7 @@ class PersonEditView(BasePersonEditView):
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
 
 
 class TeamJoinView(PersonView):

@@ -442,8 +442,8 @@ class DistributionEditView(LaunchpadEditFormView):
     field_names = ['displayname', 'title', 'summary', 'description',
                    'gotchi', 'emblem']
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EditStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EditStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -484,8 +484,8 @@ class DistributionAddView(LaunchpadFormView):
     field_names = ["name", "displayname", "title", "summary", "description",
                    "gotchi", "emblem", "domainname", "members"]
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.AddStyle)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.AddStyle)
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action("Save", name='save')
     def save_action(self, action, data):
