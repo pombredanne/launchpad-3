@@ -20,9 +20,7 @@ from canonical.testing import (
         BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
         )
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
-from canonical.functional import (
-        FunctionalTestSetup, FunctionalDocFileSuite,
-        )
+from canonical.functional import FunctionalTestSetup
 from canonical.config import config
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
@@ -177,7 +175,7 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
     dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
-        
+
         If no user is provided, ANONYMOUS is used.
         """
         if user is None:

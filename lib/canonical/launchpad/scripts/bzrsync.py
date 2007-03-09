@@ -86,10 +86,19 @@ class BzrSync:
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
 
-        # synchronise Revision objects
-        ancestry = self.bzr_branch.repository.get_ancestry(
-            self.bzr_branch.last_revision())
-        for revision_id in ancestry:
+        # Synchronise Revision objects, but do not reprocess the ones which are
+        # part of the previously recorded ancestry of the branch.
+        self.trans_manager.begin()
+        # XXX: DavidAllouche 2007-02-15
+        # Use complete-revisions to get complete database ancestry.
+        previous_ancestry = [
+            revisionnumber.revision.revision_id
+            for revisionnumber in self.db_branch.revision_history]
+        self.trans_manager.abort()
+        branch_tip = self.bzr_branch.last_revision()
+        new_ancestry = set(self.bzr_branch.repository.get_ancestry(branch_tip))
+        added_ancestry = new_ancestry.difference(previous_ancestry)
+        for revision_id in added_ancestry:
             if revision_id is None:
                 continue
             # If the revision is a ghost, it won't appear in the repository.
@@ -100,8 +109,8 @@ class BzrSync:
             if self.syncRevision(revision):
                 did_something = True
 
-        # now synchronise the RevisionNumber objects
-        if self.syncRevisionNumbers():
+        # now synchronise the BranchRevision objects
+        if self.syncBranchRevisions():
             did_something = True
 
         return did_something
@@ -189,7 +198,7 @@ class BzrSync:
         revision_date += timedelta(seconds=timestamp - int_timestamp)
         return revision_date
 
-    def syncRevisionNumbers(self):
+    def syncBranchRevisions(self):
         """Synchronise the revision numbers for the branch."""
         self.logger.info(
             "synchronizing revision numbers for branch: %s",
@@ -197,11 +206,11 @@ class BzrSync:
 
         did_something = False
         self.trans_manager.begin()
-        # now synchronise the RevisionNumber objects
+        # now synchronise the BranchRevision objects
         for (index, revision_id) in enumerate(self.bzr_history):
             # sequence numbers start from 1
             sequence = index + 1
-            if self.syncRevisionNumber(sequence, revision_id):
+            if self.syncBranchRevision(sequence, revision_id):
                 did_something = True
 
         # finally truncate any further revision numbers (if they exist):
@@ -227,7 +236,7 @@ class BzrSync:
 
         return did_something
 
-    def syncRevisionNumber(self, sequence, revision_id):
+    def syncBranchRevision(self, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
 
         :param sequence: the sequence number for this revision number
@@ -240,7 +249,7 @@ class BzrSync:
         self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
-        db_revno = self.db_branch.getRevisionNumber(sequence)
+        db_revno = self.db_branch.getBranchRevision(sequence)
 
         # If the database revision history has diverged, so we
         # truncate the database history from this point on.  The
@@ -251,7 +260,7 @@ class BzrSync:
             db_revno = None
 
         if db_revno is None:
-            db_revno = self.db_branch.createRevisionNumber(
+            db_revno = self.db_branch.createBranchRevision(
                 sequence, db_revision)
             did_something = True
 

@@ -19,8 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, ISearchableByTicketOwner,
-    NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -35,16 +35,23 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import TicketTargetSearch
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
-class Project(SQLBase, BugTargetBase, KarmaContextMixin):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByTicketOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
+               IHasGotchiAndEmblem)
 
     _table = "Project"
+    default_gotchi_resource = '/@@/project-mugshot'
+    default_gotchi_heading_resource = '/@@/project-heading'
+    default_emblem_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -122,6 +129,21 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Product.project= %s AND
+            Specification.product = Product.id AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def has_any_specifications(self):
@@ -225,19 +247,23 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
-    # ITicketCollection
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, language=None,
-                      sort=None, owner=None, needs_attention_from=None):
-        """See ITicketCollection."""
-        return TicketTargetSearch(
+
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,
             sort=sort, owner=owner, needs_attention_from=needs_attention_from,
             product=self.products).getResults()
 
-    def getTicketLanguages(self):
-        """See ITicketCollection."""
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
         product_ids = sqlvalues(*self.products)
         return set(Language.select(
             'Language.id = language AND product IN (%s)' % ', '.join(

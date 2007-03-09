@@ -13,11 +13,41 @@ import unittest
 
 from BeautifulSoup import BeautifulSoup, Comment, NavigableString
 
+from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.testbrowser.testing import Browser
+
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+
+class UnstickyCookieHTTPCaller(HTTPCaller):
+    """HTTPCaller subclass that do not carry cookies across requests.
+
+    HTTPCaller propogates cookies between subsequent requests.
+    This is a nice feature, except it triggers a bug in Launchpad where
+    sending both Basic Auth and cookie credentials raises an exception
+    (Bug 39881).
+    """
+    def __init__(self, *args, **kw):
+        if kw.get('debug'):
+            self._debug = True
+            del kw['debug']
+        else:
+            self._debug = False
+        HTTPCaller.__init__(self, *args, **kw)
+    def __call__(self, *args, **kw):
+        if self._debug:
+            import pdb; pdb.set_trace()
+        try:
+            return HTTPCaller.__call__(self, *args, **kw)
+        finally:
+            self.resetCookies()
+
+    def resetCookies(self):
+        self.cookies = SimpleCookie()
 
 
 class DuplicateIdError(Exception):
@@ -75,26 +105,6 @@ def find_main_content(content):
 def extract_text(soup):
     """Return the text stripped of all tags.
 
-    >>> soup = BeautifulSoup('<html><h1>Title</h1><p>foo bar</p></html>')
-    >>> extract_text(soup)
-    u'Titlefoo bar'
-    """
-    # XXX Tim Penhey 22-01-2007
-    # At the moment this does not nicely give whitespace between
-    # tags that would have visual separation when rendered.
-    # eg. <p>foo</p><p>bar</p>
-    result = u''
-    for node in soup:
-        if isinstance(node, NavigableString):
-            result = result + unicode(node)
-        else:
-            result = result + extract_text(node)
-    return result
-
-
-def extract_text(soup):
-    """Return the text stripped of all tags.
-
     >>> soup = BeautifulSoup(
     ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
     >>> extract_text(soup)
@@ -137,6 +147,25 @@ def parse_relationship_section(content):
 
 
 def setUpGlobs(test):
+    # Our tests report being on a different port.
+    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    def setupBrowser(auth=None):
+        browser = Browser()
+        browser.handleErrors = False
+        if auth is not None:
+            browser.addHeader("Authorization", auth)
+        return browser
+
+    test.globs['browser'] = setupBrowser()
+    test.globs['anon_browser'] = setupBrowser()
+    test.globs['user_browser'] = setupBrowser(
+        auth="Basic no-priv@canonical.com:test")
+    test.globs['admin_browser'] = setupBrowser(
+        auth="Basic foo.bar@canonical.com:test")
+
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet

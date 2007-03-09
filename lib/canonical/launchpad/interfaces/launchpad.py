@@ -10,10 +10,12 @@ import zope.exceptions
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Int, Choice
+from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    BaseImageUpload, LargeImageUpload, SmallImageUpload)
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX These import shims are actually necessary if we don't go over the
@@ -38,7 +40,7 @@ __all__ = [
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
     'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
-    'IStructuralObjectPresentation',
+    'IStructuralObjectPresentation', 'IHasGotchiAndEmblem',
     ]
 
 
@@ -70,8 +72,10 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
-    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -95,6 +99,9 @@ class ICrowd(Interface):
 
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
+
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Malone")
     bugwatch_count = Attribute("The number of links to external bug trackers")
@@ -290,6 +297,42 @@ class IHasSecurityContact(Interface):
         description=_(
             "The person or team who handles security-related bug reports"),
         required=False, vocabulary='ValidPersonOrTeam')
+
+
+class IHasGotchiAndEmblem(Interface):
+    """An object that has a gotchi and an emblem."""
+
+    default_gotchi_resource = TextLine(
+        title=_("Default gotchi resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi."))
+    default_gotchi_heading_resource = TextLine(
+        title=_("Default heading resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi_heading."))
+    default_emblem_resource = TextLine(
+        title=_("Default emblem resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a emblem."))
+
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this object."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this object. It should be "
+            "no bigger than 50k in size.")) 
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on this "
+            "object's home page. It should be no bigger than 100k in size. "))
 
 
 class IAging(Interface):
