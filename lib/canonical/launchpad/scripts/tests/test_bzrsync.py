@@ -748,6 +748,8 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
             u'merge', committer=self.AUTHOR, rev_id='r3',
             allow_pointless=True)
 
+        # The purpose of this test is to show what happens when revision
+        # properties are not in the mainline history.
         self.failIf('rev1' in new_tree.branch.revision_history(),
                     "'rev1' in %s" % (new_tree.branch.revision_history()))
 
