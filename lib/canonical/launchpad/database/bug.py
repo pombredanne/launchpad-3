@@ -387,8 +387,8 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
 
-    def addAttachment(self, owner, file_, description, comment, filename,
-                      is_patch=False, content_type=None):
+    def addAttachment(self, owner, file_, comment, filename,
+                      is_patch=False, content_type=None, description=None):
         """See IBug."""
         filecontent = file_.read()
 
@@ -408,7 +408,7 @@ class Bug(SQLBase):
         if description:
             title = description
         else:
-            title = self.followup_subject()
+            title = filename
 
         if IMessage.providedBy(comment):
             message = comment
