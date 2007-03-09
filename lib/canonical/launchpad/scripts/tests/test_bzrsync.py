@@ -72,8 +72,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
             dbuser=config.branchscanner.dbuser)
         self.zopeless_helper.setUp()
         self.txn = self.zopeless_helper.txn
-        self.setUpBzrBranch()
-        self.setUpDBBranch()
+        self.setUpBranch()
         self.setUpAuthor()
         self.bzrsync = None
 
@@ -90,23 +89,35 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def url(self, name):
         return self.webserver_helper.get_remote_url(name)
 
-    def setUpBzrBranch(self):
-        relpath = "bzr_branch"
-        self.bzr_branch_url = self.url(relpath)
-        self.bzr_tree = self.make_branch_and_tree(relpath)
-        self.bzr_branch = self.bzr_tree.branch
+    def makeBranch(self, relpath, name=None, owner=None, product=None,
+                   title='Test branch', summary='Branch for testing'):
+        return (
+            self.make_branch_and_tree(relpath),
+            self.makeDBBranch(relpath, name, owner, product, title, summary))
 
-    def setUpDBBranch(self):
+    def makeDBBranch(self, relpath, name=None, owner=None, product=None,
+                   title='Test branch', summary='Branch for testing'):
+        url = self.url(relpath)
+        if name is None:
+            name = relpath
+        if owner is None:
+            # Set to arbitrary owner id
+            owner = 1
         self.txn.begin()
-        arbitraryownerid = 1
-        self.db_branch = getUtility(IBranchSet).new(
-            name="test",
-            owner=arbitraryownerid,
-            product=None,
-            url=self.bzr_branch_url,
-            title="Test branch",
-            summary="Branch for testing")
+        db_branch = getUtility(IBranchSet).new(
+            name=name,
+            owner=owner,
+            product=product,
+            url=url,
+            summary=summary)
         self.txn.commit()
+        return db_branch
+
+    def setUpBranch(self):
+        relpath = "bzr_branch"
+        self.bzr_tree, self.db_branch = self.makeBranch("bzr_branch")
+        self.bzr_branch_url = self.db_branch.url
+        self.bzr_branch = self.bzr_tree.branch
 
     def setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
@@ -722,9 +733,34 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         self.syncBranch()
         self.assertEqual(len(self.oopses), 1)
 
-    # CREATE A BRANCH ON FS AND IN DB AND SCAN IT.
     def test_make_branch_and_scan_it(self):
-        pass
+        # Commit a revision which claims to fix a bug. If you branch from that
+        # revision and then sync the new branch with Launchpad, the new branch
+        # will be the one that Launchpad recognises as the bug-fixing branch.
+
+        self.commitRevision(
+            rev_id='rev1', revprops={'launchpad:bug': '1'})
+
+        # Make a new branch and merge in our base branch.
+        new_tree, new_dbbranch = self.makeBranch('branched')
+        new_tree.merge_from_branch(self.bzr_branch)
+        new_tree.commit(
+            u'merge', committer=self.AUTHOR, rev_id='r3',
+            allow_pointless=True)
+
+        self.failIf('rev1' in new_tree.branch.revision_history(),
+                    "'rev1' in %s" % (new_tree.branch.revision_history()))
+
+        # Sync both branches
+        new_sync = BzrSync(self.txn, new_dbbranch, 'branched')
+        new_sync.syncBranchAndClose()
+        self.syncBranch()
+
+        bbr = BugBranchRevision.selectOne()
+        self.assertNotEqual(bbr, None)
+        self.assertEqual(bbr.revision.revision_id, 'rev1')
+        self.assertEqual(bbr.branch.id, new_dbbranch.id)
+        self.assertEqual(bbr.bug.id, 1)
 
 
 def test_suite():
