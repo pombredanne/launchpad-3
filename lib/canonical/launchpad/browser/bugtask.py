@@ -978,8 +978,9 @@ class BugTaskListingView(LaunchpadView):
             return status_title + ' (unassigned)'
 
         assignee_html = (
-            '<img alt="" src="/@@/user" /> '
+            '<img alt="" src="%s" /> '
             '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                assignee.default_emblem_resource,
                 urllib.quote(assignee.name),
                 cgi.escape(assignee.browsername)))
 
