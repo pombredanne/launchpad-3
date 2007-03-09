@@ -130,7 +130,7 @@ class TestCanonicalUrl(unittest.TestCase):
         # webapp.canonical_url, if the provided unique_name is correct.
         branch = Branch.get(15)
         # Check that the unique_name used in this test is consistent with the
-        # sample data. This invariant of the test, so use a plain assert.
+        # sample data. This is an invariant of the test, so use a plain assert.
         unique_name = 'name12/gnome-terminal/main'
         assert branch.unique_name == '~' + unique_name
         branch_to_mirror = branchtomirror.BranchToMirror(
