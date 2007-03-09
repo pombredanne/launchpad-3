@@ -18,6 +18,8 @@ __all__ = [
     'ProductView',
     'ProductAddView',
     'ProductEditView',
+    'ProductChangeTranslatorsView',
+    'ProductReviewView',
     'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
@@ -68,7 +70,8 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets.image import ImageAddWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -542,16 +545,40 @@ class ProductView:
         series_list.insert(0, self.context.development_focus)
         return series_list
 
-class ProductEditView(SQLObjectEditView):
+class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
-    def changed(self):
-        # If the name changed then the URL will have changed
+    schema = IProduct
+    label = "Edit details"
+    field_names = [
+        "project", "displayname", "title", "summary", "description",
+        "homepageurl", "gotchi", "emblem", "sourceforgeproject",
+        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
+        "programminglang", "development_focus"]
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
         if self.context.active:
-            self.request.response.redirect(canonical_url(self.context))
+            return canonical_url(self.context)
         else:
-            productset = getUtility(IProductSet)
-            self.request.response.redirect(canonical_url(productset))
+            return canonical_url(getUtility(IProductSet))
+
+
+class ProductChangeTranslatorsView(ProductEditView):
+    label = "Change translation group"
+    field_names = ["translationgroup", "translationpermission"]
+
+
+class ProductReviewView(ProductEditView):
+    label = "Administer product details"
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -759,8 +786,9 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None
@@ -792,6 +820,7 @@ class ProductAddView(LaunchpadFormView):
             assert "reviewed" not in data
             data['owner'] = self.user
             data['reviewed'] = False
+        gotchi, gotchi_heading = data['gotchi']
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -808,7 +837,8 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.product))
 
