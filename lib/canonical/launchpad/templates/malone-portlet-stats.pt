@@ -5,9 +5,9 @@
 <div>
   including <strong tal:content="context/bugwatch_count">5</strong> links
   to <strong tal:content="context/bugtracker_count">5</strong>
-  <a href="/malone/bugtrackers">bug trackers</a>
+  <a href="/bugs/bugtrackers">bug trackers</a>
 </div>
 <div>
   and <strong tal:content="view/getCveBugLinkCount">5</strong>
-  <a href="/malone/cve">CVE references</a>
+  <a href="/bugs/cve">CVE references</a>
 </div>
