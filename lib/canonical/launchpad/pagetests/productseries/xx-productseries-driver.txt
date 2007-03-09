@@ -28,5 +28,5 @@ Sample Person is listed as the driver of Firefox 1.0.
 
   >>> project_portlet = find_portlet(
   ...     browser.contents, 'Mozilla Firefox Series: 1.0')
-  >>> project_portlet.find(text='Drivers:').findNext('a').string
-  u'Sample Person'
+  >>> project_portlet.find(text='Drivers:').findNext('a').renderContents()
+  '<img ...>Sample Person'
