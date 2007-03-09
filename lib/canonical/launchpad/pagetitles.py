@@ -535,7 +535,8 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
