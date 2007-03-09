@@ -2,7 +2,7 @@
   <tbody>
     <tr>
       <td class="icon left">
-        <img alt="" src="/@@/spec" />
+        <img alt="" src="/@@/blueprint" />
       </td>
       <td>
         <strong><a tal:attributes="href context/fmt:url"

@@ -568,7 +568,7 @@
     <tbody>
       <tr>
         <td>spec</td>
-        <td><img src="/@@/spec" /></td>
+        <td><img src="/@@/blueprint" /></td>
         <td>A feature specification, used as a bullet in lists of specs, or
         to indicate a link to a specification.</td>
       </tr>

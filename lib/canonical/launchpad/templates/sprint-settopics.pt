@@ -71,7 +71,7 @@
               <span tal:attributes="
                     class string:specdelivery${spec/delivery/name}"
                     tal:content="spec/delivery/title">New</span>,
-              <img src="/@@/spec" />&nbsp;<a
+              <img src="/@@/blueprint" />&nbsp;<a
                    tal:attributes="href spec/fmt:url"
                    >Details</a >
               <img src="/@@/link" />&nbsp;<a

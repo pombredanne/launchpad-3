@@ -44,7 +44,7 @@
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
     <resource name="blue-bar" file="../images/blue-bar.png" />
-    <resource name="spec" file="../images/specification.png" />
+    <resource name="blueprint" file="../images/specification.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/branch.png" />
     <resource name="bug" file="../images/bug.png" />
