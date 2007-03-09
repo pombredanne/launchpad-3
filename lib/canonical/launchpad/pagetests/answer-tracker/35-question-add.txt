@@ -2,7 +2,7 @@
 
 There are two paths available to a user to ask a new question. The first
 one involes two steps. First, go to the product or distribution for
-which support is desired. Then use the 'Ask Question' action:
+which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
@@ -10,7 +10,7 @@ which support is desired. Then use the 'Ask Question' action:
 
 Asking a new question requires logging in:
 
-    >>> browser.getLink('Ask question').click()
+    >>> browser.getLink('Ask a question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...

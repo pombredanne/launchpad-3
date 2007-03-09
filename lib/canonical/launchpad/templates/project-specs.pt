@@ -10,17 +10,11 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
 
-  <h1>Blueprint listing for <tal:name replace="context/displayname" /></h1>
+  <h1>Blueprints for <tal:name replace="context/displayname" /></h1>
 
   <tal:no_specs condition="not: has_any_specs">
 
@@ -29,8 +23,8 @@
       the next few releases. It can generate reports of the project roadmap, as
       well as notifying developers of blueprint status changes.
       Examples:
-      <a href="/ubuntu/">Ubuntu</a>,
-      <a href="/bzr/">Bazaar</a>.
+      <a href="/ubuntu">Ubuntu</a>,
+      <a href="/bzr">Bazaar</a>.
     </p>
 
     <p>

@@ -36,9 +36,9 @@ and another one listing those of the distribution.
     Sample Person
 
 To register himself as anwer contact, the user clicks on the
-'Answer Contact' link. He needs to login to access that function.
+'Set answer contact' link. He needs to login to access that function.
 
-    >>> anon_browser.getLink('Answer contact').click()
+    >>> anon_browser.getLink('Set answer contact').click()
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -47,7 +47,7 @@ To register himself as anwer contact, the user clicks on the
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+tickets')
     >>> browser.getLink('Answers').click()
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> print browser.title
     Answer contact for Source Package "mozilla-firefox" in Ubuntu Linux
 

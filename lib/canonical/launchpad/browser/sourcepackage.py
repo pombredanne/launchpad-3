@@ -119,7 +119,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+changelog', 'View changelog', icon='list')
 
     def upstream(self):
-        return Link('+packaging', 'Edit upstream link', icon='edit')
+        return Link('+packaging', 'Change upstream link', icon='edit')
 
     def builds(self):
         text = 'Show builds'

@@ -13,7 +13,7 @@ that link to load the +edit form for the branch.
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon')
-  >>> browser.getLink('Edit branch details').click()
+  >>> browser.getLink('Change branch details').click()
   >>> browser.url
   'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon/+edit'
 
@@ -114,7 +114,7 @@ The edit form allows changing the product of a branch.
 
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/+junk/junk.dev')
-  >>> browser.getLink('Edit branch details').click()
+  >>> browser.getLink('Change branch details').click()
   >>> browser.getControl('Product').value = 'ubuntu-product'
   >>> browser.getControl('Change Branch').click()
 
@@ -128,7 +128,7 @@ canonical URL
 In the same way, the edit form allows changing the name of a branch, and must
 correctly redirect to the new branch page.
 
-  >>> browser.getLink('Edit branch details').click()
+  >>> browser.getLink('Change branch details').click()
   >>> browser.getControl('Name').value = 'junk'
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
@@ -138,7 +138,7 @@ We can also detach a branch from a product, making it a junk branch. While we
 are it, we also reset the branch name to its original value, and check that the
 branch was moved back to its original location.
 
-  >>> browser.getLink('Edit branch details').click()
+  >>> browser.getLink('Change branch details').click()
   >>> browser.getControl('Name').value = 'junk.dev'
   >>> browser.getControl('Product').value = ''
   >>> browser.getControl('Change Branch').click()
