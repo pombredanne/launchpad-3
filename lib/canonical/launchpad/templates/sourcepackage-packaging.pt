@@ -41,8 +41,8 @@
 
     <tbody>
       <tal:block repeat="packaging context/sourcepackagename/packagings">
-        <tr class="highlight"
-            tal:condition="python: packaging == context.packaging">
+	<tr tal:attributes="
+          class python:packaging == context.packaging and 'highlight' or None">
           <td tal:content="context/packaging/distrorelease/distribution/displayname">
             ubuntu
           </td>
@@ -50,18 +50,6 @@
             hoary
           </td>
           <td tal:content="context/packaging/productseries/title">
-            evolution main
-          </td>
-        </tr>
-
-        <tr tal:condition="python: packaging != context.packaging">
-          <td tal:content="packaging/distrorelease/distribution/displayname">
-            ubuntu
-          </td>
-          <td tal:content="packaging/distrorelease/displayname">
-            hoary
-          </td>
-          <td tal:content="packaging/productseries/title">
             evolution main
           </td>
         </tr>
