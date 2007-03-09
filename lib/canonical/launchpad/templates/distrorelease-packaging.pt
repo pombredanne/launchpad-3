@@ -8,33 +8,19 @@
       <h1>Linking to upstream</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <div class="portletBody portletContent">
-      <img src="/@@/info" />
-      Links from distribution packages to upstream branches let
-      distribution and upstream maintainers share bugs, patches, and
-      translations efficiently.
-    </div>
-  </div>
-</metal:leftportlets>
-
-
 <div metal:fill-slot="main"
      tal:define="packagings view/cached_packagings;
                  unlinked_translatables view/unlinked_translatables">
 
-  <p>
-    <abbr>HCT</abbr>, the Hypothetical Changeset Tool, uses packaging
-    information to link a source package in a distribution to an upstream
-    product series.
-  </p>
+  <p>Links from distribution packages to upstream product series let
+    distribution and upstream maintainers share bugs, patches, and translations
+    efficiently.</p>
+
   <p tal:condition="not: packagings" class="informational message">
     There are no links between packages in <span
-    tal:replace="context/displayname">Hoary</span> and upstream.
-    By adding packaging information for specific packages in this release that
-    are different to previous distribution releases,
-    you can help the distribution developers collaborate with upstream.
+    tal:replace="context/displayname">Hoary</span> and upstream. By adding
+    information for specific packages, you can help the distribution developers
+    collaborate with upstream.
   </p>
 
   <tal:unlinked_translatables condition="unlinked_translatables">
@@ -47,13 +33,12 @@
   </tal:unlinked_translatables>
 
   <tal:known_links condition="packagings">
-    <h2>
-      Known upstream links for
-      <span tal:replace="context/title">Ubuntu Hoary</span>
-      source packages
-    </h2>
-
+    <h2>Upstream links</h2>
     <table class="listing">
+      <caption>
+        Upstream links for all source packages in
+        <span tal:replace="context/title">Ubuntu Hoary</span>
+      </caption>
       <thead>
         <tr>
           <th>Source Package</th>
@@ -75,13 +60,6 @@
       </tbody>
 
     </table>
-
-    <p>
-      These are the packaging details for only those packages that have been
-      specifically modified inside this release.
-      The distribution will also inherit packaging data from previous releases,
-      as well as its parent distribution.
-    </p>
   </tal:known_links>
 
 </div>
