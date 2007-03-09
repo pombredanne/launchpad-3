@@ -1,7 +1,7 @@
 <table width="100%">
   <tr>
     <td width="10px">
-      <img src="/@@/blueprint" />
+      <img src="/@@/spec" />
     </td>
     <td width="80%">
       <a tal:attributes="
