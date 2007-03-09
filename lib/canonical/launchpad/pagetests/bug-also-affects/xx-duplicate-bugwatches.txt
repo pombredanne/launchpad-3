@@ -48,7 +48,7 @@ same bug watch.
     ...     row for row in affects_table.tbody.fetch('tr', recursive=False)
     ...     if row.get('style') != 'display: none']
     >>> for row in task_rows:
-    ...     target_td, bugwatch_td = row('td')[0], row('td')[-1]
+    ...     target_td, bugwatch_td = row('td')[1], row('td')[-2]
     ...     if bugwatch_td.img:
     ...         bugwatch = bugwatch_td.img.nextSibling
     ...     else:

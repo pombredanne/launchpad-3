@@ -119,7 +119,8 @@ If we remove the remote bug it will work.
 
 It's not possible to change a bugtask to a existing one.
 
-    >>> browser.getLink('mozilla-firefox (Ubuntu)').click()
+    >>> browser.getLink(
+    ...     url='ubuntu/+source/mozilla-firefox/+bug/1/+editstatus').click()
     >>> browser.url
     'http://localhost/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
 
