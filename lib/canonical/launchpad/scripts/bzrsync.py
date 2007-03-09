@@ -60,8 +60,8 @@ class BzrSync:
     def syncBranchAndClose(self):
         """Synchronize the database with a Bazaar branch and release resources.
 
-        Convenience method that implements the proper for the common case of
-        calling `syncBranch` and `close`.
+        Convenience method that implements the proper idiom for the common case
+        of calling `syncBranch` and `close`.
         """
         try:
             self.syncBranch()
@@ -101,13 +101,13 @@ class BzrSync:
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
-        # The Branch table is written to by other systems, including the web
-        # UI, so we need to update it in a short transaction to avoid causing
+        # The Branch table is modified by other systems, including the web UI,
+        # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
         # revision data is updated in the database, but the Branch table has
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been updated
-        # althought it has), the race is accetpable.
+        # although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus()
         self.trans_manager.commit()
@@ -116,16 +116,16 @@ class BzrSync:
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
         branch_revision_set = getUtility(IBranchRevisionSet)
-        self.db_ancestry, self.db_history, self.db_branch_revision_map = \
-            branch_revision_set.getScannerDataForBranch(self.db_branch)
+        self.db_ancestry, self.db_history, self.db_branch_revision_map = (
+            branch_revision_set.getScannerDataForBranch(self.db_branch))
 
     def retrieveBranchDetails(self):
         """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
         self.last_revision = self.bzr_branch.last_revision()
         # Make bzr_ancestry a set for consistency with db_ancestry.
-        bzr_ancestry_ordered = \
-            self.bzr_branch.repository.get_ancestry(self.last_revision)
+        bzr_ancestry_ordered = (
+            self.bzr_branch.repository.get_ancestry(self.last_revision))
         first_ancestor = bzr_ancestry_ordered.pop(0)
         assert first_ancestor is None, 'history horizons are not supported'
         self.bzr_ancestry = set(bzr_ancestry_ordered)
@@ -262,7 +262,7 @@ class BzrSync:
         """Generate revision IDs that make up the branch's ancestry.
 
         Generate a sequence of (sequence, revision-id) pairs to be inserted
-        into the branchrevision (nee revisionnumber) table.
+        into the branchrevision table.
 
         :param limit: set of revision ids, only yield tuples whose revision-id
             is in this set. Defaults to the full ancestry of the branch.
@@ -324,6 +324,6 @@ class BzrSync:
         # FIXME: move that conditional logic down to updateScannedDetails.
         # -- DavidAllouche 2007-02-22
         revision_count = len(self.bzr_history)
-        if (last_revision != self.db_branch.last_scanned_id) or \
-               (revision_count != self.db_branch.revision_count):
+        if ((last_revision != self.db_branch.last_scanned_id)
+                or (revision_count != self.db_branch.revision_count)):
             self.db_branch.updateScannedDetails(last_revision, revision_count)

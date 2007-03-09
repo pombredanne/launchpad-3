@@ -129,8 +129,8 @@ represent the ancestry of a large branch.
 In particular, IBranch.getScannerDataForBranch efficiently retrieves the
 BranchRevision data needed by the branch-scanner script.
 
-  >>> ancestry, history, mapping = \
-  ...     branch_revision_set.getScannerDataForBranch(branch)
+  >>> ancestry, history, mapping = (
+  ...     branch_revision_set.getScannerDataForBranch(branch))
 
 The first return value is a set of revision_id strings for the full ancestry of
 the branch.
