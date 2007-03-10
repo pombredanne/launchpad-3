@@ -219,7 +219,7 @@ def nullify(con):
 def liverebuild(con):
     """Rebuild the data in all the fti columns against possibly live database.
     """
-    batch_size = 500 # Update maximum of this many rows per commit
+    batch_size = 50 # Update maximum of this many rows per commit
     cur = con.cursor()
     for table, ignored in ALL_FTI:
         table = quote_identifier(table)
