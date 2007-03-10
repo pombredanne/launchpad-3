@@ -13,7 +13,7 @@
   <a tal:repeat="product view/products"
      tal:attributes="href product/fmt:url;
                      class product/html_class"
-     tal:content="product/name">product</a>
+     tal:content="product/name">project</a>
 
 </div>
 

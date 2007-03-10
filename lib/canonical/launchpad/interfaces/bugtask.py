@@ -132,9 +132,13 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    related_pillar_bugtasks = Attribute(
-        "IBugTasks related to this one, namely other IBugTasks on the same "
-        "IBug, but only those tasks on pillars (product or distributions).")
+    pillar = Attribute(
+        "The LP pillar (product or distribution) associated with this "
+        "task.")
+    other_affected_pillars = Attribute(
+        "The other pillars (products or distributions) affected by this bug. "
+        "This returns a list of pillars OTHER THAN the pillar associated "
+        "with this particular bug.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -170,8 +174,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson
-        object, the dateassigned is set on the task. If the assignee
-        value is set to None, dateassigned is also set to None.
+        object, the date_assigned is set on the task. If the assignee
+        value is set to None, date_assigned is also set to None.
         """
 
     def updateTargetNameCache():
@@ -195,6 +199,16 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
+        """
+
+    def getDelta(old_task):
+        """Compute the delta from old_task to this task.
+
+        old_task and this task are either both IDistroBugTask's or both
+        IUpstreamBugTask's, otherwise a TypeError is raised.
+
+        Returns an IBugTaskDelta or None if there were no changes between
+        old_task and this task.
         """
 
 
@@ -292,6 +306,7 @@ class IBugTaskDelta(Interface):
 
     Likewise, if sourcepackagename is not None, product must be None.
     """
+    targetname = Attribute("Where this change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -333,6 +348,7 @@ class IBugTaskDelta(Interface):
         if no change was made to the assignee.
         """)
     statusexplanation = Attribute("The new value of the status notes.")
+    bugwatch = Attribute("The bugwatch which governs this task.")
 
 
 # XXX, Brad Bollenbach, 2006-08-03: This interface should be

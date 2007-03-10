@@ -17,7 +17,7 @@
 
   <h1>Package upstream link</h1>
 
-  <p>Links from distribution packages to upstream product series let
+  <p>Links from distribution packages to upstream project series let
     distribution and upstream maintainers share bugs, patches, and translations
     efficiently.</p>
 
@@ -27,7 +27,7 @@
   </p>
 
   <p class="informational message" tal:condition="not: context/productseries">
-    Launchpad does not know the upstream product series for this package.
+    Launchpad does not know the upstream project series for this package.
     If you know the correct details, please let us know.
   </p>
 

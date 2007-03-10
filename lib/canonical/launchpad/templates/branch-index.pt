@@ -228,7 +228,7 @@
   <ul>
     <li>Mirror branches are primarily hosted somewhere else on the internet.
       You can register a mirror branch from the page of a person or of a
-      product. Launchpad will create a mirror of this branch and pull changes
+      project. Launchpad will create a mirror of this branch and pull changes
       every day from the URL provided in the branch details.</li>
 
     <li>Upload branches are primarily hosted on Launchpad. You can create an
@@ -244,8 +244,8 @@
     or upload data, you can reassign a branch to a team.</p>
 
   <p>The URL of the branch on <code>bazaar.launchpad.net</code> is based on the
-    short name of the registrant, product and branch. If you change any of
-    those short names or assign the branch to a different product or person or
+    short name of the registrant, project and branch. If you change any of
+    those short names or assign the branch to a different project or person or
     team, the URL will change.</p>
 
   <p>Subscribing to a branch will make it appear in your personal branch

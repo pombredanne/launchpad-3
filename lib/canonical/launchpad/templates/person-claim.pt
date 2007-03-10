@@ -43,7 +43,7 @@
       If you're <span tal:replace="context/browsername" />, relax! You don't
       need to do anything, and we'll never spam you. But claiming this
       profile will let you edit your contact details, register your own
-      products and code branches in Launchpad, and use Launchpad to
+      projects and code branches in Launchpad, and use Launchpad to
       <strong>collaborate with other developers</strong>.
     </p>
     <p>

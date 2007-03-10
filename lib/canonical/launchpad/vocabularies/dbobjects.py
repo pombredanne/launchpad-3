@@ -1214,7 +1214,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 
 
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
-    displayname = 'Select a distribution, product or project'
+    displayname = 'Select a project'
     _filter = PillarName.q.active == True
 
     def __contains__(self, obj):

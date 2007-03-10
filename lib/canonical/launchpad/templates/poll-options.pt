@@ -30,7 +30,9 @@
             <tal:inactive condition="not: polloption/active">No</tal:inactive>
           </td>
           <td tal:condition="context/required:launchpad.Edit">
-            [<a tal:attributes="href polloption/fmt:url">Edit</a>]
+            <a tal:attributes="href polloption/fmt:url"
+              ><img src="/@@/edit" alt="[Edit]"
+                    title="Change this option details" /></a>
           </td>
         </tr>
       </table>

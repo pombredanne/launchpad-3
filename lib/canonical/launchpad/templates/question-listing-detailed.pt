@@ -1,6 +1,7 @@
+
 <tr class="noted"
-    tal:attributes="title context/description/fmt:shorten/300">
-  <td class="icon left" rowspan="2">
+    tal:attributes="title context/description/fmt:shorten/320">
+  <td class="icon left">
     <img alt="" src="/@@/question" />
   </td>
   <td>
@@ -10,7 +11,6 @@
         class string:${context/status/title}
       "
       tal:content="context/title"
-      style="font-weight: bold;"
     />
     (<span tal:replace="context/status/title">Approved</span>)
   </td>
@@ -31,7 +31,3 @@
     (<span tal:replace="context/priority/title">High</span>)
   </td>
 </tr>
-
-
-
-

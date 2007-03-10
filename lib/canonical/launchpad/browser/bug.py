@@ -378,7 +378,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                     sourcepackage = distrorelease.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
-                        'Please select the appropriate upstream product.'
+                        'Please select the appropriate upstream project.'
                         ' This step can be avoided by'
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
