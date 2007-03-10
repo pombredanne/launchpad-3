@@ -231,12 +231,17 @@ def liverebuild(con):
 
         log.info("Rebuilding fti column on %s", table)
         for id in range(0, max_id, batch_size):
-            query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
-                table, id+1, id + batch_size
-                )
-            log.debug(query)
-            cur.execute(query)
-            # No commit - we are in autocommit mode
+            try:
+                query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
+                    table, id+1, id + batch_size
+                    )
+                log.debug(query)
+                cur.execute(query)
+            except psycopg.Error:
+                # No commit - we are in autocommit mode
+                log.exception('psycopg error')
+                con = connect(lp.dbuser)
+                con.set_isolation_level(AUTOCOMMIT_ISOLATION)
 
 
 def setup(con, configuration=DEFAULT_CONFIG):
