@@ -63,11 +63,15 @@ __all__ = [
     'PersonSetSOP',
     'PersonSetFacets',
     'PersonSetContextMenu',
+    'PersonBranchesView',
+    'PersonAuthoredBranchesView',
+    'PersonRegisteredBranchesView',
+    'PersonSubscribedBranchesView',
     ]
 
 import cgi
 import urllib
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -85,7 +89,8 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
+from canonical.widgets import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -97,9 +102,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    ILaunchpadRoot, BugTaskSearchParams)
+    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -116,39 +122,51 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    LaunchpadEditFormView, LaunchpadFormView, action, custom_widget,
-    RedirectionNavigation)
+    LaunchpadEditFormView, LaunchpadFormView, action, custom_widget)
 
 from canonical.launchpad import _
 
 
 class BranchTraversalMixin:
+    """Branch of this person or team for the specified product and
+    branch names.
+
+    For example:
+
+    * '/~ddaa/bazaar/devel' points to the branch whose owner
+    name is 'ddaa', whose product name is 'bazaar', and whose branch name
+    is 'devel'.
+    
+    * '/~sabdfl/+junk/junkcode' points to the branch whose
+    owner name is 'sabdfl', with no associated product, and whose branch
+    name is 'junkcode'.
+
+    * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
+    
+    """
 
     @stepto('+branch')
-    def traverse_branch(self):
-        """Branch of this person or team for the specified product and
-        branch names.
-
-        For example:
-
-        * '/~ddaa/+branch/bazaar/devel' points to the branch whose owner
-          name is 'ddaa', whose product name is 'bazaar', and whose branch name
-          is 'devel'.
-
-        * '/~sabdfl/+branch/+junk/junkcode' points to the branch whose
-          owner name is 'sabdfl', with no associated product, and whose branch
-          name is 'junkcode'.
-        """
+    def redirect_branch(self):
+        """Redirect to canonical_url for branch which is ~user/product/name."""
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
-            return self.context.getBranch(product_name, branch_name)
+            branch = self.context.getBranch(product_name, branch_name)
+            return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
+    def traverse(self, product_name):
+        branch_name = self.request.stepstogo.consume()
+        if branch_name is not None:
+            return self.context.getBranch(product_name, branch_name)
+        else:
+            return super(BranchTraversalMixin, self).traverse(product_name)
 
-class PersonNavigation(Navigation, CalendarTraversalMixin,
-                       BranchTraversalMixin):
+
+class PersonNavigation(CalendarTraversalMixin,
+                       BranchTraversalMixin,
+                       Navigation):
 
     usedfor = IPerson
 
@@ -156,8 +174,9 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
         return self.context.displayname
 
 
-class TeamNavigation(Navigation, CalendarTraversalMixin,
-                     BranchTraversalMixin):
+class TeamNavigation(CalendarTraversalMixin,
+                     BranchTraversalMixin,
+                     Navigation):
 
     usedfor = ITeam
 
@@ -177,35 +196,27 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
             person, self.context)
 
 
-class PersonSetNavigation(RedirectionNavigation):
+class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
 
     def breadcrumb(self):
         return 'People'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid Person name
-        if self.context.getByName(name) is None:
+        person = self.context.getByName(name)
+        if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return RedirectionNavigation.traverse(self, '~' + name)
+        return self.redirectSubTree(canonical_url(person))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        try:
-            # Not a permanent redirect, as it depends on who is logged in
-            self.redirection_status = 303
-            return RedirectionNavigation.traverse(self, '~' + me.name)
-        finally:
-            self.redirection_status = 301
+        return self.redirectSubTree(canonical_url(me), status=303)
 
 
 class PersonSetSOP(StructuralObjectPresentation):
@@ -979,6 +990,11 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
+    def initialize(self):
+        # Set schema here to avoid ZCML magic overriding it.
+        self.schema = IPersonBugTaskSearch
+        BugTaskSearchListingView.initialize(self)
+
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
@@ -1316,6 +1332,19 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    @cachedproperty
+    def contributions(self):
+        """Cache the results of getProjectsAndCategoriesContributedTo()."""
+        return self.context.getProjectsAndCategoriesContributedTo()
+
+    @cachedproperty
+    def contributed_categories(self):
+        """Return all karma categories in which this person has some karma."""
+        categories = set()
+        for contrib in self.contributions:
+            categories.update(category for category in contrib['categories'])
+        return sorted(categories, key=attrgetter('title'))
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -1329,7 +1358,7 @@ class PersonView(LaunchpadView):
     def getBugsInProgress(self):
         """Return up to 5 bugs assigned to this person that are In Progress."""
         params = BugTaskSearchParams(
-            user=self.user, assignee=self.context,
+            user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
 
@@ -1769,10 +1798,8 @@ class PersonGPGView(LaunchpadView):
 
     def keyserver_url(self):
         assert self.fingerprint
-        url = getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
-        # Our servers use an internal keyserver which users can't access.
-        # We must point them to the ubuntu keyserver. See bug 81269
-        return url.replace('keyserver.internal', 'keyserver.ubuntu.com', 1)
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
         permitted_actions = [
@@ -1980,7 +2007,8 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
 
 
 class TeamJoinView(PersonView):
@@ -2771,3 +2799,60 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedtickets', text, summary, icon='question')
 
 
+class PersonBranchesView(BranchListingView):
+    """View for branch listing for a person."""
+
+    extra_columns = ('author', 'product', 'role')
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForPerson(
+            self.context, self.selected_lifecycle_status)
+
+    @cachedproperty
+    def _subscribed_branches(self):
+        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, []))
+
+    def roleForBranch(self, branch):
+        person = self.context
+        if branch.author == person:
+            return 'Author'
+        elif branch.owner == person:
+            return 'Registrant'
+        elif branch in self._subscribed_branches:
+            return 'Subscriber'
+        else:
+            return 'Team Branch'
+
+
+class PersonAuthoredBranchesView(BranchListingView):
+    """View for branch listing for a person's authored branches."""
+
+    extra_columns = ('product',)
+    title_prefix = 'Authored'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonRegisteredBranchesView(BranchListingView):
+    """View for branch listing for a person's registered branches."""
+
+    extra_columns = ('author', 'product')
+    title_prefix = 'Registered'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonSubscribedBranchesView(BranchListingView):
+    """View for branch listing for a subscribed's authored branches."""
+
+    extra_columns = ('author', 'product')
+    title_prefix = 'Subscribed'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, self.selected_lifecycle_status)

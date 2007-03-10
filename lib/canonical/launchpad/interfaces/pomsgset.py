@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool
+from zope.schema import Bool, Object, Datetime
+from canonical.launchpad.interfaces.person import IPerson
 
 __metaclass__ = type
 
@@ -69,8 +70,15 @@ class IPOMsgSet(Interface):
         plurals. This depends on the language and in some cases even the
         specific text being translated per po-file.""")
 
-    selections = Attribute(
-        """All IPOSelection associated with this IPOMsgSet.""")
+    reviewer = Object(
+        title=u'The person who did the review and accepted current active'
+              u'translations.',
+        required=False, schema=IPerson)
+
+    date_reviewed = Datetime(
+        title=u'The date when this message was reviewed for last time.',
+        required=False)
+
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
@@ -81,16 +89,21 @@ class IPOMsgSet(Interface):
 
         """
 
-    def getSelection(pluralform):
-        """Return the IPOSelection for this PO msgset or None.
+    def setActiveSubmission(pluralform, submission):
+        """Set given submission as the active one.
 
-        :arg pluralform: The plural form that we want to get the selection
-            from.
+        If submission is None, no submissions will be active.
         """
 
     def getActiveSubmission(pluralform):
         """Return the published translation submission for this po
         msgset and plural form or None.
+        """
+
+    def setPublishedSubmission(pluralform, submission):
+        """Set given submission as the published one.
+
+        If submission is None, no submissions will be published.
         """
 
     def getPublishedSubmission(pluralform):
@@ -150,6 +163,19 @@ class IPOMsgSet(Interface):
         """Update the complete and fuzzy flags for this IPOMsgSet.
 
         The new values will reflect current status of this entry.
+        """
+
+    def updateReviewerInfo(reviewer):
+        """Update a couple of fields to note there was an update.
+
+        :arg reviewer: The person who just reviewed this IPOMsgSet.
+
+        The updated fields are:
+            - self.pofile.last_touched_pomsgset: To cache which message was
+              the last one updated so we can know when was an IPOFile last
+               updated.
+            - self.reviewer: To note who did last review for this message.
+            - self.date_reviewed: To note when was done last review.
         """
 
 

@@ -5,7 +5,6 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-import itertools
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -30,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent
@@ -48,8 +48,9 @@ from canonical.launchpad.interfaces import (
     ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
     IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities, ILanguageSet, IDistributionSet,
-    ISourcePackageNameSet, UNRESOLVED_BUGTASK_STATUSES)
+    ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
+    ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -91,7 +92,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner)
+    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -147,8 +148,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', prejoins=['product'],
-        orderBy='-id')
+        intermediateTable='BranchSubscription', prejoins=['product'])
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -162,8 +162,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
-        orderBy='-id', prejoins=['product'])
+    authored_branches = SQLMultipleJoin(
+        'Branch', joinColumn='author', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -177,6 +177,38 @@ class Person(SQLBase, HasSpecificationsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
+    # IHasGotchiAndEmblem attributes
+    @property
+    def default_emblem_resource(self):
+        return self._getDefaultIconResource()
+
+    @property
+    def default_gotchi_resource(self):
+        return self._getDefaultIconResource('mugshot')
+
+    @property
+    def default_gotchi_heading_resource(self):
+        return self._getDefaultIconResource('heading')
+
+    def _getDefaultIconResource(self, suffix=''):
+        """Return the zope3 resource for the icon of this person with the
+        given suffix.
+
+        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
+        """
+        assert suffix in ('', 'mini', 'heading', 'mugshot')
+        if self.isTeam():
+            img = '/@@/team'
+        else:
+            if self.is_valid_person:
+                img = '/@@/person'
+            else:
+                img = '/@@/person-inactive'
+        if suffix:
+            return "%s-%s" % (img, suffix)
+        else:
+            return img
+
     # specification-related joins
     @property
     def approver_specs(self):
@@ -187,6 +219,18 @@ class Person(SQLBase, HasSpecificationsMixin):
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
             assignee=self, orderBy=['-datecreated']))
+
+    @property
+    def assigned_specs_in_progress(self):
+        replacements = sqlvalues(assignee=self)
+        replacements['started_clause'] = Specification.started_clause
+        replacements['completed_clause'] = Specification.completeness_clause
+        query = """
+            (assignee = %(assignee)s)
+            AND (%(started_clause)s)
+            AND NOT (%(completed_clause)s)
+            """ % replacements
+        return Specification.select(query, orderBy=['-date_started'], limit=5)
 
     @property
     def created_specs(self):
@@ -409,9 +453,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """See IPerson."""
-        return QuestionPersonSearch(person=self, **search_criteria).getResults()
+        return QuestionPersonSearch(
+                person=self,
+                search_text=search_text,
+                status=status, language=language, sort=sort,
+                participation=participation,
+                needs_attention=needs_attention
+                ).getResults()
 
     def getSupportedLanguages(self):
         """See IPerson."""
@@ -457,8 +510,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = """Branch.owner = %d AND
                    (Branch.author != %d OR Branch.author is NULL)"""
         return Branch.select(query % (self.id, self.id),
-                             prejoins=["product"],
-                             orderBy='-Branch.id')
+                             prejoins=["product"])
 
 
     def getBugContactPackages(self):
@@ -659,6 +711,74 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
 
+    def getProjectsAndCategoriesContributedTo(self, limit=10):
+        """See IPerson."""
+        contributions = []
+        results = self._getProjectsWithTheMostKarma(limit=limit)
+        for pillar_name, karma in results:
+            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+            contributions.append(
+                {'project': pillar,
+                 'categories': self._getContributedCategories(pillar)})
+        return contributions
+
+    def _getProjectsWithTheMostKarma(self, limit=10):
+        """Return the names and karma points of of this person on the
+        product/distribution with that name.
+
+        The results are ordered descending by the karma points and limited to
+        the given limit.
+        """
+        # We want this person's total karma on a given context (that is,
+        # across all different categories) here; that's why we use a 
+        # "KarmaCache.category IS NULL" clause here.
+        query = """
+            SELECT PillarName.name, KarmaCache.karmavalue
+            FROM KarmaCache
+            JOIN PillarName ON 
+                COALESCE(KarmaCache.distribution, -1) =
+                COALESCE(PillarName.distribution, -1)
+                AND
+                COALESCE(KarmaCache.product, -1) =
+                COALESCE(PillarName.product, -1)
+            WHERE person = %(person)s
+                AND KarmaCache.category IS NULL
+                AND KarmaCache.project IS NULL
+            ORDER BY karmavalue DESC, name
+            LIMIT %(limit)s;
+            """ % sqlvalues(person=self, limit=limit)
+        cur = cursor()
+        cur.execute(query)
+        return cur.fetchall()
+
+    def _getContributedCategories(self, pillar):
+        """Return the KarmaCategories to which this person has karma on the
+        given pillar.
+
+        The given pillar must be either an IProduct or an IDistribution.
+        """
+        if IProduct.providedBy(pillar):
+            where_clause = "product = %s" % sqlvalues(pillar)
+        elif IDistribution.providedBy(pillar):
+            where_clause = "distribution = %s" % sqlvalues(pillar)
+        else:
+            raise AssertionError(
+                "Pillar must be a product or distro, got %s" % pillar)
+        replacements = sqlvalues(person=self)
+        replacements['where_clause'] = where_clause
+        query = """
+            SELECT DISTINCT KarmaCategory.id
+            FROM KarmaCategory
+            JOIN KarmaCache ON KarmaCache.category = KarmaCategory.id
+            WHERE %(where_clause)s
+                AND category IS NOT NULL
+                AND person = %(person)s
+            """ % replacements
+        cur = cursor()
+        cur.execute(query)
+        ids = ",".join(str(id) for [id] in cur.fetchall())
+        return KarmaCategory.select("id IN (%s)" % ids)
+
     @property
     def karma_category_caches(self):
         """See IPerson."""
@@ -853,7 +973,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         assert self.teamowner is not None
         to_addrs = set()
-        for person in itertools.chain(self.administrators, [self.teamowner]):
+        for person in self.getEffectiveAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -899,6 +1019,16 @@ class Person(SQLBase, HasSpecificationsMixin):
             tm.comment = comment
 
         tm.syncUpdate()
+
+    def getEffectiveAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam()
+        owner = Person.select("id = %s" % sqlvalues(self.teamowner))
+        # We can't use Person.sortingColumns with union() queries
+        # because the table name Person is not available in that
+        # context.
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.adminmembers.union(owner, orderBy=orderBy)
 
     def getMembersByStatus(self, status, orderBy=None):
         """See IPerson."""
@@ -967,7 +1097,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
-    def administrators(self):
+    def adminmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
@@ -983,8 +1113,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         # because the table name Person is not available in that
         # context.
         orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.approvedmembers.union(self.administrators,
-                                          orderBy=orderBy)
+        return self.approvedmembers.union(self.adminmembers, orderBy=orderBy)
 
     @property
     def active_member_count(self):
@@ -1059,7 +1188,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         # Note that we can't use selectBy here because of the prejoins.
         history = POFileTranslator.select(
-            "POFileTranslator.person = %d" % self.id,
+            "POFileTranslator.person = %s" % sqlvalues(self),
             prejoins=[
                 "pofile",
                 "pofile.potemplate",

@@ -1,4 +1,4 @@
-= Project and the Support Tracker =
+= Project and the Answer Tracker =
 
 Although question cannot be filed directly against projects, IProject in
 Launchpad also provides the IQuestionCollection and

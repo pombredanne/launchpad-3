@@ -14,6 +14,7 @@ __all__ = [
     'DistributionAddView',
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
+    'DistributionCountryArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
     'DistributionReleaseMirrorsRSSView',
     'DistributionArchiveMirrorsRSSView',
@@ -37,22 +38,24 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError)
+    ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu,
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistributionReleaseStatus
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class DistributionNavigation(
@@ -88,22 +91,19 @@ class DistributionNavigation(
         return self.context.getSpecification(name)
 
 
-class DistributionSetNavigation(RedirectionNavigation):
+class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
-        if self.context.getByName(name) is None:
+        distribution = self.context.getByName(name)
+        if distribution is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(distribution))
 
 
 class DistributionSOP(StructuralObjectPresentation):
@@ -446,8 +446,9 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'gotchi', 'emblem']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -487,11 +488,13 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "gotchi", "emblem", "domainname", "members"]
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -501,8 +504,8 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -536,6 +539,26 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionCountryArchiveMirrorsView(LaunchpadView):
+    """A text/plain page which lists the mirrors in the country of the request.
+
+    If there are no mirrors located in the country of the request, we fallback
+    to the main Ubuntu repositories.
+    """
+
+    def render(self):
+        if not self.context.full_functionality:
+            self.request.response.setStatus(404)
+            return u''
+        country = request_country(self.request)
+        mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+            country, MirrorContent.ARCHIVE)
+        body = "\n".join(mirror.base_url for mirror in mirrors)
+        self.request.response.setHeader(
+            'content-type', 'text/plain;charset=utf-8')
+        return body.encode('utf-8')
 
 
 class DistributionMirrorsView(LaunchpadView):

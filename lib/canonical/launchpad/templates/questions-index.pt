@@ -33,7 +33,8 @@
                             </a>
                           </li>
                         </ul>
-                        <form class="central" action="+tickets" method="get">
+                        <form class="central" action="" method="get"
+                              tal:attributes="action request/URL">
                           <table>
                             <tbody>
                               <tr>
@@ -47,46 +48,42 @@
                                 </td>
                                 <td>
                                   <input
-                                    name="field.actions.search"
+                                    tal:replace="structure view/search_action/render"
                                     type="submit"
                                     value="Find Answers"
                                   />
                                 </td>
                               </tr>
                               <tr>
-                                <td style="text-align: right;">
-                                  <label>
-                                    <input
-                                      name="scope"
-                                      type="radio"
-                                      value="all"
-                                      checked="checked"
-                                    />
-                                    All projects
-                                  </label>
-                                  <label>
-                                    <input
-                                      name="scope"
-                                      type="radio"
-                                      value="project"
-                                      onclick="document.getElementById('project').focus();"
-                                    />
-                                    One project:
-                                    <input
-                                      id="project"
-                                      name="project"
+                                <td tal:attributes="class view/scope_css_class"
+                                    style="text-align: right;">
+
+                                  <tal:scope
+                                    replace="structure view/widgets/scope/renderScopeOptions" />
+
+                                  <input
+                                    id="project"
+                                    name="project"
+                                    tal:define="widget_name view/widgets/scope/target_widget/name"
+                                    tal:attributes="
+                                      value view/request/form/?widget_name|nothing;
+                                      id widget_name;
+                                      name widget_name;
+                                      onkeypress view/widgets/scope/target_widget/onKeyPress"
                                       type="text"
-                                    />
-                                  </label>
+                                     />
 
-        <input type="hidden" name="field.sort" value="by relevancy" />
-        <input type="hidden" name="field.status" value="Open" />
-        <input type="hidden" name="field.status" value="Needs information" />
-        <input type="hidden" name="field.status" value="Answered" />
-        <input type="hidden" name="field.status" value="Solved" />
-
+                                  <tal:sort
+                                    replace="structure view/widgets/sort/hidden" />
+                                  <tal:status
+                                    replace="structure view/widgets/status/hidden" />
+                                  <div class="message"
+                                    tal:condition="view/scope_error"
+                                    tal:content="structure view/scope_error">
+                                    Error message
+                                  </div>
                                 </td>
-                                <td>(<a href="choose">Choose&hellip;</a>)</td>
+                                <td>(<a tal:attributes="href view/widgets/scope/target_widget/popupHref">Choose&hellip;</a>)</td>
                               </tr>
                             </tbody>
                           </table>
@@ -94,7 +91,7 @@
                         </form>
                         <p id="application-summary">
                           Launchpad&rsquo;s Answers system lets people
-                          ask questions about products or distributions,
+                          ask questions about projects,
                           and lets anyone help answer those questions.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
@@ -142,9 +139,9 @@
     <p>This page gives you a quick overview of the recent
     activity in the Launchpad Answer Tracker.
     </p>
-    <p>To post a new question, navigate to the product or distribution
-      you are having a problem with and use the <emph>Ask Question</emph>
-      menu item.
+    <p>To post a new question, navigate to the project
+      you are having a problem with and use the <emph>Ask a Question</emph>
+      button.
     </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the

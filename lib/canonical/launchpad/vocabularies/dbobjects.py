@@ -1224,6 +1224,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
         return SimpleTerm(obj, obj.name, title)
 
+    def __contains__(self, obj):
+        raise NotImplementedError
+
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution or product'
@@ -1232,7 +1235,21 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             PillarName.q.productID != None
             ), PillarName.q.active == True)
 
+    def __contains__(self, obj):
+        if IProduct.providedBy(obj):
+            # Only active products are in the vocabulary.
+            return obj.active
+        else:
+            return IDistribution.providedBy(obj)
+
+
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
     displayname = 'Select a distribution, product or project'
     _filter = PillarName.q.active == True
 
+    def __contains__(self, obj):
+        if IProduct.providedBy(obj) or IProject.providedBy(obj):
+            # Only active products and projects are in the vocabulary.
+            return obj.active
+        else:
+            return IDistribution.providedBy(obj)

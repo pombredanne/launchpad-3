@@ -41,9 +41,9 @@ from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    CreateBugParams, ILanguageSet, IQuestion, IQuestionAddMessageForm,
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget,
-    UnexpectedFormData)
+    CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet, IQuestion,
+    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
+    IQuestionTarget, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
@@ -51,6 +51,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
+from canonical.widgets.project import ProjectScopeWidget
 
 
 class QuestionSetNavigation(Navigation):
@@ -58,8 +59,34 @@ class QuestionSetNavigation(Navigation):
     usedfor = IQuestionSet
 
 
-class QuestionSetView:
+class QuestionSetView(LaunchpadFormView):
     """View for the Answer Tracker index page."""
+
+    schema = IAnswersFrontPageSearchForm
+    custom_widget('scope', ProjectScopeWidget)
+
+    @property
+    def scope_css_class(self):
+        """The CSS class for used in the scope widget."""
+        if self.scope_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def scope_error(self):
+        """The error message for the scope widget."""
+        return self.getWidgetError('scope')
+
+    @action('Find Answers', name="search")
+    def search_action(self, action, data):
+        """Redirect to the proper search page based on the scope widget."""
+        scope = data['scope']
+        if scope is None:
+            # Use 'All projects' scope.
+            scope = self.context
+        self.next_url = "%s/+tickets?%s" % (
+            canonical_url(scope), self.request['QUERY_STRING'])
 
     @property
     def questions_count(self):
@@ -357,7 +384,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
     def initial_values(self):
         return {'status': self.context.status}
 
-    @action(_('Change status'), name='change-status')
+    @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
@@ -564,7 +591,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                 self.user != self.context.owner and
                 self.context.can_request_info)
 
-    @action(_('Add information request'), name='requestinfo',
+    @action(_('Add Information Request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
         """Add a request for more information to the question."""

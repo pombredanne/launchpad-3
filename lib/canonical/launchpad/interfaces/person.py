@@ -118,8 +118,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
+    # The emblem is only used for teams; that's why we use /@@/team as the
+    # default image resource.
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/team',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
@@ -127,6 +130,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/person-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
@@ -134,6 +138,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
             "image of your mug. Make the most of it."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
+        default_image_resource='/@@/person-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
@@ -269,7 +274,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -286,6 +291,9 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
+    assigned_specs_in_progress = Attribute(
+        "Specifications assigned to this person whose implementation is "
+        "started but not yet completed, sorted newest first.")
     drafted_specs = Attribute(
         "Specifications being drafted by this person, sorted newest first.")
     created_specs = Attribute(
@@ -426,6 +434,20 @@ class IPerson(IHasSpecifications, IQuestionCollection):
 
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
+
+    def getProjectsAndCategoriesContributedTo(limit=10):
+        """Return a list of dicts with projects and the contributions made
+        by this person on that project.
+
+        The list is limited to the :limit: projects this person is most
+        active.
+
+        The dictionaries containing the following keys:
+            - project:    The project, which is either an IProduct or an
+                          IDistribution.
+            - categories: A dictionary mapping KarmaCategory titles to
+                          the icons which represent that category.
+        """
 
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -582,6 +604,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
+        """
+
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
@@ -645,7 +672,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchQuestions(**search_criteria):
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
@@ -672,6 +702,7 @@ class ITeam(IPerson):
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/team-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this team's home page. It should be no bigger than 100k in "

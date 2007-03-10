@@ -111,18 +111,18 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
+branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
-            context.title, context.author.title)
+            context.displayname, context.author.title)
     else:
-        return smartquote('"%s" branch in Launchpad') % (context.title)
+        return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
 
-branchtarget_branchlisting = ContextTitle('Details of Branches for %s')
+branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
@@ -177,6 +177,9 @@ buglinktarget_unlinkbugs = 'Remove links to bug reports'
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
+
+def buglisting_embedded_advanced_search(context, view):
+    return view.getSearchPageHeading()
 
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
@@ -540,12 +543,10 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
-
-def person_bugs(context, view):
-    return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
 
@@ -663,8 +664,6 @@ product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
-product_bazaar = 'Projects with Code'
-
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
@@ -673,6 +672,8 @@ product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
+product_code_index = 'Projects with Code'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
@@ -862,12 +863,12 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('%s HCT status')
+sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define upstream series for %s')
+sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
