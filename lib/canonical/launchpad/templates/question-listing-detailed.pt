@@ -1,6 +1,7 @@
+
 <tr class="noted"
-    tal:attributes="title context/description/fmt:shorten/300">
-  <td class="icon left" rowspan="2">
+    tal:attributes="title context/description/fmt:shorten/320">
+  <td class="icon left">
     <img alt="" src="/@@/question" />
   </td>
   <td>
@@ -10,7 +11,6 @@
         class string:${context/status/title}
       "
       tal:content="context/title"
-      style="font-weight: bold;"
     />
     (<span tal:replace="context/status/title">Approved</span>)
   </td>
@@ -18,31 +18,16 @@
 <tr class="note">
   <td class="lesser">
     posted <span tal:replace="context/datecreated/fmt:date">2005-10-05</span> by
-    <img src="/@@/user" />
-    <a
-      tal:attributes="href string:${context/owner/fmt:url}/+tickets"
-      tal:content="context/owner/browsername"
-    >Foo Bar
-    </a><tal:assignee condition="context/assignee">,
+    <a tal:replace="structure context/owner/fmt:link"
+       >Foo Bar</a><tal:assignee condition="context/assignee">,
     assigned to
-    <img src="/@@/user" />
-    <a
-      tal:attributes="href string:${context/assignee/fmt:url}/+tickets"
-      tal:content="context/assignee/browsername"
-    >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
+    <a tal:replace="structure context/assignee/fmt:link"
+       >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
     answered by
-    <img src="/@@/user" />
-    <a
-      tal:attributes="href string:${context/answerer/fmt:url}/+tickets"
-      tal:content="context/answerer/browsername">Foo Bar
-    </a>
+    <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
     </tal:answerer>
     in
     <span tal:replace="context/target/title">SmegConf</span>
     (<span tal:replace="context/priority/title">High</span>)
   </td>
 </tr>
-
-
-
-

@@ -165,7 +165,7 @@ Project also have the 'Ask a question' button on their overview page.
     >>> user_browser.open('http://launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Ask a question about a product from the Mozilla Project
+    Ask a question about a project in the Mozilla Project
 
 == Persons ==
 

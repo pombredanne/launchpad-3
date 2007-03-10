@@ -511,10 +511,13 @@ class DatabaseBranchDetailsStorage:
         # -- jml, 2007-01-31
 
         transaction.execute(utf8("""
-            SELECT Branch.id, Branch.url, Person.name
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name
             FROM Branch INNER JOIN Person ON Branch.owner = Person.id
             LEFT OUTER JOIN ProductSeries
                 ON ProductSeries.import_branch = Branch.id
+            LEFT OUTER JOIN Product
+                ON Branch.product = Product.id
             WHERE (ProductSeries.id is NULL AND (
                       last_mirror_attempt is NULL
                       OR (%(utc_now)s - last_mirror_attempt > '1 day')
@@ -529,7 +532,16 @@ class DatabaseBranchDetailsStorage:
             ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
             """ % {'utc_now': UTC_NOW}))
         result = []
-        for (branch_id, url, owner_name) in transaction.fetchall():
+        for row in transaction.fetchall():
+            branch_id, branch_name, url, owner_name, product_name = row
+            # XXX - this logic is almost identical to that in
+            # Branch.unique_name. Ideally, they should use the same code. Also,
+            # it would be nice to guarantee that this points to a branch.
+            # Jonathan Lange, 2007-03-01
+            if product_name is None:
+                product_name = u'+junk'
+            unique_name = u'%s/%s/%s' % (owner_name, product_name, branch_name)
+
             if url is not None:
                 # This is a pull branch, hosted externally.
                 pull_url = url
@@ -543,7 +555,7 @@ class DatabaseBranchDetailsStorage:
                 # (pushed there by users via SFTP).
                 prefix = config.supermirrorsftp.branches_root
                 pull_url = os.path.join(prefix, split_branch_id(branch_id))
-            result.append((branch_id, pull_url))
+            result.append((branch_id, pull_url, unique_name))
         return result
 
     def startMirroring(self, branchID):

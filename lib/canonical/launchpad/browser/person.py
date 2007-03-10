@@ -62,11 +62,15 @@ __all__ = [
     'PersonSetSOP',
     'PersonSetFacets',
     'PersonSetContextMenu',
+    'PersonBranchesView',
+    'PersonAuthoredBranchesView',
+    'PersonRegisteredBranchesView',
+    'PersonSubscribedBranchesView',
     ]
 
 import cgi
 import urllib
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -84,7 +88,8 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import ImageChangeWidget, PasswordChangeWidget
+from canonical.widgets import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -96,9 +101,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch)
+    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -1279,6 +1285,19 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    @cachedproperty
+    def contributions(self):
+        """Cache the results of getProjectsAndCategoriesContributedTo()."""
+        return self.context.getProjectsAndCategoriesContributedTo()
+
+    @cachedproperty
+    def contributed_categories(self):
+        """Return all karma categories in which this person has some karma."""
+        categories = set()
+        for contrib in self.contributions:
+            categories.update(category for category in contrib['categories'])
+        return sorted(categories, key=attrgetter('title'))
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -1941,7 +1960,8 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
                    'gotchi']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget('gotchi', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
 
 
 class TeamJoinView(PersonView):
@@ -2732,3 +2752,60 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedtickets', text, summary, icon='question')
 
 
+class PersonBranchesView(BranchListingView):
+    """View for branch listing for a person."""
+
+    extra_columns = ('author', 'product', 'role')
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForPerson(
+            self.context, self.selected_lifecycle_status)
+
+    @cachedproperty
+    def _subscribed_branches(self):
+        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, []))
+
+    def roleForBranch(self, branch):
+        person = self.context
+        if branch.author == person:
+            return 'Author'
+        elif branch.owner == person:
+            return 'Registrant'
+        elif branch in self._subscribed_branches:
+            return 'Subscriber'
+        else:
+            return 'Team Branch'
+
+
+class PersonAuthoredBranchesView(BranchListingView):
+    """View for branch listing for a person's authored branches."""
+
+    extra_columns = ('product',)
+    title_prefix = 'Authored'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonRegisteredBranchesView(BranchListingView):
+    """View for branch listing for a person's registered branches."""
+
+    extra_columns = ('author', 'product')
+    title_prefix = 'Registered'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
+            self.context, self.selected_lifecycle_status)
+
+
+class PersonSubscribedBranchesView(BranchListingView):
+    """View for branch listing for a subscribed's authored branches."""
+
+    extra_columns = ('author', 'product')
+    title_prefix = 'Subscribed'
+    
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
+            self.context, self.selected_lifecycle_status)

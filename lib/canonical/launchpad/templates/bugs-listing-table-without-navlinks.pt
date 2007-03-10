@@ -10,7 +10,7 @@
           Package
         </th>
         <th tal:condition="context/show_column/productname|nothing">
-          Product
+          Project
         </th>
         <th tal:condition="context/show_column/importance|nothing">Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
