@@ -174,8 +174,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson
-        object, the dateassigned is set on the task. If the assignee
-        value is set to None, dateassigned is also set to None.
+        object, the date_assigned is set on the task. If the assignee
+        value is set to None, date_assigned is also set to None.
         """
 
     def updateTargetNameCache():

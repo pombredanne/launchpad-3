@@ -185,7 +185,7 @@ If no product name is given at all, a widget error is raised.
     >>> selected_distribution = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a product name
+    LaunchpadValidationError: Please enter a project name
 
 == setRenderedValue() ==
 

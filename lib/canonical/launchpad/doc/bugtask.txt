@@ -854,7 +854,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.datecreated is None
     True
-    >>> null_bugtask.dateassigned is None
+    >>> null_bugtask.date_assigned is None
     True
     >>> null_bugtask.age is None
     True

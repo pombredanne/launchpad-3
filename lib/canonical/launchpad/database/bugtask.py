@@ -242,7 +242,7 @@ class NullBugTask(BugTaskMixin):
         # that until we've encountered one.)
         self.id = None
         self.datecreated = None
-        self.dateassigned = None
+        self.date_assigned = None
         self.age = None
         self.milestone = None
         self.status = None
@@ -627,7 +627,7 @@ class BugTask(SQLBase, BugTaskMixin):
         UTC = pytz.timezone('UTC')
         now = datetime.datetime.now(UTC)
         if self.assignee and not assignee:
-            # The assignee is being cleared, so clear the dateassigned
+            # The assignee is being cleared, so clear the date_assigned
             # value.
             self.date_assigned = None
         if not self.assignee and assignee:

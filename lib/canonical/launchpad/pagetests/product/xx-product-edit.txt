@@ -140,7 +140,7 @@ Now we try to change newproductname2's name to newproductname.
   </p>
   <div class="error">
   ...
-  <div class="message">newproductname is already in use by another product, project or distribution</div>
+  <div class="message">newproductname is already in use by another project</div>
   </div>
 
 

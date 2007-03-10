@@ -124,7 +124,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'product' AS otype, id, name, title, description,
+            SELECT 'project' AS otype, id, name, title, description,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM product
             WHERE fti @@ ftq(%(text)s)
