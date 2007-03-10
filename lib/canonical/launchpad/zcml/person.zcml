@@ -23,6 +23,9 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+      <allow attributes="
+          default_gotchi_resource default_gotchi_heading_resource
+          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />

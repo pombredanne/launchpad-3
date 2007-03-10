@@ -162,24 +162,23 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <div class="listing">
-    <div tal:repeat="rev_no context/latest_revisions"
-         tal:attributes="id string:rev${rev_no/sequence}">
-      <h3>
-        Revision <span tal:replace="rev_no/sequence">1</span>
-        <tal:valid-user tal:condition="rev_no/revision/revision_author">
-          by <span tal:replace="rev_no/revision/revision_author/name">John Doe
-            &lt;john.doe@example.com&gt;</span>
-        </tal:valid-user>
+  <ol>
+    <li tal:repeat="rev_no context/latest_revisions"
+        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+      <div>
+        <span tal:replace="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;</span>
         <tal:date>
-          (<span tal:replace="rev_no/revision/revision_date/fmt:date">2005-10-05</span>)
+          (<span
+          tal:replace="rev_no/revision/revision_date/fmt:datetime">2005-10-05
+            14:34:22 WST</span>)
         </tal:date>
-      </h3>
+      </div>
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-    </div>
-  </div>
+    </li>
+  </ol>
   </tal:history-available>
 
   <tal:related-bugs condition="context/related_bugs">

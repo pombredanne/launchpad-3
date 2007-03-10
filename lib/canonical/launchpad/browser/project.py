@@ -38,7 +38,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
-    ILaunchpadRoot, NotFoundError)
+    NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
@@ -48,7 +48,8 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, structured)
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -234,8 +235,9 @@ class ProjectEditView(LaunchpadEditFormView):
         'name', 'displayname', 'title', 'summary', 'description',
         'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
 
     @action('Change Details', name='change')
@@ -352,12 +354,14 @@ class ProjectAddView(LaunchpadFormView):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
         """Create the new Project from the form details."""
+        gotchi, gotchi_heading = data['gotchi']
         self.project = getUtility(IProjectSet).new(
             name=data['name'].lower(),
             displayname=data['displayname'],
@@ -366,8 +370,8 @@ class ProjectAddView(LaunchpadFormView):
             summary=data['summary'],
             description=data['description'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
