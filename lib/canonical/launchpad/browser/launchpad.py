@@ -49,20 +49,44 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarNameSet,
-    IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
-    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
-    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    IStructuralObjectPresentation, ITranslationImportQueue,
-    ITranslationGroupSet, NotFoundError)
+	IAppFrontPageSearchForm,
+    IBazaarApplication,
+	IBinaryPackageNameSet,
+	IBountySet,
+	IBugSet,
+	IBugTrackerSet,
+	IBuilderSet,
+	ICodeOfConductSet,
+	ICveSet,
+	IDistributionSet,
+	IKarmaActionSet,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+	ILaunchpadRoot,
+    ILoginTokenSet,
+    IMaloneApplication,
+	IPersonSet,
+	IPillarNameSet,
+	IPOTemplateNameSet,
+	IProductSet,
+	IProjectSet,
+	IQuestionSet,
+	IRegistryApplication,
+    IRosettaApplication,
+    ISourcePackageNameSet,
+    ISpecificationSet,
+	ISprintSet,
+    IStructuralObjectPresentation,
+    ITranslationGroupSet,
+	ITranslationImportQueue,
+	NotFoundError,
+    )
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.widgets.project import ProjectScopeWidget
 
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
@@ -904,6 +928,25 @@ class DefaultShortLink(LaunchpadView):
         L.append(cgi.escape(self.getLinkText()).replace(' ', '&nbsp;'))
         L.append('</a>')
         return u''.join(L)
+
+
+class AppFrontPageSearchView(LaunchpadFormView):
+
+    schema = IAppFrontPageSearchForm
+    custom_widget('scope', ProjectScopeWidget)
+
+    @property
+    def scope_css_class(self):
+        """The CSS class for used in the scope widget."""
+        if self.scope_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def scope_error(self):
+        """The error message for the scope widget."""
+        return self.getWidgetError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):

@@ -118,7 +118,10 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def searchtext(self):
-        return self.request.form.get('searchtext')
+        st = self.request.form.get('searchtext')
+        if st is None:
+            st = self.request.form.get('field.searchtext')
+        return st
 
     @cachedproperty
     def spec_filter(self):
