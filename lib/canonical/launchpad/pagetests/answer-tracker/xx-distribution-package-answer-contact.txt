@@ -87,7 +87,7 @@ The answer contacts porlet for the source package was updated:
 To unregister as answer contact, the same page is used. Instead this
 time, we unselect the checkboxes:
 
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl(
     ...     "I want to be an answer contact for mozilla-firefox").selected
     True

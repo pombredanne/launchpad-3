@@ -214,7 +214,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         return Link('+addticket', text, icon='add')
 
 

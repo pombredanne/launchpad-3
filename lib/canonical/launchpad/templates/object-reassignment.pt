@@ -69,7 +69,7 @@
       <tr>
         <td></td>
         <td>
-          <input type="submit" value="Change Owner" name="CHANGE_OWNER" />
+          <input type="submit" value="Change Registrant" name="CHANGE_OWNER" />
         </td>
       </tr>
     </table>

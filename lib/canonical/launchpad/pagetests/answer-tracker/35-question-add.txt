@@ -15,7 +15,7 @@ Asking a new question requires logging in:
       ...
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> user_browser.getLink('Ask question').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
     'Ask a question about Ubuntu'
 
