@@ -42,18 +42,6 @@ def main():
         print '---- end tabnanny bitching ----'
         return 1
 
-    # Ensure ++resource++ URL's are all absolute - this ensures they
-    # are cache friendly
-    results = os.popen(
-        r"find lib/canonical -type f | grep -v '~$' | "
-        r"xargs grep '[^/]\(++resource++\|@@/\)'"
-        ).readlines()
-    if results:
-        print '---- non-absolute ++resource++ or @@/ URLs found ----'
-        print ''.join(results)
-        print '---- end non-absolute ++resource++ URLs found ----'
-        return 1
-
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
     con = psycopg.connect('dbname=template1')
