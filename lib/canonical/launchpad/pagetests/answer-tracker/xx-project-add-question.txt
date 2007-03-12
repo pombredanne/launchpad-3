@@ -6,13 +6,13 @@ question from a project.
 The user must login to proceed:
 
     >>> browser.open('http://answers.launchpad.dev/mozilla')
-    >>> browser.getLink('Ask question').click()
+    >>> browser.getLink('Ask a question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
-    >>> user_browser.getLink('Ask question').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about a project in the Mozilla Project
 

@@ -117,7 +117,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+packaging', 'Show upstream links', icon='info')
 
     def edit_packaging(self):
-        return Link('+edit-packaging', 'Edit upstream link', icon='edit')
+        return Link('+edit-packaging', 'Change upstream link', icon='edit')
 
     def builds(self):
         text = 'Show builds'
