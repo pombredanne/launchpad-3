@@ -10,11 +10,16 @@ import pytz
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
+
+from canonical.lp.dbschema import TeamMembershipStatus
+
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
@@ -23,8 +28,6 @@ from canonical.launchpad.interfaces import (
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
-from canonical.lp.dbschema import EnumCol, TeamMembershipStatus
 
 
 class TeamMembership(SQLBase):
@@ -83,15 +86,13 @@ class TeamMembership(SQLBase):
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
         admins_names = []
-        admins = team.administrators
-        if admins.count() <= 1:
-            if admins.count() == 0:
-                admin = team.owner
-            else:
-                admin = admins[0]
+        admins = team.getEffectiveAdministrators()
+        assert admins.count() >= 1
+        if admins.count() == 1:
+            admin = admins[0]
             contact_admins_text = (
-                "To prevent this membership from expiring, you should get\n"
-                "in touch\nwith the team's administrator, %s.\n<%s>"
+                "To prevent this membership from expiring, you should "
+                "contact\nthe team's administrator, %s.\n<%s>"
                 % (admin.unique_displayname, canonical_url(admin)))
         else:
             for admin in admins:
@@ -372,7 +373,7 @@ def _fillTeamParticipation(member, team):
     table can be found in the TeamParticipationUsage spec.
     """
     members = [member]
-    if member.teamowner is not None:
+    if member.isTeam():
         # The given member is, in fact, a team, and in this case we must 
         # add all of its members to the given team and to its superteams.
         members.extend(member.allmembers)

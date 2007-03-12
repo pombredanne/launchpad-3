@@ -18,7 +18,7 @@ redirected to +add-affected-product directly.
 If this wasn't what we intended, we can go back to choose another
 product.
 
-    >>> user_browser.getLink('Choose another product').click()
+    >>> user_browser.getLink('Choose another project').click()
     >>> user_browser.url
     'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 
@@ -128,7 +128,7 @@ to register the product if he doesn't find it.
 
     >>> user_browser.getLink('register it').click()
     >>> user_browser.title
-    'Register a product in the Launchpad'
+    'Register a project in Launchpad'
 
 Since we don't restrict the input, the user can write anything, so we
 need to make sure that everything is quoted before displaying the input.

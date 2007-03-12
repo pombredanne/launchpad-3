@@ -15,7 +15,7 @@ Gentoo is currently using Malone.
 Any user can request a fix for it.
 
     >>> user_browser.open('http://launchpad.dev/bugs/4')
-    >>> user_browser.getLink('Also Affects Distribution').click()
+    >>> user_browser.getLink('Also affects distribution').click()
     >>> user_browser.getControl('Distribution').value = ['gentoo']
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
@@ -33,7 +33,7 @@ link to a external bug for it.
     False
 
     >>> user_browser.open('http://launchpad.dev/bugs/7')
-    >>> user_browser.getLink('Also Affects Distribution').click()
+    >>> user_browser.getLink('Also affects distribution').click()
     >>> user_browser.getControl('Distribution').value = ['gentoo']
     >>> user_browser.getControl('Source Package').value = ''
     >>> user_browser.getControl('URL').value = (

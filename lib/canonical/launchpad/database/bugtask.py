@@ -2,14 +2,16 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugTaskDelta',
+    'BugTaskToBugAdapter',
+    'BugTaskMixin',
+    'NullBugTask',
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'search_value_to_where_condition']
 
-import urllib
-import cgi
 import datetime
 
 from sqlobject import (
@@ -22,30 +24,51 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.components.bugtask import BugTaskMixin
+from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IProductSeriesBugTask, NotFoundError,
-    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
-    ConjoinedBugTaskEditError)
+    BugTaskSearchParams,
+    ConjoinedBugTaskEditError,
+    IBugTask,
+    IBugTaskDelta, 
+    IBugTaskSet,
+    IDistributionSourcePackage,
+    IDistroBugTask,
+    IDistroReleaseBugTask,
+    ILaunchpadCelebrities,
+    INullBugTask,
+    IProductSeriesBugTask,
+    ISourcePackage,
+    IUpstreamBugTask,
+    NotFoundError,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from canonical.launchpad.helpers import shortlist
+# XXX: see bug 49029 -- kiko, 2006-06-14
+
+from canonical.lp.dbschema import (
+    BugTaskImportance,
+    BugTaskStatus,
+    PackagePublishingStatus,
+    )
+from canonical.launchpad.database.pillar import pillar_sort_key
 
 
-debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
-                      'wishlist':  dbschema.BugTaskImportance.WISHLIST,
-                      'minor':     dbschema.BugTaskImportance.LOW,
-                      'normal':    dbschema.BugTaskImportance.MEDIUM,
-                      'important': dbschema.BugTaskImportance.HIGH,
-                      'serious':   dbschema.BugTaskImportance.HIGH,
-                      'grave':     dbschema.BugTaskImportance.HIGH,
-                      'critical':  dbschema.BugTaskImportance.CRITICAL}
+debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
+                      'wishlist':  BugTaskImportance.WISHLIST,
+                      'minor':     BugTaskImportance.LOW,
+                      'normal':    BugTaskImportance.MEDIUM,
+                      'important': BugTaskImportance.HIGH,
+                      'serious':   BugTaskImportance.HIGH,
+                      'grave':     BugTaskImportance.HIGH,
+                      'critical':  BugTaskImportance.CRITICAL}
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -89,6 +112,162 @@ def bugtask_sort_key(bugtask):
         distrorelease_name, sourcepackage_name)
 
 
+class BugTaskDelta:
+    """See canonical.launchpad.interfaces.IBugTaskDelta."""
+    implements(IBugTaskDelta)
+    def __init__(self, bugtask, product=None, sourcepackagename=None,
+                 status=None, importance=None, assignee=None,
+                 milestone=None, statusexplanation=None, bugwatch=None):
+        self.bugtask = bugtask
+        self.product = product
+        self.sourcepackagename = sourcepackagename
+        self.status = status
+        self.importance = importance
+        self.assignee = assignee
+        self.target = milestone
+        self.statusexplanation = statusexplanation
+        self.bugwatch = bugwatch
+
+    @property
+    def targetname(self):
+        return self.bugtask.targetname
+
+
+class BugTaskMixin:
+    """Mix-in class for some property methods of IBugTask implementations."""
+
+    @property
+    def title(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        title = 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.targetname, self.bug.title)
+        return title
+
+    @property
+    def targetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
+
+    @property
+    def target(self):
+        # We explicitly reference attributes here (rather than, say,
+        # IDistroBugTask.providedBy(self)), because we can't assume this
+        # task has yet been marked with the correct interface.
+        if self.product:
+            return self.product
+        elif self.productseries:
+            return self.productseries
+        elif self.distribution:
+            if self.sourcepackagename:
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
+            else:
+                return self.distribution
+        elif self.distrorelease:
+            if self.sourcepackagename:
+                return self.distrorelease.getSourcePackage(
+                    self.sourcepackagename)
+            else:
+                return self.distrorelease
+        else:
+            raise AssertionError("Unable to determine bugtask target")
+
+    @property
+    def related_tasks(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        other_tasks = [
+            task for task in self.bug.bugtasks if task != self]
+
+        return other_tasks
+
+    @property
+    def pillar(self):
+        """See IBugTask."""
+        if self.product is not None:
+            return self.product
+        elif self.productseries is not None:
+            return self.productseries.product
+        elif self.distribution is not None:
+            return self.distribution
+        else:
+            return self.distrorelease.distribution
+
+    @property
+    def other_affected_pillars(self):
+        """See IBugTask."""
+        result = set()
+        this_pillar = self.pillar
+        for task in self.bug.bugtasks:
+            that_pillar = task.pillar
+            if that_pillar != this_pillar:
+                result.add(that_pillar)
+        return sorted(result, key=pillar_sort_key)
+
+
+class NullBugTask(BugTaskMixin):
+    """A null object for IBugTask.
+
+    This class is used, for example, to be able to render a URL like:
+
+      /products/evolution/+bug/5
+
+    when bug #5 isn't yet reported in evolution.
+    """
+    implements(INullBugTask)
+
+    def __init__(self, bug, product=None, productseries=None,
+                 sourcepackagename=None, distribution=None,
+                 distrorelease=None):
+        self.bug = bug
+        self.product = product
+        self.productseries = productseries
+        self.sourcepackagename = sourcepackagename
+        self.distribution = distribution
+        self.distrorelease = distrorelease
+
+        # Mark the task with the correct interface, depending on its
+        # context.
+        if self.product:
+            alsoProvides(self, IUpstreamBugTask)
+        elif self.distribution:
+            alsoProvides(self, IDistroBugTask)
+        elif self.distrorelease:
+            alsoProvides(self, IDistroReleaseBugTask)
+
+        # Set a bunch of attributes to None, because it doesn't make
+        # sense for these attributes to have a value when there is no
+        # real task there. (In fact, it may make sense for these
+        # values to be non-null, but I haven't yet found a use case
+        # for it, and I don't think there's any point on designing for
+        # that until we've encountered one.)
+        self.id = None
+        self.datecreated = None
+        self.date_assigned = None
+        self.age = None
+        self.milestone = None
+        self.status = None
+        self.statusexplanation = None
+        self.importance = None
+        self.assignee = None
+        self.bugwatch = None
+        self.owner = None
+        self.conjoined_master = None
+        self.conjoined_slave = None
+
+    @property
+    def targetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        # For a INullBugTask, there is no targetname in the database, of
+        # course, so we fallback on calculating the targetname in
+        # Python.
+        return self.target.bugtargetname
+
+
+def BugTaskToBugAdapter(bugtask):
+    """Adapt an IBugTask to an IBug."""
+    return bugtask.bug
+
+
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
@@ -98,7 +277,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (dbschema.BugTaskStatus.REJECTED,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.REJECTED,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -119,15 +298,15 @@ class BugTask(SQLBase, BugTaskMixin):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = dbschema.EnumCol(
+    status = EnumCol(
         dbName='status', notNull=True,
-        schema=dbschema.BugTaskStatus,
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
+        schema=BugTaskStatus,
+        default=BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    importance = dbschema.EnumCol(
+    importance = EnumCol(
         dbName='importance', notNull=True,
-        schema=dbschema.BugTaskImportance,
-        default=dbschema.BugTaskImportance.UNDECIDED)
+        schema=BugTaskImportance,
+        default=BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -321,13 +500,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX: we should use a specific SQLObject API here to avoid the
         # privacy violation.
         #   -- kiko, 2006-03-21
-        if self._SO_val_productID is not None:
+        if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self._SO_val_productseriesID is not None:
+        elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self._SO_val_distroreleaseID is not None:
+        elif self.distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
-        elif self._SO_val_distributionID is not None:
+        elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
@@ -390,7 +569,7 @@ class BugTask(SQLBase, BugTaskMixin):
         old_status = self.status
         self.status = new_status
 
-        if new_status == dbschema.BugTaskStatus.UNKNOWN:
+        if new_status == BugTaskStatus.UNKNOWN:
             # Ensure that all status-related dates are cleared,
             # because it doesn't make sense to have any values set for
             # date_confirmed, date_closed, etc. when the status
@@ -406,8 +585,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((old_status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
-            (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
+        if ((old_status.value < BugTaskStatus.CONFIRMED.value) and
+            (new_status.value >= BugTaskStatus.CONFIRMED.value)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
             # confirmed date at the same time anyway, otherwise we get
@@ -415,8 +594,8 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((old_status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
-            (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
+        if ((old_status.value < BugTaskStatus.INPROGRESS.value) and
+            (new_status.value >= BugTaskStatus.INPROGRESS.value)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
@@ -433,10 +612,10 @@ class BugTask(SQLBase, BugTaskMixin):
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
 
-        if new_status < dbschema.BugTaskStatus.CONFIRMED:
+        if new_status < BugTaskStatus.CONFIRMED:
             self.date_confirmed = None
 
-        if new_status < dbschema.BugTaskStatus.INPROGRESS:
+        if new_status < BugTaskStatus.INPROGRESS:
             self.date_inprogress = None
 
     def transitionToAssignee(self, assignee):
@@ -448,7 +627,7 @@ class BugTask(SQLBase, BugTaskMixin):
         UTC = pytz.timezone('UTC')
         now = datetime.datetime.now(UTC)
         if self.assignee and not assignee:
-            # The assignee is being cleared, so clear the dateassigned
+            # The assignee is being cleared, so clear the date_assigned
             # value.
             self.date_assigned = None
         if not self.assignee and assignee:
@@ -536,6 +715,47 @@ class BugTask(SQLBase, BugTaskMixin):
              'assignee': assignee_value})
 
         return header_value
+
+    def getDelta(self, old_task):
+        """See IBugTask."""
+        changes = {}
+        if ((IUpstreamBugTask.providedBy(old_task) and
+             IUpstreamBugTask.providedBy(self)) or
+            (IProductSeriesBugTask.providedBy(old_task) and
+             IProductSeriesBugTask.providedBy(self))):
+            if old_task.product != self.product:
+                changes["product"] = {}
+                changes["product"]["old"] = old_task.product
+                changes["product"]["new"] = self.product
+        elif ((IDistroBugTask.providedBy(old_task) and
+               IDistroBugTask.providedBy(self)) or
+              (IDistroReleaseBugTask.providedBy(old_task) and
+               IDistroReleaseBugTask.providedBy(self))):
+            if old_task.sourcepackagename != self.sourcepackagename:
+                changes["sourcepackagename"] = {}
+                changes["sourcepackagename"]["old"] = old_task.sourcepackagename
+                changes["sourcepackagename"]["new"] = self.sourcepackagename
+        else:
+            raise TypeError(
+                "Can't calculate delta on bug tasks of incompatible types: "
+                "[%s, %s]" % (repr(old_task), repr(self)))
+
+        # calculate the differences in the fields that both types of tasks
+        # have in common
+        for field_name in ("status", "importance",
+                           "assignee", "bugwatch", "milestone"):
+            old_val = getattr(old_task, field_name)
+            new_val = getattr(self, field_name)
+            if old_val != new_val:
+                changes[field_name] = {}
+                changes[field_name]["old"] = old_val
+                changes[field_name]["new"] = new_val
+
+        if changes:
+            changes["bugtask"] = self
+            return BugTaskDelta(**changes)
+        else:
+            return None
 
 
 def search_value_to_where_condition(search_value):
@@ -769,7 +989,7 @@ class BugTaskSet:
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(distrorelease, component_ids,
-                            dbschema.PackagePublishingStatus.PUBLISHED)])
+                            PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
@@ -791,7 +1011,7 @@ class BugTaskSet:
                             )
                         AND RelatedBugTask.status != %s
                     )
-                """ % sqlvalues(dbschema.BugTaskStatus.REJECTED)
+                """ % sqlvalues(BugTaskStatus.REJECTED)
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -815,12 +1035,12 @@ class BugTaskSet:
         # seb128, sfllaw, et al.)
         if params.only_resolved_upstream:
             statuses_for_watch_tasks = [
-                dbschema.BugTaskStatus.REJECTED,
-                dbschema.BugTaskStatus.FIXCOMMITTED,
-                dbschema.BugTaskStatus.FIXRELEASED]
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
             statuses_for_upstream_tasks = [
-                dbschema.BugTaskStatus.FIXCOMMITTED,
-                dbschema.BugTaskStatus.FIXRELEASED]
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
 
             only_resolved_upstream_clause = """
                 EXISTS (
@@ -928,7 +1148,7 @@ class BugTaskSet:
                    'TeamParticipation.person = %s' % person.id]
 
         if not showclosed:
-            committed = dbschema.BugTaskStatus.FIXCOMMITTED
+            committed = BugTaskStatus.FIXCOMMITTED
             filters.append('BugTask.status < %s' % sqlvalues(committed))
 
         if minimportance is not None:

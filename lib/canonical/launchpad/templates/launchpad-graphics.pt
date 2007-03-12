@@ -175,14 +175,15 @@
         <td>
           <img alt="" src="/@@/launchpad" />
         </td>
-        <td rowspan="3">
-          The Launchpad icon,
-          used for pages that don't belong to a pillar with its own icon.
-        </td>
+        <td>The Launchpad icon, used for bookmarks. 16 &times; 16 pixels.</td>
       </tr>
       <tr>
         <td>launchpad-large</td>
         <td><img alt="" src="/@@/launchpad-large" /></td>
+        <td rowspan="2">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
       </tr>
       <tr>
         <td>launchpad-heading</td>
@@ -213,6 +214,16 @@
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
+      </tr>
+      <tr>
+        <td>maybe</td>
+        <td><img alt="" src="/@@/maybe" /></td>
+        <td>A blue freehand question mark (used, for example, when something is proposed).</td>
+      </tr>
+      <tr>
+        <td>no</td>
+        <td><img alt="" src="/@@/no" /></td>
+        <td>A dark-ish red freehand cross (used, for example, when something is declined).</td>
       </tr>
       <tr>
         <td>person-mini</td>
@@ -258,9 +269,9 @@
         <td>product-mini</td>
         <td><img alt="" src="/@@/product-mini" /></td>
         <td>
-          A software product.
+          A software project.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
-          used where the product owner has not uploaded a custom icon.
+          used where the project owner has not uploaded a custom icon.
         </td>
       </tr>
       <tr>
@@ -278,7 +289,7 @@
       <tr>
         <td>project-mini</td>
         <td><img alt="" src="/@@/project-mini" /></td>
-        <td rowspan="4">A group of products.</td>
+        <td rowspan="4">A group of projects.</td>
       </tr>
       <tr>
         <td>project</td>
@@ -385,6 +396,11 @@
         <td><img alt="" src="/@@/warning-large" /></td>
       </tr>
       <tr>
+        <td>yes</td>
+        <td><img alt="" src="/@@/yes" /></td>
+        <td>A green check mark (used, for example, when something is approved).</td>
+      </tr>
+      <tr>
         <td>zoom-in</td>
         <td><img src="/@@/zoom-in" /></td>
         <td>Zoom in.</td>
@@ -485,7 +501,7 @@
   </table>
 
   <h3>Rosetta, the translation engine</h3>
-  
+
   <p>
     <img src="/@@/rosetta" align="left" />Rosetta is the Launchpad
     translation engine. It allows projects to invite translators to help make
@@ -541,7 +557,7 @@
   </table>
 
   <h3>Blueprint, the feature tracking application</h3>
-  
+
   <p>
     <img src="/@@/blueprint" align="left" />Blueprint is the Launchpad
     feature tracker. It is used to help projects plan their feature
@@ -560,12 +576,12 @@
   </table>
 
   <h3>Greenhouse, the code management system</h3>
-  
+
   <p>
     <img src="/@@/greenhouse" align="left" />"Greenhouse" is
     the Launchpad application that keeps track of software source code.
   </p>
-  
+
   <table class="listing">
     <tbody>
       <tr>
@@ -577,7 +593,7 @@
   </table>
 
   <h3>Soyuz, the distribution package management system</h3>
-  
+
   <p>
     <img src="/@@/soyuz" align="left" />Soyuz is the Launchpad subsystem
     that keeps track of the packages in a distribution. It handles uploads,
@@ -604,13 +620,13 @@
       <tr>
         <td>build-depwait</td>
         <td><img src="/@@/build-depwait" /></td>
-        <td>This is a build which depends on other packages that have
+        <td>A build depending on other packages that have
         themselves not yet been built.</td>
       </tr>
       <tr>
         <td>build-failure</td>
         <td><img src="/@@/build-failure" /></td>
-        <td>A build which failed.</td>
+        <td>A build that failed.</td>
       </tr>
       <tr>
         <td>build-needed</td>
@@ -641,7 +657,7 @@
   </table>
 
   <h3>Cashpoint, the bounty tracking system.</h3>
-  
+
   <p>
     <img src="/@@/cashpoint" align="left" />Cashpoint is the bounty tracking
     system in Launchpad. It allows projects to manage the feature proposals
@@ -660,10 +676,10 @@
     </tbody>
   </table>
 
-  <h3>XXX, the question tracking system.</h3>
-  
+  <h3>Answer Tracker, the question tracking system.</h3>
+
   <p>
-    The "question tracker" is a system that allows users to request help of
+    The "Answer Tracker" is a system that allows users to request help of
     one form or another with the software. It forms a lightweight framework
     for community support.
   </p>
@@ -671,10 +687,9 @@
   <table class="listing">
     <tbody>
       <tr>
-        <td>ticket</td>
-        <td><img src="/@@/ticket" /></td>
-        <td>A question - or "ticket". This is used as a bullet in lists of
-        such tickets.</td>
+        <td>question</td>
+        <td><img src="/@@/question" /></td>
+        <td>A question. This is used as a bullet in lists of questions.</td>
       </tr>
     </tbody>
   </table>

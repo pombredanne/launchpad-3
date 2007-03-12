@@ -24,19 +24,26 @@ from canonical.lp.dbschema import MirrorStatus
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
 # requests on a given host. (This ratio is per run, rather than held long
 # term)
+# IMPORTANT: Changing these values can cause lots of false negatives when
+# probing mirrors, so please don't change them unless you know what you're
+# doing.
 MIN_REQUEST_TIMEOUT_RATIO = 3
-MIN_REQUESTS_TO_CONSIDER_RATIO = 10
+MIN_REQUESTS_TO_CONSIDER_RATIO = 30
+
 # XXX: We need to get rid of these global dicts in this module. See
 # https://launchpad.net/launchpad/+bug/82201 for more details.
 # -- Guilherme Salgado, 2007-01-30
 host_requests = {}
 host_timeouts = {}
+host_semaphores = {}
 
 MAX_REDIRECTS = 3
 
 # Number of simultaneous connections we issue on a given host
-PER_HOST_REQUESTS = 1
-host_semaphores = {}
+# IMPORTANT: Don't change this unless you really know what you're doing. Using
+# a to big value can cause spurious failures on lots of mirrors and a to small
+# one can cause the prober to run for hours.
+PER_HOST_REQUESTS = 2
 
 
 class ProberProtocol(HTTPClient):
@@ -50,10 +57,10 @@ class ProberProtocol(HTTPClient):
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
 
-        Uses factory.host and factory.path
+        Uses factory.connect_host and factory.connect_path
         """
-        self.sendCommand('HEAD', self.factory.path)
-        self.sendHeader('HOST', self.factory.host)
+        self.sendCommand('HEAD', self.factory.connect_path)
+        self.sendHeader('HOST', self.factory.connect_host)
         self.endHeaders()
         
     def handleStatus(self, version, status, message):
@@ -105,21 +112,26 @@ class RedirectAwareProberProtocol(ProberProtocol):
         self.transport.loseConnection()
 
 
-def should_skip_host(host):
-    """Return True if the requests/timeouts ratio on this host is too low."""
-    requests = host_requests[host]
-    timeouts = host_timeouts[host]
-    if timeouts == 0 or requests < MIN_REQUESTS_TO_CONSIDER_RATIO:
-        return False
-    else:
-        ratio = float(requests) / timeouts
-        return ratio < MIN_REQUEST_TIMEOUT_RATIO
-
-
 class ProberFactory(protocol.ClientFactory):
     """Factory using ProberProtocol to probe single URL existence."""
 
     protocol = ProberProtocol
+
+    # Details of the URL of the host in which we actually want to request the
+    # confirmation from.
+    request_scheme = None
+    request_host = None
+    request_port = None
+    request_path = None
+
+    # Details of the URL of the host in which we'll connect, which will only
+    # be different from request_* in case we have an http_proxy environment
+    # variable --in that case the scheme, host and port will be the ones
+    # extracted from http_proxy and the path will be self.url
+    connect_scheme = None
+    connect_host = None
+    connect_port = None
+    connect_path = None
 
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
         # We want the deferred to be a private attribute (_deferred) to make
@@ -129,15 +141,20 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        if self.host not in host_requests:
-            host_requests[self.host] = 0
-        if self.host not in host_timeouts:
-            host_timeouts[self.host] = 0
 
     def probe(self):
-        if should_skip_host(self.host):
+        # NOTE: We don't want to issue connections to any outside host when
+        # running the mirror prober in a development machine, so we do this
+        # hack here.
+        if (self.connect_host != 'localhost' 
+            and config.distributionmirrorprober.localhost_only):
+            reactor.callLater(0, self.succeeded, '200')
+            return self._deferred
+
+        if should_skip_host(self.request_host):
             reactor.callLater(0, self.failed, ConnectionSkipped(self.url))
             return self._deferred
+
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
@@ -145,11 +162,11 @@ class ProberFactory(protocol.ClientFactory):
         return self._deferred
 
     def connect(self):
-        host_requests[self.host] += 1
-        reactor.connectTCP(self.host, self.port, self)
+        host_requests[self.request_host] += 1
+        reactor.connectTCP(self.connect_host, self.connect_port, self)
 
     def failWithTimeoutError(self):
-        host_timeouts[self.host] += 1
+        host_timeouts[self.request_host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
         self.connector.disconnect()
 
@@ -169,12 +186,7 @@ class ProberFactory(protocol.ClientFactory):
 
     def setURL(self, url):
         self.url = url
-        proxy = os.getenv('http_proxy')
-        if proxy:
-            scheme, host, port, path = _parse(proxy)
-            path = url
-        else:
-            scheme, host, port, path = _parse(url)
+        scheme, host, port, path = _parse(url)
         # XXX: We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
@@ -183,22 +195,29 @@ class ProberFactory(protocol.ClientFactory):
         # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(scheme)
+
         if scheme and host:
-            self.scheme = scheme
-            self.host = host
-            self.port = port
-        self.path = path
+            self.request_scheme = scheme
+            self.request_host = host
+            self.request_port = port
+            self.request_path = path
 
+        if self.request_host not in host_requests:
+            host_requests[self.request_host] = 0
+        if self.request_host not in host_timeouts:
+            host_timeouts[self.request_host] = 0
 
-def _parse(url, defaultPort=80):
-    """Parse the given URL returning the scheme, host, port and path."""
-    scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
-    port = defaultPort
-    if ':' in host:
-        host, port = host.split(':')
-        assert port.isdigit()
-        port = int(port)
-    return scheme, host, port, path
+        # If the http_proxy variable is set, we want to use it as the host
+        # we're going to connect to.
+        proxy = os.getenv('http_proxy')
+        if proxy:
+            scheme, host, port, dummy = _parse(proxy)
+            path = url
+
+        self.connect_scheme = scheme
+        self.connect_host = host
+        self.connect_port = port
+        self.connect_path = path
 
 
 class RedirectAwareProberFactory(ProberFactory):
@@ -261,7 +280,7 @@ class ConnectionSkipped(ProberError):
 
     def __str__(self):
         return ("Connection skipped because of too many timeouts on this "
-                "host. It will be retrieved on the next probing run.")
+                "host. It will be retried on the next probing run.")
 
 
 class UnknownURLScheme(ProberError):
@@ -363,7 +382,7 @@ class ArchiveMirrorProberCallbacks(object):
             # If we ever need an overall limit, we can use Andrew's suggestion
             # on https://launchpad.net/bugs/54791 to implement it.
             semaphore = host_semaphores.setdefault(
-                prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
             deferred = semaphore.run(prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
@@ -525,7 +544,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         # If we ever need an overall limit, we can use Andrews's suggestion
         # on https://launchpad.net/bugs/54791 to implement it.
         semaphore = host_semaphores.setdefault(
-            prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+            prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
         deferred = semaphore.run(prober.probe)
         deferred.addCallbacks(
             callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
@@ -538,7 +557,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
 
 def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
-    """Probe a release or release mirror for its contents.
+    """Probe a release mirror for its contents.
     
     This is done by checking the list of files for each flavour and release
     returned by get_expected_cdimage_paths(). If a mirror contains all
@@ -569,7 +588,7 @@ def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
             # If we ever need an overall limit, we can use Andrews's
             # suggestion on https://launchpad.net/bugs/54791 to implement it.
             semaphore = host_semaphores.setdefault(
-                prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
             deferred = semaphore.run(prober.probe)
             deferred.addErrback(callbacks.logMissingURL, url)
             deferredList.append(deferred)
@@ -577,4 +596,26 @@ def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
         deferredList.addCallback(checkComplete, mirror_key, unchecked_keys)
+
+
+def should_skip_host(host):
+    """Return True if the requests/timeouts ratio on this host is too low."""
+    requests = host_requests[host]
+    timeouts = host_timeouts[host]
+    if timeouts == 0 or requests < MIN_REQUESTS_TO_CONSIDER_RATIO:
+        return False
+    else:
+        ratio = float(requests) / timeouts
+        return ratio < MIN_REQUEST_TIMEOUT_RATIO
+
+
+def _parse(url, defaultPort=80):
+    """Parse the given URL returning the scheme, host, port and path."""
+    scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
+    port = defaultPort
+    if ':' in host:
+        host, port = host.split(':')
+        assert port.isdigit()
+        port = int(port)
+    return scheme, host, port, path
 

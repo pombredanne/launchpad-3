@@ -6,7 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'ProductNavigation',
-    'ProductSetNavigation',
+    'ProductShortLink',
+    'ProductSOP',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -14,16 +15,22 @@ __all__ = [
     'ProductBountiesMenu',
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
-    'ProductSetContextMenu',
     'ProductView',
-    'ProductEditView',
-    'ProductAddSeriesView',
-    'ProductRdfView',
-    'ProductSetView',
     'ProductAddView',
+    'ProductEditView',
+    'ProductChangeTranslatorsView',
+    'ProductReviewView',
+    'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductLaunchpadUsageEditView',
+    'ProductRdfView',
+    'ProductSetFacets',
+    'ProductSetSOP',
+    'ProductSetNavigation',
+    'ProductSetContextMenu',
+    'ProductSetView',
+    'ProductBranchesView',
     ]
 
 from operator import attrgetter
@@ -38,39 +45,40 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot)
+    ILaunchpadRoot, IBranchSet)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetTraversalMixin)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadView,
-    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation,
-    RedirectionNavigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough,
-    structured)
+    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, sorted_version_numbers,
+    StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets.image import ImageAddWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    TicketTargetTraversalMixin):
+    QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -100,30 +108,43 @@ class ProductNavigation(
         return self.context.getSeries(name)
 
 
-class ProductSetNavigation(RedirectionNavigation):
+class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
 
     def breadcrumb(self):
         return 'Products'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid product name
-        if self.context.getByName(name) is None:
+        product = self.context.getByName(name)
+        if product is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(product))
 
 
-class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class ProductSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # product series, most recent first
+        return list(self.context.serieslist[:num])
+
+    def listAltChildren(self, num):
+        return None
+
+
+class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
 
-    enable_only = ['overview', 'bugs', 'support', 'specifications',
+    enable_only = ['overview', 'bugs', 'answers', 'specifications',
                    'translations', 'branches']
 
     links = StandardLaunchpadFacets.links
@@ -154,7 +175,7 @@ class ProductFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
 
     def specifications(self):
         target = ''
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
@@ -183,22 +204,22 @@ class ProductOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Product Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint Driver'
+        text = 'Appoint driver'
         summary = 'Someone with permission to set goals for all series'
         return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Maintainer'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def top_contributors(self):
-        text = 'Top Contributors'
+        text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
@@ -206,26 +227,26 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+distributions', text, icon='info')
 
     def packages(self):
-        text = 'Published Packages'
+        text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
     def series_add(self):
-        text = 'Add Release Series'
+        text = 'Add series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
-        text = 'Register Bazaar Branch'
+        text = 'Register branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
-        text = 'Define Launchpad Usage'
+        text = 'Define Launchpad usage'
         return Link('+launchpad', text, icon='edit')
 
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
-            'RDF</abbr> Metadata')
+            'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
@@ -241,20 +262,20 @@ class ProductBugsMenu(ApplicationMenu):
     links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
 
     def filebug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE Reports', icon='cve')
+        return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change Bug Contact'
+        text = 'Change bug contact'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
-        text = 'Change Security Contact'
+        text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
 
@@ -262,17 +283,12 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['listing', 'branch_add', ]
+    links = ['branch_add', ]
 
     def branch_add(self):
-        text = 'Register Bazaar Branch'
+        text = 'Register branch'
         summary = 'Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
-
-    def listing(self):
-        text = 'Listing View'
-        summary = 'Show detailed branch listing'
-        return Link('+branchlisting', text, summary, icon='branch')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -282,12 +298,12 @@ class ProductSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'doc', 'roadmap', 'table', 'new']
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         summary = 'Show all specifications for %s' %  self.context.title
         return Link('+specs?show=all', text, summary, icon='info')
 
     def doc(self):
-        text = 'Documentation'
+        text = 'List documentation'
         summary = 'List all complete informational specifications'
         return Link('+documentation', text, summary,
             icon='info')
@@ -303,8 +319,8 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def new(self):
-        text = 'New Specification'
-        summary = 'Register a new specification for %s' % self.context.title
+        text = 'Register blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
 
@@ -315,11 +331,11 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'New Bounty'
+        text = 'Register bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -330,12 +346,12 @@ class ProductTranslationsMenu(ApplicationMenu):
     links = ['translators', 'edit']
 
     def translators(self):
-        text = 'Change Translators'
+        text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
-        text = 'Edit Template Names'
+        text = 'Edit template names'
         return Link('+potemplatenames', text, icon='edit')
 
 
@@ -346,18 +362,61 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
+class ProductSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class ProductSetFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for the IProductSet."""
+
+    usedfor = IProductSet
+
+    enable_only = ['overview',]
+
+
 class ProductSetContextMenu(ContextMenu):
 
     usedfor = IProductSet
-    links = ['register', 'listall']
+
+    links = ['products', 'distributions', 'people', 'meetings',
+             'register', 'listall', 'withcode']
 
     def register(self):
-        text = 'Register a Product'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Products'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
+    
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def meetings(self):
+        return Link('/sprints/', 'View meetings')
+
+    def withcode(self):
+        text = 'Show projects with code'
+        productset = getUtility(IProductSet)
+        return Link(canonical_url(
+            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:
@@ -486,16 +545,40 @@ class ProductView:
         series_list.insert(0, self.context.development_focus)
         return series_list
 
-class ProductEditView(SQLObjectEditView):
+class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
-    def changed(self):
-        # If the name changed then the URL will have changed
+    schema = IProduct
+    label = "Edit details"
+    field_names = [
+        "project", "displayname", "title", "summary", "description",
+        "homepageurl", "gotchi", "emblem", "sourceforgeproject",
+        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
+        "programminglang", "development_focus"]
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
         if self.context.active:
-            self.request.response.redirect(canonical_url(self.context))
+            return canonical_url(self.context)
         else:
-            productset = getUtility(IProductSet)
-            self.request.response.redirect(canonical_url(productset))
+            return canonical_url(getUtility(IProductSet))
+
+
+class ProductChangeTranslatorsView(ProductEditView):
+    label = "Change translation group"
+    field_names = ["translationgroup", "translationpermission"]
+
+
+class ProductReviewView(ProductEditView):
+    label = "Administer product details"
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -703,8 +786,9 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None
@@ -736,6 +820,7 @@ class ProductAddView(LaunchpadFormView):
             assert "reviewed" not in data
             data['owner'] = self.user
             data['reviewed'] = False
+        gotchi, gotchi_heading = data['gotchi']
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -752,7 +837,8 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.product))
 
@@ -820,3 +906,37 @@ class ProductReassignmentView(ObjectReassignmentView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+
+class ProductShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname
+
+
+class ProductBranchesView(BranchListingView):
+    """View for branch listing for a product."""
+    
+    extra_columns = ('author',)
+
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForProduct(
+            self.context, self.selected_lifecycle_status)
+
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status:
+            message = (
+                'There may be branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this product.')
+        return message % self.context.displayname
+
+

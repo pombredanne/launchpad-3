@@ -11,7 +11,7 @@
 
   The link to the Administrator console
 
-  >>> admin_console_link = browser.getLink('Administrator Console')
+  >>> admin_console_link = browser.getLink('Administration console')
   >>> admin_console_link.url
   'http://localhost:9000/codeofconduct/console'
 
@@ -39,8 +39,8 @@
   >>> 'Ubuntu Code of Conduct - 1.0.1' in browser.contents
   True
 
-  >>> browser.getLink('Sign This Version').url
+  >>> browser.getLink('Sign this version').url
   'http://localhost:9000/codeofconduct/1.0.1/+sign'
 
-  >>> browser.getLink('Download This Version').url
+  >>> browser.getLink('Download this version').url
   'http://localhost:9000/codeofconduct/1.0.1/+download'
