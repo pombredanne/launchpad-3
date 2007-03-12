@@ -190,6 +190,7 @@
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
+                      <div class="clear"></div><!-- needed for Safari -->
                     </div>
                     <div class="clear"></div>
                     </div>
