@@ -31,19 +31,19 @@ class MockUploadLogger:
     def __init__(self, verbose=True):
         self.verbose = verbose
 
-    def debug(self, s):
+    def debug(self, message):
         if self.verbose is not True:
             return
-        print 'DEBUG:', s
+        print 'DEBUG:', message
 
-    def info(self, s):
-        print 'INFO:', s
+    def info(self, message):
+        print 'INFO:', message
 
-    def warn(self, s):
-        print 'WARN:', s
+    def warn(self, message):
+        print 'WARN:', message
 
-    def error(self, s):
-        print 'ERROR:', s
+    def error(self, message):
+        print 'ERROR:', message
 
 
 mock_options = MockUploadOptions()

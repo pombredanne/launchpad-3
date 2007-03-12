@@ -276,7 +276,7 @@ Publish the custom upload:
 
   >>> upload.queue_root.realiseUpload(MockLogger())
   DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
-  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
+  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar/foobar')
 
 Check if the queue item remained in ACCEPTED and not cruft was
 inserted in the archive:

@@ -17,11 +17,32 @@ import os
 import tarfile
 import stat
 
-from canonical.archivepublisher.custom_upload import CustomUpload
+from canonical.archivepublisher.customupload import CustomUpload
 
 
 class DdtpTarballUpload(CustomUpload):
+    """DDTP (Debian Description Translation Project) tarball upload
 
+    The tarball should be name as:
+
+     <NAME>_<COMPONENT>_<VERSION>.tar.gz
+
+    where:
+
+     * NAME: anything reasonable (ddtp-tarball);
+     * COMPONENT: LP component (main, universe, etc);
+     * VERSION: debian-like version token.
+
+    It is consisted of a tarball containing all the supported indexes
+    files for the DDTP system (under 'i18n' directory) contents driven
+    by component.
+
+    Results will be published (installed in archive) under:
+
+       <ARCHIVE>dists/<SUITE>/<COMPONENT>/i18n
+
+    Old contents will be preserved.
+    """
     def __init__(self, archive_root, tarfile_path, distrorelease):
         CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
 

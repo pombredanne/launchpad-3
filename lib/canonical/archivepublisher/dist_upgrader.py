@@ -11,7 +11,7 @@ import tarfile
 import stat
 import shutil
 
-from canonical.archivepublisher.custom_upload import (
+from canonical.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
 from sourcerer.deb.version import (
     BadUpstreamError, Version as make_version)
@@ -32,7 +32,32 @@ class DistUpgraderBadVersion(CustomUploadError):
 
 
 class DistUpgraderUpload(CustomUpload):
+    """Dist Upgrader custom upload processor.
 
+    Dist-Upgrader is a tarball containing files for performing automatic
+    distrorelease upgrades, driven by architecture.
+
+    The tarball should be name as:
+
+      <NAME>_<VERSION>_<ARCH>.tar.gz
+
+    where:
+
+     * NAME: can be anything reasonable like 'dist-upgrader', it's not used;
+     * VERSION: debian-like version token;
+     * ARCH: debian-like architecture tag.
+
+    and should contain:
+
+     * ReleaseAnnouncement text file;
+     * <distrorelease>.tar.gz file.
+
+    Dist-Upgrader versions are published under:
+
+    <ARCHIVE>/dists/<SUITE>/main/dist-upgrader-<ARCH>/<VERSION>/
+
+    A 'current' symbolic link points to the most recent version.
+    """
     def __init__(self, archive_root, tarfile_path, distrorelease):
         CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
 
@@ -49,7 +74,18 @@ class DistUpgraderUpload(CustomUpload):
             raise DistUpgraderAlreadyExists(arch, self.version)
 
     def shouldInstall(self, filename):
-        directory_name = filename.split('/')[0]
+        """ Install files from a dist-upgrader tarball.
+
+        It raises DistUpgraderBadVersion if if finds a directory name that
+        could not be treated as a valid Debian version.
+
+        It returns False for extracted contents of a directory named
+        'current' (since it would obviously conflict with the symbolic
+        link in the archive).
+
+        Return True for contents of 'versionable' directories.
+        """
+        directory_name = os.path.dirname(filename)
         try:
             version = make_version(directory_name)
         except BadUpstreamError, exc:

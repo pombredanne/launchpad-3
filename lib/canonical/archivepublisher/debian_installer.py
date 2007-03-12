@@ -14,7 +14,7 @@ import tarfile
 import stat
 import shutil
 
-from canonical.archivepublisher.custom_upload import (
+from canonical.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
 from sourcerer.deb.version import Version as make_version
 
@@ -28,7 +28,27 @@ class DebianInstallerAlreadyExists(CustomUploadError):
 
 
 class DebianInstallerUpload(CustomUpload):
+    """ Debian Installer custom upload.
 
+    The debian-installer filename should be something like:
+
+        <BASE>_<VERSION>_<ARCH>.tar.gz
+
+    where:
+
+      * BASE: base name (usually 'debian-installer-images');
+      * VERSION: encoded version (something like '20061102ubuntu14');
+      * if the version string contains '.0.' we assume it is a
+        'daily-installer', otherwise, it is a normal 'installer';
+      * ARCH: targeted architecture tag ('i386', 'amd64', etc);
+
+    The contents are extracted in the archive, respecting its type
+    ('installer' or 'daily-installer'), in the following path:
+
+         <ARCHIVE>/dists/<SUITE>/main/<TYPE>-<ARCH>/<VERSION>
+
+    A 'current' symbolic link points to the most recent version.
+    """
     def __init__(self, archive_root, tarfile_path, distrorelease):
         CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
 

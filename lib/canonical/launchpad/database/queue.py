@@ -18,7 +18,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.archivepublisher.custom_upload import CustomUploadError
+from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
