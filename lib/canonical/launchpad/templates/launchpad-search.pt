@@ -58,7 +58,7 @@
 
       <a tal:attributes="href string:/${result/name}">
         <dfn tal:content="result/title">Ubuntu Linux</dfn>
-      </a> (<span tal:replace="result/type">distribution</span>)
+      </a>
       
         </dt>
         <dd tal:content="result/description">Description of Ubuntu</dd>

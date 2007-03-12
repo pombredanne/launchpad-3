@@ -95,9 +95,9 @@ class QuestionSetView(LaunchpadFormView):
 
     @property
     def latest_questions_asked(self):
-        """Return the 10 latest questions asked."""
+        """Return the 5 latest questions asked."""
         return self.context.searchQuestions(
-            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:5]
 
     @property
     def latest_questions_solved(self):

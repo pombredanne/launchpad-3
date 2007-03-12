@@ -135,6 +135,7 @@
     <resource name="translation" file="../images/translation.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.png" />
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
+    <resource name="user" file="../images/person.png" />
     <resource name="warning" file="../images/warning.png" />
     <resource name="warning-large" file="../images/warning-large.png" />
     <resource name="yes" file="../images/yes.png" />

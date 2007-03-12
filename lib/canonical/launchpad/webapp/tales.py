@@ -21,6 +21,7 @@ from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -1181,6 +1182,109 @@ class PermissionRequiredQuery:
                     "There should be no further path segments after "
                     "required:permission")
         return check_permission(name, self.context)
+
+
+class PageMacroDispatcher:
+    """Selects a macro, while storing information about page layout.
+
+        view/macro:page
+        view/macro:page/applicationhome
+        view/macro:page/pillarindex
+        view/macro:page/freeform
+
+        view/macro:pagehas/actionsmenu
+        view/macro:pagehas/portletcolumn
+        view/macro:pagehas/applicationtabs
+        view/macro:pagehas/applicationborder
+        view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/heading
+
+    """
+
+    implements(ITraversable)
+
+    master = ViewPageTemplateFile('../templates/main-template.pt')
+
+    def __init__(self, context):
+        # The context of this object is a view object.
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if name == 'page':
+            if len(furtherPath) == 1:
+                pagetype = furtherPath.pop()
+            elif not furtherPath:
+                pagetype = 'default'
+            else:
+                raise TraversalError("Max one path segment after macro:page")
+
+            return self.page(pagetype)
+
+        if name == 'pagehas':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "Exactly one path segment after macro:haspage")
+
+            layoutelement = furtherPath.pop()
+            return self.haspage(layoutelement)
+
+        raise TraversalError()
+
+    def page(self, pagetype):
+        if pagetype not in self._pagetypes:
+            raise TraversalError('unknown pagetype: %s' % pagetype)
+        self.context.__pagetype__ = pagetype
+        return self.master.macros['master']
+
+    def haspage(self, layoutelement):
+        pagetype = getattr(self.context, '__pagetype__', None)
+        if pagetype is None:
+            pagetype = 'unset'
+        return self._pagetypes[pagetype][layoutelement]
+
+    class LayoutElements:
+
+        def __init__(self,
+            actionsmenu=False,
+            portletcolumn=False,
+            applicationtabs=False,
+            applicationborder=False,
+            applicationbuttons=False,
+            heading=False,
+            pagetypewasset=True
+            ):
+            self.elements = vars()
+
+        def __getitem__(self, name):
+            return self.elements[name]
+
+    _pagetypes = {
+        'unset':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationtabs=True,
+                applicationborder=True,
+                pagetypewasset=False),
+        'default':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationtabs=True,
+                applicationborder=True),
+        'applicationhome':
+            LayoutElements(
+                applicationbuttons=True,
+                heading=True),
+        'pillarindex':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationbuttons=True,
+                heading=True),
+        'freeform':
+            LayoutElements(),
+        }
 
 
 class GotoStructuralObject:

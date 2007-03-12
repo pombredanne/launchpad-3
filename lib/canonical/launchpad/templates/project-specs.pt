@@ -35,7 +35,7 @@
 
     <p>
       <strong>Register the first blueprint in this project!</strong>
-      Start by choosing the relevant product from the list below:
+      Start by choosing the relevant project from the list below:
     </p>
     <ul class="menu">
       <li class="add" tal:repeat="product context/products">
@@ -87,7 +87,7 @@
           <th>Status</th>
           <th>Delivery</th>
           <th>Assignee</th>
-          <th>Product</th>
+          <th>Project</th>
         </tr>
       </thead>
       <tbody>
@@ -147,7 +147,7 @@
 
     <p tal:condition="view/specs" class="discreet">
       This listing shows by default all the unimplemented feature
-      specifications currently associated with all products in 
+      specifications currently associated with all projects in 
       <span tal:replace="context/displayname">Mozilla</span>.
     </p>
 

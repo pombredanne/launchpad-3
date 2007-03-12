@@ -69,7 +69,6 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
-from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -183,20 +182,20 @@ class BugTargetTraversalMixin:
         # for example, return a bug page for a context in which the bug hasn't
         # yet been reported.
         if IProduct.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, product=context)
+            null_bugtask = bug.getNullBugTask(product=context)
         elif IProductSeries.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, productseries=context)
+            null_bugtask = bug.getNullBugTask(productseries=context)
         elif IDistribution.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distribution=context)
+            null_bugtask = bug.getNullBugTask(distribution=context)
         elif IDistributionSourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distribution=context.distribution,
+            null_bugtask = bug.getNullBugTask(
+                distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         elif IDistroRelease.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+            null_bugtask = bug.getNullBugTask(distrorelease=context)
         elif ISourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distrorelease=context.distrorelease,
+            null_bugtask = bug.getNullBugTask(
+                distrorelease=context.distrorelease,
                 sourcepackagename=context.sourcepackagename)
         else:
             raise TypeError(

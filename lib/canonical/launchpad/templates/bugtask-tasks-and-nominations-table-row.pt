@@ -30,7 +30,7 @@
       <span style="display: block; padding: 0.25em">
         <img src="/@@/pkg-source" alt="package"
              tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" alt="product"
+        <img src="/@@/product" alt="project"
              tal:condition="view/shouldShowProductIcon" />
         <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
           <a
