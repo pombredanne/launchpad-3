@@ -776,6 +776,7 @@ class NascentUpload:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
+            self.logger.error("duhhhh", exc_info=True)
             self.reject("Exception while accepting: %s" % e)
             return False, self.do_reject()
 
@@ -886,22 +887,18 @@ class NascentUpload:
                 queue_root.addCustom(libraryfile, custom_file.custom_type)
 
             for binary_package_file in self.changes.binary_package_files:
-                try:
-                    if self.sourceful:
-                        # The reason we need to do this verification
-                        # so late in the game is that in the
-                        # mixed-upload case we only have a
-                        # sourcepackagerelease to verify here!
-                        assert self.policy.can_upload_mixed
-                        assert spr
-                        binary_package_file.verify_sourcepackagerelease(spr)
-                    else:
-                        spr = binary_package_file.find_sourcepackagerelease()
+                if self.sourceful:
+                    # The reason we need to do this verification
+                    # so late in the game is that in the
+                    # mixed-upload case we only have a
+                    # sourcepackagerelease to verify here!
+                    assert self.policy.can_upload_mixed
+                    assert spr
+                    binary_package_file.verify_sourcepackagerelease(spr)
+                else:
+                    spr = binary_package_file.find_sourcepackagerelease()
                     build = binary_package_file.find_build(spr)
                     binary_package_file.store_in_database(build)
-                except UploadError, e:
-                    self.reject("Error storing binaries: %s" % e)
-                    return
 
                 # XXX: two questions: did we mean distrorelease or
                 # pocket here, and can we assert build.pocket ==

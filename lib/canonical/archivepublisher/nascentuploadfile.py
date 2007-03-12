@@ -508,10 +508,14 @@ class UBinaryUploadFile(PackageUploadFile):
         #
 
         control_source = self.control.get("Source", None)
-        if control_source is not None and "(" in control_source:
-            src_match = re_extract_src_version.match(control_source)
-            self.source_name = src_match.group(1)
-            self.source_version = src_match.group(2)
+        if control_source is not None:
+            if "(" in control_source:
+                src_match = re_extract_src_version.match(control_source)
+                self.source_name = src_match.group(1)
+                self.source_version = src_match.group(2)
+            else:
+                self.source_name = control_source
+                self.source_version = self.control.get("Version")
         else:
             self.source_name = self.control.get("Package")
             self.source_version = self.control.get("Version")
@@ -686,8 +690,7 @@ class UBinaryUploadFile(PackageUploadFile):
             build.distroarchrelease != dar):
             raise UploadError(
                 "Attempt to upload binaries specifying "
-                "build %s, where they don't fit.\n%s"
-                % (build.id, "\n".join(info)))
+                "build %s, where they don't fit." % build.id)
 
         return build
 
@@ -725,7 +728,9 @@ class UBinaryUploadFile(PackageUploadFile):
             binpackageformat=self.format,
             component=self.converted_component,
             section=self.converted_section,
-            priority=self.converted_priority,
+            # XXX !!!
+            #priority=self.converted_priority,
+            priority=PackagePublishingPriority.OPTIONAL,
             shlibdeps=shlibdeps,
             depends=encoded.get('Depends', ''),
             recommends=encoded.get('Recommends', ''),

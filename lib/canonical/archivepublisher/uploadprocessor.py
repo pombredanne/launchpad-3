@@ -45,8 +45,9 @@ above, failed being worst).
 
 __metaclass__ = type
 
-import os
 from email import message_from_string
+import os
+import shutil
 
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
@@ -225,13 +226,11 @@ class UploadProcessor:
 
         # Restore original value for self.options.distro
         self.options.distro = options_distro
-        
+
         upload = NascentUpload(policy, upload_path, changes_file, self.log)
 
         try:
-            self.ztm.begin()
             self.log.info("Processing upload %s" % upload.changes.filename)
-
             result = UploadStatusEnum.ACCEPTED
 
             try:
@@ -301,7 +300,7 @@ class UploadProcessor:
             self.options.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
-        os.rename(upload, target_path)
+        shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
@@ -309,7 +308,7 @@ class UploadProcessor:
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
-            os.rename(distro_filename, target_path)
+            shutil.move(distro_filename, target_path)
 
     def sendMails(self, mails):
         """Send the mails provided using the launchpad mail infrastructure."""

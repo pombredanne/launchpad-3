@@ -23,7 +23,8 @@ re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 
 
 class ChangesFile(SignableTagFile):
-    """XXX"""
+    """Changesfile model."""
+
     mandatory_fields = set([
         "source", "binary", "architecture", "version", "distribution",
         "maintainer", "files", "changes"])
@@ -45,7 +46,7 @@ class ChangesFile(SignableTagFile):
     filename_archtag = None
     files = None
     def __init__(self, filename, fsroot, policy, logger):
-        """XXX
+        """Process the given changesfile.
 
         Does:
             * Verification of required fields
@@ -53,6 +54,7 @@ class ChangesFile(SignableTagFile):
             * Parses maintainer and changed-by
             * Checks name of changes file
             * Checks signature of changes file
+
         If any of these checks fail, UploadError is raised, and it's
         considered a fatal error (no subsequent processing of the upload
         will be done).
@@ -108,7 +110,8 @@ class ChangesFile(SignableTagFile):
         for fileline in self._dict['files'].strip().split("\n"):
             # files lines from a changes file are always of the form:
             # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
-            digest, size, component_and_section, priority, filename = fileline.strip().split()
+            digest, size, component_and_section, priority, filename = (
+                fileline.strip().split())
             source_match = re_issource.match(filename)
             binary_match = re_isadeb.match(filename)
             try:
@@ -150,8 +153,9 @@ class ChangesFile(SignableTagFile):
                 else:
                     # XXX: byhand will fall into this category now. is
                     # that right?
-                    yield UploadError("Unable to identify file %s (%s) "
-                                      "in changes." % (filename, component_and_section))
+                    yield UploadError(
+                        "Unable to identify file %s (%s) in changes."
+                        % (filename, component_and_section))
                     continue
             except UploadError, e:
                 yield e
@@ -173,15 +177,16 @@ class ChangesFile(SignableTagFile):
 
         raw_urgency = self._dict['urgency'].lower()
         if not self.urgency_map.has_key(raw_urgency):
-            yield UploadWarning("Unable to grok urgency %s, overriding with 'low'"
-                                % ( raw_urgency))
+            yield UploadWarning(
+                "Unable to grok urgency %s, overriding with 'low'"
+                % ( raw_urgency))
             self._dict['urgency'] = "low"
 
         if not self.policy.unsigned_changes_ok:
             assert self.signer is not None
 
     #
-    #
+    # useful properties
     #
 
     @property

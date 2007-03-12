@@ -114,6 +114,9 @@ class SignableTagFile:
                 comment=('when the %s package was uploaded to %s'
                          % (package, release)))
 
+            self.logger.debug('******* Person created: %s (%s)'
+                              % (person.displayname, person.id))
+
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"
                               % (name, email))
@@ -254,12 +257,13 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         % (self.filename, field_name, e))
 
         # Verify the filename matches appropriately
-        epochless_dsc_version = re_no_epoch.sub('', self._dict["version"])
-        if epochless_dsc_version != self.version:
+        dsc_version = self._dict["version"]
+
+        if dsc_version != self.version:
             yield UploadError(
                 "%s: version ('%s') in .dsc does not match version "
                 "('%s') in .changes."
-                % (self.filename, epochless_dsc_version, self.version))
+                % (self.filename, dsc_version, self.version))
 
         for error in self.check_files():
             yield error
@@ -282,9 +286,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # dismiss. It prevent us to have scary duplicated filenames
                 # in Librarian and missapplied files in archive, fixes
                 # bug # 38636 and friends.
-                if sub_dsc_file.sha_digest != library_file.content.sha1:
-                    yield UploadError("SHA1 sum of uploaded file does not "
-                                      "match existent file in archive")
+                if sub_dsc_file.digest != library_file.content.md5:
+                    yield UploadError(
+                        "MD5 sum of uploaded file does not match existent "
+                        "file in archive")
                     files_missing = True
                     continue
 
@@ -398,7 +403,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             sourcepackagename=source_name,
             version=self.changes.version,
             maintainer=self.maintainer['person'],
-
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
