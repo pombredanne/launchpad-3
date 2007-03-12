@@ -84,10 +84,10 @@ Product and Branches:
   >>> print find_tag_by_id(browser.contents, 'upstreams')
   <ul id="upstreams">
     <li>
-      <b>Project:</b>
+      <b>Project Group:</b>
       <a href="/mozilla">the Mozilla Project</a>
     </li>
-    <li><b>Product:</b>
+    <li><b>Project:</b>
       <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>

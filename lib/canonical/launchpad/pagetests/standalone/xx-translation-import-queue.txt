@@ -57,7 +57,7 @@ thus, the link should appear.
   >>> 'Mozilla Firefox Series' in browser.contents
   True
   >>> browser.getLink(url='imports/3')
-  <Link text='Edit' url='http://launchpad.dev/translations/imports/3'>
+  <Link text='[IMG]' url='http://launchpad.dev/translations/imports/3'>
   >>> browser.getControl(name='status-3').displayValue
   ['Needs Review']
 

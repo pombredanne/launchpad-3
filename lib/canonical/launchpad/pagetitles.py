@@ -535,7 +535,8 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
@@ -852,12 +853,12 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('%s HCT status')
+sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define upstream series for %s')
+sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 

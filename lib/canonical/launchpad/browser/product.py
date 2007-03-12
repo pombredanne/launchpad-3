@@ -18,6 +18,8 @@ __all__ = [
     'ProductView',
     'ProductAddView',
     'ProductEditView',
+    'ProductChangeTranslatorsView',
+    'ProductReviewView',
     'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
@@ -28,6 +30,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchesView',
     ]
 
 from operator import attrgetter
@@ -47,8 +50,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot)
+    ILaunchpadRoot, IBranchSet)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -66,7 +70,8 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets.image import ImageAddWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -226,7 +231,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+packages', text, icon='info')
 
     def series_add(self):
-        text = 'Add series'
+        text = 'Register a release series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -278,17 +283,12 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['listing', 'branch_add', ]
+    links = ['branch_add', ]
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
-
-    def listing(self):
-        text = 'Show branch listing'
-        summary = 'Show detailed branch listing'
-        return Link('+branchlisting', text, summary, icon='branch')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -545,16 +545,40 @@ class ProductView:
         series_list.insert(0, self.context.development_focus)
         return series_list
 
-class ProductEditView(SQLObjectEditView):
+class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
-    def changed(self):
-        # If the name changed then the URL will have changed
+    schema = IProduct
+    label = "Edit details"
+    field_names = [
+        "project", "displayname", "title", "summary", "description",
+        "homepageurl", "gotchi", "emblem", "sourceforgeproject",
+        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
+        "programminglang", "development_focus"]
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
         if self.context.active:
-            self.request.response.redirect(canonical_url(self.context))
+            return canonical_url(self.context)
         else:
-            productset = getUtility(IProductSet)
-            self.request.response.redirect(canonical_url(productset))
+            return canonical_url(getUtility(IProductSet))
+
+
+class ProductChangeTranslatorsView(ProductEditView):
+    label = "Change translation group"
+    field_names = ["translationgroup", "translationpermission"]
+
+
+class ProductReviewView(ProductEditView):
+    label = "Administer product details"
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -615,7 +639,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             if message:
                 self.setFieldError('user_branch', message)
 
-    @action(_('Add Series'), name='add')
+    @action(_('Register Series'), name='add')
     def add_action(self, action, data):
         self.series = self.context.newSeries(
             owner=self.user,
@@ -762,8 +786,9 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None
@@ -795,6 +820,7 @@ class ProductAddView(LaunchpadFormView):
             assert "reviewed" not in data
             data['owner'] = self.user
             data['reviewed'] = False
+        gotchi, gotchi_heading = data['gotchi']
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -811,7 +837,8 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.product))
 
@@ -884,3 +911,32 @@ class ProductShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductBranchesView(BranchListingView):
+    """View for branch listing for a product."""
+    
+    extra_columns = ('author',)
+
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForProduct(
+            self.context, self.selected_lifecycle_status)
+
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status:
+            message = (
+                'There may be branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this product.')
+        return message % self.context.displayname
+
+

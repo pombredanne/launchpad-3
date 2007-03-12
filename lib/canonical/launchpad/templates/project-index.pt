@@ -9,7 +9,7 @@
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Mozilla</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <span tal:replace="structure context/fmt:icon" />
       <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
@@ -22,10 +22,11 @@
     work of the Project, and the people behind it. It should describe the
     project history, and organisation.
 
-    The Project Description should also mention the major product or
-    products from that project. For example, the Apache Project description
+    The Project Description should also mention the major project or
+    projects that make up the aggregate project. For example, the Apache
+    Project description
     would highlight its work on the Apache Server, and mention other
-    products such as APR.
+    projects such as APR.
     </div>
 
       <ul tal:condition="context/homepageurl">
@@ -55,9 +56,9 @@
           tal:content="structure context/@@+portlet-coming-sprints"
         />
         <div class="portlet">
-          <h2>Products</h2>
+          <h2>Projects</h2>
           <p tal:condition="not: context/products">
-            There are no products registered for
+            There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
           <div
@@ -68,7 +69,7 @@
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/title"
-              >Product title</a>
+              >Project title</a>
             </h3>
             <div>
               <strong>Releases:</strong>
@@ -94,7 +95,7 @@
             </div>
           </div>
           <ul tal:condition="context/required:launchpad.Edit">
-            <li><a href="+newproduct">Register another product</a></li>
+            <li><a href="+newproduct">Register another project</a></li>
           </ul>
         </div>
         <div tal:replace="structure context/@@+portlet-top-contributors" />

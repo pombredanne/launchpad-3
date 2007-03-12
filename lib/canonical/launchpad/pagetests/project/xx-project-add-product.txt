@@ -8,7 +8,7 @@ bottom of the project page to add a new product:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/gnome')
-  >>> browser.getLink('Register another product').click()
+  >>> browser.getLink('Register another project').click()
   >>> print browser.url
   http://launchpad.dev/gnome/+newproduct
 

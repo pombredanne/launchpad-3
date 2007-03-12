@@ -66,7 +66,7 @@ to link to the page which shows the whole list of specs assigned to the
 person.
 
     >>> browser.open('http://launchpad.dev/~name12/')
-    >>> browser.getLink('Show all assigned specs').click()
+    >>> browser.getLink('Show all assigned blueprints').click()
     >>> browser.url
     'http://launchpad.dev/.../+specs?role=assignee'
 

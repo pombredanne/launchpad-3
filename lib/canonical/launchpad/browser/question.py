@@ -95,9 +95,9 @@ class QuestionSetView(LaunchpadFormView):
 
     @property
     def latest_questions_asked(self):
-        """Return the 10 latest questions asked."""
+        """Return the 5 latest questions asked."""
         return self.context.searchQuestions(
-            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:5]
 
     @property
     def latest_questions_solved(self):
@@ -384,7 +384,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
     def initial_values(self):
         return {'status': self.context.status}
 
-    @action(_('Change status'), name='change-status')
+    @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
@@ -591,7 +591,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                 self.user != self.context.owner and
                 self.context.can_request_info)
 
-    @action(_('Add information request'), name='requestinfo',
+    @action(_('Add Information Request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
         """Add a request for more information to the question."""
