@@ -18,7 +18,8 @@ __all__ = [
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
-    'SpecificationTreeDotOutput'
+    'SpecificationTreeDotOutput',
+    'SpecificationSetView',
     ]
 
 from subprocess import Popen, PIPE
@@ -36,12 +37,16 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.widgets.project import ProjectScopeWidget
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -819,3 +824,21 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
+    """View for the Blueprints index page."""
+
+    @action('Find blueprints', name="search")
+    def search_action(self, action, data):
+        """Redirect to the proper search page based on the scope widget."""
+        scope = data['scope']
+        search_text = data['search_text']
+        if scope is None:
+            url = '/'
+        else:
+            url = canonical_url(scope)
+        if search_text is not None:
+            url += '?searchtext=' + search_text
+        self.next_url = url
+

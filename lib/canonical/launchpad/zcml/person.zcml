@@ -23,6 +23,9 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+      <allow attributes="
+          default_gotchi_resource default_gotchi_heading_resource
+          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
@@ -43,8 +46,8 @@
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
-      name="+branches"
       layer="canonical.launchpad.layers.CodeLayer"
+      name="+branches"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
@@ -143,9 +146,6 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           />
-      <browser:page
-          name="+portlet-working-on"
-          template="../templates/person-portlet-working-on.pt" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
@@ -350,39 +350,45 @@
           />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <browser:page
-        name="+branches"
-        template="../templates/person-branches.pt" />
-  </browser:pages>
+    name="+branches"
+    template="../templates/person-branches.pt" />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.BranchTargetView"
+    class="canonical.launchpad.browser.PersonAuthoredBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <!-- there is trickery here, in the view class, which detects the view
-    name and then gives the template a different set of branches to work
-    with.-->
-    <browser:page
-        name="+branchlisting"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+authoredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+registeredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+subscribedbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-  </browser:pages>
+    name="+authoredbranches"
+    template="../templates/person-branches.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonSubscribedBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+subscribedbranches"
+    template="../templates/person-branches.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonRegisteredBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+registeredbranches"
+    template="../templates/person-branches.pt" />
+ 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView"
+      name="+teamhierarchy"
+      template="../templates/person-teamhierarchy.pt"
+      />
 
   <!-- Team Views -->
 

@@ -54,7 +54,7 @@ Let's make 1.5 the development series.
 With the additions of the icons and emblems, you need to specify
 the name of the Change control as there are now more than one.
 
-   >>> browser.getControl(name='UPDATE_SUBMIT').click()
+   >>> browser.getControl(name='field.actions.change').click()
 
 And now check the ordering of the series:
 

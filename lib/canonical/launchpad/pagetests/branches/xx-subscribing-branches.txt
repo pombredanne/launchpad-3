@@ -4,18 +4,18 @@ Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
   >>> print http(r"""
-  ... GET /~name12/+branch/gnome-terminal/main HTTP/1.1
+  ... GET /~name12/gnome-terminal/main HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main/+subscribe">Subscribe</a>...
+  ...<a href="http://code.launchpad.dev/~name12/gnome-terminal/main/+subscribe">Subscribe</a>...
 
 Clicking this link should send us to the branch subscription form. This form
 should want to be posted back to the main branch page.
 
   >>> print http(r"""
-  ... GET /~name12/+branch/gnome-terminal/main/+subscribe HTTP/1.1
+  ... GET /~name12/gnome-terminal/main/+subscribe HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -27,7 +27,7 @@ Now, post the subscription form. We should see a message that we have just
 subscribed.
 
   >>> print http(r"""
-  ... POST /~name12/+branch/gnome-terminal/main/ HTTP/1.1
+  ... POST /~name12/gnome-terminal/main/ HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
@@ -38,18 +38,18 @@ subscribed.
 Now the link should say "Unsubscribe" in the actions menu.
 
   >>> print http(r"""
-  ... GET /~name12/+branch/gnome-terminal/main HTTP/1.1
+  ... GET /~name12/gnome-terminal/main HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main/+subscribe">Unsubscribe</a>...
+  ...<a href="http://code.launchpad.dev/~name12/gnome-terminal/main/+subscribe">Unsubscribe</a>...
 
 We do not really want to be subscribed. We load the subcription page, and now
 the button should say "Unsubscribe".
 
   >>> print http(r"""
-  ... GET /~name12/+branch/gnome-terminal/main/+subscribe HTTP/1.1
+  ... GET /~name12/gnome-terminal/main/+subscribe HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -61,7 +61,7 @@ And when we post this form, we see a message saying we are no longer a
 subscriber.
 
   >>> print http(r"""
-  ... POST /~name12/+branch/gnome-terminal/main/ HTTP/1.1
+  ... POST /~name12/gnome-terminal/main/ HTTP/1.1
   ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 

@@ -53,7 +53,7 @@ the question in the 'Message' field and clicks on the
     ...     'http://launchpad.dev/firefox/+ticket/2')
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
-    >>> support_browser.getControl('Add information request').click()
+    >>> support_browser.getControl('Add Information Request').click()
 
 The message was added to the question and its status was changed to
 'Needs information':
@@ -67,7 +67,7 @@ The message was added to the question and its status was changed to
 Of course, if you don't add a message, clicking on the button will give
 you an error.
 
-    >>> support_browser.getControl('Add information request').click()
+    >>> support_browser.getControl('Add Information Request').click()
     >>> soup = BeautifulSoup(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
@@ -144,8 +144,7 @@ This changes the status of the question to 'Solved' and mark
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print soup.first(
-    ...     'b', text='Solved by:').findNext('a').renderContents()
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     No Privileges Person
 
 Since no message can be provided when that button is clicked. A default
@@ -226,7 +225,7 @@ reopening portlet.
 
     >>> portlet = find_portlet(
     ...     owner_browser.contents, 'This question was reopened')
-    >>> print portlet.fetch('a')[-1].renderContents()
+    >>> print extract_text(portlet.fetch('a')[-1])
     Sample Person
 
 == Self-Answer ==
@@ -246,8 +245,7 @@ This appends the message to the quesiton and sets its status to
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print soup.first(
-    ...     'b', text='Solved by:').findNext('a').renderContents()
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     Sample Person
 
 It also records the owner as the answerer and marks his answer with the
@@ -283,7 +281,7 @@ It lists all the actions performed through workflow on the question:
     New State
     >>> for row in action_listing.first('tbody').fetch('tr'):
     ...     cells = row.fetch('td')
-    ...     who = cells[1].first('a').renderContents()
+    ...     who = extract_text(cells[1].first('a'))
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
     ...     print who, action, new_status

@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
-from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
@@ -241,6 +240,9 @@ def generate_bug_add_email(bug):
             bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
         bug_info += u"         Status: %s\n" % bugtask.status.title
 
+    if bug.tags:
+        bug_info += '\n** Tags: %s\n' % ' '.join(bug.tags)
+
     mailwrapper = MailWrapper(width=72)
     contents = get_email_template('bug-add-notification-contents.txt') % {
         'visibility' : visibility, 'bugurl' : canonical_url(bug),
@@ -404,7 +406,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
             change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.targetname)
+                bugtask_delta.targetname)
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -603,55 +605,6 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
-def get_task_delta(old_task, new_task):
-    """Compute the delta from old_task to new_task.
-
-    old_task and new_task are either both IDistroBugTask's or both
-    IUpstreamBugTask's, otherwise a TypeError is raised.
-
-    Returns an IBugTaskDelta or None if there were no changes between
-    old_task and new_task.
-    """
-    changes = {}
-    if ((IUpstreamBugTask.providedBy(old_task) and
-         IUpstreamBugTask.providedBy(new_task)) or
-        (IProductSeriesBugTask.providedBy(old_task) and
-         IProductSeriesBugTask.providedBy(new_task))):
-        if old_task.product != new_task.product:
-            changes["product"] = {}
-            changes["product"]["old"] = old_task.product
-            changes["product"]["new"] = new_task.product
-    elif ((IDistroBugTask.providedBy(old_task) and
-           IDistroBugTask.providedBy(new_task)) or
-          (IDistroReleaseBugTask.providedBy(old_task) and
-           IDistroReleaseBugTask.providedBy(new_task))):
-        if old_task.sourcepackagename != new_task.sourcepackagename:
-            changes["sourcepackagename"] = {}
-            changes["sourcepackagename"]["old"] = old_task.sourcepackagename
-            changes["sourcepackagename"]["new"] = new_task.sourcepackagename
-    else:
-        raise TypeError(
-            "Can't calculate delta on bug tasks of incompatible types: "
-            "[%s, %s]" % (repr(old_task), repr(new_task)))
-
-    # calculate the differences in the fields that both types of tasks
-    # have in common
-    for field_name in ("status", "importance",
-                       "assignee", "bugwatch", "milestone"):
-        old_val = getattr(old_task, field_name)
-        new_val = getattr(new_task, field_name)
-        if old_val != new_val:
-            changes[field_name] = {}
-            changes[field_name]["old"] = old_val
-            changes[field_name]["new"] = new_val
-
-    if changes:
-        changes["bugtask"] = old_task
-        return BugTaskDelta(**changes)
-    else:
-        return None
-
-
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
@@ -708,8 +661,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     modified_bugtask must be an IBugTask. event must be an
     ISQLObjectModifiedEvent.
     """
-    bugtask_delta = get_task_delta(
-        event.object_before_modification, event.object)
+    bugtask_delta = event.object.getDelta(event.object_before_modification)
     bug_delta = BugDelta(
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
@@ -849,6 +801,17 @@ def notify_bug_attachment_added(bugattachment, event):
         attachment={'new' : bugattachment})
 
     add_bug_change_notifications(bug_delta)
+
+
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    # Include the URL, since it will still be downloadable until the
+    # Librarian garbage collector removes it.
+    change_info = '\n'.join([
+        '** Attachment removed: "%s"\n' % bugattachment.title,
+        '   %s' %  bugattachment.libraryfile.http_url])
+    bug.addChangeNotification(change_info, person=event.user)
 
 
 def notify_team_join(event):

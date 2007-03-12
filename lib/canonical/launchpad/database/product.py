@@ -49,16 +49,20 @@ from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    IQuestionTarget, NotFoundError, get_supported_languages)
+    IQuestionTarget, NotFoundError, get_supported_languages,
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget)
+    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
 
     _table = 'Product'
+    default_gotchi_resource = '/@@/product-mugshot'
+    default_gotchi_heading_resource = '/@@/product-heading'
+    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
@@ -287,10 +291,17 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
         return question
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
-            product=self, **search_criteria).getResults()
+            product=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
+
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""

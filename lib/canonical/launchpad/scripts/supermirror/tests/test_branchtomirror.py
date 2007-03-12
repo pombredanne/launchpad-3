@@ -91,7 +91,8 @@ class TestBranchKind(unittest.TestCase):
         for source in sample_urls:
             yield branchtomirror.BranchToMirror(
                 src=source, dest=None,
-                branch_status_client=None, branch_id=None)
+                branch_status_client=None, branch_id=None,
+                branch_unique_name=None)
 
     def testIsUploadBranch(self):
         # isUploadBranch is true if and only if the source url is that of an
