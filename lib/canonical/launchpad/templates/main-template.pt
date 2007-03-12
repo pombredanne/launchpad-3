@@ -5,11 +5,6 @@
                     xml:lang default_language|default;">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
@@ -21,6 +16,11 @@
       tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/lpmenu.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
@@ -222,7 +222,6 @@
         tal:replace="nothing">
         <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
         <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-      
       <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
       <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
       <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
@@ -244,7 +243,7 @@
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
     </div>
-    <div id="menupreload">
+    <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
         <li class="item"><a href="/products">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
