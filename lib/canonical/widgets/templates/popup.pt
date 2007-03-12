@@ -1,12 +1,4 @@
-<input type="text"
-    tal:attributes="value view/formToken;
-                    id view/name;
-                    name view/name;
-                    size view/displayWidth;
-                    maxlength view/displayMaxWidth;
-                    onKeyPress view/onKeyPress;
-                    style view/style;
-                    class view/cssClass" />
+<tal:input replace="structure view/inputField" />
 
 <tal:search_results tal:condition="not: view/hasValidInput">
   <select
@@ -23,5 +15,5 @@
   </select>
 </tal:search_results>
 
-<tal:chooseLink replace="view/chooseLink" />
+<tal:chooseLink replace="structure view/chooseLink" />
 

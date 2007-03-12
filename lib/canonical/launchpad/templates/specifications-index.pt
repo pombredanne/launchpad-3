@@ -69,17 +69,7 @@
                                 <tal:scope
                                   replace="structure view/widgets/scope/renderScopeOptions" />
 
-                                <input
-                                  id="project"
-                                  name="project"
-                                  tal:define="widget_name target_widget/name"
-                                  tal:attributes="
-                                    value view/request/form/?widget_name|nothing;
-                                    id widget_name;
-                                    name widget_name;
-                                    onkeypress target_widget/onKeyPress"
-                                    type="text"
-                                   />
+                                <tal:input replace="structure target_widget/inputField" />
 
                                 <div class="message"
                                   tal:condition="view/scope_error"

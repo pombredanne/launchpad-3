@@ -30,7 +30,9 @@ class ISinglePopupWidget(ISimpleInputWidget):
     def formToken():
         'The token representing the value to display, possibly invalid'
     def chooseLink():
-        'The link text and inline frame for the Choose.. link.'
+        'The HTML link text and inline frame for the Choose.. link.'
+    def inputField():
+        'The HTML for the form input that is linked to this popup'
     def popupHref():
         'The contents to go into the href tag used to popup the select window'
     def matches():
@@ -51,12 +53,12 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     __call__ = ViewPageTemplateFile('templates/popup.pt')
 
     default = ''
-    displayWidth = 20
-    displayMaxWidth = None
 
+    displayWidth = '20'
+    displayMaxWidth = ''
     onKeyPress = ''
-    style = None
-    cssClass = None
+    style = ''
+    cssClass = ''
 
     @cachedproperty
     def matches(self):
@@ -93,6 +95,22 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
         # Just return the existing invalid token
         return val
+
+    def inputField(self):
+        d = {
+            'formToken' : self.formToken,
+            'name': self.name,
+            'displayWidth': self.displayWidth,
+            'displayMaxWidth': self.displayMaxWidth,
+            'onKeyPress': self.onKeyPress,
+            'style': self.style,
+            'cssClass': self.cssClass
+        }
+        return """<input type="text" value="%(formToken)s" id="%(name)s"
+                         name="%(name)s" size="%(displayWidth)s"
+                         maxlength="%(displayMaxWidth)s"
+                         onKeyPress="%(onKeyPress)s" style="%(style)s"
+                         class="%(cssClass)s" />""" % d
 
     def chooseLink(self):
         return """(<a href="%s">Choose&hellip;</a>)
