@@ -29,6 +29,8 @@ class ISinglePopupWidget(ISimpleInputWidget):
     style = Attribute('''CSS style to be applied to the input widget''')
     def formToken():
         'The token representing the value to display, possibly invalid'
+    def chooseLink():
+        'The link text and inline frame for the Choose.. link.'
     def popupHref():
         'The contents to go into the href tag used to popup the select window'
     def matches():
@@ -91,6 +93,14 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
         # Just return the existing invalid token
         return val
+
+    def chooseLink(self):
+        return """(<a href="%s">Choose&hellip;</a>)
+
+            <iframe style="display: none" 
+                    id="popup_iframe_%s"
+                    name="popup_iframe_%s"></iframe>
+        """ % (self.popupHref(), self.name, self.name)
 
     def popupHref(self):
         template = (

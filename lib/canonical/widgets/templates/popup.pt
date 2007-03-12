@@ -23,9 +23,5 @@
   </select>
 </tal:search_results>
 
-(<a tal:attributes="href view/popupHref">Choose&hellip;</a>)
-
-<iframe style="display: none"
-    tal:attributes="id string:popup_iframe_${view/name}; 
-                    name string:popup_iframe_${view/name};"></iframe>
+<tal:chooseLink replace="view/chooseLink" />
 
