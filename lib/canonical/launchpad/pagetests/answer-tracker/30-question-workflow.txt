@@ -152,7 +152,7 @@ Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the question discussion:
 
     >>> print find_last_comment(owner_browser.contents).renderContents()
-    <p>User confirmed that the question is solved.</p>
+    <p>Thanks No Privileges Person, that solved my question.</p>
 
 The confirmed answer is also highlighted.
 

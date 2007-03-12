@@ -210,7 +210,7 @@ enter a confirmation message at that stage.
 Since no confirmation message was given, a default one was used.
 
     >>> print firefox_question.messages[-1].text_contents
-    User confirmed that the question is solved.
+    Thanks No Privileges Person, that solved my question.
 
 Once in the SOLVED state, the owner can now only either add a comment
 or reopen the question:
