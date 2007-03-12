@@ -11,9 +11,12 @@ from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.publisher.interfaces import NotFound
+from zope.component.interfaces import ComponentLookupError
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.cachedproperty import cachedproperty
 
 
@@ -95,8 +98,8 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             '''popup_window('@@popup-window?'''
             '''vocabulary=%s&field=%s&search='''
             ''''+escape(document.getElementById('%s').value),'''
-            ''''500','400')'''
-            ) % (self.context.vocabularyName, self.name, self.name)
+            ''''%s','300','420')'''
+            ) % (self.context.vocabularyName, self.name, self.name, self.name)
         if self.onKeyPress:
             # XXX: I suspect onkeypress() here is non-standard, but it
             # works for me, and enough researching for tonight. It may
@@ -127,8 +130,16 @@ class ISinglePopupView(Interface):
 class SinglePopupView(object):
     implements(ISinglePopupView)
 
-    _batchsize = 15
+    _batchsize = 10
     batch = None
+
+    def __init__(self, context, request):
+        if ("vocabulary" not in request.form or 
+            "field" not in request.form):
+            # Hand-hacked URLs get no love from us
+            raise NotFound(self, "/@@popup-window", request)
+        self.context = context
+        self.request = request
 
     def title(self):
         """See ISinglePopupView"""
@@ -136,11 +147,20 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
-        factory = zapi.getUtility(IVocabularyFactory,
-            self.request.form['vocabulary'])
+        try:
+            factory = zapi.getUtility(IVocabularyFactory,
+                self.request.form['vocabulary'])
+        except ComponentLookupError:
+            # Couldn't find the vocabulary? Adios!
+            raise UnexpectedFormData('Unknown vocabulary %s' % 
+                                     self.request.form['vocabulary'])
+
         vocabulary = factory(self.context)
-        assert IHugeVocabulary.providedBy(vocabulary), (
-            'Invalid vocabulary %s' % self.request.form['vocabulary'])
+
+        if not IHugeVocabulary.providedBy(vocabulary):
+            raise UnexpectedFormData('Non-huge vocabulary %s' % 
+                                     self.request.form['vocabulary'])
+
         return vocabulary
 
     def search(self):

@@ -393,6 +393,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
+>>> check_not_found("/@@popup-window")
 
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")

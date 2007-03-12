@@ -1,4 +1,3 @@
-
 <input type="text"
     tal:attributes="value view/formToken;
                     id view/name;
@@ -25,3 +24,6 @@
 </tal:search_results>
 
 (<a tal:attributes="href view/popupHref">Choose&hellip;</a>)
+
+<div tal:attributes="id string:popup_div_${view/name}" class="popup_div"></div>
+
