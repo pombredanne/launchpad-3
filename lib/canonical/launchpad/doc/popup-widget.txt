@@ -1,5 +1,4 @@
-The SinglePopupWidget
-=====================
+=== The SinglePopupWidget ===
 
 There's a widget, SinglePopupWidget, for selecting a single value from a
 huge vocabulary. It provides a simple text input line, and a popup
@@ -25,14 +24,9 @@ We also need a request before we can initialise the widget:
     <input type="text" name="field.owner" onkeypress="" value=""
            id="field.owner" size="20" />
     <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
     (<a href="...@@popup-window?vocabulary=ValidTeamOwner...
     <BLANKLINE>
-    <div class="popup_div" id="popup_div_field.owner"></div>
-    <BLANKLINE>
+    <iframe style="display: none" id="popup_iframe_field.owner"...
     <BLANKLINE>
 
 Now, since we didn't pass a value to the form, it has no input, and
@@ -88,8 +82,7 @@ vocabulary search returns a few matches, we don't have a valid input:
     ConversionError: ('Invalid value',
         token u'shipit' not found in vocabulary)
 
-Error handling
---------------
+== Error handling ==
 
 There are a few situations which we need to be careful about.
 
@@ -132,6 +125,18 @@ implement IHugeVocabulary.
     Traceback (most recent call last):
     ...
     UnexpectedFormData: Unknown vocabulary FooBar
+
+4. When someone specifies an empty vocabulary name.
+
+    >>> form = {
+    ...     'vocabulary': '', 'field':'field.distribution'}
+    >>> request = TestRequest(
+    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
+    >>> popup_view = SinglePopupView(rootObject, request)
+    >>> popup_view.vocabulary()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No vocabulary specified
 
 Bullet-proof!
 

@@ -25,5 +25,7 @@
 
 (<a tal:attributes="href view/popupHref">Choose&hellip;</a>)
 
-<div tal:attributes="id string:popup_div_${view/name}" class="popup_div"></div>
+<iframe style="display: none"
+    tal:attributes="id string:popup_iframe_${view/name}; 
+                    name string:popup_iframe_${view/name};"></iframe>
 

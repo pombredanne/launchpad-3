@@ -134,7 +134,7 @@ class SinglePopupView(object):
     batch = None
 
     def __init__(self, context, request):
-        if ("vocabulary" not in request.form or 
+        if ("vocabulary" not in request.form or
             "field" not in request.form):
             # Hand-hacked URLs get no love from us
             raise NotFound(self, "/@@popup-window", request)
@@ -147,6 +147,8 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
+        if not self.request.form['vocabulary']:
+            raise UnexpectedFormData('No vocabulary specified')
         try:
             factory = zapi.getUtility(IVocabularyFactory,
                 self.request.form['vocabulary'])

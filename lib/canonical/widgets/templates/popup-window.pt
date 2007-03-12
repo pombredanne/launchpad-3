@@ -13,13 +13,6 @@
             }
         -->
         </style>
-        <title tal:content="view/title">Title</title>
-        <tal:comment condition="nothing">
-            This javascript iterates over all forms and their elements in
-            the source window, and sets the elements value if the elements
-            name matches. It would be much nicer if the source form had a
-            name... or I knew Javascript ;-)
-        </tal:comment>
         <script language="Javascript" type="text/javascript"
             tal:content="string:field = '${request/form/field}';" />
         <script language="Javascript" type="text/javascript">
@@ -32,32 +25,34 @@
                     e.value = value;
                     hide();
                     }
-                }
+            }
             function hide() {
                 parent_doc = window.parent.document
-                parent_doc.getElementsByTagName('body')[0].onclick = null;
-                div = parent_doc.getElementById('popup_div_' + field);
-                div.style.display = 'none';
+                iframe = parent_doc.getElementById('popup_iframe_' + field);
+                // XXX: when we alter the iframe's display value, the
+                // @@popup-window page is reloaded for some reason, and
+                // I can't find out why. I've tried
+                // event.preventBubble() and return false.. -- kiko, 2007-03-12
+                iframe.style.display = 'none';
+                return false;
             }
         </script>
+        <title tal:content="view/title">Title</title>
     </head>
     <body onLoad="document.searchform.search.focus()">
         <div style="float: right; padding: 0.5em;"><a href="#"
             style="text-decoration: none;" onClick="javascript: hide()"><small>[cancel]</small></a></div>
         <div tal:define="batchnav view/search">
             <h1 tal:content="view/title">Title</h1>
-
-            <center>
-              <form method="GET" name="searchform">
-                  <input type="text" name="search"
-                      tal:attributes="value request/search|nothing" />
-                  <input type="submit" value="Search" />
-                  <input type="hidden" name="vocabulary"
-                      tal:attributes="value request/vocabulary" />
-                  <input type="hidden" name="field"
-                      tal:attributes="value request/field" />
-              </form>
-            </center>
+            <form method="get" name="searchform" style="text-align: center">
+                <input type="text" name="search"
+                    tal:attributes="value request/search|nothing" />
+                <input type="submit" value="Search" />
+                <input type="hidden" name="vocabulary"
+                    tal:attributes="value request/vocabulary" />
+                <input type="hidden" name="field"
+                    tal:attributes="value request/field" />
+            </form>
 
             <table tal:condition="view/hasMoreThanOnePage">
                 <tr>
