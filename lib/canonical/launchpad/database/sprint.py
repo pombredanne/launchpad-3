@@ -12,7 +12,8 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, SQLRelatedJoin)
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    IHasGotchiAndEmblem, ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -30,9 +31,12 @@ from canonical.lp.dbschema import (
 class Sprint(SQLBase):
     """See ISprint."""
 
-    implements(ISprint)
+    implements(ISprint, IHasGotchiAndEmblem)
 
     _defaultOrder = ['name']
+    default_gotchi_resource = '/@@/sprint-mugshot'
+    default_gotchi_heading_resource = '/@@/sprint-heading'
+    default_emblem_resource = '/@@/sprint'
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)

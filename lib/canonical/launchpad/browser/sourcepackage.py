@@ -108,18 +108,16 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'builds']
-
-    def hct(self):
-        text = structured(
-            '<abbr title="Hypothetical Changeset Tool">HCT</abbr> status')
-        return Link('+hctstatus', text, icon='info')
+    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
 
-    def upstream(self):
-        return Link('+packaging', 'Edit upstream link', icon='edit')
+    def packaging(self):
+        return Link('+packaging', 'Show upstream links', icon='info')
+
+    def edit_packaging(self):
+        return Link('+edit-packaging', 'Change upstream link', icon='edit')
 
     def builds(self):
         text = 'Show builds'
@@ -190,9 +188,9 @@ class SourcePackageView(BuildRecordsView):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream branch updated, thank you!'
+                self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid upstream branch given.'
+                self.status_message = 'Invalid product series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
