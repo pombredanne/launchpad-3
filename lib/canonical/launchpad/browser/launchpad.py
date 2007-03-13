@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AppFrontPageSearchView',
     'Breadcrumbs',
     'LoginStatus',
     'MaintenanceMessage',
