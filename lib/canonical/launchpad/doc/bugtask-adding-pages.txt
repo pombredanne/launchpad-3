@@ -131,7 +131,7 @@ why the product wasn't chosen automatically.
     1
     >>> for notification in add_task_view.request.response.notifications:
     ...     print notification.message
-    Please select the appropriate upstream product. This step...
+    Please select the appropriate upstream project. This step...
 
 Sometimes the distribution won't have any release, though. In that
 case, we won't prompt the user to add a link, since he can't actually

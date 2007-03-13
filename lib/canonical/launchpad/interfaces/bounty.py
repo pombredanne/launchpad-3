@@ -63,7 +63,7 @@ class IBounty(IHasOwner, IMessageTarget):
     reviewer = Choice(title=_('The bounty reviewer.'), required=False,
         description=_("The person who is responsible for deciding whether "
         "the bounty is awarded, and to whom if there are multiple "
-        "claimants."), vocabulary='ValidPersonOrTeamVocabulary')
+        "claimants."), vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )

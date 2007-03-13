@@ -361,6 +361,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
 COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -378,6 +379,8 @@ COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName 
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
+COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
+COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -392,23 +395,6 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-
--- POSelection
-COMMENT ON TABLE POSelection IS 'This table captures the full set
-of all the translations ever submitted for a given pomsgset and pluralform.
-It also indicates which of those is currently active.';
-COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
-which we are recording a selection.';
-COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
-this selected translation.';
-COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
-this the active translation in rosetta for this pomsgset and pluralform.';
-COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
-we noted this as the current translation published in revision control (or
-in the public po files for this translation template, in the package or
-tarball or branch which is considered the source of it).';
-COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
-COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
@@ -430,6 +416,8 @@ translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
 COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
+COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
+COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -448,7 +436,8 @@ same status for the last published pofile we pulled in.';
 COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
-
+COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
+COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -1283,6 +1272,7 @@ COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of reques
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
+COMMENT ON COLUMN Language.uuid IS 'Mozilla language pack unique ID';
 COMMENT ON COLUMN Language.englishname IS 'The english name for this language';
 COMMENT ON COLUMN Language.nativename IS 'The name of this language in the language itself';
 COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this language has';
@@ -1349,6 +1339,7 @@ COMMENT ON COLUMN MirrorProbeRecord.date_created IS 'The date and time the probe
 COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
 COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
 COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.format IS 'The file format of the content that is being imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
 COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';

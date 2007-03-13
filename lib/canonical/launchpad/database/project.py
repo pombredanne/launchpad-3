@@ -19,7 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -27,21 +28,30 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
-class Project(SQLBase, BugTargetBase, KarmaContextMixin):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
+               IHasGotchiAndEmblem)
 
     _table = "Project"
+    default_gotchi_resource = '/@@/project-mugshot'
+    default_gotchi_heading_resource = '/@@/project-heading'
+    default_emblem_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -60,6 +70,8 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
     gotchi = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    gotchi_heading = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -106,6 +118,32 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    def translatables(self):
+        """See IProject."""
+        return Product.select('''
+            Product.project = %s AND
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''' % sqlvalues(self),
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return Sprint.select("""
+            Product.project= %s AND
+            Specification.product = Product.id AND
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.sprint = Sprint.id AND
+            Sprint.time_ends > 'NOW'
+            """ % sqlvalues(self.id),
+            clauseTables=['Product', 'Specification', 'SprintSpecification'],
+            orderBy='time_starts',
+            distinct=True,
+            limit=5)
 
     @property
     def has_any_specifications(self):
@@ -209,6 +247,29 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
+
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
+            product=self.products).getResults()
+
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
+        product_ids = sqlvalues(*self.products)
+        return set(Language.select(
+            'Language.id = language AND product IN (%s)' % ', '.join(
+                product_ids),
+            clauseTables=['Ticket'], distinct=True))
+
 
 class ProjectSet:
     implements(IProjectSet)
@@ -252,7 +313,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, emblem):
+            description, owner, gotchi, gotchi_heading, emblem):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -264,6 +325,7 @@ class ProjectSet:
             owner=owner,
             datecreated=UTC_NOW,
             gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=emblem)
 
     def count_all(self):

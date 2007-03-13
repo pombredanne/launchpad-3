@@ -1,14 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
+__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'BranchRevision',
            'RevisionSet']
 
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
+    IRevision, IRevisionAuthor, IRevisionParent, IBranchRevision, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
 
 from canonical.database.sqlbase import SQLBase
@@ -70,18 +70,17 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
-class RevisionNumber(SQLBase):
+class BranchRevision(SQLBase):
     """The association between a revision and a branch."""
 
-    implements(IRevisionNumber)
+    implements(IBranchRevision)
 
-    _table = 'RevisionNumber'
-    _idSequence = 'branchrevision_id_seq'
+    _table = 'BranchRevision'
     
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)
 
-    sequence = IntCol(notNull=True)
+    sequence = IntCol()
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
 

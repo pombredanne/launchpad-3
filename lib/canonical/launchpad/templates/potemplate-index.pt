@@ -23,7 +23,9 @@
 
     <p tal:condition="context/description">
       <span tal:content="context/description">A brief paragraph describing
-      the potemplate would go here.</span> [<a href="+edit">Edit</a>]
+      the potemplate would go here.</span>
+      <a href="+edit"><img src="/@@/edit" title="Update this description"
+        /></a>
     </p>
     <p tal:condition="not: context/description">
       This template has no description, you can <a href="+edit">create

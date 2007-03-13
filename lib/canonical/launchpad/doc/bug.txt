@@ -726,3 +726,27 @@ IBug.date_last_updated.
 
   >>> firefox_bug.date_last_updated == current_date_last_updated
   True
+
+
+Enumerating Bug Tasks
+=====================
+
+You can get a set of bugtasks for this bug:
+
+  >>> b2 = bugset.get(2)
+  >>> for task in b2.bugtasks: print task.target.displayname
+  Ubuntu
+  Ubuntu
+  Hoary
+  mozilla-firefox in debian
+  Woody mozilla-firefox
+
+You can also get a list of the "LP pillars" affected by a particular bug.
+
+  >>> for pillar in b2.affected_pillars: print pillar.displayname
+  Ubuntu
+  Ubuntu
+  Debian
+
+Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
+
