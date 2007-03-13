@@ -1703,6 +1703,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (60, 'janitor@support.launchpad.net', 65, 4, '2006-10-17 23:23:23.232323');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (61, 'matsubara@async.com.br', 66, 1, '2006-12-13 21:19:06.369142');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (62, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
