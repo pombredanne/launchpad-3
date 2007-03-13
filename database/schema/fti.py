@@ -200,6 +200,19 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     con.commit()
 
 
+def nullify(con):
+    """Set all fti index columns to NULL"""
+    cur = con.cursor()
+    for table, ignored in ALL_FTI:
+        table = quote_identifier(table)
+        log.info("Removing full text index data from %s", table)
+        cur.execute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
+        cur.execute("UPDATE %s SET fti=NULL" % table)
+        cur.execute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
+    cur.execute("DELETE FROM FtiCache")
+    con.commit()
+
+
 def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
     try:
@@ -551,7 +564,9 @@ def update_dicts(con):
 def main():
     con = connect(lp.dbuser)
     setup(con)
-    if not options.setup:
+    if options.null:
+        nullify(con)
+    elif not options.setup:
         for table, columns in ALL_FTI:
             if needs_refresh(con, table, columns):
                 log.info("Rebuilding full text index on %s", table)
@@ -572,10 +587,19 @@ if __name__ == '__main__':
             action="store_true", default=False,
             help="Force a rebuild of all full text indexes.",
             )
+    parser.add_option(
+            "-0", "--null", dest="null",
+            action="store_true", default=False,
+            help="Set all full text index column values to NULL.",
+            )
     db_options(parser)
     logger_options(parser)
 
     (options, args) = parser.parse_args()
+
+    if (options.setup and (options.force or options.null)) \
+            or (options.force and options.null) :
+        parser.error("Incompatible options")
 
     log = logger(options)
 

@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import os
 import shutil
+import subprocess
+import sys
 
 import CVS
 import cscvs
@@ -475,7 +477,14 @@ class SVNStrategy(CSCVSStrategy):
             path=self.getSVNDirPath(self.aJob,self.dir)
             try:
                 if os.access(path, os.F_OK):
-                    SCM.tree(path).update()
+                    # XXX: David Allouche 2006-01-31. See bug 82483. A bug in
+                    # pysvn prevents us from ignoring svn:externals. We work
+                    # around it by shelling out to svn. When cscvs no longer
+                    # uses pysvn, we will use the cscvs API again.
+                    arguments = ['svn', 'update', '--ignore-externals']
+                    retcode = subprocess.call(arguments, cwd=path)
+                    if retcode != 0:
+                        sys.exit(retcode)
                 else:
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)

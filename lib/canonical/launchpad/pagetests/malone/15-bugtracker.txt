@@ -7,7 +7,7 @@ trackers.
 
 Now we are going to add a bug tracker. First, can we see the form?
 
-  >>> user_browser.getLink('Register Bug Tracker').click()
+  >>> user_browser.getLink('Register bug tracker').click()
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/+newbugtracker'
 
@@ -98,7 +98,7 @@ a nice error message.
 And lets see if we can edit the newly added bugtracker.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
-  >>> user_browser.getLink('Change Details').click()
+  >>> user_browser.getLink('Change details').click()
 
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
