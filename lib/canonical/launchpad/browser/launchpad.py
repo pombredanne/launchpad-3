@@ -12,6 +12,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralObjectPresentationView',
@@ -558,6 +559,66 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+
+class LaunchpadRootIndexView(LaunchpadView):
+    """An view for the default view of the LaunchpadRoot."""
+
+    def _getCookieParams(self):
+        """Return a string containing the 'domain' and 'secure' parameters."""
+        params = '; Path=/'
+        # XXX: 20070206 jamesh
+        # This code to select the cookie domain comes from webapp/session.py
+        # It should probably be factored out.
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        for domain in config.launchpad.cookie_domains:
+            assert not domain.startswith('.'), \
+                   "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(uri.host, domain) or
+                domain_match(uri.host, dotted_domain)):
+                params += '; Domain=%s' % dotted_domain
+                break
+        return params
+
+    def getInhibitRedirectScript(self):
+        """Returns a Javascript function that inhibits redirection."""
+        return '''
+        function inhibit_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
+            document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
+                               expire.toGMTString())
+            alert('You will not be redirected to the beta site for 2 hours');
+            return false;
+        }''' % self._getCookieParams()
+
+    def getEnableRedirectScript(self):
+        """Returns a Javascript function that enables beta redireciton."""
+        return '''
+        function enable_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 1000)
+            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
+                               expire.toGMTString())
+            alert('Redirection to the beta site has been enabled');
+            return false;
+        }''' % self._getCookieParams()
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+    
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if config.launchpad.beta_testers_redirection_host is None:
+            return False
+
+        return self.user is not None and self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+        
 
 
 class ObjectForTemplate:
