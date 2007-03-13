@@ -3,22 +3,18 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h4><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h4>
-  <h2 tal:content="context/title">Spec Title</h2>
-</metal:heading>
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:cahs fill-slot="contentareaheadingsecondary">
+      <a
+        tal:attributes="href context/fmt:url"
+        tal:content="context/title"
+      >Specification title</a>
+    </metal:cahs>
+    <metal:cahp fill-slot="contentareaheadingprimary">
+      Subscribe someone else
+    </metal:cahp>
 
 <div metal:fill-slot="main">
 
@@ -30,4 +26,4 @@
     
 </body>
 </html>
-
+<!-- 1-0 todo remove duplicate heading -->

@@ -9,9 +9,7 @@
   }
 </script>
 
-<table class="listing"
-       cellpadding="0" cellspacing="0"
-       style="width: 100%; margin-bottom: 1px; margin-top: 2px;">
+<table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
   <thead>
     <tr>
       <th>Affects</th>
@@ -29,7 +27,7 @@
 
 </table>
 
-<div style="font-size: 80%; text-align: right; margin-bottom: 1em;"
+<div style="text-align: right; margin-bottom: 1em;"
      tal:define="current_bugtask view/currentBugTask">
 
   Also affects:

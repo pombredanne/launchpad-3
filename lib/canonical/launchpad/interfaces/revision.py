@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent',
-           'IRevisionNumber', 'IRevisionSet']
+           'IBranchRevision', 'IRevisionSet']
 
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
@@ -47,7 +47,7 @@ class IRevisionParent(Interface):
     parent_id = Attribute("The revision_id of the parent revision.")
 
 
-class IRevisionNumber(Interface):
+class IBranchRevision(Interface):
     """The association between a revision and a branch."""
 
     sequence = Int(

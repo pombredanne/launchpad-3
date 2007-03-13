@@ -10,31 +10,38 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
 from datetime import datetime, timedelta, MINYEAR
 import pytz
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
+
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
-    EnumCol, PackagePublishingStatus, SourcePackageFileType,
+    PackagePublishingStatus, SourcePackageFileType,
     BinaryPackageFileType)
 
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
-    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease)
+    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
+    ILaunchpadCelebrities)
+from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
+    get_email_template, contactEmailAddresses, shortlist)
 from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.mail import simple_sendmail, format_address
 
@@ -365,6 +372,47 @@ class DistributionMirrorSet:
     def __getitem__(self, mirror_id):
         """See IDistributionMirrorSet"""
         return DistributionMirror.get(mirror_id)
+
+    def getBestMirrorsForCountry(self, country, mirror_type):
+        """See IDistributionMirrorSet"""
+        # As per mvo's request we only return mirrors which have an
+        # http_base_url.
+        country_id = None
+        if country is not None:
+            country_id = country.id
+        base_query = AND(
+            DistributionMirror.q.content == sqlvalues(mirror_type),
+            DistributionMirror.q.enabled == True,
+            DistributionMirror.q.http_base_url != None,
+            DistributionMirror.q.official_candidate == True,
+            DistributionMirror.q.official_approved == True)
+        query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        mirrors = shortlist(
+            DistributionMirror.select(query, orderBy=['-speed']),
+            longest_expected=50)
+
+        if not mirrors and country is not None:
+            continent = country.continent
+            query = AND(
+                Country.q.continentID == continent.id,
+                DistributionMirror.q.countryID == Country.q.id,
+                base_query)
+            mirrors.extend(shortlist(
+                DistributionMirror.select(query, orderBy=['-speed']),
+                longest_expected=100))
+
+        if mirror_type == MirrorContent.ARCHIVE:
+            main_mirror = getUtility(
+                ILaunchpadCelebrities).ubuntu_archive_mirror
+        elif mirror_type == MirrorContent.RELEASE:
+            main_mirror = getUtility(
+                ILaunchpadCelebrities).ubuntu_release_mirror
+        else:
+            raise AssertionError("Unknown mirror type: %s" % mirror_type)
+        assert main_mirror is not None, 'Main mirror was not found'
+        if main_mirror not in mirrors:
+            mirrors.append(main_mirror)
+        return mirrors
 
     def getMirrorsToProbe(self, content_type, ignore_last_probe=False):
         """See IDistributionMirrorSet"""

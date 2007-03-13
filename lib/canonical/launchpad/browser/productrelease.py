@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseNavigation',
     'ProductReleaseContextMenu',
     'ProductReleaseEditView',
     'ProductReleaseAddView',
@@ -29,14 +28,6 @@ from canonical.launchpad.webapp import (
     Navigation, canonical_url, ContextMenu, Link, enabled_with_permission)
 
 
-class ProductReleaseNavigation(Navigation):
-
-    usedfor = IProductRelease
-
-    def breadcrumb(self):
-        return 'Release ' + self.context.version
-
-
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
@@ -44,7 +35,7 @@ class ProductReleaseContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -53,7 +44,7 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link('+review', text, icon='edit')
 
     def download(self):
-        text = 'Download RDF Metadata'
+        text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
 

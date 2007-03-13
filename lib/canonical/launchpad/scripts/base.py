@@ -8,7 +8,6 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
-from canonical.launchpad.ftests import login
 
 
 class LaunchpadScriptFailure(Exception):
@@ -139,6 +138,9 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
+        # This import is actually quite expensive, and causes us to
+        # import circularly in pathological cases.
+        from canonical.launchpad.ftests import login
         login(user)
 
     #
@@ -156,7 +158,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.error('Lockfile %s in use' % self.lockfilename)
+            self.logger.error('Lockfile %s in use' % self.lockfile)
             sys.exit(1)
 
     # XXX: I'm not sure this is actually necessary; if it is remove the
@@ -171,7 +173,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.info('Lockfile %s in use' % self.lockfilename)
+            self.logger.info('Lockfile %s in use' % self.lockfile)
             sys.exit(0)
 
     def unlock(self, skip_delete=False):

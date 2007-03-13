@@ -6,15 +6,14 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Register a bounty</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+      <h1>Register a bounty</h1>
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
@@ -32,4 +31,4 @@
     
 </body>
 </html>
-
+<!-- 1-0 done -->

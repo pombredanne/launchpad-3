@@ -1,52 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 import os
-import shutil
 import unittest
 
 from twisted.internet import defer
-from twisted.vfs.ivfs import VFSError, PermissionError, NotFoundError
+from twisted.vfs.ivfs import PermissionError, NotFoundError
 
-from canonical.tests.test_twisted import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
     SFTPServerProductDirPlaceholder)
+from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
-class AvatarTestBase(TwistedTestCase):
-    """Base class for tests that need an SFTPOnlyAvatar with some basic sample
-    data."""
-    def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
-        # A basic user dict, 'bob' is a member of no teams (aside from the user
-        # themself).
-        self.aliceUserDict = {
-            'id': 1,
-            'name': 'alice',
-            'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
-        }
-
-        # An slightly more complex user dict for a user, 'alice', that is also a
-        # member of a team.
-        self.bobUserDict = {
-            'id': 2,
-            'name': 'bob',
-            'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
-                      {'id': 3, 'name': 'test-team', 'initialBranches': []}],
-        }
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-        
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
-
-
-class TestTopLevelDir(AvatarTestBase):
+class TestTopLevelDir(AvatarTestCase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
@@ -73,18 +40,18 @@ class TestTopLevelDir(AvatarTestBase):
 
     def testUserDirPlusJunk(self):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~test-team')
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
 
 
-class UserDirsTestCase(AvatarTestBase):
+class UserDirsTestCase(AvatarTestCase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
 
@@ -95,7 +62,7 @@ class UserDirsTestCase(AvatarTestBase):
                 return defer.succeed(123)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
             [name for name, child in userDir.children()],
@@ -118,7 +85,7 @@ class UserDirsTestCase(AvatarTestBase):
                 return defer.succeed(None)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # We expect PermissionError from a userDir.createDirectory:
@@ -137,7 +104,7 @@ class UserDirsTestCase(AvatarTestBase):
             (3, 'thing', [(4, 'another-branch')]),
         ]
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
 
         # The user's dir with have mozilla-firefox, product-x, and also +junk.
         self.assertEqual(
@@ -150,7 +117,7 @@ class UserDirsTestCase(AvatarTestBase):
             set(['.', '..', 'thing']))
 
 
-class ProductDirsTestCase(AvatarTestBase):
+class ProductDirsTestCase(AvatarTestCase):
     def testCreateBranch(self):
         # Define a mock launchpad RPC object.
         class Launchpad:
@@ -167,7 +134,7 @@ class ProductDirsTestCase(AvatarTestBase):
                 return defer.succeed(0xabcdef12)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        root = avatar.filesystem.root
+        root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # First create ~alice/mozilla-firefox.  This will trigger a call to
@@ -214,9 +181,11 @@ class ProductDirsTestCase(AvatarTestBase):
         return self.assertFailure(deferred, PermissionError)
 
 
-class ProductPlaceholderTestCase(AvatarTestBase):
+class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
+        # XXX - factor this out into a common Launchpad utility class
+        # jml, 2007-01-26
         class Launchpad:
             test = self
             def fetchProductID(self, productName):
@@ -238,7 +207,7 @@ class ProductPlaceholderTestCase(AvatarTestBase):
 
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 Launchpad())
-        return avatar.filesystem
+        return avatar.makeFileSystem()
 
     def testBranchInPlaceholderNotFound(self):
         # Test that we get a NotFoundError when trying to access

@@ -2,171 +2,254 @@
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+                    xml:lang default_language|default;"
+    tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
-    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css?rev=2);</style>
+    <style
+      type="text/css"
+      media="screen"
+      tal:content="string:@import url(${rooturl}+icing/style.css);"/>
+    <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
-      tal:condition="python: dbname!='launchpad_prod'"
+      tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <link rel="shortcut icon" href="/@@/launchpad" />
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/lpmenu.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/sorttable.js"></script>
+    <link rel="shortcut icon" tal:attributes="href string:${rooturl}@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body onload="lpmenu.initialize(['menuroot'], 
-                    '/',
-                    'menupreload',
-                    [],
-                    '2em', 16, true);" id="document">
-    <div id="menucontainer">
+  <body
+    onload="
+      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
+      sortables_init();
+      initHelpPanel();
+      initPortlets();
+    "
+    id="document"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
+  >
+    <div id="globalheader">
+      <div class="launchpad">
+        <img
+          alt=""
+          src="/+icing/globalheader_launchpad.gif"
+          width="34"
+          height="16"
+        /><a tal:attributes="href rooturl">Launchpad</a>
+      </div>
+      <ul class="home">
+        <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
+      </ul>
+      <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+    </div>
+
+    <div id="locationbar">
+      <strong>Your location:</strong>
       <ul id="menuroot" class="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
     </div>
-    <div class="userLog">
-      <tal:login tal:content="structure context/@@login_status" />
+
+    <div id="logincontrol" tal:content="structure context/@@login_status" />
+    <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    
+    <div id="singlecolumn" tal:condition="columns1|nothing">
+      <metal:heading define-slot="pageheading" />
+      <tal:XXX condition="nothing"
+      >20061025 mpt: pageheading deprecated</tal:XXX>
+      <tal:notifications
+        define="notifications request/notifications"
+        condition="notifications"
+      >
+        <metal:notifications
+         use-macro="context/@@+main-template-macros/notifications"
+        />
+      </tal:notifications>
+      <metal:block define-slot="main" />
     </div>
-    <div tal:condition="columns1|nothing" class="body">
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    <tal:layout condition="not:columns1|nothing">
 
-        <div class="pageheading">
-          <metal:block define-slot="pageheading">
-          </metal:block>
-        </div>
-        <tal:notifications
-          define="notifications request/notifications"
-          condition="notifications"
-        ><metal:notifications
-            use-macro="context/@@+main-template-macros/notifications" />
-        </tal:notifications>
-        <metal:block define-slot="main">
-        </metal:block>
-
+    <div
+      id="structuralobject"
+      tal:define="structuralobject CONTEXTS/lp:structuralobject"
+      tal:condition="not:contextless|nothing"
+    >
+      <tal:header
+        condition="structuralobject"
+        replace="structure structuralobject/@@+structural-header"
+      />
+      <tal:none condition="not:structuralobject">No structural object</tal:none>
     </div>
-    <div tal:condition="not: columns1|nothing" class="columns">
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    <form id="globalsearch" action="/+search" method="get">
+      <div>
+        <input
+          type="text"
+          id="q"
+          name="q"
+          value="Search"
+          onfocus="if(this.value=='Search'){this.value='';};"
+        />
+        <input
+          type="image"
+          id="searchbutton"
+          src="/+icing/but_search.gif"
+          title="Search"
+        />
+      </div>
+    </form>
+    <div id="mainarea">
+      <div class="t">
+        <div class="u">
+          <div class="v">
+            <div class="w">
+              <div class="x">
+                <div class="y">
+                  <div class="z">
+                    <tal:onlyincontexts condition="not:contextless|nothing">
 
-        <div id="portal-columns">
-          <div id="portal-column-content">
-            <div class="pageheading">
-              <metal:block define-slot="pageheading">
-              </metal:block>
+                    <ul
+                      id="applicationchooser"
+                      tal:define="facetmenu CONTEXTS/menu:facet"
+                      tal:condition="facetmenu"
+                    >
+                      <tal:facet repeat="link facetmenu">
+                        <tal:available condition="link/enabled">
+                          <li
+                            tal:condition="link/selected"
+                            tal:attributes="title link/summary; class string:current tab-${link/name}"
+                          >
+                            <a
+                              tal:condition="link/linked"
+                              tal:attributes="href link/url"
+                              tal:content="structure link/escapedtext"
+                            >abc</a>
+                            <span
+                              tal:condition="not: link/linked"
+                              tal:replace="structure link/escapedtext"
+                            >def</span>
+                          </li>
+                          <li
+                            tal:condition="not: link/selected"
+                            tal:attributes="title link/summary; class string:current tab-${link/name}"
+                          ><a
+                              tal:attributes="href link/url"
+                              tal:content="structure link/escapedtext"
+                            >ghi</a><span
+                              class="disabled"
+                              tal:condition="not: link/linked"
+                              tal:content="structure link/escapedtext"
+                          >jkl</span></li>
+                        </tal:available>
+                        <li
+                          tal:condition="not: link/enabled"
+                          tal:attributes="title link/summary; class string:unavailable tab-${link/name}"
+                          tal:content="structure link/escapedtext"
+                        />
+                      </tal:facet>
+                    </ul>
+
+                    </tal:onlyincontexts>
+                    <div
+                      tal:condition="contextless|nothing"
+                      id="noapplicationchooser"
+                    >&nbsp;</div>
+
+                    <br class="clear" />
+
+                    <div id="container">
+
+                    <div id="maincontent">
+                      <div class="pageheading"><!-- XXX obsolete -->
+                        <metal:block define-slot="pageheading">
+                        </metal:block>
+                      </div>
+                      <tal:notifications
+                        define="notifications request/notifications"
+                        condition="notifications"
+                      ><metal:notifications
+                          use-macro="context/@@+main-template-macros/notifications" />
+                      </tal:notifications>
+                      <metal:block define-slot="main" />
+                      <div
+                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
+                        tal:condition="structuralobject"
+                        tal:replace="structure structuralobject/@@+structural-footer"
+                      />
+                    </div>
+                    <div id="portlets">
+                      <tal:menu replace="structure CONTEXTS/@@+menubox" />
+                      <metal:portlets define-slot="portlets" />
+                      <metal:portlets define-slot="portlets_two" />
+                      <metal:portlets define-slot="portlets_one" />
+                      <div class="clear"></div><!-- needed for Safari -->
+                    </div>
+                    <div class="clear"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div id="region-content">
-              <tal:block
-                define="notifications request/notifications"
-                condition="notifications"
-              >
-                <metal:notifications
-                  use-macro="context/@@+main-template-macros/notifications" />
-              </tal:block>
-
-              <metal:main define-slot="main" tal:condition="nothing">
-                <p>Main content area.</p>
-              </metal:main>
-              <tal:help condition="nothing">
-                <p metal:define-slot="help">
-                  Sorry, help isn&rsquo;t available for this page.
-                </p>
-              </tal:help>
-            </div>
-          </div>
-        <!-- start of right (by default at least) column -->
-        <div id="portal-column-two">
-          <metal:portlets define-slot="portlets_two">
-          </metal:portlets>
-          &nbsp; <tal:x condition="nothing">Forces the left column to show up.</tal:x>
-        </div>
-        <!-- start of the left (by default at least) column -->
-        <div id="portal-column-one">
-          <tal:notlogin condition="python: '+login' not in request.getURL()">
-              <tal:menu
-                 condition="not:exists:body"
-                 replace="structure CONTEXTS/@@+menubox"
-                 />
-
-              <ul
-                 tal:define="facetmenu CONTEXTS/menu:facet"
-                 tal:condition="facetmenu"
-                 class="facets"
-              >
-                <tal:facet repeat="link facetmenu">
-                  <tal:available condition="link/enabled">
-                    <li
-                       tal:condition="link/selected"
-                       tal:attributes="title link/summary"
-                       class="current"
-                       >
-                      <a tal:condition="link/linked"
-                         tal:attributes="href link/url"
-                         tal:content="structure link/escapedtext"
-                         >abc</a>
-                      <span
-                         tal:condition="not: link/linked"
-                         tal:replace="structure link/escapedtext"
-                         >def</span>
-                    </li>
-                    <li
-                       tal:condition="not: link/selected"
-                       tal:attributes="title link/summary"
-                       ><a
-                           tal:attributes="href link/url"
-                           tal:content="structure link/escapedtext"
-                           >ghi</a><span
-                                      class="disabled"
-                                      tal:condition="not: link/linked"
-                                      tal:content="structure link/escapedtext"
-                                      >jkl</span></li>
-                  </tal:available>
-                  <li
-                     tal:condition="not: link/enabled"
-                     tal:attributes="title link/summary"
-                     tal:content="structure link/escapedtext"
-                     class="unavailable"
-                     />
-                </tal:facet>
-              </ul>
-          </tal:notlogin>
-          <div metal:define-slot="portlets_one">
           </div>
         </div>
       </div>
-      <!-- end column wrapper -->
-      <div class="visualClear">&nbsp;</div>
     </div>
-    <div class="footer" tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
-      <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> &ndash;
-      <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> &ndash;
-      <a tal:attributes="href vhosts/translations/rooturl">Translations</a> &ndash;
-      <a tal:attributes="href vhosts/answers/rooturl">Answers</a> &ndash;
-      <a tal:attributes="href vhosts/code/rooturl">Code</a> &ndash;
-      Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-      &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> &ndash;
-      <a href="/faq">FAQ</a> &ndash;
-      <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
-          build
-          <tal:block condition="revno" replace="revno" />
-          <tal:block condition="not: revno">unknown</tal:block>
-      </tal:block>
-  </div>
-    <div id="menupreload">
+
+    </tal:layout>
+
+    <div id="help_panel" class="closed">
+      <div class="help1">
+        <div class="help2">
+          <p metal:define-slot="help">
+            Sorry, help isn&rsquo;t available for this page.
+          </p>
+        </div>
+        <a href="#" class="open-close">Help</a>
+        <br class="clear" />
+      </div>
+      <div class="bottom">&nbsp;</div>
+    </div>
+    <div id="globalfooter">
+      <div id="applications-footer"
+        tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+        tal:replace="nothing">
+        <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
+        <a tal:attributes="href vhosts/code/rooturl">Code</a> |
+      <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
+      <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
+      <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
+
+        <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
+      </div>
+      <div id="colophon">
+        <a href="/legal">Copyright&nbsp;&amp;&nbsp;Terms&nbsp;of&nbsp;use</a> |
+        <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
+        <a href="/faq">FAQ</a>
+      </div>
+      <div id="copyright">
+        Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+        <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
+            | build
+            <tal:block condition="revno" replace="revno" />
+            <tal:block condition="not: revno">unknown</tal:block>
+        </tal:block> |
+        <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+      </div>
+    </div>
+    <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/products">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
-        <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
-</body>
+  </body>
 </html>
 </metal:page>
+<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->

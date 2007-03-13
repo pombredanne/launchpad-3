@@ -9,7 +9,7 @@ def test_sorting():
     """
     dbschema items sort themselves based on the order they are defined in the class.
 
-    >>> from canonical.lp.dbschema import Item, DBSchema
+    >>> from canonical.launchpad.webapp.enum import Item, DBSchema
     >>> class SortingTest(DBSchema):
     ...
     ...     lobster = Item(9, 'A lobster', 'signifies completion')
@@ -35,7 +35,7 @@ def test_constructor():
 
     We can import Item.
 
-    >>> from canonical.lp.dbschema import Item
+    >>> from canonical.launchpad.webapp.enum import Item
 
     An Item can be created only within a class suite, and its first arg
     must be an int.
@@ -154,7 +154,8 @@ def test_constructor():
 
 def test_decorator():
     """
-    >>> from canonical.lp.dbschema import BugTaskImportance, Item
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.webapp.enum import Item
 
     We can iterate over the Items in a DBSchema class
 

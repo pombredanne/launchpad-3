@@ -2,7 +2,7 @@ Open the "Upstream Source Import" page for a series.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
-  >>> browser.getLink('Edit Source').click()
+  >>> browser.getLink('Edit source').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
 
@@ -24,14 +24,14 @@ as is, which will leave us with no revision control system selected:
 
 Now we'll go back to the edit source form and add some CVS details:
 
-  >>> browser.getLink('Edit Source').click()
+  >>> browser.getLink('Edit source').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
   >>> browser.getControl('CVS').click()
-  >>> browser.getControl('Repository root').value = (
+  >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'main'
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk
@@ -40,8 +40,10 @@ We check if the info we just entered on the form is displayed correctly
 
   >>> print find_main_content(browser.contents)
   <...
-  ...<td>CVS root:</td>...
-  ...<td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>...
+  <tr>
+  <th>Root:</th>
+  <td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>
+  </tr>
   ...
 
 And we test if the validator is working adding the same CVS details to
@@ -49,10 +51,10 @@ another product
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('CVS').click()
-  >>> browser.getControl('Repository root').value = (
+  >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl('Branch name').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'main'
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
@@ -63,7 +65,7 @@ Now we test if we can edit again changing the RCS to Subversion:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
   >>> browser.getControl('Subversion').click()
-  >>> browser.getControl('Repository', index=1).value = (
+  >>> browser.getControl(name='field.svnrepository').value = (
   ...     'svn://svn.mozilla.org/firefox/trunk')
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
@@ -71,8 +73,10 @@ Now we test if we can edit again changing the RCS to Subversion:
 
   >>> print find_main_content(browser.contents)
   <...
-  ...<td>Subversion Repository:</td>...
-  ...<td>svn://svn.mozilla.org/firefox/trunk</td>...
+  <tr>
+  <th>Subversion:</th>
+  <td>svn://svn.mozilla.org/firefox/trunk</td>
+  </tr>
   ...
 
 
@@ -80,11 +84,11 @@ After changing to over to Subversion, the CVS details are unset in the
 form:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
-  >>> browser.getControl('Repository root').value
+  >>> browser.getControl('Repository').value
   ''
   >>> browser.getControl('Module').value
   ''
-  >>> browser.getControl('Branch name').value
+  >>> browser.getControl(name='field.cvsbranch').value
   ''
 
 
@@ -93,7 +97,7 @@ svnrepository to another ProductSeries
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('Subversion').click()
-  >>> browser.getControl('Repository', index=1).value = (
+  >>> browser.getControl(name='field.svnrepository').value = (
   ...     'svn://svn.mozilla.org/firefox/trunk')
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
@@ -114,5 +118,5 @@ details are blanked:
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
   >>> browser.getControl('No revision control system, or Bazaar').selected
   True
-  >>> browser.getControl('Repository', index=1).value
+  >>> browser.getControl(name='field.svnrepository').value
   ''

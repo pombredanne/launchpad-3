@@ -7,13 +7,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
   <h4><span tal:replace="context/target/displayname">Firefox</span>
       Feature Specification:</h4>
@@ -25,10 +18,10 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-      You can attach the specification to a different product or
-      distribution. Be careful, when you retarget the specification you will
+      You can attach the specification to a different project. Be careful,
+      when you retarget the specification you will
       lose any goal or milestone information for it. <b>Choose EITHER a
-      product, OR a distribution,</b> using the form below.
+      project, OR a distribution,</b> using the form below.
     </p>
 
   </div>
