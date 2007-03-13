@@ -173,9 +173,11 @@ button, as well as displaying the product name in the project widget.
              onclick="document.getElementById('field.scope.target').focus();"
              type="radio" value="project" />
     ...
-      <input type="text" name="field.scope.target"
-             onkeypress="selectWidget('field.scope.option.project', event)"
-             value="mozilla" id="field.scope.target" size="20" />
+      <input type="text" value="mozilla" id="field.scope.target"
+             name="field.scope.target" size="20"
+             maxlength=""
+             onKeyPress="selectWidget('field.scope.option.project', event)" style=""
+             class="" />
     ...
 
 Setting the scope to None, will default to the 'All projects' option.

@@ -21,8 +21,11 @@ We also need a request before we can initialise the widget:
     >>> popup_widget = SinglePopupWidget(
     ...     owner_field,  owner_field.vocabulary, TestRequest())
     >>> print popup_widget()
-    <input type="text" name="field.owner" onkeypress="" value=""
-           id="field.owner" size="20" />
+    <input type="text" value="" id="field.owner"
+           name="field.owner" size="20"
+           maxlength="" 
+           onKeyPress="" style=""
+           class="" />
     <BLANKLINE>
     (<a href="...@@popup-window?vocabulary=ValidTeamOwner...
     <BLANKLINE>
