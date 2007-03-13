@@ -143,6 +143,8 @@ k            </description>
             default="https://devpad.canonical.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
+        <key name="branchlisting_batch_size" datatype="integer" required="no"
+            default="100" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
