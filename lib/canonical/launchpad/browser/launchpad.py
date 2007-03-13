@@ -52,37 +52,37 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-	IAppFrontPageSearchForm,
+    IAppFrontPageSearchForm,
     IBazaarApplication,
-	IBinaryPackageNameSet,
-	IBountySet,
-	IBugSet,
-	IBugTrackerSet,
-	IBuilderSet,
-	ICodeOfConductSet,
-	ICveSet,
-	IDistributionSet,
-	IKarmaActionSet,
+    IBinaryPackageNameSet,
+    IBountySet,
+    IBugSet,
+    IBugTrackerSet,
+    IBuilderSet,
+    ICodeOfConductSet,
+    ICveSet,
+    IDistributionSet,
+    IKarmaActionSet,
     ILaunchBag,
     ILaunchpadCelebrities,
-	ILaunchpadRoot,
+    ILaunchpadRoot,
     ILoginTokenSet,
     IMaloneApplication,
-	IPersonSet,
-	IPillarNameSet,
-	IPOTemplateNameSet,
-	IProductSet,
-	IProjectSet,
-	IQuestionSet,
-	IRegistryApplication,
+    IPersonSet,
+    IPillarNameSet,
+    IPOTemplateNameSet,
+    IProductSet,
+    IProjectSet,
+    IQuestionSet,
+    IRegistryApplication,
     IRosettaApplication,
     ISourcePackageNameSet,
     ISpecificationSet,
-	ISprintSet,
+    ISprintSet,
     IStructuralObjectPresentation,
     ITranslationGroupSet,
-	ITranslationImportQueue,
-	NotFoundError,
+    ITranslationImportQueue,
+    NotFoundError,
     )
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
@@ -1067,3 +1067,4 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
