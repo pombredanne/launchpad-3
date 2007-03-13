@@ -797,14 +797,20 @@ a.open, a.closed {
   display: block;
   width: 28px;
   height: 120px;
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
   text-indent: -9999px;
   overflow: hidden;
 }
+
+#help_panel.open a.open-close, a.open {
+  background-image: url(help_ttl_open.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
+}
+
 #help_panel.closed a.open-close, a.closed {
-  background-image: url(help_ttl_closed.gif);
+	background-image: url(help_ttl_closed.gif);
+	background-repeat: no-repeat;
+	background-position: 0px 0px;
 }
 
 /* --- Various custom list formats --- */
