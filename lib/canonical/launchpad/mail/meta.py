@@ -11,6 +11,7 @@ from zope.schema import ASCII, Bool
 from canonical.launchpad.interfaces import IMailBox
 from canonical.launchpad.mail.stub import StubMailer, TestMailer
 from canonical.launchpad.mail.mailbox import TestMailBox, POP3MailBox
+from canonical.launchpad.mail.mbox import MboxMailer
 
 
 
@@ -105,3 +106,26 @@ def testMailerHandler(_context, name):
             callable = handler,
             args = ('provideUtility', IMailer, TestMailer(), name,)
             )
+
+
+class IMboxMailerDirective(IMailerDirective):
+    filename = ASCII(
+        title=u'File name',
+        description=u'Unix mbox file to store outgoing emails in',
+        required=True,
+        )
+    overwrite = Bool(
+        title=u'Overwrite',
+        description=u'Whether to overwrite the existing mbox file or not',
+        required=False,
+        default=False,
+        )
+
+def mboxMailerHandler(_context, name, filename, overwrite):
+    _context.action(
+        discriminator = ('utility', IMailer, name),
+        callable = handler,
+        args = ('provideUtility', IMailer,
+                MboxMailer(filename, overwrite),
+                name,)
+        )
