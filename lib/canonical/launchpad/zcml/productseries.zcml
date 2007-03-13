@@ -74,8 +74,8 @@
             template="../templates/productseries-index.pt"
             />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt" />
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />

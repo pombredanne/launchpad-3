@@ -28,19 +28,45 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 __all__ = [
-    'NotFoundError', 'ILaunchpadRoot', 'ILaunchBag', 'IOpenLaunchBag',
-    'NameNotAvailable', 'UnexpectedFormData',
-    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
-    'IWriteZODBAnnotation', 'IZODBAnnotation',
-    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
-    'IHasProductAndAssignee', 'IAging', 'IHasDateCreated', 'IHasBug',
-    'ICrowd', 'ILaunchpadCelebrities', 'IAuthApplication',
-    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-    'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
-    'IStructuralObjectPresentation', 'IHasGotchiAndEmblem',
+	'AfterTraverseEvent',
+	'BeforeTraverseEvent',
+    'IAfterTraverseEvent',
+	'IAging',
+	'IAppFrontPageSearchForm',
+	'IAuthApplication',
+    'IBasicLaunchpadRequest',
+    'IBazaarApplication',
+    'IBeforeTraverseEvent',
+	'IBreadcrumb',
+    'ICrowd',
+	'IHasAppointedDriver',
+	'IHasAssignee',
+	'IHasBug',
+	'IHasDateCreated',
+	'IHasDrivers',
+	'IHasGotchiAndEmblem',
+    'IHasOwner',
+	'IHasProduct',
+    'IHasProductAndAssignee',
+	'IHasSecurityContact',
+    'ILaunchBag',
+	'ILaunchpadCelebrities',
+    'ILaunchpadRoot',
+    'IMaloneApplication',
+	'IOpenLaunchBag',
+    'IPasswordChangeApp',
+	'IPasswordEncryptor',
+	'IPasswordResets',
+	'IReadZODBAnnotation',
+	'IRegistryApplication',
+    'IRosettaApplication',
+	'IShipItApplication',
+    'IStructuralObjectPresentation',
+    'IWriteZODBAnnotation',
+	'IZODBAnnotation',
+    'NameNotAvailable',
+    'NotFoundError',
+	'UnexpectedFormData',
     ]
 
 
@@ -371,4 +397,14 @@ class IStructuralObjectPresentation(Interface):
 
     def countAltChildren():
         """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProject')
+
 
