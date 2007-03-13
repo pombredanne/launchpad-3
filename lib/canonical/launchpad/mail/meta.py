@@ -120,12 +120,20 @@ class IMboxMailerDirective(IMailerDirective):
         required=False,
         default=False,
         )
+    mailer = ASCII(
+            title=u"Mailer to use",
+            description=u"""\
+                Which registered mailer to use, such as configured with
+                the smtpMailer or sendmailMailer directives""",
+                required=False,
+                default='smtp',
+                )
 
-def mboxMailerHandler(_context, name, filename, overwrite):
+def mboxMailerHandler(_context, name, filename, overwrite, mailer='smtp'):
     _context.action(
         discriminator = ('utility', IMailer, name),
         callable = handler,
         args = ('provideUtility', IMailer,
-                MboxMailer(filename, overwrite),
+                MboxMailer(filename, overwrite, mailer),
                 name,)
         )
