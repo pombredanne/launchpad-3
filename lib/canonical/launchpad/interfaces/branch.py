@@ -5,9 +5,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
-    'IBranchLifecycleFilter'
+    'IBranchLifecycleFilter',
+    'IBranchBatchNavigator',
     ]
 
 from zope.interface import Interface, Attribute
@@ -26,6 +28,15 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.validation import valid_branch_url
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+
+
+DEFAULT_BRANCH_STATUS_IN_LISTING = (
+    BranchLifecycleStatus.NEW,
+    BranchLifecycleStatus.EXPERIMENTAL,
+    BranchLifecycleStatus.DEVELOPMENT,
+    BranchLifecycleStatus.MATURE)
+
 
 class BranchURIField(URIField):
 
@@ -61,6 +72,10 @@ class BranchURIField(URIField):
             raise LaunchpadValidationError(
                 message, canonical_url(branch), branch.displayname)
 
+
+class IBranchBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate branch listings."""
+    
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
@@ -298,7 +313,7 @@ class IBranchSet(Interface):
             summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
@@ -351,6 +366,71 @@ class IBranchSet(Interface):
 
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""
+
+    def getBranchesForPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with person with appropriate lifecycle.
+
+        All associated branches are returned, whether they be registered
+        by the person, authored by the person, subscribed by the person
+        or any team that the person is a member of.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        XXX: thumper 2007-03-07
+        This has been shown to be a bad idea, see bug 87878.
+        """
+        
+    def getBranchesAuthoredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches authored by person with appropriate lifecycle.
+
+        Only branches that are authored by the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesRegisteredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches registered by person with appropriate lifecycle.
+
+        Only branches registered by the person but *NOT* authored by
+        the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesSubscribedByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches subscribed by person with appropriate lifecycle.
+
+        All branches where the person has subscribed to the branch
+        are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesForProduct(
+        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with product with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
 
 
 class IBranchLifecycleFilter(Interface):

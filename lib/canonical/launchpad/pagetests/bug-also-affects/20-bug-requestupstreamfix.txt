@@ -18,7 +18,7 @@ redirected to +add-affected-product directly.
 If this wasn't what we intended, we can go back to choose another
 product.
 
-    >>> user_browser.getLink('Choose another product').click()
+    >>> user_browser.getLink('Choose another project').click()
     >>> user_browser.url
     'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 

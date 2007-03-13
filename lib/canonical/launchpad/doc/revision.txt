@@ -4,6 +4,26 @@ Branches are collection of revisions, and a revision can exist independently
 from any branch. Revisions are created automatically by scanning branches, they
 have no creation interface and Launchpad cannot create or modify them.
 
+== Interfaces ==
+
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet,
+...     IBranchRevision)
+>>> from canonical.launchpad.database import (
+...     Revision, RevisionAuthor, RevisionParent, RevisionSet,
+...     BranchRevision)
+>>> verifyObject(IRevision, Revision.get(1))
+True
+>>> verifyObject(IRevisionAuthor, RevisionAuthor.get(1))
+True
+>>> verifyObject(IRevisionParent, RevisionParent.get(1))
+True
+>>> verifyObject(IRevisionSet, RevisionSet())
+True
+>>> verifyObject(IBranchRevision, BranchRevision.get(1))
+True
+
 == Creating revisions ==
 
 XXX: Revisions have an owner attribute. As a convention, the owner of a

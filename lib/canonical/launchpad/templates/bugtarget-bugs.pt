@@ -97,8 +97,10 @@
         </div><!-- two column right -->
       </div><!-- columns -->
       <div class="clear"></div>
-      <div class="section">
+      <div class="left">
         <tal:reported replace="structure context/@@+portlet-latestbugs" />
+      </div>
+      <div class="right">
         <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
       </div>
     </div><!-- main -->

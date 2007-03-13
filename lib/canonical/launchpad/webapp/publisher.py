@@ -7,7 +7,8 @@ __metaclass__ = type
 __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'canonical_url', 'nearest', 'get_current_browser_request',
            'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView']
+           'stepthrough', 'redirection', 'stepto', 'RedirectionView',
+           'RenamedView']
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -178,7 +179,7 @@ class LaunchpadView(UserAttributeCache):
 
         If the mime type of request.response starts with text/, then
         the result of this method is encoded to the charset of
-        request.response. If there is no charset, it is encoded to 
+        request.response. If there is no charset, it is encoded to
         utf8. Otherwise, the result of this method is treated as bytes.
 
         XXX: Steve Alexander says this is a convenient lie. That is, its
@@ -574,3 +575,41 @@ class RedirectionView:
     def browserDefault(self, request):
         return self, ()
 
+
+class RenamedView:
+    """Redirect permanently to the new name of the view.
+
+    This view should be used when pages are renamed.
+
+    :param new_name: the new page name.
+    :param rootsite: (optional) the virtual host to redirect to,
+            e.g. 'answers'.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request, new_name, rootsite=None):
+        self.context = context
+        self.request = request
+        self.new_name = new_name
+        self.rootsite = rootsite
+
+    def __call__(self):
+        target_url = "%s/%s" % (
+            canonical_url(self.context, rootsite=self.rootsite),
+            self.new_name)
+
+        query_string = self.request.get('QUERY_STRING', '')
+        if query_string:
+            target_url += '?' + query_string
+
+        self.request.response.redirect(target_url, status=301)
+
+        return u''
+
+    def publishTraverse(self, request, name):
+        """See zope.publisher.interfaces.browser.IBrowserPublisher."""
+        raise NotFound(name)
+
+    def browserDefault(self, request):
+        """See zope.publisher.interfaces.browser.IBrowserPublisher."""
+        return self, ()

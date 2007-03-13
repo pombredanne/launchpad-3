@@ -120,8 +120,7 @@ Let's see some examples of how this works:
 
 This code also works for null bug tasks:
 
-  >>> from canonical.launchpad.components.bugtask import NullBugTask
-  >>> from canonical.launchpad.database import Bug, Product
+  >>> from canonical.launchpad.database import Bug, NullBugTask, Product
   >>> bug_one = Bug.get(1)
   >>> netapplet = Product.selectOneBy(name="netapplet")
   >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)

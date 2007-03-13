@@ -2,7 +2,7 @@ Test to add a product series
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Add series').click()
+  >>> browser.getLink('Register a release series').click()
   >>> print browser.url
   http://launchpad.dev/firefox/+addseries
 
@@ -16,7 +16,7 @@ After checking that the page +addseries is there, we try to add a new series.
   >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.9.2'
   >>> browser.getControl('Release URL pattern').value = (
   ...     'ftp://ftp.mozilla.org/pub/mozilla/firefox-*.tar.gz')
-  >>> browser.getControl('Add Series').click()
+  >>> browser.getControl('Register Series').click()
 
 Now we are redirected to the Overview page of the product series we just added
 
@@ -121,7 +121,7 @@ should get a nice error message.
 
   >>> browser.getControl('Name').value = 'unstable'
   >>> browser.getControl('Summary').value = 'Another series with the same name'
-  >>> browser.getControl('Add Series').click()
+  >>> browser.getControl('Register Series').click()
 
   >>> message = 'unstable is already in use by another series' 
   >>> message in browser.contents

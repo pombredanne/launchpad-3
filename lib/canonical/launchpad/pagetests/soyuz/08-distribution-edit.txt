@@ -13,10 +13,10 @@ Change some details of the Ubuntu distribution that were incorrect.
 
   >>> find_tag_by_id(
   ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'/@@/nyet-mini'
+  u'/@@/distribution'
   >>> find_tag_by_id(
   ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'/@@/nyet-mugshot'
+  u'/@@/distribution-mugshot'
 
   >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
   >>> set_gotchi_and_emblem(admin_browser)
