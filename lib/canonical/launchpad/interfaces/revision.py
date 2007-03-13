@@ -70,5 +70,5 @@ class IRevisionSet(Interface):
         """
 
     def new(revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids):
+            parent_ids, properties):
         """Create a new Revision with the given revision ID."""

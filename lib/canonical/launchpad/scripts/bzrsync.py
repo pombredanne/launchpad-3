@@ -259,7 +259,8 @@ class BzrSync:
                 revision_date=revision_date,
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
-                parent_ids=bzr_revision.parent_ids)
+                parent_ids=bzr_revision.parent_ids,
+                properties=bzr_revision.properties)
             self._makeBugRevisionLink(db_revision, bzr_revision)
 
     def _makeBugRevisionLink(self, db_revision, bzr_revision):

@@ -100,8 +100,10 @@ class RevisionSet:
         return Revision.selectOneBy(revision_id=revision_id)
 
     def new(self, revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids):
+            parent_ids, properties):
         """See IRevisionSet.new()"""
+        if properties is None:
+            properties = {}
         # create a RevisionAuthor if necessary:
         try:
             author = RevisionAuthor.byName(revision_author)
@@ -120,5 +122,9 @@ class RevisionSet:
             seen_parents.add(parent_id)
             RevisionParent(revision=revision, sequence=sequence,
                            parent_id=parent_id)
-        
+
+        # Create revision properties.
+        for name, value in properties.iteritems():
+            RevisionProperty(revision=revision, name=name, value=value)
+
         return revision

@@ -656,6 +656,19 @@ class TestBzrSyncModified(BzrSyncTestCase):
                           self.bzrsync.syncOneRevision, FakeRevision)
 
 
+class TestRevisionProperty(BzrSyncTestCase):
+    """Tests for storting revision properties."""
+
+    def test_revision_properties(self):
+        # Revisions with properties should have records stored in the
+        # RevisionProperty table, accessible through Revision.getProperties().
+        self.commitRevision(rev_id='rev1', revprops={'name': 'value'})
+        self.syncBranch()
+        db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
+        bzr_revision = self.bzr_branch.repository.get_revision('rev1')
+        self.assertEquals(bzr_revision.properties, db_revision.getProperties())
+
+
 class OopsLoggingTest(unittest.TestCase):
     """Test that temporarily disables the default OOPS reporting and instead
     keeps any OOPSes in a list on the instance.
@@ -674,18 +687,6 @@ class OopsLoggingTest(unittest.TestCase):
 
     def raising(self, info, request=None, now=None):
         self.oopses.append((info, request, now))
-
-
-class TestRevisionProperty(BzrSyncTestCase):
-    """Tests for storting revision properties."""
-
-    def test_no_revision_properties(self):
-        # Revisions without properties should have no records stored in the
-        # RevisionProperty table.
-        self.commitRevision(rev_id='rev1', revprops={})
-        self.syncBranch()
-        revision = getUtility(IRevisionSet).getByRevisionId('rev1')
-        self.assertEquals(revision.getProperties(), {})
 
 
 class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
