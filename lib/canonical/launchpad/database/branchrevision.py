@@ -12,12 +12,12 @@ from canonical.launchpad.interfaces import IBranchRevision, IBranchRevisionSet
 
 
 class BranchRevision(SQLBase):
-    """The association between a revision and a branch."""
+    """See IBranchRevision."""
 
     implements(IBranchRevision)
 
     _table = 'BranchRevision'
-    
+
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)
 
@@ -27,6 +27,7 @@ class BranchRevision(SQLBase):
 
 
 class BranchRevisionSet:
+    """See IBranchRevisionSet."""
 
     implements(IBranchRevisionSet)
 
