@@ -444,6 +444,8 @@ class TestQueueToolInJail(TestQueueBase):
 
         Instead of overwrite a file in the working directory queue will
         fail, raising a CommandRunnerError.
+
+        bug 67014: Don't complain if files are the same
         """
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
@@ -452,12 +454,19 @@ class TestQueueToolInJail(TestQueueBase):
         # acquire last modification time
         mtime = os.stat(self._listfiles()[0]).st_mtime
 
-        # fetch will raise and not overwrite the file in disk
-        self.assertRaises(
-            CommandRunnerError, self.execute_command, 'fetch 1')
+        # fetch will NOT raise and not overwrite the file in disk
+        self.execute_command('fetch 1')
 
         # check if the file wasn't modified (mtime continues the same)
         self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
+
+        # clobber the existing file, fetch it again and expect an exception
+        f = open(self._listfiles()[0],"w")
+        f.write("you're clobbered")
+        f.close()
+
+        self.assertRaises( 
+            CommandRunnerError, self.execute_command, 'fetch 1')
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem
