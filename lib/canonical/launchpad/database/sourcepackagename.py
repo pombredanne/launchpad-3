@@ -144,8 +144,9 @@ def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):
                      FROM BinaryPackageRelease, SourcePackageName, Build,
                           SourcePackageRelease, BinaryPackageName
                     WHERE
-                       BinaryPackageName.id = BinaryPackageRelease.id AND
-                       BinaryPackageRelease.build = Build.ID AND
+                       BinaryPackageName.id =
+                           BinaryPackageRelease.binarypackagename AND
+                       BinaryPackageRelease.build = Build.id AND
                        SourcePackageRelease.sourcepackagename =
                            SourcePackageName.id AND
                        Build.sourcepackagerelease =

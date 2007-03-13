@@ -39,9 +39,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
 from canonical.launchpad.webapp import smartquote
+from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -111,13 +111,18 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
+branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
-branch_index = ContextDisplayName(smartquote('Bazaar branch "%s"'))
+def branch_index(context, view):
+    if context.author:
+        return smartquote('"%s" branch by %s in Launchpad') % (
+            context.displayname, context.author.title)
+    else:
+        return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
 
-branchtarget_branchlisting = ContextTitle('Details of Branches for %s')
+branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
@@ -169,6 +174,9 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+def buglisting_embedded_advanced_search(context, view):
+    return view.getSearchPageHeading()
+
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetname)
@@ -189,22 +197,20 @@ def bugs_assigned(context, view):
 
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
-bugtarget_filebug = ContextTitle('Report a bug about %s')
+bugtarget_bugs = ContextTitle('Bugs in %s')
 
-bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
-
-bugtarget_filebug_search = ContextTitle('Report a bug about %s')
-
-def bugtarget_filebug_simple(context, view):
-    if hasattr(context, "title"):
-        # We're generating a title for a contextual bug filing page.
-        ContextTitle('Report a bug about %s')
-    else:
+def bugtarget_filebug_advanced(context, view):
+    if IMaloneApplication.providedBy(context):
         # We're generating a title for a top-level, contextless bug
         # filing page.
         return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
 
-bugtarget_filebug_submit_bug = bugtarget_filebug_simple
+bugtarget_filebug_search = bugtarget_filebug_advanced
+
+bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
 
@@ -302,6 +308,8 @@ distributionmirror_index = ContextTitle('Mirror %s')
 distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -449,9 +457,11 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
+launchpad_onezerostatus = 'One-Zero Page Template Status'
+
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search Launchpad Projects'
+launchpad_search = 'Search projects in Launchpad'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -503,6 +513,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+notification_test = 'Notification test'
+
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
@@ -525,12 +537,10 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
-
-def person_bugs(context, view):
-    return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
 
@@ -577,7 +587,7 @@ person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
-person_specworkload = ContextDisplayName('Specification workload for %s')
+person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
@@ -642,7 +652,7 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-product_add = 'Register a product with Launchpad'
+product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -655,13 +665,15 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
+product_code_index = 'Projects with Code'
+
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
 
-product_new = 'Register a product in the Launchpad'
+product_new = 'Register a project in Launchpad'
 
 product_translators = ContextTitle('Set translation group for %s')
 
@@ -677,13 +689,13 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
-products_index = 'Products registered in Launchpad'
+products_index = 'Projects registered in Launchpad'
 
 productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import product series'
+productseries_source = 'Import a stable or development branch to Bazaar'
 
 productseries_translations = ContextTitle('Translation templates for %s')
 
@@ -701,11 +713,17 @@ project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = ContextTitle('%s project details')
 
+project_filebug_search = bugtarget_filebug_advanced
+
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-project_specs = ContextTitle('Specifications for %s')
+project_specs = ContextTitle('Blueprints for %s')
+
+project_translations = ContextTitle('Translatable projects for %s')
+
+project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Projects registered in Launchpad'
 
@@ -724,9 +742,9 @@ def reference_index(context, view):
 
 registry_about = 'About the Launchpad Registry'
 
-registry_index = 'Product and group registration in Launchpad'
+registry_index = 'Project and group registration in Launchpad'
 
-products_all = 'Upstream products registered in Launchpad'
+products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Projects registered in Launchpad'
 
@@ -748,6 +766,44 @@ def productseries_edit(context, view):
     return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
+
+def question_add(context, view):
+    return view.pagetitle
+
+question_add_search = question_add
+
+question_bug = ContextId('Link question #%s to a bug report')
+
+question_change_status = ContextId('Change status of question #%s')
+
+question_confirm_answer = ContextId('Confirm an answer to question #%s')
+
+question_edit = ContextId('Edit question #%s details')
+
+question_history = ContextId('History of question #%s')
+
+def question_index(context, view):
+    text = (
+        smartquote('%s question #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+    return text
+
+question_linkbug = ContextId('Link question  #%s to a bug report')
+
+def question_listing(context, view):
+    return view.pagetitle
+
+question_makebug = ContextId('Create bug report based on question #%s')
+
+question_reject = ContextId('Reject question #%s')
+
+question_subscription = ContextId('Subscription to question #%s')
+
+question_unlinkbugs = ContextId('Remove bug links from question #%s')
+
+questions_index = 'Launchpad Answer Tracker'
+
+questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
@@ -799,12 +855,12 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('%s HCT status')
+sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define upstream series for %s')
+sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
@@ -824,59 +880,59 @@ sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
 sourcesource_index = 'Upstream source import'
 
-specification_add = 'Register a feature specification in Launchpad'
+specification_add = 'Register a blueprint in Launchpad'
 
-specification_addsubscriber = 'Subscribe someone else to this spec'
+specification_addsubscriber = 'Subscribe someone else to this blueprint'
 
 specification_linkbug = ContextTitle(
-  u'Link specification \N{left double quotation mark}%s'
+  u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach spec to a different product or distribution'
+specification_retargeting = 'Attach blueprint to a different project or distribution'
 
-specification_superseding = 'Mark specification as superseded by another'
+specification_superseding = 'Mark blueprint as superseded by another'
 
-specification_goaldecide = 'Approve or decline specification goal'
+specification_goaldecide = 'Approve or decline blueprint goal'
 
-specification_dependency = 'Create a specification dependency'
+specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
 specification_milestone = 'Target feature to milestone'
 
-specification_people = 'Change specification assignee, drafter, and reviewer'
+specification_people = 'Change blueprint assignee, drafter, and reviewer'
 
-specification_priority = 'Change specification priority'
+specification_priority = 'Change blueprint priority'
 
-specification_distrorelease = ('Target specification at a distribution release')
+specification_distrorelease = ('Target blueprint to a distribution release')
 
-specification_productseries = 'Target specification at a series'
+specification_productseries = 'Target blueprint to a series'
 
 specification_removedep = 'Remove a dependency'
 
 specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request feedback on this specification'
+specification_requestfeedback = 'Request feedback on this blueprint'
 
-specification_edit = 'Edit specification details'
+specification_edit = 'Edit blueprint details'
 
-specification_linksprint = 'Put specification on sprint agenda'
+specification_linksprint = 'Put blueprint on sprint agenda'
 
-specification_status = 'Edit specification status'
+specification_status = 'Edit blueprint status'
 
-specification_index = ContextTitle(smartquote('Feature specification: "%s"'))
+specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 
-specification_subscription = 'Subscribe to specification'
+specification_subscription = 'Subscribe to blueprint'
 
-specification_queue = 'Queue specification for review'
+specification_queue = 'Queue blueprint for review'
 
-specification_linkbranch = 'Link branch to specification'
+specification_linkbranch = 'Link branch to blueprint'
 
-specifications_index = ContextTitle('%s')
+specifications_index = 'Launchpad Blueprints'
 
-specificationbranch_status = 'Edit specification branch status'
+specificationbranch_status = 'Edit blueprint branch status'
 
 specificationgoal_specs = ContextTitle('List goals for %s')
 
@@ -887,16 +943,16 @@ def specificationsubscription_edit(context, view):
 
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
-specificationtarget_index = ContextTitle('Specification Listing for %s')
+specificationtarget_index = ContextTitle('Blueprint listing for %s')
 
 def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
-specificationtarget_assignments = ContextTitle('Specification assignments for %s')
+specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 
-specificationtarget_workload = ContextTitle('Feature workload in %s')
+specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 
 sprint_attend = ContextTitle('Register your attendance at %s')
 
@@ -908,7 +964,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_specs = ContextTitle('Specifications for %s')
+sprint_specs = ContextTitle('Blueprints for %s')
 
 sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
@@ -918,40 +974,7 @@ sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
 
-sprintspecification_admin = 'Approve specification for sprint agenda'
-
-tickets_index = 'Launchpad support tracker'
-
-def ticket_add(context, view):
-    return view.pagetitle
-
-ticket_add_search = ticket_add
-
-ticket_bug = ContextId('Link support request #%s to a bug report')
-
-ticket_change_status = ContextId('Change status of support request #%s')
-
-ticket_confirm_answer = ContextId('Confirm an answer to support request #%s')
-
-ticket_edit = ContextId('Edit support request #%s details')
-
-def ticket_index(context, view):
-    text = (
-        smartquote('%s support request #%d: "%s"') %
-        (context.target.displayname, context.id, context.title))
-    return text
-
-ticket_history = ContextId('History of support request #%s')
-
-ticket_linkbug = ContextId('Link support request #%s to a bug report')
-
-ticket_makebug = ContextId('Create bug report based on request #%s')
-
-ticket_reject = ContextId('Reject support request #%s')
-
-ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
-
-ticket_subscription = ContextId('Subscription to request #%s')
+sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
@@ -994,11 +1017,6 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
-
-def ticket_listing(context, view):
-    return view.pagetitle
-
-tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
 translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 

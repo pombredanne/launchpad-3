@@ -71,7 +71,7 @@ URL for the branch.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   You can <b>upload</b> to this branch at:
-  <span class="lesser">sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed</span>
+  <span class="lesser">sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed</span>
 
 == SSH key directions ==
 
@@ -82,7 +82,7 @@ First, unregister the existing SSH key for Sample Person.
 
   >>> name12_browser.open('http://launchpad.dev/')
   >>> name12_browser.getLink('Sample Person').click()
-  >>> name12_browser.getLink('SSH Keys').click()
+  >>> name12_browser.getLink('Update SSH keys').click()
   >>> name12_browser.getControl('Remove').click()
 
 The branch page now displays directions and a link to register a SSH key.
@@ -133,10 +133,10 @@ which is owned by Sample Person.
 Reassign the branch to the team.
 
   >>> name12_browser.open(branch_page)
-  >>> name12_browser.getLink('Change Registrant').click()
+  >>> name12_browser.getLink('Change registrant').click()
   >>> name12_browser.getControl(name='field.owner').value = (
   ...     'landscape-developers')
-  >>> name12_browser.getControl('Change Owner').click()
+  >>> name12_browser.getControl('Change Registrant').click()
 
 This changes the URL of the branch. Save the new URL.
 
@@ -181,5 +181,5 @@ owning team's name.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   You can <b>upload</b> to this branch at:
-  <span class="lesser">sftp://name12@bazaar.canonical.com/~landscape-developers/gnome-terminal/pushed</span>
+  <span class="lesser">sftp://name12@bazaar.launchpad.net/~landscape-developers/gnome-terminal/pushed</span>
 

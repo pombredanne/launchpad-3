@@ -1,7 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Specification', 'SpecificationSet']
+__all__ = [
+    'HasSpecificationsMixin',
+    'Specification',
+    'SpecificationSet',
+    ]
 
 from zope.interface import implements
 
@@ -16,9 +20,20 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     )
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    SpecificationDelivery, SpecificationSort,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority, SpecificationStatus,
+    )
+
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, shortlist)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
@@ -35,17 +50,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
-
 from canonical.launchpad.components.specification import SpecificationDelta
-
-from canonical.lp.dbschema import (
-    EnumCol, SpecificationDelivery,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationStatus,
-    )
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -567,7 +572,39 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                    summary=summary)
 
 
-class SpecificationSet:
+class HasSpecificationsMixin:
+    """A mixin class that implements many of the common shortcut properties
+    for other classes that have specifications.
+    """
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+        # this should be implemented by the actual context class
+        raise NotImplementedError
+
+    @property
+    def valid_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
+    @property
+    def latest_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(sort=SpecificationSort.DATE, quantity=5)
+
+    @property
+    def latest_completed_specifications(self):
+        """See IHasSpecifications."""
+        return self.specifications(sort=SpecificationSort.DATE, quantity=5,
+            filter=[SpecificationFilter.COMPLETE,])
+
+    @property
+    def specification_count(self):
+        """See IHasSpecifications."""
+        return self.specifications(filter=[SpecificationFilter.ALL]).count()
+
+
+class SpecificationSet(HasSpecificationsMixin):
     """The set of feature specifications."""
 
     implements(ISpecificationSet)
@@ -615,7 +652,13 @@ class SpecificationSet:
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+            if SpecificationFilter.COMPLETE in filter:
+                # if we are showing completed, we care about date completed
+                order = ['-Specification.date_completed', 'Specification.id']
+            else:
+                # if not specially looking for complete, we care about date
+                # registered
+                order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -647,6 +690,7 @@ class SpecificationSet:
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
+            # XXX: this is untested and was broken. -- kiko 2007-02-07
             query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
                 sqlvalues(SpecificationStatus.OBSOLETE,
                           SpecificationStatus.SUPERSEDED)
@@ -674,14 +718,9 @@ class SpecificationSet:
         return specification
 
     @property
-    def latest_specs(self):
+    def coming_sprints(self):
         """See ISpecificationSet."""
-        return Specification.select(orderBy='-datecreated')[:10]
-
-    @property
-    def upcoming_sprints(self):
-        """See ISpecificationSet."""
-        return Sprint.select("time_starts > 'NOW'", orderBy='-time_starts',
+        return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 
     def new(self, name, title, specurl, summary, status,
