@@ -92,9 +92,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
-    # XXX: why is date_created underscored when none of our other date
-    # columns are? -- kiko, 2006-01-29
-    date_created = UtcDateTimeCol(notNull=False, default=None)
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
