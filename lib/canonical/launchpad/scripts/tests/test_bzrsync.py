@@ -676,7 +676,20 @@ class OopsLoggingTest(unittest.TestCase):
         self.oopses.append((info, request, now))
 
 
+class TestRevisionProperty(BzrSyncTestCase):
+    """Tests for storting revision properties."""
+
+    def test_no_revision_properties(self):
+        # Revisions without properties should have no records stored in the
+        # RevisionProperty table.
+        self.commitRevision(rev_id='rev1', revprops={})
+        self.syncBranch()
+        revision = getUtility(IRevisionSet).getByRevisionId('rev1')
+        self.assertEquals(revision.getProperties(), {})
+
+
 class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
+    """Tests for automatic bug branch linking."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)

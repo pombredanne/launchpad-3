@@ -1,17 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionSet']
+__all__ = [
+    'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
+    'RevisionSet']
 
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
+    IRevisionSet)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -30,6 +34,8 @@ class Revision(SQLBase):
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
+
+    properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
 
     @property
     def parents(self):
@@ -67,6 +73,19 @@ class RevisionParent(SQLBase):
 
     sequence = IntCol(notNull=True)
     parent_id = StringCol(notNull=True)
+
+
+class RevisionProperty(SQLBase):
+    """A property on a revision. See IRevisionProperty."""
+
+    implements(IRevisionProperty)
+
+    _table = 'RevisionProperty'
+
+    revision = ForeignKey(
+        dbName='revision', foreignKey='Revision', notNull=True)
+    name = StringCol(notNull=True)
+    value = StringCol(notNull=True)
 
 
 class RevisionSet:
