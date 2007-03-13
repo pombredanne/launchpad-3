@@ -18,13 +18,18 @@ link to enable to change his preferred languages:
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
+The languages that are supported are displayed with an asterisk.
+
+    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
+    
+    >>> browser.getControl('Language').displayOptions
+    ['English (en) *', 'Portuguese (Brazil) (pt_BR)']
+
 Although it's possible to ask questions in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
 a language that is not spoken/understood by any of the context's answer
 contacts.
-
-    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
 
     >>> browser.getControl('Language').value = ['pt_BR']
     >>> browser.getControl('Summary').value = (

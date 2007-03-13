@@ -180,9 +180,20 @@ class QuestionLanguageVocabularyFactory:
 
         # Insert English as the first element, to make it the default one.
         languages.insert(0, getUtility(ILanguageSet)['en'])
+        
+        # The vocabulary indicates which languages are supported.
+        if context is not None:
+            question_target = IQuestionTarget(context)
+            supported_languages = question_target.getSupportedLanguages()
+        else:
+            supported_languages = set([getUtility(ILanguageSet)['en']])
 
-        terms = [SimpleTerm(lang, lang.code, lang.displayname)
-                 for lang in languages]
+        terms = []
+        for lang in languages:
+            label = lang.displayname
+            if lang in supported_languages:
+                label = "%s *" % label
+            terms.append(SimpleTerm(lang, lang.code, label))
         return SimpleVocabulary(terms)
 
 
@@ -238,7 +249,11 @@ class QuestionSupportLanguageMixin:
                     source=QuestionLanguageVocabularyFactory(self.request),
                     title=_('Language'),
                     description=_(
-                        'The language in which this question is written.')),
+                        "The language in which this question is written. "
+                        "The languages marked with a star (*) are the "
+                        "languages spoken by at least one answer contact in "
+                        "the community."
+                        )),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
