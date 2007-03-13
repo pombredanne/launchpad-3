@@ -728,9 +728,7 @@ class UBinaryUploadFile(PackageUploadFile):
             binpackageformat=self.format,
             component=self.converted_component,
             section=self.converted_section,
-            # XXX !!!
-            #priority=self.converted_priority,
-            priority=PackagePublishingPriority.OPTIONAL,
+            priority=self.converted_priority,
             shlibdeps=shlibdeps,
             depends=encoded.get('Depends', ''),
             recommends=encoded.get('Recommends', ''),

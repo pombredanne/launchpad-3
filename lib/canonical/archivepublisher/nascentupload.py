@@ -635,7 +635,10 @@ class NascentUpload:
 
         uploaded_file.component = override.component.name
         uploaded_file.section = override.section.name
-        uploaded_file.priority = override.priority
+        # Both, changesfiles and nascentuploadfile local maps, reffer to
+        # priority in lower-case names, but the DBSCHEMA name is upper-case.
+        # That's why we need this conversion here.
+        uploaded_file.priority = override.priority.name.lower()
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
