@@ -52,6 +52,10 @@ class Revision(SQLBase):
         """
         return [parent.parent_id for parent in self.parents]
 
+    def getProperties(self):
+        """See IRevision."""
+        return dict((prop.name, prop.value) for prop in self.properties)
+
 
 class RevisionAuthor(SQLBase):
     implements(IRevisionAuthor)

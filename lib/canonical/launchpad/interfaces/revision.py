@@ -34,6 +34,9 @@ class IRevision(IHasOwner):
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
 
+    def getProperties():
+        """Return the revision properties as a dict."""
+
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
