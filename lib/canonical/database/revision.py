@@ -17,7 +17,7 @@ class InvalidDatabaseRevision(Exception):
     """Exception raised by confirm_dbrevision."""
 
 
-def confirm_dbrevision():
+def confirm_dbrevision(cur):
     """Check that the database we are connected to is the same
     database patch level as expected by the code.
     
@@ -42,8 +42,6 @@ def confirm_dbrevision():
     # We skip any patches from earlier 'major' revision levels, as they
     # are no longer stored on the filesystem.
     fs_major = fs_patches[0][0]
-    con = connect(config.launchpad.dbuser)
-    cur = con.cursor()
     cur.execute("""
         SELECT major, minor, patch FROM LaunchpadDatabaseRevision 
         ORDER BY major, minor, patch
@@ -52,7 +50,6 @@ def confirm_dbrevision():
             (major, minor, patch) for major, minor, patch in cur.fetchall()
                 if major >= fs_major
             ]
-    con.close()
 
     # Raise an exception if we have a patch on the filesystem that has not
     # been applied to the database.
@@ -81,4 +78,10 @@ def confirm_dbrevision():
 
 def confirm_dbrevision_on_startup(*ignored):
     """Event handler that calls confirm_dbrevision"""
-    confirm_dbrevision()
+    con = connect(config.launchpad.dbuser)
+    try:
+        cur = con.cursor()
+        confirm_dbrevision()
+    finally:
+        con.close()
+
