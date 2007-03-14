@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright (c) 2005-2006 Canonical Ltd.
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
