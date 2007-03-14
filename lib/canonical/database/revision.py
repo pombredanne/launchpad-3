@@ -10,7 +10,7 @@ import os.path
 import re
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import connect
 
 
 class InvalidDatabaseRevision(Exception):
@@ -42,7 +42,8 @@ def confirm_dbrevision():
     # We skip any patches from earlier 'major' revision levels, as they
     # are no longer stored on the filesystem.
     fs_major = fs_patches[0][0]
-    cur = cursor()
+    con = connect(config.launchpad.dbuser)
+    cur = con.cursor()
     cur.execute("""
         SELECT major, minor, patch FROM LaunchpadDatabaseRevision 
         ORDER BY major, minor, patch
@@ -51,6 +52,7 @@ def confirm_dbrevision():
             (major, minor, patch) for major, minor, patch in cur.fetchall()
                 if major >= fs_major
             ]
+    con.close()
 
     # Raise an exception if we have a patch on the filesystem that has not
     # been applied to the database.

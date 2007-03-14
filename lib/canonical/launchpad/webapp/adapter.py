@@ -4,11 +4,13 @@ __metaclass__ = type
 
 import os
 import sys
+import thread
 import threading
 import traceback
 import time
 import warnings
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.app.rdb.interfaces import DatabaseException
 from zope.publisher.interfaces import Retry
@@ -16,9 +18,12 @@ from zope.publisher.interfaces import Retry
 from psycopgda.adapter import PsycopgAdapter, PsycopgConnection
 import psycopg
 
+import sqlos.connection
+from sqlos.interfaces import IConnectionName
+
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -358,3 +363,36 @@ class CursorWrapper:
 
     def __setattr__(self, attr, value):
         setattr(self._cur, attr, value)
+
+
+def break_main_thread_db_access(*ignored):
+    """Deliberately corrupt the SQLOS connection cache.
+    
+    When the app server is running, we want ensure we don't use the
+    connection cache from the main thread as this would only be done
+    on process startup and would leave an open connection dangling,
+    wasting resources.
+
+    This method is invoked by an IProcessStartingEvent - it would be
+    easier to do on module load, but the test suite has legitimate uses
+    for using connections from the main thread.
+    """
+    name = getUtility(IConnectionName).name
+    tid = thread.get_ident() # This event handler called on the main thread
+    key = (tid, name)
+    # We can't specify the order event handlers are called, so detect if
+    # another event handler has already been naughty.
+    assert not sqlos.connection.connCache.has_key(key), \
+        "Main thread has already used the SQLOS connection cache"
+    # Break SQLOS from this thread.
+    sqlos.connection.connCache[key] = """
+        Do not use SQLOS connection from the main thread
+        """
+
+    # And prove it
+    try:
+        cur = cursor()
+        raise AssertionError("Failed to kill main thread SQLOS connection")
+    except AttributeError:
+        pass
+
