@@ -396,7 +396,7 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.potmsgset = POTMsgSet.id AND
             POMsgSet.pofile = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.published AND
+            POSubmission.published IS TRUE AND
             POSubmission.pluralform = 0 AND
             POSubmission.validationstatus <> %s
             ''' % sqlvalues(self.potemplate.id, self.id,
@@ -484,9 +484,9 @@ class POFile(SQLBase, RosettaStats):
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 POTMsgSet.sequence > 0 AND
                 active_submission.pomsgset = POMsgSet.id AND
-                active_submission.active AND
+                active_submission.active IS TRUE AND
                 published_submission.pomsgset = POMsgSet.id AND
-                published_submission.published AND
+                published_submission.published IS TRUE AND
                 active_submission.pluralform = published_submission.pluralform
                 AND
                 active_submission.datecreated > published_submission.datecreated

@@ -92,20 +92,20 @@ Right now this search is done across Products, Projects and Distributions.
     ...     rank = get_meaningful_rank(row)
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
-    project: The Mozilla Project (mozilla) [relevance: perfect]
-    product: Mozilla Firefox (firefox) [relevance: high]
-    product: Mozilla Thunderbird (thunderbird) [relevance: high]
+    project group: The Mozilla Project (mozilla) [relevance: perfect]
+    project: Mozilla Firefox (firefox) [relevance: high]
+    project: Mozilla Thunderbird (thunderbird) [relevance: high]
 
     >>> for row in pillar_set.search('ubuntu', limit=6):
     ...     rank = get_meaningful_rank(row)
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
-    product: Ubuntu (ubuntu-product) [relevance: perfect]
+    project: Ubuntu (ubuntu-product) [relevance: perfect]
     project: The Ubuntu Project (ubuntu-project) [relevance: high]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
-    product: The Evolution Groupware Application (evolution) [relevance: low]
-    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+    project: The Evolution Groupware Application (evolution) [relevance: low]
+    project: The Gnome Panel Applets (applets) [relevance: low]
 
 Note that inactive products and projects won't be included in the results.
 
@@ -115,8 +115,8 @@ Note that inactive products and projects won't be included in the results.
     ...     rank = get_meaningful_rank(row)
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
-    project: The Mozilla Project (mozilla) [relevance: perfect]
-    product: Mozilla Thunderbird (thunderbird) [relevance: high]
+    project group: The Mozilla Project (mozilla) [relevance: perfect]
+    project: Mozilla Thunderbird (thunderbird) [relevance: high]
 
     >>> pillar_set['ubuntu-project'].active = False
     >>> flush_database_updates()
@@ -125,8 +125,8 @@ Note that inactive products and projects won't be included in the results.
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
-    product: Ubuntu (ubuntu-product) [relevance: perfect]
+    project: Ubuntu (ubuntu-product) [relevance: perfect]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
-    product: The Evolution Groupware Application (evolution) [relevance: low]
+    project: The Evolution Groupware Application (evolution) [relevance: low]
     distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
-    product: The Gnome Panel Applets (applets) [relevance: low]
+    project: The Gnome Panel Applets (applets) [relevance: low]

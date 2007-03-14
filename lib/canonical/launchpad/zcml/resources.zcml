@@ -63,7 +63,7 @@
     <resource name="distribution" file="../images/distribution.png" />
     <resource name="distribution-mini" file="../images/distribution-mini.png" />
     <resource name="distribution-heading" file="../images/distribution-heading.png" />
-    <resource name="distribution-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="distribution-mugshot" file="../images/distribution-heading.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
@@ -102,12 +102,12 @@
     <resource name="product" file="../images/product.png" />
     <resource name="product-mini" file="../images/product-mini.png" />
     <resource name="product-heading" file="../images/product-heading.png" />
-    <resource name="product-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="product-mugshot" file="../images/product-heading.png" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/project.png" />
     <resource name="project-mini" file="../images/project-mini.png" />
     <resource name="project-heading" file="../images/project-heading.png" />
-    <resource name="project-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="project-mugshot" file="../images/project-heading.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="question" file="../images/question.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
@@ -126,7 +126,7 @@
     <resource name="team" file="../images/team.png" />
     <resource name="team-mini" file="../images/team-mini.png" />
     <resource name="team-heading" file="../images/team-heading.png" />
-    <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="team-mugshot" file="../images/team-heading.png" />
     <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
@@ -135,6 +135,7 @@
     <resource name="translation" file="../images/translation.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.png" />
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
+    <resource name="user" file="../images/person.png" />
     <resource name="warning" file="../images/warning.png" />
     <resource name="warning-large" file="../images/warning-large.png" />
     <resource name="yes" file="../images/yes.png" />

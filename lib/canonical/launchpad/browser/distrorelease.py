@@ -139,7 +139,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     # has a search form.
 
     def answers(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 

@@ -129,7 +129,7 @@ so let's extract the real URL and open it manually.
     ...     "popup_window\('([^']*)'", choose_link.url).group(1)
     >>> user_browser.open('http://bugs.launchpad.dev/' + search_url)
     >>> user_browser.title
-    'Select a distribution, product or project'
+    'Select a project'
 
 'Project' in this context means either a product, distribution or a
 project.

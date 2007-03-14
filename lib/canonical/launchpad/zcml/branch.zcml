@@ -123,6 +123,12 @@
     class="canonical.launchpad.browser.BranchReassignmentView"
     template="../templates/object-reassignment.pt" />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchBatchNavigator"
+      name="+branch-listing"
+      template="../templates/branch-listing.pt"
+      permission="zope.Public" />
+
   <!-- BranchSet -->
   <content class="canonical.launchpad.database.BranchSet">
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />

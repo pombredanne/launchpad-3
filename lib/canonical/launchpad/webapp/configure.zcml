@@ -101,6 +101,14 @@
         name="count"
         />
 
+    <!-- TALES macro: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageMacroDispatcher"
+        name="macro"
+        />
+
     <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
@@ -181,6 +189,27 @@
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IHasGotchiAndEmblem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.HasGotchiAndEmblemFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IKarmaCategory"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryFormatterAPI"
         name="fmt"
         />
 
@@ -373,28 +402,28 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />

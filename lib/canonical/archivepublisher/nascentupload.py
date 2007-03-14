@@ -1550,7 +1550,7 @@ class NascentUpload:
                 return candidates[0]
         return None
 
-    def getBinaryAncestry(self, uploaded_file):
+    def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -1578,6 +1578,10 @@ class NascentUpload:
                 uploaded_file.package, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
+
+            if not try_other_archs:
+                continue
+
             # Try the other architectures...
             dars = self.distrorelease.architectures
             other_dars = [other_dar for other_dar in dars
@@ -1692,10 +1696,18 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    self.checkBinaryVersion(uploaded_file, ancestry)
                     # XXX cprov 20070212: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
+                    # Fo binary versions verification we should only
+                    # use ancestries in the same architecture. If none
+                    # was found we can go w/o any checks, since it's
+                    # a NEW binary in this architecture, any version is
+                    # fine. See bug #89846 for further info.
+                    ancestry = self.getBinaryAncestry(
+                        uploaded_file, try_other_archs=False)
+                    if ancestry is not None:
+                        self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
@@ -1943,39 +1955,46 @@ class NascentUpload:
         - Create a new build in FULLYBUILT status.
         """
         if getattr(self.policy, 'build', None) is not None:
+            self.logger.debug("Using cached build: %s" % self.policy.build.id)
             return self.policy.build
 
-        build_id = getattr(self.policy.options, 'buildid', None)
         spr = self.policy.sourcepackagerelease
+        dar = self.distrorelease[archtag]
 
+        build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
-            spr = self.policy.sourcepackagerelease
-            dar = self.distrorelease[archtag]
-
             # Check if there's a suitable existing build.
             build = spr.getBuildByArch(dar)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
+                self.logger.debug("Updating build for %s: %s" % (
+                    dar.architecturetag, build.id))
             else:
                 # No luck. Make one.
                 build = spr.createBuild(
                     dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
-            self.policy.build = build
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
+            # XXX cprov 20070302: builddmaster will update the build.
+            # This is unfortunate because doing it here would fix the
+            # the problem mentioned #32261, since it would be only updated
+            # if this transaction got commited.
+            self.logger.debug("Build %s found" % build.id)
 
-            # Sanity check; raise an error if the build we've been
-            # told to link to makes no sense (ie. is not for the right
-            # source package).
-            if (build.sourcepackagerelease != spr or
-                build.pocket != self.pocket):
-                raise UploadError("Attempt to upload binaries specifying "
-                                  "build %s, where they don't fit" % build_id)
-            self.policy.build = build
-            self.logger.debug("Build %s found" % self.policy.build.id)
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense (ie. is not for the right
+        # source package).
+        if (build.sourcepackagerelease != spr or
+            build.pocket != self.pocket or
+            build.distroarchrelease != dar):
+            raise UploadError("Attempt to upload binaries specifying "
+                              "build %s, where they don't fit" % build_id)
 
-        return self.policy.build
+        # cache build instance in policy.
+        self.policy.build = build
+
+        return build
 
     def insert_binary_into_db(self):
         """Insert this nascent upload's builds into the database."""

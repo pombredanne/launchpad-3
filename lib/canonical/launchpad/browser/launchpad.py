@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AppFrontPageSearchView',
     'Breadcrumbs',
     'LoginStatus',
     'MaintenanceMessage',
@@ -12,6 +13,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralObjectPresentationView',
@@ -23,10 +25,10 @@ __all__ = [
     ]
 
 import cgi
+from cookielib import domain_match
 import errno
 import urllib
 import os
-import os.path
 import re
 import time
 from datetime import timedelta, datetime
@@ -38,6 +40,8 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.content_types import guess_content_type
 from zope.app.traversing.interfaces import ITraversable
+from zope.app.publisher.browser.fileresource import setCacheControl
+from zope.app.datetimeutils import rfc1123_date
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import isinstance as zope_isinstance
@@ -48,20 +52,46 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarNameSet,
-    IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
-    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
-    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    IStructuralObjectPresentation, ITranslationImportQueue,
-    ITranslationGroupSet, NotFoundError)
+    IAppFrontPageSearchForm,
+    IBazaarApplication,
+    IBinaryPackageNameSet,
+    IBountySet,
+    IBugSet,
+    IBugTrackerSet,
+    IBuilderSet,
+    ICodeOfConductSet,
+    ICveSet,
+    IDistributionSet,
+    IKarmaActionSet,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    ILaunchpadRoot,
+    ILoginTokenSet,
+    IMaloneApplication,
+    IPersonSet,
+    IPillarNameSet,
+    IPOTemplateNameSet,
+    IProductSet,
+    IProjectSet,
+    IQuestionSet,
+    IRegistryApplication,
+    IRosettaApplication,
+    ISourcePackageNameSet,
+    ISpecificationSet,
+    ISprintSet,
+    IStructuralObjectPresentation,
+    ITranslationGroupSet,
+    ITranslationImportQueue,
+    NotFoundError,
+    )
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.widgets.project import ProjectScopeWidget
 
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
@@ -459,6 +489,54 @@ class LaunchpadRootNavigation(Navigation):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
 
+    def _getBetaRedirectionView(self):
+        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
+            return None
+
+        # If we are looking at the front page, don't redirect:
+        if self.request['PATH_INFO'] == '/':
+            return None
+        
+        # If no redirection host is set, don't redirect.
+        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        redirection_host = config.launchpad.beta_testers_redirection_host
+        if redirection_host is None:
+            return None
+        # If the hostname for our URL isn't under the main site
+        # (e.g. shipit.ubuntu.com), don't redirect.
+        uri = URI(self.request.getURL())
+        if not uri.host.endswith(mainsite_host):
+            return None
+
+        # Only redirect if the user is a member of beta testers team,
+        # don't redirect.
+        user = getUtility(ILaunchBag).user
+        if user is None or not user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
+            return None
+
+        # Alter the host name to point at the redirection target:
+        new_host = uri.host[:-len(mainsite_host)] + redirection_host
+        uri = uri.replace(host=new_host)
+        # Complete the URL from the environment:
+        uri = uri.replace(path=self.request['PATH_INFO'])
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            uri = uri.replace(query=query_string)
+
+        # Empty the traversal stack, since we're redirecting.
+        self.request.setTraversalStack([])
+        
+        # And perform a temporary redirect.
+        return RedirectionView(str(uri), self.request, status=303)
+
+    def publishTraverse(self, request, name):
+        beta_redirection_view = self._getBetaRedirectionView()
+        if beta_redirection_view is not None:
+            return beta_redirection_view
+        return Navigation.publishTraverse(self, request, name)
+
 
 class SoftTimeoutView(LaunchpadView):
 
@@ -485,6 +563,66 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+
+class LaunchpadRootIndexView(LaunchpadView):
+    """An view for the default view of the LaunchpadRoot."""
+
+    def _getCookieParams(self):
+        """Return a string containing the 'domain' and 'secure' parameters."""
+        params = '; Path=/'
+        # XXX: 20070206 jamesh
+        # This code to select the cookie domain comes from webapp/session.py
+        # It should probably be factored out.
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        for domain in config.launchpad.cookie_domains:
+            assert not domain.startswith('.'), \
+                   "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(uri.host, domain) or
+                domain_match(uri.host, dotted_domain)):
+                params += '; Domain=%s' % dotted_domain
+                break
+        return params
+
+    def getInhibitRedirectScript(self):
+        """Returns a Javascript function that inhibits redirection."""
+        return '''
+        function inhibit_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
+            document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
+                               expire.toGMTString())
+            alert('You will not be redirected to the beta site for 2 hours');
+            return false;
+        }''' % self._getCookieParams()
+
+    def getEnableRedirectScript(self):
+        """Returns a Javascript function that enables beta redireciton."""
+        return '''
+        function enable_beta_redirect() {
+            var expire = new Date()
+            expire.setTime(expire.getTime() + 1000)
+            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
+                               expire.toGMTString())
+            alert('Redirection to the beta site has been enabled');
+            return false;
+        }''' % self._getCookieParams()
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+    
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if config.launchpad.beta_testers_redirection_host is None:
+            return False
+
+        return self.user is not None and self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+        
 
 
 class ObjectForTemplate:
@@ -580,6 +718,22 @@ class OneZeroTemplateStatus(LaunchpadView):
         self.excluded_from_run = sorted(excluded)
 
 
+class File:
+    # Copied from zope.app.publisher.fileresource, which
+    # unbelievably throws away the file data, and isn't
+    # useful extensible.
+    #
+    def __init__(self, path, name):
+        self.path = path
+
+        f = open(path, 'rb')
+        self.data = f.read()
+        f.close()
+        self.content_type, enc = guess_content_type(path, self.data)
+        self.__name__ = name
+        self.lmt = float(os.path.getmtime(path)) or time()
+        self.lmh = rfc1123_date(self.lmt)
+
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
@@ -614,23 +768,21 @@ class IcingFolder:
                 'os.path.sep appeared in the resource name: %s' % name)
         filename = os.path.join(here, self.folder, name)
         try:
-            datafile = open(filename, 'rb')
+            fileobj = File(filename, name)
         except IOError, ioerror:
             if ioerror.errno == errno.ENOENT: # No such file or directory
                 raise NotFound(self, name)
             else:
                 # Some other IOError that we're not expecting.
                 raise
-        else:
-            data = datafile.read()
-            datafile.close()
 
         # TODO: Set an appropriate charset too.  There may be zope code we
         #       can reuse for this.
-        content_type, encoding = guess_content_type(filename)
-        self.request.response.setHeader('Content-Type', content_type)
-
-        return data
+        response = self.request.response
+        response.setHeader('Content-Type', fileobj.content_type)
+        response.setHeader('Last-Modified', fileobj.lmh)
+        setCacheControl(response)
+        return fileobj.data
 
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
@@ -891,8 +1043,28 @@ class DefaultShortLink(LaunchpadView):
         return u''.join(L)
 
 
+class AppFrontPageSearchView(LaunchpadFormView):
+
+    schema = IAppFrontPageSearchForm
+    custom_widget('scope', ProjectScopeWidget)
+
+    @property
+    def scope_css_class(self):
+        """The CSS class for used in the scope widget."""
+        if self.scope_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def scope_error(self):
+        """The error message for the scope widget."""
+        return self.getWidgetError('scope')
+
+
 class BrowserWindowDimensions(LaunchpadView):
     """Allow capture of browser window dimensions."""
 
     def render(self):
         return u'Thanks.'
+
