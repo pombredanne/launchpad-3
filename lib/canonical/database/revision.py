@@ -10,14 +10,14 @@ import os.path
 import re
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import connect
 
 
 class InvalidDatabaseRevision(Exception):
     """Exception raised by confirm_dbrevision."""
 
 
-def confirm_dbrevision():
+def confirm_dbrevision(cur):
     """Check that the database we are connected to is the same
     database patch level as expected by the code.
     
@@ -42,7 +42,6 @@ def confirm_dbrevision():
     # We skip any patches from earlier 'major' revision levels, as they
     # are no longer stored on the filesystem.
     fs_major = fs_patches[0][0]
-    cur = cursor()
     cur.execute("""
         SELECT major, minor, patch FROM LaunchpadDatabaseRevision 
         ORDER BY major, minor, patch
@@ -79,4 +78,10 @@ def confirm_dbrevision():
 
 def confirm_dbrevision_on_startup(*ignored):
     """Event handler that calls confirm_dbrevision"""
-    confirm_dbrevision()
+    con = connect(config.launchpad.dbuser)
+    try:
+        cur = con.cursor()
+        confirm_dbrevision()
+    finally:
+        con.close()
+
