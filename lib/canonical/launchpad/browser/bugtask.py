@@ -1195,7 +1195,6 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    form_has_errors = False
     owner_error = ""
     assignee_error = ""
     bug_contact_error = ""
@@ -1273,7 +1272,9 @@ class BugTaskSearchListingView(LaunchpadView):
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
         except WidgetsError:
-            self.form_has_errors = True
+            # No need to do anything, the widget will be checked for
+            # errors elsewhere.
+            pass
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1535,11 +1536,19 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return False
 
+    @property
+    def form_has_errors(self):
+        has_errors = (
+            self.assignee_error or
+            self.owner_error or
+            self.bug_contact_error or
+            self.tag_widget.error())
+        return has_errors
+
     def validateVocabulariesAdvancedForm(self):
         """Validate person vocabularies in advanced form.
 
-        If a vocabulary lookup fail set a custom error message and set
-        self.form_has_errors to True.
+        If a vocabulary lookup fail set a custom error message.
         """
         error_message = _(
             "There's no person with the name or email address '%s'")
@@ -1548,19 +1557,16 @@ class BugTaskSearchListingView(LaunchpadView):
         except WidgetsError:
             self.assignee_error = error_message % (
                 cgi.escape(self.request.get('field.assignee')))
-            self.form_has_errors = True
         try:
             getWidgetsData(self, self.schema, names=["owner"])
         except WidgetsError:
             self.owner_error = error_message % (
                 cgi.escape(self.request.get('field.owner')))
-            self.form_has_errors = True
         try:
             getWidgetsData(self, self.schema, names=["bug_contact"])
         except WidgetsError:
             self.bug_contact_error = error_message % (
                 cgi.escape(self.request.get('field.bug_contact')))
-            self.form_has_errors = True
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
