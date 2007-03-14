@@ -220,7 +220,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def sourcepackages(self):
-        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
                     ProductSeries.product = %s
@@ -234,7 +233,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def distrosourcepackages(self):
-        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.distributionsourcepackage \
             import DistributionSourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
