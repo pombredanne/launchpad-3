@@ -6,7 +6,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -30,6 +30,8 @@ from canonical.launchpad import _
 # The maximum number of requests in a single shipping run
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
+MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
+
 
 def _validate_positive_int(value):
     """Return True if the given value is a positive integer.
@@ -49,7 +51,7 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distrorelease = ShipItDistroRelease.DAPPER
+    current_distrorelease = ShipItDistroRelease.FEISTY
     max_size_for_auto_approval = 15
 
 
@@ -477,11 +479,16 @@ class IStandardShipItRequestSet(Interface):
     def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """Create and return a new StandardShipItRequest."""
 
-    def getAll():
-        """Return all standard ShipIt requests."""
+    def getByFlavour(flavour, user):
+        """Return the standard ShipIt requests for the given flavour and user.
 
-    def getByFlavour(flavour):
-        """Return all standard ShipIt requests for the given flavour."""
+        If the given user is truested in Shipit, then all options of that
+        flavour are returned. Otherwise, only the options with less than
+        MAX_CDS_FOR_UNTRUSTED_PEOPLE CDs are returned.
+
+        To find out whether a user has made contributions or not, we use the
+        is_trusted_on_shipit property of IPerson.
+        """
 
     def get(id, default=None):
         """Return the StandardShipItRequest with the given id.

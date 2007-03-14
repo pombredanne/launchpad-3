@@ -15,7 +15,7 @@ these CDs are sent to the user.
   >>> from canonical.launchpad.database import ShippingRun
   >>> from canonical.launchpad.interfaces import (
   ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
-  ...    IShippingRequest, ILaunchBag, IShipmentSet, ShippingRequestPriority)
+  ...    IShippingRequest, ILaunchBag, ShippingRequestPriority)
   >>> requestset = getUtility(IShippingRequestSet)
   >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
@@ -201,9 +201,9 @@ of a given distrorelease (or both, obviously).
    (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
   >>> from canonical.lp.dbschema import ShipItDistroRelease
-  >>> dapper = ShipItDistroRelease.DAPPER
+  >>> feisty = ShipItDistroRelease.FEISTY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=dapper)]
+  ...  for shipreq in requestset.search(distrorelease=feisty)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
    (u'Celso Providelo', 6), (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
@@ -213,7 +213,7 @@ of a given distrorelease (or both, obviously).
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
+  ...  for shipreq in requestset.search(distrorelease=feisty, flavour=edubuntu)]
   [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
 
@@ -235,8 +235,40 @@ beginning of his email address.
   ['info@shipit.ubuntu.com']
 
 
-Exporting requests
-------------------
+== Standard request templates ==
+
+We want most of the people to use the standard options we provide when making
+new requests, because if we give them a text field for entering the quantity,
+lots of people will just enter as many as they can, just because they can.
+
+These options are presented as a set of radio buttons and their visibility
+change according to the logged in user. That is, some users get to see all
+options while others can see only the options with at most N CDs.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl.is_trusted_on_shipit
+    True
+    >>> optionset = getUtility(IStandardShipItRequestSet)
+    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, sabdfl):
+    ...     print option.description
+    1 Ubuntu CD (1 64-bit PC Edition)
+    1 Ubuntu CD (1 Mac Edition)
+    1 Ubuntu CD (1 PC Edition)
+    5 Ubuntu CDs (5 PC Edition)
+    10 Ubuntu CDs (8 PC Edition, 1 64-bit PC Edition, 1 Mac Edition)
+    10 Ubuntu CDs (10 PC Edition)
+
+    >>> jdub = getUtility(IPersonSet).getByName('jdub')
+    >>> jdub.is_trusted_on_shipit
+    False
+    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, jdub):
+    ...     print option.description
+    1 Ubuntu CD (1 64-bit PC Edition)
+    1 Ubuntu CD (1 Mac Edition)
+    1 Ubuntu CD (1 PC Edition)
+    5 Ubuntu CDs (5 PC Edition)
+
+== Exporting requests ==
 
 When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
@@ -293,34 +325,6 @@ shipped, by running the shipit-exports cronscript.
 
   >>> run.requests[0].highpriority
   False
-
-Since we're now allowing shipit admins to make requests for Edgy CDs, we need
-to have a separate export containing only Edgy requests. Similarly, these
-Edgy requests won't be included in the default export.
-
-  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
-  ...                                        ShipItDistroRelease.EDGY))
-  1
-
-  >>> args = '-q --priority=normal --distrorelease=edgy'
-  >>> process = subprocess.Popen(
-  ...     'cronscripts/shipit-exports.py %s' % args, shell=True,
-  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  >>> (out, err) = process.communicate()
-  >>> out, err
-  ('', '')
-  >>> process.returncode
-  0
-
-  >>> transaction.commit()
-  >>> flush_database_updates()
-  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
-  ...                                        ShipItDistroRelease.EDGY))
-  0
-  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
-  >>> sorted([request.id for request in run.requests])
-  [19]
-
 
 Generating reports
 ------------------

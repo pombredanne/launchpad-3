@@ -16,6 +16,7 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
+    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     ]
 
 
@@ -39,6 +40,9 @@ from canonical.launchpad.interfaces.validation import (
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class PersonNameField(BlacklistableContentNameField):
@@ -367,6 +371,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
