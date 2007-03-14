@@ -231,7 +231,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+packages', text, icon='info')
 
     def series_add(self):
-        text = 'Add series'
+        text = 'Register a release series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -639,7 +639,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             if message:
                 self.setFieldError('user_branch', message)
 
-    @action(_('Add Series'), name='add')
+    @action(_('Register Series'), name='add')
     def add_action(self, action, data):
         self.series = self.context.newSeries(
             owner=self.user,

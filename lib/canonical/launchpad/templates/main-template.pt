@@ -2,14 +2,15 @@
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+                    xml:lang default_language|default;"
+    tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
       media="screen"
-    >@import url(/+icing/style.css);</style>
+      tal:content="string:@import url(${rooturl}+icing/style.css);"/>
     <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
@@ -17,11 +18,11 @@
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/lpmenu.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <link rel="shortcut icon" href="/@@/launchpad" />
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/lpmenu.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/sorttable.js"></script>
+    <link rel="shortcut icon" tal:attributes="href string:${rooturl}@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
@@ -34,20 +35,17 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
   >
-    <div
-      id="globalheader"
-      tal:define="frontpage modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
-    >
+    <div id="globalheader">
       <div class="launchpad">
         <img
           alt=""
           src="/+icing/globalheader_launchpad.gif"
           width="34"
           height="16"
-        /><a tal:attributes="href frontpage">Launchpad</a>
+        /><a tal:attributes="href rooturl">Launchpad</a>
       </div>
       <ul class="home">
-        <li><a tal:attributes="href frontpage" title="Home">Home</a></li>
+        <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
       </ul>
       <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
     </div>
@@ -190,6 +188,7 @@
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
+                      <div class="clear"></div><!-- needed for Safari -->
                     </div>
                     <div class="clear"></div>
                     </div>

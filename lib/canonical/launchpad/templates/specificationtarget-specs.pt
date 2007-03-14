@@ -24,8 +24,8 @@
       the next few releases. It can generate reports of the project roadmap, as
       well as notifying developers of status changes in those blueprints.
       Examples:
-      <a href="/ubuntu/">Ubuntu</a>,
-      <a href="/bzr/">Bazaar</a>.
+      <a href="/ubuntu">Ubuntu</a>,
+      <a href="/bzr">Bazaar</a>.
     </p>
 
     <tal:not_person condition="not: view/is_person">

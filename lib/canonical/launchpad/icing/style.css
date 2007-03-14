@@ -897,7 +897,7 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-overview #actions, body.tab-overview .results {
- /* background-color: #e6eed3; */
+  background: #e6eed3;
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
