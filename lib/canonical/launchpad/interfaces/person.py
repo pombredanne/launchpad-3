@@ -668,6 +668,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
+    def getSupportedQuestionTargets():
+        """Return a list of IQuestionTargets for which the person is an answer contact.
+        
+        This will return IQuestionTargets that the person, or a team that the person is a 
+        member of, registered as an answer contact.
+        """
+    
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,

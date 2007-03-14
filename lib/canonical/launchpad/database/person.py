@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
@@ -457,6 +458,29 @@ class Person(SQLBase, HasSpecificationsMixin):
             )''' % sqlvalues(personID=self.id),
             clauseTables=['Ticket'], distinct=True))
 
+    def getSupportedQuestionTargets(self):
+        """See IPerson."""
+        targets = []
+        answer_contacts = AnswerContact.select(
+            '''SupportContact.person = TeamParticipation.team
+            AND TeamParticipation.person = %s''' % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'])
+        for answer_contact in answer_contacts:
+            if answer_contact.product is not None:
+                targets.append(answer_contact.product)
+            elif answer_contact.sourcepackagename is not None:
+                assert answer_contact.distribution is not None, (
+                    "Missing distribution.")
+                distribution = answer_contact.distribution
+                targets.append(
+                    distribution.getSourcePackage(
+                        answer_contact.sourcepackagename))
+            elif answer_contact.distribution is not None:
+                targets.append(answer_contact.distribution)
+            else:
+                assert False, "Unknown IQuestionTarget."
+        return targets
+    
     @property
     def branches(self):
         """See IPerson."""

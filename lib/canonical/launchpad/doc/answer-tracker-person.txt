@@ -202,7 +202,7 @@ answer questions.
 For a person, it is the same list than its list of known languages,
 with the addition that English is always assumed to be supported:
 
-    >>> sample_person = getUtility(IPersonSet).getByName('name16')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())
@@ -325,3 +325,57 @@ And questions on which the user commented:
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
+
+== getSupportedQuestionTargets() ==
+
+IPerson defines getSupportedQuestionTargets that can be used to retrieve
+a list of IQuestionTargets for which a person is an answer contact.
+
+    >>> sample_person.getSupportedQuestionTargets()
+    []
+    
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.addAnswerContact(sample_person)
+    True
+    
+    >>> for target in sample_person.getSupportedQuestionTargets():
+    ...    print target.name
+    firefox
+    
+The results also include QuestionTargets for which the answer contact is
+a team that the person is a members of.
+
+    >>> landscape_team = getUtility(IPersonSet).getByName(
+    ...    "landscape-developers")
+    >>> sample_person.inTeam(landscape_team)
+    True
+    
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.addAnswerContact(landscape_team)
+    True
+    
+    >>> sorted([target.name
+    ...         for target in sample_person.getSupportedQuestionTargets()])
+    [u'firefox', u'ubuntu']
+    
+Indirect team membership is also taken in consideration. For example, 
+Sample Person is a member of the Warty Security Team which itself is 
+member of the Ubuntu Gnome Team. So targets for which that last team is
+an answer contact will be included in Sample Person's supported 
+IQuestionTargets:
+
+    >>> gnome_team = getUtility(IPersonSet).getByName('name18')
+    >>> sample_person.inTeam(gnome_team)
+    True
+    >>> sample_person.hasMembershipEntryFor(gnome_team)
+    False
+    >>> evolution_package = ubuntu.getSourcePackage('evolution')
+    >>> evolution_package.addAnswerContact(gnome_team)
+    True
+    
+    >>> sorted([target.name
+    ...         for target in sample_person.getSupportedQuestionTargets()])
+    [u'evolution', u'firefox', u'ubuntu']
+    
