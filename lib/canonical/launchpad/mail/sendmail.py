@@ -198,6 +198,11 @@ def sendmail(message, to_addrs=None):
     if 'return-path' not in message:
         message['Return-Path'] = config.bounce_address
 
+    # Add Precedence header to prevent automatic reply programs
+    # (e.g. vacation) from trying to respond to our messages.
+    del message['Precedence']
+    message['Precedence'] = 'bulk'
+
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
