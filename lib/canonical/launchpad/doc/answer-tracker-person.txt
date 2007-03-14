@@ -331,15 +331,16 @@ And questions on which the user commented:
 IPerson defines getSupportedQuestionTargets that can be used to retrieve
 a list of IQuestionTargets for which a person is an answer contact.
 
-    >>> sample_person.getSupportedQuestionTargets()
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.getSupportedQuestionTargets()
     []
     
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName("firefox")
-    >>> firefox.addAnswerContact(sample_person)
+    >>> firefox.addAnswerContact(no_priv)
     True
     
-    >>> for target in sample_person.getSupportedQuestionTargets():
+    >>> for target in no_priv.getSupportedQuestionTargets():
     ...    print target.name
     firefox
     
@@ -348,7 +349,8 @@ a team that the person is a members of.
 
     >>> landscape_team = getUtility(IPersonSet).getByName(
     ...    "landscape-developers")
-    >>> sample_person.inTeam(landscape_team)
+    >>> landscape_team.addMember(no_priv, foo_bar)
+    >>> no_priv.inTeam(landscape_team)
     True
     
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -357,25 +359,30 @@ a team that the person is a members of.
     True
     
     >>> sorted([target.name
-    ...         for target in sample_person.getSupportedQuestionTargets()])
+    ...         for target in no_priv.getSupportedQuestionTargets()])
     [u'firefox', u'ubuntu']
     
 Indirect team membership is also taken in consideration. For example, 
-Sample Person is a member of the Warty Security Team which itself is 
+if No Privileges Person joins the Warty Security Team which itself is 
 member of the Ubuntu Gnome Team. So targets for which that last team is
-an answer contact will be included in Sample Person's supported 
+an answer contact will be included in No Privileges Person's supported 
 IQuestionTargets:
 
+    >>> warty_team = getUtility(IPersonSet).getByName('name20')
+    >>> warty_team.addMember(no_priv, foo_bar)
     >>> gnome_team = getUtility(IPersonSet).getByName('name18')
-    >>> sample_person.inTeam(gnome_team)
+    >>> no_priv.inTeam(gnome_team)
     True
-    >>> sample_person.hasMembershipEntryFor(gnome_team)
+    >>> no_priv.hasMembershipEntryFor(gnome_team)
     False
     >>> evolution_package = ubuntu.getSourcePackage('evolution')
     >>> evolution_package.addAnswerContact(gnome_team)
     True
     
+(Note that the Ubuntu Gnome Team is already registered as an answer 
+contact for two other products.)
+
     >>> sorted([target.name
-    ...         for target in sample_person.getSupportedQuestionTargets()])
-    [u'evolution', u'firefox', u'ubuntu']
+    ...         for target in no_priv.getSupportedQuestionTargets()])
+    [u'applets', u'evolution', u'firefox', u'gnomebaker', u'ubuntu']
     
