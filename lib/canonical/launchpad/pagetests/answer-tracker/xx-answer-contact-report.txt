@@ -1,0 +1,46 @@
+= Answer Contact Report =
+
+To view the answer contact report for a given person, the user chooses 
+the 'Answer Contact For' link from the actions portlet while viewing
+the Person's page.
+
+    >>> anon_browser.open('http://launchpad.dev/~no-priv')
+    >>> anon_browser.getLink('Show answer contact for').click()
+    >>> print anon_browser.title
+    Projects for which No Privileges Person is an answer contact
+
+Since No Privileges Person is not an answer contact, the report states
+that.
+    
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print content.find('p').renderContents()
+    No Privileges Person is not an answer contact for any project
+
+But when the person is an answer contact, the page displays the project
+he registered for, and a link to manage the subscription.
+
+    >>> anon_browser.open('http://launchpad.dev/~name16')
+    >>> anon_browser.getLink('List answer contact for').click()
+    >>> print anon_browser.title
+    Projects for which Foo Bar is an answer contact
+    
+    >>> content = find_tag_by_id(
+    ...     anon_browser.contents, "answer-contacts-for-list")
+    >>> print extract_text(content)
+    Gnome Applets Set answer contact
+    GnomeBaker Set answer contact
+    mozilla firefox in ubuntu Set answer contact
+    
+Clicking on the name of the project will show the project answers.
+
+    >>> anon_browser.getLink('GnomeBaker').click()
+    >>> print anon_browser.title
+    Questions for GnomeBaker
+    
+    # We should use goBack() here but can't because of ZC #645
+    # >>> anon_browser.goBack()
+    >>> anon_browser.open('http://launchpad.dev/~name16/+answer-contact-for')
+    >>> anon_browser.getLink(id="gnomebaker-setanswercontact").click()
+    >>> print anon_browser.title
+    Answer contact for GnomeBaker
+    
