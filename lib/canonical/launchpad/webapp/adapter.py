@@ -365,9 +365,17 @@ class CursorWrapper:
         setattr(self._cur, attr, value)
 
 
+class SQLOSAccessFromMainThread(Exception):
+    """The main thread must not access the database via SQLOS.
+
+    Occurs only if the appserver is running. Other code, such as the test
+    suite, can do what it likes.
+    """
+
+
 def break_main_thread_db_access(*ignored):
     """Deliberately corrupt the SQLOS connection cache.
-    
+
     When the app server is running, we want ensure we don't use the
     connection cache from the main thread as this would only be done
     on process startup and would leave an open connection dangling,
@@ -377,22 +385,32 @@ def break_main_thread_db_access(*ignored):
     easier to do on module load, but the test suite has legitimate uses
     for using connections from the main thread.
     """
-    name = getUtility(IConnectionName).name
+    connection_name = getUtility(IConnectionName).name
     tid = thread.get_ident() # This event handler called on the main thread
-    key = (tid, name)
+    key = (tid, connection_name)
+
+
     # We can't specify the order event handlers are called, so detect if
     # another event handler has already been naughty.
-    assert not sqlos.connection.connCache.has_key(key), \
-        "Main thread has already used the SQLOS connection cache"
+    if sqlos.connection.connCache.has_key(key):
+        raise SQLOSAccessFromMainThread()
+
     # Break SQLOS from this thread.
-    sqlos.connection.connCache[key] = """
-        Do not use SQLOS connection from the main thread
-        """
+
+    class BrokenConnection:
+        def __getattr__(self, key):
+            raise SQLOSAccessFromMainThread()
+        
+    sqlos.connection.connCache[key] = BrokenConnection()
 
     # And prove it
     try:
-        cur = cursor()
-        raise AssertionError("Failed to kill main thread SQLOS connection")
-    except AttributeError:
+        # Calling cursor() will raise an exception.
+        dummy = cursor()
+    except SQLOSAccessFromMainThread:
+        # This exception occured, so the main thread's connection is
+        # appropriately broken.
         pass
+    else:
+        raise AssertionError("Failed to kill main thread SQLOS connection")
 
