@@ -252,7 +252,10 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'translation. This will remove the caution from the '
         'pages for this product in Launchpad.'))
 
-    sourcepackages = Attribute(_("List of distribution packages for this \
+    sourcepackages = Attribute(_("List of distribution release packages for this \
+        product"))
+
+    distrosourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this

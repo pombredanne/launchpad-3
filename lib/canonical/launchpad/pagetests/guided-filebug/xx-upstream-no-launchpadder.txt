@@ -1,0 +1,48 @@
+
+We do some special-handling of the cases where upstream doesn't use
+Malone as their official bugtracker. In this situation, we want to tell
+people what their options are. Alsa-utils, for instance, doesn't use
+Malone:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/alsa-utils/+filebug')
+    >>> "does not use Malone" in user_browser.contents
+    True
+    >>> user_browser.getControl(name="field.title")
+    ...
+    LookupError...
+
+But it's packaged in Ubuntu and Debian, and we suggest those packages
+for filing bugs:
+
+    >>> "Ubuntu alsa-utils" in user_browser.contents
+    True
+
+We don't know what bug tracker they use either:
+
+    >>> "doesn't know what bug tracker" in user_browser.contents
+    True
+
+Gnomebaker doesn't use Malone either. We don't have packaging
+information for it:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/gnomebaker/+filebug')
+    >>> "does not use Malone" in user_browser.contents
+    True
+    >>> user_browser.getLink("telling Launchpad") is not None
+    True
+
+But we do know what tracker it uses:
+
+    >>> user_browser.getLink("GnomeGBug GTracker") is not None
+    True
+
+Distributions have less options available if they don't use Malone:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+filebug')
+    >>> "does not use Malone" in user_browser.contents
+    True
+
+

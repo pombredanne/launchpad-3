@@ -226,10 +226,32 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     ProductSeries.product = %s
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables)
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
+
+    @property
+    def distrosourcepackages(self):
+        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
+        from canonical.launchpad.database.distributionsourcepackage \
+            import DistributionSourcePackage
+        clause = """ProductSeries.id=Packaging.productseries AND
+                    ProductSeries.product = %s
+                    """ % sqlvalues(self.id)
+        clauseTables = ['ProductSeries']
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        dsps = {}
+        for packaging in ret:
+            distro = packaging.distrorelease.distribution
+            if dsps.has_key(distro):
+                continue
+            dsps[distro] = DistributionSourcePackage(
+                sourcepackagename=packaging.sourcepackagename,
+                distribution=distro)
+        return dsps.values()
 
     @property
     def bugtargetname(self):

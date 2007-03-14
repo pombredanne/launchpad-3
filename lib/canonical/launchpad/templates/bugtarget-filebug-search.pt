@@ -61,18 +61,8 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone
-      tal:condition="not: view/contextUsesMalone"
-      tal:define="main_context view/getMainContext">
-    <p class="error message">
-      <span tal:replace="main_context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
-
-    <p>
-      To report a bug about <span tal:replace="main_context/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
+  <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
 </div>
 
