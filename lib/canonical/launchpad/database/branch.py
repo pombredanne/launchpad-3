@@ -80,9 +80,11 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        history = BranchRevisionSet().getRevisionHistoryForBranch(self)
-        history.prejoin('revision')
-        return history
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
+            ''' % sqlvalues(self),
+            prejoins=['revision'], orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -155,8 +157,7 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return BranchRevisionSet().getRevisionHistoryForBranch(
-            self, limit=quantity)
+        return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""

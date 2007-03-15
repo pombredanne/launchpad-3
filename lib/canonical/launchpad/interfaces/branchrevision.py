@@ -38,18 +38,6 @@ class IBranchRevisionSet(Interface):
     def delete(branch_revision_id):
         """Delete the BranchRevision."""
 
-    def getRevisionHistoryForBranch(branch, limit=None):
-        """Returns an ordered list of at most limit BranchRevisions.
-
-        If limit is omitted, then all the BranchRevisions for the branch
-        are returned.
-
-        They are ordered with the most recent revision first, and the list
-        only contains those in the "leftmost tree", or in other words
-        the revisions that match the revision history from bzrlib for this
-        branch.
-        """
-
     def getScannerDataForBranch(branch):
         """Retrieve the full ancestry of a branch for the branch scanner.
 

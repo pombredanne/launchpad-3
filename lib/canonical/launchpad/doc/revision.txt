@@ -83,24 +83,10 @@ True
 
 === Accessing BranchRevision ===
 
-The Branch.revision_history property (covered in doc/branch.txt) is a
-convenience that calls the BranchRevisionSet.getRevisionHistoryForBranch
-method.
-
   >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
   >>> branch = getUtility(IBranchSet).getByUniqueName(
   ...     '~name12/+junk/junk.contrib')
-
   >>> branch_revision_set = getUtility(IBranchRevisionSet)
-  >>> history = branch_revision_set.getRevisionHistoryForBranch(branch)
-  >>> for branch_revision in history:
-  ...     print branch_revision.sequence, branch_revision.revision.id
-  6 9
-  5 8
-  4 11
-  3 10
-  2 5
-  1 4
 
 The full ancestry of a branch is recorded. That includes the history commits on
 this branch, but also revisions that were merged into this branch. Such merged

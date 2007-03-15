@@ -50,17 +50,6 @@ class BranchRevisionSet:
         """
         return BranchRevision.selectBy(branch=branch)
 
-    def getRevisionHistoryForBranch(self, branch, limit=None):
-        """See IBranchRevisionSet."""
-        query = BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(branch), orderBy='-sequence')
-        if limit is None:
-            return query
-        else:
-            return query.limit(limit)
-
     def getScannerDataForBranch(self, branch):
         """See IBranchRevisionSet."""
         cur = cursor()
