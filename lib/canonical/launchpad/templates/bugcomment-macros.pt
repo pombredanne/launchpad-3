@@ -11,7 +11,7 @@
     </a></strong> said
     <span
       tal:attributes="title comment/datecreated/fmt:datetime"
-      tal:content="comment/datecreated/fmt:approximatedate">
+      tal:content="comment/datecreated/fmt:displaydate">
       Thursday 13:21
     </span>:
     <a tal:attributes="href comment/fmt:url">(permalink)</a>

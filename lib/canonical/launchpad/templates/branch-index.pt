@@ -168,12 +168,11 @@
     <li tal:repeat="rev_no context/latest_revisions"
         tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
       <div>
-        <strong tal:content="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;</strong>,
-        <span
-          tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
-          tal:content="rev_no/revision/revision_date/fmt:displaydate"
-          >2005-10-05 14:34:22 WST</span>
+        By <strong tal:content="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;</strong> <span
+            tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
+            tal:content="rev_no/revision/revision_date/fmt:displaydate"
+            >2005-10-05 14:34:22 WST</span>
       </div>
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
