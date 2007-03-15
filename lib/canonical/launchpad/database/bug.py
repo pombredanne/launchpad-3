@@ -257,6 +257,7 @@ class Bug(SQLBase):
         if rationale:
             for subscriber in subscribers:
                 rationale.addDirectSubscriber(subscriber)
+        return subscribers
 
     def getIndirectSubscribers(self, rationale=None):
         """See canonical.launchpad.interfaces.IBug."""
@@ -327,7 +328,8 @@ class Bug(SQLBase):
                     for pbc in sourcepackage.bugcontacts:
                         also_notified_subscribers.add(pbc.bugcontact)
                         if rationale:
-                            rationale.addPackageBugContact(pbc.bugcontact)
+                            rationale.addPackageBugContact(pbc.bugcontact,
+                                                           sourcepackage)
             else:
                 if IUpstreamBugTask.providedBy(bugtask):
                     product = bugtask.product
@@ -337,11 +339,11 @@ class Bug(SQLBase):
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
                     if rationale:
-                        rationale.addUpstreamContact(product.bugcontact)
+                        rationale.addUpstreamContact(product.bugcontact, product)
                 else:
                     also_notified_subscribers.add(product.owner)
                     if rationale:
-                        rationale.addUpstreamRegistrant(product.owner)
+                        rationale.addUpstreamRegistrant(product.owner, product)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

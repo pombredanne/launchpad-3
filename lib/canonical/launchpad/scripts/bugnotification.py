@@ -35,6 +35,7 @@ class BugNotificationRationale:
             # XXX: this is not the same as subscriber of duplicate!
             reason = reason + " (via bug %s)" % self.duplicateof
             header = header + "via Bug %s" % self.duplicateof
+        reason = "You received this bug notification because you %s." % reason
         for email in contactEmailAddresses(person):
             if email not in self._reasons:
                 # XXX: avoid clobbering; FCFS
@@ -49,13 +50,13 @@ class BugNotificationRationale:
         return self._reasons[email]
 
     def getAddresses(self):
-        return self._reasons.keys()
+        return sorted(self._reasons.keys())
 
     def addExtraEmail(self, email):
         self._reasons[email] = ("XXX", "XXX")
 
     def addDupeSubscriber(self, person):
-        if person.is_team():
+        if person.isTeam():
             text = ("are a member of %s, which is a subscriber "
                     "of a duplicate bug" % person.displayname)
         else:
@@ -63,21 +64,21 @@ class BugNotificationRationale:
         self._addReason(person, text, "Direct Subscriber of Duplicate")
 
     def addDirectSubscriber(self, person):
-        if person.is_team():
+        if person.isTeam():
             text = "are a member of %s, which is a direct subscriber" % person.displayname
         else:
-            text = "are a direct subscriber"
+            text = "are a direct subscriber of the bug"
         self._addReason(person, text, "Direct Subscriber")
 
     def addAssignee(self, person):
-        if person.is_team():
+        if person.isTeam():
             text = "are a member of %s, which is a bug assignee" % person.displayname
         else:
             text = "are a bug assignee"
         self._addReason(person, text, "Assignee")
 
     def addDistroBugContact(self, person, distro):
-        if person.is_team():
+        if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
         else:
@@ -85,7 +86,7 @@ class BugNotificationRationale:
         self._addReason(person, text, "%s Bug Contact" % distro.displayname)
 
     def addPackageBugContact(self, person, package):
-        if person.is_team():
+        if person.isTeam():
             text = ("are a member of %s, which is a bug contact for %s" %
                 (person.displayname, package.displayname))
         else:
@@ -93,15 +94,15 @@ class BugNotificationRationale:
         self._addReason(person, text, "%s Bug Contact" % package.displayname)
 
     def addUpstreamBugContact(self, person, upstream):
-        if person.is_team():
+        if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, upstream.displayname))
         else:
             text = "are the bug contact for %s" % upstream.displayname
         self._addReason(person, text, "%s Bug Contact" % upstream.displayname)
 
-    def addUpstreamOwner(self, person, upstream):
-        if person.is_team():
+    def addUpstreamRegistrant(self, person, upstream):
+        if person.isTeam():
             text = ("are a member of %s, which is the registrant for %s" %
                 (person.displayname, upstream.displayname))
         else:
