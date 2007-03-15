@@ -19,6 +19,7 @@ from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
+from canonical.lp.dbschema import BugBranchStatus
 from canonical.launchpad.interfaces import (
     IBugSet, ILaunchpadCelebrities, IBugBranchRevisionSet, IBranchRevisionSet,
     IRevisionSet, NotFoundError)
@@ -284,7 +285,7 @@ class BzrSync:
         # XXX - make sure the 'status' field is correct
         return bbr_set.new(
             bug=bug_set.get(bug_id), branch=self.db_branch,
-            revision=db_revision)
+            revision=db_revision, status=BugBranchStatus.FIXAVAILABLE)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.

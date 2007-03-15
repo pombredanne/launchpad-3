@@ -19,12 +19,14 @@ class IBugBranchRevision(Interface):
     bug = Attribute("The bug that relates to the revision.")
     branch = Attribute("The branch that the revision occurs in.")
     revision = Attribute("The revision that relates to the bug.")
+    status = Attribute(
+        "How this revision relates to the bug. See BugBranchStatus.")
 
 
 class IBugBranchRevisionSet(Interface):
     """The set of all bug-revision associations."""
 
-    def new(bug, branch, revision):
+    def new(bug, branch, revision, status):
         """Create a new BugBranchRevision for the specified bug, branch and
         revision."""
 
