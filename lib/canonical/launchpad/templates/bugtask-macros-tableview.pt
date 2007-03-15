@@ -339,6 +339,29 @@
                       </div>
                     </td>
                   </tr>
+                  <tr>
+                    <td>
+                        <label
+                            tal:attributes="for view/bug_contact_widget/name">
+                          Bug contact:
+                        </label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="white-space: nowrap"
+                        tal:define="error view/bug_contact_error">
+                      <div class="field">
+                        <div tal:attributes="
+                            class python: error and 'error' or None">
+                        <tal:widget tal:content="structure view/bug_contact_widget" />
+                        <div tal:condition="error"
+                             class="message"
+                             tal:content="error">An error on
+                             Bug contact widget </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
                 </table>
               </td>
               <td>&nbsp;</td>
