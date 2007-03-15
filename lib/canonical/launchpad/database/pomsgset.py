@@ -164,7 +164,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
         results = list(POSubmission.select(
-            "POSubmission.published AND "
+            "POSubmission.published IS TRUE AND "
             "POSubmission.pomsgset = %s" % sqlvalues(self),
             orderBy='pluralform'))
         translations = []
@@ -182,7 +182,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
         results = list(POSubmission.select(
-            """POSubmission.active AND
+            """POSubmission.active IS TRUE AND
                POSubmission.pomsgset = %s""" % sqlvalues(self),
             orderBy='pluralform'))
         translations = []
@@ -240,7 +240,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         return POSubmission.selectOne("""
             POSubmission.pomsgset = %s AND
             POSubmission.pluralform = %s AND
-            POSubmission.active
+            POSubmission.active IS TRUE
             """ % sqlvalues(self, pluralform))
 
     def getPublishedSubmission(self, pluralform):
@@ -248,7 +248,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         return POSubmission.selectOne("""
             POSubmission.pomsgset = %s AND
             POSubmission.pluralform = %s AND
-            POSubmission.published
+            POSubmission.published IS TRUE
             """ % sqlvalues(self, pluralform))
 
     def updateReviewerInfo(self, reviewer):
@@ -607,7 +607,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # calculate the number of published plural forms
         published_count = POSubmission.select("""
             POSubmission.pomsgset = %s AND
-            POSubmission.published AND
+            POSubmission.published IS TRUE AND
             POSubmission.pluralform < %s
             """ % sqlvalues(self, pluralforms)).count()
 
@@ -620,7 +620,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # calculate the number of active plural forms
         active_count = POSubmission.select("""
             POSubmission.pomsgset = %s AND
-            POSubmission.active AND
+            POSubmission.active IS TRUE AND
             POSubmission.pluralform < %s
             """ % sqlvalues(self, pluralforms)).count()
 
@@ -641,10 +641,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             POMsgSet.publishedcomplete = TRUE AND
             published_submission.pomsgset = POMsgSet.id AND
             published_submission.pluralform < %s AND
-            published_submission.published AND
+            published_submission.published IS TRUE AND
             active_submission.pomsgset = POMsgSet.id AND
             active_submission.pluralform = published_submission.pluralform AND
-            active_submission.active AND
+            active_submission.active IS TRUE AND
             POMsgSet.date_reviewed > published_submission.datecreated
             """ % sqlvalues(self, pluralforms),
             clauseTables=['POSubmission AS active_submission',

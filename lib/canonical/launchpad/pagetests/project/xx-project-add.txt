@@ -45,7 +45,7 @@ Testing if the validator is working for the name field.
 
   >>> admin_browser.getControl('Name', index=0).value = 'ubuntu'
   >>> admin_browser.getControl('Add').click()
-  >>> ("ubuntu is already in use by another product, project or distribution"
+  >>> ("ubuntu is already in use by another project"
   ... in admin_browser.contents)
   True
 

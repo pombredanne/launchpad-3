@@ -116,7 +116,7 @@ Now let's try to insert a product with the same name (testing).
 'http://launchpad.dev/products/+new'
 >>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
 True
->>> ('testing is already in use by another product, project or distribution'
+>>> ('testing is already in use by another project'
 ...     in user_browser.contents)
 True
 

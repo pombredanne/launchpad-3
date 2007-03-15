@@ -71,8 +71,7 @@ Set the timeout to 5000ms for the next tests:
     >>> cursor = conn.cursor()
     >>> cursor.execute('SHOW statement_timeout')
     >>> print cursor.fetchone()[0]
-    5000
-
+    5s
 
 
 Request Timeout

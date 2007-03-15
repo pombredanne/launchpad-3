@@ -15,19 +15,19 @@ project:
 That page contain a link to register new products with the project. It
 is only available to users which have 'Admin' privileges on the project.
 
-    >>> browser.getLink('Register another product')
+    >>> browser.getLink('Register another project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.getLink('Register another product')
+    >>> browser.getLink('Register another project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> admin_browser.open('http://launchpad.dev/mozilla')
-    >>> admin_browser.getLink('Register another product').url
+    >>> admin_browser.getLink('Register another project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
 == Overview Fallback ==

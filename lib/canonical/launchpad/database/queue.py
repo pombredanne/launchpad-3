@@ -379,6 +379,7 @@ class DistroReleaseQueueBuild(SQLBase):
                     embargo=False
                     )
                 published_binaries.append(sbpph)
+        return published_binaries
 
 
 class DistroReleaseQueueSource(SQLBase):

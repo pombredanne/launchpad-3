@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """XML-RPC server for Malone in Twisted.
 
 To run the server, just run this file ("rpcdaemon.py").

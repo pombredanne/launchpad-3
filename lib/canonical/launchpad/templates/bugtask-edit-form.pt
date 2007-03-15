@@ -27,7 +27,7 @@
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/targetname">product</tal:context>,
+    <tal:context replace="context/targetname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
   <div class="field">
@@ -56,7 +56,7 @@
             <label
               tal:attributes="for view/product_widget/name"
               tal:content="view/product_widget/label"
-            >Upstream product</label>
+            >Upstream project</label>
           </td>
         </tr>
         <tr tal:condition="view/product_widget">
@@ -87,12 +87,12 @@
       </tr>
       <tr>
         <td tal:content="structure view/status_widget" />
-        <td title="Editable only by the maintainer or bug contact of the product or distribution">
+        <td title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
           <span tal:content="structure view/importance_widget" />
         </td>
         <td tal:condition="view/milestone_widget"
-            title="Editable only by the maintainer or bug contact of the product or distribution">
+            title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
           <span tal:content="structure view/milestone_widget" />
         </td>

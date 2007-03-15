@@ -36,6 +36,7 @@ class Launchpad:
 
     def requestMirror(self, branchID):
         self.requests.append(('requestMirror', branchID))
+        return defer.succeed(None)
 
 
 class TestPushDoneNotification(AvatarTestCase):
