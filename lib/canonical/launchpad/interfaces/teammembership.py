@@ -21,7 +21,12 @@ class ITeamMembership(Interface):
     person = Int(title=_("Member"), required=True, readonly=False)
     reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
 
-    datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
+    datejoined = Text(
+        title=_("Date Joined"), required=True, readonly=True,
+        description=_(
+            "If this is an active membership, it contains the date in which "
+            "the membership was approved. If this is a proposed membership, "
+            "it contains the date the user asked to join."))
     dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)

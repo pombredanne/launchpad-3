@@ -53,12 +53,14 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
     def pofiles(self):
         return POFile.select('''
             POFile.language = %s AND
+            POFile.variant IS NULL AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s
+            POTemplate.distrorelease = %s AND
+            POTemplate.iscurrent = TRUE
             ''' % sqlvalues(self.language.id, self.distrorelease.id),
             clauseTables=['POTemplate'],
             prejoins=["potemplate.sourcepackagename",
-                      "latestsubmission.person"],
+                      "last_touched_pomsgset.reviewer"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
@@ -163,7 +165,7 @@ class DummyDistroReleaseLanguage(RosettaStats):
         """We need to pretend that we have pofiles, so we will use
         DummyPOFile's."""
         pofiles = []
-        for potemplate in self.distrorelease.potemplates:
+        for potemplate in self.distrorelease.currentpotemplates:
             pofiles.append(DummyPOFile(potemplate, self.language))
         return pofiles
 

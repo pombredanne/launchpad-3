@@ -6,7 +6,7 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">    
+    <metal:heading fill-slot="heading">    
       <h1>Change project details</h1>
     </metal:heading>
 

@@ -4,22 +4,26 @@ __metaclass__ = type
 
 import os
 import sys
+import thread
 import threading
 import traceback
 import time
 import warnings
 
+from zope.component import getUtility
 from zope.interface import implements
-from zope.app.rdb import ZopeConnection
 from zope.app.rdb.interfaces import DatabaseException
 from zope.publisher.interfaces import Retry
 
-from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
+from psycopgda.adapter import PsycopgAdapter, PsycopgConnection
 import psycopg
+
+import sqlos.connection
+from sqlos.interfaces import IConnectionName
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -338,7 +342,9 @@ class CursorWrapper:
                 if (errorstr.startswith(
                     'ERROR:  canceling query due to user request') or
                     errorstr.startswith(
-                    'ERROR:  canceling statement due to statement timeout')):
+                    'ERROR:  canceling statement due to statement timeout') or
+                    errorstr.startswith(
+                    'ERROR:  cancelling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
         # Fix Bug 31755. There are unavoidable race conditions when handling
@@ -357,3 +363,54 @@ class CursorWrapper:
 
     def __setattr__(self, attr, value):
         setattr(self._cur, attr, value)
+
+
+class SQLOSAccessFromMainThread(Exception):
+    """The main thread must not access the database via SQLOS.
+
+    Occurs only if the appserver is running. Other code, such as the test
+    suite, can do what it likes.
+    """
+
+
+def break_main_thread_db_access(*ignored):
+    """Deliberately corrupt the SQLOS connection cache.
+
+    When the app server is running, we want ensure we don't use the
+    connection cache from the main thread as this would only be done
+    on process startup and would leave an open connection dangling,
+    wasting resources.
+
+    This method is invoked by an IProcessStartingEvent - it would be
+    easier to do on module load, but the test suite has legitimate uses
+    for using connections from the main thread.
+    """
+    connection_name = getUtility(IConnectionName).name
+    tid = thread.get_ident() # This event handler called on the main thread
+    key = (tid, connection_name)
+
+
+    # We can't specify the order event handlers are called, so detect if
+    # another event handler has already been naughty.
+    if sqlos.connection.connCache.has_key(key):
+        raise SQLOSAccessFromMainThread()
+
+    # Break SQLOS from this thread.
+
+    class BrokenConnection:
+        def __getattr__(self, key):
+            raise SQLOSAccessFromMainThread()
+        
+    sqlos.connection.connCache[key] = BrokenConnection()
+
+    # And prove it
+    try:
+        # Calling cursor() will raise an exception.
+        dummy = cursor()
+    except SQLOSAccessFromMainThread:
+        # This exception occured, so the main thread's connection is
+        # appropriately broken.
+        pass
+    else:
+        raise AssertionError("Failed to kill main thread SQLOS connection")
+

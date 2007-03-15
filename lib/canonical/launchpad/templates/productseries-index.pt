@@ -50,7 +50,7 @@
 
     <h2>This series in The Bazaar</h2>
 
-    <div tal:replace="structure context/@@+hctstatus-core" />
+    <div tal:replace="structure context/@@+importstatus" />
 
 </div>
 

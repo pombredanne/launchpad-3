@@ -12,14 +12,10 @@
       </a><br />
     </tal:has_home_page>
     <b>Registrant:</b><br />
-    <img src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url" 
-       tal:content="context/owner/browsername" /><br />
+    <a tal:replace="structure context/owner/fmt:link" /><br />
     <tal:has_driver condition="context/driver">
       <b>Driver:</b><br />
-      <img src="/@@/user" />
-      <a tal:attributes="href context/driver/fmt:url" 
-         tal:content="context/driver/browsername" /><br />
+      <a tal:replace="structure context/driver/fmt:link" /><br />
     </tal:has_driver>
     <b>Starts:</b><br />
     <span tal:replace="python:view.formatDateTime(context.time_starts)">

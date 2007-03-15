@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 #
 # Remove all translations from upstream. This script is useful to recover from
 # breakages after importing bad .po files like the one reported at #32610
@@ -19,7 +19,7 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
     IProductSet, IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet,
-    IPOTemplateSet)
+    IPOTemplateSet, ILaunchpadCelebrities)
 
 logger_name = 'remove-upstream-translations'
 
@@ -72,6 +72,9 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
     logger_object = logging.getLogger(logger_name)
 
     items_deleted = 0
+    # All changes should be logged as done by Rosetta Expert team.
+    rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+
     for potemplate in potemplates:
         if lang_code is None:
             pofiles = sorted(
@@ -86,53 +89,37 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
 
         for pofile in pofiles:
             logger_object.debug('Processing %s...' % pofile.title)
-            if pofile.latestsubmission is not None:
-                logger_object.debug(
-                    'Before the removal, latest submission came from: %s' %
-                        pofile.latestsubmission.person.displayname)
+            if pofile.last_touched_pomsgset is not None:
+                # Save who was last reviewer to show it when we change active
+                # translations.
+                old_reviewer = pofile.last_touched_pomsgset.reviewer
             pofile_items_deleted = 0
-            pofile.latestsubmission = None
             for pomsgset in pofile.pomsgsets:
-                for poselection in pomsgset.selections:
-                    if (poselection.activesubmission is not None and
-                        poselection.activesubmission.origin ==
-                            RosettaTranslationOrigin.SCM):
-                        poselection.activesubmission = None
-                        # We removed at least one translation, we cannot have
-                        # this pomsgset as iscomplete anymore, we are missing
-                        # one translation!.
-                        pomsgset.iscomplete = False
-                    if (poselection.publishedsubmission is not None and
-                        poselection.publishedsubmission.origin ==
-                            RosettaTranslationOrigin.SCM):
-                        poselection.publishedsubmission = None
-                        # We removed at least one translation, we cannot have
-                        # this pomsgset as iscomplete anymore, we are missing
-                        # one translation!.
-                        pomsgset.publishedcomplete = False
-                # We are going to delete POSubmissions here, and we need that
-                # the database has all changes we did to remove the references
-                # to the removed object.
-                flush_database_updates()
+                active_changed = False
                 for posubmission in pomsgset.submissions:
-                    if (not posubmission.active_selections and
-                        not posubmission.published_selections and
-                        posubmission.origin == RosettaTranslationOrigin.SCM):
+                    if posubmission.origin == RosettaTranslationOrigin.SCM:
+                        if posubmission.active:
+                            active_changed = True
                         posubmission.destroySelf()
                         pofile_items_deleted += 1
                 # Let's fix the flags that depend on translations, we modified
                 # the IPOMsgSet and we should leave it in a consistent status.
                 pomsgset.updateFlags()
+                if active_changed:
+                    pomsgset.updateReviewerInfo(rosetta_expert)
+
             items_deleted += pofile_items_deleted
             logger_object.debug(
                  'Removed %d submissions' % pofile_items_deleted)
-            pofile.updateStatistics()
-            pofile.recalculateLatestSubmission()
-            ztm.commit()
-            if pofile.latestsubmission is not None:
+            if (pofile_items_deleted > 0 and
+                pofile.last_touched_pomsgset is not None):
                 logger_object.debug(
-                    'After the removal, latest submission came from: %s' %
-                        pofile.latestsubmission.person.displayname)
+                    'After some removals, latest reviewer changed from'
+                    ' %s to %s ' % (
+                        old_reviewer.displayname,
+                        pofile.last_touched_pomsgset.reviewer.displayname))
+            pofile.updateStatistics()
+            ztm.commit()
 
     # We finished the removal process, is time to notify the amount of entries
     # that we removed.

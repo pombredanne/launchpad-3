@@ -13,27 +13,31 @@ from zope.component import getUtility
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, LaunchpadEditFormView)
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeamMembershipSet)
+    ITeam, ITeamMembershipSet)
 
 
-class TeamEditView(SQLObjectEditView):
+class TeamEditView(LaunchpadEditFormView):
 
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-        self.team = context
+    schema = ITeam
+    field_names = [
+        'name', 'displayname', 'teamdescription', 'gotchi', 'emblem',
+        'defaultmembershipperiod', 'defaultrenewalperiod',
+        'subscriptionpolicy']
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
-    def changed(self):
-        """Redirect to the team  page.
-
-        We need this because people can now change team names, and this will
-        make their canonical_url to change too.
-        """
-        self.request.response.redirect(canonical_url(self.context))
+    @action('Save', name='save')
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 def generateTokenAndValidationEmail(email, team):

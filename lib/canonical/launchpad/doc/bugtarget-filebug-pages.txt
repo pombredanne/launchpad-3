@@ -65,17 +65,15 @@ Librarian.
 
     >>> transaction.commit()
 
-Now, if we pass the token to the filebug view, the extra_bug_data_msg
+Now, if we pass the token to the filebug view, the extra_data
 attribute will be set with the actual data.
 
     >>> request = LaunchpadTestRequest()
     >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
-    >>> filebug_view.extra_bug_data.uuid == token
-    True
-    >>> filebug_view.extra_bug_data.blob == debug_data
-    True
+    >>> filebug_view.extra_data.extra_description
+    u'This should be added to the description.'
 
     >>> filebug_view.validate(bug_data) is None
     True
@@ -230,6 +228,13 @@ Notifications were added to inform the user about what happened.
     The file "attachment1" was attached to the bug report.
     The file "attachment2" was attached to the bug report.
 
+The attachments are all added to the same comment.
+
+    >>> for comment in filebug_view.added_bug.messages[1:]:
+    ...     print "Comment by %s: %s attachment(s)" % (
+    ...         comment.owner.displayname, comment.bugattachments.count())
+    Comment by No Privileges Person: 2 attachment(s)
+
 == publishTraverse() ==
 
 As already seen above, it's the FileBugViewBase's publishTraverse that
@@ -239,9 +244,9 @@ finds the right blob to use.
     >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
-    >>> filebug_view.extra_bug_data.uuid == token
+    >>> filebug_view.extra_data_token == token
     True
-    >>> filebug_view.extra_bug_data.blob == debug_data
+    >>> filebug_view.extra_data is not None
     True
 
 Since the view itself is returned, it will handle further traversals as
@@ -264,3 +269,27 @@ NotFound error is raised.
     Traceback (most recent call last):
     ...
     NotFound:...
+
+== Adding tags to filed bugs ==
+
+    >>> bug_data = dict(
+    ...     title=u'Test Title', comment=u'Test description.',
+    ...     tags=[u'foo', u'bar'])
+
+The validate and action don't use the request when filing the bug, so we
+can pass an empty request and pass the data dict to the methods
+directly.
+
+    >>> login('no-priv@canonical.com')
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> filebug_view.added_bug.description
+    u'Test description.'
+    >>> for tag in filebug_view.added_bug.tags:
+    ...     print tag
+    bar
+    foo

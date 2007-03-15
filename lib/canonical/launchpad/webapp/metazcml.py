@@ -38,10 +38,10 @@ from zope.app.publisher.browser.metaconfigure import (
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 
-from canonical.launchpad.interfaces import (
-    IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb)
-
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, IFacetMenu, IApplicationMenu,
+    IContextMenu, IBreadcrumb, IAuthorization)
+from canonical.launchpad.webapp.publisher import RenamedView
 
 
 class IAuthorizationsDirective(Interface):
@@ -303,7 +303,7 @@ class CanonicalUrlDataBase:
 
     # Filled in by subclass.
     _for = None
-    _compiled_path_expression = None 
+    _compiled_path_expression = None
 
     def __init__(self, context):
         self.context = context
@@ -455,6 +455,53 @@ class pages(original_pages):
             facet = self.facet
         page(_context, name=name, attribute=attribute, template=template,
              menu=menu, title=title, facet=facet, **(self.opts))
+
+
+class IRenamedPageDirective(Interface):
+    """Schema for the browser:renamed-page directive."""
+
+    for_ = GlobalObject(
+        title=u"Specification of the object that has the renamed page",
+        required=True )
+
+    layer = LayerField(
+        title=u"The layer the renamed page is in.",
+        description=u"""
+        A skin is composed of layers. It is common to put skin
+        specific views in a layer named after the skin. If the 'layer'
+        attribute is not supplied, it defaults to 'default'.""",
+        required=False,
+        )
+
+    name = zope.schema.TextLine(
+        title=u"The name of the old page.",
+        description=u"The name shows up in URLs/paths. For example 'foo'.",
+        required=True)
+
+    new_name = zope.schema.TextLine(
+        title=u"The name the page was renamed to.",
+        description=u"The name shows up in URLs/paths. For example 'foo'.",
+        required=True)
+
+    rootsite = PythonIdentifier(
+        title=u"Name of the site this URL has as its root."
+               "None for 'use the request'.",
+        required=False)
+
+
+def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
+                 rootsite=None):
+    """Will provide a RedirectView that will redirect to the new_name."""
+    def renamed_factory(context, request):
+        return RenamedView(
+            context, request, new_name=new_name, rootsite=rootsite)
+
+    _context.action(
+        discriminator = ('view', for_, name, IBrowserRequest, layer),
+        callable = handler,
+        args = ('provideAdapter',
+                (for_, layer), Interface, name, renamed_factory, _context.info),
+        )
 
 
 class IEditFormDirective(

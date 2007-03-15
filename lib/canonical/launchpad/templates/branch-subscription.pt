@@ -8,10 +8,10 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <h1 tal:condition="view/user_is_subscribed">
-        Unsubscribe from &ldquo;<tal:branch replace="context/title" />&rdquo;
+        Unsubscribe from &ldquo;<tal:branch replace="context/displayname" />&rdquo;
       </h1>
       <h1 tal:condition="not: view/user_is_subscribed">
-        Subscribe to &ldquo;<tal:branch replace="context/title" />&rdquo;
+        Subscribe to &ldquo;<tal:branch replace="context/displayname" />&rdquo;
       </h1>
     </metal:heading>
 
@@ -61,4 +61,4 @@
 
 </body>
 </html>
-
+<!-- 1-0 done -->

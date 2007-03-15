@@ -8,7 +8,7 @@ The Features link shows an overview of all the specifications
 involving that person.
 
   >>> browser.open('http://blueprints.launchpad.dev/~name16')
-  >>> browser.getLink('Features').click()
+  >>> browser.getLink('Blueprints').click()
   >>> browser.url
   '.../~name16/+specs'
   >>> browser.title
@@ -16,7 +16,7 @@ involving that person.
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h1')
-  [<h1>Feature specifications</h1>]
+  [<h1>Blueprints involving Foo Bar</h1>]
 
 In the left-side menu, there are menu items that allow to select a 
 subset of these specifications. The 'Approver' link selects the specs
@@ -71,7 +71,7 @@ in the workload of that person.
   >>> browser.url
   '.../~name16/+specworkload'
   >>> browser.title
-  'Specification workload for Foo Bar'
+  'Blueprint workload for Foo Bar'
 
 The 'Feedback requests' link displays a list of the specifications that
 the person was asked to review.
