@@ -451,6 +451,9 @@ class FileBugGuidedView(FileBugViewBase):
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
         return self.showFileBugForm()
 
     def getSearchContext(self):
