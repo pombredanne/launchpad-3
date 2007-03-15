@@ -31,11 +31,6 @@ class BranchRevisionSet:
 
     implements(IBranchRevisionSet)
 
-    def new(self, branch, sequence, revision):
-        """See IBranchRevisionSet."""
-        return BranchRevision(
-            branch=branch, sequence=sequence, revision=revision)
-
     def delete(self, branch_revision_id):
         """See IBranchRevisionSet."""
         BranchRevision.delete(branch_revision_id)

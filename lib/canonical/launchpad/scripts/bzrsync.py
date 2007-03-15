@@ -115,7 +115,6 @@ class BzrSync:
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        branch_revision_set = getUtility(IBranchRevisionSet)
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
             self.db_branch.getScannerData())
 
@@ -306,11 +305,10 @@ class BzrSync:
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
-        branch_revision_set = getUtility(IBranchRevisionSet)
         revision_set = getUtility(IRevisionSet)
         for sequence, revision_id in branchrevisions_to_insert:
             db_revision = revision_set.getByRevisionId(revision_id)
-            branch_revision_set.new(self.db_branch, sequence, db_revision)
+            self.db_branch.createBranchRevision(sequence, db_revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""

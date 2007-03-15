@@ -32,8 +32,5 @@ class IBranchRevision(Interface):
 class IBranchRevisionSet(Interface):
     """The set of all branch-revision associations."""
 
-    def new(branch, sequence, revision):
-        """Create a new BranchRevision for the specified branch."""
-
     def delete(branch_revision_id):
         """Delete the BranchRevision."""

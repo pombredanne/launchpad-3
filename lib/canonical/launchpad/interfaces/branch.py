@@ -266,7 +266,7 @@ class IBranch(IHasOwner):
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a BranchRevision mapping sequence to revision."""
+        """Create a new BranchRevision for this branch."""
 
     def updateScannedDetails(revision_id, revision_count):
         """Updates attributes associated with the scanning of the branch.

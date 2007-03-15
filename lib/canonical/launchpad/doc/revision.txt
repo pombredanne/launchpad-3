@@ -71,22 +71,18 @@ Bazaar converge-on-pull logic.
 >>> branch.revision_history.count()
 0
 
-BranchRevision rows are created using `BranchRevisionSet.new`, or using the
-convenience method `Branch.createBranchRevision`.
+BranchRevision rows are created using `Branch.createBranchRevision`.
 
->>> from canonical.launchpad.interfaces import IBranchRevisionSet
->>> rev_no_1 = getUtility(IBranchRevisionSet).new(
-...     branch=branch, sequence=1, revision=revision_1)
+>>> rev_no_1 = branch.createBranchRevision(sequence=1, revision=revision_1)
 >>> rev_no_2 = branch.createBranchRevision(sequence=2, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
 
 === Accessing BranchRevision ===
 
-  >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
+  >>> from canonical.launchpad.interfaces import IBranchSet
   >>> branch = getUtility(IBranchSet).getByUniqueName(
   ...     '~name12/+junk/junk.contrib')
-  >>> branch_revision_set = getUtility(IBranchRevisionSet)
 
 The full ancestry of a branch is recorded. That includes the history commits on
 this branch, but also revisions that were merged into this branch. Such merged

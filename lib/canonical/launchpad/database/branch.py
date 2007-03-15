@@ -21,8 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.branchrevision import (
-    BranchRevision, BranchRevisionSet)
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -202,12 +201,11 @@ class Branch(SQLBase):
         """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(
-            branch=self, sequence=sequence)
+        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
-        return BranchRevisionSet().new(
+        return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
     def updateScannedDetails(self, revision_id, revision_count):
