@@ -69,7 +69,8 @@
 
   <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
 
-    <tal:defines define="product_or_distro view/getProductOrDistroFromContext">
+    <tal:has-context define="product_or_distro view/getProductOrDistroFromContext"
+                     condition="product_or_distro">
 
       <p class="warning message">
         <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
@@ -91,7 +92,7 @@
               tal:replace="product_or_distro/displayname" /> is present in
               the following distribution packages:
                   <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
-                      <li><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" />
+                      <li><a tal:attributes="href dsp/fmt:url"><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" /></a>
                       </li>
                   </ul>
               You can report bugs by visiting the package's page.
@@ -101,8 +102,14 @@
             <li tal:condition="not: product_or_distro/distrosourcepackages">If
               the bug you are reporting is in a package installed by a <a
               href="/distros">distribution registered in Launchpad</a>, you should file the bug
-              against that specific distribution. <br />(<small>You can
-              help us by <a tal:attributes="href string:${product_or_distro/development_focus/fmt:url}/+ubuntupkg">telling Launchpad</a> about distribution packages for <span tal:replace="product_or_distro/displayname" />).
+              against that specific distribution. 
+
+              <p class="helpwanted message">Launchpad doesn't know of
+              any distribution packages that include upstream <span
+              tal:replace="product_or_distro/displayname" />. You can
+              help by <a tal:attributes="href
+              string:${product_or_distro/development_focus/fmt:url}/+ubuntupkg">linking
+              them for us.</a></p>
             </li>
 
             <tal:has-bugtracker condition="bugtracker">
@@ -131,14 +138,14 @@
 
       </tal:upstream>
 
-      <tal:distro>
+      <tal:distro condition="not: view/contextIsProduct">
 
         To file a bug for this distribution, visit its official bug
         tracker.
 
       </tal:distro>
 
-    </tal:defines>
+    </tal:has-context>
 
   </tal:not_uses_malone>
 

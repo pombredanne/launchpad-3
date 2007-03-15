@@ -18,12 +18,14 @@ Alsa-utils, for instance, doesn't use Malone:
 But it's packaged in Ubuntu and Debian, and we suggest those packages
 for filing bugs:
 
-    >>> "Ubuntu alsa-utils" in user_browser.contents
+    >>> user_browser.getLink("Ubuntu alsa-utils") is not None
     True
 
 We don't know what bug tracker they use either:
 
     >>> "doesn't know what bug tracker" in user_browser.contents
+    True
+    >>> user_browser.getLink("Tell us about it.") is not None
     True
 
 Gnomebaker doesn't use Malone either. We don't have packaging
@@ -33,7 +35,7 @@ information for it:
     ...     'http://bugs.launchpad.dev/gnomebaker/+filebug')
     >>> "does not use Malone" in user_browser.contents
     True
-    >>> user_browser.getLink("telling Launchpad") is not None
+    >>> user_browser.getLink("linking them for us.") is not None
     True
 
 But we do know what tracker it uses:
