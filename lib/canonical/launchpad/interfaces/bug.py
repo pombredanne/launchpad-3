@@ -202,36 +202,43 @@ class IBug(IMessageTarget):
         duplicate of this bug, otherwise False.
         """
 
-    def getDirectSubscribers():
+    def getDirectSubscribers(rationale=None):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
+
+        XXX: document rationale
         """
 
-    def getIndirectSubscribers():
+    def getIndirectSubscribers(rationale=None):
         """A list of IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
         dupes, etc.
+
+        XXX: document rationale
         """
 
-    def getAlsoNotifiedSubscribers():
+    def getAlsoNotifiedSubscribers(rationale=None):
         """A list of IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
+
+        XXX: document rationale
         """
 
-    def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+    def getSubscribersFromDuplicates(rationale=None):
+        """A list of IPersons subscribed from dupes of this bug.
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+        XXX: document rationale
+        """
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+    def registerBugSubscribers(rationale):
+        """XXX
+
+        XXX
         """
 
     def addChangeNotification(text, person):

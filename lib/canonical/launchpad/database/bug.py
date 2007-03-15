@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
@@ -25,9 +25,9 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationReleaseObsoleteError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
@@ -247,26 +247,29 @@ class Bug(SQLBase):
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
                 person = %d""" % (self.id, person.id)))
 
-    def getDirectSubscribers(self):
+    def getDirectSubscribers(self, rationale=None):
         """See canonical.launchpad.interfaces.IBug."""
-        return list(
+        subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
                 BugSubscription.bug = %d""" % self.id,
                 orderBy="displayname", clauseTables=["BugSubscription"]))
+        if rationale:
+            for subscriber in subscribers:
+                rationale.addDirectSubscriber(subscriber)
 
-    def getIndirectSubscribers(self):
+    def getIndirectSubscribers(self, rationale=None):
         """See canonical.launchpad.interfaces.IBug."""
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
         indirect_subscribers = (
-            self.getAlsoNotifiedSubscribers() +
-            self.getSubscribersFromDuplicates())
+            self.getAlsoNotifiedSubscribers(rationale) +
+            self.getSubscribersFromDuplicates(rationale))
 
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
 
-    def getSubscribersFromDuplicates(self):
+    def getSubscribersFromDuplicates(self, rationale=None):
         """See IBug."""
         if self.private:
             return []
@@ -279,13 +282,18 @@ class Bug(SQLBase):
                 clauseTables=["Bug", "BugSubscription"]))
 
         # Direct and "also notified" subscribers take precedence over
-        # subscribers from dupes
+        # subscribers from dupes. Note that we don't supply rationale
+        # here because we are doing this to /remove/ subscribers.
         dupe_subscribers -= set(self.getDirectSubscribers())
         dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
 
+        if rationale is not None:
+            for subscriber in dupe_subscribers:
+                rationale.addDupeSubscriber(subscriber)
+
         return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
 
-    def getAlsoNotifiedSubscribers(self):
+    def getAlsoNotifiedSubscribers(self, rationale=None):
         """See IBug."""
         if self.private:
             return []
@@ -296,6 +304,8 @@ class Bug(SQLBase):
             # Assignees are indirect subscribers.
             if bugtask.assignee:
                 also_notified_subscribers.add(bugtask.assignee)
+                if rationale:
+                    rationale.addAssignee(bugtask.assignee)
 
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
@@ -307,12 +317,17 @@ class Bug(SQLBase):
 
                 if distribution.bugcontact:
                     also_notified_subscribers.add(distribution.bugcontact)
+                    if rationale:
+                        rationale.addDistroBugContact(bugtask.assignee,
+                                                      distribution)
 
                 if bugtask.sourcepackagename:
                     sourcepackage = distribution.getSourcePackage(
                         bugtask.sourcepackagename)
-                    also_notified_subscribers.update(
-                        pbc.bugcontact for pbc in sourcepackage.bugcontacts)
+                    for pbc in sourcepackage.bugcontacts:
+                        also_notified_subscribers.add(pbc.bugcontact)
+                        if rationale:
+                            rationale.addPackageBugContact(pbc.bugcontact)
             else:
                 if IUpstreamBugTask.providedBy(bugtask):
                     product = bugtask.product
@@ -321,8 +336,12 @@ class Bug(SQLBase):
                     product = bugtask.productseries.product
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
+                    if rationale:
+                        rationale.addUpstreamContact(product.bugcontact)
                 else:
                     also_notified_subscribers.add(product.owner)
+                    if rationale:
+                        rationale.addUpstreamRegistrant(product.owner)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -331,21 +350,16 @@ class Bug(SQLBase):
             (also_notified_subscribers - direct_subscribers),
             key=operator.attrgetter('displayname'))
 
-    def notificationRecipientAddresses(self):
+    def registerBugSubscribers(self, rationale):
         """See canonical.launchpad.interfaces.IBug."""
-        emails = set()
-        for direct_subscriber in self.getDirectSubscribers():
-            emails.update(contactEmailAddresses(direct_subscriber))
-
+        self.getDirectSubscribers(rationale)
         if not self.private:
-            for indirect_subscriber in self.getIndirectSubscribers():
-                emails.update(contactEmailAddresses(indirect_subscriber))
+            self.getIndirectSubscribers(rationale)
         else:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
-
-        return sorted(emails)
+        return rationale
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""

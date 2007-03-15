@@ -115,7 +115,7 @@ def _send_bug_details_to_new_bugcontacts(
     new_subs = cur_subs_set.difference(prev_subs_set)
 
     # Send a notification to the new bug contacts that weren't subscribed to the
-    # bug before, which looks identical to a new bug report.
+    # bug before, which looks identical to a new bug report. XXX: fix this
     subject, contents = generate_bug_add_email(bug)
     new_bugcontact_addresses = sorted([contactEmailAddresses(p) for p in new_subs])
     if new_bugcontact_addresses:
@@ -552,12 +552,16 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
 
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
-    body = get_email_template('bug-notification.txt') % {
-        'content': contents,
-        'bug_title': bug.title,
-        'bug_url': canonical_url(bug)}
-
     for to_addr in to_addrs:
+
+        reason = ""
+
+        body = get_email_template('bug-notification.txt') % {
+            'content': contents,
+            'bug_title': bug.title,
+            'bug_url': canonical_url(bug),
+            'reason': reason}
+
         simple_sendmail_from_person(
             person=user, to_addrs=to_addr, subject=subject,
             body=body, headers=headers)
