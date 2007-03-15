@@ -275,7 +275,7 @@ class IBranch(IHasOwner):
         script.
         """
 
-    def getScannerData(branch):
+    def getScannerData():
         """Retrieve the full ancestry of a branch for the branch scanner.
 
         The branch scanner script is the only place where we need to retrieve
