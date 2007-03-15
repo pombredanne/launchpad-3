@@ -252,8 +252,8 @@ provide better bounce handling.
 It must also add a Precedence: bulk header so that automatic replies
 (e.g. vacation programs) don't try to respond to them.
 
-    >>> sent_msg['Precedence'] == 'bulk'
-    True
+    >>> sent_msg['Precedence']
+    'bulk'
 
 It's possible to set Return-Path manually if needed.
 

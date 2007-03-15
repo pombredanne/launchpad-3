@@ -94,9 +94,11 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     Arbitrary headers can be set using the headers parameter. If the value for
     a given key in the headers dict is a list or tuple, the header will be
-    added to the message once for each value in the list.
+    added to the message once for each value in the list.  Note however that
+    the `Precedence` header will always be set to `bulk`, overriding any
+    `Precedence` header in `headers`.
 
-    Returns the Message-Id.
+    Returns the `Message-Id`.
     """
     if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
