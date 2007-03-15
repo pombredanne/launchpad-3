@@ -136,7 +136,7 @@ class ProductInfo:
         return "%s %s" % (self.branch_class, self.time_class)
 
     @property
-    def reason_for_class(self):
+    def html_title(self):
         if self.num_branches == 1:
             size = "1 branch"
         else:
@@ -144,8 +144,8 @@ class ProductInfo:
         if self.elapsed_since_commit is None:
             commit = "no commits yet"
         elif self.elapsed_since_commit.days == 0:
-            commit = "last commit under a day old"
-        elif self.elapsed_since_commit.days == 0:
+            commit = "last commit less than a day old"
+        elif self.elapsed_since_commit.days == 1:
             commit = "last commit one day old"
         else:
             commit = "last commit %d days old" % self.elapsed_since_commit.days
