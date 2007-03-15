@@ -55,16 +55,17 @@
         <tr class="secondary">
           <td></td>
           <td>
-            Build started:
+            Build started
             <tal:soyuz_record condition="build/buildduration">
-               <tal:calc_buildstart
-                    content="build/calculated_buildstart/fmt:datetime" />
+               <span
+                 tal:attributes="title build/calculated_buildstart/fmt:datetime"
+                 tal:content="build/calculated_buildstart/fmt:displaydate" />
             </tal:soyuz_record>
             <tal:gina_record condition="not: build/buildduration">
                 <i>not available</i>
             </tal:gina_record>
             <tal:show_builder_info condition="view/showBuilderInfo">
-              by
+              on
               <a
                 tal:condition="build/builder"
                 tal:content="build/builder/title"
@@ -76,16 +77,19 @@
              </tal:unknown_builder>
              </tal:show_builder_info>
           </td>
-        <tr class="secondary">
+        <tr class="secondary" tal:condition="build/datebuilt">
           <td></td>
           <td>
-            Build finished:
-            <tal:built_time content="build/datebuilt/fmt:datetime" />
-            (<tal:time
-                  content="build/buildduration/fmt:approximateduration" />
+            Build finished
+            <span
+              tal:attributes="title build/datebuilt/fmt:datetime"
+              tal:content="build/datebuilt/fmt:displaydate" />
+            and took
+            <tal:time
+              content="build/buildduration/fmt:approximateduration" />
             <tal:log condition="build/buildlog">
               &mdash;
-              <a tal:attributes="href build/buildlog/http_url">see the log</a>)
+              <a tal:attributes="href build/buildlog/http_url">see the log</a>
             </tal:log>
           </td>
         </tr>
@@ -102,9 +106,11 @@
              />)
             </td>
             <td tal:condition="bq/builder">
-              Build started:
-              <tal:built_start content="bq/buildstart/fmt:datetime" />
-              by
+              Build started
+              <span
+                tal:attributes="title bq/buildstart/fmt:datetime"
+                tal:content="bq/buildstart/fmt:displaydate" />
+              on
               <a tal:content="bq/builder/title"
                  tal:attributes="href bq/builder/fmt:url"/>
             </td>

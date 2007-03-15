@@ -286,6 +286,7 @@ class NoneFormatter:
         'time',
         'datetime',
         'approximatedate',
+        'displaydate',
         'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
@@ -508,6 +509,19 @@ class DateTimeFormatterAPI:
         if value.tzinfo:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
+
+    def displaydate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = now - self._datetime
+        if delta > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return 'on ' + self.date()
+        return self.approximatedate()
 
     def approximatedate(self):
         if self._datetime.tzinfo:

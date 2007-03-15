@@ -165,7 +165,9 @@
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
-        <td><span tal:replace="context/daterequested/fmt:datetime" /></td>
+        <td><span
+              tal:attributes="title context/daterequested/fmt:datetime"
+              tal:content="context/daterequested/fmt:approximatedate" /></td>
       </tr>
       <tr tal:condition="context/reason">
         <td align="right"><strong>Reason:</strong></td>

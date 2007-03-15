@@ -51,6 +51,7 @@ class BugComment:
         self.bugtask = bugtask
 
         self.title = message.title
+        self.has_new_title = message.has_new_title
         self.datecreated = message.datecreated
         self.owner = message.owner
 
