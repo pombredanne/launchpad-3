@@ -14,7 +14,6 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -227,9 +226,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
             prejoins=["sourcepackagename", "distrorelease.distribution"])
-        return [SourcePackage(sourcepackagename=r.sourcepackagename,
-                              distrorelease=r.distrorelease)
-                for r in ret]
+        sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
+                             distrorelease=r.distrorelease) for r in ret]
+        return sorted(sps, key=lambda x:
+            (x.sourcepackagename.name, x.distrorelease.name,
+             x.distrorelease.distribution.name))
 
     @property
     def distrosourcepackages(self):
@@ -241,15 +242,18 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
             prejoins=["sourcepackagename", "distrorelease.distribution"])
-        dsps = {}
+        distros = set()
+        dsps = []
         for packaging in ret:
             distro = packaging.distrorelease.distribution
-            if dsps.has_key(distro):
+            if distro in distros:
                 continue
-            dsps[distro] = DistributionSourcePackage(
+            distros.add(distro)
+            dsps.append(DistributionSourcePackage(
                 sourcepackagename=packaging.sourcepackagename,
-                distribution=distro)
-        return dsps.values()
+                distribution=distro))
+        return sorted(dsps, key=lambda x:
+            (x.sourcepackagename.name, x.distribution.name))
 
     @property
     def bugtargetname(self):

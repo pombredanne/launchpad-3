@@ -110,7 +110,7 @@ related to a certain upstream:
    >>> [(sp.name, sp.distrorelease.name) for sp in alsa.sourcepackages]
    [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
    >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
-   [(u'alsa-utils', u'ubuntu'), (u'alsa-utils', u'debian')]
+   [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
 
 == External Bug Tracker ==
 
