@@ -527,6 +527,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -7957,6 +7960,13 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 
 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
+
+
+ALTER TABLE revisionproperty DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
 
 
 
