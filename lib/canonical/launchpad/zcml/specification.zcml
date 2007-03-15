@@ -446,7 +446,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public"
     template="../templates/specifications-index.pt"
-    class="canonical.launchpad.browser.HasSpecificationsView"
+    class="canonical.launchpad.browser.SpecificationSetView"
     />
 
   <!-- SpecificationDelta -->

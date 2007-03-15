@@ -3,6 +3,7 @@ SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET standard_conforming_strings = off;
 
 SET search_path = public, pg_catalog;
 
@@ -1927,11 +1928,8 @@ ALTER TABLE karmacache ENABLE TRIGGER ALL;
 
 ALTER TABLE karmacategory DISABLE TRIGGER ALL;
 
-INSERT INTO karmacategory (id, name, title, summary) VALUES (1, 'misc', 'Miscellaneous', 'This category is a catch-all that is used for karma events that do not fit neatly into any other obvious category.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Management', 'This karma category covers work in the Malone bug tracking system, such as filing, closing and otherwise working with bugs.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
-INSERT INTO karmacategory (id, name, title, summary) VALUES (4, 'bounties', 'Bounty Tracking', 'This covers all karma associated with the bounty system. Registering bounties, or closing them, will earn you karma.');
-INSERT INTO karmacategory (id, name, title, summary) VALUES (5, 'registry', 'The Registry', 'This category covers all work with product, projects and the general registry which Launchpad maintains of the open source world.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Support Tracker', 'This is the category for all karma associated with technical support, and the ticket tracker in Launchpad. Help solve users problems to earn this karma.');
 
@@ -7911,7 +7909,7 @@ INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owne
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 25, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 25, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix a bug', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 11, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 25, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 25, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');

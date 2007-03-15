@@ -9,14 +9,14 @@ The owner of a branch can be changed in the $branch/+reassign form.
 Impressed by his notorious fluency in foreign languages, we want to transfer
 the GNOME Terminal Klingon support branch to SABDFL.
 
-    >>> browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/klingon')
-    >>> browser.getLink('Change Registrant').click()
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> browser.getLink('Change registrant').click()
     >>> browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon/+reassign'
+    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+reassign'
     >>> browser.getControl(name='field.owner').value = 'sabdfl'
-    >>> browser.getControl('Change Owner').click()
+    >>> browser.getControl('Change Registrant').click()
     >>> browser.url
-    'http://launchpad.dev/~sabdfl/+branch/gnome-terminal/klingon'
+    'http://code.launchpad.dev/~sabdfl/gnome-terminal/klingon'
 
 However, arguing that common Klingon habits are incompatible with the Ubuntu
 Code of Conduct, and that Klingon rocket technology is no match to the Russian,
@@ -24,11 +24,11 @@ SABDFL declines and asks an administrator to reassign the branch back.
 
 Incidentally that restores the test data to its initial state.
 
-    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+branch/gnome-terminal/klingon/+reassign')
+    >>> admin_browser.open('http://launchpad.dev/~sabdfl/gnome-terminal/klingon/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change Owner').click()
+    >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
+    'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
 
 
 NOTE: Transferring to a team we are creating is a stock functionality of
@@ -46,21 +46,21 @@ We will setup a conflict with ~launchpad/gnome-terminal/launchpad. First, we
 need to rename one of the user branches to use the "launchpad" name, and then
 we will try to reassign to the "launchpad" team.
 
-    >>> browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main/+edit')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main/+edit')
     >>> browser.getControl('Name').value = 'launchpad'
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad'
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad'
 
 Now, try to reassign that branch to "launchpad", that should cause an error.
 
-    >>> browser.getLink('Change Registrant').click()
+    >>> browser.getLink('Change registrant').click()
     >>> browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad/+reassign'
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
     >>> browser.getControl(name='field.owner').value = 'launchpad'
-    >>> browser.getControl('Change Owner').click()
+    >>> browser.getControl('Change Registrant').click()
     >>> browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad/+reassign'
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
 
 That should have displayed an error message, with a link to the conflicting
 branch and a link to edit the details of this branch.
@@ -78,3 +78,4 @@ will not let us have even that. -- David Allouche 2005-08-17
     >>> for p_tag in soup('p', 'error message'):
     ...     print p_tag.renderContents()
     Branch name conflict. ... try changing its registrant again.
+

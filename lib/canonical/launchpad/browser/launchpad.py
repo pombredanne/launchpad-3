@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AppFrontPageSearchView',
     'Breadcrumbs',
     'LoginStatus',
     'MaintenanceMessage',
@@ -26,7 +27,6 @@ import cgi
 import errno
 import urllib
 import os
-import os.path
 import re
 import time
 from datetime import timedelta, datetime
@@ -38,6 +38,8 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.content_types import guess_content_type
 from zope.app.traversing.interfaces import ITraversable
+from zope.app.publisher.browser.fileresource import setCacheControl
+from zope.app.datetimeutils import rfc1123_date
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import isinstance as zope_isinstance
@@ -48,20 +50,44 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IPillarNameSet,
-    IMaloneApplication, IProductSet, IPersonSet, IDistributionSet,
-    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
-    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
-    ISpecificationSet, ISprintSet, IQuestionSet, IBuilderSet, IBountySet,
-    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet,
-    IStructuralObjectPresentation, ITranslationImportQueue,
-    ITranslationGroupSet, NotFoundError)
+	IAppFrontPageSearchForm,
+    IBazaarApplication,
+	IBinaryPackageNameSet,
+	IBountySet,
+	IBugSet,
+	IBugTrackerSet,
+	IBuilderSet,
+	ICodeOfConductSet,
+	ICveSet,
+	IDistributionSet,
+	IKarmaActionSet,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+	ILaunchpadRoot,
+    ILoginTokenSet,
+    IMaloneApplication,
+	IPersonSet,
+	IPillarNameSet,
+	IPOTemplateNameSet,
+	IProductSet,
+	IProjectSet,
+	IQuestionSet,
+	IRegistryApplication,
+    IRosettaApplication,
+    ISourcePackageNameSet,
+    ISpecificationSet,
+	ISprintSet,
+    IStructuralObjectPresentation,
+    ITranslationGroupSet,
+	ITranslationImportQueue,
+	NotFoundError,
+    )
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.widgets.project import ProjectScopeWidget
 
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
@@ -580,6 +606,22 @@ class OneZeroTemplateStatus(LaunchpadView):
         self.excluded_from_run = sorted(excluded)
 
 
+class File:
+    # Copied from zope.app.publisher.fileresource, which
+    # unbelievably throws away the file data, and isn't
+    # useful extensible.
+    #
+    def __init__(self, path, name):
+        self.path = path
+
+        f = open(path, 'rb')
+        self.data = f.read()
+        f.close()
+        self.content_type, enc = guess_content_type(path, self.data)
+        self.__name__ = name
+        self.lmt = float(os.path.getmtime(path)) or time()
+        self.lmh = rfc1123_date(self.lmt)
+
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
@@ -614,23 +656,21 @@ class IcingFolder:
                 'os.path.sep appeared in the resource name: %s' % name)
         filename = os.path.join(here, self.folder, name)
         try:
-            datafile = open(filename, 'rb')
+            fileobj = File(filename, name)
         except IOError, ioerror:
             if ioerror.errno == errno.ENOENT: # No such file or directory
                 raise NotFound(self, name)
             else:
                 # Some other IOError that we're not expecting.
                 raise
-        else:
-            data = datafile.read()
-            datafile.close()
 
         # TODO: Set an appropriate charset too.  There may be zope code we
         #       can reuse for this.
-        content_type, encoding = guess_content_type(filename)
-        self.request.response.setHeader('Content-Type', content_type)
-
-        return data
+        response = self.request.response
+        response.setHeader('Content-Type', fileobj.content_type)
+        response.setHeader('Last-Modified', fileobj.lmh)
+        setCacheControl(response)
+        return fileobj.data
 
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
@@ -889,6 +929,25 @@ class DefaultShortLink(LaunchpadView):
         L.append(cgi.escape(self.getLinkText()).replace(' ', '&nbsp;'))
         L.append('</a>')
         return u''.join(L)
+
+
+class AppFrontPageSearchView(LaunchpadFormView):
+
+    schema = IAppFrontPageSearchForm
+    custom_widget('scope', ProjectScopeWidget)
+
+    @property
+    def scope_css_class(self):
+        """The CSS class for used in the scope widget."""
+        if self.scope_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def scope_error(self):
+        """The error message for the scope widget."""
+        return self.getWidgetError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):
