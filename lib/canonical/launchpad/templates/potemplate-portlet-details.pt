@@ -6,7 +6,7 @@
     <div class="portletBody">
         <div class="portletContent">
             <span tal:replace="view/num_messages" /><br />
-            <img alt="" src="/@@/languages" />
+            <img alt="" src="/@@/language" />
             <span tal:replace="context/language_count">421</span>
             Languages<br />
             <b>Owner:</b><br />
@@ -23,7 +23,7 @@
             <b>Priority:</b>
             <span tal:replace="context/priority">34</span><br />
             <b>Translation Group(s):</b><br />
-            <img alt="" src="/@@/languages" />
+            <img alt="" src="/@@/language" />
             <tal:block repeat="group context/translationgroups">
             <a tal:attributes="href
                      string:/translations/groups/${group/name}/"

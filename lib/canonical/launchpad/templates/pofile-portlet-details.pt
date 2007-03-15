@@ -6,7 +6,7 @@
   <div class="portletContent">
 
     <ul>
-      <li class="languages">
+      <li class="language">
         <span tal:replace="context/language/englishname">Language</span>
         <tal:block condition="context/language/nativename">
           (<span tal:replace="context/language/nativename">native</span>)
