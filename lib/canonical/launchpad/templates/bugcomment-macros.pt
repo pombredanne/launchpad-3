@@ -14,7 +14,8 @@
       7 minutes ago
     </span>:
     <a tal:attributes="href comment/fmt:url">
-      <strong tal:condition="comment/title" tal:content="comment/title" />
+      <strong tal:condition="comment/display_title"
+              tal:content="comment/title" />
       (permalink)
     </a>
   </div>

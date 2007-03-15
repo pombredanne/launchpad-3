@@ -91,7 +91,10 @@ def unique_title(title):
     """
     if title is None:
         return None
-    return title.lower().lstrip('re:').strip()
+    title = title.lower()
+    if title.startswith('re:'):
+        title = title[3:]
+    return title.strip()
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
@@ -110,13 +113,15 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         assert comments.has_key(message_id)
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
+    current_title = bugtask.bug.title
     for comment in comments:
-        if (unique_title(comment.title) == \
-            unique_title(comments[comment.index-1].title)) or \
-           (unique_title(comment.title) == \
-            unique_title(comment.bugtask.bug.title)):
-            # this comment has the same title as the previous one
-            comment.title = None
+        if not ((unique_title(comment.title) == \
+                 unique_title(current_title)) or \
+                (unique_title(comment.title) == \
+                 unique_title(bugtask.bug.title))):
+            # this comment has a new title, so make that the rolling focus
+            current_title = comment.title
+            comment.display_title = True
     return comments
 
 

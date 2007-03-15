@@ -517,7 +517,7 @@ class DateTimeFormatterAPI:
         else:
             # datetime is offset-naive
             now = datetime.utcnow()
-        delta = now - self._datetime
+        delta = abs(now - self._datetime)
         if delta > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return 'on ' + self.date()
@@ -531,14 +531,15 @@ class DateTimeFormatterAPI:
             # datetime is offset-naive
             now = datetime.utcnow()
         delta = now - self._datetime
-        if delta > timedelta(1, 0, 0):
+        if abs(delta) > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return self.date()
         future = delta < timedelta(0, 0, 0)
-        days = abs(delta.days)
-        hours = abs(delta.seconds) / 3600
-        minutes = abs(delta.seconds - (3600*hours)) / 60
-        seconds = abs(delta.seconds %60)
+        delta = abs(delta)
+        days = delta.days
+        hours = delta.seconds / 3600
+        minutes = (delta.seconds - (3600*hours)) / 60
+        seconds = delta.seconds % 60
         result = ''
         comma = ''
         if future:
