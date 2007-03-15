@@ -30,19 +30,19 @@ adding a comment to a bug:
 If we pass these notifications to get_email_notifications, we get a
 list of emails to send:
 
-    >>> def print_notification(to_addrs, email_notification):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     for header in ['From', 'Subject']:
+    >>> def print_notification(email_notification):
+    ...     for header in ['To', 'From', 'Subject']:
     ...         print "%s: %s" % (header, email_notification[header])
     ...     print
     ...     print email_notification.get_payload(decode=True)
+    ...     print "-" * 70
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     notifications):
-    ...     print_notification(to_addresses, email)
-    To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
+    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -51,6 +51,36 @@ list of emails to send:
     --
     Firefox does not support SVG
     http://launchpad.dev/bugs/1
+    You received this bug notification because you are a bug contact for
+    mozilla-firefox in ubuntu.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+    To: mark@hbd.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://launchpad.dev/bugs/1
+    You received this bug notification because you are a bug assignee.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://launchpad.dev/bugs/1
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -89,9 +119,9 @@ subject, though, which is often the case when someone replies via email.
     >>> bug_one.addCommentNotification(comment)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: Re: [Bug 1] subject
@@ -119,9 +149,9 @@ Let's add a few changes and see how it looks like:
     >>> len(pending_notifications)
     2
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -155,9 +185,9 @@ the constructed email:
 Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -187,9 +217,9 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> len(pending_notifications)
     6
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -240,9 +270,9 @@ If we add three comments, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -298,9 +328,9 @@ change in between, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -415,9 +445,9 @@ well:
     >>> len(pending_notifications)
     9
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: support@ubuntu.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
@@ -525,10 +555,9 @@ notification will be sent to all members individually.
     >>> len(pending_notifications)
     1
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     pending_notifications):
-    ...     for address in sorted(to_addresses):
-    ...         print address
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print address['To']
     foo.bar@canonical.com
     marilize@hbd.com
     mark@hbd.com
@@ -562,9 +591,9 @@ initial message of the bug, it will result in a bug filed notification:
     >>> len(notifications)
     1
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 11] subject
@@ -601,9 +630,9 @@ top of the email:
     >>> len(notifications)
     1
 
-    >>> for bug_notifications, to_addresses, email in get_email_notifications(
-    ...     notifications):
-    ...     print_notification(to_addresses, email)
+    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
     To: foo.bar@canonical.com, marilize@hbd.com, mark@hbd.com,
         test@canonical.com
     From: Sample Person <test@canonical.com>
