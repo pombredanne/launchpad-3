@@ -85,7 +85,9 @@ class DistUpgraderUpload(CustomUpload):
 
         Return True for contents of 'versionable' directories.
         """
-        directory_name = os.path.dirname(filename)
+        # Only the first path part (directory name) must be *versionable*
+        # and we may allow subdirectories.
+        directory_name = filename.split(os.path.sep)[0]
         try:
             version = make_version(directory_name)
         except BadUpstreamError, exc:
