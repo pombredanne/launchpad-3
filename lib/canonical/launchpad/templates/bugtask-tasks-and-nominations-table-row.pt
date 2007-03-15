@@ -80,8 +80,6 @@
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img tal:condition="context/assignee"
-               src="/@@/user" alt="" />
           <img
             alt="Linked to "
             src="/@@/bug-remote"
@@ -97,7 +95,7 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <img src="/@@/user"
+            <img tal:attributes="src context/assignee/default_emblem_resource"
                  style="padding-bottom: 2px"
                  alt="" />
             <span tal:replace="context/assignee/browsername">
