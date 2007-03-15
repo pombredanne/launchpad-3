@@ -40,16 +40,6 @@ class BranchRevisionSet:
         """See IBranchRevisionSet."""
         BranchRevision.delete(branch_revision_id)
 
-    def getAncestryForBranch(self, branch):
-        """Queries all the BranchRevisions for a branch.
-
-        :warning: Only use this for tests. Production functionality that needs
-            to use the ancestry of a branch should define more efficient and
-            focused queries. This is why this method is not exposed in the
-            interface.
-        """
-        return BranchRevision.selectBy(branch=branch)
-
     def getScannerDataForBranch(self, branch):
         """See IBranchRevisionSet."""
         cur = cursor()

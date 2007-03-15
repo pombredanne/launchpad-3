@@ -93,8 +93,8 @@ this branch, but also revisions that were merged into this branch. Such merged
 revisions are associated to the branch using BranchRevision whose sequence
 attribute is None.
 
-  >>> from canonical.launchpad.database import BranchRevisionSet
-  >>> ancestry = BranchRevisionSet().getAncestryForBranch(branch)
+  >>> from canonical.launchpad.database import BranchRevision
+  >>> ancestry = BranchRevision.selectBy(branch=branch)
   >>> for branch_revision in sorted(ancestry,
   ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
   ...     print branch_revision.sequence, branch_revision.revision.id
@@ -107,10 +107,9 @@ attribute is None.
   None 7
   None 6
 
-Note that BranchRevisionSet.getAncestryForBranch is only useful for testing.
-If you need to operate on the ancestry of a branch, you should write a more
-focused query to avoid creating the tens of thousands of objects necessary to
-represent the ancestry of a large branch.
+If you need to operate on the ancestry of a branch, you should write a focused
+query to avoid creating the tens of thousands of objects necessary to represent
+the ancestry of a large branch.
 
 In particular, IBranch.getScannerDataForBranch efficiently retrieves the
 BranchRevision data needed by the branch-scanner script.
