@@ -242,7 +242,14 @@ class IBranch(IHasOwner):
     spec_links = Attribute("Specifications linked to this branch")
 
     # Joins
-    revision_history = Attribute("The sequence of revisions in that branch.")
+    revision_history = Attribute(
+        """The sequence of BranchRevision for the mainline of that branch.
+
+        They are ordered with the most recent revision first, and the list
+        only contains those in the "leftmost tree", or in other words
+        the revisions that match the revision history from bzrlib for this
+        branch.
+        """)
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -274,7 +281,7 @@ class IBranch(IHasOwner):
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a BranchRevision mapping sequence to revision."""
+        """Create a new BranchRevision for this branch."""
 
     def updateScannedDetails(revision_id, revision_count):
         """Updates attributes associated with the scanning of the branch.
@@ -282,6 +289,23 @@ class IBranch(IHasOwner):
         A single entry point that is called solely from the branch scanner
         script.
         """
+
+    def getScannerData(branch):
+        """Retrieve the full ancestry of a branch for the branch scanner.
+
+        The branch scanner script is the only place where we need to retrieve
+        all the BranchRevision rows for a branch. Since the ancestry of some
+        branches is into the tens of thousands we don't want to materialise
+        BranchRevision instances for each of these.
+
+        :return: tuple of three items.
+            1. Ancestry set of bzr revision-ids.
+            2. History list of bzr revision-ids. Similar to the result of
+               bzrlib.Branch.revision_history().
+            3. Dictionnary mapping bzr bzr revision-ids to the database ids of
+               the corresponding BranchRevision rows for this branch.
+        """
+
 
 
 class IBranchSet(Interface):

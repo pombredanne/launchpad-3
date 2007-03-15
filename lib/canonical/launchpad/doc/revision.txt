@@ -91,44 +91,26 @@ Bazaar converge-on-pull logic.
 >>> branch.revision_history.count()
 0
 
-BranchRevision rows are created using `BranchRevisionSet.new`, or using the
-convenience method `Branch.createBranchRevision`.
+BranchRevision rows are created using `Branch.createBranchRevision`.
 
->>> from canonical.launchpad.interfaces import IBranchRevisionSet
->>> rev_no_1 = getUtility(IBranchRevisionSet).new(
-...     branch=branch, sequence=1, revision=revision_1)
+>>> rev_no_1 = branch.createBranchRevision(sequence=1, revision=revision_1)
 >>> rev_no_2 = branch.createBranchRevision(sequence=2, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
 
 === Accessing BranchRevision ===
 
-The Branch.revision_history property (covered in doc/branch.txt) is a
-convenience that calls the BranchRevisionSet.getRevisionHistoryForBranch
-method.
-
-  >>> from canonical.launchpad.interfaces import IBranchSet, IBranchRevisionSet
+  >>> from canonical.launchpad.interfaces import IBranchSet
   >>> branch = getUtility(IBranchSet).getByUniqueName(
   ...     '~name12/+junk/junk.contrib')
-
-  >>> branch_revision_set = getUtility(IBranchRevisionSet)
-  >>> history = branch_revision_set.getRevisionHistoryForBranch(branch)
-  >>> for branch_revision in history:
-  ...     print branch_revision.sequence, branch_revision.revision.id
-  6 9
-  5 8
-  4 11
-  3 10
-  2 5
-  1 4
 
 The full ancestry of a branch is recorded. That includes the history commits on
 this branch, but also revisions that were merged into this branch. Such merged
 revisions are associated to the branch using BranchRevision whose sequence
 attribute is None.
 
-  >>> from canonical.launchpad.database import BranchRevisionSet
-  >>> ancestry = BranchRevisionSet().getAncestryForBranch(branch)
+  >>> from canonical.launchpad.database import BranchRevision
+  >>> ancestry = BranchRevision.selectBy(branch=branch)
   >>> for branch_revision in sorted(ancestry,
   ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
   ...     print branch_revision.sequence, branch_revision.revision.id
@@ -141,16 +123,14 @@ attribute is None.
   None 7
   None 6
 
-Note that BranchRevisionSet.getAncestryForBranch is only useful for testing.
-If you need to operate on the ancestry of a branch, you should write a more
-focused query to avoid creating the tens of thousands of objects necessary to
-represent the ancestry of a large branch.
+If you need to operate on the ancestry of a branch, you should write a focused
+query to avoid creating the tens of thousands of objects necessary to represent
+the ancestry of a large branch.
 
-In particular, IBranch.getScannerDataForBranch efficiently retrieves the
-BranchRevision data needed by the branch-scanner script.
+In particular, IBranch.getScannerData efficiently retrieves the BranchRevision
+data needed by the branch-scanner script.
 
-  >>> ancestry, history, mapping = (
-  ...     branch_revision_set.getScannerDataForBranch(branch))
+  >>> ancestry, history, mapping = branch.getScannerData()
 
 The first return value is a set of revision_id strings for the full ancestry of
 the branch.

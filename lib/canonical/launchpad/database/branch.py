@@ -21,8 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.branchrevision import (
-    BranchRevision, BranchRevisionSet)
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -81,9 +80,11 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        history = BranchRevisionSet().getRevisionHistoryForBranch(self)
-        history.prejoin('revision')
-        return history
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
+            ''' % sqlvalues(self),
+            prejoins=['revision'], orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -156,8 +157,7 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return BranchRevisionSet().getRevisionHistoryForBranch(
-            self, limit=quantity)
+        return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
@@ -202,12 +202,11 @@ class Branch(SQLBase):
         """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(
-            branch=self, sequence=sequence)
+        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
-        return BranchRevisionSet().new(
+        return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
     def updateScannedDetails(self, revision_id, revision_count):
@@ -215,6 +214,27 @@ class Branch(SQLBase):
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
+
+    def getScannerData(self):
+        """See IBranch."""
+        cur = cursor()
+        cur.execute("""
+            SELECT BranchRevision.id, BranchRevision.sequence,
+                Revision.revision_id
+            FROM Revision, BranchRevision
+            WHERE Revision.id = BranchRevision.revision
+                AND BranchRevision.branch = %s
+            ORDER BY BranchRevision.sequence
+            """ % sqlvalues(self))
+        ancestry = set()
+        history = []
+        branch_revision_map = {}
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
+            ancestry.add(revision_id)
+            branch_revision_map[revision_id] = branch_revision_id
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history, branch_revision_map
 
 
 class BranchSet:
