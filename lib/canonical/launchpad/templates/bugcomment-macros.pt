@@ -2,19 +2,21 @@
      class="boardComment">
 
   <div class="boardCommentDetails">
-    <strong>
-      <img src="/@@/person" />
-      <a href="#"
-         tal:attributes="href comment/owner/fmt:url"
-         tal:content="comment/owner/browsername|string:(nobody)">
-        $Person.browsername
-    </a></strong> said
+    <img src="/@@/person" />
+    <a href="#"
+       tal:attributes="href comment/owner/fmt:url"
+       tal:content="comment/owner/browsername|string:(nobody)">
+      $Person.browsername
+    </a> said
     <span
       tal:attributes="title comment/datecreated/fmt:datetime"
       tal:content="comment/datecreated/fmt:displaydate">
-      Thursday 13:21
+      7 minutes ago
     </span>:
-    <a tal:attributes="href comment/fmt:url">(permalink)</a>
+    <a tal:attributes="href comment/fmt:url">
+      <strong tal:condition="comment/title" tal:content="comment/title" />
+      (permalink)
+    </a>
   </div>
 
   <div class="boardCommentBody">
