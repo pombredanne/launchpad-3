@@ -20,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -45,9 +45,13 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
+               IHasGotchiAndEmblem)
 
     _table = "Project"
+    default_gotchi_resource = '/@@/project-mugshot'
+    default_gotchi_heading_resource = '/@@/project-heading'
+    default_emblem_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)

@@ -14,7 +14,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
@@ -62,7 +64,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    get_supported_languages)
+    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
+    IHasGotchiAndEmblem)
 
 from sourcerer.deb.version import Version
 
@@ -72,9 +75,13 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords, IQuestionTarget)
+    implements(
+        IDistribution, IHasBuildRecords, IQuestionTarget, IHasGotchiAndEmblem)
 
     _defaultOrder = 'name'
+    default_gotchi_resource = '/@@/distribution-mugshot'
+    default_gotchi_heading_resource = '/@@/distribution-heading'
+    default_emblem_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -128,6 +135,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     @property
     def archive_mirrors(self):
@@ -489,10 +497,17 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
         return question
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
-            distribution=self, **search_criteria).getResults()
+            distribution=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
+
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""

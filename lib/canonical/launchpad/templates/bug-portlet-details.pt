@@ -18,9 +18,8 @@
     </tal:nickname>
 
     <b>Initial Reporter:</b><br />
-    <img src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername"></a><br />
+    <span tal:replace="structure context/owner/fmt:link" />
+    <br />
 
     <b>Reported on:</b><br />
     <span tal:replace="context/datecreated/fmt:datetime">

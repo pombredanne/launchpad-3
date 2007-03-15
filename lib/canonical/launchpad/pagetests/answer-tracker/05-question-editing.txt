@@ -92,7 +92,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
   Some note
-  >>> print soup.first('b', text='Assignee:').findNext('a').renderContents()
+  >>> print extract_text(soup.first('b', text='Assignee:').findNext('a'))
   Foo Bar
   >>> print soup.first('b', text='Priority:').next.strip()
   Wishlist
