@@ -191,6 +191,15 @@ k            </description>
                 puller to use, not for public URLs.
             </description>
         </key>
+        <key name="codebrowse_root" datatype="canonical.config.urlbase"
+             default="http://codebrowse.launchpad.net/">
+            <description>
+                The URL prefix for links to the Bazaar code browser.
+                Links are formed by appending the branch's unique name
+                to the root URL.
+            </description>
+            <example>http://codebrowse.launchpad.net/</example>
+        </key>
         <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
                 Number of seconds a blob stored in the temporary blob storage
@@ -217,6 +226,13 @@ k            </description>
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
+        <key name="beta_testers_redirection_host" datatype="string"
+             required="no">
+            <description>
+                If set, the host name to redirect beta testers to.
+            </description>
+            <example>beta.launchpad.net</example>
+        </key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>
@@ -535,6 +551,13 @@ k            </description>
                 Host running PKS-like (SKS) keyserver Application.
             </description>
         </key>
+        <key name="public_host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                A public host running PKS-like (SKS) keyserver Application.
+                This option is used to display links in the UI referring to
+                the public keyserver.
+            </description>
+        </key>
         <key name="port" datatype="port-number" required="yes">
             <description>
                 Port number on Host to access the keyserver
@@ -585,6 +608,13 @@ k            </description>
                 reply.
             </description>
         </key>
+        <key name="localhost_only" datatype="boolean" default="false">
+            <description>
+                If true, the mirror prober will only try to connect to
+                localhost; all other hosts it'll return a success without
+                even trying to connect.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="expiredmembershipsflagger">
@@ -633,7 +663,7 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="tickettracker">
+    <sectiontype name="answertracker">
         <key name="dbuser" datatype="string" default="tickettracker">
             <description>
                 The database user wich will be used to expire tickets.
@@ -868,7 +898,7 @@ k            </description>
         <section name="*" type="targetnamecacheupdater"
             attribute="targetnamecacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
-        <section name="*" type="tickettracker" attribute="tickettracker" />
+        <section name="*" type="answertracker" attribute="answertracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />

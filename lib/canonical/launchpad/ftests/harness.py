@@ -20,12 +20,12 @@ from canonical.testing import (
         BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
         )
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
-from canonical.functional import (
-        FunctionalTestSetup, FunctionalDocFileSuite,
-        )
+from canonical.functional import FunctionalTestSetup
 from canonical.config import config
 from canonical.database.revision import confirm_dbrevision
-from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
+from canonical.database.sqlbase import (
+        cursor, SQLBase, ZopelessTransactionManager,
+        )
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
@@ -84,7 +84,7 @@ def _reconnect_sqlos(dbuser=None):
     assert len(connCache.keys()) == 0, 'SQLOS appears to have kept connections'
 
     # Confirm the database has the right patchlevel
-    confirm_dbrevision()
+    confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
@@ -177,7 +177,7 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
     dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
-        
+
         If no user is provided, ANONYMOUS is used.
         """
         if user is None:

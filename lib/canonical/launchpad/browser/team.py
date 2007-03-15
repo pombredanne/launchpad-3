@@ -14,7 +14,8 @@ from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.validators.email import valid_email
-from canonical.widgets.image import ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView)
 from canonical.launchpad.interfaces import (
@@ -29,8 +30,9 @@ class TeamEditView(LaunchpadEditFormView):
         'name', 'displayname', 'teamdescription', 'gotchi', 'emblem',
         'defaultmembershipperiod', 'defaultrenewalperiod',
         'subscriptionpolicy']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action('Save', name='save')
     def action_save(self, action, data):

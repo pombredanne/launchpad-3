@@ -274,6 +274,18 @@ in the vocabulary.
     >>> debian_woody.milestones.count()
     0
 
+If the context is a specification, only milestones from that specification
+target are in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> spec_target_milestones = vocabulary_registry.get(
+    ...     canvas_spec, 'Milestone')
+    >>> for term in spec_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+
 The vocabulary contains only visible milestones.
 
     >>> one_dot_o = firefox.milestones[0]
@@ -440,6 +452,23 @@ All the products in a project.
     firefox: Mozilla Firefox
     thunderbird: Mozilla Thunderbird
 
+ProjectProductsVocabularyUsingMalone
+-----------------------------------
+All the products in a project using Malone.
+
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> for product in mozilla_project.products:
+    ...     print "%s: %s" % (product.name, product.official_malone)
+    firefox: True
+    thunderbird: False
+
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProductsUsingMalone')
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
+
 Non-Enumerable Vocabularies
 ===========================
 
@@ -512,7 +541,7 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    14
+    15
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
@@ -1035,7 +1064,10 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1043,7 +1075,10 @@ Inactive products and projects are not available
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu Test (Distribution) - class Distribution
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = True
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_product.active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1052,6 +1087,14 @@ Inactive products and projects are not available
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu (Product) - class Product
     Ubuntu Test (Distribution) - class Distribution
+    >>> ubuntu_product in vocab
+    True
+
+Projects are not contained in this vocabulary:
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    False
 
 DistributionOrProductOrProjectVocabulary
 ----------------------------------------
@@ -1069,9 +1112,23 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
-    >>> getUtility(IProjectSet).getByName('ubuntu-project').active = False
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
+    >>> syncUpdate(ubuntu_product)
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    True
+    >>> ubuntu_project.active = False
+    >>> syncUpdate(ubuntu_project)
+    >>> ubuntu_project in vocab
+    False
+
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:

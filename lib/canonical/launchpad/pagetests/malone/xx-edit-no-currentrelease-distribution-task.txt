@@ -5,7 +5,7 @@ still possible to edit its tasks from the bug page. There are no Gentoo
 tasks currently open, so let's add one.
 
     >>> user_browser.open('http://launchpad.dev/bugs/4')
-    >>> user_browser.getLink('Also Affects Distribution').click()
+    >>> user_browser.getLink('Also affects distribution').click()
 
     >>> user_browser.getControl('Distribution').value = ['gentoo']
     >>> user_browser.getControl('Continue').click()

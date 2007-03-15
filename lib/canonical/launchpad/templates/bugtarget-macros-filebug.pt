@@ -1,5 +1,11 @@
 <metal:basic_filebug_widgets metal:define-macro="basic_filebug_widgets">
 
+  <tal:bugtarget
+      tal:define="widget nocall:view/widgets/bugtarget|nothing"
+      tal:condition="widget">
+    <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+  </tal:bugtarget>
+
   <tr tal:condition="view/widgets/packagename|nothing">
     <th colspan="2" style="text-align: left"><label
         tal:attributes="for view/widgets/packagename/name"
@@ -35,9 +41,22 @@
     </td>
   </tr>
 
+  <tal:product tal:define="widget nocall:view/widgets/product|nothing"
+               tal:condition="widget">
+    <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+  </tal:product>
+
   <metal:summary tal:define="widget nocall:view/widgets/title">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:summary>
+
+  <tal:tags tal:condition="view/advanced_form"
+            tal:define="widget nocall:view/widgets/tags">
+    <metal:row use-macro="context/@@launchpad_form/widget_row" />
+  </tal:tags>
+
+  <tal:hidden_tags tal:condition="not: view/advanced_form"
+            tal:replace="structure view/widgets/tags/hidden" />
 
   <metal:description tal:define="widget nocall:view/widgets/comment">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />

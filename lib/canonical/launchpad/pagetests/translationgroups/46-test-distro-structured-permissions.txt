@@ -25,7 +25,7 @@ translations.
   ... 
   ... 1
   ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
   ... Change
   ... -----------------------------13732029051312745333834570722--
