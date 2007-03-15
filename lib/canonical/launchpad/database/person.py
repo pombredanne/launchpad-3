@@ -464,21 +464,24 @@ class Person(SQLBase, HasSpecificationsMixin):
         answer_contacts = AnswerContact.select(
             '''SupportContact.person = TeamParticipation.team
             AND TeamParticipation.person = %s''' % sqlvalues(self.id),
-            clauseTables=['TeamParticipation'])
+            clauseTables=['TeamParticipation'], distinct=True)
         for answer_contact in answer_contacts:
             if answer_contact.product is not None:
-                targets.append(answer_contact.product)
+                target = answer_contact.product
             elif answer_contact.sourcepackagename is not None:
                 assert answer_contact.distribution is not None, (
                     "Missing distribution.")
                 distribution = answer_contact.distribution
-                targets.append(
-                    distribution.getSourcePackage(
-                        answer_contact.sourcepackagename))
+                target = distribution.getSourcePackage(
+                    answer_contact.sourcepackagename)
             elif answer_contact.distribution is not None:
-                targets.append(answer_contact.distribution)
+                target = answer_contact.distribution
             else:
                 assert False, "Unknown IQuestionTarget."
+            
+            if not target in targets:
+                targets.append(target)
+            
         return targets
     
     @property

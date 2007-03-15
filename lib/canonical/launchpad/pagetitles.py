@@ -535,6 +535,9 @@ people_index = 'People and teams in Launchpad'
 def people_list(context, view):
     return view.header
 
+person_answer_contact_for = ContextDisplayName(
+    'Projects for which %s is an answer contact')    
+
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):

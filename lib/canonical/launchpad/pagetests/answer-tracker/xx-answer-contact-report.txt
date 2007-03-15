@@ -4,8 +4,8 @@ To view the answer contact report for a given person, the user chooses
 the 'Answer Contact For' link from the actions portlet while viewing
 the Person's page.
 
-    >>> anon_browser.open('http://launchpad.dev/~no-priv')
-    >>> anon_browser.getLink('Show answer contact for').click()
+    >>> anon_browser.open('http://answers.launchpad.dev/~no-priv')
+    >>> anon_browser.getLink('Answer contact for').click()
     >>> print anon_browser.title
     Projects for which No Privileges Person is an answer contact
 
@@ -14,33 +14,60 @@ that.
     
     >>> content = find_main_content(anon_browser.contents)
     >>> print content.find('p').renderContents()
-    No Privileges Person is not an answer contact for any project
+    No Privileges Person is not an answer contact for any project.
 
 But when the person is an answer contact, the page displays the project
-he registered for, and a link to manage the subscription.
+he registered for.
 
-    >>> anon_browser.open('http://launchpad.dev/~name16')
-    >>> anon_browser.getLink('List answer contact for').click()
+    >>> anon_browser.open('http://answers.launchpad.dev/~name16')
+    >>> anon_browser.getLink('Answer contact for').click()
     >>> print anon_browser.title
     Projects for which Foo Bar is an answer contact
     
     >>> content = find_tag_by_id(
     ...     anon_browser.contents, "answer-contacts-for-list")
     >>> print extract_text(content)
-    Gnome Applets Set answer contact
-    GnomeBaker Set answer contact
-    mozilla firefox in ubuntu Set answer contact
+    Gnome Baker
+    Source Package "mozilla-firefox" in Ubuntu Linux
+    The Gnome Panel Applets
     
 Clicking on the name of the project will show the project answers.
 
-    >>> anon_browser.getLink('GnomeBaker').click()
+    >>> anon_browser.getLink('Gnome Baker').click()
     >>> print anon_browser.title
-    Questions for GnomeBaker
+    Questions for gnomebaker
+
+When the user is logged in, and he is visiting this page in his profile
+he will see a link after each project to manage his registration.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev/~name12')
+    >>> browser.getLink('Answer contact for').click()
+    >>> print browser.title
+    Projects for which Sample Person is an answer contact
     
-    # We should use goBack() here but can't because of ZC #645
-    # >>> anon_browser.goBack()
-    >>> anon_browser.open('http://launchpad.dev/~name16/+answer-contact-for')
-    >>> anon_browser.getLink(id="gnomebaker-setanswercontact").click()
-    >>> print anon_browser.title
-    Answer contact for GnomeBaker
+    >>> content = find_tag_by_id(browser.contents, "answer-contacts-for-list")
+    >>> print extract_text(content)
+    Gnome Baker &mdash; Remove yourself
+    The Gnome Panel Applets &mdash; Remove yourself
     
+    >>> browser.getLink(id="gnomebaker-setanswercontact").click()
+    >>> print browser.title
+    Answer contact for Gnome Baker
+    
+The Remove yourself link only appears in his profile. He cannot see the
+link for other users
+
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev/~name16')
+    >>> browser.getLink('Answer contact for').click()
+    >>> print browser.title
+    Projects for which Foo Bar is an answer contact
+    
+    >>> content = find_tag_by_id(browser.contents, "answer-contacts-for-list")
+    >>> print extract_text(content)
+    Gnome Baker
+    Source Package "mozilla-firefox" in Ubuntu Linux
+    The Gnome Panel Applets
+

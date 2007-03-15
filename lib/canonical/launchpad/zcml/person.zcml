@@ -688,7 +688,14 @@
     name="+subscribedtickets"
     permission="zope.Public"
     />
-
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
+      
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"
