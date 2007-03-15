@@ -365,14 +365,18 @@ class FileBugViewBase(LaunchpadFormView):
 
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.
-           Will return None if the context is not a product or a distro."""
+
+        For instance, if the context is an IDistroRelease, return the
+        distribution related to it. Will return None if the context is
+        not related to a product or a distro.
+        """
         if IProduct.providedBy(self.context) or IDistribution.providedBy(self.context):
             return self.context
         elif IProductSeries.providedBy(self.context):
             return self.context.product
         elif (IDistroRelease.providedBy(self.context) or
               IDistributionSourcePackage.providedBy(self.context)):
-            return self.context.distribution 
+            return self.context.distribution
         else:
             return None
 
