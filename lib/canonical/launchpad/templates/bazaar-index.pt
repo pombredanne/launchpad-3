@@ -51,14 +51,14 @@
                         </ul>
                         <p id="application-summary">
                           Launchpad lets you track branches of any
-                          <a href="/+code/+products-with-code">project</a> that
+                          <a href="/products">project</a> that
                           uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
                           version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
-                        <form class="central" action="/products" method="get">
+                        <form class="central" action="/products/+index" method="get">
                           <input
                             id="text"
                             type="text"
