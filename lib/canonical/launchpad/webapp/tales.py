@@ -353,12 +353,6 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
             url = context.default_emblem_resource
         return '<img alt="" src="%s" />' % url
 
-    def link(self):
-        """Return a link with an icon and the object's displayname."""
-        return ('<a href="%s">%s%s</a>'
-                % (canonical_url(self._context), self.emblem(),
-                   self._context.displayname))
-
 
 # Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
 # subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
