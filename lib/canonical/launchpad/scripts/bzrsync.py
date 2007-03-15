@@ -266,7 +266,7 @@ class BzrSync:
 
     def _makeBugRevisionLink(self, db_revision, bzr_revision):
         try:
-            bug_id = int(bzr_revision.properties['launchpad:bug'])
+            bug_id = int(bzr_revision.properties['launchpad:bugs'])
         except KeyError:
             return
         except ValueError:

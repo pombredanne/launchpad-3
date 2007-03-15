@@ -16,6 +16,9 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
+
+from canonical.lp.dbschema import BugBranchStatus
+
 from canonical.launchpad.database import (
     BranchRevision, BugBranchRevision, Revision, RevisionAuthor,
     RevisionParent)
@@ -689,6 +692,77 @@ class OopsLoggingTest(unittest.TestCase):
         self.oopses.append((info, request, now))
 
 
+def extract_bug_info(bug_status_prop, error_utility):
+    valid_statuses = dict(
+        (item.name, item) for item in BugBranchStatus.items)
+    bug_statuses = {}
+    for line in bug_status_prop.splitlines():
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        tokens = line.split(None, 2)
+        if len(tokens) != 2:
+            error_utility.logFailure('Invalid line: %r' % line)
+            continue
+        bug, status = tokens
+        try:
+            bug = int(bug)
+        except ValueError:
+            error_utility.logFailure('Invalid bug number: %r' % bug)
+            continue
+        try:
+            status = valid_statuses[status.upper()]
+        except KeyError:
+            error_utility.logFailure('Invalid BugBranch status: %r' % status)
+            continue
+        bug_statuses[bug] = status
+    return bug_statuses
+
+
+class RevisionPropertyParsing(unittest.TestCase):
+    def setUp(self):
+        self.errors = []
+
+    def logFailure(self, message):
+        self.errors.append(message)
+
+    def test_single(self):
+        bugs = extract_bug_info("9999 FIXAVAILABLE", self)
+        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
+
+    def test_multiple(self):
+        bugs = extract_bug_info("9999 FIXAVAILABLE\n8888 fixavailable", self)
+        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
+                                 8888: BugBranchStatus.FIXAVAILABLE})
+
+    def test_empty(self):
+        bugs = extract_bug_info('', self)
+        self.assertEquals(bugs, {})
+
+    def test_bad_status(self):
+        bugs = extract_bug_info('9999 FOXAVAILABLE', self)
+        self.assertEquals(bugs, {})
+        self.assertEquals(
+            self.errors, ['Invalid BugBranch status: %r' % 'FOXAVAILABLE'])
+
+    def test_bad_bug(self):
+        bugs = extract_bug_info('orange FIXAVAILABLE', self)
+        self.assertEquals(bugs, {})
+        self.assertEquals(self.errors, ['Invalid bug number: %r' % 'orange'])
+
+    def test_bad_line(self):
+        bugs = extract_bug_info('9999', self)
+        self.assertEquals(bugs, {})
+        self.assertEquals(self.errors, ['Invalid line: %r' % '9999'])
+
+    def test_blank_lines(self):
+        bugs = extract_bug_info('9999 FIXAVAILABLE\n\n\n8888 FIXAVAILABLE\n\n',
+                                self)
+        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
+                                 8888: BugBranchStatus.FIXAVAILABLE})
+        self.assertEquals(self.errors, [])
+
+
 class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
     """Tests for automatic bug branch linking."""
 
@@ -704,7 +778,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         # When we scan a revision that has the launchpad:bug property set to a
         # valid LP bug, we should create a link in the BugBranchRevision table.
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': '1'})
+            rev_id='rev1', revprops={'launchpad:bugs': '1'})
         self.syncBranch()
         bbr = BugBranchRevision.selectOne()
         self.assertNotEqual(bbr, None)
@@ -715,7 +789,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
     def test_bug_branch_revision_twice(self):
         # When we scan a branch twice, we should only create one link.
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': '1'})
+            rev_id='rev1', revprops={'launchpad:bugs': '1'})
         self.syncBranch()
         self.syncBranch()
         bbrs = list(BugBranchRevision.select())
@@ -725,7 +799,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         # If no BugBranch relation exists for the branch and bug, a scan of
         # the branch should create one.
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': '1'})
+            rev_id='rev1', revprops={'launchpad:bugs': '1'})
         self.syncBranch()
         bug = getUtility(IBugSet).get(1)
         self.assertEqual(True, bug.hasBranch(self.db_branch))
@@ -735,7 +809,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         # exist, then we should generate some sort of OOPS report.
         self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': '99999'})
+            rev_id='rev1', revprops={'launchpad:bugs': '99999'})
         self.syncBranch()
         self.assertEqual(len(self.oopses), 1)
 
@@ -743,7 +817,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         # If the revision properties provide an absurd value for the bug
         # number, we should generate an OOPS report.
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': 'orange'})
+            rev_id='rev1', revprops={'launchpad:bugs': 'orange'})
         self.syncBranch()
         self.assertEqual(len(self.oopses), 1)
 
@@ -753,7 +827,7 @@ class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
         # will be the one that Launchpad recognises as the bug-fixing branch.
 
         self.commitRevision(
-            rev_id='rev1', revprops={'launchpad:bug': '1'})
+            rev_id='rev1', revprops={'launchpad:bugs': '1'})
 
         # Make a new branch and merge in our base branch.
         new_tree, new_dbbranch = self.makeBranch('branched')
