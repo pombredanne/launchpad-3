@@ -61,6 +61,12 @@ class BzrSync:
         self.db_branch = None
         self.bzr_history = None
 
+    def logFailure(self, message=None):
+        """Called to register a failure of some sort while scanning the branch.
+        Generates an OOPS.
+        """
+        errorlog.globalErrorUtility.raising(sys.exc_info())
+
     def syncBranchAndClose(self):
         """Synchronize the database with a Bazaar branch and release resources.
 
@@ -264,28 +270,66 @@ class BzrSync:
                 properties=bzr_revision.properties)
             self._makeBugRevisionLink(db_revision, bzr_revision)
 
+    def extractBugInfo(self, bug_status_prop, error_utility=None):
+        """Extract the bug status information from the given bzr revision
+        property.
+        """
+        if error_utility is None:
+            error_utility = self
+        valid_statuses = dict(
+            (item.name, item) for item in BugBranchStatus.items)
+        bug_statuses = {}
+        duplicates = []
+        for line in bug_status_prop.splitlines():
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            tokens = line.split(None, 2)
+            if len(tokens) != 2:
+                error_utility.logFailure('Invalid line: %r' % line)
+                continue
+            bug, status = tokens
+            try:
+                bug = int(bug)
+            except ValueError:
+                error_utility.logFailure('Invalid bug number: %r' % bug)
+                continue
+            try:
+                status = valid_statuses[status.upper()]
+            except KeyError:
+                error_utility.logFailure('Invalid BugBranch status: %r' % status)
+                continue
+            if bug in bug_statuses and bug_statuses[bug] != status:
+                error_utility.logFailure(
+                    'Multiple statuses given for %s, ignoring all of them.'
+                    % bug)
+                duplicates.append(bug)
+                continue
+            bug_statuses[bug] = status
+        for bug in duplicates:
+            del bug_statuses[bug]
+        return bug_statuses
+
     def _makeBugRevisionLink(self, db_revision, bzr_revision):
-        try:
-            bug_id = int(bzr_revision.properties['launchpad:bugs'])
-        except KeyError:
-            return
-        except ValueError:
-            errorlog.globalErrorUtility.raising(sys.exc_info())
+        bug_details = bzr_revision.properties.get('launchpad:bugs', None)
+        if bug_details is None:
             return
         bug_set = getUtility(IBugSet)
-        try:
-            bug = bug_set.get(bug_id)
-        except NotFoundError:
-            errorlog.globalErrorUtility.raising(sys.exc_info())
-            return
-        if not bug.hasBranch(self.db_branch):
-            bug.addBranch(self.db_branch)
         bbr_set = getUtility(IBugBranchRevisionSet)
-        # XXX - add a record to the bug activity log
-        # XXX - make sure the 'status' field is correct
-        return bbr_set.new(
-            bug=bug_set.get(bug_id), branch=self.db_branch,
-            revision=db_revision, status=BugBranchStatus.FIXAVAILABLE)
+        bugs = self.extractBugInfo(bug_details)
+        for bug_id, status in bugs.iteritems():
+            try:
+                bug = bug_set.get(bug_id)
+            except NotFoundError:
+                self.logFailure('Not a valid bug ID: %r' % bug_id)
+                return
+            if not bug.hasBranch(self.db_branch):
+                bug.addBranch(self.db_branch)
+            # XXX - add a record to the bug activity log
+            # XXX - make sure the 'status' field is correct
+            bbr_set.new(
+                bug=bug_set.get(bug_id), branch=self.db_branch,
+                revision=db_revision, status=BugBranchStatus.FIXAVAILABLE)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.
