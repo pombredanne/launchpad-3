@@ -91,8 +91,7 @@
               tal:replace="product_or_distro/displayname" /> is present in
               the following distribution packages:
                   <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
-                      <li><span tal:replace="dsp/distribution/displayname" /> 
-                          <span tal:replace="dsp/sourcepackagename" />
+                      <li><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" />
                       </li>
                   </ul>
               You can report bugs by visiting the package's page.
