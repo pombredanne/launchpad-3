@@ -174,7 +174,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None):
+                       timestamp=None, timezone=None, revprops=None):
         if message is None:
             message = self.LOG
         if committer is None:
@@ -183,7 +183,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
             message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True)
+            timestamp=timestamp, timezone=timezone, allow_pointless=True,
+            revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
@@ -590,6 +591,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = old_timestamp
             timezone = 0
+            properties = {}
 
         # sync the revision
         self.bzrsync.syncOneRevision(FakeRevision)
@@ -609,6 +611,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = 1000000000.0
             timezone = 0
+            properties = {}
         # synchronise the fake revision:
         counts = self.getCounts()
         self.bzrsync.syncOneRevision(FakeRevision)
