@@ -302,12 +302,12 @@ class LaunchpadEditFormView(LaunchpadFormView):
 class custom_widget:
     """A class advisor for overriding the default widget for a field."""
 
-    def __init__(self, field_name, widget, **kwargs):
+    def __init__(self, field_name, widget, *args, **kwargs):
         self.field_name = field_name
         if widget is None:
             self.widget = None
         else:
-            self.widget = CustomWidgetFactory(widget, **kwargs)
+            self.widget = CustomWidgetFactory(widget, *args, **kwargs)
         addClassAdvisor(self.advise)
 
     def advise(self, cls):

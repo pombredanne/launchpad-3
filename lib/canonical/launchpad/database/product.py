@@ -50,16 +50,19 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
     IQuestionTarget, NotFoundError, get_supported_languages,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget)
+    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
 
     _table = 'Product'
+    default_gotchi_resource = '/@@/product-mugshot'
+    default_gotchi_heading_resource = '/@@/product-heading'
+    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)

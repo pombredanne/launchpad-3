@@ -51,14 +51,14 @@
                         </ul>
                         <p id="application-summary">
                           Launchpad lets you track branches of any
-                          <a href="/+code/+products-with-code">product</a> that
+                          <a href="/products">project</a> that
                           uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
                           version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
-                        <form class="central" action="/products" method="get">
+                        <form class="central" action="/products/+index" method="get">
                           <input
                             id="text"
                             type="text"
@@ -73,8 +73,9 @@
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>
-                            <ul>
-                              <li tal:repeat="branch view/recently_imported_branches">
+                            <ul class="branch">
+                              <li tal:repeat="
+                                      branch view/recently_imported_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
@@ -83,7 +84,7 @@
                           </div>
                           <div class="three column middle">
                             <h2>Recently registered</h2>
-                            <ul>
+                            <ul class="branch">
                               <li tal:repeat="branch view/recently_registered_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
@@ -93,7 +94,7 @@
                           </div>
                           <div class="three column right">
                             <h2>Recently changed</h2>
-                            <ul>
+                            <ul class="branch">
                               <li tal:repeat="branch view/recently_changed_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
@@ -109,7 +110,7 @@
                             branches registered in
                             <a href="/products">
                             <strong tal:content="view/product_count">1234</strong>
-                            products
+                            projects
                             </a>
                           </div>
                           <div>
@@ -139,14 +140,14 @@
       </p>
       <p>
         To register a branch so other people can find it,
-        go to the page of the product the branch belongs to,
+        go to the page of the project the branch belongs to,
         and click &ldquo;Register Bazaar Branch&rdquo;.
         Launchpad will automatically maintain a mirror of the branch.
       </p>
       <p>
         You can register a branch on behalf someone else from that
         person&rsquo;s page,
-        or by setting the author field when registering a branch on a product.
+        or by setting the author field when registering a branch on a project.
         (The URL of the branch mirror is based on the nickname of
         the registrant, not the author.)
       </p>
@@ -156,7 +157,7 @@
         trunk of the project, so you can use Bazaar to manage your own changes
         even if the project leaders do not.
         To set up a VCS import, edit the source details of the trunk release
-        series of the product.
+        series of the project.
       </p>
       <p>
         Launchpad also provides hosting for Bazaar branches.
@@ -167,7 +168,7 @@
         destination URL must be of the form:
       </p>
       <blockquote>
-        <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>product</var>/<wbr></wbr><var>branch</var></code>
+        <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>project</var>/<wbr></wbr><var>branch</var></code>
       </blockquote>
       <p>
         where <var>user</var> is your short name in Launchpad
@@ -175,7 +176,7 @@
         <code>ssh</code> configuration),
         <var>registrant</var> is your short name in Launchpad
         (which can be a team name for a shared branch),
-        <var>product</var> is the Launchpad product the branch belongs to,
+        <var>project</var> is the Launchpad project the branch belongs to,
         and <var>name</var> is the short name of the branch
         (if you are uploading your main development branch,
         <code>devel</code> is a good generic name).
@@ -183,7 +184,7 @@
       <p>
         For example, if your Launchpad user name were <code>john</code>, and
         you wanted to upload a personal branch of the <code>froboize</code>
-        product, you could use the following command:
+        project, you could use the following command:
       </p>
       <blockquote>
         bzr push sftp://john<wbr></wbr>@bazaar.launchpad.net/<wbr></wbr>~john/<wbr></wbr>froboize/<wbr></wbr>devel
