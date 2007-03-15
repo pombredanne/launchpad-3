@@ -370,7 +370,8 @@ class FileBugViewBase(LaunchpadFormView):
         distribution related to it. Will return None if the context is
         not related to a product or a distro.
         """
-        if IProduct.providedBy(self.context) or IDistribution.providedBy(self.context):
+        if (IProduct.providedBy(self.context) or
+            IDistribution.providedBy(self.context)):
             return self.context
         elif IProductSeries.providedBy(self.context):
             return self.context.product
