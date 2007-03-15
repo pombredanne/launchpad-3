@@ -20,7 +20,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
 import time
@@ -32,6 +32,8 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
+
+from twisted.trial.runner import TrialSuite
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -607,3 +609,29 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def testTearDown(cls):
         pass
 
+
+# XXX - Note that DatabaseLayer needs to be mentioned as a base class
+# explicitly, even though its already a base of LaunchpadZopelessLayer. This is
+# so that the Zope testrunner will load the DatabaseLayer.testSetUp before
+# SQLOSLayer.testSetUp, which depends on DatabaseLayer.
+# -- JonathanLange, 2007-03-08
+class TwistedLayer(LaunchpadZopelessLayer, DatabaseLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # TrialSuite._bail cleans up the threadpool and initiates a reactor
+        # shutdown event. This ensures that the process will terminate cleanly.
+        TrialSuite()._bail()
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass

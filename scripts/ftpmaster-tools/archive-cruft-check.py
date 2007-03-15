@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # Check for obsolete binary packages
 # Copyright (C) 2006  James Troup <james.troup@canonical.com>

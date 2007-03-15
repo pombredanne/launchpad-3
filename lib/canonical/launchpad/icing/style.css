@@ -75,11 +75,12 @@ body {margin: 0; padding: 0;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
 h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 0.5em 0 0.75em; padding: 0;}
-h3 {font-size: 1.25em; margin: 0.5em 0 0 0;    padding: 0;}
+h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.25em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
+h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: smaller;}
@@ -283,7 +284,7 @@ hr, #globalheader label {
   float: left;
   margin-top: 0.5em;
   border-top: 1px solid #ccc;
-  padding: 0.5em 0 2em;
+  padding: 0.5em 0 1em;
   width: auto;
 }
 .clear {
@@ -545,24 +546,21 @@ ul#applicationchooser li#applicationchooser_selected {
 #actions ul {
   width: 192px;
   overflow: hidden;
-  margin: 3px 0px 0px 0px;
-  padding: 4px 4px 0 4px;
-  list-style: none;
+  margin: 0;
+  padding: 4px;
 }
 #actions li {
-  margin: 0;
+  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
+  list-style-image: url(/+icing/action.png);
+  list-style-type: circle; /* A fallback in case the image can't be found. */
+  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
 }
-#actions li a {
-  width: 180px;
-  height: auto !important;
-  display: block;
-  padding: 6px !important;
+#actions li:hover {background-color: #fff; text-decoration: underline;}
+#actions a {
+  display: block; /* Makes the clickable area equal to the highlighted area. */
+  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
+  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
 }
-#actions li a:hover {
-  background-color: #fff;
-  text-decoration: underline;
-}
-
 #globalsearch {
   width: 220px;
   float: right;
@@ -684,6 +682,8 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #applicationchooser {
   clear: both;
+  position: relative; /* needed to make z-index work */
+  z-index: 1; /* ensures tabs appear above structural object heading */
 }
 #mainarea {
   clear: both;
@@ -697,15 +697,13 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-left: 0;
   margin-right: 0;
 }
-#mainarea {position: relative; top: -10px;} /* reduces pillargotchi~tab gap */
+#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
 * html #mainarea {top: 0;}
 #singlecolumn #mainarea {top: -20px;}
 * html #singlecolumn #mainarea {top: 0;}
 #singlecolumn h1 {
   padding-bottom: 0;
   padding-top: 1em;
-  position: relative;
-  z-index: 1;
 }
 * html #singlecolumn h1 {padding-top: 0;}
 #mainarea div.t {
@@ -831,6 +829,7 @@ ul.languages, li.languages           {list-style-image: url(/@@/languages);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
+ul.news, li.news                     {list-style-image: url(/@@/news);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
@@ -898,7 +897,7 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-overview #actions, body.tab-overview .results {
-  background-color: #e6eed3;
+  background: #e6eed3;
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
@@ -1236,7 +1235,7 @@ body {
 }
 #singlecolumn #container {
   padding-left: 20px;
-  padding-top: 60px;
+  padding-top: 50px;
 }
 #maincontent, #portlets {
   display: inline;
@@ -1259,18 +1258,18 @@ body {
 #portlets .portlet {
   width: 200px;
 }
-#singlecolumn {margin: 20px 20px 20px 38px;} /* test: front page, Oops page */
+#singlecolumn {margin: 20px 20px 0 38px;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 
 /* ====== Content area styles ====== */
 
 /* -- Front pages -- */
 
-#applications {clear: both; padding: 1em 0; width: 100%;}
-div#applications {text-align: center;}
+#applications {clear: both; width: 100%;}
+div#applications {padding: 1em 0; text-align: center;}
 table#applications {margin-bottom: -0.5em;}
 table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {text-align: left;}
+table#applications th {padding-left: 100px; text-align: left;}
 table#applications td {padding-right: 20px; text-align: right;}
 #applications span {
   display: inline-block;
@@ -1283,9 +1282,10 @@ table#applications td {padding-right: 20px; text-align: right;}
   clear: left; /* Bugs FP */
   font-size: 1.5em;
   margin: auto;
-  padding: 2em 0;
+  padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
+.tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
 }
@@ -1295,7 +1295,7 @@ div.bordered {
 #application-summary, #application-footer {
   font-size: 1.5em;
   line-height: 1.5em;
-  width: 50%;
+  margin-top: 0;
 }
 #application-footer {
   border-top: 1px dotted #999;
@@ -1343,7 +1343,7 @@ div.right div.portlet { /* is this necessary? */
 }
 div.columns div.right div.portlet {border: none; padding: 0;} /* BlueprintsFP */
 
-div.three.column {width: 33%;}
+div.three.column {width: 30%; margin-right: 3%;}
 div.three.column.left, div.three.column.middle, div.three.column.right {
   clear: none;
   float: left;
@@ -1353,7 +1353,8 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 }
 ul.buttons {margin: 2em 0 4em 0; padding: 0;}
 ul.buttons li {display: inline; margin-right: 1em;}
-#singlecolumn ul.buttons {float: right;}
+#singlecolumn ul.buttons {float: right; margin: 0;}
+#singlecolumn ul.buttons li {margin: 0;}
 #singlecolumn ul.buttons li {display: block;}
 ul.cross-reference {font-size: 1.25em;}
 /*
@@ -1495,4 +1496,22 @@ th.descending {
 }
 #locationbar {
   overflow: visible;
+}
+.cloud-size-small { 
+  font-size: 1em;
+}
+.cloud-size-medium {
+  font-size: 1.35em;
+}
+.cloud-size-large {
+  font-size: 1.7em;
+}
+.cloud-shade-dark { 
+  color: #00f;
+}
+.cloud-shade-medium { 
+  color: #7878ff;
+}
+.cloud-shade-light {
+  color: #b8b8ff;
 }

@@ -3,6 +3,7 @@
 
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
+IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 
 TESTFLAGS=-p -v
@@ -148,14 +149,14 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
-	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib ipython -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
-	database/schema/fti.py -d launchpad_dev --force
+	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

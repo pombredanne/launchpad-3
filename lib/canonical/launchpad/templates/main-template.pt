@@ -2,26 +2,27 @@
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+                    xml:lang default_language|default;"
+    tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
       media="screen"
-    >@import url(/+icing/style.css);</style>
+      tal:content="string:@import url(${rooturl}+icing/style.css);"/>
     <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <link rel="shortcut icon" href="/@@/launchpad" />
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/lpmenu.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/sorttable.js"></script>
+    <link rel="shortcut icon" tal:attributes="href string:${rooturl}@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
@@ -34,20 +35,17 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
   >
-    <div
-      id="globalheader"
-      tal:define="frontpage modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
-    >
+    <div id="globalheader">
       <div class="launchpad">
         <img
           alt=""
           src="/+icing/globalheader_launchpad.gif"
           width="34"
           height="16"
-        /><a tal:attributes="href frontpage">Launchpad</a>
+        /><a tal:attributes="href rooturl">Launchpad</a>
       </div>
       <ul class="home">
-        <li><a tal:attributes="href frontpage" title="Home">Home</a></li>
+        <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
       </ul>
       <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
     </div>
@@ -186,23 +184,11 @@
                       />
                     </div>
                     <div id="portlets">
-                      <tal:actionsmenu
-                        tal:condition="python: '+login' not in request.getURL()"
-                      >
-                        <div
-                          tal:condition="not:exists:body"
-                          id="actions"
-                          class="portlet"
-                        >
-                          <h2>Actions</h2>
-                          <tal:menu
-                            replace="structure CONTEXTS/@@+menubox"
-                          />
-                        </div>
-                      </tal:actionsmenu>
+                      <tal:menu replace="structure CONTEXTS/@@+menubox" />
                       <metal:portlets define-slot="portlets" />
                       <metal:portlets define-slot="portlets_two" />
                       <metal:portlets define-slot="portlets_one" />
+                      <div class="clear"></div><!-- needed for Safari -->
                     </div>
                     <div class="clear"></div>
                     </div>
@@ -230,10 +216,11 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="globalfooter">
-      <div id="applications-footer" tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+      <div id="applications-footer"
+        tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+        tal:replace="nothing">
         <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
         <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-      
       <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
       <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
       <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
@@ -241,12 +228,12 @@
         <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
       </div>
       <div id="colophon">
-        <a href="/legal">Copyright&nbsp;terms</a> |
+        <a href="/legal">Copyright&nbsp;&amp;&nbsp;Terms&nbsp;of&nbsp;use</a> |
         <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
         <a href="/faq">FAQ</a>
       </div>
       <div id="copyright">
-        Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+        Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
         <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
             | build
             <tal:block condition="revno" replace="revno" />
@@ -255,12 +242,11 @@
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
     </div>
-    <div id="menupreload">
+    <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/products">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
-        <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
   </body>

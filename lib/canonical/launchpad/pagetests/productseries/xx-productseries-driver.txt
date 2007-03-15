@@ -4,7 +4,7 @@ Appoint Sample Person as the driver of Firefox 1.0 series.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/1.0')
-  >>> browser.getLink('Appoint Driver').click()
+  >>> browser.getLink('Appoint driver').click()
 
   >>> browser.url
   'http://launchpad.dev/firefox/1.0/+driver'
@@ -28,5 +28,5 @@ Sample Person is listed as the driver of Firefox 1.0.
 
   >>> project_portlet = find_portlet(
   ...     browser.contents, 'Mozilla Firefox Series: 1.0')
-  >>> project_portlet.find(text='Drivers:').findNext('a').string
+  >>> extract_text(project_portlet.find(text='Drivers:').findNext('a'))
   u'Sample Person'

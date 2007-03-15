@@ -30,10 +30,10 @@ Check the series order. Development focus is at the top:
 
 Now let's add another product series for 1.5.
 
-   >>> browser.getLink('Add Release Series').click()
+   >>> browser.getLink('Register a release series').click()
    >>> browser.getControl('Name').value = '1.5'
    >>> browser.getControl('Summary').value= 'A slightly newer firefox'
-   >>> browser.getControl('Add Series').click()
+   >>> browser.getControl('Register Series').click()
 
 And go back to the main product page
 
@@ -48,13 +48,13 @@ And check the ordering of the series. Again, development focus at the top:
 
 Let's make 1.5 the development series.
 
-   >>> browser.getLink('Edit Product Details').click()
+   >>> browser.getLink('Change details').click()
    >>> browser.getControl('Development focus').displayValue = ['firefox 1.5']
 
 With the additions of the icons and emblems, you need to specify
 the name of the Change control as there are now more than one.
 
-   >>> browser.getControl(name='UPDATE_SUBMIT').click()
+   >>> browser.getControl(name='field.actions.change').click()
 
 And now check the ordering of the series:
 

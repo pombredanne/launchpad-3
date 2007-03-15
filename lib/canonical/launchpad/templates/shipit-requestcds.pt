@@ -114,7 +114,6 @@
         based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
         EM64T Xeon).
       </li>
-    </ul>
   </tal:not-edubuntu>
 
   <tal:custom-request condition="view/should_show_custom_request">

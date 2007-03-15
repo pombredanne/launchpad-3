@@ -22,7 +22,7 @@ Then we are going to propose it for the meeting agenda:
 
   >>> browser.getLink('Propose for meeting agenda').click()
   >>> browser.title
-  'Put specification on sprint agenda'
+  'Put blueprint on sprint agenda'
 
 Now  with a POST, we try to Add the spec to the Guacamole sprint.
 
@@ -60,7 +60,7 @@ doctests, since it depends on Browser View code to work (the database
 classes don't know about their own permissions and security).
 
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks')
-  >>> 'Accepted' in browser.contents
+  >>> 'Approved for the meeting agenda' in browser.contents
   False
   >>> browser.getLink('Propose for meeting agenda').click()
   >>> sprint_field = browser.getControl(name='field.sprint')
@@ -68,7 +68,7 @@ classes don't know about their own permissions and security).
   >>> browser.getControl('Add').click()
   >>> 'paris' in browser.contents
   True
-  >>> 'Accepted' in browser.contents
+  >>> 'Approved for the meeting agenda' in browser.contents
   True
 
 Now, if we change our mind, we can go and decline the spec.
@@ -80,24 +80,24 @@ First, make sure the page has no "Declined" text.
 
 Now go and change that and verify.
 
-  >>> browser.getLink('Accepted').click()
+  >>> browser.getLink('Approved').click()
   >>> browser.url
   'http://.../kubuntu/+spec/kde-desktopfile-langpacks/paris'
   >>> browser.getControl('Decline').click()
-  >>> 'Declined' not in browser.contents
+  >>> 'Declined for the meeting' not in browser.contents
   False
 
 Alright. Now lets go accept it again.
 
   >>> browser.getLink('Declined').click()
   >>> browser.getControl('Accept').click()
-  >>> 'Declined' not in browser.contents
+  >>> 'Declined for the meeting' not in browser.contents
   True
 
 And finally, we will test the Cancel button on that page.
 
-  >>> browser.getLink('Accepted').click()
+  >>> browser.getLink('Approved').click()
   >>> browser.getControl('Cancel').click()
-  >>> 'Declined' not in browser.contents
+  >>> 'Declined for the meeting' not in browser.contents
   True
 

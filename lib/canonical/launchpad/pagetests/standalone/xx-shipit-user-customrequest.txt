@@ -249,7 +249,7 @@ because he already has a shipped request containing Ubuntu CDs.
 The architectures of the CDs we ship depend on the flavour (Ubuntu, Kubuntu
 and Edubuntu).
 
-For Ubuntu, we ship only two architectures (X86 and AMD64)
+For Ubuntu, we ship both X86 and AMD64 CDs.
 
   >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
@@ -265,7 +265,7 @@ For Ubuntu, we ship only two architectures (X86 and AMD64)
   LookupError: name 'field.ubuntu_quantityppc'
 
 
-For Kubuntu, we also ship only X86 and AMD64.
+For Kubuntu we also ship X86 and AMD64.
 
   >>> browser.open('http://shipit.kubuntu.dev/specialrequest')
   >>> browser.url
@@ -297,3 +297,4 @@ And for Edubuntu, we ship only X86.
   Traceback (most recent call last):
   ...
   LookupError: name 'field.ubuntu_quantityppc'
+
