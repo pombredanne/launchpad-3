@@ -111,11 +111,10 @@ If you need to operate on the ancestry of a branch, you should write a focused
 query to avoid creating the tens of thousands of objects necessary to represent
 the ancestry of a large branch.
 
-In particular, IBranch.getScannerDataForBranch efficiently retrieves the
-BranchRevision data needed by the branch-scanner script.
+In particular, IBranch.getScannerData efficiently retrieves the BranchRevision
+data needed by the branch-scanner script.
 
-  >>> ancestry, history, mapping = (
-  ...     branch_revision_set.getScannerDataForBranch(branch))
+  >>> ancestry, history, mapping = branch.getScannerData()
 
 The first return value is a set of revision_id strings for the full ancestry of
 the branch.

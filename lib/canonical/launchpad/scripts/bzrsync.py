@@ -117,7 +117,7 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         branch_revision_set = getUtility(IBranchRevisionSet)
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
-            branch_revision_set.getScannerDataForBranch(self.db_branch))
+            self.db_branch.getScannerData())
 
     def retrieveBranchDetails(self):
         """Retrieve ancestry from the the bzr branch on disk."""

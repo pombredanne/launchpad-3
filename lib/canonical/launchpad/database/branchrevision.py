@@ -39,24 +39,3 @@ class BranchRevisionSet:
     def delete(self, branch_revision_id):
         """See IBranchRevisionSet."""
         BranchRevision.delete(branch_revision_id)
-
-    def getScannerDataForBranch(self, branch):
-        """See IBranchRevisionSet."""
-        cur = cursor()
-        cur.execute("""
-            SELECT BranchRevision.id, BranchRevision.sequence,
-                Revision.revision_id
-            FROM Revision, BranchRevision
-            WHERE Revision.id = BranchRevision.revision
-                AND BranchRevision.branch = %s
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(branch))
-        ancestry = set()
-        history = []
-        branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchall():
-            ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
-            if sequence is not None:
-                history.append(revision_id)
-        return ancestry, history, branch_revision_map

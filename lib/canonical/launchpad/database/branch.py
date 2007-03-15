@@ -216,6 +216,27 @@ class Branch(SQLBase):
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
+    def getScannerData(self):
+        """See IBranch."""
+        cur = cursor()
+        cur.execute("""
+            SELECT BranchRevision.id, BranchRevision.sequence,
+                Revision.revision_id
+            FROM Revision, BranchRevision
+            WHERE Revision.id = BranchRevision.revision
+                AND BranchRevision.branch = %s
+            ORDER BY BranchRevision.sequence
+            """ % sqlvalues(self))
+        ancestry = set()
+        history = []
+        branch_revision_map = {}
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
+            ancestry.add(revision_id)
+            branch_revision_map[revision_id] = branch_revision_id
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history, branch_revision_map
+
 
 class BranchSet:
     """The set of all branches."""
