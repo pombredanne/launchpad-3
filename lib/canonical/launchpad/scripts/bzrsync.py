@@ -23,7 +23,7 @@ from canonical.lp.dbschema import BugBranchStatus
 from canonical.launchpad.interfaces import (
     IBugSet, ILaunchpadCelebrities, IBugBranchRevisionSet, IBranchRevisionSet,
     IRevisionSet, NotFoundError)
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp import canonical_url, errorlog
 
 UTC = pytz.timezone('UTC')
 
@@ -31,6 +31,19 @@ UTC = pytz.timezone('UTC')
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+def log_failure(branch, message, logger):
+    """Log diagnostic for branches that had problems during scanning."""
+    request = errorlog.ScriptRequest([
+        ('branch.id', branch.id),
+        ('branch.unique_name', branch.unique_name),
+        ('branch.url', branch.url),
+        ('branch.warehouse_url', branch.warehouse_url),
+        ('error-explanation', message)])
+    request.URL = canonical_url(branch)
+    errorlog.globalErrorUtility.raising(sys.exc_info())
+    logger.info('%s: %s', request.oopsid, message)
 
 
 class BzrSync:
@@ -65,7 +78,7 @@ class BzrSync:
         """Called to register a failure of some sort while scanning the branch.
         Generates an OOPS.
         """
-        errorlog.globalErrorUtility.raising(sys.exc_info())
+        log_failure(self.db_branch, message, self.logger)
 
     def syncBranchAndClose(self):
         """Synchronize the database with a Bazaar branch and release resources.
