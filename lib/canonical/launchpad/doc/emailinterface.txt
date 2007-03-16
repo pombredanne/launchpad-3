@@ -128,8 +128,14 @@ A notification was added:
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly", because he's the product owner.
 
+    >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRationale
+    >>> def getSubscribers(bug):
+    ...     rationale = BugNotificationRationale()
+    ...     bug.registerBugSubscribers(rationale)
+    ...     return rationale.getAddresses()
+
     >>> added_bug = bug_notification.bug
-    >>> sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 If we would file a bug on Ubuntu instead, we would submit a mail like
@@ -169,7 +175,7 @@ Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly" since he's a bug contact for the mozilla
 package:
 
-    >>> print sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 It's possible to file a bug on more than product/package at once:
