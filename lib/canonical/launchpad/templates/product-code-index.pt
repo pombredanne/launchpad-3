@@ -24,6 +24,8 @@
                     <div class="z">
                       <div id="container">
 
+                        <div><strong><a href="/">&laquo; Back</a></strong></div>
+
                         <a tal:repeat="product view/products"
                            tal:attributes="href product/fmt:url;
                                            class product/html_class"
