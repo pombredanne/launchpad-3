@@ -48,6 +48,8 @@ as 'packages', as:
    ...
   ]
 
+Each pocket should only contain packages marked as PUBLISHED.
+
   >>> for pub in pmount_view.published_by_pocket():
   ...     pkg_versions = [p.version for p in pub['packages']]
   ...     print pub['pocketdetails'].title, sorted(pkg_versions)
