@@ -207,7 +207,8 @@ class POTemplate(SQLBase, RosettaStats):
         "See IPOTemplate"
         return POTemplate.select('''
             id <> %s AND
-            potemplatename = %s
+            potemplatename = %s AND
+            iscurrent = TRUE
             ''' % sqlvalues (self.id, self.potemplatename.id),
             orderBy=['datecreated'])
 
@@ -217,14 +218,16 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
-                productseries = %s
+                productseries = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
         elif self.distrorelease and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
                 distrorelease = %s AND
-                sourcepackagename = %s
+                sourcepackagename = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id,
                     self.distrorelease.id, self.sourcepackagename.id),
                 orderBy=['id'])
@@ -351,7 +354,7 @@ class POTemplate(SQLBase, RosettaStats):
                    quote(language_code)),
             clauseTables=['Language'],
             prejoinClauseTables=['Language'],
-            prejoins=["latestsubmission"])
+            prejoins=["last_touched_pomsgset"])
 
     def messageCount(self):
         """See IRosettaStats."""

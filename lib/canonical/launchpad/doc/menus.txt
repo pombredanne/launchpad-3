@@ -5,7 +5,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
 === Construct an example url hierarchy ===
 
     >>> from canonical.launchpad.webapp import nearest_menu, canonical_url
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.webapp.interfaces import (
     ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
     ...     ILink, ILinkData, IFacetLink
     ...     )
@@ -477,12 +477,12 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         else:
     ...             return self.query
 
-    >>> from canonical.launchpad.webapp.url import Url
+    >>> from canonical.launchpad.webapp.uri import URI
 
 The following request is for a url that is different from all of the facet
 menu links for 'sesamestreet'.  So, all links will be linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+xxx')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+xxx')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -502,7 +502,7 @@ still be linked.
 
 Next, we'll use the link +bar.  The +bar link will not be linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -512,7 +512,7 @@ Next, we'll use the link +bar.  The +bar link will not be linked.
 Now, we use +bar with a trailing slash.  The +bar link will still be not
 linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar/')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar/')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -540,7 +540,7 @@ This will be the common case for default links.
     ...             'More explanation about Baz of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -602,7 +602,7 @@ earlier in this doctest.
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
-    >>> request = Url('http://launchpad.dev/sesamestreet')
+    >>> request = URI('http://launchpad.dev/sesamestreet')
 
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):

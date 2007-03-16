@@ -33,9 +33,10 @@ Combining Distribution and SourcePackageRelease:
  >>> sourcepackagerelease.name
  u'pmount'
 
+ >>> from zope.interface.verify import verifyObject
  >>> dspr = DistributionSourcePackageRelease(distribution,
  ...                                         sourcepackagerelease)
- >>> IDistributionSourcePackageRelease.providedBy(dspr)
+ >>> verifyObject(IDistributionSourcePackageRelease, dspr)
  True
 
  >>> dspr.displayname, dspr.version
@@ -48,7 +49,7 @@ Combining DistroRelease and SourcePackageRelease:
 
  >>> drspr = DistroReleaseSourcePackageRelease(distrorelease,
  ...                                           sourcepackagerelease)
- >>> IDistroReleaseSourcePackageRelease.providedBy(drspr)
+ >>> verifyObject(IDistroReleaseSourcePackageRelease, drspr)
  True
 
  >>> drspr.displayname

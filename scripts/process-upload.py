@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Upload processor.
 
 Given a bunch of context information and a bunch of files, process them as
@@ -11,12 +11,13 @@ import os
 import sys
 from optparse import OptionParser
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.archivepublisher.uploadpolicy import policy_options
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.lp import initZopeless
 
 
@@ -27,10 +28,10 @@ def main():
     options = readOptions()
     log = logger(options, "process-upload")
 
-    locker = LockFile(_default_lockfile, logger=log)
+    locker = GlobalLock(_default_lockfile, logger=log)
     try:
         locker.acquire()
-    except OSError:
+    except LockAlreadyAcquired:
         log.error("Cannot acquire lock.")
         return 1
 
@@ -72,7 +73,7 @@ def readOptions():
     (options, args) = parser.parse_args()
 
     if len(args) != 1:
-        raise ValueError("Need to be given exactly one non-option"
+        raise ValueError("Need to be given exactly one non-option "
                          "argument, namely the fsroot for the upload.")
     options.base_fsroot = os.path.abspath(args[0])
 

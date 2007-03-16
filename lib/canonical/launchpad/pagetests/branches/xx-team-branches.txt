@@ -7,19 +7,10 @@ overview page:
 
   >>> anon_browser.open(
   ...     'http://launchpad.dev/gnome-terminal/+branches')
-  >>> anon_browser.getLink('Launchpad support for Gnome Terminal').url
-  'http://launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad'
-
-
-And on the product's detailed branch listing as well.
-
-  >>> anon_browser.open(
-  ...     'http://launchpad.dev/gnome-terminal/+branchlisting')
-  >>> anon_browser.getLink('Launchpad support for Gnome Terminal').url
-  'http://launchpad.dev/~launchpad/+branch/gnome-terminal/launchpad'
-
-
+  >>> anon_browser.getLink('klingon').url
+  'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
+        
 Ensure that a branch owned by a team can be viewed:
 
-  >>> anon_browser.getLink('Launchpad support for Gnome Terminal').click()
+  >>> anon_browser.getLink('klingon').click()
 

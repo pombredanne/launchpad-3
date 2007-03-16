@@ -1,10 +1,14 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageSOP',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageOverviewMenu',
+    'DistributionSourcePackageBugContactsView'
     ]
 
 from zope.component import getUtility
@@ -13,18 +17,35 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.tickettarget import (
-        TicketTargetFacetMixin, TicketTargetTraversalMixin)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.questiontarget import (
+        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
 
 
-class DistributionSourcePackageFacets(TicketTargetFacetMixin,
+class DistributionSourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distribution.title + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.name
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: package releases, most recent first
+        return self.context.releases
+
+    def listAltChildren(self, num):
+        return None
+
+
+class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
-    enable_only = ['overview', 'bugs', 'support']
+    enable_only = ['overview', 'bugs', 'answers']
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):
@@ -34,7 +55,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
     links = ['reportbug', 'managebugcontacts']
 
     def reportbug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
     def managebugcontacts(self):
@@ -49,7 +70,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
-    BugTargetTraversalMixin, TicketTargetTraversalMixin):
+    BugTargetTraversalMixin, QuestionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 

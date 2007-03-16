@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
@@ -15,6 +15,8 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from sourcerer.deb.version import Version
 
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
@@ -22,7 +24,6 @@ from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 
@@ -92,10 +93,10 @@ if __name__ == '__main__':
 
     log.info("Rebuilding Build Queue.")
 
-    locker = LockFile(_default_lockfile, logger=log)
+    locker = GlobalLock(_default_lockfile, logger=log)
     try:
         locker.acquire()
-    except OSError:
+    except LockAlreadyAcquired:
         log.error("Cannot Acquire Lock.")
         sys.exit(1)
 

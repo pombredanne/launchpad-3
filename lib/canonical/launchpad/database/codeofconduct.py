@@ -9,8 +9,9 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
 import os
-from datetime import date
+from datetime import datetime
 
+import pytz
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -44,7 +45,7 @@ class CodeOfConductConf:
     # Set the datereleased to the date that 1.0 CoC was released,
     # preserving everyone's Ubuntero status.
     # https://launchpad.net/products/launchpad/+bug/48995
-    datereleased = date(2005, 4, 12)
+    datereleased = datetime(2005, 4, 12, tzinfo=pytz.timezone("UTC"))
 
 
 class CodeOfConduct:

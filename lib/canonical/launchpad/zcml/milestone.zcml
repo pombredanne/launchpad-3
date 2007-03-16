@@ -1,14 +1,13 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
     <!-- Milestone -->
     <content class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
-        <allow interface="canonical.launchpad.interfaces.IAuthorization" />
+        <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
             set_attributes="name dateexpected visible" />
@@ -58,8 +57,7 @@
         fields="name dateexpected visible"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+admin"
@@ -70,8 +68,7 @@
         fields="productseries distrorelease"
         permission="launchpad.Admin"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+admin">
-    </browser:editform>
+        />
 
     <!-- IMilestoneSet -->
     <securedutility

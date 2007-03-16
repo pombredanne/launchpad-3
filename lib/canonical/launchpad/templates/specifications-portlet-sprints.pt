@@ -1,19 +1,9 @@
-<div class="portlet">
+<div>
+  <h2>Upcoming meetings</h2>
 
-  <h2>Upcoming sprints</h2>
-
-  <div class="portletBody portletContent">
-
-    <ul class="sprint">
-      <li tal:repeat="sprint context/upcoming_sprints">
-        <a tal:attributes="href sprint/fmt:url"
-           tal:content="sprint/title">ubuntu Below Zero</a>
-        <br />
-        <span class="discreet"
-              tal:content="sprint/time_starts/fmt:date">2005-10-12</span>
-      </li>
-    </ul>
-
-  </div>
-
+    <table>
+      <tal:per_sprint repeat="sprint context/coming_sprints"
+                      replace="structure sprint/@@+listing-simple" />
+    </table>
+    <div><a href="/sprints">&raquo; Show all sprints and meetings</a></div>
 </div>
