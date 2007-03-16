@@ -23,7 +23,6 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.searchbuilder import NULL
 
 from canonical.launchpad.webapp.snapshot import Snapshot
