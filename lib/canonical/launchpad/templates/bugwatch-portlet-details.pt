@@ -37,9 +37,7 @@
         15 Jan 2003
        </span><br />
     <b>By:</b>
-      <img src="/@@/user" />
-      <a tal:attributes="href string:/people/${context/owner/name}/"
-         tal:content="context/owner/browsername">Foo Bar</a><br />
+      <a tal:replace="structure context/owner/fmt:link" /><br />
     </div>
   </div>
 </div>

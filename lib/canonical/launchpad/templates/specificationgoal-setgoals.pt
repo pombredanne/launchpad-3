@@ -65,7 +65,7 @@
                 <span tal:attributes="
                       class string:specdelivery${spec/delivery/name}"
                       tal:content="spec/delivery/title">New</span>,
-                <img src="/@@/spec" />&nbsp;<a
+                <img src="/@@/blueprint" />&nbsp;<a
                      tal:attributes="href spec/fmt:url">Details</a >
                 <img src="/@@/link" />&nbsp;<a
                      tal:attributes="href spec/specurl">Specification</a>
@@ -73,9 +73,7 @@
                 Proposed for
                 <span tal:replace="context/displayname">Edgy</span>
                 by
-                <img src="/@@/user" />
-                <a tal:attributes="href spec/goal_proposer/fmt:url"
-                   tal:content="spec/goal_proposer/browsername">Carlos</a>
+                <a tal:replace="structure spec/goal_proposer/fmt:link" />
                 <span
                   tal:attributes="title spec/date_goal_proposed/fmt:datetime"
                   tal:content="spec/date_goal_proposed/fmt:displaydate" />.

@@ -30,9 +30,7 @@
 
     <p>
       This goal was proposed by
-      <img src="/@@/user/">
-      <a tal:attributes="href context/goal_proposer/fmt:url"
-         tal:content="context/goal_proposer/browsername">Foo Bar</a>
+      <a tal:replace="structure context/goal_proposer/fmt:link">Foo Bar</a>
       <span
         tal:attributes="title context/date_goal_proposed/fmt:datetime"
         tal:content="context/date_goal_proposed/fmt:displaydate">
@@ -41,9 +39,7 @@
       <tal:already_decided condition="context/goal_decider">
         It was previously marked "<span tal:replace="context/goalstatus/title">
         Approved</span>" as a goal by
-        <img src="/@@/user/">
-        <a tal:attributes="href context/goal_decider/fmt:url"
-           tal:content="context/goal_decider/browsername">Foo Bar</a>
+        <a tal:replace="structure context/goal_decider/fmt:link">Foo Bar</a>
         <span
           tal:attributes="title context/date_goal_decided/fmt:datetime"
           tal:content="context/date_goal_decided/fmt:displaydate">

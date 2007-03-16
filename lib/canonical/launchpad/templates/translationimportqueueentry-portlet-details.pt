@@ -16,9 +16,7 @@
             <a tal:attributes="href context/content/http_url"
                tal:content="context/path">po/foo.pot</a><br />
             <b>Uploader:</b><br />
-            <img src="/@@/user" />
-            <a tal:content="context/importer/browsername"
-               tal:attributes="href context/importer/fmt:url"
+            <a tal:replace="structure context/importer/fmt:link"
                >Mark Shuttleworth</a><br />
             <b>Waiting since:</b>
             <span

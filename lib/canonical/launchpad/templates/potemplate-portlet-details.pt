@@ -10,8 +10,7 @@
             <span tal:replace="context/language_count">421</span>
             Languages<br />
             <b>Owner:</b><br />
-            <img alt="" src="/@@/user" />
-            <span tal:replace="context/owner/browsername" /><br />
+            <a tal:replace="structure context/owner/fmt:link" /><br />
             <b>Created:</b>
             <span
               tal:attributes="title context/datecreated/fmt:datetime"

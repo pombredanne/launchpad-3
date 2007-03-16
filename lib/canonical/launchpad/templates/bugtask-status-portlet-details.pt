@@ -7,10 +7,7 @@
     <div class="portletContent">
 
       <b>Reported by:</b><br />
-      <img src="/@@/user" />
-      <a tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/browsername"
-        style="text-decoration: underline"></a><br />
+      <a tal:replace="structure context/owner/fmt:link" /><br />
 
       <b>In:</b>
       <a tal:content="context/targetname"
