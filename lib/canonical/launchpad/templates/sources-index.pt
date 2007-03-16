@@ -31,7 +31,7 @@
   </form>
 
   <tal:no-results condition="not:batch">
-    <p>No product series found matching criteria.</p>
+    <p>No project series found matching criteria.</p>
   </tal:no-results>
 
   <tal:results condition="batch">
@@ -39,7 +39,7 @@
     <table class="listing" width="100%">
       <thead>
         <tr>
-          <th>Product Series</th>
+          <th>Project Series</th>
           <th>Started</th>
           <th>Finished</th>
           <th>Tested</th>

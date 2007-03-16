@@ -1,4 +1,4 @@
-= Support Tracker Utility: IQuestionSet =
+= Answer Tracker Utility: IQuestionSet =
 
 There is an IQuestionSet utility that can be use to retrieve and search
 for question whatever the target they were created in.
@@ -52,8 +52,8 @@ the query using the regular full text algorithm.
 
 === status ===
 
-By default, expired and invalid support requests are not searched for.
-The status parameter can be used to select the questions in the status
+By default, expired and invalid questions are not searched for. The
+status parameter can be used to select the questions in the status
 you are interested in.
 
     >>> from canonical.lp.dbschema import QuestionStatus
@@ -135,6 +135,6 @@ QuestionSort.NEWEST_FIRST.
 The getQuestionLanguages() method returns the set of languages in which
 questions are written in Launchpad.
 
-    >>> sorted([language.code 
+    >>> sorted([language.code
     ...         for language in question_set.getQuestionLanguages()])
     [u'en', u'es', u'pt_BR']

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 """
 gina-loggrep parses gina's logfile output format in an attempt to extract

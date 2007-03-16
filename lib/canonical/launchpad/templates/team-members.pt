@@ -66,7 +66,9 @@
               >2006-06-13</td>
               <td tal:content="membership/statusname"></td>
               <td tal:condition="context/required:launchpad.Edit">
-                [<a tal:attributes="href membership/fmt:url">Edit</a>]
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
               </td>
             </tal:block>
           </tr>
@@ -101,7 +103,9 @@
               tal:content="membership/datejoined/fmt:date"
             >2005-04-01</td>
             <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
+              <a tal:attributes="href membership/fmt:url"
+                ><img src="/@@/edit"
+                      title="Change membership duration or status" /></a>
             </td>
             </tal:block>
           </tr>
@@ -151,7 +155,9 @@
               tal:condition="not: membership/isExpired"
               tal:content="membership/statusname" />
             <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
+              <a tal:attributes="href membership/fmt:url"
+                ><img src="/@@/edit"
+                      title="Change membership duration or status" /></a>
             </td>
             </tal:block>
           </tr>

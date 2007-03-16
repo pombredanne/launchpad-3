@@ -116,8 +116,8 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
         d = self.storage.getBranchPullQueue()
         if self.debug:
             def printresult(result):
-                for (branch_id, pull_url) in result:
-                    print branch_id, pull_url
+                for (branch_id, pull_url, unique_name) in result:
+                    print branch_id, pull_url, unique_name
                 return result
             d.addCallback(printresult)
         return d

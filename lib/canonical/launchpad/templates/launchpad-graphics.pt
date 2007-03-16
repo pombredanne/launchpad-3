@@ -269,9 +269,9 @@
         <td>product-mini</td>
         <td><img alt="" src="/@@/product-mini" /></td>
         <td>
-          A software product.
+          A software project.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
-          used where the product owner has not uploaded a custom icon.
+          used where the project owner has not uploaded a custom icon.
         </td>
       </tr>
       <tr>
@@ -289,7 +289,7 @@
       <tr>
         <td>project-mini</td>
         <td><img alt="" src="/@@/project-mini" /></td>
-        <td rowspan="4">A group of products.</td>
+        <td rowspan="4">A group of projects.</td>
       </tr>
       <tr>
         <td>project</td>
@@ -568,7 +568,7 @@
     <tbody>
       <tr>
         <td>spec</td>
-        <td><img src="/@@/spec" /></td>
+        <td><img src="/@@/blueprint" /></td>
         <td>A feature specification, used as a bullet in lists of specs, or
         to indicate a link to a specification.</td>
       </tr>

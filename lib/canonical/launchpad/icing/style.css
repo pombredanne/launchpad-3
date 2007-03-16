@@ -111,6 +111,12 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 .warning.message, .warning .message {
   background-image: url(/@@/warning);
 }
+.helpwanted {background-color: #fafca9; color: black; border: 1px solid black; 
+    padding: 0.5em; font-size: smaller; padding-left: 3em
+}
+.helpwanted.message, .helpwanted .message {
+  background-image: url(/@@/helpwanted);
+}
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
   background-image: url(/@@/info);
@@ -897,7 +903,7 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-overview #actions, body.tab-overview .results {
- /* background-color: #e6eed3; */
+  background: #e6eed3;
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;

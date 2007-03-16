@@ -189,18 +189,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
-    @property
-    def open_ticket_count(self):
-        """See ISourcePackageRelease."""
-        results = Question.select("""
-            status = %s AND
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(QuestionStatus.OPEN,
-                            self.uploaddistrorelease.distribution.id,
-                            self.sourcepackagename.id))
-        return results.count()
-
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
         upload_distro = self.uploaddistrorelease.distribution
