@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -49,7 +48,7 @@
         permission="zope.Public">
         <browser:page name="index"
             template="../templates/bugpackageinfestations-index.pt"
-            lp:url="malone/bugs/$Bug.id/bugpackageinfestations/index" />
+            />
     </browser:pages>
 
     <!--FORMS-->
@@ -64,7 +63,7 @@
         keyword_arguments="sourcepackagerelease infestationstatus"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/packageinfestations/+new" />
+        />
 
     <browser:editform
         name="+edit"
@@ -75,6 +74,6 @@
         label="Edit infested package release"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
-        lp:url="malone/bugs/$Bug.id/packageinfestations/$BugPackageInfestation.id/+edit" />
+        />
 </facet>
 </configure>

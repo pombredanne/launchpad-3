@@ -47,13 +47,13 @@ Changes:
      out on errors.  Thanks to Joel Baker <fenton@debian.org>.
      Closes: #130327
 Files: 
- 22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
+ e31eeb0b6b3b87e1ea79378df864be18 522 editors important ed_0.2-20.dsc
  f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFD7KqrK8hAFiBoeJURAnWSAJ9qY9jRt6wMkIGrs17JZ/1A4rk75wCgzwci
-dtROLvLiFEJxcVA81lr7nu0=
-=1TEF
+iD8DBQFFt6jDjn63CGxkqMURAsFvAJ9mgxcw5n1lbN2qTK3uLXuYurDS8wCfe43p
+EuJHt6fWb9XXgbo6u+YP9b4=
+=ch8n
 -----END PGP SIGNATURE-----

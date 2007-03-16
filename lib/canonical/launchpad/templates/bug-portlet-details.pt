@@ -18,13 +18,13 @@
     </tal:nickname>
 
     <b>Initial Reporter:</b><br />
-    <img src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername"></a><br />
+    <span tal:replace="structure context/owner/fmt:link" />
+    <br />
 
     <b>Reported on:</b><br />
-    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
-    <br />
+    <span tal:replace="context/datecreated/fmt:datetime">
+      2004-12-12 12:12:12
+    </span><br />
 
     <div title="Can be seen only by the bug subscribers"
         tal:condition="context/private">

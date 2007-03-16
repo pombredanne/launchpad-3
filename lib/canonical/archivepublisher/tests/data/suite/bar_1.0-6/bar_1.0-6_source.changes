@@ -16,5 +16,5 @@ Changes:
    * Change the binary name to check bogus creation of sourcepackagename when
      processing binaries.
 Files: 
- e3e065e21756d25f06640c13b2324935 518 devel optional bar_1.0-6.dsc
+ 6e6bfd2ad2ab37268b90e22484fd291c 516 devel optional bar_1.0-6.dsc
  273bef311801aab42376058b1cbd5e10 771 devel optional bar_1.0-6.diff.gz

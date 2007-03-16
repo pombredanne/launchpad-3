@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 """Tests that get run automatically on a merge."""
@@ -40,18 +40,6 @@ def main():
         print '---- tabnanny bitching ----'
         print tabnanny_results
         print '---- end tabnanny bitching ----'
-        return 1
-
-    # Ensure ++resource++ URL's are all absolute - this ensures they
-    # are cache friendly
-    results = os.popen(
-        r"find lib/canonical -type f | grep -v '~$' | "
-        r"xargs grep '[^/]\(++resource++\|@@/\)'"
-        ).readlines()
-    if results:
-        print '---- non-absolute ++resource++ or @@/ URLs found ----'
-        print ''.join(results)
-        print '---- end non-absolute ++resource++ URLs found ----'
         return 1
 
     # Sanity check PostgreSQL version. No point in trying to create a test

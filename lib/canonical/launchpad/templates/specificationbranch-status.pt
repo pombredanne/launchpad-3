@@ -7,10 +7,6 @@
 >
   <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/specification/@@+portlet-details" />
-  </metal:leftportlets>
-
   <h3 metal:fill-slot="pageheading"
       tal:content="context/specification/title">Spec Title</h3>
 

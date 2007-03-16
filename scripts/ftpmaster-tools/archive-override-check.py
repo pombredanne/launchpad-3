@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Archive Override Check
 
 Given a distribution to run on, report any override inconsistence found.

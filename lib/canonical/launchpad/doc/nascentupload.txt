@@ -1,14 +1,6 @@
 == The nascent uploads ==
 
-We also need to set up the OpenPGP key used to sign things so that we can
-identify the upload signer later on.
-
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
-  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
-
-Next we import the test keys so we have them ready for verification
+Import the test keys so we have them ready for verification
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -37,6 +29,10 @@ managed archive.
   >>> class MockLogger:
   ...     def debug(self, s):
   ...         print "DEBUG:", s
+
+  >>> class MockMunchyLogger:
+  ...     def debug(self, s):
+  ...         pass
 
 The policy we feed to to the nascent upload needs to have its command
 line options passed in.
@@ -252,12 +248,11 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases()
+  DEBUG: Checking for ed/0.2-20 source ancestry
   DEBUG: ed: (source) NEW
-  DEBUG: getPublishedReleases()
-  DEBUG: Checking against i386 for ed
+  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
   DEBUG: ed: (binary) NEW
-  DEBUG: Daniel Silverstone (26) is an uploader for main, restricted, universe.
+  DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
   END
@@ -267,7 +262,7 @@ Finally we can ask the upload to process itself.
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
-  DEBUG: Adding recipient: 'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Build ... created
   DEBUG: Creating a New queue entry
   >>> print success
@@ -275,7 +270,7 @@ Finally we can ask the upload to process itself.
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Daniel Silverstone <daniel.silverstone@canonical.com>
+  To: Foo Bar <foo.bar@canonical.com>
   Bcc: Root <root@localhost>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
@@ -333,16 +328,12 @@ Finally we can ask the upload to process itself.
        out on errors.  Thanks to Joel Baker <fenton@debian.org>.
        Closes: #130327
   Files:
-   22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
+   e31eeb0b6b3b87e1ea79378df864be18 522 editors important ed_0.2-20.dsc
    f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
    0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
   <BLANKLINE>
   -----BEGIN PGP SIGNATURE-----
-  Version: GnuPG v1.4.1 (GNU/Linux)
-  <BLANKLINE>
-  iD8DBQFDTWC+K8hAFiBoeJURAnA7AJ9i9ZjWjtqUQ+nFJfPnsjOmfUq6DQCffPZZ
-  nwN7DFh8fuhURm3VCzcwIGc=
-  =jANz
+  ...
   -----END PGP SIGNATURE-----
   <BLANKLINE>
   <BLANKLINE>
@@ -404,12 +395,8 @@ Roll back everything so that we can try again
 
 First up, construct an upload of just the ed source...
 
-  >>> class MockMunchyLogger:
-  ...     def debug(self, s):
-  ...         pass
-
-  >>> ed_src = NascentUpload(findPolicyByName('sync'), 
-  ...          datadir('split-upload-test'), "ed_0.2-20_source.changes", 
+  >>> ed_src = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('split-upload-test'), "ed_0.2-20_source.changes",
   ...          MockMunchyLogger())
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.process()
@@ -511,8 +498,8 @@ to upload to -UPDATES in a DEVELOPMENT release.
 
   >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
 
-  >>> ed_src = NascentUpload(findPolicyByName('sync'), 
-  ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes", 
+  >>> ed_src = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes",
   ...          MockMunchyLogger())
   >>> ed_src.policy.setOptions(MockOptions())
   >>> ed_src.policy.distrorelease = None # Override this by the changes
@@ -598,38 +585,45 @@ Chuck it all away again
 DSC signature. It only allows 'source' upload where both, changesfile
 and DSC, should be signed.
 
-  >>> from zope.interface.verify import verifyObject
-  >>> from canonical.launchpad.interfaces import (
-  ...     IGPGKey, IPersonSet)
+Import the test keys again since the transaction was aborted before.
 
-Ensure that the key is attached to the database to be used in tests:
-
-  >>> key_owner = getUtility(IPersonSet).getByName('kinnison')
-  >>> uploader_key = getUtility(IGPGKeySet).new(key_owner, '20687895',
-  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
 
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
-  >>> ed_ok = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
-  >>> ed_ok.policy.setOptions(MockOptions())
+  >>> bar_ok = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
+  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
+  >>> bar_ok.policy.setOptions(MockOptions())
 
-XXX cprov 20061206: ok, by lack of better sample-packages we will
-override the policy attributes to allow binary (and mixed) uploads.
-
-  >>> ed_ok.policy.can_upload_binaries = True
-  >>> ed_ok.policy.can_upload_mixed = True
-
-  >>> ed_ok.process()
-  >>> ed_ok.rejected
+  >>> bar_ok.process()
+  >>> bar_ok.rejected
   False
 
-  >>> verifyObject(IGPGKey, ed_ok.dsc_signing_key)
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import (
+  ...    IGPGKey, IPersonSet)
+
+  >>> verifyObject(IGPGKey, bar_ok.dsc_signing_key)
   True
 
-  >>> ed_ok.dsc_signing_key.fingerprint == uploader_key.fingerprint
+  >>> verifyObject(IGPGKey, bar_ok.signing_key)
+  True
+
+The second key of name16 person is used to sign uploads (the first gpgkey
+record is a placeholder one, we used the second key):
+
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> uploader_key = name16.gpgkeys[1]
+
+Both, DSC and changesfile were signed:
+
+  >>> bar_ok.dsc_signing_key.fingerprint == uploader_key.fingerprint
+  True
+
+  >>> bar_ok.signing_key.fingerprint == uploader_key.fingerprint
   True
 
 Let's modify the current ACL rules for ubuntu, moving the upload
@@ -640,31 +634,29 @@ rights to all commponents from 'ubuntu-team' to 'sabdfl':
   ...     distro_component.uploader = new_uploader
 
 This time the upload should fail because the ACLs don't let
-"kinnison", the key owner,  upload a package.
+"name16", the key owner, upload a package.
 
-  >>> ed_failed = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
-  >>> ed_failed.policy.setOptions(MockOptions())
+  >>> bar_failed = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
+  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
+  >>> bar_failed.policy.setOptions(MockOptions())
 
-XXX cprov 20061206: ok, by lack of better sample-packages we will
-override the policy attributes to allow binary (and mixed) upload.
-
-  >>> ed_failed.policy.can_upload_binaries = True
-  >>> ed_failed.policy.can_upload_mixed = True
-
-  >>> ed_failed.process()
-  >>> ed_failed.rejected
+  >>> bar_failed.process()
+  >>> bar_failed.rejected
   True
-  >>> ed_failed.rejection_message
+  >>> bar_failed.rejection_message
   'Signer has no upload rights at all to this distribution.'
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
-is stored in NascentUpload instance for further checks:
+and the changesfile sigining key are stored in NascentUpload instance
+for further checks:
 
-  >>> verifyObject(IGPGKey, ed_failed.dsc_signing_key)
+  >>> verifyObject(IGPGKey, bar_failed.dsc_signing_key)
+  True
+  >>> verifyObject(IGPGKey, bar_failed.signing_key)
   True
 
-  >>> ed_failed.dsc_signing_key.fingerprint == uploader_key.fingerprint
+  >>> bar_failed.dsc_signing_key.fingerprint == uploader_key.fingerprint
   True
-
+  >>> bar_failed.signing_key.fingerprint == uploader_key.fingerprint
+  True

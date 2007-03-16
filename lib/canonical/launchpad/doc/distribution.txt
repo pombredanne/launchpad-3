@@ -16,7 +16,9 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IDistributionSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
     ...     MirrorPulseType)
@@ -31,6 +33,14 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Or, to grab one by name, use:
 
     >>> gentoo = distroset.getByName("gentoo")
+
+Let's make sure a distribution object properly implements its interfaces.
+
+    >>> IDistribution.providedBy(gentoo)
+    True
+    >>> verifyObject(IDistribution, gentoo)
+    True
+
 
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
@@ -261,9 +271,10 @@ people.
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
 
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').url
+    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').getURL()
     'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', source=False).url
+    >>> ubuntu.getFileByName(
+    ...     'mozilla-firefox_0.9_i386.deb', source=False).getURL()
     'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
     >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
     Traceback (most recent call last):

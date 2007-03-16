@@ -16,9 +16,7 @@
             <span tal:replace="context/processorfamily/title" /><br />
 
             <b>Port registrant:</b><br />
-            <img alt="" src="/@@/user" />
-            <a tal:attributes="href context/owner/fmt:url"
-               tal:content="context/owner/browsername">owner name</a><br /> 
+            <a tal:replace="structure context/owner/fmt:link" /><br /> 
 
             <b><span tal:content="context/package_count">4234</span> binary
             packages</b><br />

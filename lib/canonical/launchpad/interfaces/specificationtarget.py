@@ -32,6 +32,12 @@ class IHasSpecifications(Interface):
     valid_specifications = Attribute(
         'A list of all specifications that are not obsolete.')
 
+    latest_specifications = Attribute(
+        "The latest 5 specifications registered for this context.")
+
+    latest_completed_specifications = Attribute(
+        "The 5 specifications most recently completed for this context.")
+
     def specifications(quantity=None, sort=None, filter=None):
         """Specifications for this target.
 

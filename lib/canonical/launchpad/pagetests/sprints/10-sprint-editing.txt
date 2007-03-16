@@ -5,7 +5,7 @@ available to those who have permissions to edit that sprint.
   >>> anon_browser.title
   'Ubuntu Below Zero (sprint or meeting)'
 
-  >>> anon_browser.getLink('Edit Details')
+  >>> anon_browser.getLink('Change details')
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -21,7 +21,7 @@ We will log in as Sample Person and edit the ubz sprint.
   >>> address = 'Holiday Inn Select, Downtown Montreal, Canada'
   >>> address in browser.contents
   False
-  >>> browser.getLink('Edit Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+edit'
 
@@ -32,7 +32,7 @@ should receive a nice error message.
   ...     'Starting Date and Time').value = '2006-01-10 23:30'
   >>> browser.getControl(
   ...     'Finishing Date and Time').value = '2005-02-12 00:11'
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl('Change', index=2).click()
 
   >>> "This event can't start after it ends" in browser.contents
   True
@@ -46,7 +46,7 @@ sprint home page.
   >>> browser.getControl(
   ...     'Finishing Date and Time').value = '2006-02-12 17:00'
   >>> browser.getControl('Meeting Address').value = address
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl('Change', index=2).click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/ubz'
@@ -68,7 +68,7 @@ dates will be changed too, since they follow local time:
 
   >>> browser.open('http://launchpad.dev/sprints/ubz/+edit')
   >>> browser.getControl('Timezone').value = ['Australia/Darwin']
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl('Change', index=2).click()
   >>> print browser.url
   http://launchpad.dev/sprints/ubz
 

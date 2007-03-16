@@ -173,7 +173,7 @@ The status of a nomination is changed by calling either the approve() or
 decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user

@@ -6,11 +6,11 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestbugs" />
+  <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-details|nothing" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -27,28 +27,29 @@
       <table class="form" metal:fill-slot="widgets">
 
         <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+            use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
 
-        <tr tal:define="product_or_distro view/getProductOrDistroFromContext">
+        <tr tal:define="main_context view/getMainContext">
           <td colspan="2" width="100%"
               tal:define="widget nocall: view/widgets/security_related">
             <input type="checkbox" tal:replace="structure widget" />
             <label tal:attributes="for widget/name">
               This bug is a security vulnerability
             </label>
-            <div tal:define="security_contact product_or_distro/security_contact">
+            <div tal:condition="view/can_decide_security_contact"
+                 tal:define="security_contact main_context/security_contact|nothing">
               <i tal:condition="security_contact">
                 The security contact for
-                <span tal:content="product_or_distro/displayname" />,
+                <span tal:content="main_context/displayname" />,
                 <a href="#"
                     tal:content="security_contact/displayname"
                     tal:attributes="href security_contact/fmt:url" />,
                 will be notified.
               </i>
               <i tal:condition="not:security_contact"
-                 tal:define="maintainer product_or_distro/owner">
+                 tal:define="maintainer main_context/owner">
                 The maintainer of
-                <span tal:content="product_or_distro/displayname">Mozilla Firefox</span>,
+                <span tal:content="main_context/displayname">Mozilla Firefox</span>,
                 <a href="" tal:attributes="href maintainer/fmt:url"
                            tal:content="maintainer/displayname">Sample Person</a>,
                 will be notified.
@@ -68,17 +69,8 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone"
-                       tal:define="product_or_distro view/getProductOrDistroFromContext">
-    <p class="error message">
-      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
-
-    <p>
-      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
+  <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
 </div>
 

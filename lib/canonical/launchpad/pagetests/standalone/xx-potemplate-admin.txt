@@ -38,7 +38,7 @@ a Rosetta Expert to administrate it.
   >>> browser.getControl(name='field.iscurrent').value
   True
   >>> browser.getControl(name='field.owner').value
-  'rosetta@launchpad.net'
+  'rosetta-admins'
   >>> browser.getControl(name='field.productseries').value
   'evolution/trunk'
   >>> browser.getControl(name='field.distrorelease').value
@@ -82,7 +82,7 @@ an admin to administrate it.
   >>> admin_browser.getControl(name='field.iscurrent').value
   True
   >>> admin_browser.getControl(name='field.owner').value
-  'rosetta@launchpad.net'
+  'rosetta-admins'
   >>> admin_browser.getControl(name='field.productseries').value
   'evolution/trunk'
   >>> admin_browser.getControl(name='field.distrorelease').value

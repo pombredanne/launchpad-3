@@ -11,26 +11,22 @@ __all__ = [
     'BugNominationTableRowView']
 
 import datetime
-from operator import attrgetter
 
 import pytz
 
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.lp import dbschema
-from canonical.launchpad import helpers, _
+from canonical.launchpad import _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBug, IDistribution, IBugNomination, IBugNominationForm,
+    ILaunchBag, IBug, IBugNomination, IBugNominationForm,
     INullBugTask)
+
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 class BugNominationView(LaunchpadFormView):
@@ -64,12 +60,12 @@ class BugNominationView(LaunchpadFormView):
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
         current_bugtask = getUtility(ILaunchBag).bugtask
-        return helpers.check_permission(
+        return check_permission(
             "launchpad.Driver", current_bugtask.target)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""
-        return helpers.check_permission(
+        return check_permission(
             "launchpad.Edit", self.getReleaseContext())
 
     def getReleaseManager(self):
@@ -166,7 +162,7 @@ class BugNominationTableRowView(LaunchpadView):
 
     def userCanMakeDecisionForNomination(self):
         """Can the user approve/decline this nomination?"""
-        return helpers.check_permission("launchpad.Driver", self.context)
+        return check_permission("launchpad.Driver", self.context)
 
 
 class BugNominationEditView(LaunchpadView):
