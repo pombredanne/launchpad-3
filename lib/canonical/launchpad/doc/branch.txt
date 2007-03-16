@@ -62,10 +62,15 @@ u'launchpad'
 
 If it doesn't exist an exception NotFoundError is raised
 
+>>> import sys
 >>> try:
 ...     branchset[-1]
+...     print 'ERROR: No exception raised'
 ... except NotFoundError:
-...     pass
+...     print 'NotFoundError raised'
+... except:
+...     print 'A different exception was raised: %r' % sys.exc_info()
+NotFoundError raised
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
