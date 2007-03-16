@@ -322,6 +322,7 @@ class NascentUpload:
         self.warnings = ""
         self.librarian = getUtility(ILibraryFileAliasSet)
         self.signer = None
+        self.signing_key = None
         self.permitted_components = self.policy.getDefaultPermittedComponents()
         self._arch_verified = False
         self._native_checked = False
@@ -614,7 +615,7 @@ class NascentUpload:
         """Find the signer and signing key for the .changes file.
 
         While this returns nothing itself, it has the side effect of setting
-        self.signer and self.signingkey (and if availabile,
+        self.signer and self.signing_key (and if availabile,
         self.signer_address also)
 
         If on exit from this, self.signer is None, you cannot trust the rest
@@ -625,10 +626,10 @@ class NascentUpload:
         if self.policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned, storing None")
             self.signer = None
-            self.signingkey = None
+            self.signing_key = None
         else:
             self.logger.debug("Checking signature on changes file.")
-            self.signer, self.signingkey, unwanted_sig = self.verify_sig(
+            self.signer, self.signing_key, unwanted_sig = self.verify_sig(
                 self.changes_basename)
             self.signer_address = self.parse_address("%s <%s>" % (
                 self.signer.displayname, self.signer.preferredemail.email))
@@ -1745,7 +1746,7 @@ class NascentUpload:
         # Verify the changes information.
         self._find_signer()
         if self.signer is not None:
-            self.policy.considerSigner(self.signer, self.signingkey)
+            self.policy.considerSigner(self.signer, self.signing_key)
 
         self.verify_changes()
         self.verify_uploaded_files()
@@ -2060,42 +2061,44 @@ class NascentUpload:
 
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
-        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes_basename, self.changes["filecontents"])
+        self.queue_root = self.distrorelease.createQueueEntry(
+            pocket=self.policy.pocket,
+            changesfilename=self.changes_basename,
+            changesfilecontent=self.changes["filecontents"],
+            signing_key=self.signing_key)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
+            self.queue_root.addSource(self.policy.sourcepackagerelease)
+
         # If we're binaryful, add the build
         if self.binaryful and not self.single_custom:
             # We cannot rely on the distrorelease coming in for a binary
             # release because it is always set to 'autobuild' by the builder.
             # We instead have to take it from the policy which gets instructed
             # by the buildd master during the upload.
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
+            self.queue_root.pocket = self.policy.build.pocket
+            self.queue_root.addBuild(self.policy.build)
+
         # Finally, add any custom files.
         for uploaded_file in self.files:
             if uploaded_file.custom:
-                queue_root.addCustom(
-                    self.librarian.create(
+                custom_file = self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,
                     open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
-
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
+                    uploaded_file.content_type)
+                self.queue_root.addCustom(
+                    custom_file, uploaded_file.custom_type)
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
         if not self.is_new():
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
+                self.queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
+                self.queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):
