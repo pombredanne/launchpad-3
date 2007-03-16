@@ -216,7 +216,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         return Link('+addticket', text, icon='add')
 
 
@@ -439,7 +439,7 @@ class ProjectAddQuestionView(QuestionAddView):
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Ask a question about a project from ${project}',
+        return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property

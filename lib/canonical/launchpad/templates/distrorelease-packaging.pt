@@ -12,7 +12,7 @@
      tal:define="packagings view/cached_packagings;
                  unlinked_translatables view/unlinked_translatables">
 
-  <p>Links from distribution packages to upstream product series let
+  <p>Links from distribution packages to upstream project series let
     distribution and upstream maintainers share bugs, patches, and translations
     efficiently.</p>
 
@@ -42,7 +42,7 @@
       <thead>
         <tr>
           <th>Source Package</th>
-          <th>Upstream Product Series</th>
+          <th>Upstream Project Series</th>
         </tr>
       </thead>
 

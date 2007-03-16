@@ -26,7 +26,13 @@
 
       <div>
         <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
+        first reported by
+        <a tal:attributes="href context/bug/owner/fmt:url"
+           tal:content="context/bug/owner/browsername">Foo Bar</a>
+        <span
+          tal:attributes="title context/bug/datecreated/fmt:datetime"
+          tal:content="context/bug/datecreated/fmt:displaydate" />
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
@@ -66,7 +72,7 @@
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
        tal:content="context/targetname">upstream firefox</a>
-    <tal:product condition="context/product">product.</tal:product>
+    <tal:product condition="context/product">project.</tal:product>
     <tal:package condition="context/sourcepackagename">package.</tal:package>
     <tal:distribution
       condition="python: (not context.product) and (not context.sourcepackagename)"

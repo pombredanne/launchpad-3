@@ -10,16 +10,11 @@
     <span tal:replace="context/name">name</span><br />
 
     <b>Registrant:</b><br />
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-       tal:content="context/owner/browsername">owner name</a><br />
+    <a tal:replace="structure context/owner/fmt:link">owner name</a><br />
 
     <b>Drivers:</b><br />
     <tal:per_driver repeat="driver context/drivers">
-      <img alt="" src="/@@/user" />
-      <a tal:content="driver/browsername"
-         tal:attributes="href driver/fmt:url">Carlos Perello</a>
-      <br />
+      <a tal:replace="structure driver/fmt:link">driver</a><br />
     </tal:per_driver>
 
   </div>

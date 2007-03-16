@@ -18,10 +18,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">

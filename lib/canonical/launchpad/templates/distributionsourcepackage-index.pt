@@ -4,9 +4,6 @@
       i18n:domain="launchpad">
 
 <body>
-  <metal:heading fill-slot="pageheading">
-    <h3><tal:packagename replace="context/title" /></h3>
-  </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />

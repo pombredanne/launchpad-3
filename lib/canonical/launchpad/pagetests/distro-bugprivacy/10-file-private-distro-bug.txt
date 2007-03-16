@@ -22,7 +22,7 @@ will be subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/ubuntu/+source/evolution/+bug/11
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/13
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -35,7 +35,7 @@ Foo Bar sees the private bug he filed.
     <!DOCTYPE...
     ...
     ...Ubuntu Linux...
-    ...<a...>...11...</a>...
+    ...<a...>...13...</a>...
 
 Foo Bar and the Ubuntu Team are subscribed to the bug.
 
@@ -45,7 +45,7 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(11)
+    >>> bug = getUtility(IBugSet).get(13)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'ubuntu-team']
@@ -75,13 +75,13 @@ subscriptions differ.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/ubuntu/+source/evolution/+bug/12
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/14
 
 Now only the reporter and /security contact/ are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(12)
+    >>> bug = getUtility(IBugSet).get(14)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']

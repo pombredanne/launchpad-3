@@ -125,7 +125,13 @@
                   tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
-              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td>
+                <span
+                  tal:attributes="
+                    title shipitrequest/daterequested/fmt:datetime"
+                  tal:content="
+                    shipitrequest/daterequested/fmt:approximatedate" />
+              </td>
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" tal:content="total_requested" />
               <td style="text-align: right" tal:content="total_approved" />

@@ -54,24 +54,14 @@
                                   />
                                 </td>
                               </tr>
-                              <tr>
+                              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
                                 <td tal:attributes="class view/scope_css_class"
                                     style="text-align: right;">
 
                                   <tal:scope
                                     replace="structure view/widgets/scope/renderScopeOptions" />
 
-                                  <input
-                                    id="project"
-                                    name="project"
-                                    tal:define="widget_name view/widgets/scope/target_widget/name"
-                                    tal:attributes="
-                                      value view/request/form/?widget_name|nothing;
-                                      id widget_name;
-                                      name widget_name;
-                                      onkeypress view/widgets/scope/target_widget/onKeyPress"
-                                      type="text"
-                                     />
+                                    <tal:input replace="structure target_widget/inputField" />
 
                                   <tal:sort
                                     replace="structure view/widgets/sort/hidden" />
@@ -83,7 +73,7 @@
                                     Error message
                                   </div>
                                 </td>
-                                <td>(<a tal:attributes="href view/widgets/scope/target_widget/popupHref">Choose&hellip;</a>)</td>
+                                <td tal:content="structure target_widget/chooseLink" />
                               </tr>
                             </tbody>
                           </table>

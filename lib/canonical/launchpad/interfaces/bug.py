@@ -151,11 +151,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
-    pillar_bugtasks = Attribute(
-        'The bugtasks which relate only to "pillars", products or '
-        'distributions, the major structural objects in Launchpad. '
-        'This leaves out the tasks relating to more detailed release '
-        'related things like distroreleases and product series.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -301,6 +298,11 @@ class IBug(IMessageTarget):
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
+
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
 
     def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.

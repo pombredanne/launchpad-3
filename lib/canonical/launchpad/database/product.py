@@ -14,7 +14,6 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -222,16 +221,41 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def sourcepackages(self):
-        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
                     ProductSeries.product = %s
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables)
-        return [SourcePackage(sourcepackagename=r.sourcepackagename,
-                              distrorelease=r.distrorelease)
-                for r in ret]
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
+                             distrorelease=r.distrorelease) for r in ret]
+        return sorted(sps, key=lambda x:
+            (x.sourcepackagename.name, x.distrorelease.name,
+             x.distrorelease.distribution.name))
+
+    @property
+    def distrosourcepackages(self):
+        from canonical.launchpad.database.distributionsourcepackage \
+            import DistributionSourcePackage
+        clause = """ProductSeries.id=Packaging.productseries AND
+                    ProductSeries.product = %s
+                    """ % sqlvalues(self.id)
+        clauseTables = ['ProductSeries']
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        distros = set()
+        dsps = []
+        for packaging in ret:
+            distro = packaging.distrorelease.distribution
+            if distro in distros:
+                continue
+            distros.add(distro)
+            dsps.append(DistributionSourcePackage(
+                sourcepackagename=packaging.sourcepackagename,
+                distribution=distro))
+        return sorted(dsps, key=lambda x:
+            (x.sourcepackagename.name, x.distribution.name))
 
     @property
     def bugtargetname(self):

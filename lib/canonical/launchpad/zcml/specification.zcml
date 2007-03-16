@@ -308,16 +308,6 @@
       height="5" />
   </browser:editform>
 
-  <browser:editform
-    name="+admin"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Administer specification"
-    fields="name goalstatus"
-    permission="launchpad.Admin"
-    template="../templates/specification-edit.pt"
-  />
-
   <browser:addform
     name="+requestfeedback"
     for="canonical.launchpad.interfaces.ISpecification"
@@ -463,7 +453,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public"
     template="../templates/specifications-index.pt"
-    class="canonical.launchpad.browser.HasSpecificationsView"
+    class="canonical.launchpad.browser.SpecificationSetView"
     />
 
   <!-- SpecificationDelta -->

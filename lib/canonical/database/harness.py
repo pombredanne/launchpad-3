@@ -52,7 +52,7 @@ dr = DistroRelease.get(1)
 prod = Product.get(1)
 proj = Project.get(1)
 b2 = Bug.get(2)
-b = Bug.get(1)
+b1 = Bug.get(1)
 s = Specification.get(1)
 q = Question.get(1)
 

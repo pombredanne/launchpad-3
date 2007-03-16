@@ -406,7 +406,7 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
-        text = 'Package Reports'
+        text = 'Package reports'
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
@@ -510,12 +510,12 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
-        text = 'Home Page'
+        text = 'Change home page'
         return Link(target, text, icon='edit')
 
     def common_packages(self):
         target = '+packages'
-        text = 'Packages'
+        text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
@@ -563,13 +563,13 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Update jabber IDs'
+        text = 'Update Jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editpassword(self):
         target = '+changepassword'
-        text = 'Change Password'
+        text = 'Change your password'
         return Link(target, text, icon='edit')
 
     def karma(self):
@@ -589,7 +589,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Update SSH Keys'
+        text = 'Update SSH keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)

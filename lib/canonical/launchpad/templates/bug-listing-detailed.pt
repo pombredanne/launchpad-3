@@ -4,23 +4,22 @@
   </td>
   <td>
     <div>
+      #<span tal:replace="context/id">4</span>
       <a tal:attributes="href context/fmt:url">
-        <span tal:replace="context/id">4</span>.
-        <strong tal:content="context/title">Bug Title Here</strong>
+        <span tal:replace="context/title">Bug Title Here</span>
       </a>
     </div>
     <div class="lesser">
       in 
-        <tal:per_task repeat="task context/pillar_bugtasks">
-          <b tal:condition="task/distribution"
-             tal:content="task/distribution/displayname"
-        /><b tal:condition="task/product"
-             tal:content="task/product/displayname" />,
-        </tal:per_task>
+        <tal:per_pillar repeat="pillar context/affected_pillars">
+          <b tal:content="pillar/displayname" />,
+        </tal:per_pillar>
       reported by <a
       tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername">Foo Bar</a> on
-      <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
+      tal:content="context/owner/browsername">Foo Bar</a>
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
     </div>
   </td>
 </tr>

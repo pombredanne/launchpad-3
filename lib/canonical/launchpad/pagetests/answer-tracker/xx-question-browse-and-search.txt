@@ -665,7 +665,7 @@ to mimick the user clicking on it.)
     # >>> anon_browser.open(search_url)
     >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
     >>> print anon_browser.title
-    Select a distribution, product or project
+    Select a project
 
 The user can enter a search term and can select one of the matching
 item.

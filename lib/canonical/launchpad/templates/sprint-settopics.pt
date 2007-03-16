@@ -15,7 +15,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Set topics for discussion</h1>
 </metal:heading>
 
@@ -71,7 +70,7 @@
               <span tal:attributes="
                     class string:specdelivery${spec/delivery/name}"
                     tal:content="spec/delivery/title">New</span>,
-              <img src="/@@/spec" />&nbsp;<a
+              <img src="/@@/blueprint" />&nbsp;<a
                    tal:attributes="href spec/fmt:url"
                    >Details</a >
               <img src="/@@/link" />&nbsp;<a
@@ -81,16 +80,15 @@
               <br />
               <tal:registrant condition="speclink/registrant">
                 Proposed for <span tal:replace="context/title">UBZ</span> by
-                <img src="/@@/person" />
-                <a tal:attributes="href speclink/registrant/fmt:url"
-                   tal:content="speclink/registrant/browsername">Foo Bar</a>
+                <a tal:replace="structure speclink/registrant/fmt:link" />
                 <span tal:condition="python: speclink.registrant.id not in view.attendee_ids">
                   (non-attendee)
                 </span>
-
-                on
                 <span
-                  tal:replace="speclink/date_created/fmt:date">2006-01-12</span>
+                  tal:attributes="title speclink/date_created/fmt:datetime"
+                  tal:content="speclink/date_created/fmt:displaydate">
+                  2006-01-12
+                </span>
               </tal:registrant>
             </div>
           </td>

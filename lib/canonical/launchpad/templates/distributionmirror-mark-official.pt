@@ -14,13 +14,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3>
-    <tal:distro replace="context/distribution/title">Ubuntu Linux</tal:distro>
-    mirror "<tal:mirror replace="context/name">foobar</tal:mirror>"
-  </h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_editform/editform">

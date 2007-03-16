@@ -1042,7 +1042,7 @@ class DistributionUsingMaloneVocabulary:
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroRelease
-    _orderBy = [Distribution.q.name, DistroRelease.q.name]
+    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
@@ -1056,7 +1056,8 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
-        return SimpleTerm(obj, token, obj.title)
+        title = "%s: %s" % (obj.distribution.displayname, obj.title)
+        return SimpleTerm(obj, token, title)
 
     def getTermByToken(self, token):
         try:
@@ -1244,7 +1245,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 
 
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
-    displayname = 'Select a distribution, product or project'
+    displayname = 'Select a project'
     _filter = PillarName.q.active == True
 
     def __contains__(self, obj):

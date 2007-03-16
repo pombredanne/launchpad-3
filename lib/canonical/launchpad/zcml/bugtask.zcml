@@ -33,8 +33,8 @@
             attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks related_pillar_bugtasks
-                        asEmailHeaderValue
+                        title related_tasks other_affected_pillars
+                        asEmailHeaderValue getDelta
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave" />
         <require
@@ -74,7 +74,7 @@
     <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.components.bugtask.BugTaskToBugAdapter" />
+        factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
@@ -175,7 +175,7 @@
         template="../templates/bug-mark-as-duplicate.pt" />
 
     <!-- NullBugTask -->
-    <content class="canonical.launchpad.components.bugtask.NullBugTask">
+    <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IBugTask" />
@@ -511,7 +511,7 @@
       />
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
+    <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
 

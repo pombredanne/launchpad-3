@@ -318,8 +318,10 @@
   <tal:invalid-person condition="not: context/is_valid_person_or_team">
     <p><span tal:replace="context/browsername" /> does not use Launchpad.
       <tal:block condition="context/creation_comment">
-        This page was created on
-        <span tal:replace="context/datecreated/fmt:date" />
+        This page was created
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate" />
         <tal:user-created
           condition="context/creation_rationale/enumvalue:USER_CREATED">
           by <a tal:attributes="href context/registrant/fmt:url">
@@ -334,8 +336,10 @@
         </tal:not-user-created>
       </tal:block>
       <tal:block condition="not: context/creation_comment">
-        (This page was created on
-        <span tal:replace="context/datecreated/fmt:date" />.)
+        This page was created
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate" />.
       </tal:block>
     </p>
 
