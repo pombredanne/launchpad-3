@@ -5,11 +5,15 @@
 __metaclass__ = type
 
 from difflib import unified_diff
+
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
+from email.Utils import formatdate
+import rfc822
 import re
 import textwrap
+import datetime
 
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
@@ -18,8 +22,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, IDistroBugTask, IDistroReleaseBugTask, ILanguageSet,
-    IProductSeriesBugTask, ISpecification, ITeamMembershipSet,
+    IBugTask, ILanguageSet, ISpecification, ITeamMembershipSet,
     IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -29,7 +32,6 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction
 
-GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
 
 
@@ -101,6 +103,34 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def construct_bug_notification(bug, from_address, address, body, subject,
+        email_date, rationale_header=None, references=None, msgid=None):
+    """Constructs a MIMEText message based on a bug and a set of headers."""
+    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg['From'] = from_address
+    msg['To'] = address
+    msg['Reply-To'] = get_bugmail_replyto_address(bug)
+    if references is not None:
+        msg['References'] = ' '.join(references)
+    msg['Sender'] = config.bounce_address
+    msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    if msgid is not None:
+        msg['Message-Id'] = msgid
+    subject_prefix = "[Bug %d]" % bug.id
+    if subject_prefix in subject:
+        msg['Subject'] = subject
+    else:
+        msg['Subject'] = "%s %s" % (subject_prefix, subject)
+
+    # Add X-Launchpad-Bug headers.
+    for bugtask in bug.bugtasks:
+        msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+
+    if rationale_header is not None:
+        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
+    return msg
+
+
 def _send_bug_details_to_new_bugcontacts(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
@@ -111,17 +141,31 @@ def _send_bug_details_to_new_bugcontacts(
     """
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
-
     new_subs = cur_subs_set.difference(prev_subs_set)
 
-    # Send a notification to the new bug contacts that weren't subscribed to the
-    # bug before, which looks identical to a new bug report. XXX: fix this
-    subject, contents = generate_bug_add_email(bug)
-    new_bugcontact_addresses = sorted([contactEmailAddresses(p) for p in new_subs])
-    if new_bugcontact_addresses:
-        send_bug_notification(
-            bug=bug, user=bug.owner, subject=subject, contents=contents,
-            to_addrs=new_bugcontact_addresses)
+    to_addrs = set()
+    for new_sub in new_subs:
+        to_addrs.update(contactEmailAddresses(new_sub))
+
+    if not to_addrs:
+        return
+
+    # XXX: stop the hardcoding XXX
+    if bug.owner.preferredemail is None:
+        # This happens for imported bugs, and much as I hate it we need
+        # to work around this problem.
+        from_addr = "noreply@launchpad.net"
+    else:
+        from_addr = bug.owner.preferredemail.email
+
+    email_date = datetime.datetime.now()
+    # XXX: stop the hardcoding XXX
+
+    subject, contents = generate_bug_add_email(bug, new_recipients=True)
+    for to_addr in sorted(to_addrs):
+        msg = construct_bug_notification(bug, from_addr, to_addr,
+                                         contents, subject, email_date)
+        sendmail(msg)
 
 
 def update_security_contact_subscriptions(modified_bugtask, event):
@@ -213,11 +257,12 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug):
+def generate_bug_add_email(bug, new_recipients=False):
     """Generate a new bug notification from the given IBug.
 
-    IBug is assumed to be a bug that was just added. The return value
-    is (subject, body).
+    If new_recipients is supplied we generate a notification explaining
+    that the new recipients have been subscribed to the bug. Otherwise
+    it's just a notification of a new bug report.
     """
     subject = u"[Bug %d] %s" % (bug.id, bug.title)
 
@@ -228,25 +273,33 @@ def generate_bug_add_email(bug):
         # This is a public bug.
         visibility = u"Public"
 
-    bug_info = ''
+    bug_info = []
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info += u"** Affects: %s\n" % bugtask.targetname
-        bug_info += u"     Importance: %s\n" % bugtask.importance.title
+        bug_info.append(u"** Affects: %s" % bugtask.targetname)
+        bug_info.append(u"     Importance: %s" % bugtask.importance.title)
 
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
-            bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
-        bug_info += u"         Status: %s\n" % bugtask.status.title
+            bug_info.append(u"     Assignee: %s" % bugtask.assignee.displayname)
+        bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
-        bug_info += '\n** Tags: %s\n' % ' '.join(bug.tags)
+        bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
     mailwrapper = MailWrapper(width=72)
-    contents = get_email_template('bug-add-notification-contents.txt') % {
+    if new_recipients:
+        contents = ("You have been subscribed to a %(visibility)s bug:\n\n"
+                    "%(description)s\n\n%(bug_info)s")
+        # The visibility appears mid-phrase so.. hack hack.
+        visibility = visibility.lower()
+    else:
+        contents = ("%(visibility)s bug reported:\n\n"
+                    "%(description)s\n\n%(bug_info)s")
+    contents = contents % {
         'visibility' : visibility, 'bugurl' : canonical_url(bug),
-        'bug_info': bug_info,
+        'bug_info': "\n".join(bug_info),
         'description': mailwrapper.format(bug.description)}
 
     contents = contents.rstrip()
@@ -492,93 +545,6 @@ def _get_task_change_values(task_change, displayattrname):
         newval_display = getattr(newval, displayattrname)
 
     return (oldval_display, newval_display)
-
-
-def send_bug_notification(bug, user, subject, contents, to_addrs=None,
-                          headers=None):
-    """Sends a bug notification.
-
-    :bug: The bug the notification concerns.
-    :user: The user that did that action that caused a notification to
-           be sent.
-    :subject: The subject of the notification.
-    :contents: The content of the notification.
-    :to_addrs: The addresses the notification should be sent to. If none
-               are provided, the default bug cc list will be used.
-    :headers: Any additional headers that should get added to the
-              message.
-
-    If no References header is given, one will be constructed to ensure
-    that the notification gets grouped together with other notifications
-    concerning the same bug (if the email client supports threading).
-    """
-
-    assert user is not None, 'user is None'
-
-    if headers is None:
-        headers = {}
-    if to_addrs is None:
-        to_addrs = get_cc_list(bug)
-
-    if not to_addrs:
-        # No recipients for this email means there's no point generating an
-        # email.
-        return
-
-    if ('Message-Id' not in headers or
-            headers['Message-Id'] != bug.initial_message.rfc822msgid):
-        # It's not the initial, message. Let's add the inital message id
-        # to the References header, so that it will be threaded properly.
-        if not 'References' in headers:
-            headers['References'] = ''
-        references = headers['References'].split()
-        if bug.initial_message.rfc822msgid not in references:
-            references.insert(0, bug.initial_message.rfc822msgid)
-        headers['References'] = ' '.join(references)
-
-    # Use zope_isinstance, to ensure that this Just Works with
-    # security-proxied objects.
-    if not zope_isinstance(to_addrs, (list, tuple)):
-        to_addrs = [to_addrs]
-
-    if "Reply-To" not in headers:
-        headers["Reply-To"] = get_bugmail_replyto_address(bug)
-
-    # Add a header for each task on this bug, to help users organize
-    # their incoming mail in a way that's convenient for them.
-    x_launchpad_bug_values = []
-    for bugtask in bug.bugtasks:
-        x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
-
-    headers["X-Launchpad-Bug"] = x_launchpad_bug_values
-
-    for to_addr in to_addrs:
-
-        reason = ""
-
-        body = get_email_template('bug-notification.txt') % {
-            'content': contents,
-            'bug_title': bug.title,
-            'bug_url': canonical_url(bug),
-            'reason': reason}
-
-        simple_sendmail_from_person(
-            person=user, to_addrs=to_addr, subject=subject,
-            body=body, headers=headers)
-
-
-def get_cc_list(bug):
-    """Return the list of people that are CC'd on this bug.
-
-    This also includes global subscribers, like the IRC bot.
-    """
-    subscriptions = []
-    if not bug.private:
-        subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
-
-    subscriptions += bug.notificationRecipientAddresses()
-
-    return subscriptions
 
 
 def get_bug_delta(old_bug, new_bug, user):

@@ -16,8 +16,6 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
-from canonical.launchpad.mailnotification import (
-    GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 from canonical.launchpad.scripts.bugnotification import get_email_notifications
 
 
@@ -135,9 +133,7 @@ class TestGetEmailNotificattions(LaunchpadZopelessTestCase):
 
         sent_notifications = []
         for notifications, to_addresses, msg in email_notifications:
-            expected_to_addresses = set(
-                notifications[0].bug.notificationRecipientAddresses() + 
-                GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+            expected_to_addresses = notifications[0].bug.notificationRecipientAddresses()
             self.assertEqual(expected_to_addresses, set(to_addresses))
             sent_notifications += notifications
         return sent_notifications

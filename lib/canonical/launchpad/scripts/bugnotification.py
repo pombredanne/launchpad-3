@@ -4,10 +4,6 @@
 
 __metaclass__ = type
 
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
-import rfc822
-
 from zope.component import getUtility
 
 from canonical.config import config
@@ -17,7 +13,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
-    get_bugmail_replyto_address, generate_bug_add_email, MailWrapper)
+    generate_bug_add_email, MailWrapper, construct_bug_notification)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
@@ -162,8 +158,7 @@ class BugNotificationRationale:
             text = "are the registrant for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
-
-def construct_email_notification(bug_notifications):
+def construct_email_notifications(bug_notifications):
     """Construct an email from a list of related bug notifications.
 
     The person and bug has to be the same for all notifications, and
@@ -279,25 +274,8 @@ def construct_email_notification(bug_notifications):
             'bug_title': bug.title,
             'bug_url': canonical_url(bug),
             'notification_rationale': mail_wrapper.format(reason)}
-        msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        msg['From'] = from_address
-        msg['To'] = address
-        msg['Reply-To'] = get_bugmail_replyto_address(bug)
-        msg['References'] = ' '.join(references)
-        msg['Sender'] = config.bounce_address
-        msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
-        msg['Message-Id'] = msgid
-        subject_prefix = "[Bug %d]" % bug.id
-        if subject_prefix in subject:
-            msg['Subject'] = subject
-        else:
-            msg['Subject'] = "%s %s" % (subject_prefix, subject)
-
-        # Add X-Launchpad-Bug headers.
-        for bugtask in bug.bugtasks:
-            msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
-
-        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
+        msg = construct_bug_notification(bug, from_address, address, body,
+                subject, email_date, rationale_header, references, msgid)
         messages.append(msg)
 
     return bug_notifications, messages
@@ -336,7 +314,7 @@ def get_email_notifications(bug_notifications, date_emailed=None):
                 notification.date_emailed = date_emailed
             if notification.is_comment and has_comment:
                 try:
-                    yield construct_email_notification(notifications_to_send)
+                    yield construct_email_notifications(notifications_to_send)
                 except:
                     # We don't want bugs preventing all bug
                     # notifications from being sent, so catch all
@@ -349,7 +327,7 @@ def get_email_notifications(bug_notifications, date_emailed=None):
             notifications_to_send.append(notification)
         if notifications_to_send:
             try:
-                yield construct_email_notification(notifications_to_send)
+                yield construct_email_notifications(notifications_to_send)
             except:
                 # We don't want bugs preventing all bug
                 # notifications from being sent, so catch all
