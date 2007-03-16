@@ -15,7 +15,7 @@
       width:35%;
       display:block;
       margin:1em;
-      float:left;
+      float:right;
       padding:1em;
       border: .1em solid #DBA73A;
       text-align:center;
@@ -90,7 +90,7 @@
 
       <p>There are several ways to get
       <span tal:replace="flavour_name">Ubuntu</span>. Please choose an
-      option that best  fits your needs.</p>
+      option that best fits your needs.</p>
 
       <ul id="downloadOptions">
         <li><a tal:attributes="href view/download_link"

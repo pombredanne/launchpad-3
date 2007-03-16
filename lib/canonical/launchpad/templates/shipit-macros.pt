@@ -185,16 +185,16 @@
                     xml:lang default_language|default;">
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css);</style>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
 
+    <tal:comment condition="nothing">
+      We want this here to make sure that whatever is in shipit.css overrides
+      things coming from ubuntu.com's css.
+    </tal:comment>
     <metal:extra-head define-slot="extra-head" />
-
     <metal:block define-slot="head_epilogue"></metal:block>
+
+    <style type="text/css" media="screen" >
+      @import url(/+icing/shipit.css);</style>
 </head>
 
   <body>
