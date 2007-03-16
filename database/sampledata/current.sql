@@ -3,6 +3,7 @@ SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET standard_conforming_strings = off;
 
 SET search_path = public, pg_catalog;
 
@@ -910,10 +911,12 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
 
+
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
+
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
@@ -1849,20 +1852,20 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2001-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (47, '2001-12-23 16:23:11.856461', 13, 14, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (48, '2007-03-15 20:33:56.67893', 16, 1, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (49, '2007-03-15 20:34:26.518114', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (50, '2007-03-15 20:35:10.133383', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (51, '2007-03-15 20:36:01.779544', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (52, '2007-03-15 20:36:57.133832', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (53, '2007-03-15 20:37:27.991571', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (54, '2007-03-15 20:37:51.544376', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (55, '2007-03-15 20:41:18.635493', 16, 1, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (56, '2007-03-15 20:41:42.154264', 16, 17, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (57, '2007-03-15 20:41:42.154264', 16, 18, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (58, '2007-03-15 20:43:14.981111', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2007-03-15 20:45:15.852052', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2007-03-15 20:45:51.817826', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2007-03-15 20:46:49.83307', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (48, '2000-03-13 20:33:56.67893', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (49, '2000-03-13 20:34:26.518114', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (50, '2000-03-13 20:35:10.133383', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (51, '2000-03-13 20:36:01.779544', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (52, '2000-03-13 20:36:57.133832', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (53, '2000-03-13 20:37:27.991571', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (54, '2000-03-13 20:37:51.544376', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (55, '2000-03-13 20:41:18.635493', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (56, '2000-03-13 20:41:42.154264', 16, 17, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (57, '2000-03-13 20:41:42.154264', 16, 18, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (58, '2000-03-13 20:43:14.981111', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;

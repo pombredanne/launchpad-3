@@ -149,10 +149,10 @@ config.karmacacheupdater.max_scaling.
 
     >>> for cache in salgado.karma_category_caches:
     ...     print "%s: %d" % (cache.category.title, cache.karmavalue)
-    Bug Management: 15
+    Bug Management: 30
     Specification Tracking: 40
 
     >>> salgado.karma
-    55
+    70
 
 
