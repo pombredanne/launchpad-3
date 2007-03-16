@@ -173,7 +173,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_answers = Bool(title=_('Officially uses Answers'),
+    official_answers = Bool(title=_('Uses Answers Officially'),
         required=True, description=_('Check this box to indicate that '
         'this distribution officially uses Answers for community support.'))
     official_malone = Bool(title=_('Uses Malone Officially'),
