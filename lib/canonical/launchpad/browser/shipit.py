@@ -10,6 +10,7 @@ __all__ = [
     'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
     'ShippingRequestSetNavigation', 'ShipitFrontPageView']
 
+from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
@@ -318,7 +319,7 @@ class ShipItRequestView(GeneralFormView):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
             self.flavour)
-        return sorted(requests, key=lambda request: request.totalCDs)
+        return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
     def current_order_standard_id(self):
@@ -502,7 +503,11 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
-        if shipped_orders.count() >= 2:
+        if current_order.getRequestsWithSameAddressFromOtherUsers().count() > 1:
+            # There are at least two other people who made requests using the
+            # same address.
+            current_order.markAsDuplicatedAddress()
+        elif shipped_orders.count() >= 2:
             # User has more than 2 shipped orders. Now we need to check if any
             # of the flavours contained in this order is also contained in two
             # or more of this user's previous orders and, if so, mark this

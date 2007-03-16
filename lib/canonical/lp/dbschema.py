@@ -3336,6 +3336,13 @@ class ShippingRequestStatus(DBSchema):
         This request needs special consideration.
         """)
 
+    DUPLICATEDADDRESS = Item(6, """
+        Pending Special Consideration (dupe address)
+
+        This request needs special consideration because other users already
+        requested CDs to the same address.
+        """)
+
 
 class ShippingService(DBSchema):
     """The Shipping company we use to ship CDs."""

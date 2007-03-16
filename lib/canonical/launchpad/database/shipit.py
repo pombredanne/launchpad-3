@@ -74,6 +74,9 @@ class ShippingRequest(SQLBase):
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
 
+    # This is maintained by a DB trigger, so it can be None here even though
+    # the DB won't allow that.
+    normalized_address = StringCol(default=None)
     city = StringCol(notNull=True)
     phone = StringCol(default=None)
     country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
@@ -252,6 +255,8 @@ class ShippingRequest(SQLBase):
                     % self.shipment.shippingrun.datecreated.date())
         elif self.isPendingSpecial():
             return ShippingRequestStatus.PENDINGSPECIAL.title.lower()
+        elif self.isDuplicatedAddress():
+            return ShippingRequestStatus.DUPLICATEDADDRESS.title.lower()
         elif self.isDenied():
             return ShippingRequestStatus.DENIED.title.lower()
         elif self.isCancelled():
@@ -283,6 +288,10 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
 
+    def isDuplicatedAddress(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.DUPLICATEDADDRESS
+
     def isPendingSpecial(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
@@ -291,6 +300,7 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.DENIED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
 
@@ -298,8 +308,13 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.APPROVED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
+
+    def markAsDuplicatedAddress(self):
+        """See IShippingRequest"""
+        self.status = ShippingRequestStatus.DUPLICATEDADDRESS
 
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
@@ -339,6 +354,20 @@ class ShippingRequest(SQLBase):
             self.clearApproval()
         self.status = ShippingRequestStatus.CANCELLED
         self.whocancelled = whocancelled
+
+    def getRequestsWithSameAddressFromOtherUsers(self):
+        """See IShippingRequest"""
+        subquery = """
+            SELECT id FROM ShippingRequest
+            WHERE normalized_address = %(address)s
+                AND country = %(country)s
+                AND recipient != %(recipient)s
+                AND status NOT IN (%(cancelled)s, %(denied)s)
+            """ % sqlvalues(
+                    address=self.normalized_address, recipient=self.recipient,
+                    denied=ShippingRequestStatus.DENIED, country=self.country,
+                    cancelled=ShippingRequestStatus.CANCELLED)
+        return ShippingRequest.select("id IN (%s)" % subquery)
 
 
 class ShippingRequestSet:
@@ -610,8 +639,7 @@ class ShippingRequestSet:
             'Shipped Kubuntu PPC CDs', 'Shipped Edubuntu x86 CDs',
             'Shipped Edubuntu AMD64 CDs', 'Shipped Edubuntu PPC CDs',
             'Normal-prio shipments', 'High-prio shipments',
-            'Average request size',
-            'Percentage of requested CDs that were approved',
+            'Average request size', 'Approved CDs (percentage)',
             'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
         requested_cd_count = self._getRequestedCDCount(
