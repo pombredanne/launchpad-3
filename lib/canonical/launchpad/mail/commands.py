@@ -389,7 +389,6 @@ class AffectsEmailCommand(EmailCommand):
         else:
             general_target = distribution
         general_task = self.getBugTask(bug, general_target)
-        # XXX: maybe move this code out to addNomination?
         if general_task is None:
             # A distrorelease task has to have a corresponding
             # distribution task.
@@ -413,7 +412,8 @@ class AffectsEmailCommand(EmailCommand):
             else:
                 return self.getBugTask(bug, distrorelease)
         else:
-            # XXX: what to do here?
+            # We can't return a nomination, so return the distribution
+            # bugtask instead.
             return general_task
 
     def _create_bug_task(self, bug, bug_target):
