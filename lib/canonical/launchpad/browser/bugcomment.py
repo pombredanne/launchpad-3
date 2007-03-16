@@ -77,6 +77,8 @@ class BugComment:
             self.was_truncated = False
 
     def isIdenticalTo(self, other):
+        if self.owner != other.owner:
+            return False
         if self.text_for_display != other.text_for_display:
             return False
         if self.title != other.title:

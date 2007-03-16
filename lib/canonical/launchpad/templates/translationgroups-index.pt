@@ -11,7 +11,7 @@
     <div metal:fill-slot="main">
       <p>
         A <dfn>translation group</dfn> is a set of teams
-        chosen by the owner of a distribution, project, or product
+        chosen by the owner of a distribution, project group, or project
         to do its translations.
         Each team in a group concentrates on a language or group of languages.
       </p>

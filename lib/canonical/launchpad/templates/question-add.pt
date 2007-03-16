@@ -34,7 +34,7 @@
           existing questions, enter the details of your problem
           to alert the
           <tal:displayName content="context/displayname"
-                            i18n:name="displayname">Product</tal:displayName>
+                            i18n:name="displayname">Project</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
       </tal:similar-questions>
@@ -45,7 +45,7 @@
         </p>
         <p i18n:translate="">Enter the details of your problem to alert the
           <tal:displayName content="context/displayname"
-                            i18n:name="displayname">Product</tal:displayName>
+                            i18n:name="displayname">Project</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
       </tal:no-similar-questions>
