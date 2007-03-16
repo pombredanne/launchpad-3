@@ -61,17 +61,14 @@ class TestBranchToMirror(unittest.TestCase):
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
 
-    def _getBranchUrl(self, branchname):
-        return 'file://' + self._getBranchDir(branchname)
-
     def testMirror(self):
         # Create a branch
-        srcbranchdir = self._getBranchUrl("branchtomirror-testmirror-src")
+        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, 1, None)
+            'file://' + srcbranchdir, destbranchdir, client, 1, None)
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
@@ -91,12 +88,12 @@ class TestBranchToMirror(unittest.TestCase):
         # from an unmirrored branch.
         
         # Create a branch
-        srcbranchdir = self._getBranchUrl("branchtomirror-testmirror-src")
+        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, 1, None)
+            'file://' + srcbranchdir, destbranchdir, client, 1, None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -189,9 +186,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
-        source_uri = 'file://' + os.path.abspath('src-branch')
+        source_url = 'file://' + os.path.abspath('src-branch')
         to_mirror = BranchToMirror(
-            source_uri, 'dest-branch', client, 1, None)
+            source_url, 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
