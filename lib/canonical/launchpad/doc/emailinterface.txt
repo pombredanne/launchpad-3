@@ -900,6 +900,17 @@ Now a new bugtask for the release will be create directly.
     Ubuntu
     Ubuntu Grumpy
 
+He can also approve existing nominations.
+
+    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+    Ubuntu Warty
+    Ubuntu Grumpy
+
 It works the same when specifying a source package while targeting a
 specific distrorelease.
 

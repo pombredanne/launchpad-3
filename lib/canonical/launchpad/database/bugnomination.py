@@ -103,6 +103,12 @@ class BugNomination(SQLBase):
         """See IBugNomination."""
         return self.status == dbschema.BugNominationStatus.APPROVED
 
+    def canApprove(self, person):
+        """See IBugNomination."""
+        for driver in self.target.drivers:
+            if person.inTeam(driver):
+                return True
+        return False
 
 class BugNominationSet:
     """See IBugNominationSet."""

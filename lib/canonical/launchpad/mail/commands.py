@@ -399,8 +399,13 @@ class AffectsEmailCommand(EmailCommand):
         if not bug.canBeNominatedFor(distrorelease):
             # A nomination has already been created.
             nomination = bug.getNominationFor(distrorelease)
+            # Automatically approve an existing nomination if a release
+            # manager targets it.
+            if not nomination.isApproved() and nomination.canApprove(user):
+                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=distrorelease, owner=user)
+
         if nomination.isApproved():
             if sourcepackagename:
                 return self.getBugTask(

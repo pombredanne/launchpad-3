@@ -517,10 +517,8 @@ class Bug(SQLBase):
         nomination = BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
             productseries=productseries)
-        for driver in target.drivers:
-            if owner.inTeam(driver):
-                nomination.approve(owner)
-                break
+        if nomination.canApprove(owner):
+            nomination.approve(owner)
         return nomination
 
     def canBeNominatedFor(self, nomination_target):
