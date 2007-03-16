@@ -6,7 +6,6 @@
 >
 <body>
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Change the <tal:role replace="view/ownerOrMaintainerAttr" /> of 
         <tal:thing replace="view/contextName" />
   </h1>

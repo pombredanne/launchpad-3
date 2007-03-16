@@ -38,7 +38,11 @@
             <td tal:content="record/pofile/language/englishname">Spanish</td>
             <td tal:content="record/latest_posubmission/pomsgset/potmsgset/primemsgid_/msgid" />
             <td tal:content="record/latest_posubmission/potranslation/translation" />
-            <td tal:content="record/date_last_touched/fmt:date" />
+            <td>
+            <span
+              tal:attributes="title record/date_last_touched/fmt:datetime"
+              tal:content="record/date_last_touched/fmt:approximatedate" />
+            </td>
           </tr>
         </tbody>
       </table>
