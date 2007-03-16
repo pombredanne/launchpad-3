@@ -375,7 +375,7 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
-    def _target_bug(self, user, bug, distrorelease,
+    def _targetBug(self, user, bug, distrorelease,
                                 sourcepackagename=None):
         """Try to target the bug the the given distrorelease.
 
@@ -427,9 +427,9 @@ class AffectsEmailCommand(EmailCommand):
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
-            return self._target_bug(user, bug, bug_target)
+            return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
-            return self._target_bug(
+            return self._targetBug(
                 user, bug, bug_target.distrorelease,
                 bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
