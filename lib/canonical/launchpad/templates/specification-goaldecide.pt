@@ -11,29 +11,18 @@
   <div tal:replace="structure context/goal/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3>Consider goal for
-      <span tal:replace="context/goal/title">Firefox 1.0</span></h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <h1 tal:content="context/title">Spec title</h1>
+  <h1>Accept as <span tal:replace="context/goal/name">1.0
+                </span> series goal?</h1>
 
   <form method="POST" tal:attributes="action request/URL">
 
-    <div class="documentDescription">
-      Approve or decline this specification as a goal for 
-      <span tal:replace="context/goal/title">UBZ</span>.
-    </div>
-
     <div>
-              
-      <div>
-        <strong>Specification summary:</strong>
-      </div>
 
-      <p class="discreet" tal:content="context/summary">
+      <h3>Specification summary:</h3>
+
+      <p tal:content="context/summary">
         Spec summary here
       </p>
 

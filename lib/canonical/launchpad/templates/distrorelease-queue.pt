@@ -12,7 +12,6 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Upload and build queue</h1>
 </metal:heading>
 
