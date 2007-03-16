@@ -548,7 +548,7 @@ well:
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
@@ -583,7 +583,7 @@ well:
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
@@ -803,7 +803,7 @@ top of the email:
     To: marilize@hbd.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 11] subject
-    X-Launchpad-Message-Rationale: Subscriber via Bug 1
+    X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://launchpad.dev/bugs/1
