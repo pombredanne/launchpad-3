@@ -81,6 +81,9 @@ class DistroReleaseQueue(SQLBase):
     changesfile = ForeignKey(dbName='changesfile',
                              foreignKey="LibraryFileAlias")
 
+    signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
+                             notNull=False)
+
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = SQLMultipleJoin('DistroReleaseQueueSource',
