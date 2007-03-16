@@ -227,7 +227,7 @@ marked as pending approval.
   'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
-  >>> browser.getControl(name='field.ubuntu_quantityppc').value = '1'
+  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '1'
   >>> browser.getControl(name='field.reason').value = 'foo'
   >>> browser.getControl('Request More CDs').click()
 
