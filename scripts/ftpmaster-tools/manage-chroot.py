@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 
 """Copyright Canonical Limited 2005
  Author: Matt Zimmerman <matt.zimmerman@canonical.com>

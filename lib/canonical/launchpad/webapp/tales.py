@@ -360,14 +360,36 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
 class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
     """Adapter for IPerson objects to a formatted string."""
 
-    def link(self):
+    implements(ITraversable)
+
+    allowed_names = set([
+        'emblem',
+        'heading_icon',
+        'icon',
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
+        url = canonical_url(person)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
         resource = person.default_emblem_resource
-        return ('<a href="%s"><img alt="" src="%s" />%s</a>'
-                % (canonical_url(person), resource, person.browsername))
+        return '<a href="%s"><img alt="" src="%s" />%s</a>' % (
+            url, resource, person.browsername)
 
 
 class BugTaskFormatterAPI(ObjectFormatterAPI):
