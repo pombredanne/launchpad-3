@@ -1,6 +1,6 @@
 = Build Notification System =
 
-IBuild instance implements the 'notify' method which sends and status
+IBuild instance implements the 'notify' method which sends a status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
@@ -61,7 +61,16 @@ The maintainer is notified:
   >>> to_addrs
   ['mark@hbd.com']
 
-Let's check the notification content:
+Let's check the notification content.  It should contain:
+ * The source package name
+ * The source package version
+ * The build architecture
+ * The build state
+ * The duration of the build
+ * A link to the build log
+ * A link to the build page
+ * A link to the source page
+This same basic content applies to all types of notification.
 
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
