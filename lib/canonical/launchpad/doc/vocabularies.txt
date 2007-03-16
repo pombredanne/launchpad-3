@@ -78,19 +78,19 @@ Reflects the available distribution releases.  Results are ordered by
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
-            ubuntu/breezy-autotest Breezy Badger Autotest
-                     ubuntu/grumpy The Grumpy Groundhog Release
-                      ubuntu/hoary The Hoary Hedgehog Release
-                      ubuntu/warty The Warty Warthog Release
-                      debian/sarge Sarge
-                        debian/sid Sid
-                      debian/woody WOODY
-                    guadalinex/2k5 Guada 2005
-                    kubuntu/krunch The Krunchy Kangaroo
-                        redhat/7.0 Seven
-                        redhat/six Six Six Six
-        ubuntutest/breezy-autotest Breezy Badger Autotest
-             ubuntutest/hoary-test Mock Hoary
+            ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest
+                     ubuntu/grumpy Ubuntu: The Grumpy Groundhog Release
+                      ubuntu/hoary Ubuntu: The Hoary Hedgehog Release
+                      ubuntu/warty Ubuntu: The Warty Warthog Release
+                      debian/sarge Debian: Sarge
+                        debian/sid Debian: Sid
+                      debian/woody Debian: WOODY
+                    guadalinex/2k5 GuadaLinex: Guada 2005
+                    kubuntu/krunch Kubuntu: The Krunchy Kangaroo
+                        redhat/7.0 Red Hat: Seven
+                        redhat/six Red Hat: Six Six Six
+        ubuntutest/breezy-autotest ubuntutest: Breezy Badger Autotest
+             ubuntutest/hoary-test ubuntutest: Mock Hoary
 
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
     u'The Hoary Hedgehog Release'

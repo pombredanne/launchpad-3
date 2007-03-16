@@ -13,10 +13,13 @@ import traceback
 from bzrlib.errors import NoSuchFile, PermissionDenied
 from bzrlib.transport import get_transport
 
-from canonical.supermirrorsftp.tests.test_acceptance import SFTPTestCase
+from canonical.supermirrorsftp.tests.test_acceptance import (
+    SFTPTestCase, deferToThread)
+from canonical.testing import TwistedLayer
 
 
 class SFTPTests(SFTPTestCase):
+    layer = TwistedLayer
 
     # XXX: AndrewBennetts 2006-06-07:
     # This is a basically a copy of failUnlessRaises from
@@ -50,7 +53,8 @@ class SFTPTests(SFTPTestCase):
                                         % (exception.__name__, result))
     assertRaises = failUnlessRaises
 
-    def test_rmdir_branch(self):
+    @deferToThread
+    def _test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
         transport = get_transport(self.server_base + '~testuser/+junk')
@@ -67,7 +71,11 @@ class SFTPTests(SFTPTestCase):
         # The 'foo' directory is still listed.
         self.failUnlessEqual(['bar', 'foo'], sorted(transport.list_dir('.')))
 
-    def test_mkdir_toplevel_error(self):
+    def test_rmdir_branch(self):
+        return self._test_rmdir_branch()
+
+    @deferToThread
+    def _test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
         transport = get_transport(self.server_base)
         e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
@@ -75,7 +83,11 @@ class SFTPTests(SFTPTestCase):
             "Branches must be inside a person or team directory." in str(e),
             str(e))
 
-    def test_mkdir_invalid_product_error(self):
+    def test_mkdir_toplevel_error(self):
+        return self._test_mkdir_toplevel_error()
+
+    @deferToThread
+    def _test_mkdir_invalid_product_error(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
         transport = get_transport(self.server_base + '~testuser')
@@ -89,7 +101,11 @@ class SFTPTests(SFTPTestCase):
             "product name registered in Launchpad" in str(e),
             str(e))
 
-    def test_mkdir_not_team_member_error(self):
+    def test_mkdir_invalid_product_error(self):
+        return self._test_mkdir_invalid_product_error()
+
+    @deferToThread
+    def _test_mkdir_not_team_member_error(self):
         # You can't mkdir in a team directory unless you're a member of that
         # team (in fact, you can't even see the directory).
         transport = get_transport(self.server_base)
@@ -97,7 +113,11 @@ class SFTPTests(SFTPTestCase):
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
 
-    def test_mkdir_team_member(self):
+    def test_mkdir_not_team_member_error(self):
+        return self._test_mkdir_not_team_member_error()
+
+    @deferToThread
+    def _test_mkdir_team_member(self):
         # You can mkdir in a team directory that you're a member of (so long as
         # it's a real product), though.
         transport = get_transport(self.server_base)
@@ -111,6 +131,9 @@ class SFTPTests(SFTPTestCase):
         self.failUnless(
             'shiny-new-thing' in transport.list_dir('~testteam/firefox'))
         transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
+
+    def test_mkdir_team_member(self):
+        return self._test_mkdir_team_member()
 
 
 def test_suite():

@@ -442,7 +442,8 @@ ubututest/breezy-RELEASE:
 
 And its binary:
 
-  >>> expect_okays('foo_1.0-1_binary', upload_policy='anything', is_new=True)
+  >>> expect_okays('foo_1.0-1_i386_binary', upload_policy='anything',
+  ...              is_new=True)
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile
