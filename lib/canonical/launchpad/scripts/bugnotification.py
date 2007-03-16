@@ -31,6 +31,9 @@ class BugNotificationRationale:
     For instance, if the email address is that of a distribution bug
     contact for a bug, the string and header will make that fact clear.
 
+    Instances of this class are meant to be supplied to
+    IBug.registerBugSubscribers.
+
     The string is meant to be rendered in the email footer. The header
     is meant to be used in an X-Launchpad-Message-Rationale header.
     """
@@ -86,64 +89,78 @@ class BugNotificationRationale:
 
     def addDupeSubscriber(self, person):
         """Registers a subscriber of a duplicate of this bug."""
+        reason = "Subscriber of Duplicate"
         if person.isTeam():
             text = ("are a member of %s, which is a subscriber "
                     "of a duplicate bug" % person.displayname)
+            reason += " (@%s)" % person.name
         else:
             text = "are a direct subscriber of a duplicate bug"
-        self._addReason(person, text, "Subscriber of Duplicate")
+        self._addReason(person, text, reason)
 
     def addDirectSubscriber(self, person):
         """Registers a direct subscriber of this bug."""
+        reason = "Subscriber"
         if person.isTeam():
             text = "are a member of %s, which is a direct subscriber" % person.displayname
+            reason += " @%s" % person.name
         else:
             text = "are a direct subscriber of the bug"
-        self._addReason(person, text, "Subscriber")
+        self._addReason(person, text, reason)
 
     def addAssignee(self, person):
         """Registers an assignee of a bugtask of this bug."""
+        reason = "Assignee"
         if person.isTeam():
             text = "are a member of %s, which is a bug assignee" % person.displayname
+            reason += " @%s" % person.name
         else:
             text = "are a bug assignee"
-        self._addReason(person, text, "Assignee")
+        self._addReason(person, text, reason)
 
     def addDistroBugContact(self, person, distro):
         """Registers a distribution bug contact for this bug."""
+        reason = "Bug Contact (%s)" % distro.displayname
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
+            reason += " @%s" % person.name
         else:
             text = "are the bug contact for %s" % distro.displayname
-        self._addReason(person, text, "Bug Contact (%s)" % distro.displayname)
+        self._addReason(person, text, reason)
 
     def addPackageBugContact(self, person, package):
         """Registers a package bug contact for this bug."""
+        reason = "Bug Contact (%s)" % package.displayname
         if person.isTeam():
             text = ("are a member of %s, which is a bug contact for %s" %
                 (person.displayname, package.displayname))
+            reason += " @%s" % person.name
         else:
             text = "are a bug contact for %s" % package.displayname
-        self._addReason(person, text, "Bug Contact (%s)" % package.displayname)
+        self._addReason(person, text, reason)
 
     def addUpstreamBugContact(self, person, upstream):
         """Registers an upstream bug contact for this bug."""
+        reason = "Bug Contact (%s)" % upstream.displayname
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
         else:
             text = "are the bug contact for %s" % upstream.displayname
-        self._addReason(person, text, "Bug Contact (%s)" % upstream.displayname)
+        self._addReason(person, text, reason)
 
     def addUpstreamRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
+        reason = "Registrant (%s)" % upstream.displayname
         if person.isTeam():
             text = ("are a member of %s, which is the registrant for %s" %
                 (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
         else:
             text = "are the registrant for %s" % upstream.displayname
-        self._addReason(person, text, "Registrant (%s)" % upstream.displayname)
+        self._addReason(person, text, reason)
 
 
 def construct_email_notification(bug_notifications):

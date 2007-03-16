@@ -319,7 +319,7 @@ class Bug(SQLBase):
                 if distribution.bugcontact:
                     also_notified_subscribers.add(distribution.bugcontact)
                     if rationale:
-                        rationale.addDistroBugContact(bugtask.assignee,
+                        rationale.addDistroBugContact(distribution.bugcontact,
                                                       distribution)
 
                 if bugtask.sourcepackagename:
@@ -339,7 +339,7 @@ class Bug(SQLBase):
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
                     if rationale:
-                        rationale.addUpstreamContact(product.bugcontact, product)
+                        rationale.addUpstreamBugContact(product.bugcontact, product)
                 else:
                     also_notified_subscribers.add(product.owner)
                     if rationale:
@@ -361,7 +361,6 @@ class Bug(SQLBase):
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
-        return rationale
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
