@@ -397,9 +397,10 @@ class AffectsEmailCommand(EmailCommand):
                 bug, user, distribution=distribution,
                 sourcepackagename=sourcepackagename)
         if not bug.canBeNominatedFor(distrorelease):
-            # XXX: what do do here?
-            raise AssertionError("Bug can't be nominated.")
-        nomination = bug.addNomination(target=distrorelease, owner=user)
+            # A nomination has already been created.
+            nomination = bug.getNominationFor(distrorelease)
+        else:
+            nomination = bug.addNomination(target=distrorelease, owner=user)
         if nomination.isApproved():
             if sourcepackagename:
                 return self.getBugTask(

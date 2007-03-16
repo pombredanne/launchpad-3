@@ -867,6 +867,20 @@ The same happens if we try to target another release.
     Ubuntu Hoary
     Ubuntu Warty
 
+Targeting an existing nomination won't create another nomination.
+
+    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
 If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to releases.
 
