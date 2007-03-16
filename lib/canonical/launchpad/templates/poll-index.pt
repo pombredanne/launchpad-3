@@ -40,8 +40,10 @@
 
     <h2>Voting has closed</h2>
 
-    <p>The voting is closed since 
-      <span tal:replace="context/datecloses/fmt:date" />.
+    <p>Voting closed
+      <span
+        tal:attributes="title context/datecloses/fmt:datetime"
+        tal:content="context/datecloses/fmt:displaydate" />.
     </p>
 
     <tal:block condition="view/userVoted">

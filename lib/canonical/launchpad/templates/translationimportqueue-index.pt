@@ -132,7 +132,7 @@
                 <span
                   tal:attributes="title entry/dateimported/fmt:datetime"
                   tal:content="entry/dateimported/fmt:displaydate">
-                  date
+                  2006-07-19
                 </span>
               </td>
             </tr>

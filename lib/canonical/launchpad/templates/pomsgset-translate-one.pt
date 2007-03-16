@@ -264,7 +264,7 @@
           <span
             tal:attributes="title context/date_reviewed/fmt:datetime"
             tal:content="context/date_reviewed/fmt:displaydate">
-            2006-08-05
+            on 2006-08-05
           </span>
         </td>
       </tr>

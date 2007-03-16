@@ -44,20 +44,25 @@
       <img src="/@@/user/">
       <a tal:attributes="href context/goal_proposer/fmt:url"
          tal:content="context/goal_proposer/browsername">Foo Bar</a>
-      on
-      <span tal:replace="context/date_goal_proposed/fmt:date">2006-12-13</span>.
+      <span
+        tal:attributes="title context/date_goal_proposed/fmt:datetime"
+        tal:content="context/date_goal_proposed/fmt:displaydate">
+        2006-12-13
+      </span>.
       <tal:already_decided condition="context/goal_decider">
         It was previously marked "<span tal:replace="context/goalstatus/title">
         Approved</span>" as a goal by
         <img src="/@@/user/">
         <a tal:attributes="href context/goal_decider/fmt:url"
            tal:content="context/goal_decider/browsername">Foo Bar</a>
-        on
         <span
-          tal:replace="context/date_goal_decided/fmt:date">2006-12-13</span>.
+          tal:attributes="title context/date_goal_decided/fmt:datetime"
+          tal:content="context/date_goal_decided/fmt:displaydate">
+          2006-12-13
+        </span>.
       </tal:already_decided>
     </p>
-              
+
     <div class="actions">
       <input
         type="submit"

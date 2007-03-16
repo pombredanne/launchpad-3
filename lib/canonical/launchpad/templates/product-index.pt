@@ -119,6 +119,10 @@
         />
         <div
           class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
           tal:content="structure context/@@+portlet-packages"
         />
       </div>

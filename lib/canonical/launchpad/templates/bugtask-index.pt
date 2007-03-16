@@ -30,7 +30,9 @@
         first reported by
         <a tal:attributes="href context/bug/owner/fmt:url"
            tal:content="context/bug/owner/browsername">Foo Bar</a>
-        on <tal:date content="context/bug/datecreated/fmt:date" />
+        <span
+          tal:attributes="title context/bug/datecreated/fmt:datetime"
+          tal:content="context/bug/datecreated/fmt:displaydate" />
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 

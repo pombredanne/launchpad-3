@@ -12,12 +12,14 @@
         tal:content="context/owner/browsername"
         style="text-decoration: underline"></a><br />
 
-      <b>On:</b>
+      <b>In:</b>
       <a tal:content="context/targetname"
          tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
 
-      <b>Date:</b>
-      <tal:block content="context/datecreated/fmt:date" />
+      <b>When:</b>
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate" />
 
     </div>
   </div>
