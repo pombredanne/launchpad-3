@@ -240,6 +240,10 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "The external bug tracker this product uses, if it's different"
             " from its Project's bug tracker."))
 
+    official_answers = Bool(title=_('Officially uses Answers'),
+        required=True, description=_('Check this box to indicate that '
+        'this project officially uses Answers for community support.'))
+        
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '

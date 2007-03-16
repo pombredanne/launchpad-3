@@ -289,20 +289,24 @@ incomplete source is uploaded).
 Launchpad Usage
 ---------------
 
-A distribution can specify if it uses Malone or Rosetta officially.
-Ubuntu uses both Malone and Rosetta:
+A distribution can specify if it uses Malone, Rosetta, or Answers 
+officially. Ubuntu uses all of them:
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
     >>> ubuntu.official_rosetta
     True
-
-While Debian uses neither:
+    >>> ubuntu.official_answers
+    True
+    
+While Debian uses none:
 
     >>> debian.official_malone
     False
     >>> debian.official_rosetta
+    False
+    >>> debian.official_answers
     False
 
 Gentoo only uses Malone
@@ -311,7 +315,8 @@ Gentoo only uses Malone
     True
     >>> print gentoo.official_rosetta
     False
-
+    >>> print gentoo.official_answers
+    False
 
 
 Specification Listings

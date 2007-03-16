@@ -125,6 +125,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
+        default=False)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
