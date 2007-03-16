@@ -17,24 +17,53 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
-    get_bugmail_replyto_address, generate_bug_add_email, MailWrapper,
-    GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+    get_bugmail_replyto_address, generate_bug_add_email, MailWrapper)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
 
 
 class BugNotificationRationale:
-    """XXX"""
+    """Or BNR. Represents a set of email addresses and rationales.
+
+    Each email address registered in a BNR instance is associated to a
+    string and a header that explain why the address is being emailed.
+    For instance, if the email address is that of a distribution bug
+    contact for a bug, the string and header will make that fact clear.
+
+    The string is meant to be rendered in the email footer. The header
+    is meant to be used in an X-Launchpad-Message-Rationale header.
+    """
     def __init__(self, duplicateof=None):
+        """Constructs a new BNR instance.
+
+        If this bug is a duplicate, duplicateof should be used to
+        specify which bug ID it is a duplicate of.
+
+        Note that there are two duplicate situations that are
+        important: 
+          - One is when this bug is a duplicate of another bug:
+            the subscribers to the main bug get notified of our
+            changes. 
+          - Another is when the bug we are changing has
+            duplicates; in that case, direct subscribers of
+            duplicate bugs get notified of our changes.
+        These two situations are catered respectively by the
+        duplicateof parameter above and the addDupeSubscriber method.
+        Don't confuse them!
+        """
         self._reasons = {}
         self.duplicateof = duplicateof
 
     def _addReason(self, person, reason, header):
+        # Adds a reason (text and header) to the local dict of reasons,
+        # keyed on email address. The reason we use email address as the
+        # key is that we want to ensure we never send emails twice to
+        # the same person; this can happen when a person is subscribed
+        # to a bug both directly and via a team subscription.
         if self.duplicateof is not None:
-            # XXX: this is not the same as subscriber of duplicate!
-            reason = reason + " (via bug %s)" % self.duplicateof
-            header = header + "via Bug %s" % self.duplicateof
+            reason = reason + " (via bug %s)" % self.duplicateof.id
+            header = header + " via Bug %s" % self.duplicateof.id
         reason = "You received this bug notification because you %s." % reason
         for email in contactEmailAddresses(person):
             if email not in self._reasons:
@@ -42,35 +71,38 @@ class BugNotificationRationale:
                 self._reasons[email] = (reason, header)
 
     def update(self, rationale):
-        for k, v in rationale._reasons:
+        """Updates this instance's reasons with reasons from another BNR."""
+        for k, v in rationale._reasons.items():
             if k not in self._reasons:
                 self._reasons[k] = v
 
     def getReason(self, email):
+        """Returns a reason tuple containing (text, header) for an address."""
         return self._reasons[email]
 
     def getAddresses(self):
+        """Returns all email addresses registered, sorted alphabetically."""
         return sorted(self._reasons.keys())
 
-    def addExtraEmail(self, email):
-        self._reasons[email] = ("XXX", "XXX")
-
     def addDupeSubscriber(self, person):
+        """Registers a subscriber of a duplicate of this bug."""
         if person.isTeam():
             text = ("are a member of %s, which is a subscriber "
                     "of a duplicate bug" % person.displayname)
         else:
             text = "are a direct subscriber of a duplicate bug"
-        self._addReason(person, text, "Direct Subscriber of Duplicate")
+        self._addReason(person, text, "Subscriber of Duplicate")
 
     def addDirectSubscriber(self, person):
+        """Registers a direct subscriber of this bug."""
         if person.isTeam():
             text = "are a member of %s, which is a direct subscriber" % person.displayname
         else:
             text = "are a direct subscriber of the bug"
-        self._addReason(person, text, "Direct Subscriber")
+        self._addReason(person, text, "Subscriber")
 
     def addAssignee(self, person):
+        """Registers an assignee of a bugtask of this bug."""
         if person.isTeam():
             text = "are a member of %s, which is a bug assignee" % person.displayname
         else:
@@ -78,36 +110,40 @@ class BugNotificationRationale:
         self._addReason(person, text, "Assignee")
 
     def addDistroBugContact(self, person, distro):
+        """Registers a distribution bug contact for this bug."""
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
         else:
             text = "are the bug contact for %s" % distro.displayname
-        self._addReason(person, text, "%s Bug Contact" % distro.displayname)
+        self._addReason(person, text, "Bug Contact (%s)" % distro.displayname)
 
     def addPackageBugContact(self, person, package):
+        """Registers a package bug contact for this bug."""
         if person.isTeam():
             text = ("are a member of %s, which is a bug contact for %s" %
                 (person.displayname, package.displayname))
         else:
             text = "are a bug contact for %s" % package.displayname
-        self._addReason(person, text, "%s Bug Contact" % package.displayname)
+        self._addReason(person, text, "Bug Contact (%s)" % package.displayname)
 
     def addUpstreamBugContact(self, person, upstream):
+        """Registers an upstream bug contact for this bug."""
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, upstream.displayname))
         else:
             text = "are the bug contact for %s" % upstream.displayname
-        self._addReason(person, text, "%s Bug Contact" % upstream.displayname)
+        self._addReason(person, text, "Bug Contact (%s)" % upstream.displayname)
 
     def addUpstreamRegistrant(self, person, upstream):
+        """Registers an upstream product registrant for this bug."""
         if person.isTeam():
             text = ("are a member of %s, which is the registrant for %s" %
                 (person.displayname, upstream.displayname))
         else:
             text = "are the registrant for %s" % upstream.displayname
-        self._addReason(person, text, "%s Registrant" % upstream.displayname)
+        self._addReason(person, text, "Registrant (%s)" % upstream.displayname)
 
 
 def construct_email_notification(bug_notifications):
@@ -125,11 +161,7 @@ def construct_email_notification(bug_notifications):
     references = []
     text_notifications = []
     rationale = BugNotificationRationale()
-
     bug.registerBugSubscribers(rationale)
-    if not bug.private and GLOBAL_NOTIFICATION_EMAIL_ADDRS:
-        for address in GLOBAL_NOTIFICATION_EMAIL_ADDRS:
-            rationale.addExtraEmail(address)
 
     for notification in bug_notifications:
         assert notification.bug == bug
@@ -141,7 +173,7 @@ def construct_email_notification(bug_notifications):
 
     if bug.duplicateof is not None:
         text_notifications.append(
-            '*** This bug is a duplicate of bug %d ***\n\t%s' %
+            '*** This bug is a duplicate of bug %d ***\n    %s' %
                 (bug.duplicateof.id, canonical_url(bug.duplicateof)))
 
         if not bug.private:
@@ -151,8 +183,8 @@ def construct_email_notification(bug_notifications):
             # changes in private bugs are not broadcast to their dupe
             # targets.
             dupe_rationale = BugNotificationRationale(duplicateof=bug.duplicateof)
-            bug.duplicateof.registerSubscribersAndRationales(dupe_rationale)
-            rationale = rationale.update(dupe_rationale)
+            bug.duplicateof.registerBugSubscribers(dupe_rationale)
+            rationale.update(dupe_rationale)
 
     if comment is not None:
         if comment == bug.initial_message:
@@ -179,9 +211,6 @@ def construct_email_notification(bug_notifications):
         if notification.message != comment:
             text = notification.message.text_contents.rstrip()
             text_notifications.append(text)
-
-    mail_wrapper = MailWrapper(width=72)
-    content = '\n\n'.join(text_notifications)
 
     if person.preferredemail is not None:
         from_address = format_address(
@@ -220,7 +249,12 @@ def construct_email_notification(bug_notifications):
 
         from_address = format_address(person.displayname, from_email)
 
+    # At this point we've got the data we need to construct the
+    # messages. Now go ahead and actually do it.
+
     messages = []
+    mail_wrapper = MailWrapper(width=72)
+    content = '\n\n'.join(text_notifications)
     for address in rationale.getAddresses():
         reason, rationale_header = rationale.getReason(address)
         body = get_email_template('bug-notification.txt') % {
@@ -246,7 +280,7 @@ def construct_email_notification(bug_notifications):
         for bugtask in bug.bugtasks:
             msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
-        msg.add_header('X-Launchpad-Bug-Rationale', rationale_header)
+        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
         messages.append(msg)
 
     return bug_notifications, messages
