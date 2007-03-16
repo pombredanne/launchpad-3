@@ -909,26 +909,11 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (1, 11, 24, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (2, 11, 25, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (3, 11, 26, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (4, 11, 27, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (5, 11, 28, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (6, 11, 29, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (7, 11, 30, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (8, 12, 31, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (9, 12, 32, false, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (10, 12, 33, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (11, 12, 34, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (12, 12, 35, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (13, 12, 36, true, NULL);
-
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
-
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
