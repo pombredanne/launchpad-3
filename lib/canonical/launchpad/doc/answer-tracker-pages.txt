@@ -306,7 +306,7 @@ the user is subscribed to the bug.
     >>> makebug.initialize()
     >>> makebug.process_form()
     >>> sorted(bug.id for bug in question_three.bugs)
-    [11L]
+    [13L]
     >>> print question_three.bugs[0].title
     Bug title
     >>> print question_three.bugs[0].description
@@ -316,7 +316,7 @@ the user is subscribed to the bug.
     >>> question_three.bugs[0].isSubscribed(makebug.user)
     True
     >>> [n.message for n in request.notifications]
-    [u'Thank you! Bug #11 created.']
+    [u'Thank you! Bug #13 created.']
 
 
     >>> notifications = pop_notifications()
@@ -325,7 +325,7 @@ the user is subscribed to the bug.
     >>> print notifications[0].get_payload(decode=True)
     Your question #3...
     ...
-        Linked to bug: #11
+        Linked to bug: #13
     ...
 
 If the question already has bugs linked to it, no new bug can be created.

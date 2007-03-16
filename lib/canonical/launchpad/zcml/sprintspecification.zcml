@@ -27,6 +27,7 @@
     for="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SprintSpecificationDecideView"
     permission="launchpad.Driver"
+    facet="specifications"
     template="../templates/sprintspecification-decide.pt">
   </browser:page>
 

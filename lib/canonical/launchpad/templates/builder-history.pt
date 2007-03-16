@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Bob the Builder</h1>
+      <h1>Build history</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -13,8 +13,6 @@
 </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-      <h2>Recent builds</h2>
 
       <div tal:replace="structure context/@@+builds-list"/>
 

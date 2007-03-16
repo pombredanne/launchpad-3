@@ -275,7 +275,7 @@ It lists all the actions performed through workflow on the question:
     >>> action_listing = soup.first('table', 'listing')
     >>> for header in action_listing.fetch('th'):
     ...     print header.renderContents()
-    Date
+    When
     Who
     Action
     New State

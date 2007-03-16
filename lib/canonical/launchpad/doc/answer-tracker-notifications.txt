@@ -251,8 +251,8 @@ A notification is also sent when a bug is unlinked from the ticket:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
-        Removed link to bug: #11
-        http://.../bugs/11
+        Removed link to bug: #13
+        http://.../bugs/13
     <BLANKLINE>
 
 == Workflow Notifications ==
