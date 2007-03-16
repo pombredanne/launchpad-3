@@ -954,6 +954,29 @@ driver of the release, only a nomination will be created.
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
 
+Nominating product series work the same way as for distro releases.
+Sample person is a driver for the Firefox trunk series, so the
+nomination is automatically approved.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for driver in firefox.getSeries('trunk').drivers:
+    ...     print driver.displayname
+    Sample Person
+
+    >>> login('test@canonical.com')
+    >>> submit_commands(bug, 'affects /firefox/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    firefox trunk (upstream)
+    evolution (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    firefox trunk (upstream)
+    Ubuntu Hoary
+
 Let's take on the upstream task on bug four as well. This time we'll
 sneak in a 'subscribe' command between the 'affects' and the other
 commands, to show that the commands acting on the bug task don't have to
