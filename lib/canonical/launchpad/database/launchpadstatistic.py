@@ -87,8 +87,18 @@ class LaunchpadStatisticSet:
         ztm.commit()
 
         cur = cursor()
-        cur.execute("SELECT COUNT(DISTINCT product) FROM BugTask")
-        self.update("products_with_bugs", cur.fetchone()[0] or 0)
+        cur.execute(
+            "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
+            "FROM BugTask")
+        self.update("projects_with_bugs", cur.fetchone()[0] or 0)
+        ztm.commit()
+
+        cur.execute(
+            "SELECT COUNT(*) FROM (SELECT COUNT(distinct product) + "
+            "                             COUNT(distinct  AS places "
+            "                             FROM BugTask GROUP BY bug) "
+            "                      AS temp WHERE places > 1")
+        self.update("shared_bug_count", cur.fetchone()[0] or 0)
         ztm.commit()
 
     def _updateRosettaStatistics(self, ztm):
@@ -127,4 +137,4 @@ class LaunchpadStatisticSet:
             """)
         self.update('products_with_potemplates', cur.fetchone()[0] or 0)
         ztm.commit()
-        
+

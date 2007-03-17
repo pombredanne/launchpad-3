@@ -2600,9 +2600,10 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'produc
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 10, '2007-01-15 17:58:42.06841');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 22, '2007-01-15 17:58:42.080033');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 4, '2007-01-15 17:58:42.093622');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'products_with_bugs', 4, '2007-01-15 17:58:42.105869');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'projects_with_bugs', 4, '2007-01-15 17:58:42.105869');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 48, '2007-01-15 17:58:42.118694');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 17, '2007-01-15 17:58:42.131757');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (15, 'shared_bug_count', 4, '2007-03-17 10:58:43.102332');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
