@@ -1,0 +1,194 @@
+
+BugNotificationRationale instances store email addresses mapped to the
+reason for which they are being notified in a certain bug.
+
+(Let's define a helper function so we can format this output)
+
+  >>> def print_rationales(rationale):
+  ...   for address in rationale.getAddresses():
+  ...     text, header = rationale.getReason(address)
+  ...     print address
+  ...     print "    %s" % header
+  ...     print "    %s" % text
+
+=== How it's used ===
+
+The construct_email_notifications function creates and uses
+BugNotificationRationale instances. Here's how:
+
+  >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRationale
+  >>> from canonical.launchpad.database import Bug, Distribution, Product
+  >>> rationale = BugNotificationRationale()
+  >>> bug_one = Bug.get(1)
+  >>> bug_one.registerBugSubscribers(rationale)
+
+  >>> print_rationales(rationale)
+  foo.bar@canonical.com
+      Bug Contact (mozilla-firefox in ubuntu)
+      You received this bug notification because you are a bug contact for mozilla-firefox in ubuntu.
+  mark@hbd.com
+      Assignee
+      You received this bug notification because you are a bug assignee.
+  test@canonical.com
+      Subscriber
+      You received this bug notification because you are a direct subscriber of the bug.
+
+=== The Bug-BugNotificationRationale API ===
+
+Let's test the API that Bug and BugNotificationRationale use to set up the
+rationales.
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from zope.component import getUtility
+  >>> rationale = BugNotificationRationale()
+
+Set up some data:
+
+  >>> debian = Distribution.selectOneBy(name="debian")
+  >>> pmount = debian.getSourcePackage("pmount")
+  >>> alsa_utils = Product.selectOneBy(name="alsa-utils")
+  >>> gnomebaker = Product.selectOneBy(name="gnomebaker")
+  >>> personset = getUtility(IPersonSet)
+
+Let's add a subscriber of each type:
+
+  >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
+  >>> rationale.addDupeSubscriber(foo_bar)
+  >>> test = personset.getByEmail("test@canonical.com")
+  >>> rationale.addDirectSubscriber(test)
+  >>> no_priv = personset.getByEmail("no-priv@canonical.com")
+  >>> rationale.addAssignee(no_priv)
+  >>> daf = personset.getByEmail("daf@canonical.com")
+  >>> rationale.addDistroBugContact(daf, debian)
+  >>> carlos = personset.getByEmail("carlos@canonical.com")
+  >>> rationale.addPackageBugContact(carlos, pmount)
+  >>> marilize = personset.getByEmail("marilize@hbd.com")
+  >>> rationale.addUpstreamBugContact(marilize, alsa_utils)
+  >>> testtest = personset.getByEmail("testtest@canonical.com")
+  >>> rationale.addUpstreamRegistrant(testtest, gnomebaker)
+
+And then print out the addresses and rationales:
+
+  >>> print_rationales(rationale)
+  carlos@canonical.com
+      Bug Contact (pmount in debian)
+      You received this bug notification because you are a bug contact for pmount in debian.
+  daf@canonical.com
+      Bug Contact (Debian)
+      You received this bug notification because you are the bug contact for Debian.
+  foo.bar@canonical.com
+      Subscriber of Duplicate
+      You received this bug notification because you are a direct subscriber of a duplicate bug.
+  marilize@hbd.com
+      Bug Contact (alsa-utils)
+      You received this bug notification because you are the bug contact for alsa-utils.
+  no-priv@canonical.com
+      Assignee
+      You received this bug notification because you are a bug assignee.
+  test@canonical.com
+      Subscriber
+      You received this bug notification because you are a direct subscriber of the bug.
+
+== A main bug notifies its duplicates ==
+
+Let's do the same for a bug which our bug a duplicate of.
+
+  >>> rationale = BugNotificationRationale(duplicateof=bug_one)
+  >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
+  >>> rationale.addDupeSubscriber(foo_bar)
+  >>> test = personset.getByEmail("test@canonical.com")
+  >>> rationale.addDirectSubscriber(test)
+  >>> no_priv = personset.getByEmail("no-priv@canonical.com")
+  >>> rationale.addAssignee(no_priv)
+  >>> daf = personset.getByEmail("daf@canonical.com")
+  >>> rationale.addDistroBugContact(daf, debian)
+  >>> carlos = personset.getByEmail("carlos@canonical.com")
+  >>> rationale.addPackageBugContact(carlos, pmount)
+  >>> marilize = personset.getByEmail("marilize@hbd.com")
+  >>> rationale.addUpstreamBugContact(marilize, alsa_utils)
+  >>> testtest = personset.getByEmail("testtest@canonical.com")
+  >>> rationale.addUpstreamRegistrant(testtest, gnomebaker)
+
+And then print out the addresses and rationales again:
+
+  >>> print_rationales(rationale)
+  carlos@canonical.com
+      Bug Contact (pmount in debian) via Bug 1
+      You received this bug notification because you are a bug contact for pmount in debian (via bug 1).
+  daf@canonical.com
+      Bug Contact (Debian) via Bug 1
+      You received this bug notification because you are the bug contact for Debian (via bug 1).
+  foo.bar@canonical.com
+      Subscriber of Duplicate via Bug 1
+      You received this bug notification because you are a direct subscriber of a duplicate bug (via bug 1).
+  marilize@hbd.com
+      Bug Contact (alsa-utils) via Bug 1
+      You received this bug notification because you are the bug contact for alsa-utils (via bug 1).
+  no-priv@canonical.com
+      Assignee via Bug 1
+      You received this bug notification because you are a bug assignee (via bug 1).
+  test@canonical.com
+      Subscriber via Bug 1
+      You received this bug notification because you are a direct subscriber of the bug (via bug 1).
+
+== Team subscribers are special ==
+
+Finally, let's do this when our subscribers are teams:
+
+  >>> rationale = BugNotificationRationale()
+  >>> testing_spanish_team = personset.getByName("testing-spanish-team")
+  >>> rationale.addDupeSubscriber(testing_spanish_team)
+  >>> guadamen = personset.getByName("guadamen")
+  >>> rationale.addAssignee(guadamen)
+  >>> name20 = personset.getByName("name20")
+  >>> rationale.addPackageBugContact(name20, pmount)
+  >>> name18 = personset.getByName("name18")
+  >>> rationale.addUpstreamBugContact(name18, alsa_utils)
+  >>> vcs_imports = personset.getByName("vcs-imports")
+  >>> rationale.addUpstreamRegistrant(vcs_imports, gnomebaker)
+  >>> shipit_admins = personset.getByName("shipit-admins")
+  >>> rationale.addDirectSubscriber(shipit_admins)
+  >>> launchpad_buildd_admins = personset.getByName("launchpad-buildd-admins")
+  >>> rationale.addDistroBugContact(launchpad_buildd_admins, debian)
+
+And then print out the addresses and rationales once more:
+
+  >>> print_rationales(rationale)
+    andrew.bennetts@ubuntulinux.com
+        Bug Contact (alsa-utils) @name18
+        You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug contact for alsa-utils.
+    carlos@canonical.com
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
+    celso.providelo@canonical.com
+        Bug Contact (Debian) @launchpad-buildd-admins
+        You received this bug notification because you are a member of Launchpad Buildd Admins, which is the bug contact for Debian.
+    david.allouche@canonical.com
+        Registrant (gnomebaker) @vcs-imports
+        You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.
+    foo.bar@canonical.com
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
+    kurem@debian.cz
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
+    marilize@hbd.com
+        Subscriber @shipit-admins
+        You received this bug notification because you are a member of ShipIt Administrators, which is a direct subscriber.
+    mark@hbd.com
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
+    robertc@robertcollins.net
+        Registrant (gnomebaker) @vcs-imports
+        You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.
+    support@ubuntu.com
+        Assignee @guadamen
+        You received this bug notification because you are a member of GuadaMen, which is a bug assignee.
+    test@canonical.com
+        Bug Contact (pmount in debian) @name20
+        You received this bug notification because you are a member of Warty Security Team, which is a bug contact for pmount in debian.
+    tsukimi@quaqua.net
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
+
+
