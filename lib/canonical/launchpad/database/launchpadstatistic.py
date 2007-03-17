@@ -13,7 +13,7 @@ from canonical.launchpad import _
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.database.sqlbase import SQLBase, cursor
+from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.language import Language
@@ -22,6 +22,10 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.database.question import Question
+
+from canonical.lp.dbschema import QuestionStatus
+
 from canonical.launchpad.interfaces import (
     ILaunchpadStatistic, ILaunchpadStatisticSet
     )
@@ -72,6 +76,7 @@ class LaunchpadStatisticSet:
         """See ILaunchpadStatisticSet."""
         self._updateRosettaStatistics(ztm)
         self._updateMaloneStatistics(ztm)
+        self._updateQuestionStatistics(ztm)
 
     def _updateMaloneStatistics(self, ztm):
         self.update('bug_count', Bug.select().count())
@@ -93,9 +98,11 @@ class LaunchpadStatisticSet:
         self.update("projects_with_bugs", cur.fetchone()[0] or 0)
         ztm.commit()
 
+        cur = cursor()
         cur.execute(
             "SELECT COUNT(*) FROM (SELECT COUNT(distinct product) + "
-            "                             COUNT(distinct  AS places "
+            "                             COUNT(distinct distribution) "
+            "                             AS places "
             "                             FROM BugTask GROUP BY bug) "
             "                      AS temp WHERE places > 1")
         self.update("shared_bug_count", cur.fetchone()[0] or 0)
@@ -136,5 +143,28 @@ class LaunchpadStatisticSet:
             WHERE ProductSeries.id = POTemplate.productseries
             """)
         self.update('products_with_potemplates', cur.fetchone()[0] or 0)
+        ztm.commit()
+
+    def _updateQuestionStatistics(self, ztm):
+        self.update('question_count', Question.select().count())
+        ztm.commit()
+
+        self.update(
+            'answered_question_count',
+            Question.select(
+              'status = %s' % sqlvalues(QuestionStatus.ANSWERED)).count())
+        ztm.commit()
+
+        self.update(
+            'solved_question_count',
+            Question.select(
+              'status = %s' % sqlvalues(QuestionStatus.SOLVED)).count())
+        ztm.commit()
+
+        cur = cursor()
+        cur.execute(
+            "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
+            "FROM Ticket")
+        self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
 

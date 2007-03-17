@@ -132,15 +132,15 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         title=_("Heading icon"), required=False,
         default_image_resource='/@@/person-heading',
         description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
+            "An image, maximum 54x54 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a great big grinning "
-            "image of your mug. Make the most of it."))
+            "than 50k in size. Traditionally this is a logo, small picture, "
+            "or personal mascot."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
+            "An image, maximum 150x150 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))

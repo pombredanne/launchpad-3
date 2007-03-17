@@ -74,9 +74,9 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.25em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
+h1 {font-size: 2.8em;    margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.55em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
@@ -668,7 +668,7 @@ ul#applicationchooser li#applicationchooser_selected {
   color: black;
   float: left;
   margin: 10px 0px 0px 38px;
-  width: 50%;
+  width: 70%;
 }
 #structuralobjectheading img {
   float: left;
@@ -676,8 +676,12 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading .main {
   font-weight: bold;
-  margin: 20px 0 0;
-  font-size: 2.5em;
+  margin: 1px 0 0 77px;
+  font-size: 2.7em;
+}
+#structuralobjectheading .intro {
+  margin: 3px 0 0 77px;
+  font-size: 1.1em;
 }
 #structural-children {
   clear: both;

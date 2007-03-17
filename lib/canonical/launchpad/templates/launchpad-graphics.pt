@@ -21,21 +21,24 @@
   <dl>
     <dt>
       <img alt="" src="/@@/nyet-mini" style="float: right;" />
-      <dfn>mini</dfn>
+      <dfn>emblem</dfn>
     </dt>
     <dd>
       Small enough to fit in a listing table without making the rows higher
       (probably 12px &times; 12px).
       These icons should have the <code>-mini</code> suffix.
+      They should only be used as badges or bullets in listings.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet" style="float: right;" />
-      <dfn>normal</dfn>
+      <dfn>icon</dfn>
     </dt>
     <dd>
+      A standard icon.
       Small enough to be used in normal text without affecting the line height.
       14px &times; 14px.
-      These icons should have no suffix.
+      These icons should have no suffix. You should get this for a pillar
+      object using <code>/fmt:icon</code>
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-large" style="float: right;" />
@@ -45,15 +48,20 @@
       Used for metadata about objects, for example bug privacy.
       32px &times; 32px.
       These icons should have the <code>-large</code> suffix.
+      They are should all have a -mini equivalent, for use as
+      badges in listings.
     </dd>
     <dt>
-      <img alt="" src="/@@/nyet-heading" style="float: right;" />
-      <dfn>heading</dfn>
+      <img alt="" src="/@@/nyet-gotchi" style="float: right;" />
+      <dfn>gotchi</dfn>
     </dt>
     <dd>
       Used as a placeholder next to the headings for people and projects that do
-      not yet have a custom icon.
-      64px &times; 64px visible, 96px &times; 96px including whitespace.
+      not yet have a custom icon.  The "advertised" size of these should be 
+      54px &times; 54px. We will actually accept images up to
+      72px &times; 72px but we expect the extra 4px border to be 90%
+      whitespace (and we should enforce this on image upload). 54x54 is the
+      <strong>active image area</strong> but the total image area is 72x72.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
@@ -61,7 +69,8 @@
     </dt>
     <dd>
       Represents people and projects on their Overview pages.
-      170px &times; 170px visible, 200px &times; 200px including whitespace.
+      150px &times; 150px active image area, 200px &times; 200px
+      including whitespace.
     </dd>
   </dl>
 

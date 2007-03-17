@@ -15,10 +15,10 @@
     <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
 
     <!-- Missing images -->
-    <resource name="nyet" file="../images/nyet.png" />
     <resource name="nyet-mini" file="../images/nyet-mini.png" />
+    <resource name="nyet" file="../images/nyet.png" /> <!--icon-->
     <resource name="nyet-large" file="../images/nyet-large.png" />
-    <resource name="nyet-heading" file="../images/nyet-heading.png" />
+    <resource name="nyet-gotchi" file="../images/nyet-gotchi.png" />
     <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />
 
     <!-- App-specific Images -->
