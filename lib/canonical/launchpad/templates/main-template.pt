@@ -47,7 +47,7 @@
       <ul class="home">
         <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
       </ul>
-      <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <div style="color:white;font-size:110%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
     </div>
 
     <div id="locationbar">
@@ -177,11 +177,13 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
+                      <tal:no_children replace="nothing">
                       <div
                         tal:define="structuralobject CONTEXTS/lp:structuralobject" 
                         tal:condition="structuralobject"
                         tal:replace="structure structuralobject/@@+structural-footer"
-                      />
+                        />
+                      </tal:no_children>
                     </div>
                     <div id="portlets">
                       <tal:menu replace="structure CONTEXTS/@@+menubox" />

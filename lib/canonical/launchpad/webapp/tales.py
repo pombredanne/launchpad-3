@@ -393,7 +393,7 @@ class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         resource = person.default_emblem_resource
-        return '<a href="%s"><img alt="" src="%s" />%s</a>' % (
+        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
             url, resource, person.browsername)
 
 
