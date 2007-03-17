@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -13,32 +14,40 @@
 <div metal:fill-slot="main">
 
   <p>
-    All icons should be provided in scalable versions,
-    but they should also be provided as bitmaps.
-    Each icon should have a bitmap in the &ldquo;normal&rdquo; size,
-    unless otherwise listed.
+    All graphics should be provided in scalable versions such as SVG,
+    as well as PNG bitmaps of the specified size.
+    Each graphic should have a PNG bitmap in the
+    &ldquo;icon&rdquo; size, unless otherwise listed.
   </p>
   <dl>
     <dt>
-      <img alt="" src="/@@/nyet-mini" style="float: right;" />
-      <dfn>emblem</dfn>
+      <img alt="" src="/@@/nyet-badge" style="float: right;" />
+      <dfn>badge</dfn>
     </dt>
     <dd>
-      Small enough to fit in a listing table without making the rows higher
-      (probably 12px &times; 12px).
-      These icons should have the <code>-mini</code> suffix.
-      They should only be used as badges or bullets in listings.
+      At 12px &times; 12px these are small enough to fit in a listing
+      table without making the rows higher.
+      These images should have the <code>-badge</code> suffix.
+      They should only be used as badges or bullets in simple listings.
+      Examples are <img src="/@@/distribution-badge" />,
+      <img src="/@@/person-badge" />,
+      <img src="/@@/product-badge" /> and  <img src="/@@/mail" />.
+      Note that there are <strong>no customised versions of these
+      per-pillar</strong>.
     </dd>
     <dt>
-      <img alt="" src="/@@/nyet" style="float: right;" />
+      <img alt="" src="/@@/nyet-icon" style="float: right;" />
       <dfn>icon</dfn>
     </dt>
     <dd>
       A standard icon.
-      Small enough to be used in normal text without affecting the line height.
-      14px &times; 14px.
-      These icons should have no suffix. You should get this for a pillar
-      object using <code>/fmt:icon</code>
+      Small enough to be used in a two-line listing without affecting
+      the line height. The size is 14px &times; 14px.
+      These icons should not have a suffix. You should
+      get this for a pillar object using <code>/fmt:icon</code>. Pillar
+      objects should optionally have these, and they should be used in
+      detailed listings (not simple listings - for those please use
+      badges). Team "emblems" should be of the icon size, not badge size.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-large" style="float: right;" />
@@ -48,20 +57,27 @@
       Used for metadata about objects, for example bug privacy.
       32px &times; 32px.
       These icons should have the <code>-large</code> suffix.
-      They are should all have a -mini equivalent, for use as
-      badges in listings.
+      They should <strong>all have a <code>-badge</code>
+      equivalent</strong>, for use as badges in listings.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-gotchi" style="float: right;" />
       <dfn>gotchi</dfn>
     </dt>
     <dd>
-      Used as a placeholder next to the headings for people and projects that do
-      not yet have a custom icon.  The "advertised" size of these should be 
+      This image is used in the heading of any Pillar object - people,
+      projects, products and distributions.  There should be default
+      versions of these images which correspond to the type of Pillar - so a
+      default for Product, a default for Project, Distribution, etc.
+      The "advertised" size of these should be
       54px &times; 54px. We will actually accept images up to
       72px &times; 72px but we expect the extra 4px border to be 90%
       whitespace (and we should enforce this on image upload). 54x54 is the
-      <strong>active image area</strong> but the total image area is 72x72.
+      <i>active image area</i> but the total image area is 72x72.
+      It should be possible to upload separate mugshot and gotchi images,
+      but it should also be possible just to have the gotchi auto-generated
+      from the mugshot (this is why the proportion of the border area is the
+      same between the mugshot and the gotchi formats).
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
@@ -69,7 +85,9 @@
     </dt>
     <dd>
       Represents people and projects on their Overview pages.
-      150px &times; 150px active image area, 200px &times; 200px
+      Please note that the mugshot is ONLY displayed on that one page per
+      pillar: http://launchpad.net/pillar/. It is not used anywhere else in
+      the site.  150px &times; 150px active image area, 200px &times; 200px
       including whitespace.
     </dd>
   </dl>
@@ -125,8 +143,8 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
-        <td>distribution-mini</td>
-        <td><img alt="" src="/@@/distribution-mini" /></td>
+        <td>distribution-badge</td>
+        <td><img alt="" src="/@@/distribution-badge" /></td>
         <td rowspan="4">An operating system compiled from various software.</td>
       </tr>
       <tr>
@@ -155,6 +173,12 @@
         <td>An action that will modify data in the system.</td>
       </tr>
       <tr>
+        <td>edit-badge</td>
+        <td><img src="/@@/edit-badge" /></td>
+        <td>A small edit graphic to be used in listings, for example the
+        links to edit the person's team membership</td>
+      </tr>
+      <tr>
         <td>error</td>
         <td>
           <img alt="" src="/@@/error" />
@@ -168,12 +192,16 @@
         <td><img alt="" src="/@@/error-large" /></td>
       </tr>
       <tr>
-        <td>info</td>
-        <td><img alt="" src="/@@/info" /></td>
+        <td>info-badge</td>
+        <td><img alt="" src="/@@/info-badge" /></td>
         <td rowspan="2">
           Something unusual but not dangerous has happened, such as you
           successfully creating something.
         </td>
+      </tr>
+      <tr>
+        <td>info</td>
+        <td><img alt="" src="/@@/info" /></td>
       </tr>
       <tr>
         <td>info-large</td>
@@ -230,13 +258,23 @@
         <td>A blue freehand question mark (used, for example, when something is proposed).</td>
       </tr>
       <tr>
+        <td>maybe-badge</td>
+        <td><img alt="" src="/@@/maybe-badge" /></td>
+        <td>For use in simple listings</td>
+      </tr>
+      <tr>
         <td>no</td>
         <td><img alt="" src="/@@/no" /></td>
         <td>A dark-ish red freehand cross (used, for example, when something is declined).</td>
       </tr>
       <tr>
-        <td>person-mini</td>
-        <td><img alt="" src="/@@/person-mini" /></td>
+        <td>no-badge</td>
+        <td><img alt="" src="/@@/no-badge" /></td>
+        <td>For use in simple listings</td>
+      </tr>
+      <tr>
+        <td>person-badge</td>
+        <td><img alt="" src="/@@/person-badge" /></td>
         <td rowspan="4">
           A person who uses Launchpad.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
@@ -256,8 +294,8 @@
         <td><img alt="" src="/@@/person-mugshot" /></td>
       </tr>
       <tr>
-        <td>person-inactive-mini</td>
-        <td><img alt="" src="/@@/person-mini" /></td>
+        <td>person-inactive-badge</td>
+        <td><img alt="" src="/@@/person-badge" /></td>
         <td rowspan="4">
           A person who does not use Launchpad.
         </td>
@@ -275,8 +313,8 @@
         <td><img alt="" src="/@@/person-inactive-mugshot" /></td>
       </tr>
       <tr>
-        <td>product-mini</td>
-        <td><img alt="" src="/@@/product-mini" /></td>
+        <td>product-badge</td>
+        <td><img alt="" src="/@@/product-badge" /></td>
         <td>
           A software project.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
@@ -296,8 +334,8 @@
         <td><img alt="" src="/@@/product-mugshot" /></td>
       </tr>
       <tr>
-        <td>project-mini</td>
-        <td><img alt="" src="/@@/project-mini" /></td>
+        <td>project-badge</td>
+        <td><img alt="" src="/@@/project-badge" /></td>
         <td rowspan="4">A group of projects.</td>
       </tr>
       <tr>
@@ -355,8 +393,8 @@
         <td>A meeting or sprint.</td>
       </tr>
       <tr>
-        <td>team-mini</td>
-        <td><img alt="" src="/@@/team-mini" /></td>
+        <td>team-badge</td>
+        <td><img alt="" src="/@@/team-badge" /></td>
         <td rowspan="4">
           An anonymous icon for a team.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
@@ -408,6 +446,11 @@
         <td>yes</td>
         <td><img alt="" src="/@@/yes" /></td>
         <td>A green check mark (used, for example, when something is approved).</td>
+      </tr>
+      <tr>
+        <td>yes-badge</td>
+        <td><img alt="" src="/@@/yes-badge" /></td>
+        <td>For use in simple listings</td>
       </tr>
       <tr>
         <td>zoom-in</td>
@@ -512,7 +555,7 @@
   <h3>Rosetta, the translation engine</h3>
 
   <p>
-    <img src="/@@/rosetta" align="left" />Rosetta is the Launchpad
+    Rosetta is the Launchpad
     translation engine. It allows projects to invite translators to help make
     their software work in any written language. Translators contribute new
     translations over the web which are then included in new releases of the
@@ -568,7 +611,7 @@
   <h3>Blueprint, the feature tracking application</h3>
 
   <p>
-    <img src="/@@/blueprint" align="left" />Blueprint is the Launchpad
+    Blueprint is the Launchpad
     feature tracker. It is used to help projects plan their feature
     development and coordinate across distributed teams.
   </p>
@@ -581,14 +624,21 @@
         <td>A feature specification, used as a bullet in lists of specs, or
         to indicate a link to a specification.</td>
       </tr>
+      <tr>
+        <td>bounty</td>
+        <td><img src="/@@/bounty" /></td>
+        <td>A bounty. This image is used in faeture listings to indicate the
+        features which have bounties associated with them, and as bullets for
+        lists of bounties.</td>
+      </tr>
     </tbody>
   </table>
 
   <h3>Greenhouse, the code management system</h3>
 
   <p>
-    <img src="/@@/greenhouse" align="left" />"Greenhouse" is
-    the Launchpad application that keeps track of software source code.
+    "Greenhouse" is the Launchpad application that keeps track of software
+    source code.
   </p>
 
   <table class="listing">
@@ -604,10 +654,17 @@
   <h3>Soyuz, the distribution package management system</h3>
 
   <p>
-    <img src="/@@/soyuz" align="left" />Soyuz is the Launchpad subsystem
+    Soyuz is the Launchpad subsystem
     that keeps track of the packages in a distribution. It handles uploads,
     the checking of permissions and consistency, builds, and the publishing
     of these packages into an archive.
+  </p>
+
+  <p>
+    Soyuz is mostly not a web application, but it still is responsible for
+    presenting the state of the distribution to the world through the
+    Launchpad site. Also, more and more of the administrative processes like
+    mirror management are being handled in Soyuz.
   </p>
 
   <table class="listing">
@@ -665,26 +722,6 @@
     </tbody>
   </table>
 
-  <h3>Cashpoint, the bounty tracking system.</h3>
-
-  <p>
-    <img src="/@@/cashpoint" align="left" />Cashpoint is the bounty tracking
-    system in Launchpad. It allows projects to manage the feature proposals
-    that they are also hoping to get bounties for.
-  </p>
-
-  <table class="listing">
-    <tbody>
-      <tr>
-        <td>bounty</td>
-        <td><img src="/@@/bounty" /></td>
-        <td>A bounty. This image is used in faeture listings to indicate the
-        features which have bounties associated with them, and as bullets for
-        lists of bounties.</td>
-      </tr>
-    </tbody>
-  </table>
-
   <h3>Answer Tracker, the question tracking system.</h3>
 
   <p>
@@ -727,3 +764,4 @@
 
 </body>
 </html>
+</tal:layout>
