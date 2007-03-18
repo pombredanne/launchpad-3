@@ -145,7 +145,7 @@ This changes the status of the question to 'Solved' and mark
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    No Privileges Person
+    &nbsp;No Privileges Person
 
 Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the question discussion:
@@ -156,8 +156,8 @@ confirmation message was appended to the question discussion:
 The confirmed answer is also highlighted.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
@@ -226,7 +226,7 @@ reopening portlet.
     >>> portlet = find_portlet(
     ...     owner_browser.contents, 'This question was reopened')
     >>> print extract_text(portlet.fetch('a')[-1])
-    Sample Person
+    &nbsp;Sample Person
 
 == Self-Answer ==
 
@@ -246,14 +246,14 @@ This appends the message to the quesiton and sets its status to
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    Sample Person
+    &nbsp;Sample Person
 
 It also records the owner as the answerer and marks his answer with the
 "Best answer" flag.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>OK, this example requires some SVG features that will only be available
@@ -285,12 +285,13 @@ It lists all the actions performed through workflow on the question:
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
     ...     print who, action, new_status
-    Foo Bar              Reject                       Invalid
-    Foo Bar              Change status                Open
-    No Privileges Person Request for more information Needs information
-    Sample Person        Give more information        Open
-    No Privileges Person Answer                       Answered
-    Sample Person        Confirm                      Solved
-    Sample Person        Comment                      Solved
-    Sample Person        Reopen                       Open
-    Sample Person        Confirm                      Solved
+    &nbsp;Foo Bar              Reject                       Invalid
+    &nbsp;Foo Bar              Change status                Open
+    &nbsp;No Privileges Person Request for more information Needs information
+    &nbsp;Sample Person        Give more information        Open
+    &nbsp;No Privileges Person Answer                       Answered
+    &nbsp;Sample Person        Confirm                      Solved
+    &nbsp;Sample Person        Comment                      Solved
+    &nbsp;Sample Person        Reopen                       Open
+    &nbsp;Sample Person        Confirm                      Solved
+

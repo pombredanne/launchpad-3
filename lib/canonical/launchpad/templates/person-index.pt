@@ -218,7 +218,7 @@
       </ul>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-          Show all bugs in progress 
+          &raquo; Show all bugs in progress 
         </a>
       </div>
     </div>
