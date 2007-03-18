@@ -19,7 +19,7 @@
     <div tal:condition="from_dupes_subscribers">
       <br />
       <b>From duplicates:</b><br />
-      <ul class="people">
+      <ul class="person">
         <li tal:repeat="subscriber from_dupes_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"

@@ -63,3 +63,90 @@
   </metal:description>
 
 </metal:basic_filebug_widgets>
+
+
+<metal:not_uses_malone metal:define-macro="not_uses_malone">
+
+  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
+
+    <tal:has-context define="product_or_distro view/getProductOrDistroFromContext"
+                     condition="product_or_distro">
+
+      <p class="warning message">
+        <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      </p>
+
+      <tal:upstream condition="view/contextIsProduct">
+
+        <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
+
+          <h3>Are you sure this bug is in <acronym class="explain" style="color: inherit" 
+                                title="the original developer of the software">upstream</acronym>
+                                <span tal:replace="product_or_distro/displayname" />?</h3>
+
+          <ul class="info">
+            <li tal:condition="product_or_distro/distrosourcepackages">
+              If you are using a package installed by your Linux
+              distribution, <b>the bug should be reported in that
+              distribution</b>, instead. Launchpad knows that <span
+              tal:replace="product_or_distro/displayname" /> is present in
+              the following distribution packages:
+                  <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
+                      <li><a tal:attributes="href dsp/fmt:url"><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" /></a>
+                      </li>
+                  </ul>
+              You can report bugs by visiting the package's page.
+            </li>
+
+            <br />
+            <li tal:condition="not: product_or_distro/distrosourcepackages">If
+              the bug you are reporting is in a package installed by a <a
+              href="/distros">distribution registered in Launchpad</a>, you should file the bug
+              against that specific distribution. 
+
+              <p class="helpwanted message">Launchpad doesn't know of
+              any distribution packages that include upstream <span
+              tal:replace="product_or_distro/displayname" />. You can
+              help by <a tal:attributes="href
+              string:${product_or_distro/development_focus/fmt:url}/+ubuntupkg">linking
+              them for us.</a></p>
+            </li>
+
+            <tal:has-bugtracker condition="bugtracker">
+              <br />
+              <li>Bugs in <abbr class="explain" 
+                                title="the original developer of the software">upstream</abbr>
+              <span tal:replace="product_or_distro/displayname">Alsa Utils</span>
+              should be reported in its official bug tracker, <a
+              tal:attributes="href bugtracker/baseurl"><span
+              tal:replace="bugtracker/title" /></a>.</li>
+            </tal:has-bugtracker>
+
+          </ul>
+
+          <tal:comment replace="nothing">
+            XXX: We shouldn't be using feedback@launchpad.net, but we have
+            no way of allowing people to go around changing product
+            bugtracker details, so for now it will have to do.
+          </tal:comment>
+          <p tal:condition="not: bugtracker" class="helpwanted message">
+              Launchpad doesn't know what bug tracker <span
+              tal:replace="product_or_distro/displayname">Alsa Utils</span>
+              uses. Do you know? <a href="mailto: feedback@launchpad.net">Tell us about it.</a>
+          </p>
+        </tal:defines>
+
+      </tal:upstream>
+
+      <tal:distro condition="not: view/contextIsProduct">
+
+        To file a bug for this distribution, visit its official bug
+        tracker.
+
+      </tal:distro>
+
+    </tal:has-context>
+
+  </tal:not_uses_malone>
+
+</metal:not_uses_malone>

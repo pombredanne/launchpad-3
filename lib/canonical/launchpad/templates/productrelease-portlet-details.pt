@@ -5,7 +5,13 @@
         <div class="portletContent even">
 
             <b>Registrant:</b><br />
+            <img alt="" src="/@@/user" />
             <a tal:replace="structure context/owner/fmt:link"/><br />
+
+            <b>When:</b>
+            <span
+              tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:approximatedate" /><br />
 
             <b>Product:</b>
             <a href="#"
@@ -20,10 +26,9 @@
             <span tal:replace="context/version" /><br />
 
             <b>Released:</b>
-            <span tal:replace="context/datereleased/fmt:date" /><br />
-
-            <b>Registered:</b>
-            <span tal:replace="context/datecreated/fmt:date" /><br />
+            <span
+              tal:attributes="title context/datereleased/fmt:datetime"
+              tal:content="context/datereleased/fmt:approximatedate" /><br />
 
         </div>
     </div>

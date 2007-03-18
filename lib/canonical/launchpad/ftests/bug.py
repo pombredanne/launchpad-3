@@ -24,7 +24,7 @@ def print_subscribers(bug_page, subscriber_portlet_index):
         bug_page, 'Subscribers to bug %s' % bug_id)
     try:
         portlet = subscriber_portlet.fetch(
-            'ul', "people")[subscriber_portlet_index]
+            'ul', "person")[subscriber_portlet_index]
     except IndexError:
         # No portlet with this index, as can happen if there are
         # no indirect subscribers, so just print an empty string

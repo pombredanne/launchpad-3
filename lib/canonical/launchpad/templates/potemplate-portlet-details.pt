@@ -12,7 +12,9 @@
             <b>Owner:</b><br />
             <a tal:replace="structure context/owner/fmt:link" /><br />
             <b>Created:</b>
-            <span tal:replace="context/datecreated/fmt:date">
+            <span
+              tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:displaydate">
               2004-05-22
             </span><br />
             <b>Domain:</b>
