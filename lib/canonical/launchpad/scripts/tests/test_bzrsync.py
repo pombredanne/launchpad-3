@@ -35,10 +35,10 @@ class BzrSyncTestCase(unittest.TestCase):
     LOG = "Log message"
 
     def setUp(self):
-        LaunchpadZopelessLaer.switchDbUser(config.branchscanner.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.txn = self.zopeless_helper.txn
+        self.txn = LaunchpadZopelessLayer.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
         self.setUpAuthor()
