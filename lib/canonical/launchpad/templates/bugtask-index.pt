@@ -97,7 +97,10 @@
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
       <div class="report">
-        <h2>Bug description <small>(<a href="+edit">edit</a>)</small></h2>
+        <h2>Bug description
+          <a href="+edit"
+          ><img src="/@@/edit" alt="[edit]" title="Edit this description"
+          /></a></h2>
 
     <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />

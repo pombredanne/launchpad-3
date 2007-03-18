@@ -64,7 +64,7 @@
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
     <resource name="download" file="../images/download.png" />
-    <resource name="edit-badge" file="../images/edit-badge.png" />
+    <resource name="download-large" file="../images/download-large.png" />
     <resource name="edit" file="../images/edit.png" />
     <resource name="error" file="../images/error.png" />
     <resource name="error-badge" file="../images/error-badge.png" />
@@ -73,7 +73,6 @@
     <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="info" file="../images/info.png" />
-    <resource name="info-badge" file="../images/info-badge.png" />
     <resource name="info-large" file="../images/info-large.png" />
     <resource name="involved-no" file="../images/involved-no-badge.png" />
     <resource name="involved-yes" file="../images/involved-yes-badge.png" />
@@ -88,11 +87,9 @@
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="maybe" file="../images/maybe.png" />
-    <resource name="maybe-badge" file="../images/maybe-badge.png" />
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
     <resource name="no" file="../images/no.png" />
-    <resource name="no-badge" file="../images/no-badge.png" />
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
@@ -143,7 +140,6 @@
     <resource name="warning-badge" file="../images/warning-badge.png" />
     <resource name="warning-large" file="../images/warning-large.png" />
     <resource name="yes" file="../images/yes.png" />
-    <resource name="yes-badge" file="../images/yes-badge.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
     <resource name="zoom-out" file="../images/zoom-out.png" />
 
