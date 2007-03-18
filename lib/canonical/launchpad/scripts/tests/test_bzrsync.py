@@ -18,36 +18,32 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import (
     Revision, BranchRevision, RevisionParent, RevisionAuthor)
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class BzrSyncTestCase(unittest.TestCase):
     """Common base for BzrSync test cases."""
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
 
     def setUp(self):
+        LaunchpadZopelessLaer.switchDbUser(config.branchscanner.dbuser)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.branchscanner.dbuser)
-        self.zopeless_helper.setUp()
         self.txn = self.zopeless_helper.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
         self.setUpAuthor()
 
     def tearDown(self):
-        self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
 
     def join(self, name):

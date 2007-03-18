@@ -250,10 +250,6 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     def setUp(cls):
         cls.force_dirty_database()
-        if is_ca_available():
-            raise LayerInvariantError(
-                    "Component architecture should not be available"
-                    )
 
     @classmethod
     def tearDown(cls):
@@ -388,7 +384,7 @@ class FunctionalLayer(BaseLayer):
         transaction.abort()
 
 
-class ZopelessLayer(LaunchpadLayer):
+class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
     loaded using execute_zcml_for_scrips()
     """
@@ -518,6 +514,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         LaunchpadZopelessTestSetup.txn = cls.txn
 
         # Connect SQLOS
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
         _reconnect_sqlos()
 
     @classmethod
