@@ -79,11 +79,8 @@
       projects, products and distributions.  There should be default
       versions of these images which correspond to the type of Pillar - so a
       default for Product, a default for Project, Distribution, etc.
-      The "advertised" size of these should be
-      54px &times; 54px. We will actually accept images up to
-      72px &times; 72px but we expect the extra 4px border to be 90%
-      whitespace (and we should enforce this on image upload). 54x54 is the
-      <i>active image area</i> but the total image area is 72x72.
+      These will be required to be 64px &times; 64px in size, if smaller
+      images are uploaded then they will be fitted into a 64px square.
       It should be possible to upload separate mugshot and gotchi images,
       but it should also be possible just to have the gotchi auto-generated
       from the mugshot (this is why the proportion of the border area is the
@@ -97,8 +94,9 @@
       Represents people and projects on their Overview pages.
       Please note that the mugshot is ONLY displayed on that one page per
       pillar: http://launchpad.net/pillar/. It is not used anywhere else in
-      the site.  150px &times; 150px active image area, 200px &times; 200px
-      including whitespace.
+      the site.  These images are allowed to be up to 192px &times; 192px in
+      size, including whitespace. If a smaller image is uploaded, it will
+      converted and set in the middle of a white 192px &times; 192px square.
     </dd>
   </dl>
 

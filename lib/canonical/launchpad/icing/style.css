@@ -570,7 +570,7 @@ ul#applicationchooser li#applicationchooser_selected {
 #globalsearch {
   width: 220px;
   float: right;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 #globalsearch #q {
   width: 170px;
@@ -672,16 +672,16 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #structuralobjectheading img {
   float: left;
-  margin: 0;
+  margin: 0 0 0 3px;
 }
 #structuralobjectheading .main {
   font-weight: bold;
-  margin: 1px 0 0 77px;
-  font-size: 2.7em;
+  margin: 1px 0 0 70px;
+  font-size: 2.3em;
 }
 #structuralobjectheading .intro {
-  margin: 3px 0 0 77px;
-  font-size: 1.1em;
+  margin: 2px 0 0 70px;
+  font-size: 1em;
 }
 #structural-children {
   clear: both;
