@@ -412,12 +412,6 @@ class ProductSetContextMenu(ContextMenu):
     def meetings(self):
         return Link('/sprints/', 'View meetings')
 
-    def withcode(self):
-        text = 'Show projects with code'
-        productset = getUtility(IProductSet)
-        return Link(canonical_url(
-            productset, rootsite='code'), text, icon='list')
-
 
 class ProductView:
 
