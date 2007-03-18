@@ -779,7 +779,6 @@ class NascentUpload:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
-            self.logger.error("duhhhh", exc_info=True)
             self.reject("Exception while accepting: %s" % e)
             return False, self.do_reject()
 
@@ -870,8 +869,9 @@ class NascentUpload:
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
         distrorelease = self.policy.distrorelease
-        queue_root = distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes.filename, self.changes.filecontents)
+        queue_root = distrorelease.createQueueEntry(
+            self.policy.pocket, self.changes.filename,
+            self.changes.filecontents, self.changes.signingkey)
 
         # When binaryful and sourceful, we have a mixed-mode upload.
         # Mixed-mode uploads need special handling, and the spr here is
@@ -900,18 +900,10 @@ class NascentUpload:
                     binary_package_file.verify_sourcepackagerelease(spr)
                 else:
                     spr = binary_package_file.find_sourcepackagerelease()
-                    build = binary_package_file.find_build(spr)
-                    binary_package_file.store_in_database(build)
 
-                # XXX: two questions: did we mean distrorelease or
-                # pocket here, and can we assert build.pocket ==
-                # self.policy.pocket?
-                #
-                # We cannot rely on the distrorelease coming in for a binary
-                # release because it is always set to 'autobuild' by the builder.
-                # We instead have to take it from the policy which gets
-                # instructed by the buildd master during the upload.
-                queue_root.pocket = build.pocket
+                build = binary_package_file.find_build(spr)
+                assert queue_root.pocket == build.pocket
+                binary_package_file.store_in_database(build)
                 queue_root.addBuild(build)
 
         if not self.is_new:

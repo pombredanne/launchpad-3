@@ -85,11 +85,24 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.project import ProjectScopeWidget
 
 
+def unique_title(title):
+    """Canonicalise a message title to help identify messages with new
+    information in their titles.
+    """
+    if title is None:
+        return None
+    title = title.lower()
+    if title.startswith('re:'):
+        title = title[3:]
+    return title.strip()
+
+
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
-    requiring only two database queries.
+    requiring only two database queries. It removes the titles
+    for those comments which do not have a "new" subject line
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
@@ -100,6 +113,15 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         assert comments.has_key(message_id)
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
+    current_title = bugtask.bug.title
+    for comment in comments:
+        if not ((unique_title(comment.title) == \
+                 unique_title(current_title)) or \
+                (unique_title(comment.title) == \
+                 unique_title(bugtask.bug.title))):
+            # this comment has a new title, so make that the rolling focus
+            current_title = comment.title
+            comment.display_title = True
     return comments
 
 
@@ -977,8 +999,9 @@ class BugTaskListingView(LaunchpadView):
             return status_title + ' (unassigned)'
 
         assignee_html = (
-            '<img alt="" src="/@@/user" /> '
+            '<img alt="" src="%s" /> '
             '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                assignee.default_emblem_resource,
                 urllib.quote(assignee.name),
                 cgi.escape(assignee.browsername)))
 
@@ -1194,9 +1217,9 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    form_has_errors = False
     owner_error = ""
     assignee_error = ""
+    bug_contact_error = ""
 
     @property
     def schema(self):
@@ -1271,7 +1294,9 @@ class BugTaskSearchListingView(LaunchpadView):
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
         except WidgetsError:
-            self.form_has_errors = True
+            # No need to do anything, the widget will be checked for
+            # errors elsewhere.
+            pass
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1311,7 +1336,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve"
+                "status_upstream", "tag", "has_cve", "bug_contact"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1533,11 +1558,19 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return False
 
+    @property
+    def form_has_errors(self):
+        has_errors = (
+            self.assignee_error or
+            self.owner_error or
+            self.bug_contact_error or
+            self.tag_widget.error())
+        return has_errors
+
     def validateVocabulariesAdvancedForm(self):
         """Validate person vocabularies in advanced form.
 
-        If a vocabulary lookup fail set a custom error message and set
-        self.form_has_errors to True.
+        If a vocabulary lookup fail set a custom error message.
         """
         error_message = _(
             "There's no person with the name or email address '%s'")
@@ -1551,9 +1584,11 @@ class BugTaskSearchListingView(LaunchpadView):
         except WidgetsError:
             self.owner_error = error_message % (
                 cgi.escape(self.request.get('field.owner')))
-
-        if self.assignee_error or self.owner_error:
-            self.form_has_errors = True
+        try:
+            getWidgetsData(self, self.schema, names=["bug_contact"])
+        except WidgetsError:
+            self.bug_contact_error = error_message % (
+                cgi.escape(self.request.get('field.bug_contact')))
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?

@@ -638,34 +638,37 @@ Import the test keys again since the transaction was aborted before.
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
-  >>> ed_ok = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
-  >>> ed_ok.policy.setOptions(MockOptions())
+  >>> bar_ok = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
+  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
+  >>> bar_ok.policy.setOptions(MockOptions())
 
-XXX cprov 20061206: ok, by lack of better sample-packages we will
-override the policy attributes to allow binary (and mixed) uploads.
-
-  >>> ed_ok.policy.can_upload_binaries = True
-  >>> ed_ok.policy.can_upload_mixed = True
-
-  >>> ed_ok.process()
-  >>> ed_ok.is_rejected
+  >>> bar_ok.process()
+  >>> bar_ok.is_rejected
   False
 
   >>> from zope.interface.verify import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...    IGPGKey, IPersonSet)
-  >>> verifyObject(IGPGKey, ed_ok.changes.dsc.signingkey)
+
+  >>> verifyObject(IGPGKey, bar_ok.changes.dsc.signingkey)
   True
 
-The second key of name16 person is used to sign uploads (the first one
-is a placeholder one):
+  >>> verifyObject(IGPGKey, bar_ok.changes.signingkey)
+  True
+
+The second key of name16 person is used to sign uploads (the first gpgkey
+record is a placeholder one, we used the second key):
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> uploader_key = name16.gpgkeys[1]
 
-  >>> ed_ok.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
+Both, DSC and changesfile were signed:
+
+  >>> bar_ok.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
+  True
+
+  >>> bar_ok.changes.signingkey.fingerprint == uploader_key.fingerprint
   True
 
 Let's modify the current ACL rules for ubuntu, moving the upload
@@ -676,33 +679,33 @@ rights to all commponents from 'ubuntu-team' to 'sabdfl':
   ...     distro_component.uploader = new_uploader
 
 This time the upload should fail because the ACLs don't let
-"kinnison", the key owner,  upload a package.
+"name16", the key owner, upload a package.
 
-  >>> ed_failed = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
-  ...     "ed_0.2-20_i386.changes", MockMunchyLogger())
-  >>> ed_failed.policy.setOptions(MockOptions())
+  >>> bar_failed = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
+  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
+  >>> bar_failed.policy.setOptions(MockOptions())
 
-XXX cprov 20061206: ok, by lack of better sample-packages we will
-override the policy attributes to allow binary (and mixed) upload.
-
-  >>> ed_failed.policy.can_upload_binaries = True
-  >>> ed_failed.policy.can_upload_mixed = True
-
-  >>> ed_failed.process()
-  >>> ed_failed.is_rejected
+  >>> bar_failed.process()
+  >>> bar_failed.is_rejected
   True
-  >>> ed_failed.rejection_message
+  >>> bar_failed.rejection_message
   'Signer has no upload rights at all to this distribution.'
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
-is stored in NascentUpload instance for further checks:
+and the changesfile sigining key are stored in NascentUpload instance
+for further checks:
 
-  >>> verifyObject(IGPGKey, ed_failed.changes.dsc.signingkey)
+  >>> verifyObject(IGPGKey, bar_failed.changes.dsc.signingkey)
+  True
+  >>> verifyObject(IGPGKey, bar_failed.changes.signingkey)
   True
 
-  >>> ed_failed.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
+  >>> bar_failed.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
   True
+  >>> bar_failed.changes.signingkey.fingerprint == uploader_key.fingerprint
+  True
+
 
 == Check if deb packages using bzip are properly checked ==
 

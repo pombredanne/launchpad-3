@@ -114,9 +114,6 @@ class SignableTagFile:
                 comment=('when the %s package was uploaded to %s'
                          % (package, release)))
 
-            self.logger.debug('******* Person created: %s (%s)'
-                              % (person.displayname, person.id))
-
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"
                               % (name, email))

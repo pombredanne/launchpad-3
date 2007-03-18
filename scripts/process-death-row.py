@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Death row kickoff script."""
 
 import _pythonpath

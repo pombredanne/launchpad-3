@@ -72,6 +72,12 @@ person's page, containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a ...><img alt="" src="/@@/team" />Ubuntu Team</a>'
 
+The fmt:link formatter uses additional path components to extend the
+link:
+
+    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
+    u'<a href=".../~spiv/foo/bar">...'
+
 We also have fmt:icon for KarmaCategory:
 
     >>> from canonical.launchpad.database import KarmaCategory

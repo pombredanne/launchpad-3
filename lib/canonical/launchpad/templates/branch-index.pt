@@ -137,8 +137,10 @@
   </tal:comment>
   <p tal:condition="context/mirror_failures"
        class="warning message" style="font-weight: normal">
-    Launchpad could not mirror this branch at
-    <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+    Launchpad could not mirror this branch
+    <span
+      tal:attributes="title context/last_mirror_attempt/fmt:datetime"
+      tal:content="context/last_mirror_attempt/fmt:displaydate" />.
     <span tal:condition="context/mirror_status_message">
       The error was:
       <span tal:replace="context/mirror_status_message">Error 1</span>
@@ -166,13 +168,11 @@
     <li tal:repeat="rev_no context/latest_revisions"
         tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
       <div>
-        <span tal:replace="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;</span>
-        <tal:date>
-          (<span
-          tal:replace="rev_no/revision/revision_date/fmt:datetime">2005-10-05
-            14:34:22 WST</span>)
-        </tal:date>
+        By <strong tal:content="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;</strong> <span
+            tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
+            tal:content="rev_no/revision/revision_date/fmt:displaydate"
+            >2005-10-05 14:34:22 WST</span>
       </div>
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.

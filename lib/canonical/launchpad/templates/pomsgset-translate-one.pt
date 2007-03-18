@@ -244,9 +244,11 @@
         <td class="icon left right" />
         <td style="overflow: auto;">
           <a tal:content="active_submission/person/browsername"
-             tal:attributes="href active_submission/person/fmt:url">Foo Bar</a> on
-          <span tal:content="active_submission/datecreated/fmt:datetime">
-            2006-08-05 01:04 UTC
+             tal:attributes="href active_submission/person/fmt:url">Foo Bar</a>
+          <span
+            tal:attributes="title active_submission/datecreated/fmt:datetime"
+            tal:content="active_submission/datecreated/fmt:displaydate">
+            on 2006-08-05
           </span>
         </td>
       </tr>
@@ -258,9 +260,11 @@
         <td class="icon left right" />
         <td style="overflow: auto;">
           <a tal:content="context/reviewer/browsername"
-             tal:attributes="href context/reviewer/fmt:url">Foo Bar</a> on
-          <span tal:content="context/date_reviewed/fmt:datetime">
-            2006-08-05 01:04 UTC
+             tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
+          <span
+            tal:attributes="title context/date_reviewed/fmt:datetime"
+            tal:content="context/date_reviewed/fmt:displaydate">
+            on 2006-08-05
           </span>
         </td>
       </tr>

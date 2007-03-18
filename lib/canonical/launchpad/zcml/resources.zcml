@@ -137,6 +137,7 @@
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
     <resource name="user" file="../images/person.png" />
     <resource name="warning" file="../images/warning.png" />
+    <resource name="helpwanted" file="../images/helpwanted.gif" />
     <resource name="warning-large" file="../images/warning-large.png" />
     <resource name="yes" file="../images/yes.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
