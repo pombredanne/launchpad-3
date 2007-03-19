@@ -17,6 +17,7 @@ from zope.interface import implements
 from bzrlib.errors import NoSuchFile, PermissionDenied
 from bzrlib.transport import get_transport
 
+from twisted.cred.credentials import SSHPrivateKey
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.portal import IRealm, Portal
 
@@ -29,10 +30,12 @@ from twisted.python import failure
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
+from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.config import config
+from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.supermirrorsftp import sftponly
 from canonical.supermirrorsftp.tests.test_acceptance import (
-    SFTPTestCase, deferToThread, TestSFTPService)
+    SFTPTestCase, deferToThread)
 from canonical.testing import TwistedLayer
 
 
@@ -186,7 +189,9 @@ class MockChecker(SSHPublicKeyDatabase):
         return failure.Failure(UnauthorizedLogin('error message'))
 
 
-class TestAuthenticationErrors(UserAuthServerMixin, TrialTestCase):
+class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
+    """Check that auth error information is passed through to the client."""
+
     layer = TwistedLayer
 
     def setUp(self):
@@ -213,11 +218,27 @@ class TestAuthenticationErrors(UserAuthServerMixin, TrialTestCase):
             self.assertEqual(
                 list(zip(*self.transport.packets)[0]),
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
+
             # Check that the banner message is informative.
             bytes, language, empty = getNS(self.transport.packets[0][1], 2)
             self.assertEqual(bytes.decode('UTF8'),
                              MockChecker.error_message + u'\r\n')
         return d.addCallback(check)
+
+
+class TestAuthenticationErrors(TrialTestCase):
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        self.authService = AuthserverService()
+        self.authService.startService()
+        self.authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        self.checker = sftponly.PublicKeyFromLaunchpadChecker(self.authserver)
+
+    def test_successful(self):
+        creds = SSHPrivateKey('jml', 'ssh-rsa', '', None, None)
+        return self.checker.requestAvatarId(creds)
 
 
 def test_suite():
