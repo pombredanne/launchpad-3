@@ -27,38 +27,6 @@ from canonical.testing import TwistedLayer
 class SFTPTests(SFTPTestCase):
     layer = TwistedLayer
 
-    # XXX: AndrewBennetts 2006-06-07:
-    # This is a basically a copy of failUnlessRaises from
-    # twisted/trial/unittest.py (MIT licensed), because unlike pyunit's
-    # failUnlessRaises it returns the caught exception.  That makes it possible
-    # to assert things about the attributes of the exception, not just the type
-    # of the exception.
-    def failUnlessRaises(self, exception, f, *args, **kwargs):
-        """fails the test unless calling the function C{f} with the given C{args}
-        and C{kwargs} does not raise C{exception}. The failure will report the
-        traceback and call stack of the unexpected exception.
-        
-        @param exception: exception type that is to be expected
-        @param f: the function to call
-    
-        @return: The raised exception instance, if it is of the given type.
-        @raise self.failureException: Raised if the function call does not raise
-            an exception or if it raises an exception of a different type.
-        """
-        try:
-            result = f(*args, **kwargs)
-        except exception, inst:
-            return inst
-        except:
-            raise self.failureException('%s raised instead of %s:\n %s'
-                                        % (sys.exc_info()[0],
-                                           exception.__name__,
-                                           ''.join(traceback.format_stack())))
-        else:
-            raise self.failureException('%s not raised (%r returned)'
-                                        % (exception.__name__, result))
-    assertRaises = failUnlessRaises
-
     @deferToThread
     def _test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
