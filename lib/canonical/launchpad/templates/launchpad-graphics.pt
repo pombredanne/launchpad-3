@@ -534,12 +534,12 @@
       </tr>
       <tr>
         <td>languages</td>
-        <td><img alt="" src="/@@/languages" /></td>
+        <td><img alt="" src="/@@/language" /></td>
         <td>A language, or a link to a set of languages.</td>
       </tr>
       <tr>
         <td>translations</td>
-        <td><img src="/@@/translations" /></td>
+        <td><img src="/@@/translation" /></td>
         <td><i>XXX what is this used for? What is the semantic? The icon is
         very unclear.</i></td>
       </tr>

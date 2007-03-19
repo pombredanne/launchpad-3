@@ -115,4 +115,4 @@ Only ten bugs are returned by default:
     ...     syncUpdate(bug.bugtasks[0])
 
     >>> len(bugs_view.getMostRecentlyFixedBugs())
-    10
+    5
