@@ -37,7 +37,7 @@ from zope.app.form.interfaces import (
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.interface import providedBy
 from zope.schema import Choice
@@ -81,7 +81,8 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget, LaunchpadRadioWidget)
+    NewLineToSpacesWidget)
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -219,13 +220,14 @@ class BugTaskNavigation(Navigation):
         # will return the +viewstatus page if bug 1 has actually been
         # reported in "foo". If bug 1 has not yet been reported in "foo",
         # a 404 will be returned.
-        if name in ("+viewstatus", "+editstatus"):
-            if INullBugTask.providedBy(self.context):
-                # The bug has not been reported in this context.
-                return None
-            else:
-                # The bug has been reported in this context.
-                return getView(self.context, name + "-page", self.request)
+        if name not in ("+viewstatus", "+editstatus"):
+            # You're going in the wrong direction.
+            return None
+        if INullBugTask.providedBy(self.context):
+            # The bug has not been reported in this context.
+            return None
+        # Yes! The bug has been reported in this context.
+        return getMultiAdapter((self.context, self.request), name=name+"-page")
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
@@ -709,6 +711,15 @@ class BugTaskEditView(GeneralFormView):
                 if field_name not in editable_field_names]
 
         return read_only_field_names
+
+    def errorMessage(self):
+        assert self.errors
+        text = ("There %s with the information you entered. "
+                "Please fix %s and try again")
+        count = len(self.errors)
+        if count == 1:
+            return text % ("is a problem", "it")
+        return text % ("are %d problems" % count, "them")
 
     def userCanEditMilestone(self):
         """Can the user edit the Milestone field?

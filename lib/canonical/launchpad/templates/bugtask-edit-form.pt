@@ -9,21 +9,8 @@
     tal:condition="errors"
     class="error message"
     i18n:translate=""
-  >
-    There are
-    <strong
-      tal:content="view/errors/count:len"
-      i18n:name="num_errors"
-    >6</strong>
-    problems with the information you entered.  Please fix them and try again.
-  </p>
-  <p
-    tal:define="errors view/errors|nothing"
-    tal:condition="errors"
-    tal:repeat="error errors"
-    tal:content="error"
-    class="error message"
-  >Individual error.</p>
+    tal:content = "view/errorMessage"
+  />
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
@@ -44,42 +31,46 @@
           </td>
         </tr>
         <tr>
-          <td
-            tal:content="structure view/sourcepackagename_widget"
-            style="white-space: nowrap;"
-          />
+          <td tal:define="widget nocall:view/sourcepackagename_widget">
+            <metal:content
+              use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+          </td>
         </tr>
       </tal:distrotask>
       <tal:upstreamtask condition="python:context.product">
         <tr tal:condition="view/product_widget">
           <td colspan="2">
-            <label
+            <label style="font-weight: bold"
               tal:attributes="for view/product_widget/name"
               tal:content="view/product_widget/label"
             >Upstream project</label>
           </td>
         </tr>
         <tr tal:condition="view/product_widget">
-          <td colspan="2" tal:content="structure view/product_widget" nowrap />
+          <td colspan="2" style="white-space: nowrap"
+              tal:define="widget nocall:view/product_widget">
+            <metal:content
+              use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+          </td>
         </tr>
       </tal:upstreamtask>
     </table>
     <table>
       <tr>
         <td>
-          <label
+          <label style="font-weight: bold"
             tal:attributes="for view/status_widget/name"
             tal:content="view/status_widget/label"
           >Status</label>
         </td>
         <td>
-          <label
+          <label style="font-weight: bold"
             tal:attributes="for view/importance_widget/name"
             tal:content="view/importance_widget/label"
           >Importance</label>
         </td>
         <td tal:condition="view/milestone_widget">
-          <label
+          <label style="font-weight: bold"
             tal:attributes="for view/milestone_widget/name"
             tal:content="view/milestone_widget/label"
           >Target</label>
@@ -101,7 +92,7 @@
     <table>
       <tr>
         <td>
-          <label
+          <label style="font-weight: bold"
             tal:attributes="for view/assignee_widget/name"
             tal:content="view/assignee_widget/label"
           />
@@ -145,14 +136,14 @@
     </table>
   </div>
   <div class="field">
-    <label tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
-    <div style="margin-top: 5px">
+    <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
+    <div style="margin-top: 5px; margin-bottom: 1em">
       <i tal:content="python:context.statusexplanation or '(none)'" />
     </div>
   </div>
   <div class="field">
     <div>
-      <label  tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
+      <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
         rows="4"
