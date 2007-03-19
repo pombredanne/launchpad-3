@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CanBeMentoredView',
     'MentoringOfferSetFacets',
     'MentoringOfferSetOverviewMenu',
     'MentoringOfferSetSOP',
@@ -15,6 +16,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
     IBug,
@@ -119,7 +122,7 @@ class RetractMentoringOfferView(LaunchpadFormView, CanBeMentoredView):
     label = "Retract your offer of mentorship"
     field_names = []
 
-    @action(_('Rectract Mentoring'), name='retract')
+    @action(_('Retract Mentoring'), name='retract')
     def add_action(self, action, data):
         user = self.user
         if self.context.isMentor(user):

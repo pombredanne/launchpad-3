@@ -52,7 +52,7 @@
       template="../templates/hasmentoringoffers-mentoring.pt" />
     <browser:page
       name="+success"
-      template="../templates/mentorshipmanager-success.pt" />
+      template="../templates/mentoringofferset-success.pt" />
   </browser:pages>
 
   <!-- IHasMentoringOffers -->

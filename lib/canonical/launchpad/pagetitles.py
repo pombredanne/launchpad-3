@@ -495,7 +495,7 @@ malone_filebug = "Report a bug"
 
 # malone_template is a means to include the mainmaster template
 
-mentorshipmanager_success = "Successful mentorships over the past year."
+mentoringofferset_success = "Successful mentorships over the past year."
 
 # messagechunk_snippet is a fragment
 

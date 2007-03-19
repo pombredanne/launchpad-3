@@ -203,6 +203,37 @@ class BugTaskMixin:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
 
+    @property
+    def mentoring_offers(self):
+        """See IHasMentoringOffers."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.mentoring_offers
+
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.canMentor(user)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.isMentor(user)
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.offerMentoring(user, team)
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.retractMentoring(user)
+
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -650,37 +681,6 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_assigned = now
 
         self.assignee = assignee
-
-    @property
-    def mentoring_offers(self):
-        """See IHasMentoringOffers."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.mentoring_offers
-
-    def canMentor(self, user):
-        """See ICanBeMentored."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.canMentor(user)
-
-    def isMentor(self, user):
-        """See ICanBeMentored."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.isMentor(user)
-
-    def offerMentoring(self, user, team):
-        """See ICanBeMentored."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.offerMentoring(user, team)
-
-    def retractMentoring(self, user):
-        """See ICanBeMentored."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.retractMentoring(user)
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""

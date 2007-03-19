@@ -111,12 +111,12 @@ First, we will make an offer of mentorship on a bug.
   >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.url
-  XXX
+  http://bugs.launchpad.dev/ubuntu-product/+bug/2/+mentor
   >>> print browser.title
-  Offer to mentor Bug #2
-  >>> browser.getControl('Continue').click()
+  Offer to mentor this work
+  >>> browser.getControl('Offer Mentoring').click()
   >>> print browser.url
-  XXX
+  http://bugs.launchpad.dev/ubuntu-product/+bug/2
   >>> 'Blackhole Trash folder' in browser.title
   True
 
@@ -148,8 +148,8 @@ Now, let's repeat the whole exercise with a Blueprint.
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.title
-  Offer to mentor someone implementing this blueprint.
-  >>> browser.getControl('Continue').click()
+  Offer to mentor this work
+  >>> browser.getControl('Offer Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True
 
@@ -185,9 +185,9 @@ First, any offers should show up on the page of the person making the offer.
   >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
   >>> print anon_browser.title
   Mentoring offered by One Membership
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   True
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   True
 
 They should also show up on the page for the team which is the beneficiary
@@ -196,9 +196,9 @@ of this mentorship.
   >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
   >>> print anon_browser.title
   Mentoring available for newcomers to Simple Team
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   True
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   True
 
 
@@ -207,7 +207,7 @@ There is also a listing of mentorships available for a product:
   >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
   >>> print anon_browser.title
   Mentoring available in Ubuntu
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   True
 
 And for a project:
@@ -215,7 +215,7 @@ And for a project:
   >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
   >>> print anon_browser.title
   Mentoring available in the Ubuntu Project
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   True
 
 And for a distribution
@@ -223,7 +223,7 @@ And for a distribution
   >>> anon_browser.open('http://launchpad.dev/kubuntu/+mentoring')
   >>> print anon_browser.title
   Mentoring available in Kubuntu
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   True
 
 
@@ -233,7 +233,7 @@ launchpad Admins:
   >>> user_browser.open('http://launchpad.dev/+mentorship/')
   Traceback (most recent call last):
     ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
 
 When we login as an admin, we can see listed here all the outstanding
@@ -242,9 +242,9 @@ mentorship offers:
   >>> admin_browser.open('http://launchpad.dev/+mentorship/')
   >>> print admin_browser.title
   Mentoring available in the Launchpad Mentorship Manager
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in admin_browser.contents
   True
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in admin_browser.contents
   True
 
 
@@ -297,9 +297,9 @@ So, first, these completed items should show up in the Mentorship Manager's
   >>> admin_browser.open('http://launchpad.dev/+mentorship/+success')
   >>> print admin_browser.title
   Successful mentorships over the past year.
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in admin_browser.contents
   True
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in admin_browser.contents
   True
 
 But not in the "mentorship available" listing:
@@ -307,9 +307,9 @@ But not in the "mentorship available" listing:
   >>> admin_browser.open('http://launchpad.dev/+mentorship')
   >>> print admin_browser.title
   Mentoring available in the Launchpad Mentorship Manager
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in admin_browser.contents
   False
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in admin_browser.contents
   False
 
 Nor in any of the listings which previously showed these items:
@@ -317,9 +317,9 @@ Nor in any of the listings which previously showed these items:
   >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
   >>> print anon_browser.title
   Mentoring offered by One Membership
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   False
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   False
 
 They should also show up on the page for the team which is the beneficiary
@@ -328,34 +328,34 @@ of this mentorship.
   >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
   >>> print anon_browser.title
   Mentoring available for newcomers to Simple Team
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   False
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   False
 
 
 There is also a listing of mentorships available for a product:
 
-  >>> browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
-  >>> print browser.title
+  >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
+  >>> print anon_browser.title
   Mentoring available in Ubuntu
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
 And for a project:
 
-  >>> browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
-  >>> print browser.title
+  >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
+  >>> print anon_browser.title
   Mentoring available in the Ubuntu Project
-  >>> 'Blackhole Trash folder' in browser.contents
+  >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
 And for a distribution
 
-  >>> browser.open('http://launchpad.dev/kubuntu/+mentoring')
-  >>> print browser.title
+  >>> anon_browser.open('http://launchpad.dev/kubuntu/+mentoring')
+  >>> print anon_browser.title
   Mentoring available in Kubuntu
-  >>> 'cluster-installation' in browser.contents
+  >>> 'cluster-installation' in anon_browser.contents
   False
 
 == Retraction of mentoring ==
@@ -387,16 +387,16 @@ complete. This should allow us to retract our offer of mentoring in both
 cases.
 
    >>> login('foo.bar@canonical.com')
-   >>> for task in b2.bugtasks:
+   >>> for task in bug_2.bugtasks:
    ...   if task.conjoined_master is None:
    ...     task.transitionToStatus(BugTaskStatus.CONFIRMED)
    >>> flush_database_updates()
-   >>> b2.is_complete
+   >>> bug_2.is_complete
    False
-   >>> s1.delivery = SpecificationDelivery.NOTSTARTED
-   >>> newstate = s1.updateLifecycleStatus(foo_bar)
-   >>> syncUpdate(s1)
-   >>> s1.is_complete
+   >>> spec_1.delivery = SpecificationDelivery.NOTSTARTED
+   >>> newstate = spec_1.updateLifecycleStatus(foo_bar)
+   >>> syncUpdate(spec_1)
+   >>> spec_1.is_complete
    False
    >>> logout()
 
@@ -411,7 +411,7 @@ mentoring again.
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
   Retract offer of mentorship
-  >>> browser.getControl('Retract').click()
+  >>> browser.getControl('Retract Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True
   >>> menu_mentoring_offer in browser.contents
@@ -423,7 +423,7 @@ And finally let's do it on the bug.
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
   Retract offer of mentorship
-  >>> browser.getControl('Retract').click()
+  >>> browser.getControl('Retract Mentoring').click()
   >>> 'Blackhole Trash folder' in browser.title
   True
   >>> menu_mentoring_offer in browser.contents
