@@ -806,14 +806,20 @@ a.open, a.closed {
   display: block;
   width: 28px;
   height: 120px;
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
   text-indent: -9999px;
   overflow: hidden;
 }
+
+#help_panel.open a.open-close, a.open {
+  background-image: url(help_ttl_open.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
+}
+
 #help_panel.closed a.open-close, a.closed {
-  background-image: url(help_ttl_closed.gif);
+	background-image: url(help_ttl_closed.gif);
+	background-repeat: no-repeat;
+	background-position: 0px 0px;
 }
 
 /* --- Various custom list formats --- */
@@ -835,7 +841,7 @@ ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
-ul.languages, li.languages           {list-style-image: url(/@@/languages);}
+ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
@@ -849,7 +855,7 @@ ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
-ul.translations, li.translations     {list-style-image: url(/@@/translations);}
+ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 

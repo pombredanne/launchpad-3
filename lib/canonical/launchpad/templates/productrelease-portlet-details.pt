@@ -5,8 +5,7 @@
         <div class="portletContent even">
 
             <b>Registrant:</b><br />
-            <img alt="" src="/@@/user" />
-            <a tal:replace="structure context/owner/fmt:link"/><br />
+            <tal:registrant replace="structure context/owner/fmt:link"/><br />
 
             <b>When:</b>
             <span

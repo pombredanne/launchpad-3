@@ -566,6 +566,13 @@
         <td>A language, or a link to a set of languages.</td>
       </tr>
       <tr>
+        <td>translation</td>
+        <td><img src="/@@/translation" /></td>
+        <td><i>What is this used for? In the templates/ directory it looks
+        like it is used for a translation group, so perhaps it should be
+        called translationgroup?</i>.</td>
+      </tr>
+      <tr>
         <td>translation-file</td>
         <td><img src="/@@/translation-file" /></td>
         <td>A set of strings translated into a particular language.</td>
