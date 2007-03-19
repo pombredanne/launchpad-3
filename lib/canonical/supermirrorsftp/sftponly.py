@@ -3,7 +3,7 @@
 from twisted.conch import avatar
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
-from twisted.conch.ssh.common import NS
+from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
@@ -193,10 +193,34 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
 
+    # XXX - Copied from twisted/conch/ssh/userauth.py, with the final line
+    # added. In Twisted r19857 and earlier, this method does not return a
+    # Deferred, but should. See http://twistedmatrix.com/trac/ticket/2528 for
+    # progress.
+    # -- Jonathan Lange, 2007-03-19
+    def ssh_USERAUTH_REQUEST(self, packet):
+        user, nextService, method, rest = getNS(packet, 3)
+        if user != self.user or nextService != self.nextService:
+            self.authenticatedWith = [] # clear auth state
+        self.user = user
+        self.nextService = nextService
+        self.method = method
+        d = self.tryAuth(method, user, rest)
+        if not d:
+            self._ebBadAuth(ConchError('auth returned none'))
+        d.addCallbacks(self._cbFinishedAuth)
+        d.addErrback(self._ebMaybeBadAuth)
+        d.addErrback(self._ebBadAuth)
+        return d
+
+    def _ebBadAuth(self, reason):
+        self.sendBanner(reason.getErrorMessage())
+        return userauth.SSHUserAuthServer._ebBadAuth(self, reason)
+
 
 class Factory(factory.SSHFactory):
     services = {
-        'ssh-userauth': userauth.SSHUserAuthServer,
+        'ssh-userauth': SSHUserAuthServer,
         'ssh-connection': connection.SSHConnection
     }
 

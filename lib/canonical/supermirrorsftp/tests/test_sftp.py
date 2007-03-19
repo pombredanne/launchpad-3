@@ -5,22 +5,34 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 import stat
 import struct
 import sys
 import traceback
 
+from zope.interface import implements
+
 from bzrlib.errors import NoSuchFile, PermissionDenied
 from bzrlib.transport import get_transport
 
-from twisted.conch.ssh.transport import SSHServerTransport
-from twisted.conch.ssh import userauth
-from twisted.conch.ssh.common import getNS
+from twisted.cred.error import UnauthorizedLogin
+from twisted.cred.portal import IRealm, Portal
 
+from twisted.conch.checkers import SSHPublicKeyDatabase
+from twisted.conch.ssh.transport import SSHServerTransport
+from twisted.conch.ssh import keys, userauth
+from twisted.conch.ssh.common import getNS, NS
+
+from twisted.python import failure
+
+from twisted.trial.unittest import TestCase as TrialTestCase
+
+from canonical.config import config
 from canonical.supermirrorsftp import sftponly
 from canonical.supermirrorsftp.tests.test_acceptance import (
-    SFTPTestCase, deferToThread)
+    SFTPTestCase, deferToThread, TestSFTPService)
 from canonical.testing import TwistedLayer
 
 
@@ -110,24 +122,33 @@ class SFTPTests(SFTPTestCase):
         return self._test_mkdir_team_member()
 
 
+class MockRealm:
+    implements(IRealm)
+
+    def requestAvatar(self, avatar, mind, *interfaces):
+        raise NotImplementedError("This should not be called")
+
+
 class MockSSHTransport(SSHServerTransport):
-    def __init__(self):
+    def __init__(self, portal):
         self.packets = []
+        class Factory:
+            pass
+        self.factory = Factory()
+        self.factory.portal = portal
 
     def sendPacket(self, messageType, payload):
         self.packets.append((messageType, payload))
 
 
-class TestUserAuthServer(unittest.TestCase):
-
+class UserAuthServerMixin:
     def setUp(self):
-        self.transport = MockSSHTransport()
+        self.portal = Portal(MockRealm())
+        self.transport = MockSSHTransport(self.portal)
         self.user_auth = sftponly.SSHUserAuthServer(self.transport)
 
-    def getBannerText(self):
-        [(messageType, payload)] = self.transport.packets
-        bytes, language, empty = getNS(payload, 2)
-        return bytes.decode('UTF8')
+
+class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
     def test_sendBanner(self):
         # sendBanner should send an SSH 'packet' with type MSG_USERAUTH_BANNER
@@ -153,7 +174,50 @@ class TestUserAuthServer(unittest.TestCase):
         #
         # See RFC 4252, Section 5.4.
         self.user_auth.sendBanner(u"test\nmessage")
-        self.assertEqual(self.getBannerText(), u"test\r\nmessage\r\n")
+        [(messageType, payload)] = self.transport.packets
+        bytes, language, empty = getNS(payload, 2)
+        self.assertEqual(bytes.decode('UTF8'), u"test\r\nmessage\r\n")
+
+
+class MockChecker(SSHPublicKeyDatabase):
+    error_message = u'error message'
+
+    def requestAvatarId(self, credentials):
+        return failure.Failure(UnauthorizedLogin('error message'))
+
+
+class TestAuthenticationErrors(UserAuthServerMixin, TrialTestCase):
+    layer = TwistedLayer
+
+    def setUp(self):
+        UserAuthServerMixin.setUp(self)
+        self.portal.registerChecker(MockChecker())
+        self.user_auth.serviceStarted()
+        self.key_data = self._makeKey()
+
+    def _makeKey(self):
+        keydir = config.supermirrorsftp.host_key_pair_path
+        public_key = keys.getPublicKeyString(
+            data=open(os.path.join(keydir,
+                                   'ssh_host_key_rsa.pub'), 'rb').read())
+        return chr(0) + NS('rsa') + NS(public_key)
+
+    def test_loggedToBanner(self):
+        # When there's an authentication failure, we display an informative
+        # error message through the SSH authentication protocol 'banner'.
+        d = self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('jml') + NS('') + NS('publickey') + self.key_data)
+
+        def check(ignored):
+            # Check that we received a BANNER, then a FAILURE.
+            self.assertEqual(
+                list(zip(*self.transport.packets)[0]),
+                [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
+            # Check that the banner message is informative.
+            bytes, language, empty = getNS(self.transport.packets[0][1], 2)
+            self.assertEqual(bytes.decode('UTF8'),
+                             MockChecker.error_message + u'\r\n')
+        return d.addCallback(check)
 
 
 def test_suite():
