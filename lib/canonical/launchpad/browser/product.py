@@ -390,7 +390,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall', 'withcode']
+             'register', 'listall']
 
     def register(self):
         text = 'Register a project'
