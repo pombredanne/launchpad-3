@@ -215,6 +215,25 @@ class PrivateEmailCommand(EditEmailCommand):
                 get_error_message('private-parameter-mismatch.txt'))
 
 
+class SecurityEmailCommand(EditEmailCommand):
+    """Marks a bug as security related."""
+
+    implements(IBugEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self):
+        """See EmailCommand."""
+        private_arg = self.string_args[0]
+        if private_arg == 'yes':
+            return {'security_related': True, 'private': True}
+        elif private_arg == 'no':
+            return {'security_related': False}
+        else:
+            raise EmailProcessingError(
+                get_error_message('security-parameter-mismatch.txt'))
+
+
 class SubscribeEmailCommand(EmailCommand):
     """Subscribes someone to the bug."""
 
@@ -494,6 +513,7 @@ class EmailCommands:
     _commands = {
         'bug': BugEmailCommand,
         'private': PrivateEmailCommand,
+        'security': SecurityEmailCommand,
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
