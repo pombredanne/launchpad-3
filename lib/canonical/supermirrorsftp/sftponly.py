@@ -3,6 +3,7 @@
 from twisted.conch import avatar
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.ssh.common import NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
@@ -180,6 +181,17 @@ class Realm:
                                         self.authserver)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
+
+
+class SSHUserAuthServer(userauth.SSHUserAuthServer):
+
+    def __init__(self, transport=None):
+        self.transport = transport
+
+    def sendBanner(self, text, language='en'):
+        bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
+        self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
+                                  NS(bytes) + NS(language))
 
 
 class Factory(factory.SSHFactory):

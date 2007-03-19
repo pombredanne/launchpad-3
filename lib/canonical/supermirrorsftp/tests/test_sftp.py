@@ -7,12 +7,18 @@ __metaclass__ = type
 
 import unittest
 import stat
+import struct
 import sys
 import traceback
 
 from bzrlib.errors import NoSuchFile, PermissionDenied
 from bzrlib.transport import get_transport
 
+from twisted.conch.ssh.transport import SSHServerTransport
+from twisted.conch.ssh import userauth
+from twisted.conch.ssh.common import getNS
+
+from canonical.supermirrorsftp import sftponly
 from canonical.supermirrorsftp.tests.test_acceptance import (
     SFTPTestCase, deferToThread)
 from canonical.testing import TwistedLayer
@@ -134,6 +140,52 @@ class SFTPTests(SFTPTestCase):
 
     def test_mkdir_team_member(self):
         return self._test_mkdir_team_member()
+
+
+class MockSSHTransport(SSHServerTransport):
+    def __init__(self):
+        self.packets = []
+
+    def sendPacket(self, messageType, payload):
+        self.packets.append((messageType, payload))
+
+
+class TestUserAuthServer(unittest.TestCase):
+
+    def setUp(self):
+        self.transport = MockSSHTransport()
+        self.user_auth = sftponly.SSHUserAuthServer(self.transport)
+
+    def getBannerText(self):
+        [(messageType, payload)] = self.transport.packets
+        bytes, language, empty = getNS(payload, 2)
+        return bytes.decode('UTF8')
+
+    def test_sendBanner(self):
+        # sendBanner should send an SSH 'packet' with type MSG_USERAUTH_BANNER
+        # and two fields. The first field is the message itself, and the second
+        # is the language tag.
+        #
+        # sendBanner automatically adds a trailing newline, because openssh and
+        # Twisted don't add one when displaying the banner.
+        #
+        # See RFC 4252, Section 5.4.
+        message = u"test message"
+        self.user_auth.sendBanner(message, language='en-US')
+        [(messageType, payload)] = self.transport.packets
+        self.assertEqual(messageType, userauth.MSG_USERAUTH_BANNER)
+        bytes, language, empty = getNS(payload, 2)
+        self.assertEqual(bytes.decode('UTF8'), message + '\r\n')
+        self.assertEqual('en-US', language)
+        self.assertEqual('', empty)
+
+    def test_sendBannerUsesCRLF(self):
+        # sendBanner should make sure that any line breaks in the message are
+        # sent as CR LF pairs.
+        #
+        # See RFC 4252, Section 5.4.
+        self.user_auth.sendBanner(u"test\nmessage")
+        self.assertEqual(self.getBannerText(), u"test\r\nmessage\r\n")
 
 
 def test_suite():
