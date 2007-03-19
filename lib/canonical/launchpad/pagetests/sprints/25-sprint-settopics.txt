@@ -54,9 +54,10 @@ First choose a driver for the UDS Guacamole sprint.
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole'
 
+  >>> ut = 'Ubuntu Team'
   >>> meeting_portlet = find_portlet(browser.contents, 'Meeting details')
-  >>> extract_text(meeting_portlet.find(text='Driver:').findNext('a'))
-  u'Ubuntu Team'
+  >>> ut in extract_text(meeting_portlet.find(text='Driver:').findNext('a'))
+  True
 
 Any member of the Ubuntu-Team can now approve and/or decline items to the UDS 
 Guacamole agenda.
