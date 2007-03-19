@@ -640,7 +640,8 @@ class QuestionWorkflowView(LaunchpadFormView):
         # The confirmation message is not given by the user when the
         # 'This Solved my Problem' button on the main question view.
         if not data['message']:
-            data['message'] = 'User confirmed that the question is solved.'
+            data['message'] = 'Thanks %s, that solved my question.' % (
+                data['answer'].owner.displayname)
         self.context.confirmAnswer(data['message'], answer=data['answer'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your feedback.'), data)

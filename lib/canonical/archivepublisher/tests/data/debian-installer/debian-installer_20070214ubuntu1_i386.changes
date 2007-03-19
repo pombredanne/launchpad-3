@@ -1,0 +1,25 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Web, 14 Feb 2007 15:04:09 -0200
+Source: debian-installer
+Binary: debian-installer
+Architecture: i386
+Version: 20070214ubuntu1
+Distribution: hoary-test
+Urgency: low
+Maintainer: Launchpad team <launchpad@lists.canonical.com>
+Changed-By: Celso Providelo <cprov@ubuntu.com>
+Changes: 
+   * debian-installer, duhh ...
+Files: 
+ c1f8796f2018ebf630910a6aab689698 515 raw-installer - debian-installer-images_20070214ubuntu1_i386.tar.gz
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFF03Cjjn63CGxkqMURAgLQAJ9aRW8fJSRe0Z/5fw4/GE126J3SuQCaA3zy
+qBWArMy4VgxBsM/D3WXw4DE=
+=Ni5G
+-----END PGP SIGNATURE-----

@@ -67,13 +67,14 @@
                                   />
                                 </td>
                               </tr>
-                              <tr>
+                              <tr tal:define="options nocall:view/widgets/scope/options;
+                                              target_widget nocall:view/widgets/scope/target_widget">
                                 <td tal:attributes="class view/target_css_class"
                                     style="text-align: right;">
                                  <div>
                                   <label>
                                     <input
-                                      tal:replace="structure view/widgets/scope/options/all"
+                                      tal:replace="structure options/all"
                                       name="scope"
                                       type="radio"
                                       value="all"
@@ -83,7 +84,7 @@
                                   </label>
                                   <label>
                                     <input
-                                      tal:replace="structure view/widgets/scope/options/project"
+                                      tal:replace="structure options/project"
                                       name="scope"
                                       id="scope.project"
                                       type="radio"
@@ -91,24 +92,16 @@
                                       onclick="document.getElementById('field.target').focus();"
                                     />
                                     One project:
-                                    <input
-                                      tal:define="widget_name view/widgets/scope/target_widget/name"
-                                      tal:attributes="
-                                        value view/request/form/?widget_name|nothing;
-                                        id widget_name;
-                                        name widget_name;
-                                        onkeypress view/widgets/scope/target_widget/onKeyPress"
-                                      type="text"
-                                    />
+                                    <tal:input replace="structure target_widget/inputField" />
                                   </label>
                                  </div>
                                  <div class="message"
                                       tal:condition="view/target_error"
                                       tal:content="structure view/target_error">
                                     Error message
-                                  </div>
+                                 </div>
                                 </td>
-                                <td>(<a tal:attributes="href view/widgets/scope/target_widget/popupHref">Choose&hellip;</a>)</td>
+                                <td tal:content="structure target_widget/chooseLink" />
                               </tr>
                             </tbody>
                           </table>

@@ -15,14 +15,8 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3>
-    <span tal:content="context/target/title">Ubuntu Linux</span>
-    <tal:has_series condition="context/series_target">
-    : <span tal:content="context/series_target/title">Hoary</span>
-    </tal:has_series>
-  </h3>
   <h1>
-    Milestone &ldquo;<tal:name replace="context/name">1.0</tal:name>&rdquo;
+    Milestone overview
   </h1>
 </metal:heading>
 
@@ -64,13 +58,8 @@
                  tal:condition="spec/informational" />
           </td>
           <td>
-            <tal:has_assignee condition="spec/assignee">
-              <img src="/@@/user" />
-              <a tal:attributes="href spec/assignee/fmt:url"
-                 tal:content="spec/assignee/browsername">
-                Carlos Perello Marin
-              </a>
-            </tal:has_assignee>&nbsp;
+            <a tal:condition="spec/assignee"
+               tal:replace="structure spec/assignee/fmt:link" />&nbsp;
           </td>
           <td>
             <span class="sortkey" tal:content="spec/delivery/sortkey" />
@@ -114,13 +103,8 @@
             <span tal:replace="bugtask/importance/title">High</span>
           </td>
           <td>
-            <tal:has_assignee condition="bugtask/assignee">
-              <img src="/@@/user" />
-              <a tal:attributes="href bugtask/assignee/fmt:url"
-                 tal:content="bugtask/assignee/browsername">
-                Carlos Perello Marin
-              </a>
-            </tal:has_assignee>&nbsp;
+            <a tal:condition="bugtask/assignee"
+               tal:replace="structure bugtask/assignee/fmt:link" />&nbsp;
           </td>
           <td>
             <span class="sortkey" tal:content="bugtask/status/sortkey" />

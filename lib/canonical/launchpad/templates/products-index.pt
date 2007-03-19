@@ -124,7 +124,7 @@
       <h2>Latest registrations</h2>
           <ul tal:condition="context/latest" class="product">
             <li tal:repeat="product context/latest">
-              <tal:date replace="product/datecreated/fmt:date" />:
+              <tal:date replace="product/datecreated/fmt:approximatedate" />:
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/displayname"

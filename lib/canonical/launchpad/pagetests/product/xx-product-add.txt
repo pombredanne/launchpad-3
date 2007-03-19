@@ -66,7 +66,7 @@ True
 We should have an automatic trunk series for this new product too.
 
 >>> anon_browser.open("http://launchpad.dev/testing/trunk")
->>> 'Series overview' in anon_browser.contents
+>>> 'Release series overview' in anon_browser.contents
 True
 
 

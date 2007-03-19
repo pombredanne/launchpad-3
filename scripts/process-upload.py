@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Upload processor.
 
 Given a bunch of context information and a bunch of files, process them as

@@ -164,7 +164,7 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
-    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
+    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
 
 buglinktarget_linkbug = 'Link to bug report'
 
@@ -513,6 +513,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+notification_test = 'Notification test'
+
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
@@ -663,7 +665,7 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
-product_code_index = 'Projects with Code'
+product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 

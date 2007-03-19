@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
@@ -46,7 +46,8 @@ class QueueBuilder(LaunchpadScript):
         if self.options.dryrun:
             # XXX: DO IT in LaunchpadScript
             # XXX cprov 20060606: i know this is evil and ugly but, right now,
-            # modifying launchpad/scripts/builddmaster.py and tests would be painfully.
+            # modifying launchpad/scripts/builddmaster.py and tests would be
+            # painfully.
             pass
 
         self.rebuildQueue()
