@@ -132,7 +132,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         title=_("Heading icon"), required=False,
         default_image_resource='/@@/person-heading',
         description=_(
-            "An image, maximum 54x54 pixels, that will be displayed on "
+            "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
             "than 50k in size. Traditionally this is a logo, small picture, "
             "or personal mascot."))
