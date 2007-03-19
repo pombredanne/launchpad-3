@@ -136,20 +136,10 @@
       </p>
     </tal:block>
   </tal:mentors>
-  <tal:block condition="view/user">
-    <tal:block condition="not: view/userIsMentor">
-      <tal:block condition="not: context/bug/duplicateof">
-        <tal:block condition="not: context/bug/is_complete">
-          <tal:block condition="view/user/myactivememberships">
-            <p>
-              &raquo;
-              <a href="+mentor">Offer to mentor someone fixing this bug</a>
-            </p>
-          </tal:block>
-        </tal:block>
-      </tal:block>
-    </tal:block>
-  </tal:block>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  </p>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
               condition="bug_branches">

@@ -5,7 +5,6 @@
   <div class="portletBody portletContent">
 
     <b>Registered by:</b>
-    <img src="/@@/person" />
     <a tal:replace="structure context/owner/fmt:link">Foo Bar</a><br />
   </div>
 

@@ -79,39 +79,24 @@
         <tr>
           <th>Assignee:</th>
           <td>
-            <tal:assignee condition="context/assignee">
-              <img src="/@@/person-mini" />
-              <a
-                tal:content="context/assignee/browsername"
-                tal:attributes="href context/assignee/fmt:url"
-              >Foo Bar</a>
-            </tal:assignee> 
+            <a tal:condition="context/assignee"
+               tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/assignee">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Drafter:</th>
           <td>
-            <tal:drafter tal:condition="context/drafter">
-              <img src="/@@/person-mini" />
-              <a
-                tal:content="context/drafter/browsername"
-                tal:attributes="href context/drafter/fmt:url"
-              >Foo Bar</a>
-            </tal:drafter>
+            <a tal:condition="context/drafter"
+               tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/drafter">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Approver:</th>
           <td>
-            <tal:approver tal:condition="context/approver">
-              <img src="/@@/person-mini" />
-              <a
-                tal:content="context/approver/browsername"
-                tal:attributes="href context/approver/fmt:url"
-              >Foo Bar</a>
-            </tal:approver>
+            <a tal:condition="context/approver"
+               tal:replace="structure context/approver/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/approver">None</tal:none>
           </td>
         </tr>
@@ -171,18 +156,11 @@
       </p>
     </tal:block>
   </tal:mentors>
-  <tal:block condition="view/user">
-    <tal:block condition="not: view/userIsMentor">
-      <tal:block condition="not: context/is_complete">
-        <tal:block condition="view/user/myactivememberships">
-          <p>
-            &raquo; <a href="+mentor">Offer to mentor someone implementing
-            this blueprint</a>
-          </p>
-        </tal:block>
-      </tal:block>
-    </tal:block>
-  </tal:block>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone implementing
+    this blueprint</a>
+  </p>
 
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>

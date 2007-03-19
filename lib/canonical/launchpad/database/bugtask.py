@@ -651,6 +651,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
+    @property
+    def mentoring_offers(self):
+        """See IHasMentoringOffers."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.mentoring_offers
+
     def canMentor(self, user):
         """See ICanBeMentored."""
         # mentoring is on IBug as a whole, not on a specific task, so we

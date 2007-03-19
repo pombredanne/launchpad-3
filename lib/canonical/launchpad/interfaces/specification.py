@@ -194,7 +194,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         readonly=True)
 
     # joins
-    mentoring_offers = Attribute('Offers to mentor anyone working on this.')
     subscriptions = Attribute('The set of subscriptions to this spec.')
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')

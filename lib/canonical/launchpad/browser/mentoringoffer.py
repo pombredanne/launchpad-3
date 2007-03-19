@@ -71,6 +71,10 @@ class MentoringOfferSetSOP(StructuralObjectPresentation):
 class CanBeMentoredView:
     """Used as a mixin on any view for something that can be mentored."""
 
+    def userCanMentor(self):
+        """Is the user able to offer mentorship?"""
+        return self.context.canMentor(self.user)
+
     def userIsMentor(self):
         """Is the user offering mentorship on this bug?"""
         return self.context.isMentor(self.user)

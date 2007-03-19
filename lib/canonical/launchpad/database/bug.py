@@ -492,16 +492,13 @@ class Bug(SQLBase):
 
     def isMentor(self, user):
         """See ICanBeMentored."""
-        for mentoring_offer in self.mentoring_offers:
-            if user == mentoring_offer.owner:
-                return True
-        return False
+        return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
 
     def offerMentoring(self, user, team):
         """See ICanBeMentored."""
         # if an offer exists, then update the team
-        for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.owner == user:
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
                 mentoringoffer.team = team
                 return mentoringoffer
         # if no offer exists, create one from scratch
@@ -512,11 +509,10 @@ class Bug(SQLBase):
 
     def retractMentoring(self, user):
         """See ICanBeMentored."""
-        for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.owner.id == user.id:
-                notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
-                MentoringOffer.delete(mentoringoffer.id)
-                break
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
+            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            MentoringOffer.delete(mentoringoffer.id)
 
     def getMessageChunks(self):
         """See IBug."""

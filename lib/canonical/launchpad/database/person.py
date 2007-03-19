@@ -284,12 +284,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         return MentoringOffer.select("""MentoringOffer.id IN
         (SELECT DISTINCT MentoringOffer.id
             FROM MentoringOffer
+            JOIN TeamParticipation ON
+                MentoringOffer.team = TeamParticipation.person
             LEFT OUTER JOIN BugTask ON
                 MentoringOffer.bug = BugTask.bug
             LEFT OUTER JOIN Specification ON
                 MentoringOffer.specification = Specification.id
             WHERE
-                MentoringOffer.team = %s
+                TeamParticipation.team = %s
                 """ % sqlvalues(self.id) + """ AND (
                 BugTask.id IS NULL OR NOT
                 (""" + BugTask.completeness_clause +""")) AND (
@@ -958,8 +960,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     #
     def getSuperTeams(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.team AND '
-                 'TeamParticipation.person = %d' % self.id)
+        query = """
+            Person.id = TeamParticipation.team AND 
+            TeamParticipation.person = %s AND
+            TeamParticipation.team <> %s
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getSubTeams(self):

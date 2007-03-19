@@ -263,18 +263,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def isMentor(self, user):
         """See ICanBeMentored."""
-        for mentoring_offer in self.mentoring_offers:
-            if user == mentoring_offer.owner:
-                return True
-        return False
+        return MentoringOffer.selectOneBy(
+            specification=self, owner=user) is not None
 
     def offerMentoring(self, user, team):
         """See ICanBeMentored."""
         # if an offer exists, then update the team
-        for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.owner == user:
-                mentoringoffer.team = team
-                return mentoringoffer
+        mentoringoffer = MentoringOffer.selectOneBy(
+            specification=self, owner=user)
+        if mentoringoffer is not None:
+            mentoringoffer.team = team
+            return mentoringoffer
         # if no offer exists, create one from scratch
         mentoringoffer = MentoringOffer(owner=user, team=team,
             specification=self)
@@ -283,11 +282,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def retractMentoring(self, user):
         """See ICanBeMentored."""
-        for mentoringoffer in self.mentoring_offers:
-            if mentoringoffer.owner.id == user.id:
-                notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
-                MentoringOffer.delete(mentoringoffer.id)
-                break
+        mentoringoffer = MentoringOffer.selectOneBy(
+            specification=self, owner=user)
+        if mentoringoffer is not None:
+            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            MentoringOffer.delete(mentoringoffer.id)
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""

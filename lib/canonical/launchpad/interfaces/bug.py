@@ -160,7 +160,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    mentoring_offers = Attribute('Offers to mentor this bug fix')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')

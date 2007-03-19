@@ -45,7 +45,7 @@ class IHasMentoringOffers(Interface):
         "The list of mentoring offers related to this object.")
 
 
-class ICanBeMentored(Interface):
+class ICanBeMentored(IHasMentoringOffers):
     """Used for objects which can have mentoring offered or retracted."""
 
     def canMentor(user):

@@ -30,6 +30,8 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, LargeImageUpload, PasswordField,
     BaseImageUpload, SmallImageUpload, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.question import (
@@ -85,7 +87,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection):
+class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection):
     """A Person."""
 
     id = Int(
@@ -305,8 +307,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
-    mentoring_offers = Attribute(
-        "All the offers of mentoring which have been made by this person.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
