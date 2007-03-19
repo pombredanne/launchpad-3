@@ -1,13 +1,13 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""CVE views."""
+"""Mentorship views."""
 
 __metaclass__ = type
 
 __all__ = [
-    'MentorshipManagerFacets',
-    'MentorshipManagerOverviewMenu',
-    'MentorshipManagerSOP',
+    'MentoringOfferSetFacets',
+    'MentoringOfferSetOverviewMenu',
+    'MentoringOfferSetSOP',
     'MentoringOfferView',
     'RetractMentoringOfferView',
     ]
@@ -20,27 +20,27 @@ from canonical.launchpad.interfaces import (
     IBug,
     IBugTask,
     IMentoringOffer,
-    IMentorshipManager,
+    IMentoringOfferSet,
     ILaunchBag,
     )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
-    StandardLaunchpadFacets, ApplicationMenu, enabled_with_permission)
-from canonical.launchpad.webapp.generalform import GeneralFormView
+    StandardLaunchpadFacets, ApplicationMenu, enabled_with_permission,
+    LaunchpadFormView, action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 
-class MentorshipManagerFacets(StandardLaunchpadFacets):
+class MentoringOfferSetFacets(StandardLaunchpadFacets):
 
-    usedfor = IMentorshipManager
+    usedfor = IMentoringOfferSet
 
     enable_only = ['overview']
 
 
-class MentorshipManagerOverviewMenu(ApplicationMenu):
+class MentoringOfferSetOverviewMenu(ApplicationMenu):
 
-    usedfor = IMentorshipManager
+    usedfor = IMentoringOfferSet
     facet = 'overview'
     links = ['current', 'successful']
 
@@ -53,7 +53,7 @@ class MentorshipManagerOverviewMenu(ApplicationMenu):
         return Link('+success', text, icon='info')
 
 
-class MentorshipManagerSOP(StructuralObjectPresentation):
+class MentoringOfferSetSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
         return None
@@ -68,40 +68,63 @@ class MentorshipManagerSOP(StructuralObjectPresentation):
         return None
 
 
-class MentoringOfferView(GeneralFormView):
+class CanBeMentoredView:
+    """Used as a mixin on any view for something that can be mentored."""
+
+    def userIsMentor(self):
+        """Is the user offering mentorship on this bug?"""
+        return self.context.isMentor(self.user)
+
+
+class MentoringOfferView(LaunchpadFormView):
     """This view will be used for objects that can be mentored, that
-    includes IBug and ISpecification
+    includes IBug, IBugTask and ISpecification
     """
 
-    def __init__(self, context, request):
-        self._nextURL = canonical_url(context)
-        if IBugTask.providedBy(context):
-            # in the case of seeing this on a bug task, we treat it as a Bug
-            self.current_bugtask = context
-            context = IBug(context)
-        GeneralFormView.__init__(self, context, request)
+    schema = IMentoringOffer
+    label = "Offer to mentor this work"
+    field_names = ['team',]
+    mentoring_offer = None
 
-    def process(self, team):
-        user = getUtility(ILaunchBag).user
-        self.context.offerMentoring(user, team)
-        return 'Thank you for this mentorship offer.'
+    def validate(self, data):
+        team = data.get('team')
+        if not self.user.inTeam(team):
+            # person must be a participant in team
+            self.setFieldError('team',
+                'You can only offer mentorship for teams in which you are '
+                'a member.')
+
+    @action(_('Offer Mentoring'), name='add')
+    def add_action(self, action, data):
+        user = self.user
+        team = data.get('team')
+        self.mentoring_offer = self.context.offerMentoring(user, team)
+        self.request.response.addInfoNotification(
+            'Thank you for this mentorship offer.')
+
+    @property
+    def next_url(self):
+        assert self.mentoring_offer is not None, 'No mentorship recorded'
+        return canonical_url(self.context)
 
 
-class RetractMentoringOfferView(GeneralFormView):
+class RetractMentoringOfferView(LaunchpadFormView, CanBeMentoredView):
     """This view is used to retract the offer of mentoring."""
 
-    def __init__(self, context, request):
-        self._nextURL = canonical_url(context)
-        if IBugTask.providedBy(context):
-            # in the case of seeing this on a bug task, we treat it as a Bug
-            self.current_bugtask = context
-            context = IBug(context)
-        GeneralFormView.__init__(self, context, request)
+    schema = IMentoringOffer
+    label = "Retract your offer of mentorship"
+    field_names = []
 
-    def process(self, confirmation):
-        if confirmation:
-            user = getUtility(ILaunchBag).user
+    @action(_('Rectract Mentoring'), name='retract')
+    def add_action(self, action, data):
+        user = self.user
+        if self.context.isMentor(user):
             self.context.retractMentoring(user)
-            return 'Mentoring retracted'
+            self.request.response.addInfoNotification(
+                'You are no longer offering mentoring on this work.')
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 

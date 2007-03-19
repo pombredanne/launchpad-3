@@ -482,15 +482,23 @@ class Bug(SQLBase):
     completeness_clause =  """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        return not (not user or
+                    self.is_complete or
+                    self.duplicateof is not None or
+                    self.isMentor(user) or
+                    not user.teams_participated_in)
+
     def isMentor(self, user):
-        """See IBug."""
+        """See ICanBeMentored."""
         for mentoring_offer in self.mentoring_offers:
             if user == mentoring_offer.owner:
                 return True
         return False
 
     def offerMentoring(self, user, team):
-        """See IBug."""
+        """See ICanBeMentored."""
         # if an offer exists, then update the team
         for mentoringoffer in self.mentoring_offers:
             if mentoringoffer.owner == user:
@@ -503,7 +511,7 @@ class Bug(SQLBase):
         return mentoringoffer
 
     def retractMentoring(self, user):
-        """See IBug."""
+        """See ICanBeMentored."""
         for mentoringoffer in self.mentoring_offers:
             if mentoringoffer.owner.id == user.id:
                 notify(SQLObjectDeletedEvent(mentoringoffer, user=user))

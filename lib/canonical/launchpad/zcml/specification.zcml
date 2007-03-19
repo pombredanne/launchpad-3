@@ -119,9 +119,6 @@
     <browser:page
       name="+subscribe"
       template="../templates/specification-subscription.pt" />
-    <browser:page
-      name="+retractmentoring"
-      template="../templates/specification-retractmentoring.pt" />
   </browser:pages>
 
   <browser:page
@@ -131,17 +128,6 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-givefeedback.pt"
     />
-
-  <browser:generalform
-    name="+mentor"
-    for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.IMentoringOffer"
-    class="canonical.launchpad.browser.MentoringOfferView"
-    fields="team"
-    arguments="team"
-    permission="launchpad.AnyPerson"
-    template="../templates/specification-mentoringoffer.pt">
-  </browser:generalform>
 
   <browser:generalform
     name="+addsubscriber"

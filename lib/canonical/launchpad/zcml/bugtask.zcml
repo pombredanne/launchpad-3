@@ -27,7 +27,8 @@
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_inprogress date_closed
-                           bug_subscribers is_complete" />
+                           bug_subscribers is_complete
+                           isMentor canMentor" />
         <require
             permission="launchpad.View"
             attributes="product productseries sourcepackagename distribution
@@ -55,6 +56,10 @@
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
                             setStatusFromDebbugs setImportanceFromDebbugs" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
+            />
     </content>
 
     <browser:defaultView
@@ -458,24 +463,6 @@
       class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
-
-    <browser:generalform
-      name="+mentor"
-      for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.IMentoringOffer"
-      class="canonical.launchpad.browser.MentoringOfferView"
-      fields="team"
-      arguments="team"
-      permission="launchpad.AnyPerson"
-      template="../templates/bug-mentoringoffer.pt">
-    </browser:generalform>
-
-    <browser:page
-      name="+retractmentoring"
-      for="canonical.launchpad.interfaces.IBugTask"
-      class="canonical.launchpad.browser.BugTaskView"
-      permission="launchpad.AnyPerson"
-      template="../templates/bug-retractmentoring.pt" />
 
     <browser:generalform
       name="+linkcve"

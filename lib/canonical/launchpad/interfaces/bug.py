@@ -25,6 +25,7 @@ from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.validators.name import name_validator
 
@@ -109,7 +110,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget):
+class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
 
     id = Int(
@@ -283,18 +284,6 @@ class IBug(IMessageTarget):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
-
-    # Mentoring
-    def isMentor(user):
-        """True if the user is offering mentoring for this bug."""
-
-    def offerMentoring(user, team):
-        """Record that the user is willing to mentor anyone who is trying to
-        fix this bug.
-        """
-
-    def retractMentoring(user):
-        """Remove the offer of mentoring for this bug from this user."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""

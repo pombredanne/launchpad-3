@@ -11,26 +11,26 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Offer to mentor this bug</h1>
+  <h1>Offer to mentor this work</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Select the team which would most benefit from this bug being fixed.
-      People wishing to join this team will be able to see a list of such
-      offers, and thus be able to prove their capability more efficiently.
+      Select the team which would most benefit from this work being
+      completed.  People wishing to join this team will be able to see your
+      offer in a list of similar ones, and thus be able to prove their
+      suitability for team membership more efficiently.
     </div>
 
   </div>
 
 </div>
-    
+
 </body>
 </html>

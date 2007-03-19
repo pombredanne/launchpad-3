@@ -651,6 +651,30 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.canMentor(user)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.isMentor(user)
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.offerMentoring(user, team)
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.retractMentoring(user)
+
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         targetname = self.target.bugtargetname

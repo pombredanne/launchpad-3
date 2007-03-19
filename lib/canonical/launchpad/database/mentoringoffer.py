@@ -3,7 +3,7 @@
 __metaclass__ = type
 __all__ = [
     'MentoringOffer',
-    'MentorshipManager',
+    'MentoringOfferSet',
     ]
 
 from datetime import datetime, timedelta
@@ -16,7 +16,7 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IMentoringOffer,
-    IMentorshipManager,
+    IMentoringOfferSet,
     )
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -29,7 +29,7 @@ class MentoringOffer(SQLBase):
 
     implements(IMentoringOffer)
 
-    _defaultOrder = ['bug', 'id']
+    _defaultOrder = ['bug', 'specification', 'id']
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -49,10 +49,10 @@ class MentoringOffer(SQLBase):
         return self.specification
 
 
-class MentorshipManager:
-    """See IMentorshipManager."""
+class MentoringOfferSet:
+    """See IMentoringOfferSet."""
 
-    implements(IMentorshipManager)
+    implements(IMentoringOfferSet)
 
     displayname = 'the Launchpad Mentorship Manager'
     title = 'Launchpad Mentorship Manager'

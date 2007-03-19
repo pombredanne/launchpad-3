@@ -69,6 +69,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -298,7 +299,7 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
-class BugTaskView(LaunchpadView):
+class BugTaskView(LaunchpadView, CanBeMentoredView):
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
@@ -311,15 +312,6 @@ class BugTaskView(LaunchpadView):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
-
-        retract_mentoring = request.form.get('retract_mentoring')
-        if self.user and request.method == 'POST':
-            if retract_mentoring is not None and \
-                self.context.bug.isMentor(self.user):
-                self.context.bug.retractMentoring(self.user)
-                self.notices.append('You are no longer offering mentoring '
-                    'on this bug.')
-
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -355,10 +347,6 @@ class BugTaskView(LaunchpadView):
             self, 'subscription', person_field, IInputWidget, value=self.user)
 
         self.handleSubscriptionRequest()
-
-    def userIsMentor(self):
-        """Is the user offering mentorship on this bug?"""
-        return self.context.bug.isMentor(self.user)
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""

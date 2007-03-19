@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICanBeMentored',
     'IHasMentoringOffers',
     'IMentoringOffer',
-    'IMentorshipManager',
+    'IMentoringOfferSet',
     ]
 
 
@@ -23,7 +24,7 @@ class IMentoringOffer(IHasOwner):
     """An offer of mentoring help."""
 
     owner = Choice(title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPerson')
     team = Choice(title=_('Team'), required=True,
         vocabulary='UserTeamsParticipation')
     date_created = Datetime(
@@ -44,7 +45,28 @@ class IHasMentoringOffers(Interface):
         "The list of mentoring offers related to this object.")
 
 
-class IMentorshipManager(IHasMentoringOffers):
+class ICanBeMentored(Interface):
+    """Used for objects which can have mentoring offered or retracted."""
+
+    def canMentor(user):
+        """True if this user could now offer mentoring on this piece of
+        work. Will be negative if the user is already offering mentoring, or
+        if the work is complete, for example.
+        """
+
+    def isMentor(user):
+        """True if the user is offering mentoring for this piece of work."""
+
+    def offerMentoring(user, team):
+        """Record that the user is willing to mentor anyone who is trying to
+        do this work.
+        """
+
+    def retractMentoring(user):
+        """Remove the offer of mentoring for this work by this user."""
+
+
+class IMentoringOfferSet(IHasMentoringOffers):
     """An object which gives us an overview of mentorship in Launchpad."""
 
     displayname = Attribute('Display name')

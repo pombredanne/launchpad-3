@@ -150,14 +150,10 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
-bug_mentoringoffer = ContextId('Offer to mentor Bug #%d')
-
 def bug_nominate_for_release(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
-
-bug_retractmentoring = 'Retract offer of mentorship'
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
@@ -282,6 +278,10 @@ calendar_view_day = calendar_view
 calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
+
+canbementored_mentoringoffer = 'Offer to mentor this work'
+
+canbementored_retractmentoring = 'Retract offer of mentorship'
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
@@ -902,8 +902,6 @@ specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach blueprint to a different project'
 
-specification_retractmentoring = 'Retract offer of mentorship'
-
 specification_superseding = 'Mark blueprint as superseded by another'
 
 specification_goaldecide = 'Approve or decline blueprint goal'
@@ -911,8 +909,6 @@ specification_goaldecide = 'Approve or decline blueprint goal'
 specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
-
-specification_mentoringoffer = 'Offer to mentor someone implementing this blueprint.'
 
 specification_milestone = 'Target feature to milestone'
 

@@ -18,7 +18,8 @@
                            subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
-                           isMentor getNullBugTask is_complete"
+                           canMentor isMentor getNullBugTask
+                           is_complete"
                            />
         <require
             permission="launchpad.View"

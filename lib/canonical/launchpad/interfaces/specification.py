@@ -22,6 +22,7 @@ from canonical.launchpad.fields import (ContentNameField, Summary,
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -62,7 +63,7 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class ISpecification(IHasOwner):
+class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
     name = SpecNameField(
@@ -253,18 +254,6 @@ class ISpecification(IHasOwner):
         'proposed as a goal for a specific distro release or product '
         'series and the drivers of that release/series have accepted '
         'the goal.')
-
-    # mentoring
-    def isMentor(user):
-        """True if the user is offering mentoring for this specification."""
-
-    def offerMentoring(user, team):
-        """Record that the user is willing to mentor anyone who is trying to
-        implement this feature.
-        """
-
-    def retractMentoring(user):
-        """Remove the offer of mentoring for this feature from this user."""
 
     # lifecycle management
     def updateLifecycleStatus(user):

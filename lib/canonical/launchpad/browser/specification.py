@@ -45,6 +45,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -149,10 +150,7 @@ class SpecificationContextMenu(ContextMenu):
     def offermentoring(self):
         text = 'Offer mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = not (self.context.isMentor(user) or
-                       self.context.is_complete or
-                       not user or
-                       not user.teams_participated_in)
+        enabled = self.context.canMentor(user)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
@@ -226,7 +224,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationView(LaunchpadView):
+class SpecificationView(LaunchpadView, CanBeMentoredView):
 
     __used_for__ = ISpecification
 
@@ -240,7 +238,6 @@ class SpecificationView(LaunchpadView):
         sub = request.form.get('subscribe')
         upd = request.form.get('update')
         unsub = request.form.get('unsubscribe')
-        retract_mentoring = request.form.get('retract_mentoring')
         essential = request.form.get('essential', False)
         if self.user and request.method == 'POST':
             if sub is not None:
@@ -252,11 +249,6 @@ class SpecificationView(LaunchpadView):
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
-            elif retract_mentoring is not None and \
-                self.context.isMentor(self.user):
-                self.context.retractMentoring(self.user)
-                self.notices.append('You are no longer offering mentoring '
-                    'on this blueprint.')
 
         if self.user is not None:
             # establish if this user has a review queued on this spec
@@ -276,11 +268,6 @@ class SpecificationView(LaunchpadView):
     @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
-
-    @cachedproperty
-    def userIsMentor(self):
-        """Is the user offering mentorship on this bug?"""
-        return self.context.isMentor(self.user)
 
 
 class SpecificationAddView(SQLObjectAddView):

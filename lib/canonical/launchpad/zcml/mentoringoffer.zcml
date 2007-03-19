@@ -13,22 +13,22 @@
   </content>
 
 
-  <!-- MentorshipManager -->
+  <!-- MentoringOfferSet -->
   <securedutility
-    class="canonical.launchpad.database.MentorshipManager"
-    provides="canonical.launchpad.interfaces.IMentorshipManager">
-    <allow interface="canonical.launchpad.interfaces.IMentorshipManager" />
+    class="canonical.launchpad.database.MentoringOfferSet"
+    provides="canonical.launchpad.interfaces.IMentoringOfferSet">
+    <allow interface="canonical.launchpad.interfaces.IMentoringOfferSet" />
   </securedutility>
 
   <adapter
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IMentorshipManager"
-    factory="canonical.launchpad.browser.MentorshipManagerSOP"
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    factory="canonical.launchpad.browser.MentoringOfferSetSOP"
     permission="zope.Public"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IMentorshipManager"
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
     path_expression="string:+mentorship"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
@@ -36,16 +36,16 @@
   <browser:menus
       module="canonical.launchpad.browser.mentoringoffer"
       classes="
-          MentorshipManagerFacets MentorshipManagerOverviewMenu"
+          MentoringOfferSetFacets MentoringOfferSetOverviewMenu"
           />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IMentorshipManager"
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
     name="+mentoring"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IMentorshipManager"
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
     permission="launchpad.Admin">
     <browser:page
       name="+mentoring"
@@ -63,5 +63,25 @@
       name="+mentoring"
       template="../templates/hasmentoringoffers-mentoring.pt" />
   </browser:pages>
+
+  <!-- ICanBeMentored -->
+  <browser:page
+    name="+retractmentoring"
+    for="canonical.launchpad.interfaces.ICanBeMentored"
+    class="canonical.launchpad.browser.RetractMentoringOfferView"
+    permission="launchpad.AnyPerson"
+    template="../templates/canbementored-retractmentoring.pt" />
+
+  <browser:generalform
+    name="+mentor"
+    for="canonical.launchpad.interfaces.ICanBeMentored"
+    schema="canonical.launchpad.interfaces.IMentoringOffer"
+    class="canonical.launchpad.browser.MentoringOfferView"
+    fields="team"
+    arguments="team"
+    permission="launchpad.AnyPerson"
+    template="../templates/canbementored-mentoringoffer.pt">
+  </browser:generalform>
+
 </facet>
 </configure>
