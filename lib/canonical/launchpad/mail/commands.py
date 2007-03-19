@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams, IPillarNameSet, BugTargetNotFound)
+        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -388,10 +388,13 @@ class AffectsEmailCommand(EmailCommand):
 
         # We can't check for IBugTarget, since Project is an IBugTarget
         # we don't allow bugs to be filed against.
-        if not (IDistribution.providedBy(pillar)
-                or IProduct.providedBy(pillar)):
+        if IProject.providedBy(pillar):
+            products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
-                "It's not possible to file bugs on '%s'." % pillar.name)
+                "%s is a group of projects. To report a bug, you need to"
+                " specify which of these projects the bug applies to: %s" % (
+                    pillar.name, products))
+        assert IDistribution.providedBy(pillar) or IProduct.providedBy(pillar)
 
         if not rest:
             return pillar

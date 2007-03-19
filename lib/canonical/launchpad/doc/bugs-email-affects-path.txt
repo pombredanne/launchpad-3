@@ -31,7 +31,10 @@ on it, so an exception with an appropriate error message is raised.
     >>> AffectsEmailCommand.getBugTarget('gnome')
     Traceback (most recent call last):
     ...
-    BugTargetNotFound: It's not possible to file bugs on 'gnome'.
+    BugTargetNotFound: gnome is a group of projects. To report a bug,
+                       you need to specify which of these projects the
+                       bug applies to: applets, evolution,
+                       gnome-terminal, gnomebaker, netapplet
 
 == Getting a product ==
 
