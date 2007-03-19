@@ -57,8 +57,6 @@ class IRevisionProperty(Interface):
 
     revision = Attribute("The revision which has this property.")
     name = TextLine(title=_("The name of the property."), required=True)
-    # XXX - perhaps this should be Bytes?
-    # jml, 2007-03-13
     value = Text(title=_("The value of the property."), required=True)
 
 

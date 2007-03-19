@@ -649,11 +649,15 @@ class TestRevisionProperty(BzrSyncTestCase):
     def test_revision_properties(self):
         # Revisions with properties should have records stored in the
         # RevisionProperty table, accessible through Revision.getProperties().
-        self.commitRevision(rev_id='rev1', revprops={'name': 'value'})
+        properties = {'name': 'value'}
+        self.commitRevision(rev_id='rev1', revprops=properties)
         self.syncBranch()
-        db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
+        # Check that properties were saved to the revision.
         bzr_revision = self.bzr_branch.repository.get_revision('rev1')
-        self.assertEquals(bzr_revision.properties, db_revision.getProperties())
+        self.assertEquals(properties, bzr_revision.properties)
+        # Check that properties are stored in the database.
+        db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
+        self.assertEquals(properties, db_revision.getProperties())
 
 
 def test_suite():
