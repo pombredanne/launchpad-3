@@ -64,26 +64,9 @@
     >Label:</label>
   </th>
   <td>
-    <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+    <span metal:use-macro="context/@@+launchpad-widget-macros/display_raw_widget" />
   </td>
 </metal:display_widget>
-
-
-<metal:display_raw_widget define-macro="display_raw_widget">
-  <tal:comment replace="nothing">
-    This macro expects the following variables defined:
-        :widget: The widget that's going to be rendered.
-  </tal:comment>
-
-  <div tal:attributes="class python:error and 'error' or None"
-       tal:define="error widget/error">
-    <span tal:replace="structure widget" />
-    <span tal:condition="widget/required"
-          class="fieldRequired"
-          title="Required">(Required)</span>
-    <div tal:condition="error" tal:content="structure error" />
-  </div>
-</metal:display_raw_widget>
 
 
 <metal:shipping_details define-macro="shipping_details">

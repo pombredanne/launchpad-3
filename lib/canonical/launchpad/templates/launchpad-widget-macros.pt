@@ -50,3 +50,23 @@
   </body>
 
 </html>
+
+<metal:display_raw_widget define-macro="display_raw_widget">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+        :widget: The widget that's going to be rendered.
+  </tal:comment>
+
+  <div tal:attributes="class python:error and 'error' or None"
+       tal:define="error widget/error">
+    <span tal:replace="structure widget" />
+    <tal:use_required condition="omit_required|default">
+      <span tal:condition="widget/required"
+            class="fieldRequired"
+            title="Required">(Required)</span>
+    </tal:use_required>
+    <div tal:condition="error" tal:content="structure error" />
+  </div>
+</metal:display_raw_widget>
+
+
