@@ -32,8 +32,8 @@ specific source package in a distribution:
 
 You can also file bugs on specific distribution releases:
 
-    affects /distros/$distribution_name/$release_name
-    affects /distros/$distribution_name/$release_name/$sourcepackage_name
+    affects $distribution_name/$release_name
+    affects $distribution_name/$release_name/$sourcepackage_name
 
 But if you want you can use any of the available commands as well.
 
@@ -836,7 +836,7 @@ well.
     ...     print bugtask.targetname
     firefox (upstream)
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary')
+    >>> submit_commands(bug, 'affects ubuntu/hoary')
 
 This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
@@ -855,7 +855,7 @@ target a bug directly, instead a nomination was created.
 
 The same happens if we try to target another release.
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
+    >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
@@ -869,7 +869,7 @@ The same happens if we try to target another release.
 
 Targeting an existing nomination won't create another nomination.
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
+    >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
@@ -892,7 +892,7 @@ bugs directly to releases.
 
 Now a new bugtask for the release will be create directly.
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/grumpy')
+    >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
@@ -902,7 +902,7 @@ Now a new bugtask for the release will be create directly.
 
 He can also approve existing nominations.
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/warty')
+    >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
@@ -919,7 +919,7 @@ specific distrorelease.
     ...     print bugtask.targetname
     firefox (upstream)
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary/evolution')
+    >>> submit_commands(bug, 'affects ubuntu/hoary/evolution')
 
 Now we can see that two tasks were created; both the general Ubuntu
 task, and the release specific task.
@@ -943,7 +943,7 @@ driver of the release, only a nomination will be created.
     ...     print bugtask.targetname
     firefox (upstream)
 
-    >>> submit_commands(bug, 'affects /distros/ubuntu/hoary/evolution')
+    >>> submit_commands(bug, 'affects ubuntu/hoary/evolution')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
