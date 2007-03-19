@@ -96,7 +96,10 @@
       </thead>
       <tbody>
         <tr tal:repeat="bugtask bugtasks">
-          <td tal:content="structure bugtask/fmt:icon" class="icon left" />
+          <td class="icon left">
+            <span class="sortkey" tal:content="bugtask/bug/id" />
+            <span tal:content="structure bugtask/fmt:icon" />
+          </td>
           <td tal:content="bugtask/bug/id" class="amount">12345</td>
           <td>
             <a tal:attributes="href bugtask/bug/fmt:url"
