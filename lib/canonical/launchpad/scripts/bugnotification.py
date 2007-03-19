@@ -89,7 +89,7 @@ class BugNotificationRationale:
         if person.isTeam():
             text = ("are a member of %s, which is a subscriber "
                     "of a duplicate bug" % person.displayname)
-            reason += " (@%s)" % person.name
+            reason += " @%s" % person.name
         else:
             text = "are a direct subscriber of a duplicate bug"
         self._addReason(person, text, reason)
@@ -293,43 +293,45 @@ def _log_exception_and_restart_transaction():
 
 
 def get_email_notifications(bug_notifications, date_emailed=None):
-    """Return the email notifications pending to be sent."""
+    """Return the email notifications pending to be sent.
+
+    The intention of this code is to ensure that as many notifications
+    as possible are batched into a single email. The criteria is that
+    the notifications:
+        - Must share the same owner.
+        - Must be related to the same bug.
+        - Must contain at most one comment.
+    """
     bug_notifications = list(bug_notifications)
     while bug_notifications:
-        person_bug_notifications = []
+        found_comment = False
+        notification_batch = []
         bug = bug_notifications[0].bug
         person = bug_notifications[0].message.owner
-        # Create a copy of the list, so removing items from it won't
-        # break the iteration over it.
+        # What the loop below does is find the largest contiguous set of
+        # bug notifications as specified above.
+        #
+        # Note that we iterate over a copy of the notifications here
+        # becase we are modifying bug_modifications as we go.
         for notification in list(bug_notifications):
-            if (notification.bug, notification.message.owner) != (bug, person):
+            if notification.is_comment and found_comment:
+                # Oops, found a second comment, stop batching.
                 break
-            person_bug_notifications.append(notification)
+            if (notification.bug, notification.message.owner) != (bug, person):
+                # Ah, we've found a change made by somebody else; time
+                # to stop batching too.
+                break
+            notification_batch.append(notification)
             bug_notifications.remove(notification)
-
-        has_comment = False
-        notifications_to_send = []
-        for notification in person_bug_notifications:
-            if date_emailed is not None:
-                notification.date_emailed = date_emailed
-            if notification.is_comment and has_comment:
-                try:
-                    yield construct_email_notifications(notifications_to_send)
-                except:
-                    # We don't want bugs preventing all bug
-                    # notifications from being sent, so catch all
-                    # exceptions and log them.
-                    _log_exception_and_restart_transaction()
-                has_comment = False
-                notifications_to_send = []
             if notification.is_comment:
-                has_comment = True
-            notifications_to_send.append(notification)
-        if notifications_to_send:
-            try:
-                yield construct_email_notifications(notifications_to_send)
-            except:
-                # We don't want bugs preventing all bug
-                # notifications from being sent, so catch all
-                # exceptions and log them.
-                _log_exception_and_restart_transaction()
+                found_comment = True
+
+        if date_emailed is not None:
+            notification.date_emailed = date_emailed
+        try:
+            # We don't want bugs preventing all bug notifications from
+            # being sent, so catch and log all exceptions.
+            yield construct_email_notifications(notification_batch)
+        except:
+            _log_exception_and_restart_transaction()
+
