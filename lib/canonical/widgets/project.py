@@ -7,16 +7,12 @@ __metaclass__ = type
 from textwrap import dedent
 
 from zope.app.form import InputWidget
-from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError,
-    WidgetInputError)
+    ConversionError, IInputWidget, InputErrors)
 from zope.app.form.utility import setUpWidget
-from zope.component import getMultiAdapter, getViewProviding
 from zope.interface import implements
 from zope.schema import Choice
-from zope.schema._bootstrapinterfaces import RequiredMissing
 
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.validators import LaunchpadValidationError
