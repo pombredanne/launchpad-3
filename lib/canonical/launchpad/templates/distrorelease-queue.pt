@@ -107,7 +107,7 @@
                      alt="[Installer]" src="/@@/ubuntu-icon"
                      title="Installer"/>
                 <img tal:condition="queue/containsTranslation"
-                     alt="[Translation]" src="/@@/translations"
+                     alt="[Translation]" src="/@@/translation-file"
                      title="Translation"/>
                 <img tal:condition="queue/containsUpgrader"
                      alt="[Upgrader]" src="/@@/topic"

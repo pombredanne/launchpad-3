@@ -9,9 +9,8 @@
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
-      media="screen"
+      media="screen, print"
       tal:content="string:@import url(${rooturl}+icing/style.css);"/>
-    <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"

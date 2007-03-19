@@ -3,6 +3,7 @@ SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET standard_conforming_strings = off;
 
 SET search_path = public, pg_catalog;
 
@@ -667,6 +668,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_p
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, false, NULL, NULL, false, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature2', NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, NULL);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, NULL);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897', 0, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, NULL, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, NULL);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -910,10 +913,12 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
 
+
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
+
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
@@ -1852,20 +1857,20 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2001-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (47, '2001-12-23 16:23:11.856461', 13, 14, 5, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (48, '2007-03-15 20:33:56.67893', 16, 1, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (49, '2007-03-15 20:34:26.518114', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (50, '2007-03-15 20:35:10.133383', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (51, '2007-03-15 20:36:01.779544', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (52, '2007-03-15 20:36:57.133832', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (53, '2007-03-15 20:37:27.991571', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (54, '2007-03-15 20:37:51.544376', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (55, '2007-03-15 20:41:18.635493', 16, 1, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (56, '2007-03-15 20:41:42.154264', 16, 17, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (57, '2007-03-15 20:41:42.154264', 16, 18, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (58, '2007-03-15 20:43:14.981111', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2007-03-15 20:45:15.852052', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2007-03-15 20:45:51.817826', 16, 2, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2007-03-15 20:46:49.83307', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (48, '2000-03-13 20:33:56.67893', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (49, '2000-03-13 20:34:26.518114', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (50, '2000-03-13 20:35:10.133383', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (51, '2000-03-13 20:36:01.779544', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (52, '2000-03-13 20:36:57.133832', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (53, '2000-03-13 20:37:27.991571', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (54, '2000-03-13 20:37:51.544376', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (55, '2000-03-13 20:41:18.635493', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (56, '2000-03-13 20:41:42.154264', 16, 17, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (57, '2000-03-13 20:41:42.154264', 16, 18, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (58, '2000-03-13 20:43:14.981111', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;

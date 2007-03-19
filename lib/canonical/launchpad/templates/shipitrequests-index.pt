@@ -12,13 +12,13 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
-  <form name="search" method="GET" tal:attributes="action request/URL">
-  <table>
+  <form name="search" method="get" tal:attributes="action request/URL">
+  <table class="headers-right-aligned">
     <tbody>
     <tr>
-      <th>Show:</th>
+      <th >Show:</th>
       <td colspan="2">
         <select name="statusfilter">
           <option tal:repeat="option view/status_options"
@@ -150,7 +150,7 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />

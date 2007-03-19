@@ -395,7 +395,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall', 'withcode']
+             'register', 'listall']
 
     def register(self):
         text = 'Register a project'
@@ -416,12 +416,6 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def withcode(self):
-        text = 'Show projects with code'
-        productset = getUtility(IProductSet)
-        return Link(canonical_url(
-            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:

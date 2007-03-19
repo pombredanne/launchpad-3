@@ -240,7 +240,7 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=10):
+    def getMostRecentlyFixedBugs(self, limit=5):
         """Return the ten most recently fixed bugs."""
         fixed_bugs = []
         search_params = BugTaskSearchParams(
