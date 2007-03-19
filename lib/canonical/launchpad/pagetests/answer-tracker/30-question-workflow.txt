@@ -144,8 +144,9 @@ This changes the status of the question to 'Solved' and mark
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    No Privileges Person
+    >>> np = 'No Privileges Person'
+    >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    True
 
 Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the question discussion:
@@ -156,8 +157,8 @@ confirmation message was appended to the question discussion:
 The confirmed answer is also highlighted.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
@@ -225,8 +226,8 @@ reopening portlet.
 
     >>> portlet = find_portlet(
     ...     owner_browser.contents, 'This question was reopened')
-    >>> print extract_text(portlet.fetch('a')[-1])
-    Sample Person
+    >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
+    True
 
 == Self-Answer ==
 
@@ -245,15 +246,16 @@ This appends the message to the quesiton and sets its status to
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    Sample Person
+    >>> 'Sample Person' in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    True
+
 
 It also records the owner as the answerer and marks his answer with the
 "Best answer" flag.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>OK, this example requires some SVG features that will only be available
@@ -284,7 +286,7 @@ It lists all the actions performed through workflow on the question:
     ...     who = extract_text(cells[1].first('a'))
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
-    ...     print who, action, new_status
+    ...     print who.lstrip('&nbsp;'), action, new_status
     Foo Bar              Reject                       Invalid
     Foo Bar              Change status                Open
     No Privileges Person Request for more information Needs information
@@ -294,3 +296,4 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Comment                      Solved
     Sample Person        Reopen                       Open
     Sample Person        Confirm                      Solved
+

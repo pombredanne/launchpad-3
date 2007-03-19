@@ -390,7 +390,7 @@ class BranchSet:
             AND Branch.owner <> %d
             ''' % vcs_imports.id
         branches = Branch.select(
-            query, orderBy=['-last_scanned'], limit=branch_count)
+            query, orderBy=['-last_scanned', 'id'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count):

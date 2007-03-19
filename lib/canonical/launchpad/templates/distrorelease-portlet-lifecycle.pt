@@ -12,6 +12,13 @@
             />
           </td>
         </tr>
+        <tr>
+          <th>When:</th>
+          <td tal:attributes="title context/date_created/fmt:datetime"
+              tal:content="context/date_created/fmt:approximatedate">
+            2006-05-14
+          </td>
+        </tr>
         <tr tal:condition="context/datereleased">
           <th>Released:</th>
           <td

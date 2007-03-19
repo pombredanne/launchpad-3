@@ -113,6 +113,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    date_created = Attribute("The date this distribution was registered.")
     bugcontact = Choice(
         title=_("Bug Contact"),
         description=_(

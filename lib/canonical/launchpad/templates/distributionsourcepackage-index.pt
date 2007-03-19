@@ -23,7 +23,7 @@
   <table class="listing">
         <thead>
           <tr>
-            <th>Datetime</th>
+            <th>When</th>
             <th>Status</th>
             <th>Target</th>
             <th>Pocket</th>
