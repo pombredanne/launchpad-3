@@ -60,11 +60,9 @@
   <div tal:attributes="class python:error and 'error' or None"
        tal:define="error widget/error">
     <span tal:replace="structure widget" />
-    <tal:use_required condition="omit_required|default">
-      <span tal:condition="widget/required"
-            class="fieldRequired"
-            title="Required">(Required)</span>
-    </tal:use_required>
+    <span tal:condition="widget/required"
+          class="fieldRequired"
+          title="Required">(Required)</span>
     <div tal:condition="error" tal:content="structure error" />
   </div>
 </metal:display_raw_widget>
