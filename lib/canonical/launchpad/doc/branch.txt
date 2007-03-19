@@ -196,6 +196,9 @@ interesting results.
 >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
 >>> branch.last_scanned = today - timedelta(1)
 >>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+>>> branch.last_scanned = today
+>>> syncUpdate(branch)
 
 >>> for branch in branchset.getRecentlyChangedBranches(5):
 ...   print branch.unique_name
