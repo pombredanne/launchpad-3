@@ -240,15 +240,14 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "The external bug tracker this product uses, if it's different"
             " from its Project's bug tracker."))
 
-    official_answers = Bool(title=_('Officially uses Answers'),
+    official_answers = Bool(title=_('Uses Answers Officially'),
         required=True, description=_('Check this box to indicate that '
         'this project officially uses Answers for community support.'))
         
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
-        'upstream. This will remove the caution from the product page.'
-        ))
+        'upstream. This will remove the caution from the product page.'))
 
     official_rosetta = Bool(title=_('Uses Rosetta Officially'),
         required=True, description=_('Check this box to indicate that '
@@ -424,9 +423,10 @@ class IProductSet(Interface):
 
 
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Malone is used."""
 
     official_rosetta = IProduct['official_rosetta']
+    official_answers = IProduct['official_answers']
     bugtracker = ProductBugTracker(
         title=_('Bug Tracker'),
         description=_('Where are bugs primarily tracked?'),

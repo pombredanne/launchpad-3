@@ -167,6 +167,20 @@ None will of course be returned.
     True
 
 
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
+
+
 == Product Creation ==
 
 We can create new products with the createProduct() method:
