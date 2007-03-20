@@ -715,7 +715,7 @@ class BugTaskEditView(GeneralFormView):
     def errorMessage(self):
         assert self.errors
         text = ("There %s with the information you entered. "
-                "Please fix %s and try again")
+                "Please fix %s and try again.")
         count = len(self.errors)
         if count == 1:
             return text % ("is a problem", "it")
