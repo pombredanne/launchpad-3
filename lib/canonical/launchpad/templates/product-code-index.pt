@@ -1,21 +1,63 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Products with Code</h1>
-    </metal:heading>
+    <div metal:fill-slot="main">
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Projects with active branches</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/code" />
+          </tr>
+        </tbody>
+      </table>
+      <div id="mainarea" class="tab-code">
+        <div class="t">
+          <div class="u">
+            <div class="v">
+              <div class="w">
+                <div class="x">
+                  <div class="y">
+                    <div class="z">
+                      <div id="container">
 
-<div metal:fill-slot="main">
+                        <div><strong><a href="/">&laquo; Back</a></strong></div>
 
-  <a tal:repeat="product view/products"
-     tal:attributes="href product/fmt:url;
-                     class product/html_class"
-     tal:content="product/name">product</a>
+                        <a tal:repeat="product view/products"
+                           tal:attributes="href product/fmt:url;
+                                           class product/html_class;
+                                           title product/html_title"
+                           tal:content="product/name">project</a>
 
-</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!--mainarea-->
+    </div><!--main-->
+    <div metal:fill-slot="help">
+      <p>
+        All projects that have active hosted or mirrored branches
+        are shown here.
+      </p>
+        
+      <p>
+        The size of the tag in the cloud is defined by the number of
+        branches that the project has.
+      </p>
 
+      <p>
+        The colour of the tag in the cloud is determined by how
+        recent the last commit to any active branch is.
+      </p>
+    </div>
   </body>
 </html>
+</tal:layout>

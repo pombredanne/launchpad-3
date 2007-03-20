@@ -62,8 +62,8 @@ thead th, tr.thead th {text-align: center;}
 html {
   position: relative;
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 8pt;
-  color: #656565;
+  font-size: 8.5pt;
+  color: #606060;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
@@ -74,9 +74,9 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.25em; margin: 1em 0 0 0;      padding: 0;}
+h1 {font-size: 2.8em;    margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.55em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
@@ -110,6 +110,12 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
   background-image: url(/@@/warning);
+}
+.helpwanted {background-color: #fafca9; color: black; border: 1px solid black; 
+    padding: 0.5em; font-size: smaller; padding-left: 3em
+}
+.helpwanted.message, .helpwanted .message {
+  background-image: url(/@@/helpwanted);
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
@@ -546,28 +552,25 @@ ul#applicationchooser li#applicationchooser_selected {
 #actions ul {
   width: 192px;
   overflow: hidden;
-  margin: 3px 0px 0px 0px;
-  padding: 4px 4px 0 4px;
-  list-style: none;
+  margin: 0;
+  padding: 4px;
 }
 #actions li {
-  margin: 0;
+  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
+  list-style-image: url(/+icing/action.png);
+  list-style-type: circle; /* A fallback in case the image can't be found. */
+  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
 }
-#actions li a {
-  width: 180px;
-  height: auto !important;
-  display: block;
-  padding: 6px !important;
+#actions li:hover {background-color: #fff; text-decoration: underline;}
+#actions a {
+  display: block; /* Makes the clickable area equal to the highlighted area. */
+  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
+  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
 }
-#actions li a:hover {
-  background-color: #fff;
-  text-decoration: underline;
-}
-
 #globalsearch {
   width: 220px;
   float: right;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 #globalsearch #q {
   width: 170px;
@@ -665,16 +668,20 @@ ul#applicationchooser li#applicationchooser_selected {
   color: black;
   float: left;
   margin: 10px 0px 0px 38px;
-  width: 50%;
+  width: 70%;
 }
 #structuralobjectheading img {
   float: left;
-  margin: 0;
+  margin: 0 0 0 3px;
 }
 #structuralobjectheading .main {
   font-weight: bold;
-  margin: 20px 0 0;
-  font-size: 2.5em;
+  margin: 1px 0 0 70px;
+  font-size: 2.3em;
+}
+#structuralobjectheading .intro {
+  margin: 2px 0 0 70px;
+  font-size: 1em;
 }
 #structural-children {
   clear: both;
@@ -685,6 +692,8 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 #applicationchooser {
   clear: both;
+  position: relative; /* needed to make z-index work */
+  z-index: 1; /* ensures tabs appear above structural object heading */
 }
 #mainarea {
   clear: both;
@@ -698,7 +707,7 @@ ul#applicationchooser li#applicationchooser_selected {
   margin-left: 0;
   margin-right: 0;
 }
-#mainarea {position: relative; top: -10px;} /* reduces pillargotchi~tab gap */
+#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
 * html #mainarea {top: 0;}
 #singlecolumn #mainarea {top: -20px;}
 * html #singlecolumn #mainarea {top: 0;}
@@ -797,14 +806,20 @@ a.open, a.closed {
   display: block;
   width: 28px;
   height: 120px;
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
   text-indent: -9999px;
   overflow: hidden;
 }
+
+#help_panel.open a.open-close, a.open {
+  background-image: url(help_ttl_open.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
+}
+
 #help_panel.closed a.open-close, a.closed {
-  background-image: url(help_ttl_closed.gif);
+	background-image: url(help_ttl_closed.gif);
+	background-repeat: no-repeat;
+	background-position: 0px 0px;
 }
 
 /* --- Various custom list formats --- */
@@ -826,13 +841,13 @@ ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
-ul.languages, li.languages           {list-style-image: url(/@@/languages);}
+ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news                     {list-style-image: url(/@@/news);}
-ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
-ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
+ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
+ul.package.source, li.package.source {list-style-image: url(/@@/package-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
@@ -840,7 +855,7 @@ ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
-ul.translations, li.translations     {list-style-image: url(/@@/translations);}
+ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
@@ -898,7 +913,7 @@ body.tab-overview #mainarea #portlets .portlet.active div {
   border-right: 4px solid #FEFCF0;
 }
 body.tab-overview #actions, body.tab-overview .results {
- /* background-color: #e6eed3; */
+  background: #e6eed3;
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
@@ -1352,7 +1367,8 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {margin: 2em 0 4em 0; padding: 0;}
+ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
+/*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
 ul.buttons li {display: inline; margin-right: 1em;}
 #singlecolumn ul.buttons {float: right; margin: 0;}
 #singlecolumn ul.buttons li {margin: 0;}
@@ -1511,8 +1527,8 @@ th.descending {
   color: #00f;
 }
 .cloud-shade-medium { 
-  color: #99f;
+  color: #7878ff;
 }
 .cloud-shade-light {
-  color: #ccf;
+  color: #b8b8ff;
 }

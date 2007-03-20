@@ -22,7 +22,8 @@ __all__ = [
     'BugTaskView',
     'get_sortorder_from_request',
     'BugTargetTextView',
-    'upstream_status_vocabulary_factory']
+    'upstream_status_vocabulary_factory',
+    'BugsBugTaskSearchListingView']
 
 import cgi
 import re
@@ -31,7 +32,8 @@ from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.app.form.interfaces import (
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
@@ -56,7 +58,7 @@ from canonical.launchpad.interfaces import (
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
     IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
     IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    ILaunchBag, INullBugTask, IPerson,
+    IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
@@ -67,7 +69,6 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
-from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -81,13 +82,27 @@ from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
+from canonical.widgets.project import ProjectScopeWidget
+
+
+def unique_title(title):
+    """Canonicalise a message title to help identify messages with new
+    information in their titles.
+    """
+    if title is None:
+        return None
+    title = title.lower()
+    if title.startswith('re:'):
+        title = title[3:]
+    return title.strip()
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
-    requiring only two database queries.
+    requiring only two database queries. It removes the titles
+    for those comments which do not have a "new" subject line
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
@@ -98,6 +113,15 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         assert comments.has_key(message_id)
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
+    current_title = bugtask.bug.title
+    for comment in comments:
+        if not ((unique_title(comment.title) == \
+                 unique_title(current_title)) or \
+                (unique_title(comment.title) == \
+                 unique_title(bugtask.bug.title))):
+            # this comment has a new title, so make that the rolling focus
+            current_title = comment.title
+            comment.display_title = True
     return comments
 
 
@@ -180,20 +204,20 @@ class BugTargetTraversalMixin:
         # for example, return a bug page for a context in which the bug hasn't
         # yet been reported.
         if IProduct.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, product=context)
+            null_bugtask = bug.getNullBugTask(product=context)
         elif IProductSeries.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, productseries=context)
+            null_bugtask = bug.getNullBugTask(productseries=context)
         elif IDistribution.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distribution=context)
+            null_bugtask = bug.getNullBugTask(distribution=context)
         elif IDistributionSourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distribution=context.distribution,
+            null_bugtask = bug.getNullBugTask(
+                distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         elif IDistroRelease.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+            null_bugtask = bug.getNullBugTask(distrorelease=context)
         elif ISourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distrorelease=context.distrorelease,
+            null_bugtask = bug.getNullBugTask(
+                distrorelease=context.distrorelease,
                 sourcepackagename=context.sourcepackagename)
         else:
             raise TypeError(
@@ -975,8 +999,9 @@ class BugTaskListingView(LaunchpadView):
             return status_title + ' (unassigned)'
 
         assignee_html = (
-            '<img alt="" src="/@@/user" /> '
+            '<img alt="" src="%s" /> '
             '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                assignee.default_emblem_resource,
                 urllib.quote(assignee.name),
                 cgi.escape(assignee.browsername)))
 
@@ -1192,16 +1217,18 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    form_has_errors = False
     owner_error = ""
     assignee_error = ""
+    bug_contact_error = ""
+
+    @property
+    def schema(self):
+        if self._personContext():
+            return IPersonBugTaskSearch
+        else:
+            return IBugTaskSearch
 
     def initialize(self):
-        if self._personContext():
-            self.schema = IPersonBugTaskSearch
-        else:
-            self.schema = IBugTaskSearch
-
         if self.shouldShowComponentWidget():
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually
@@ -1267,7 +1294,9 @@ class BugTaskSearchListingView(LaunchpadView):
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
         except WidgetsError:
-            self.form_has_errors = True
+            # No need to do anything, the widget will be checked for
+            # errors elsewhere.
+            pass
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1307,7 +1336,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve"
+                "status_upstream", "tag", "has_cve", "bug_contact"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1529,11 +1558,19 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return False
 
+    @property
+    def form_has_errors(self):
+        has_errors = (
+            self.assignee_error or
+            self.owner_error or
+            self.bug_contact_error or
+            self.tag_widget.error())
+        return has_errors
+
     def validateVocabulariesAdvancedForm(self):
         """Validate person vocabularies in advanced form.
 
-        If a vocabulary lookup fail set a custom error message and set
-        self.form_has_errors to True.
+        If a vocabulary lookup fail set a custom error message.
         """
         error_message = _(
             "There's no person with the name or email address '%s'")
@@ -1547,9 +1584,11 @@ class BugTaskSearchListingView(LaunchpadView):
         except WidgetsError:
             self.owner_error = error_message % (
                 cgi.escape(self.request.get('field.owner')))
-
-        if self.assignee_error or self.owner_error:
-            self.form_has_errors = True
+        try:
+            getWidgetsData(self, self.schema, names=["bug_contact"])
+        except WidgetsError:
+            self.bug_contact_error = error_message % (
+                cgi.escape(self.request.get('field.bug_contact')))
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -1783,3 +1822,40 @@ class BugTaskTableRowView(LaunchpadView):
     def shouldShowProductIcon(self):
         """Should we show the product icon?"""
         return IUpstreamBugTask.providedBy(self.context)
+
+
+class BugsBugTaskSearchListingView(BugTaskSearchListingView):
+    """Search all bug reports."""
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    schema = IFrontPageBugTaskSearch
+    scope_widget = CustomWidgetFactory(ProjectScopeWidget)
+
+    def initialize(self):
+        BugTaskSearchListingView.initialize(self)
+        self._redirectToSearchContext()
+
+    def _redirectToSearchContext(self):
+        """Check wether a target was given and redirect to it.
+
+        All the URL parameters will be passed on to the target's +bugs
+        page.
+
+        If the target widget contains errors, redirect to the front page
+        which will handle the error.
+        """
+        try:
+            search_target = self.scope_widget.getInputValue()
+        except InputErrors:
+            query_string = self.request['QUERY_STRING']
+            bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
+            self.request.response.redirect(bugs_url)
+        else:
+            if search_target is not None:
+                query_string = self.request['QUERY_STRING']
+                search_url = "%s/+bugs?%s" % (
+                    canonical_url(search_target), query_string)
+                self.request.response.redirect(search_url)
+
+    def getSearchPageHeading(self):
+        return "Search all bug reports"

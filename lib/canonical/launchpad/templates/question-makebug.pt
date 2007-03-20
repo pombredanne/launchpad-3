@@ -36,7 +36,7 @@
 
 <metal:help fill-slot="help">
   <p>If the problem described in this question is really caused by
-    a bug in this product or distributino, you can create a new bug for it.
+    a bug in this project, you can create a new bug for it.
     You should make sure that the bug hasn't already be reported by searching
     for something similar first.
   </p>

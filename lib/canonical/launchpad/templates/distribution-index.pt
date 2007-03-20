@@ -13,7 +13,7 @@
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Ubuntu Linux</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <span tal:replace="structure context/fmt:icon" />
       <div tal:replace="structure context/summary/fmt:text-to-html" />
       <div tal:replace="structure context/description/fmt:text-to-html" />
       <ul class="buttons">
@@ -82,11 +82,11 @@
             </li>
           </ul>
         </div>
+        <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
-          class="portlet"
-          tal:condition="nothing"
-          tal:content="structure context/currentrelease/@@+last-uploads"
-        >After bug 74342, change tal:condition="context/currentrelease"</div>
+          tal:condition="context/currentrelease"
+          tal:content="structure context/currentrelease/@@+latest-uploads"
+        />
       </div>
       <div class="right">
         <div
@@ -99,11 +99,11 @@
         />
         <div
           class="two column section"
-          tal:content="structure context/@@+portlet-latestbugs"
+          tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-latestspecs"
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
         />
       </div>
     </div>

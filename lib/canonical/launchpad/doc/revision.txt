@@ -4,6 +4,26 @@ Branches are collection of revisions, and a revision can exist independently
 from any branch. Revisions are created automatically by scanning branches, they
 have no creation interface and Launchpad cannot create or modify them.
 
+== Interfaces ==
+
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet,
+...     IBranchRevision)
+>>> from canonical.launchpad.database import (
+...     Revision, RevisionAuthor, RevisionParent, RevisionSet,
+...     BranchRevision)
+>>> verifyObject(IRevision, Revision.get(1))
+True
+>>> verifyObject(IRevisionAuthor, RevisionAuthor.get(1))
+True
+>>> verifyObject(IRevisionParent, RevisionParent.get(1))
+True
+>>> verifyObject(IRevisionSet, RevisionSet())
+True
+>>> verifyObject(IBranchRevision, BranchRevision.get(1))
+True
+
 == Creating revisions ==
 
 XXX: Revisions have an owner attribute. As a convention, the owner of a
@@ -62,7 +82,7 @@ we can represent revision whose at least one ancestor is a ghost revision.
 
 == Revision numbers ==
 
-Revisions are associated to branches through the RevisionNumber table. A given
+Revisions are associated to branches through the BranchRevision table. A given
 revision may appear in different positions in different branches thanks to
 Bazaar2 converge-on-pull logic.
 
@@ -71,13 +91,13 @@ Bazaar2 converge-on-pull logic.
 >>> branch.revision_history.count()
 0
 
-RevisionNumber does not have a creation interface, like for Revision, new
+BranchRevision does not have a creation interface, like for Revision, new
 records are only created by a non-zope batch job.
 
->>> from canonical.launchpad.database import RevisionNumber
+>>> from canonical.launchpad.database import BranchRevision
 >>> junkcode_sql = Branch.selectOneBy(name='junkcode')
->>> rev_no_1 = RevisionNumber(sequence=1, branch=branch, revision=revision_1)
->>> rev_no_2 = RevisionNumber(sequence=2, branch=branch, revision=revision_2)
+>>> rev_no_1 = BranchRevision(sequence=1, branch=branch, revision=revision_1)
+>>> rev_no_2 = BranchRevision(sequence=2, branch=branch, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
 
@@ -88,12 +108,12 @@ Launchpad's view of the branch will differ from the actual state of
 the branch.
 
 If the bzr branch now has fewer revisions than Launchpad's view of the
-branch, then some of RevisionNumber records will need to be removed.
+branch, then some of BranchRevision records will need to be removed.
 The branch scanner does this by calling destroySelf() on the excess
 records.
 
 As the branch scanner manipulates branch information through the zope
-interfaces, the RevisionNumber objects in question will be security
+interfaces, the BranchRevision objects in question will be security
 wrapped.  It is important that they be deletable in this state.
 
 First, get a branch via the IPersonSet utility:
@@ -131,7 +151,7 @@ access attributes not exposed in its interface:
   >>> revno_6.forbidden_attribute
   Traceback (most recent call last):
     ...
-  ForbiddenAttribute: ('forbidden_attribute', <RevisionNumber at ...>)
+  ForbiddenAttribute: ('forbidden_attribute', <BranchRevision at ...>)
 
 
 This revision can then be deleted in the same way the branch scanner
@@ -143,7 +163,7 @@ does, leaving only 5 revisions in the branch:
   5
 
 
-Note that while the RevisionNumber object linking the revision to the
+Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
 may be referenced by some other branch):
 

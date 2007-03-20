@@ -40,78 +40,66 @@
                           </a>
                         </li>
                       </ul>
-                      <form class="central" name="spec_search" method="get">
+                      <form class="central" action="" method="get"
+                            tal:attributes="action request/URL">
                         <table>
                           <tbody>
                             <tr>
                               <td style="text-align: right;">
                                 <input
-                                  id="searchtext"
-                                  tal:attributes="value view/searchtext"
+                                  id="text"
                                   type="text"
-                                  name="searchtext"
+                                  name="field.search_text"
                                   size="50"
+                                  tal:attributes="value view/searchtext"
                                 />
                               </td>
                               <td>
                                 <input
-                                  tal:condition="not:view/searchrequested"
+                                  tal:replace="structure view/search_action/render"
                                   type="submit"
-                                  value="Search Blueprints"
-                                />
-                                <input
-                                  tal:condition="view/searchrequested"
-                                  type="submit"
-                                  value="Search Again"
+                                  value="Find blueprints"
                                 />
                               </td>
                             </tr>
-                            <tr>
-                              <td style="text-align: right;">
-                                <label>
-                                  <input
-                                    name="scope"
-                                    type="radio"
-                                    value="all"
-                                    checked="checked"
-                                  />
-                                  All projects
-                                </label>
-                                <label>
-                                  <input
-                                    name="scope"
-                                    type="radio"
-                                    value="project"
-                                    onclick="document.getElementById('project').focus();"
-                                  />
-                                  One project:
-                                  <input
-                                    id="project"
-                                    name="project"
-                                    type="text"
-                                  />
-                                </label>
+                            <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
+                              <td tal:attributes="class view/scope_css_class"
+                                  style="text-align: right;">
+
+                                <tal:scope
+                                  replace="structure view/widgets/scope/renderScopeOptions" />
+
+                                <tal:input replace="structure target_widget/inputField" />
+
+                                <div class="message"
+                                  tal:condition="view/scope_error"
+                                  tal:content="structure view/scope_error">
+                                  Error message
+                                </div>
                               </td>
-                              <td>(<a href="choose">Choose&hellip;</a>)</td>
+                              <td tal:content="structure target_widget/chooseLink" />
                             </tr>
                           </tbody>
                         </table>
+                        <div>
                       </form>
                       <tal:searchresults
                         condition="view/searchrequested"
                         define="specs view/specs"
                       >
                         <p tal:condition="specs">
-                          Blueprints matching
+                          <span tal:replace="view/spec_count" />
+                          blueprint(s) matching
                           &#8220;<tal:string replace="view/searchtext" />&#8221:
                         </p>
 
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
 
-    <tal:per_spec repeat="spec specs">
-      <div tal:replace="structure spec/@@+listing-detailed" />
-    </tal:per_spec>
+    <table>
+      <tr tal:repeat="spec specs"
+          tal:replace="structure spec/@@+listing-simple" />
+    </table>
 
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">
@@ -153,16 +141,9 @@
                             tal:content="structure context/@@+portlet-sprints"
                           />
                         </div>
-<<<<<<< TREE
-                        <p id="application-footer">
-                          <strong>XXX</strong>
-                          blueprints registered
-                        </p>
-=======
                         <div id="application-footer">
                           <tal:stats replace="structure context/@@+portlet-stats" />
                         </div>
->>>>>>> MERGE-SOURCE
                       </tal:nosearchresults>
 
                       </div><!--container-->

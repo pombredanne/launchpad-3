@@ -30,7 +30,8 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
     RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
-    should_skip_host, PER_HOST_REQUESTS)
+    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -257,8 +258,8 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         """Test that only a small ratio is not enough to cause a host to be
         skipped; we also need to have a considerable number of requests.
         """
-        requests = 5
-        timeouts = 5
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO - 1
+        timeouts = requests
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failUnless(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -271,8 +272,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         """
         # If the ratio is small enough and we have a considerable number of
         # requests, we won't issue more connections on that host.
-        requests = 15
-        timeouts = 8
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failIf(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -282,8 +284,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
     def test_connect_is_called_if_not_many_timeouts(self):
         # If the ratio is not too small we consider it's safe to keep 
         # issuing connections on that host.
-        requests = 15
-        timeouts = 5
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) - 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
         self.failUnless(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
@@ -347,8 +350,9 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
 
     def test_failure_after_too_many_timeouts(self):
         host = 'foo.bar'
-        requests = 15
-        timeouts = 8
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
         distributionmirror_prober.host_requests = {host: requests}
         distributionmirror_prober.host_timeouts = {host: timeouts}
         # Ensure the number of requests and timeouts we're using should

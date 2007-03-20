@@ -28,7 +28,7 @@ information.
 
     >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
     ...     print notification.renderContents()
-    Please select the appropriate upstream product. This step...
+    Please select the appropriate upstream project. This step...
 
 Let's follow the link and specify the packaging information.
 
