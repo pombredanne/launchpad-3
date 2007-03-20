@@ -16,10 +16,12 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
+from canonical.launchpad.fields import (
+    LargeImageUpload, BaseImageUpload, SmallImageUpload)
 
 
 class DistributionNameField(PillarNameField):
@@ -29,8 +31,9 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, IKarmaContext):
+class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                    ISpecificationTarget, IHasSecurityContact,
+                    IKarmaContext, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -59,11 +62,22 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "so you cannot undo changes."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/distribution',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this distribution."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        default_image_resource='/@@/distribution-heading',
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this distribution. It should "
+            "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/distribution-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this distribution's home page. It should be no bigger than 100k "
@@ -98,6 +112,7 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    date_created = Attribute("The date this distribution was registered.")
     bugcontact = Choice(
         title=_("Bug Contact"),
         description=_(
@@ -185,10 +200,6 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             ),
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
-
-    def traverse(name):
-        """Traverse the distribution. Check for special names, and return
-        appropriately, otherwise use __getitem__"""
 
     def __getitem__(name):
         """Returns a DistroRelease that matches name, or raises and
@@ -316,6 +327,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
+            members, owner, gotchi, gotchi_heading, emblem):
         """Creaste a new distribution."""
 

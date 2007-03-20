@@ -12,86 +12,15 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Bazaar branches</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset view/visible_branches;
-                 branchset view/branches">
+     tal:define="branches view/branches">
 
-  <tal:branchlist condition="branchset">
+  <tal:branchlisting content="structure branches/@@+branch-listing" />
 
-  <metal:branch-filter
-      metal:use-macro="context/@@branch-filtering-macros/branch-filter" />
-
-  <table class="listing sortable" id="branchtable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Author</th>
-        <th class="initial-sort">Status</th>
-        <th>Last Commit</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="branch branchviewset">
-        <!-- Name -->
-        <td>
-          <a tal:attributes="href branch/fmt:url;
-                             title branch/displayname"
-             tal:content="branch/name/fmt:shorten/30">
-               Name
-          </a>
-        </td>
-        <!-- Author -->
-        <td>
-          <a tal:condition="branch/author"
-             tal:attributes="href branch/author/fmt:url"
-             tal:content="branch/author/browsername">
-               Author
-          </a>
-        </td>
-        <!-- Status -->
-        <td>
-          <span tal:content="branch/lifecycle_status/sortkey"
-                class="sortkey">23</span>
-          <span tal:content="branch/lifecycle_status/title"
-                tal:attributes="
-                  class string:branchstatus${branch/lifecycle_status/name}">
-                  Status</span>
-        </td>
-        <!-- Last Commit -->
-        <td tal:define="last_commit python:view.last_commit[branch]">
-          <span tal:condition="last_commit"
-                tal:replace="last_commit/fmt:datetime">
-            2007-01-01
-          </span>
-        </td>
-      </tr>
-      <tr tal:condition="not:branchviewset">
-        <td colspan="4">
-          <i>There are branches registered for
-            <span tal:replace="context/name">firefox</span> but none of them
-            match the current filter criteria for this page.  Try filtering on
-            "Any Status".</i>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  </tal:branchlist>
-
-  <p tal:condition="not:branchset">
-    There are no branches registered for
-    <span tal:replace="context/displayname">Firefox</span> in Launchpad
-    today. We recommend you visit
-    <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> for more
-    information about how you can use the Bazaar revision control system to
-    improve community participation in this product.
-  </p>
-
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+</div>
 
 <metal:block fill-slot="help">
 

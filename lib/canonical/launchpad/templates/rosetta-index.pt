@@ -6,12 +6,15 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <div
-        id="applications"
-        tal:content="structure context/@@+applicationbuttons/translations"
-      />
+      <table id="applications">
+        <tbody>
+          <tr>
+            <th><h1>Software translations</h1></th>
+            <td tal:content="structure context/@@+applicationbuttons/translations" />
+          </tr>
+        </tbody>
+      </table>
       <div id="mainarea" class="tab-translations">
-        <h1>Translations</h1>
         <div class="t">
           <div class="u">
             <div class="v">
@@ -20,20 +23,24 @@
                   <div class="y">
                     <div class="z">
                       <div id="container">
-                        <p id="application-summary">
-                          With Launchpad you can translation Free Software
-                          into your own language.
-                        </p>
-                        <ul class="buttons">
+                        <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
                               <img
                                 alt="Take a tour"
-                                src="/+icing/but_lrg_takeatour.gif"
+                                src="/+icing/but-lrg-takeatour.gif"
                               />
                             </a>
                           </li>
                         </ul>
+                        <p id="application-summary">
+                          Launchpad helps you build a community to
+                          translate your project into into almost any
+                          language. Translators use this simple web
+                          interface to contribute translations in a
+                          wiki-style of collaboration.
+                          <a href="/+tour">Learn more&#8230;</a>
+                        </p>
                         <div class="three column left">
 
                             <h2>Translatable operating systems</h2>
@@ -56,7 +63,7 @@
                         </div>
                         <div class="three column middle">
 
-                            <h2>Translatable products</h2>
+                            <h2>Translatable projects</h2>
                             <ul class="product">
                               <li tal:repeat="product context/translatable_products">
                                 <a
@@ -90,6 +97,20 @@
         </div><!--t-->
       </div><!--mainarea-->
     </div><!--main-->
+    <div metal:fill-slot="help">
+      <p>
+        Read more <a href="+about">about Rosetta</a>, a Web-based system for
+        translating open source software into any language. All you need to
+        start translating is a Web browser, a good knowledge of the
+        application you are translating, and a knowledge of English.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequent asked questions</a>
+        </li>
+      </ul>
+    </div>
   </body>
 </html>
 </tal:layout>

@@ -6,7 +6,7 @@ the page is not broken.
 This page is used to search packages in a distribution context.
 
   >>> browser.open("http://localhost/ubuntu")
-  >>> browser.getLink("Search Packages").click()
+  >>> browser.getLink("Search packages").click()
   >>> browser.url
   'http://localhost/ubuntu/+search'
 

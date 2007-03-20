@@ -12,101 +12,15 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/browsername">Context Title</h3>
-  <h1>Bazaar branches</h1>
+  <h1><span tal:replace="view/title_prefix">Bazaar</span> branches</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset view/visible_branches;
-                 branchset view/branches">
+     tal:define="branches view/branches">
 
-  <tal:branchlist condition="branchset">
+  <tal:branchlisting content="structure branches/@@+branch-listing" />
 
-  <metal:branch-filter
-      metal:use-macro="context/@@branch-filtering-macros/branch-filter" />
-
-  <table class="listing sortable" id="branchtable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Author</th>
-        <th>Status</th>
-        <th>Last Commit</th>
-        <th class="initial-sort">Product</th>
-        <th>Role</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="branch branchviewset">
-        <td>
-        <!-- Name -->
-          <a tal:attributes="href branch/fmt:url;
-                             title branch/displayname"
-             tal:content="branch/name/fmt:shorten/30">
-               Title Goes Here!
-          </a>
-        </td>
-        <!-- Author -->
-        <td>
-          <a tal:condition="branch/author"
-             tal:attributes="href branch/author/fmt:url"
-             tal:content="branch/author/browsername">
-               Author
-          </a>
-        </td>
-        <!-- Status -->
-        <td>
-          <span tal:content="branch/lifecycle_status/sortkey"
-                class="sortkey">23</span>
-          <span tal:content="branch/lifecycle_status/title"
-                tal:attributes="
-                  class string:branchstatus${branch/lifecycle_status/name}">
-                  Status</span>
-        </td>
-        <!-- Last Commit -->
-        <td tal:define="last_commit python:view.last_commit[branch]">
-          <span tal:condition="last_commit"
-                tal:replace="last_commit/fmt:datetime">
-            2007-01-01
-          </span>
-        </td>
-        <!-- Product -->
-        <td>
-          <a tal:condition="branch/product"
-             tal:attributes="href branch/product/fmt:url"
-             tal:content="branch/product/name">
-               Product
-          </a>
-        </td>
-        <!-- Role -->
-        <td tal:define="role python:view.branch_role(branch)">
-          <span class="sortkey" tal:content="role/sortkey">12</span>
-          <span tal:replace="role/title">Role of the person</span>
-        </td>
-      </tr>
-      <tr tal:condition="not: branchviewset">
-        <td colspan="6">
-          <i>There are branches registered for
-            <span tal:replace="context/name">James Jiggler</span> but none of them
-            match the current filter criteria for this page.  Try filtering on
-            "Any Status".</i>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  </tal:branchlist>
-  
-
-  <p tal:condition="not:branchset">
-    There are no branches related to
-    <span tal:replace="context/displayname">Steve Alexander</span>
-    in Launchpad today. You can use Launchpad as a registry for Bazaar
-    branches, and encourage broader community participation in your project
-    using distributed version control.
-  </p>
-
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+</div>
 
 <metal:block fill-slot="help">
 
@@ -125,7 +39,10 @@
 
     <li>The <strong>author</strong> is the person being given credit for the
       branch. The author cannot modify the branch in any way, and should
-      normally be the same as the registrant.</li>
+      normally be the same as the registrant. We have both fields to allow
+      you to register a branch which is useful for you and the community,
+      and which you want to monitor through Launchpad, but for which you
+      are not the author.</li>
 
     <li>A <strong>subscriber</strong> is a person expressing interest in a
       branch. Subscribing to a branch does not give any right, and is only

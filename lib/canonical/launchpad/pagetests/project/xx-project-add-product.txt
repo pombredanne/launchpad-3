@@ -1,0 +1,52 @@
+
+Adding a Product to a Project
+-----------------------------
+
+A project registrant can add products to a project. Let's add an
+Eye of GNOME product to the GNOME project.  There is a link at the
+bottom of the project page to add a new product:
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> browser.getLink('Register another project').click()
+  >>> print browser.url
+  http://launchpad.dev/gnome/+newproduct
+
+Now we'll fill in the product details and add it.  This will bring us
+back to the project page:
+
+  >>> browser.getControl('Name', index=0).value = 'eog'
+  >>> browser.getControl('Display Name').value = 'Eye of GNOME'
+  >>> browser.getControl('Title').value = 'Eye of GNOME'
+  >>> browser.getControl('Summary').value = 'An image viewer for GNOME'
+  >>> browser.getControl('Description').value = 'Blah blah blah'
+  >>> browser.getControl('Homepage URL').value = 'http://homepage'
+  >>> browser.getControl('Sourceforge Project').value = 'eog'
+  >>> browser.getControl('Freshmeat Project').value = 'eog'
+  >>> browser.getControl('Wiki URL').value = 'http://wiki'
+  >>> browser.getControl('Screenshots URL').value = 'http://screenshots'
+  >>> browser.getControl('Download URL').value = 'http://download'
+  >>> browser.getControl('Programming Language').value = 'C'
+
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://launchpad.dev/eog
+
+
+Now let's get the page for that product to make sure it's there.  It
+is accessible both under "/" and under the project URL:
+
+  >>> anon_browser.open('http://launchpad.dev/eog')
+  >>> 'Eye of GNOME' in anon_browser.contents
+  True
+
+  >>> anon_browser.open('http://launchpad.dev/gnome/eog')
+  >>> 'Eye of GNOME' in anon_browser.contents
+  True
+
+A default product series named "trunk" was created for the new
+product:
+
+  >>> anon_browser.open('http://launchpad.dev/eog/trunk')
+  >>> 'Release series overview' in anon_browser.contents
+  True

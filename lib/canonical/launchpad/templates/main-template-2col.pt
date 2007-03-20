@@ -115,7 +115,7 @@
       <a href="/bugs">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;
       <a href="/rosetta">Rosetta</a> &ndash;
-      <a href="/support">Tech&nbsp;support</a> &ndash;
+      <a href="/support">Answers</a> &ndash;
       <a href="/bazaar">Bazaar</a> &ndash;
       Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
@@ -129,10 +129,9 @@
   </div>
     <div id="menupreload">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/products">Products</a></li>
+        <li class="item"><a href="/products">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
-        <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
 </body>

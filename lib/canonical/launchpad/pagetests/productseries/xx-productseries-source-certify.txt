@@ -48,10 +48,10 @@ certify the import:
 If we have correct details, we can approve the build for production:
 
   >>> browser.getControl('CVS').click()
-  >>> browser.getControl('Repository root').value = (
+  >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52')
   >>> browser.getControl('Module').value = 'a52dec'
-  >>> browser.getControl('Branch name').value = 'MAIN'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
   >>> browser.getControl(
   ...     'Approve import for production and publication').click()
   >>> print browser.url
@@ -62,7 +62,7 @@ Check that that import status was indeed updated.
   >>> print find_main_content(browser.contents)
   <...
   <tr>
-  <td><b>Import Status:</b></td>
+  <th>Import status:</th>
   <td>Processing</td>
   </tr>
   ...

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # This script runs through the set of Debbugs watches, and tries to
 # syncronise each of those to the malone bug which is watching it.

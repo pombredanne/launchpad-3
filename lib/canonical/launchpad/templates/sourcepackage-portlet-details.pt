@@ -7,8 +7,10 @@
       <b>Current version:</b>
       <span tal:replace="current/version" /><br />
 
-      <b>Upload date:</b>
-      <span tal:replace="current/dateuploaded/fmt:date" /><br />
+      <b>Uploaded:</b>
+      <span
+        tal:attributes="title current/dateuploaded/fmt:datetime"
+        tal:content="current/dateuploaded/fmt:approximatedate" /><br />
       
       <b>Urgency:</b>
       <span tal:content="current/urgency/title" /><br />

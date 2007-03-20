@@ -15,7 +15,7 @@ includes a list of translatable distribution releases,
 
 products,
 
-  >>> '>Translatable products</h2>' in browser.contents
+  >>> '>Translatable projects</h2>' in browser.contents
   True
 
 (XXX This should include a test that the list includes any products.)

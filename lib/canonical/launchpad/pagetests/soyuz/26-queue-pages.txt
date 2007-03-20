@@ -14,7 +14,7 @@ Setup a browser as the upload manager:
 Change ubuntu's upload manager to be carlos:
 
   >>> admin_browser.open("http://localhost/ubuntu")
-  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
 
@@ -22,7 +22,7 @@ We are at "Distribution Overview" page, let's check the stored values:
 
   >>> admin_browser.url
   'http://localhost/ubuntu'
-  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value
   'carlos'
 
@@ -31,7 +31,7 @@ requests in Distrorelease page, authentication is required to access
 queue page itself:
 
   >>> anon_browser.open("http://localhost/ubuntu/breezy-autotest")
-  >>> queue_link = anon_browser.getLink("View Uploads")
+  >>> queue_link = anon_browser.getLink("Show uploads")
 
   >>> queue_link.url
   'http://localhost/ubuntu/breezy-autotest/+queue'

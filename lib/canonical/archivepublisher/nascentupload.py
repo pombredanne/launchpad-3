@@ -322,6 +322,7 @@ class NascentUpload:
         self.warnings = ""
         self.librarian = getUtility(ILibraryFileAliasSet)
         self.signer = None
+        self.signing_key = None
         self.permitted_components = self.policy.getDefaultPermittedComponents()
         self._arch_verified = False
         self._native_checked = False
@@ -614,7 +615,7 @@ class NascentUpload:
         """Find the signer and signing key for the .changes file.
 
         While this returns nothing itself, it has the side effect of setting
-        self.signer and self.signingkey (and if availabile,
+        self.signer and self.signing_key (and if availabile,
         self.signer_address also)
 
         If on exit from this, self.signer is None, you cannot trust the rest
@@ -625,10 +626,10 @@ class NascentUpload:
         if self.policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned, storing None")
             self.signer = None
-            self.signingkey = None
+            self.signing_key = None
         else:
             self.logger.debug("Checking signature on changes file.")
-            self.signer, self.signingkey, unwanted_sig = self.verify_sig(
+            self.signer, self.signing_key, unwanted_sig = self.verify_sig(
                 self.changes_basename)
             self.signer_address = self.parse_address("%s <%s>" % (
                 self.signer.displayname, self.signer.preferredemail.email))
@@ -1550,7 +1551,7 @@ class NascentUpload:
                 return candidates[0]
         return None
 
-    def getBinaryAncestry(self, uploaded_file):
+    def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
         """Return the last published binary (ancestry) for given file.
 
         Return the most recent IBPPH instance matching the uploaded file
@@ -1578,6 +1579,10 @@ class NascentUpload:
                 uploaded_file.package, include_pending=True, pocket=pocket)
             if candidates:
                 return candidates[0]
+
+            if not try_other_archs:
+                continue
+
             # Try the other architectures...
             dars = self.distrorelease.architectures
             other_dars = [other_dar for other_dar in dars
@@ -1600,7 +1605,7 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = uploaded_file.version
+        proposed_version = self.changes['version']
         archive_version = ancestry.sourcepackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
@@ -1692,10 +1697,18 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    self.checkBinaryVersion(uploaded_file, ancestry)
                     # XXX cprov 20070212: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
+                    # Fo binary versions verification we should only
+                    # use ancestries in the same architecture. If none
+                    # was found we can go w/o any checks, since it's
+                    # a NEW binary in this architecture, any version is
+                    # fine. See bug #89846 for further info.
+                    ancestry = self.getBinaryAncestry(
+                        uploaded_file, try_other_archs=False)
+                    if ancestry is not None:
+                        self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
@@ -1733,7 +1746,7 @@ class NascentUpload:
         # Verify the changes information.
         self._find_signer()
         if self.signer is not None:
-            self.policy.considerSigner(self.signer, self.signingkey)
+            self.policy.considerSigner(self.signer, self.signing_key)
 
         self.verify_changes()
         self.verify_uploaded_files()
@@ -1943,39 +1956,46 @@ class NascentUpload:
         - Create a new build in FULLYBUILT status.
         """
         if getattr(self.policy, 'build', None) is not None:
+            self.logger.debug("Using cached build: %s" % self.policy.build.id)
             return self.policy.build
 
-        build_id = getattr(self.policy.options, 'buildid', None)
         spr = self.policy.sourcepackagerelease
+        dar = self.distrorelease[archtag]
 
+        build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
-            spr = self.policy.sourcepackagerelease
-            dar = self.distrorelease[archtag]
-
             # Check if there's a suitable existing build.
             build = spr.getBuildByArch(dar)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
+                self.logger.debug("Updating build for %s: %s" % (
+                    dar.architecturetag, build.id))
             else:
                 # No luck. Make one.
                 build = spr.createBuild(
                     dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
-            self.policy.build = build
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
+            # XXX cprov 20070302: builddmaster will update the build.
+            # This is unfortunate because doing it here would fix the
+            # the problem mentioned #32261, since it would be only updated
+            # if this transaction got commited.
+            self.logger.debug("Build %s found" % build.id)
 
-            # Sanity check; raise an error if the build we've been
-            # told to link to makes no sense (ie. is not for the right
-            # source package).
-            if (build.sourcepackagerelease != spr or
-                build.pocket != self.pocket):
-                raise UploadError("Attempt to upload binaries specifying "
-                                  "build %s, where they don't fit" % build_id)
-            self.policy.build = build
-            self.logger.debug("Build %s found" % self.policy.build.id)
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense (ie. is not for the right
+        # source package).
+        if (build.sourcepackagerelease != spr or
+            build.pocket != self.pocket or
+            build.distroarchrelease != dar):
+            raise UploadError("Attempt to upload binaries specifying "
+                              "build %s, where they don't fit" % build_id)
 
-        return self.policy.build
+        # cache build instance in policy.
+        self.policy.build = build
+
+        return build
 
     def insert_binary_into_db(self):
         """Insert this nascent upload's builds into the database."""
@@ -2041,42 +2061,44 @@ class NascentUpload:
 
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
-        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
-            self.changes_basename, self.changes["filecontents"])
+        self.queue_root = self.distrorelease.createQueueEntry(
+            pocket=self.policy.pocket,
+            changesfilename=self.changes_basename,
+            changesfilecontent=self.changes["filecontents"],
+            signing_key=self.signing_key)
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
-            queue_root.addSource(self.policy.sourcepackagerelease)
+            self.queue_root.addSource(self.policy.sourcepackagerelease)
+
         # If we're binaryful, add the build
         if self.binaryful and not self.single_custom:
             # We cannot rely on the distrorelease coming in for a binary
             # release because it is always set to 'autobuild' by the builder.
             # We instead have to take it from the policy which gets instructed
             # by the buildd master during the upload.
-            queue_root.pocket = self.policy.build.pocket
-            queue_root.addBuild(self.policy.build)
+            self.queue_root.pocket = self.policy.build.pocket
+            self.queue_root.addBuild(self.policy.build)
+
         # Finally, add any custom files.
         for uploaded_file in self.files:
             if uploaded_file.custom:
-                queue_root.addCustom(
-                    self.librarian.create(
+                custom_file = self.librarian.create(
                     uploaded_file.filename, uploaded_file.size,
                     open(uploaded_file.full_filename, "rb"),
-                    uploaded_file.content_type),
-                    uploaded_file.custom_type)
-
-        # Stuff the queue item away in case we want it later
-        self.queue_root = queue_root
+                    uploaded_file.content_type)
+                self.queue_root.addCustom(
+                    custom_file, uploaded_file.custom_type)
 
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
         if not self.is_new():
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
+                self.queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
+                self.queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):
@@ -2117,6 +2139,14 @@ class NascentUpload:
                 self, interpolations)
 
             self.insert_into_queue()
+
+            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
+            # section 'translations' should not generate any emails.
+            if (self.sourceful and self._find_dsc().section == 'translations'):
+                self.logger.debug(
+                    "Skipping acceptance and announcement, it is a language-"
+                    "package upload.")
+                return True, []
 
             # Unknown uploads
             if self.is_new():

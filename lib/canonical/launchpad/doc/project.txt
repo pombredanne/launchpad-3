@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, emblem=None)
+    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
     >>> test_project.name
     u'project-test'
 
@@ -37,6 +37,12 @@ We can get a project using IProjectSet, by supplying the project's name.
 
     >>> verifyObject(IProject, gnome)
     True
+
+Make sure that a project provides the IProject interface.
+
+    >>> IProject.providedBy(gnome)
+    True
+
 
 If there is no project with the specified name, a NotFoundError will be
 raised.

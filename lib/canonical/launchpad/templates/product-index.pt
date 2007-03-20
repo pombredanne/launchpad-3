@@ -11,8 +11,8 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Name of product</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+  <h1 tal:content="context/title">Name of product</h1>
+  <span tal:replace="structure context/fmt:icon" />
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -30,20 +30,13 @@
       <ul class="buttons">
         <li>
           <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but_sml_reportabug.gif" />
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li tal:content="structure context/@@+ask-a-question-button">
-          <a href="+addticket">
-            <img
-              alt="Ask a question"
-              src="/+icing/but_sml_requestsupport.gif"
-            />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
         <li>
           <a href="+translations">
-            <img alt="Help translate" src="/+icing/but_sml_helptranslate.gif" />
+            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
           </a>
         </li>
       </ul>
@@ -56,6 +49,10 @@
         </li>
       </ul>
       <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
         <div class="portlet">
           <h2>Timeline</h2>
 
@@ -103,7 +100,7 @@
         </div>
         <div
           class="section"
-          tal:content="structure context/@@+portlet-packages"
+          tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
           class="section"
@@ -122,10 +119,13 @@
         />
         <div
           class="section"
-          tal:content="structure context/@@+portlet-latestspecs"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
         />
       </div>
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress needs mugshot (salgado) -->

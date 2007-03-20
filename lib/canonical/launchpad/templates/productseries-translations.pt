@@ -16,7 +16,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox Series: 1.0</h3>
   <h1>Translation templates</h1>
 </metal:heading>
 

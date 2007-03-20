@@ -6,7 +6,7 @@
   <div class="portletContent">
 
     <ul>
-      <li class="languages">
+      <li class="language">
         <span tal:replace="context/language/englishname">Language</span>
         <tal:block condition="context/language/nativename">
           (<span tal:replace="context/language/nativename">native</span>)
@@ -15,9 +15,7 @@
     </ul>
     <tal:has_owner condition="context/owner">
       <b>Creator:</b><br />
-      <img src="/@@/user" />
-      <a tal:content="context/owner/browsername"
-         tal:attributes="href context/owner/fmt:url">Creator</a>
+      <a tal:replace="structure context/owner/fmt:link">Creator</a>
       <br />
     </tal:has_owner>
     <tal:has_series condition="context/potemplate/productseries">

@@ -34,9 +34,7 @@
             </td>
             <td tal:content="builder/processor/name">LOCATION</td>
             <td>
-              <img alt="[owner]" src="/@@/user"/>
-              <a tal:content="builder/owner/displayname"
-                 tal:attributes="href builder/owner/fmt:url">Owner</a>
+              <a tal:replace="structure builder/owner/fmt:link" />
             </td>
             <td tal:content="builder/status">STATUS</td>
           </tr>

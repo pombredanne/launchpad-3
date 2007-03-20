@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -292,16 +291,6 @@
       height="5" />
   </browser:editform>
 
-  <browser:editform
-    name="+admin"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Administer specification"
-    fields="name goalstatus"
-    permission="launchpad.Admin"
-    template="../templates/specification-edit.pt"
-  />
-
   <browser:addform
     name="+requestfeedback"
     for="canonical.launchpad.interfaces.ISpecification"
@@ -437,6 +426,9 @@
     <browser:page
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
+    <browser:page
+      name="+portlet-stats"
+      template="../templates/specifications-portlet-stats.pt" />
   </browser:pages>
 
   <browser:page
@@ -444,7 +436,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public"
     template="../templates/specifications-index.pt"
-    class="canonical.launchpad.browser.HasSpecificationsView"
+    class="canonical.launchpad.browser.SpecificationSetView"
     />
 
   <!-- SpecificationDelta -->

@@ -64,16 +64,23 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Branch Details'
+        text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    def browse(self):
+        text = 'Browse code'
+        # Only enable the link if we've ever mirrored the branch.
+        enabled = self.context.last_mirrored_id is not None
+        url = config.launchpad.codebrowse_root + self.context.unique_name
+        return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
     def subscription(self):
@@ -251,8 +258,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         self.branch = getUtility(IBranchSet).new(
             name=data['name'],
             owner=self.user,
-            author=data['author'],
-            product=data['product'],
+            author=self.getAuthor(data),
+            product=self.getProduct(data),
             url=data['url'],
             title=data['title'],
             summary=data['summary'],
@@ -260,6 +267,14 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             home_page=data['home_page'],
             whiteboard=data['whiteboard'])
         notify(SQLObjectCreatedEvent(self.branch))
+
+    def getAuthor(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['author']
+
+    def getProduct(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['product']
 
     @property
     def next_url(self):
@@ -288,15 +303,30 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
 
 class PersonBranchAddView(BranchAddView):
+    """See BranchAddView."""
 
-    custom_widget('author', ContextWidget)
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('author')
+        return fields
 
+    def getAuthor(self, data):
+        return self.context
 
 class ProductBranchAddView(BranchAddView):
-
-    custom_widget('product', ContextWidget)
+    """See BranchAddView."""
 
     initial_focus_widget = 'url'
+    
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('product')
+        return fields
+
+    def getProduct(self, data):
+        return self.context
 
     def validate(self, data):
         if 'name' in data:

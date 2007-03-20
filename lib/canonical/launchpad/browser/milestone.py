@@ -63,12 +63,12 @@ class MilestoneContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Milestone'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Admin Milestone'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 

@@ -372,6 +372,52 @@ created with the binary package name.
   >>> spn_set = getUtility(ISourcePackageNameSet)
   >>> assert spn_set.queryByName('bar-bin') is None
 
+== Source Uploads using epochs ==
+
+As described in Debian Policy
+(http://www.debian.org/doc/debian-policy/ch-controlfields.html)
+
+A package version can be provided as:
+
+[epoch:]upstream_version[-debian_revision]
+
+The 'epoch' allow mistakes in the version numbers of older versions of
+a package, and also a package's previous version numbering schemes,
+to be left behind.
+
+In few words, it is another mechanism to override upstream version
+scheme changes and keep the package sanely versioned.
+
+For instance, if upstream "bar" switched their versioning from
+date-based to version based.
+
+An old version '20050304' will always higher than '0.1.2'.
+
+So, when such thing happens, the package maintainer added the epoch to
+get '1:0.1.2' which is higher than '20050304', since the epoch is
+implied as '0'.
+
+Check if upload system interpret epochs properly, inter-epoch versions
+will get compared in this case (see bug #85201):
+
+  >>> expect_okays('bar_1.0-7', upload_policy='sync')
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: Accepted bar 1:1.0-7 (source)
+  ...
+
+  >>> expect_okays('bar_1.0-8', upload_policy='sync')
+
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: Accepted bar 1:1.0-8 (source)
+  ...
+
 
 == Pocket Version Consistency ==
 
@@ -396,7 +442,8 @@ ubututest/breezy-RELEASE:
 
 And its binary:
 
-  >>> expect_okays('foo_1.0-1_binary', upload_policy='anything', is_new=True)
+  >>> expect_okays('foo_1.0-1_i386_binary', upload_policy='anything',
+  ...              is_new=True)
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile

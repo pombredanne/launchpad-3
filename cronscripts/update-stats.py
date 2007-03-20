@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 # This script updates the cached stats in the system
