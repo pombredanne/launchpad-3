@@ -177,18 +177,6 @@ Throw away the DB changes:
   >>> transaction.abort()
 
 
-Verify the 'meta_binary' attribute:
-
-   >>> spr_test = SourcePackageRelease.get(20)
-   >>> spr_test.name
-   u'pmount'
-
-   >>> from canonical.launchpad.interfaces import (
-   ...    IDistroReleaseBinaryPackage)
-
-   >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
-   True
-
 Counting bugs
 -------------
 
@@ -242,10 +230,15 @@ Before the upload, the queue should be empty.
 
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
 correspondent to the alias (long) we already have.
+(BTW it really is not good practice to rely on objects existing from
+previous tests)
 
    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
    >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
 
+   >>> spr_test = SourcePackageRelease.get(20)
+   >>> spr_test.name
+   u'pmount'
    >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries

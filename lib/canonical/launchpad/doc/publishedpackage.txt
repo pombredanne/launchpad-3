@@ -24,6 +24,19 @@ model in more intuitive ones:
  >>> src.name
  u'pmount'
 
- >>> verifyObject(IDistroReleaseBinaryPackage, src.meta_binaries[0])
- True
+In fixing bug 43115 we have moved the meta_binaries from 
+ISourcePackageRelease to IDistroReleaseSourcePackageRelease as this 
+makes much more sense and also ensures that the returned set of binaries 
+are unique to the DistroRelease in question.  When this method lived on 
+ISourcePackageRelease it would return binaries for all distro releases, 
+some duplicated, which is not very useful.  This test makes sure that the 
+new meta_binaries method exists and the returned object meets the
+IDistroReleaseBinaryPackage interface.
 
+ >>> from canonical.launchpad.interfaces import IDistributionSet
+ >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+ >>> warty = ubuntu['warty']                                             
+ >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
+ >>> ff_drspr = ff_sp['0.9']
+ >>> verifyObject(IDistroReleaseBinaryPackage, ff_drspr.meta_binaries[0])
+ True
