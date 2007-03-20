@@ -1,0 +1,109 @@
+= Searching BugTasks =
+
+BugTasks are usually searched through an IBugTarget's searchTasks()
+method, but they all delegate the search to IBugTaskSet.search(). That
+method accepts a single parameter; an BugTaskSearchParams instance.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> bugtask_set = getUtility(IBugTaskSet)
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> found_bugtasks = bugtask_set.search(all_public)
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> all_public_bugtasks = BugTask.select(
+    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     clauseTables=['Bug'])
+    >>> found_bugtasks.count() == all_public_bugtasks.count()
+    True
+
+== Searching by bug contact ==
+
+The 'bug_contact' parameter allows you to search bugtasks that a certain
+person is responsible for. A person can be a bug contact for a product,
+a distribution, or a distribution source package. No Privileges Person
+isn't a bug contact, so no bugs are found for him:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_bug_contact = BugTaskSearchParams(
+    ...     user=None, bug_contact=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count()
+    0
+
+=== Product bug contact ===
+
+Firefox has a few bugs:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_bugs = firefox.searchTasks(all_public)
+    >>> firefox_bugs.count() > 0
+    True
+
+If No Privileges is specified as Firefox' bug contact, searching for his
+bugs return all of Firefox' bugs.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> firefox.bugcontact = no_priv
+    >>> syncUpdate(firefox)
+
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count()
+    True
+
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    firefox (upstream)
+
+=== Package bug contact ===
+
+Firefox in Ubuntu also has a few bugs:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
+    >>> ubuntu_firefox_bugs.count() > 0
+    True
+
+If No Privileges Person is added as a bug contact for this package,
+searching for his bugs returns all bugs in this package, as well as the
+previous bugs (since he is also a bug contact for the Firefox product).
+
+    >>> ubuntu_firefox.addBugContact(no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == (
+    ...     firefox_bugs.count() + ubuntu_firefox_bugs.count())
+    True
+
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+
+=== Distribution bug contact ===
+
+If someone is bug contact for Firefox, Firefox in Ubuntu, and Ubuntu,
+all bugs in Firefox and Ubuntu are returned. Bugs in the Ubuntu Firefox
+package are included in the Ubuntu bugs, so they won't be returned
+twice.
+
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
+
+    >>> ubuntu.bugcontact = no_priv
+    >>> syncUpdate(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
+    True

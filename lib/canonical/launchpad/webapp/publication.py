@@ -223,6 +223,10 @@ class LaunchpadBrowserPublication(
 
     def callObject(self, request, ob):
 
+        # Don't render any content on a redirect.
+        if request.response.getStatus() in [301, 302, 303, 307]:
+            return ''
+
         # Set the launchpad user-id and page-id (if available) in the
         # wsgi environment, so that the request logger can access it.
         request.setInWSGIEnvironment('launchpad.userid', request.principal.id)

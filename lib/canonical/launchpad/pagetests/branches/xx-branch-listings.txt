@@ -16,7 +16,7 @@ Luckily for us, many is 5 in the tests.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...5...of 8 results...
+   ...1...&rarr;...5...of 10 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.thead.fetch('tr'):
@@ -39,12 +39,14 @@ and are really just branch metadata without the revisions behind them.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...6...&rarr;...8...of 8 results...
+   ...6...&rarr;...10...of 10 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
+   mirrored                   New          gnome-terminal Registrant
    pushed                     New          gnome-terminal Registrant
+   scanned                    New          gnome-terminal Registrant
    junk.dev     Ubuntu Team   Experimental                
       2005-10-31 12:03:57 ... weeks ago  Registrant
    junk.contrib Sample Person New                         
@@ -100,7 +102,7 @@ Now all types of branches should be shown.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...5...of 10 results...
+   ...1...&rarr;...5...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
@@ -115,18 +117,16 @@ Now all types of branches should be shown.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...6...&rarr;...10...of 10 results...
+   ...6...&rarr;...10...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
    klingon      Sample Person        Experimental gnome-terminal Author
    launchpad    Launchpad Developers New          gnome-terminal Subscriber
+   mirrored                          New          gnome-terminal Registrant
    pushed                            New          gnome-terminal Registrant
-   junk.dev     Ubuntu Team          Experimental                
-      2005-10-31 12:03:57 ... weeks ago  Registrant
-   junk.contrib Sample Person        New                         
-      2005-10-31 12:03:57 ... weeks ago  Author
+   scanned                           New          gnome-terminal Registrant
 
 
 Selecting an individual lifecycle status from the select control 

@@ -1068,6 +1068,25 @@ class BugTaskSet:
             extra_clauses.append(tags_clause)
             clauseTables.append('BugTag')
 
+        if params.bug_contact:
+            bug_contact_clause = """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, Product
+                WHERE BugTask.product = Product.id
+                    AND Product.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id
+                FROM BugTask, PackageBugContact
+                WHERE BugTask.distribution = PackageBugContact.distribution
+                    AND BugTask.sourcepackagename =
+                        PackageBugContact.sourcepackagename
+                    AND PackageBugContact.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, Distribution
+                WHERE BugTask.distribution = Distribution.id
+                    AND Distribution.bugcontact = %(bug_contact)s
+                )""" % sqlvalues(bug_contact=params.bug_contact)
+            extra_clauses.append(bug_contact_clause)
+
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)

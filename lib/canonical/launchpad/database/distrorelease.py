@@ -92,6 +92,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -905,7 +906,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         return distro_sprs
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
+                         signing_key=None):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -919,10 +921,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self,
-                                  status=DistroReleaseQueueStatus.NEW,
-                                  pocket=pocket,
-                                  changesfile=changes_file)
+
+        return DistroReleaseQueue(
+            distrorelease=self, status=DistroReleaseQueueStatus.NEW,
+            pocket=pocket, changesfile=changes_file,
+            signing_key=signing_key)
 
     def getPackageUploadQueue(self, state):
         """See IDistroRelease."""

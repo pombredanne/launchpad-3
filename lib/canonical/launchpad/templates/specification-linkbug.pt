@@ -14,9 +14,6 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:heading fill-slot="heading">
-      <h4><span tal:replace="context/target/displayname">Firefox</span>
-          Feature Specification:</h4>
-      <h2 tal:content="context/title">Spec Title</h2>
       <h1 i18n:translate="">Link specification to bug report</h1>
     </metal:heading>
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
@@ -9,8 +9,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from canonical.launchpad.pathlookup import get_object
-from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
@@ -18,7 +16,7 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams)
+        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -322,6 +320,120 @@ class AffectsEmailCommand(EmailCommand):
     implements(IBugTaskEmailCommand)
     _numberOfArguments = 1
 
+    @classmethod
+    def _splitPath(cls, path):
+        """Split the path part into two.
+
+        The first part is the part before any slash, and the other is
+        the part behind the slash:
+
+            >>> AffectsEmailCommand._splitPath('foo/bar/baz')
+            ('foo', 'bar/baz')
+
+        If No slash is in the path, the other part will be empty.
+
+            >>> AffectsEmailCommand._splitPath('foo')
+            ('foo', '')
+        """
+        if '/' not in path:
+            return path, ''
+        else:
+            return tuple(path.split('/', 1))
+
+    @classmethod
+    def _normalizePath(cls, path):
+        """Normalize the path.
+
+        Previously the path had to start with either /distros/ or
+        /products/. Simply remove any such prefixes to stay backward
+        compatible.
+
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+
+        Also remove a starting slash, since that's a common mistake.
+
+            >>> AffectsEmailCommand._normalizePath('/foo/bar')
+            'foo/bar'
+        """
+        for prefix in ['/distros/', '/products/', '/']:
+            if path.startswith(prefix):
+                path = path[len(prefix):]
+                break
+        return path
+
+    @classmethod
+    def getBugTarget(cls, path):
+        """Return the IBugTarget with the given path.
+
+        Path should be in any of the following forms:
+
+            $product
+            $product/$product_series
+            $distribution
+            $distribution/$source_package
+            $distribution/$distro_release
+            $distribution/$distro_release/$source_package
+        """
+        path = cls._normalizePath(path)
+        name, rest = cls._splitPath(path)
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=True)
+        if pillar is None:
+            raise BugTargetNotFound(
+                "There is no project named '%s' registered in Launchpad." % 
+                    name)
+
+        # We can't check for IBugTarget, since Project is an IBugTarget
+        # we don't allow bugs to be filed against.
+        if IProject.providedBy(pillar):
+            products = ", ".join(product.name for product in pillar.products)
+            raise BugTargetNotFound(
+                "%s is a group of projects. To report a bug, you need to"
+                " specify which of these projects the bug applies to: %s" % (
+                    pillar.name, products))
+        assert IDistribution.providedBy(pillar) or IProduct.providedBy(pillar)
+
+        if not rest:
+            return pillar
+        # Resolve the path that is after the pillar name.
+        if IProduct.providedBy(pillar):
+            series_name, rest = cls._splitPath(rest)
+            product_series = pillar.getSeries(series_name)
+            if product_series is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a series named '%s'." % (
+                        pillar.displayname, series_name))
+            elif not rest:
+                return product_series
+        else:
+            assert IDistribution.providedBy(pillar)
+            # The next step can be either a distro release or a source
+            # package.
+            release_name, rest = cls._splitPath(rest)
+            try:
+                release = pillar.getRelease(release_name)
+            except NotFoundError:
+                package_name = release_name
+            else:
+                if not rest:
+                    return release
+                else:
+                    pillar = release
+                    package_name, rest = cls._splitPath(rest)
+            package = pillar.getSourcePackage(package_name)
+            if package is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a release or source package named '%s'."
+                    % (pillar.displayname, package_name))
+            elif not rest:
+                return package
+
+        assert rest, "This is the fallback for unexpected path components."
+        raise BugTargetNotFound("Unexpected path components: %s" % rest)
+
     def execute(self, bug):
         """See IEmailCommand."""
         string_args = list(self.string_args)
@@ -331,12 +443,9 @@ class AffectsEmailCommand(EmailCommand):
             raise EmailProcessingError(
                 get_error_message('affects-no-arguments.txt'))
         try:
-            bug_target = get_object(path, path_only=True)
-        except PathStepNotFoundError, error:
-            raise EmailProcessingError(
-                get_error_message(
-                    'affects-path-not-found.txt',
-                    pathstep_not_found=error.step, path=path))
+            bug_target = self.getBugTarget(path)
+        except BugTargetNotFound, error:
+            raise EmailProcessingError(unicode(error))
         event = None
         bugtask = self.getBugTask(bug, bug_target)
         if (bugtask is None and

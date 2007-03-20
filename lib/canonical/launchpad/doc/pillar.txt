@@ -128,5 +128,7 @@ Note that inactive products and projects won't be included in the results.
     project: Ubuntu (ubuntu-product) [relevance: perfect]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
-    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
+    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+
+
