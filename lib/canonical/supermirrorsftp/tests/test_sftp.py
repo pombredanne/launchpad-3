@@ -27,6 +27,7 @@ from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
 
 from twisted.python import failure
+from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -35,7 +36,7 @@ from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.supermirrorsftp import sftponly
 from canonical.supermirrorsftp.tests.test_acceptance import (
-    SFTPTestCase, deferToThread)
+    SFTPTestCase, SSHKeyMixin, deferToThread)
 from canonical.testing import TwistedLayer
 
 
@@ -201,7 +202,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
         self.key_data = self._makeKey()
 
     def _makeKey(self):
-        keydir = config.supermirrorsftp.host_key_pair_path
+        keydir = sibpath(__file__, 'keys')
         public_key = keys.getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())
@@ -226,7 +227,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check)
 
 
-class TestAuthenticationErrors(TrialTestCase):
+class TestAuthenticationErrors(TrialTestCase, SSHKeyMixin):
 
     layer = TwistedLayer
 
@@ -235,10 +236,23 @@ class TestAuthenticationErrors(TrialTestCase):
         self.authService.startService()
         self.authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
         self.checker = sftponly.PublicKeyFromLaunchpadChecker(self.authserver)
+        self.prepareTestUser()
+        self.valid_login = 'testuser'
+        self.public_key = self.getPublicKey()
+        self.sigData = (
+            NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
+            + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
+            + NS('ssh-dss') + NS(self.public_key))
+        self.signature = keys.signData(self.getPrivateKey(), self.sigData)
 
     def test_successful(self):
-        creds = SSHPrivateKey('jml', 'ssh-rsa', '', None, None)
-        return self.checker.requestAvatarId(creds)
+        # We should be able to login with the correct public and private
+        # key-pair. This test exists primarily as a control to ensure our other
+        # tests are checking the right error conditions.
+        creds = SSHPrivateKey(self.valid_login, 'ssh-dss', self.public_key,
+                              self.sigData, self.signature)
+        d = self.checker.requestAvatarId(creds)
+        return d.addCallback(self.assertEqual, self.valid_login)
 
 
 def test_suite():
