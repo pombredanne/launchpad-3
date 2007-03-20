@@ -327,18 +327,16 @@ indirect_subscribers will include only martin-pitt.
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Martin Pitt
 
-To find out which email addresses should receive a
-notification email on a bug, and why, assemble a
-BugNotificationRecipients and register the emails on it:
+To find out which email addresses should receive a notification email on
+a bug, and why, IBug.getBugNotificationRecipients() assembles a
+BugNotificationRecipients instance for us:
 
-   >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRecipients
-   >>> rationale = BugNotificationRecipients()
-   >>> linux_source_bug.registerBugSubscribers(rationale)
+   >>> recipients = linux_source_bug.getBugNotificationRecipients()
 
 You can query for the addresses and reasons:
 
-   >>> addresses = rationale.getEmails()
-   >>> [(address, rationale.getReason(address)[1]) for address in addresses]
+   >>> addresses = recipients.getEmails()
+   >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@hbd.com', 'Subscriber'),
      ('no-priv@canonical.com', 'Subscriber'),
@@ -430,9 +428,8 @@ https://launchpad.net/bugs/5484.
 Define a function that get subscriber email addresses back conveniently:
 
     >>> def getSubscribers(bug):
-    ...     rationale = BugNotificationRecipients()
-    ...     bug.registerBugSubscribers(rationale)
-    ...     return rationale.getEmails()
+    ...     recipients = bug.getBugNotificationRecipients()
+    ...     return recipients.getEmails()
 
 Let's have a look at an example for a distribution bug:
 

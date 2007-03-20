@@ -15,9 +15,8 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
-from canonical.launchpad.scripts.bugnotification import (
-    get_email_notifications, BugNotificationRecipients)
+    IBug, IBugSet, IMessageSet, IPersonSet, IProductSet, BugNotificationRecipients)
+from canonical.launchpad.scripts.bugnotification import get_email_notifications
 
 
 class MockBug:
@@ -38,10 +37,12 @@ class MockBug:
     def title(self):
         return "Mock Bug #%s" % self.id
 
-    def registerBugSubscribers(self, rationale):
+    def getBugNotificationRecipients(self, duplicateof=None):
+        recipients = BugNotificationRecipients()
         no_priv = getUtility(IPersonSet).getByEmail(
             'no-priv@canonical.com')
-        rationale.addDirectSubscriber(no_priv)
+        recipients.addDirectSubscriber(no_priv)
+        return recipients
 
     def __eq__(self, other):
         """Compare by id to make different subclasses of MockBug be equal."""
@@ -51,14 +52,14 @@ class MockBug:
 class ExceptionBug(MockBug):
     """A bug which causes an exception to be raised."""
 
-    def registerBugSubscribers(self, rationale):
+    def getBugNotificationRecipients(self, duplicateof=None):
         raise Exception('FUBAR')
 
 
 class DBExceptionBug(MockBug):
     """A bug which causes a DB constraint to be triggered."""
 
-    def registerBugSubscribers(self, rationale):
+    def getBugNotificationRecipients(self, duplicateof=None):
         # Trigger a DB constraint, resulting in the transaction being
         # unusable.
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -139,9 +140,8 @@ class TestGetEmailNotificattions(LaunchpadZopelessTestCase):
         for notifications, messages in email_notifications:
             for message in messages:
                 to_addresses.add(message['to'])
-            rationale = BugNotificationRecipients()
-            notifications[0].bug.registerBugSubscribers(rationale)
-            expected_to_addresses = rationale.getEmails()
+            recipients = notifications[0].bug.getBugNotificationRecipients()
+            expected_to_addresses = recipients.getEmails()
             self.assertEqual(expected_to_addresses, sorted(to_addresses))
             sent_notifications += notifications
         return sent_notifications

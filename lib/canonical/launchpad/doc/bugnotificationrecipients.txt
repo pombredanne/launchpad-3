@@ -2,7 +2,7 @@
 BugNotificationRecipients instances store email addresses mapped to the
 reason for which they are being notified in a certain bug.
 
-(Let's define a helper function so we can format this output)
+Let's define a helper function so we can format this output
 
   >>> def print_rationales(rationale):
   ...   for address in rationale.getEmails():
@@ -13,16 +13,14 @@ reason for which they are being notified in a certain bug.
 
 === How it's used ===
 
-The construct_email_notifications function creates and uses
+The IBug.getBugNotificationRecipients() implementation creates and uses
 BugNotificationRecipients instances. Here's how:
 
-  >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRecipients
   >>> from canonical.launchpad.database import Bug, Distribution, Product
-  >>> rationale = BugNotificationRecipients()
   >>> bug_one = Bug.get(1)
-  >>> bug_one.registerBugSubscribers(rationale)
+  >>> recipients = bug_one.getBugNotificationRecipients()
 
-  >>> print_rationales(rationale)
+  >>> print_rationales(recipients)
   foo.bar@canonical.com
       Bug Contact (mozilla-firefox in ubuntu)
       You received this bug notification because you are a bug contact for mozilla-firefox in ubuntu.
@@ -38,9 +36,9 @@ BugNotificationRecipients instances. Here's how:
 Let's test the API that Bug and BugNotificationRecipients use to set up the
 rationales.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from canonical.launchpad.interfaces import IPersonSet, BugNotificationRecipients
   >>> from zope.component import getUtility
-  >>> rationale = BugNotificationRecipients()
+  >>> recipients = BugNotificationRecipients()
 
 Set up some data:
 
@@ -53,23 +51,23 @@ Set up some data:
 Let's add a subscriber of each type:
 
   >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
-  >>> rationale.addDupeSubscriber(foo_bar)
+  >>> recipients.addDupeSubscriber(foo_bar)
   >>> test = personset.getByEmail("test@canonical.com")
-  >>> rationale.addDirectSubscriber(test)
+  >>> recipients.addDirectSubscriber(test)
   >>> no_priv = personset.getByEmail("no-priv@canonical.com")
-  >>> rationale.addAssignee(no_priv)
+  >>> recipients.addAssignee(no_priv)
   >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> rationale.addDistroBugContact(daf, debian)
+  >>> recipients.addDistroBugContact(daf, debian)
   >>> carlos = personset.getByEmail("carlos@canonical.com")
-  >>> rationale.addPackageBugContact(carlos, pmount)
+  >>> recipients.addPackageBugContact(carlos, pmount)
   >>> marilize = personset.getByEmail("marilize@hbd.com")
-  >>> rationale.addUpstreamBugContact(marilize, alsa_utils)
+  >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
   >>> testtest = personset.getByEmail("testtest@canonical.com")
-  >>> rationale.addUpstreamRegistrant(testtest, gnomebaker)
+  >>> recipients.addUpstreamRegistrant(testtest, gnomebaker)
 
 And then print out the addresses and rationales:
 
-  >>> print_rationales(rationale)
+  >>> print_rationales(recipients)
   carlos@canonical.com
       Bug Contact (pmount in debian)
       You received this bug notification because you are a bug contact for pmount in debian.
@@ -93,25 +91,25 @@ And then print out the addresses and rationales:
 
 Let's do the same for a bug which our bug a duplicate of.
 
-  >>> rationale = BugNotificationRecipients(duplicateof=bug_one)
+  >>> recipients = BugNotificationRecipients(duplicateof=bug_one)
   >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
-  >>> rationale.addDupeSubscriber(foo_bar)
+  >>> recipients.addDupeSubscriber(foo_bar)
   >>> test = personset.getByEmail("test@canonical.com")
-  >>> rationale.addDirectSubscriber(test)
+  >>> recipients.addDirectSubscriber(test)
   >>> no_priv = personset.getByEmail("no-priv@canonical.com")
-  >>> rationale.addAssignee(no_priv)
+  >>> recipients.addAssignee(no_priv)
   >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> rationale.addDistroBugContact(daf, debian)
+  >>> recipients.addDistroBugContact(daf, debian)
   >>> carlos = personset.getByEmail("carlos@canonical.com")
-  >>> rationale.addPackageBugContact(carlos, pmount)
+  >>> recipients.addPackageBugContact(carlos, pmount)
   >>> marilize = personset.getByEmail("marilize@hbd.com")
-  >>> rationale.addUpstreamBugContact(marilize, alsa_utils)
+  >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
   >>> testtest = personset.getByEmail("testtest@canonical.com")
-  >>> rationale.addUpstreamRegistrant(testtest, gnomebaker)
+  >>> recipients.addUpstreamRegistrant(testtest, gnomebaker)
 
 And then print out the addresses and rationales again:
 
-  >>> print_rationales(rationale)
+  >>> print_rationales(recipients)
   carlos@canonical.com
       Bug Contact (pmount in debian) via Bug 1
       You received this bug notification because you are a bug contact for pmount in debian (via bug 1).
@@ -135,25 +133,25 @@ And then print out the addresses and rationales again:
 
 Finally, let's do this when our subscribers are teams:
 
-  >>> rationale = BugNotificationRecipients()
+  >>> recipients = BugNotificationRecipients()
   >>> testing_spanish_team = personset.getByName("testing-spanish-team")
-  >>> rationale.addDupeSubscriber(testing_spanish_team)
+  >>> recipients.addDupeSubscriber(testing_spanish_team)
   >>> guadamen = personset.getByName("guadamen")
-  >>> rationale.addAssignee(guadamen)
+  >>> recipients.addAssignee(guadamen)
   >>> name20 = personset.getByName("name20")
-  >>> rationale.addPackageBugContact(name20, pmount)
+  >>> recipients.addPackageBugContact(name20, pmount)
   >>> name18 = personset.getByName("name18")
-  >>> rationale.addUpstreamBugContact(name18, alsa_utils)
+  >>> recipients.addUpstreamBugContact(name18, alsa_utils)
   >>> vcs_imports = personset.getByName("vcs-imports")
-  >>> rationale.addUpstreamRegistrant(vcs_imports, gnomebaker)
+  >>> recipients.addUpstreamRegistrant(vcs_imports, gnomebaker)
   >>> shipit_admins = personset.getByName("shipit-admins")
-  >>> rationale.addDirectSubscriber(shipit_admins)
+  >>> recipients.addDirectSubscriber(shipit_admins)
   >>> launchpad_buildd_admins = personset.getByName("launchpad-buildd-admins")
-  >>> rationale.addDistroBugContact(launchpad_buildd_admins, debian)
+  >>> recipients.addDistroBugContact(launchpad_buildd_admins, debian)
 
 And then print out the addresses and rationales once more:
 
-  >>> print_rationales(rationale)
+  >>> print_rationales(recipients)
     andrew.bennetts@ubuntulinux.com
         Bug Contact (alsa-utils) @name18
         You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug contact for alsa-utils.

@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationReleaseObsoleteError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -352,15 +352,26 @@ class Bug(SQLBase):
             (also_notified_subscribers - direct_subscribers),
             key=operator.attrgetter('displayname'))
 
-    def registerBugSubscribers(self, rationale):
+    def getBugNotificationRecipients(self, duplicateof=None):
         """See canonical.launchpad.interfaces.IBug."""
-        self.getDirectSubscribers(rationale)
-        if not self.private:
-            self.getIndirectSubscribers(rationale)
-        else:
+        recipients = BugNotificationRecipients(duplicateof=duplicateof)
+        self.getDirectSubscribers(recipients)
+        if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
+        else:
+            self.getIndirectSubscribers(recipients)
+            if self.duplicateof:
+                # This bug is a public duplicate of another bug, so include
+                # the dupe target's subscribers in the recipient list. Note
+                # that we only do this for duplicate bugs that are public;
+                # changes in private bugs are not broadcast to their dupe
+                # targets.
+                dupe_recipients = self.duplicateof.getBugNotificationRecipients(
+                    duplicateof=self.duplicateof)
+                recipients.update(dupe_recipients)
+        return recipients
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""

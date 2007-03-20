@@ -202,43 +202,54 @@ class IBug(IMessageTarget):
         duplicate of this bug, otherwise False.
         """
 
-    def getDirectSubscribers(rationale=None):
+    def getDirectSubscribers(recipients=None):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
 
-        XXX: document rationale
+        If 
         """
 
-    def getIndirectSubscribers(rationale=None):
-        """A list of IPersons that are indirectly subscribed to this bug.
+    def getIndirectSubscribers(recipients=None):
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
         dupes, etc.
 
-        XXX: document rationale
+        If a BugNotificationRecipients instance is supplied as an
+        argument, the relevant subscribers and rationales will be
+        registered on it.
         """
 
-    def getAlsoNotifiedSubscribers(rationale=None):
-        """A list of IPersons in the "Also notified" subscriber list.
+    def getAlsoNotifiedSubscribers(recipients=None):
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
 
-        XXX: document rationale
+        If a BugNotificationRecipients instance is supplied as an
+        argument, the relevant subscribers and rationales will be
+        registered on it.
         """
 
-    def getSubscribersFromDuplicates(rationale=None):
-        """A list of IPersons subscribed from dupes of this bug.
+    def getSubscribersFromDuplicates(recipients=None):
+        """Return IPersons subscribed from dupes of this bug.
 
-        XXX: document rationale
+        If a BugNotificationRecipients instance is supplied as an
+        argument, the relevant subscribers and rationales will be
+        registered on it.
         """
 
-    def registerBugSubscribers(rationale):
-        """XXX
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete BugNotificationRecipients instance.
 
-        XXX
+        The BugNotificationRecipients instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details.
         """
 
     def addChangeNotification(text, person):

@@ -11,154 +11,13 @@ from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
     get_email_template, shortlist, contactEmailAddresses)
-from canonical.launchpad.interfaces import IEmailAddressSet, INotificationRecipientSet
+from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
-
-
-class BugNotificationRecipients:
-    """Or BNR. A set of emails and rationales notified for a bug change.
-
-    Each email address registered in a BNR instance is associated to a
-    string and a header that explain why the address is being emailed.
-    For instance, if the email address is that of a distribution bug
-    contact for a bug, the string and header will make that fact clear.
-
-    Instances of this class are meant to be supplied to
-    IBug.registerBugSubscribers.
-
-    The string is meant to be rendered in the email footer. The header
-    is meant to be used in an X-Launchpad-Message-Rationale header.
-    """
-    implements(INotificationRecipientSet)
-    def __init__(self, duplicateof=None):
-        """Constructs a new BNR instance.
-
-        If this bug is a duplicate, duplicateof should be used to
-        specify which bug ID it is a duplicate of.
-
-        Note that there are two duplicate situations that are
-        important: 
-          - One is when this bug is a duplicate of another bug:
-            the subscribers to the main bug get notified of our
-            changes. 
-          - Another is when the bug we are changing has
-            duplicates; in that case, direct subscribers of
-            duplicate bugs get notified of our changes.
-        These two situations are catered respectively by the
-        duplicateof parameter above and the addDupeSubscriber method.
-        Don't confuse them!
-        """
-        self._reasons = {}
-        self.duplicateof = duplicateof
-
-    def _addReason(self, person, reason, header):
-        # Adds a reason (text and header) to the local dict of reasons,
-        # keyed on email address. The reason we use email address as the
-        # key is that we want to ensure we never send emails twice to
-        # the same person; this can happen when a person is subscribed
-        # to a bug both directly and via a team subscription.
-        if self.duplicateof is not None:
-            reason = reason + " (via bug %s)" % self.duplicateof.id
-            header = header + " via Bug %s" % self.duplicateof.id
-        reason = "You received this bug notification because you %s." % reason
-        for email in contactEmailAddresses(person):
-            if email not in self._reasons:
-                # XXX: avoid clobbering; FCFS
-                self._reasons[email] = (reason, header)
-
-    def update(self, rationale):
-        """See INotificationRecipientSet"""
-        for k, v in rationale._reasons.items():
-            if k not in self._reasons:
-                self._reasons[k] = v
-
-    def getReason(self, email):
-        """See INotificationRecipientSet"""
-        return self._reasons[email]
-
-    def getEmails(self):
-        """See INotificationRecipientSet"""
-        return sorted(self._reasons.keys())
-
-    def addDupeSubscriber(self, person):
-        """Registers a subscriber of a duplicate of this bug."""
-        reason = "Subscriber of Duplicate"
-        if person.isTeam():
-            text = ("are a member of %s, which is a subscriber "
-                    "of a duplicate bug" % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a direct subscriber of a duplicate bug"
-        self._addReason(person, text, reason)
-
-    def addDirectSubscriber(self, person):
-        """Registers a direct subscriber of this bug."""
-        reason = "Subscriber"
-        if person.isTeam():
-            text = "are a member of %s, which is a direct subscriber" % person.displayname
-            reason += " @%s" % person.name
-        else:
-            text = "are a direct subscriber of the bug"
-        self._addReason(person, text, reason)
-
-    def addAssignee(self, person):
-        """Registers an assignee of a bugtask of this bug."""
-        reason = "Assignee"
-        if person.isTeam():
-            text = "are a member of %s, which is a bug assignee" % person.displayname
-            reason += " @%s" % person.name
-        else:
-            text = "are a bug assignee"
-        self._addReason(person, text, reason)
-
-    def addDistroBugContact(self, person, distro):
-        """Registers a distribution bug contact for this bug."""
-        reason = "Bug Contact (%s)" % distro.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
-                (person.displayname, distro.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug contact for %s" % distro.displayname
-        self._addReason(person, text, reason)
-
-    def addPackageBugContact(self, person, package):
-        """Registers a package bug contact for this bug."""
-        reason = "Bug Contact (%s)" % package.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is a bug contact for %s" %
-                (person.displayname, package.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are a bug contact for %s" % package.displayname
-        self._addReason(person, text, reason)
-
-    def addUpstreamBugContact(self, person, upstream):
-        """Registers an upstream bug contact for this bug."""
-        reason = "Bug Contact (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug contact for %s" % upstream.displayname
-        self._addReason(person, text, reason)
-
-    def addUpstreamRegistrant(self, person, upstream):
-        """Registers an upstream product registrant for this bug."""
-        reason = "Registrant (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the registrant for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the registrant for %s" % upstream.displayname
-        self._addReason(person, text, reason)
 
 
 def construct_email_notifications(bug_notifications):
@@ -175,12 +34,11 @@ def construct_email_notifications(bug_notifications):
     comment = None
     references = []
     text_notifications = []
-    rationale = BugNotificationRecipients()
-    bug.registerBugSubscribers(rationale)
+    recipients = bug.getBugNotificationRecipients()
 
     for notification in bug_notifications:
-        assert notification.bug == bug
-        assert notification.message.owner == person
+        assert notification.bug == bug, bug.id
+        assert notification.message.owner == person, person.id
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
@@ -190,16 +48,6 @@ def construct_email_notifications(bug_notifications):
         text_notifications.append(
             '*** This bug is a duplicate of bug %d ***\n    %s' %
                 (bug.duplicateof.id, canonical_url(bug.duplicateof)))
-
-        if not bug.private:
-            # This bug is a public duplicate of another bug, so include
-            # the dupe target's subscribers in the recipient list. Note
-            # that we only do this for duplicate bugs that are public;
-            # changes in private bugs are not broadcast to their dupe
-            # targets.
-            dupe_rationale = BugNotificationRecipients(duplicateof=bug.duplicateof)
-            bug.duplicateof.registerBugSubscribers(dupe_rationale)
-            rationale.update(dupe_rationale)
 
     if comment is not None:
         if comment == bug.initial_message:
@@ -219,13 +67,16 @@ def construct_email_notifications(bug_notifications):
         msgid = first_notification.message.rfc822msgid
         email_date = first_notification.message.datecreated
 
-    if bug.initial_message.rfc822msgid not in references:
-        references.insert(0, bug.initial_message.rfc822msgid)
-
     for notification in bug_notifications:
-        if notification.message != comment:
-            text = notification.message.text_contents.rstrip()
-            text_notifications.append(text)
+        if notification.message == comment:
+            # Comments were just handled in the previous if block.
+            continue
+        text = notification.message.text_contents.rstrip()
+        text_notifications.append(text)
+
+    if bug.initial_message.rfc822msgid not in references:
+        # Ensure that references contain the initial message ID
+        references.insert(0, bug.initial_message.rfc822msgid)
 
     if person.preferredemail is not None:
         from_address = format_address(
@@ -270,8 +121,8 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    for address in rationale.getEmails():
-        reason, rationale_header = rationale.getReason(address)
+    for address in recipients.getEmails():
+        reason, rationale_header = recipients.getReason(address)
         body = get_email_template('bug-notification.txt') % {
             'content': mail_wrapper.format(content),
             'bug_title': bug.title,
@@ -315,7 +166,7 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         # bug notifications as specified above.
         #
         # Note that we iterate over a copy of the notifications here
-        # becase we are modifying bug_modifications as we go.
+        # because we are modifying bug_modifications as we go.
         for notification in list(bug_notifications):
             if notification.is_comment and found_comment:
                 # Oops, found a second comment, stop batching.
@@ -331,6 +182,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
 
         if date_emailed is not None:
             notification.date_emailed = date_emailed
+        # We don't want bugs preventing all bug notifications from
+        # being sent, so catch and log all exceptions.
         try:
             # We don't want bugs preventing all bug notifications from
             # being sent, so catch and log all exceptions.
