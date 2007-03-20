@@ -26,7 +26,7 @@
             <form method="post" action=".">
                 <input type="hidden" name="token"
                     tal:attributes="value view/token" />
-                <input type="submit" value="Allow Once" />
+                <input type="submit" name="action" value="Allow Once" />
             </form>
         </td><td>
             <form tal:attributes="action view/openid_request/getCancelURL">

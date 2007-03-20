@@ -33,7 +33,7 @@ XXX: Break most of this out into a helper -- StuartBishop 20070302
 ...     implements(IBrowserPublisher)
 ...     def render(self):
 ...         out = StringIO()
-...         print >> out, self.request.method
+...         print >> out, 'Consumer received %s' % self.request.method
 ...         keys = sorted(self.request.form.keys())
 ...         for key in keys:
 ...             print >> out, '%s=%s' % (key, self.request.form[key])
@@ -54,7 +54,7 @@ NB. If this fails, your Z3 tree isn't up to date enough.
 
 >>> anon_browser.open('http://launchpad.dev/+openid-consumer?foo=%2Bbar')
 >>> print anon_browser.contents
-GET
+Consumer received GET
 foo=+bar
 
 
@@ -117,7 +117,7 @@ will currently return "can't say" as we are not yet logged into Launchpad.
 ...     })
 >>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
 >>> print anon_browser.contents
-GET
+Consumer received GET
 openid.mode=id_res
 openid.user_setup_url=http://openid.launchpad.dev/?...
 <BLANKLINE>
@@ -136,7 +136,7 @@ URL for the checkid_setup from the result of the previous test.
 ...
 <form method="post" action=".">
     <input type="hidden" name="token" value="..." />
-    <input type="submit" value="Allow Once" />
+    <input type="submit" name="action" value="Allow Once" />
 </form>
 ...
 <form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel">
@@ -144,13 +144,38 @@ URL for the checkid_setup from the result of the previous test.
 </form>
 ...
 
->>> anon_browser.getControl('Allow Once').click()
->>> anon_browser.url
-'http://openid.launchpad.dev/'
+
+Lets deny the request. This will return us to the consumer without
+authentication.
+
+>>> anon_browser.getControl('Deny').click()
+>>> print anon_browser.url
+http://launchpad.dev/+openid-consumer
 >>> print anon_browser.contents
+Consumer received GET
+<BLANKLINE>
+
+
+Now, lets do that again but allow the request, which will first require us
+to log in to Launchpad and then redirect us back to the consumer saying
+the request is valid.
+
+>>> anon_browser.open(setup_url)
+>>> anon_browser.getControl('Allow Once').click()
+
+XXX: This should actually fail, redirecting user to the login page
+
+>>> print anon_browser.url
+http://launchpad.dev/+openid-consumer?...
+>>> print anon_browser.contents
+Consumer received GET
 openid.assoc_handle=...
 openid.identity=https://launchpad.dev/~sabdfl
-openid.mode=cancel
-openid.return_to=whatever
-openid.signed=whatever
-openid.sig=whatever
+openid.mode=id_res
+openid.return_to=http://launchpad.dev/+openid-consumer
+openid.sig=...
+openid.signed=...
+<BLANKLINE>
+
+
+

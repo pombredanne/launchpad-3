@@ -11,8 +11,14 @@ from time import time
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession
 from zope.interface import Interface, Attribute, implements
+from zope.security.proxy import isinstance as zisinstance
 
-from openid.server.server import ProtocolError, Server, ENCODE_URL
+from openid.server.server import (
+    ProtocolError,
+    Server,
+    ENCODE_URL,
+    CheckIDRequest,
+    )
 # XXX: Temporary - switch to SQL -- StuartBishop 20070214
 from openid.store.filestore import FileOpenIDStore
 
@@ -40,9 +46,21 @@ class OpenIdView(LaunchpadView):
             )
 
     def render(self):
-        #if self.request.form.has_key('token'):
+        """Handle all OpenId requests and form submissions
 
+        Returns the page contents after setting all relevant headers in
+        self.request.response
+        """
+        # Detect submission of the decide page
+        if (self.request.form.has_key('action') and
+                self.request.form['action'] == 'Allow Once'
+                ):
+            # The user has selected "Allow Once" on the decide page
+            return self.renderOpenIdResponse(self.allowOnce())
+
+        # Not a form submission, so extract the OpenIDRequest from the request.
         try:
+            # NB: Will be None if there are no parameters in the request.
             openid_request = self.openid_server.decodeRequest(self.request.form)
         except ProtocolError, exception:
             return self.renderProtocolError(exception)
@@ -76,6 +94,9 @@ class OpenIdView(LaunchpadView):
         else:
             openid_response = self.openid_server.handleRequest(openid_request)
 
+        return self.renderOpenIdResponse(openid_response)
+
+    def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
 
         response = self.request.response
@@ -128,13 +149,15 @@ class OpenIdView(LaunchpadView):
         # it was used to store information in the actual users session,
         # rather than the session of a malicious connection attempting a
         # man-in-the-middle attack.
-        token = 'token_%s' % generate_uuid()
-        session = ISession(self.request)[SESSION_PKG_KEY]
+        token = '%s' % generate_uuid()
+        session = self._getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
         now = time()
         self._sweep(now, session)
-        session[token] = (now, self.openid_request)
+        # Store token with a distinct prefix to ensure malicious requests
+        # can't trick our code into retrieving something that isn't a token.
+        session['token_' + token] = (now, self.openid_request)
         self.token = token
         return self.decide_template(foo='foobar')
 
@@ -150,6 +173,23 @@ class OpenIdView(LaunchpadView):
 
     def isAuthorized(self, identity, trust_root):
         return False
+
+    def allowOnce(self):
+        token = self.request.form['token']
+        session = self._getSession()
+        try:
+            timestamp, openid_request = session['token_' + token]
+        except LookupError:
+            # The token has expired. Just show the user the decide page again.
+            return self.showDecidePage()
+
+        assert zisinstance(openid_request, CheckIDRequest), \
+                'Invalid request in session %s' % repr(openid_request)
+
+        return openid_request.answer(True)
+
+    def _getSession(self):
+        return ISession(self.request)[SESSION_PKG_KEY]
 
     def renderProtocolError(self, exception):
         # XXX: Is this tested? -- StuartBishop 20070226
