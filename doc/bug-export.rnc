@@ -36,10 +36,10 @@ person = (
 lpbugs = element launchpad-bugs { bug* }
 
 bug = element bug {
-  attribute id { text } &
+  attribute id { xsd:integer } &
   element private { boolean }? &
   element security_related { boolean }? &
-  element duplicateof { text }? &
+  element duplicateof { xsd:integer }? &
   element datecreated { xsd:dateTime } &
   element nickname { lpname }? &
   element title { text } &

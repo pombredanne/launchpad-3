@@ -2,14 +2,18 @@
 import datetime
 import os
 import pytz
+import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IPersonSet, IProductSet)
+    IBugSet, IEmailAddressSet, IPersonSet, IProductSet)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.lp.dbschema import (
@@ -24,7 +28,8 @@ class UtilsTestCase(unittest.TestCase):
     """Tests for the various utility functions used by the importer."""
 
     def test_parse_date(self):
-        # None and empty string parse to None
+        # Test that the parse_date() helper can correctly parse
+        # timestamp strings.
         self.assertEqual(bugimport.parse_date(None), None)
         self.assertEqual(bugimport.parse_date(''), None)
         dt = bugimport.parse_date('2006-12-01T08:00:00Z')
@@ -37,6 +42,8 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(dt.tzinfo, pytz.timezone('UTC'))
 
     def test_get_text(self):
+        # Test that the get_text() helper can correctly return the
+        # text content of an element.
         self.assertEqual(bugimport.get_text(None), None)
         node = ET.fromstring('<a/>')
         self.assertEqual(bugimport.get_text(node), '')
@@ -55,6 +62,9 @@ class UtilsTestCase(unittest.TestCase):
         
 
     def test_get_enum_value(self):
+        # Test that the get_enum_value() function returns the
+        # appropriate enum value, or raises BugXMLSyntaxError if it is
+        # not found.
         from canonical.lp.dbschema import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
@@ -64,8 +74,13 @@ class UtilsTestCase(unittest.TestCase):
                           'NO-SUCH-ENUM-VALUE')
 
     def test_get_element(self):
+        # Test that the get_element() function returns the correct
+        # element.
         node = ET.fromstring('''\
         <foo xmlns="https://launchpad.net/xmlns/2006/bugs">
+          <bar xmlns="http://some/other/namespace">
+            <baz/>
+          </bar>
           <bar>
             <baz/>
           </bar>
@@ -81,8 +96,11 @@ class UtilsTestCase(unittest.TestCase):
                          '{https://launchpad.net/xmlns/2006/bugs}baz')
 
     def test_get_value(self):
+        # Test that the get_value() helper correctly returns the text
+        # content of the named element.
         node = ET.fromstring('''\
         <foo xmlns="https://launchpad.net/xmlns/2006/bugs">
+          <bar xmlns="http://some/other/namespace">Bad Value</bar>
           <bar>   value 1</bar>
           <tag>
             <baz>
@@ -95,10 +113,13 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(bugimport.get_value(node, 'tag/baz'), 'value 2')
 
     def test_get_all(self):
+        # Test that the get_all() helper returns all matching elements
+        # in the bugs namespace.
         node = ET.fromstring('''\
         <foo xmlns="https://launchpad.net/xmlns/2006/bugs">
           <bar/>
           <bar/>
+          <bar xmlns="http://some/other/namespace"/>
           <something>
             <bar/>
           </something>
@@ -117,7 +138,7 @@ class GetPersonTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def test_create_person(self):
-        # Test that person creation works
+        # Test that getPerson() can create new users.
         person = getUtility(IPersonSet).getByEmail('foo@example.com')
         self.assertEqual(person, None)
 
@@ -139,7 +160,9 @@ class GetPersonTestCase(unittest.TestCase):
             'when importing bugs for NetApplet')
 
     def test_create_person_conflicting_name(self):
-        # we have a user called sabdfl
+        # Test that getPerson() can correctly create new users when
+        # they have a short name that conflicts with an existing user
+        # in the database.
         person1 = getUtility(IPersonSet).getByName('sabdfl')
         self.assertNotEqual(person1, None)
 
@@ -154,6 +177,7 @@ class GetPersonTestCase(unittest.TestCase):
         self.assertNotEqual(person2.name, 'sabdfl')
 
     def test_find_existing_person(self):
+        # Test that getPerson() returns an existing person.
         person = getUtility(IPersonSet).getByEmail('foo@example.com')
         self.assertEqual(person, None)
         person, email = getUtility(IPersonSet).createPersonAndEmail(
@@ -179,6 +203,8 @@ class GetPersonTestCase(unittest.TestCase):
         self.assertEqual(importer.getPerson(personnode), None)
 
     def test_verify_new_person(self):
+        # Test that getPerson() creates new users with their preferred
+        # email address set when verify_users=True.
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle',
                                          verify_users=True)
@@ -196,9 +222,10 @@ class GetPersonTestCase(unittest.TestCase):
             'when importing bugs for NetApplet')
 
     def test_verify_existing_person(self):
-        person = getUtility(IPersonSet).ensurePerson(
-            'foo@example.com', None,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        # Test that getPerson() will validate the email of an existing
+        # user when verify_users=True.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         self.assertEqual(person.preferredemail, None)
 
         product = getUtility(IProductSet).getByName('netapplet')
@@ -213,9 +240,10 @@ class GetPersonTestCase(unittest.TestCase):
                          'foo@example.com')
 
     def test_verify_doesnt_clobber_preferred_email(self):
-        person = getUtility(IPersonSet).ensurePerson(
-            'foo@example.com', None,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        # Test that getPerson() does not clobber an existing verified
+        # email address when verify_users=True.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         email = getUtility(IEmailAddressSet).new('foo@preferred.com',
                                                  person.id)
         person.setPreferredEmail(email)
@@ -237,6 +265,7 @@ class GetMilestoneTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def test_create_milestone(self):
+        # Test that getMilestone() can create new milestones.
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle')
         milestone = importer.getMilestone('foo-bar')
@@ -245,7 +274,7 @@ class GetMilestoneTestCase(unittest.TestCase):
         self.assertEqual(milestone.productseries, product.development_focus)
 
     def test_use_existing_milestone(self):
-        # looking up an existing milestone
+        # Test that existing milestones are returned by getMilestone().
         product = getUtility(IProductSet).getByName('firefox')
         one_point_zero = product.getMilestone('1.0')
         self.assertNotEqual(one_point_zero, None)
@@ -256,7 +285,7 @@ class GetMilestoneTestCase(unittest.TestCase):
 
 sample_bug = '''\
 <bug xmlns="https://launchpad.net/xmlns/2006/bugs" id="42">
-  <private>False</private>
+  <private>True</private>
   <security_related>True</security_related>
   <datecreated>2004-10-12T12:00:00Z</datecreated>
   <nickname>some-bug</nickname>
@@ -303,7 +332,15 @@ sample_bug = '''\
   <comment>
     <sender email="mark@hbd.com">Mark Shuttleworth</sender>
     <date>2005-01-01T13:00:00Z</date>
-    <text>A comment from mark about CVE-2005-2730</text>
+    <text>
+A comment from mark about CVE-2005-2730
+
+ * list item 1
+ * list item 2
+
+Another paragraph
+
+    </text>
     <attachment>
       <mimetype>application/octet-stream;key=value</mimetype>
       <contents>PGh0bWw+</contents>
@@ -345,6 +382,7 @@ class ImportBugTestCase(unittest.TestCase):
         logout()
 
     def test_import_bug(self):
+        # Test that various features of the bug are imported from the XML.
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle',
                                          verify_users=True)
@@ -358,7 +396,7 @@ class ImportBugTestCase(unittest.TestCase):
                          '2004-10-12T12:00:00+00:00')
         self.assertEqual(bug.title, 'A test bug')
         self.assertEqual(bug.description, 'A modified bug description')
-        self.assertEqual(bug.private, False)
+        self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
         self.assertEqual(bug.externalrefs.count(), 1)
@@ -420,7 +458,8 @@ class ImportBugTestCase(unittest.TestCase):
                          '2005-01-01T13:00:00+00:00')
         self.assertEqual(message3.subject, 'Re: A test bug')
         self.assertEqual(message3.text_contents,
-                         'A comment from mark about CVE-2005-2730')
+                         'A comment from mark about CVE-2005-2730\n\n'
+                         ' * list item 1\n * list item 2\n\nAnother paragraph')
         self.assertEqual(message3.bugattachments.count(), 2)
         # grab the attachments in the appropriate order
         [attachment1, attachment2] = list(message3.bugattachments)
@@ -497,7 +536,7 @@ class BugImportCacheTestCase(unittest.TestCase):
         self.assertEqual(importer.pending_duplicates, {})
 
     def test_load_cache(self):
-        # Test that loadCache() restores the state set by saveCache()
+        # Test that loadCache() restores the state set by saveCache().
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
         self.assertFalse(os.path.exists(cache_filename))
         importer = bugimport.BugImporter(None, None, cache_filename)
@@ -510,6 +549,95 @@ class BugImportCacheTestCase(unittest.TestCase):
         importer.loadCache()
         self.assertEqual(importer.bug_id_map, {42: 1, 100:2})
         self.assertEqual(importer.pending_duplicates, {50: [1,2]})
+
+    def test_failed_import_does_not_update_cache(self):
+        # Test that failed bug imports do not update the mapping cache.
+        product = getUtility(IProductSet).getByName('netapplet')
+        xml_file = os.path.join(self.tmpdir, 'bugs.xml')
+        fp = open(xml_file, 'w')
+        fp.write(
+            '<launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">\n')
+        fp.write(sample_bug)
+        fp.write('</launchpad-bugs>\n')
+        fp.close()
+        cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+        class MyBugImporter(bugimport.BugImporter):
+            def importBug(self, bugnode):
+                raise bugnode.BugXMLSyntaxError('not imported')
+        importer = MyBugImporter(product, xml_file, cache_filename)
+        importer.importBugs(self.layer.txn)
+        importer.loadCache()
+        self.assertEqual(importer.bug_id_map, {})
+
+    def test_repeated_import(self):
+        # Test that importing a bug twice does not result in two bugs
+        # being imported.
+        product = getUtility(IProductSet).getByName('netapplet')
+        xml_file = os.path.join(self.tmpdir, 'bugs.xml')
+        fp = open(xml_file, 'w')
+        fp.write(
+            '<launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">\n')
+        fp.write(sample_bug)
+        fp.write('</launchpad-bugs>\n')
+        fp.close()
+        cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+        fail = self.fail
+        class MyBugImporter(bugimport.BugImporter):
+            def importBug(self, bugnode):
+                fail('Should not have imported bug')
+        importer = MyBugImporter(product, xml_file, cache_filename)
+        # Mark the bug as imported
+        importer.bug_id_map = {42: 1}
+        importer.saveCache()
+        # Import the file.  The fail() statement in importBug() shows
+        # that the bug does not get reimported.
+        importer.importBugs(self.layer.txn)
+
+
+class BugImportScriptTestCase(unittest.TestCase):
+    """Test that the driver script can be called, and does its job."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        # We ran a subprocess that may have changed the database, so
+        # force the test system to treat it as dirty.
+        self.layer.force_dirty_database()
+
+    def test_bug_import_script(self):
+        # Test that the bug import script can do its job
+        xml_file = os.path.join(self.tmpdir, 'bugs.xml')
+        fp = open(xml_file, 'w')
+        fp.write(
+            '<launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">\n')
+        fp.write(sample_bug)
+        fp.write('</launchpad-bugs>\n')
+        fp.close()
+        cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+        # Run the bug import script as a subprocess:
+        proc = subprocess.Popen(
+            [sys.executable,
+             os.path.join(config.root, 'scripts', 'bug-import.py'),
+             '--product', 'netapplet',
+             '--cache', cache_filename,
+             xml_file],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        output, error = proc.communicate()
+        self.assertEqual(proc.returncode, 0)
+        # Find the imported bug number:
+        match = re.search(r'Creating Launchpad bug #(\d+)', error)
+        self.assertNotEqual(match, None)
+        bug_id = int(match.group(1))
+        # Abort transaction so we can see the result:
+        self.layer.txn.abort()
+        bug = getUtility(IBugSet).get(bug_id)
+        self.assertEqual(bug.title, 'A test bug')
+        self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
 
 
 def test_suite():

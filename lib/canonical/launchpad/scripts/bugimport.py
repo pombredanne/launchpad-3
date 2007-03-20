@@ -46,12 +46,11 @@ from canonical.lp.dbschema import (
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
 
-# when accessed anonymously, Sourceforge returns dates in this timezone:
 UTC = pytz.timezone('UTC')
 
 
 class BugXMLSyntaxError(Exception):
-    pass
+    """A syntax error was detected in the input."""
 
 
 def parse_date(datestr):
@@ -77,11 +76,11 @@ def get_text(node):
 
 def get_enum_value(enumtype, name):
     """Get the dbschema enum value with the given name."""
-    for item in enumtype.items:
-        if item.name == name:
-            return item
-    raise BugXMLSyntaxError('%s is not a valid %s enumeration value' %
-                            (name, enumtype.__name__))
+    try:
+        return enumtype.items[name]
+    except KeyError:
+        raise BugXMLSyntaxError('%s is not a valid %s enumeration value' %
+                                (name, enumtype.__name__))
 
 
 def get_element(node, name):
@@ -210,16 +209,17 @@ class BugImporter:
     def haveImportedBug(self, bugnode):
         """Return True if the given bug has been imported already."""
         bug_id = int(bugnode.get('id'))
-        # XXX: this should be extended to cover other cases like
-        # identity based on bug nickname.
+        # XXX: 20070316 jamesh
+        # This should be extended to cover other cases like identity
+        # based on bug nickname.
         return bug_id in self.bug_id_map
 
     def importBugs(self, ztm):
         """Import bugs from a file."""
         tree = ET.parse(self.bugs_filename)
         root = tree.getroot()
-        # Basic sanity check that we have the correct type of XML:
-        assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS
+        assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS, (
+            "Root element is wrong: %s" % root.tag)
         for bugnode in get_all(root, 'bug'):
             if self.haveImportedBug(bugnode):
                 continue
@@ -241,8 +241,8 @@ class BugImporter:
                 ztm.commit()
 
     def importBug(self, bugnode):
-        if self.haveImportedBug(bugnode):
-            return
+        assert not self.haveImportedBug(bugnode), (
+            'the bug has already been imported')
         bug_id = int(bugnode.get('id'))
         logger.info('Handling bug %d', bug_id)
 
@@ -251,7 +251,10 @@ class BugImporter:
         owner = self.getPerson(get_element(bugnode, 'reporter'))
         datecreated = parse_date(get_value(bugnode, 'datecreated'))
         title = get_value(bugnode, 'title')
-        
+
+        private = get_value(bugnode, 'private') == 'True'
+        security_related = get_value(bugnode, 'security_related') == 'True'
+
         if owner is None:
             owner = self.bug_importer
         commentnode = comments.pop(0)
@@ -261,6 +264,8 @@ class BugImporter:
             msg=msg,
             datecreated=datecreated,
             title=title,
+            private=private,
+            security_related=security_related,
             owner=owner))
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
