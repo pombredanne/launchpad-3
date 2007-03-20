@@ -14,12 +14,12 @@ Changed-By: Celso Providelo <cprov@ubuntu.com>
 Changes: 
    * debian-installer, duhh ...
 Files: 
- c1f8796f2018ebf630910a6aab689698 515 raw-installer - debian-installer-images_20070214ubuntu1_i386.tar.gz
+ 3bd06e37ab77fc618b1f7aba95d39410 549 raw-installer - debian-installer-images_20070214ubuntu1_i386.tar.gz
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.3 (GNU/Linux)
 
-iD8DBQFF03Cjjn63CGxkqMURAgLQAJ9aRW8fJSRe0Z/5fw4/GE126J3SuQCaA3zy
-qBWArMy4VgxBsM/D3WXw4DE=
-=Ni5G
+iD8DBQFGAB16jn63CGxkqMURAnGrAKCFHjtNz1ljUCAHLSKMU2hEBaL4SwCfVfTQ
+4TL3dp4GJ/iLs9dwszESoL0=
+=xoBZ
 -----END PGP SIGNATURE-----
