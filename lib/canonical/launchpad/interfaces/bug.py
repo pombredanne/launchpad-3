@@ -207,7 +207,9 @@ class IBug(IMessageTarget):
 
         Direct subscribers have an entry in the BugSubscription table.
 
-        If 
+        If a BugNotificationRecipients instance is supplied as an
+        argument, the relevant subscribers and rationales will be
+        registered on it.
         """
 
     def getIndirectSubscribers(recipients=None):
