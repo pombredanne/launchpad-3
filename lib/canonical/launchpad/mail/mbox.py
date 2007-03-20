@@ -26,7 +26,7 @@ class MboxMailer:
     """
     implements(IMailer)
 
-    def __init__(self, filename, overwrite, mailer):
+    def __init__(self, filename, overwrite, mailer=None):
         self.filename = filename
         if overwrite:
             # Truncate existing file.  Subsequent opens will always append so
