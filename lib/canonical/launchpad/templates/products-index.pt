@@ -83,13 +83,11 @@
         it yourself!
       </p>
       <p>
-        <a href="+new">&raquo;
-          Register a project</a>
-      </p>
-
-      <p>
-        <a href="+all">&raquo;
-          Browse the listing of all (!) projects</a>
+        <a href="+new">
+          <img
+            alt="Register a project"
+            src="/+icing/but-lrg-registerproj.gif"
+          />
       </p>
 
   </tal:searching>
