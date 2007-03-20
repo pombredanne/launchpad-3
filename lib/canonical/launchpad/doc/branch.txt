@@ -196,6 +196,9 @@ interesting results.
 >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
 >>> branch.last_scanned = today - timedelta(1)
 >>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+>>> branch.last_scanned = today
+>>> syncUpdate(branch)
 
 >>> for branch in branchset.getRecentlyChangedBranches(5):
 ...   print branch.unique_name
@@ -581,17 +584,17 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
-  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
   >>> for product in products:
   ...     print "%s %s %s" % (
   ...         product.name,
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
-  evolution      2  None
-  firefox        5  2005-03-09 15:50:00
-  gnome-terminal 10 None
-  iso-codes      1  None
-  thunderbird    1  None
+  evolution      1 None
+  firefox        5 2005-03-09 15:50:00
+  gnome-terminal 8 None
+  iso-codes      1 None
+  thunderbird    1 None
 
 
 == Getting branches by owner ==

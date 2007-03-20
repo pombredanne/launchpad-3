@@ -130,9 +130,11 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled 
-            <b tal:content="context/bugwatch/lastchecked/fmt:datetime">
-              2006-03-01 23:15 UTC
+            This information was last pulled
+            <b
+              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+              3 minutes ago
             </b>.
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 

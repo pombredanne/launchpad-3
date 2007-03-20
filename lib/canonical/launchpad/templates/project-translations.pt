@@ -14,7 +14,6 @@
   </metal:rightportlets>
 
   <metal:heading fill-slot="pageheading">
-    <h3 tal:content="context/title">Context title goes here</h3>
     <tal:untranslatable condition="not: context/translatables">
       <h1 tal:condition="context/required:launchpad.Edit">
         How to set up translations
