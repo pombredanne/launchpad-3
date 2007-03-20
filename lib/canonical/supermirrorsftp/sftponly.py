@@ -270,7 +270,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         # Jonathan Lange, 2007-03-20
         if len(keys) == 0:
             raise UnauthorizedLogin(
-                "No such Launchpad account: %s" % credentials.username)
+                "No such Launchpad account or no registered SSH keys: %s"
+                % credentials.username)
 
         for keytype, keytext in keys:
             if keytype != wantKeyType:
