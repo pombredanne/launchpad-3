@@ -121,15 +121,18 @@ class IMboxMailerDirective(IMailerDirective):
         default=False,
         )
     mailer = ASCII(
-            title=u"Mailer to use",
-            description=u"""\
-                Which registered mailer to use, such as configured with
-                the smtpMailer or sendmailMailer directives""",
-                required=False,
-                default='smtp',
-                )
+        title=u"Chained mailer to which messages are forwarded",
+        description=u"""\
+            Optional mailer to forward messages to, such as those configured
+            with smtpMailer, sendmailMailer, or testMailer directives.  When
+            not given, the message is not forwarded but only stored in the
+            mbox file.""",
+        required=False,
+        default=None,
+        )
 
-def mboxMailerHandler(_context, name, filename, overwrite, mailer='smtp'):
+
+def mboxMailerHandler(_context, name, filename, overwrite, mailer=None):
     _context.action(
         discriminator = ('utility', IMailer, name),
         callable = handler,
