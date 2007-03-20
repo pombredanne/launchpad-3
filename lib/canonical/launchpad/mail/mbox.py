@@ -29,16 +29,16 @@ class MboxMailer:
     def __init__(self, filename, overwrite, mailer):
         self.filename = filename
         if overwrite:
-            # Truncate existing file.  Subsequent opens will always append.
-            # XXX should we open the file once here regardless?  IMailer does
-            # not have a close() method, so no.
-            try:
-                fp = open(self.filename, 'w')
-            finally:
-                fp.close()
+            # Truncate existing file.  Subsequent opens will always append so
+            # this is effectively an overwrite.  Note that because IMailer
+            # doesn't have a close() method, we can't leave the file open
+            # here, otherwise it will never get closed.
+            mbox_file = open(self.filename, 'w')
+            mbox_file.close()
         self.mailer = mailer
 
     def send(self, fromaddr, toaddrs, message):
+        """See IMailer."""
         env_recips = COMMASPACE.join(toaddrs)
         log = getLogger('canonical.launchpad.mail')
         log.info('Email from %s to %s being stored in mailbox %s',
@@ -56,11 +56,16 @@ class MboxMailer:
         # zap it first just in case.
         del msg['message-id']
         msg['Message-ID'] = message_id = make_msgid()
-        fp = open(self.filename, 'a')
+        mbox_file = open(self.filename, 'a')
         try:
-            print >> fp, msg
+            print >> mbox_file, msg
         finally:
-            fp.close()
-        sendmail = zapi.getUtility(IMailer, self.mailer)
-        sendmail.send(fromaddr, toaddrs, message)
+            mbox_file.close()
+        if self.mailer is not None:
+            # Forward the message on to the chained mailer, if there is one.
+            # This allows for example, the mboxMailer to be used in the test
+            # suite, which requires that the testMailer eventually gets
+            # called.
+            chained_mailer = zapi.getUtility(IMailer, self.mailer)
+            chained_mailer.send(fromaddr, toaddrs, message)
         return message_id
