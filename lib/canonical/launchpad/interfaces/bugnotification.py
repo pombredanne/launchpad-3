@@ -158,7 +158,8 @@ class BugNotificationRecipients:
         """Registers a direct subscriber of this bug."""
         reason = "Subscriber"
         if person.isTeam():
-            text = "are a member of %s, which is a direct subscriber" % person.displayname
+            text = ("are a member of %s, which is a direct subscriber"
+                    % person.displayname)
             reason += " @%s" % person.name
         else:
             text = "are a direct subscriber of the bug"
@@ -168,7 +169,8 @@ class BugNotificationRecipients:
         """Registers an assignee of a bugtask of this bug."""
         reason = "Assignee"
         if person.isTeam():
-            text = "are a member of %s, which is a bug assignee" % person.displayname
+            text = ("are a member of %s, which is a bug assignee"
+                    % person.displayname)
             reason += " @%s" % person.name
         else:
             text = "are a bug assignee"

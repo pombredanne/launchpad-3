@@ -30,7 +30,8 @@ from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction, EmailAddressStatus
+from canonical.lp.dbschema import (TeamMembershipStatus, QuestionAction,
+    EmailAddressStatus)
 
 CC = "CC"
 
