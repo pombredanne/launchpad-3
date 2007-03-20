@@ -127,6 +127,12 @@ class SFTPTests(SFTPTestCase):
 
 
 class MockRealm:
+    """A mock realm for testing userauth.SSHUserAuthServer.
+
+    This realm is not actually used in the course of testing, so calls to
+    requestAvatar will raise an exception.
+    """
+
     implements(IRealm)
 
     def requestAvatar(self, avatar, mind, *interfaces):
@@ -134,11 +140,23 @@ class MockRealm:
 
 
 class MockSSHTransport(SSHServerTransport):
+    """A mock SSH transport for testing userauth.SSHUserAuthServer.
+
+    SSHUserAuthServer expects an SSH transport which has a factory attribute
+    which in turn has a portal attribute. Because the portal is important for
+    testing authentication, we need to be able to provide an interesting portal
+    object to the SSHUserAuthServer.
+
+    In addition, we want to be able to capture any packets sent over the
+    transport.
+    """
+
+    class Factory:
+        pass
+
     def __init__(self, portal):
         self.packets = []
-        class Factory:
-            pass
-        self.factory = Factory()
+        self.factory = self.Factory()
         self.factory.portal = portal
 
     def sendPacket(self, messageType, payload):
@@ -184,6 +202,12 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
 
 class MockChecker(SSHPublicKeyDatabase):
+    """A very simple public key checker which rejects all offered credentials.
+
+    Used by TestAuthenticationErrorDisplay to test that errors raised by
+    checkers are sent to SSH clients.
+    """
+
     error_message = u'error message'
 
     def requestAvatarId(self, credentials):
@@ -191,7 +215,16 @@ class MockChecker(SSHPublicKeyDatabase):
 
 
 class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
-    """Check that auth error information is passed through to the client."""
+    """Check that auth error information is passed through to the client.
+
+    Normally, SSH servers provide minimal information on failed authentication.
+    With Launchpad, much more user information is public, so it is helpful and
+    not insecure to tell users why they failed to authenticate.
+
+    SSH doesn't provide a standard way of doing this, but the
+    MSG_USERAUTH_BANNER message is allowed and seems appropriate. See RFC 4252,
+    Section 5.4 for more information.
+    """
 
     layer = TwistedLayer
 
@@ -200,6 +233,9 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
         self.portal.registerChecker(MockChecker())
         self.user_auth.serviceStarted()
         self.key_data = self._makeKey()
+
+    def tearDown(self):
+        self.user_auth.serviceStopped()
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
@@ -252,6 +288,9 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
             + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
             + NS('ssh-dss') + NS(self.public_key))
         self.signature = keys.signData(self.getPrivateKey(), self.sigData)
+
+    def tearDown(self):
+        self.authService.stopService()
 
     def test_successful(self):
         # We should be able to login with the correct public and private
