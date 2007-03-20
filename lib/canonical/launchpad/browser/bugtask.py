@@ -22,6 +22,7 @@ __all__ = [
     'BugTaskView',
     'get_sortorder_from_request',
     'BugTargetTextView',
+    'BugListingBatchNavigator',
     'upstream_status_vocabulary_factory',
     'BugsBugTaskSearchListingView']
 
@@ -1300,15 +1301,10 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params.orderby = get_sortorder_from_request(self.request)
         return search_params
 
-    def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
-
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
-
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
-        precedence over request params.
+    def buildSearchParams(self, searchtext=None, context=None,
+                          extra_params=None):
+        """Build the BugTaskSearchParams object for the given arguments and
+        values specified by the user on this form's widgets.
         """
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
@@ -1376,8 +1372,22 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params = self._getDefaultSearchParams()
         for name, value in form_values.items():
             setattr(search_params, name, value)
-        tasks = context.searchTasks(search_params)
+        return search_params
 
+    def search(self, searchtext=None, context=None, extra_params=None):
+        """Return an ITableBatchNavigator for the GET search criteria.
+
+        If :searchtext: is None, the searchtext will be gotten from the
+        request.
+
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
+        precedence over request params.
+        """
+        search_params = self.buildSearchParams(
+            searchtext=searchtext, context=self.context,
+            extra_params=extra_params)
+        tasks = self.context.searchTasks(search_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
