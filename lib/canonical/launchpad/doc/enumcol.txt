@@ -28,7 +28,8 @@ in the database as integers, and we'll give the column a default value.
 
 Let's define a schema for that column.
 
-    >>> from canonical.launchpad.webapp.enum import DBSchema, Item
+    >>> from canonical.launchpad.webapp.enum import DBSchema
+    >>> from canonical.launchpad.webapp.enum import DBSchemaItem as Item
     >>> class FooSchema(DBSchema):
     ...     """Schema for the foo column."""
     ...     ONE = Item(1, """

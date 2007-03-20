@@ -245,20 +245,6 @@ class MetaEnum(type):
         # grab all the items:
         items = [(key, value) for key, value in classdict.iteritems()
                  if isinstance(value, Item)]
-        if items:
-            if bases and issubclass(bases[0], DBEnumeratedType):
-                for id, item in items:
-                    if not isinstance(value, DBItem):
-                        raise TypeError(
-                            'DBEnumeratedType items must be of type DBItem, '
-                            '%s.%s.%s' % (
-                            classdict['__module__'], classname, id))
-            else:
-                for id, item in items:
-                    if isinstance(value, DBItem):
-                        raise TypeError(
-                            'EnumeratedType items must be of type Item, '
-                            '%s.%s.%s' % (classdict['__module__'], classname, id))
 
         # Enforce capitalisation of items.
         for key, value in items:
@@ -303,7 +289,13 @@ class MetaEnum(type):
             classdict['sort_order'] = tuple(
                 [item.token for item in classdict['items']])
 
-        return type.__new__(cls, classname, bases, classdict)
+        instance = type.__new__(cls, classname, bases, classdict)
+
+        # Add a reference to the enumerated type to each item.
+        for item in instance.items:
+            item.enum = instance
+
+        return instance
 
     def __contains__(self, value):
         """Return whether the value is available in this source
@@ -340,6 +332,9 @@ class MetaEnum(type):
         # The token is the name of the attribute, so getattr suffices.
         return getattr(self, token)
 
+    def __repr__(self):
+        return "<EnumeratedType '%s'>" % self.name
+    
 
 class Item:
     """Items are the primary elements of the enumerated types.
@@ -433,9 +428,6 @@ class DBItem(Item):
     def __hash__(self):
         return self.db_value
 
-    def __str__(self):
-        return self.db_value
-    
     def __repr__(self):
         return "<DBItem %s.%s, (%d) %s>" % (
             self.schema, self.token, self.db_value, self.value)
@@ -454,16 +446,35 @@ class DBEnumeratedType(EnumeratedType):
     pass
 
 
-def extends(*enum_types):
+def extends(enum_type, include=None, exclude=None):
+    """An alternative way to extend an enumerated type as opposed to inheritance.
+
+    The parameters include and exclude shoud either be the token values of the
+    items (the parameter names), or a list or tuple that contains string values.
+    """
     frame = sys._getframe(1)
     locals = frame.f_locals
     
-    # import pdb; pdb.set_trace()
-
-    # Try to make sure we were called from a class def
+    # Try to make sure we were called from a class def.
     if (locals is frame.f_globals) or ('__module__' not in locals):
-        raise TypeError("Item can be used only from a class definition.")
+        raise TypeError("extends can be used only from a class definition.")
 
-    frame.f_locals['omigod'] = 'Fubar'
+    # You can specify either includes or excludes, not both.
+    if include and exclude:
+        raise ValueError("You can specify includes or excludes not both.")
 
-    return 'Fubar'
+    if include is None:
+        items = enum_type.items
+    else:
+        if isinstance(include, str):
+            include = [include]
+        items = [item for item in enum_type if item.token in include]
+
+    if exclude is None:
+        exclude = []
+    elif isinstance(exclude, str):
+        exclude = [exclude]
+        
+    for item in items:
+        if item.token not in exclude:
+            locals[item.token] = copy.copy(item)

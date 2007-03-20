@@ -10,7 +10,8 @@ import sqlobject.constraints as consts
 
 from canonical.database.constants import DEFAULT
 
-from canonical.launchpad.webapp.enum import DBSchema, Item
+from canonical.launchpad.webapp.enum import DBSchema
+from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 __all__ = [
 'EnumCol',
