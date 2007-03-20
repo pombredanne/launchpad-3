@@ -18,17 +18,15 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import (
-    IBranchSet, IRevisionSet)
+from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class BzrlibZopelessLayer(ZopelessLayer):
+class BzrlibZopelessLayer(LaunchpadZopelessLayer):
     """Clean up the test directory created by TestCaseInTempDir tests."""
 
     @classmethod
@@ -64,12 +62,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.branchscanner.dbuser)
-        self.zopeless_helper.setUp()
-        self.txn = self.zopeless_helper.txn
+        self.txn = LaunchpadZopelessLayer.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
         self.setUpAuthor()
@@ -78,7 +74,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def tearDown(self):
         if self.bzrsync is not None and self.bzrsync.db_branch is not None:
             self.bzrsync.close()
-        self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
         TestCaseWithTransport.tearDown(self)
 

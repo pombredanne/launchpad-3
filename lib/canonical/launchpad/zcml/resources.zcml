@@ -89,8 +89,8 @@
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
     <resource name="no" file="../images/no.png" />
-    <resource name="pkg-binary" file="../images/package-binary.png" />
-    <resource name="pkg-source" file="../images/package-source.png" />
+    <resource name="package-binary" file="../images/package-binary.png" />
+    <resource name="package-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
     <resource name="person-mini" file="../images/person-mini.png" />
     <resource name="person-heading" file="../images/person-heading.png" />
