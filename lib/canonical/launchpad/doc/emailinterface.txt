@@ -128,11 +128,11 @@ A notification was added:
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly", because he's the product owner.
 
-    >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRationale
+    >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRecipients
     >>> def getSubscribers(bug):
-    ...     rationale = BugNotificationRationale()
+    ...     rationale = BugNotificationRecipients()
     ...     bug.registerBugSubscribers(rationale)
-    ...     return rationale.getAddresses()
+    ...     return rationale.getEmails()
 
     >>> added_bug = bug_notification.bug
     >>> getSubscribers(added_bug)

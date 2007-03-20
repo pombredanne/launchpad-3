@@ -3,7 +3,7 @@
 """Bug notifications."""
 
 __metaclass__ = type
-__all__ = ['IBugNotification', 'IBugNotificationSet']
+__all__ = ['IBugNotification', 'IBugNotificationSet', 'INotificationRecipientSet']
 
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Datetime
@@ -35,3 +35,33 @@ class IBugNotificationSet(Interface):
 
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
+
+
+class INotificationRecipientSet(Interface):
+    """Represents a set of email addresses and rationales.
+
+    The pattern for using this are as follows: email addresses in an
+    INotificationRecipientSet are being notified because of a specific
+    event (for instance, because a bug changed). The rationales describe
+    why that email addresses is included in the recipient list,
+    detailing subscription types, membership in teams and/or other
+    possible reasons.
+
+    You are meant to implement an API that defines how emails and
+    rationales are added to an INotificationRecipientSet; this is
+    to be kept private between your INotificationRecipientSet
+    implementation and the content class which defines the
+    subscriptions..
+    """
+
+    def getEmails():
+        """Returns all email addresses registered, sorted alphabetically."""
+
+    def getReason(email):
+        """Returns a reason tuple containing (text, header) for an address."""
+
+    def update(recipient_set):
+        """Updates this instance's reasons with reasons from another BNR."""
+
+
+

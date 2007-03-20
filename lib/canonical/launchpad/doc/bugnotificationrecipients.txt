@@ -1,11 +1,11 @@
 
-BugNotificationRationale instances store email addresses mapped to the
+BugNotificationRecipients instances store email addresses mapped to the
 reason for which they are being notified in a certain bug.
 
 (Let's define a helper function so we can format this output)
 
   >>> def print_rationales(rationale):
-  ...   for address in rationale.getAddresses():
+  ...   for address in rationale.getEmails():
   ...     text, header = rationale.getReason(address)
   ...     print address
   ...     print "    %s" % header
@@ -14,11 +14,11 @@ reason for which they are being notified in a certain bug.
 === How it's used ===
 
 The construct_email_notifications function creates and uses
-BugNotificationRationale instances. Here's how:
+BugNotificationRecipients instances. Here's how:
 
-  >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRationale
+  >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRecipients
   >>> from canonical.launchpad.database import Bug, Distribution, Product
-  >>> rationale = BugNotificationRationale()
+  >>> rationale = BugNotificationRecipients()
   >>> bug_one = Bug.get(1)
   >>> bug_one.registerBugSubscribers(rationale)
 
@@ -33,14 +33,14 @@ BugNotificationRationale instances. Here's how:
       Subscriber
       You received this bug notification because you are a direct subscriber of the bug.
 
-=== The Bug-BugNotificationRationale API ===
+=== The Bug-BugNotificationRecipients API ===
 
-Let's test the API that Bug and BugNotificationRationale use to set up the
+Let's test the API that Bug and BugNotificationRecipients use to set up the
 rationales.
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> from zope.component import getUtility
-  >>> rationale = BugNotificationRationale()
+  >>> rationale = BugNotificationRecipients()
 
 Set up some data:
 
@@ -93,7 +93,7 @@ And then print out the addresses and rationales:
 
 Let's do the same for a bug which our bug a duplicate of.
 
-  >>> rationale = BugNotificationRationale(duplicateof=bug_one)
+  >>> rationale = BugNotificationRecipients(duplicateof=bug_one)
   >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
   >>> rationale.addDupeSubscriber(foo_bar)
   >>> test = personset.getByEmail("test@canonical.com")
@@ -135,7 +135,7 @@ And then print out the addresses and rationales again:
 
 Finally, let's do this when our subscribers are teams:
 
-  >>> rationale = BugNotificationRationale()
+  >>> rationale = BugNotificationRecipients()
   >>> testing_spanish_team = personset.getByName("testing-spanish-team")
   >>> rationale.addDupeSubscriber(testing_spanish_team)
   >>> guadamen = personset.getByName("guadamen")

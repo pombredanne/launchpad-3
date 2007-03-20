@@ -4,13 +4,14 @@
 
 __metaclass__ = type
 
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
     get_email_template, shortlist, contactEmailAddresses)
-from canonical.launchpad.interfaces import IEmailAddressSet
+from canonical.launchpad.interfaces import IEmailAddressSet, INotificationRecipientSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification)
@@ -19,8 +20,8 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
 
 
-class BugNotificationRationale:
-    """Or BNR. Represents a set of email addresses and rationales.
+class BugNotificationRecipients:
+    """Or BNR. A set of emails and rationales notified for a bug change.
 
     Each email address registered in a BNR instance is associated to a
     string and a header that explain why the address is being emailed.
@@ -33,6 +34,7 @@ class BugNotificationRationale:
     The string is meant to be rendered in the email footer. The header
     is meant to be used in an X-Launchpad-Message-Rationale header.
     """
+    implements(INotificationRecipientSet)
     def __init__(self, duplicateof=None):
         """Constructs a new BNR instance.
 
@@ -70,17 +72,17 @@ class BugNotificationRationale:
                 self._reasons[email] = (reason, header)
 
     def update(self, rationale):
-        """Updates this instance's reasons with reasons from another BNR."""
+        """See INotificationRecipientSet"""
         for k, v in rationale._reasons.items():
             if k not in self._reasons:
                 self._reasons[k] = v
 
     def getReason(self, email):
-        """Returns a reason tuple containing (text, header) for an address."""
+        """See INotificationRecipientSet"""
         return self._reasons[email]
 
-    def getAddresses(self):
-        """Returns all email addresses registered, sorted alphabetically."""
+    def getEmails(self):
+        """See INotificationRecipientSet"""
         return sorted(self._reasons.keys())
 
     def addDupeSubscriber(self, person):
@@ -158,6 +160,7 @@ class BugNotificationRationale:
             text = "are the registrant for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
+
 def construct_email_notifications(bug_notifications):
     """Construct an email from a list of related bug notifications.
 
@@ -172,7 +175,7 @@ def construct_email_notifications(bug_notifications):
     comment = None
     references = []
     text_notifications = []
-    rationale = BugNotificationRationale()
+    rationale = BugNotificationRecipients()
     bug.registerBugSubscribers(rationale)
 
     for notification in bug_notifications:
@@ -194,7 +197,7 @@ def construct_email_notifications(bug_notifications):
             # that we only do this for duplicate bugs that are public;
             # changes in private bugs are not broadcast to their dupe
             # targets.
-            dupe_rationale = BugNotificationRationale(duplicateof=bug.duplicateof)
+            dupe_rationale = BugNotificationRecipients(duplicateof=bug.duplicateof)
             bug.duplicateof.registerBugSubscribers(dupe_rationale)
             rationale.update(dupe_rationale)
 
@@ -267,7 +270,7 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    for address in rationale.getAddresses():
+    for address in rationale.getEmails():
         reason, rationale_header = rationale.getReason(address)
         body = get_email_template('bug-notification.txt') % {
             'content': mail_wrapper.format(content),

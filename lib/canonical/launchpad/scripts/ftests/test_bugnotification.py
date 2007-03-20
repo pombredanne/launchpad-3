@@ -17,7 +17,7 @@ from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
 from canonical.launchpad.scripts.bugnotification import (
-    get_email_notifications, BugNotificationRationale)
+    get_email_notifications, BugNotificationRecipients)
 
 
 class MockBug:
@@ -139,9 +139,9 @@ class TestGetEmailNotificattions(LaunchpadZopelessTestCase):
         for notifications, messages in email_notifications:
             for message in messages:
                 to_addresses.add(message['to'])
-            rationale = BugNotificationRationale()
+            rationale = BugNotificationRecipients()
             notifications[0].bug.registerBugSubscribers(rationale)
-            expected_to_addresses = rationale.getAddresses()
+            expected_to_addresses = rationale.getEmails()
             self.assertEqual(expected_to_addresses, sorted(to_addresses))
             sent_notifications += notifications
         return sent_notifications
