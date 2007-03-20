@@ -77,14 +77,14 @@
 
     <div
       id="structuralobject"
-      tal:define="structuralobject CONTEXTS/lp:structuralobject"
+      tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
       tal:condition="not:contextless|nothing"
     >
       <tal:header
-        condition="structuralobject"
-        replace="structure structuralobject/@@+structural-header"
+        condition="structuralheaderobject"
+        replace="structure structuralheaderobject/@@+structural-header"
       />
-      <tal:none condition="not:structuralobject">No structural object</tal:none>
+      <tal:none condition="not:structuralheaderobject">No structural header object</tal:none>
     </div>
     <form id="globalsearch" action="/+search" method="get">
       <div>
@@ -178,9 +178,9 @@
                       <metal:block define-slot="main" />
                       <tal:no_children replace="nothing">
                       <div
-                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
-                        tal:condition="structuralobject"
-                        tal:replace="structure structuralobject/@@+structural-footer"
+                        tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
+                        tal:condition="structuralfooterobject"
+                        tal:replace="structure structuralfooterobject/@@+structural-footer"
                         />
                       </tal:no_children>
                     </div>
