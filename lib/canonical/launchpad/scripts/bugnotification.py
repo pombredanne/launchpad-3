@@ -4,20 +4,14 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
-from zope.component import getUtility
-
-from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
-    get_email_template, shortlist, contactEmailAddresses)
-from canonical.launchpad.interfaces import IEmailAddressSet
-from canonical.launchpad.mail import format_address
+    get_email_template)
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, construct_bug_notification)
+    generate_bug_add_email, MailWrapper, construct_bug_notification,
+    get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import EmailAddressStatus
 
 
 def construct_email_notifications(bug_notifications):
@@ -78,49 +72,12 @@ def construct_email_notifications(bug_notifications):
         # Ensure that references contain the initial message ID
         references.insert(0, bug.initial_message.rfc822msgid)
 
-    if person.preferredemail is not None:
-        from_address = format_address(
-            person.displayname, person.preferredemail.email)
-    else:
-        # XXX: The person doesn't have a preferred email set, but he
-        #      added a comment via the email UI. It shouldn't be
-        #      possible to use the email UI if you don't have a
-        #      preferred email set, but work around it for now by
-        #      setting the from address as the first validated address,
-        #      or if that fails, simply anyone if his address.
-        #      -- Bjorn Tillenius, 2006-04-05
-        for email in getUtility(IEmailAddressSet).getByPerson(person):
-            if email.status == EmailAddressStatus.VALIDATED:
-                from_email = email.email
-                break
-        else:
-            # Since he added a comment, he's bound to have at least one
-            # address.
-            email_addresses = shortlist(
-                getUtility(IEmailAddressSet).getByPerson(person))
-            if len(email_addresses) > 0:
-                # We have no idea of which email address is best to use,
-                # just choose the first one.
-                email = email_addresses[0]
-                from_email = email.email
-            else:
-                # XXX: A user should always have at least one email
-                # address, but due to bug 33427, this isn't always the
-                # case. -- Bjorn Tillenius, 2006-05-21
-                log.error(
-                    "The user %r has no email addresses. This happened"
-                    " while sending notifications for bug %s." % (
-                        person.name, bug.id))
-                from_email = "%s@%s" % (bug.id, config.launchpad.bugs_domain)
-
-        from_address = format_address(person.displayname, from_email)
-
     # At this point we've got the data we need to construct the
-    # messages. Now go ahead and actually do it.
-
+    # messages. Now go ahead and actually do that.
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
+    from_address = get_bugmail_from_address(person, bug)
     for address in recipients.getEmails():
         reason, rationale_header = recipients.getReason(address)
         body = get_email_template('bug-notification.txt') % {

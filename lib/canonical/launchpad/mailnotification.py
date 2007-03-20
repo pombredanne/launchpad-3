@@ -23,14 +23,14 @@ from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, ILanguageSet, ISpecification, ITeamMembershipSet,
-    IUpstreamBugTask)
+    IUpstreamBugTask, IEmailAddressSet)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction
+from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction, EmailAddressStatus
 
 CC = "CC"
 
@@ -150,16 +150,15 @@ def _send_bug_details_to_new_bugcontacts(
     if not to_addrs:
         return
 
-    # XXX: stop the hardcoding XXX
-    if bug.owner.preferredemail is None:
-        # This happens for imported bugs, and much as I hate it we need
-        # to work around this problem.
-        from_addr = "noreply@launchpad.net"
-    else:
-        from_addr = bug.owner.preferredemail.email
-
+    # XXX: We send this notification as if it was from the bug owner. I
+    # hope this isn't too confusing to people receiving this
+    # notification; it may be better to use a celebrity.
+    #   -- kiko, 2007-03-20
+    from_addr = get_bugmail_from_address(bug.owner, bug)
+    # Now's a good a time as any for this email; don't use the original
+    # reported date for the bug as it will just confuse mailer and
+    # recipient.
     email_date = datetime.datetime.now()
-    # XXX: stop the hardcoding XXX
 
     subject, contents = generate_bug_add_email(bug, new_recipients=True)
     for to_addr in sorted(to_addrs):
@@ -188,6 +187,33 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
                 new_product.security_contact)
+
+
+def get_bugmail_from_address(person, bug):
+    """Returns the right From: address to use for a bug notification."""
+    if person.preferredemail is not None:
+        return format_address(person.displayname, person.preferredemail.email)
+
+    # XXX: The person doesn't have a preferred email set, but he
+    # added a comment (either via the email UI, or because he was
+    # imported as a deaf reporter). It shouldn't be possible to use the
+    # email UI if you don't have a preferred email set, but work around
+    # it for now by trying hard to find the right email address to use.
+    #   -- Bjorn Tillenius, 2006-04-05
+    email_addresses = shortlist(
+        getUtility(IEmailAddressSet).getByPerson(person))
+    if not email_addresses:
+        # XXX: A user should always have at least one email
+        # address, but due to bug 33427, this isn't always the
+        # case. -- Bjorn Tillenius, 2006-05-21
+        return format_address(person.displayname,
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
+    # At this point we have no validated emails to use: if any of the
+    # person's emails had been validated the preferredemail would be
+    # set. Since we have no idea of which email address is best to use,
+    # we choose the first one.
+    return format_address(person.displayname, email_addresses[0].email)
 
 
 def get_bugmail_replyto_address(bug):

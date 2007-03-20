@@ -127,7 +127,7 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.scripts.bugnotification import BugNotificationRecipients
+    >>> from canonical.launchpad.interfaces.bugnotification import BugNotificationRecipients
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
