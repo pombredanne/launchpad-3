@@ -250,10 +250,6 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     def setUp(cls):
         cls.force_dirty_database()
-        if is_ca_available():
-            raise LayerInvariantError(
-                    "Component architecture should not be available"
-                    )
 
     @classmethod
     def tearDown(cls):
@@ -314,31 +310,6 @@ class DatabaseLayer(BaseLayer):
     def _dropDb(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         return LaunchpadTestSetup().dropDb()
-
-
-class SQLOSLayer(BaseLayer):
-    """Maintains the SQLOS connection.
-
-    This Layer is not useful by itself, but it intended to be used as
-    a mixin to the Functional and Zopeless Layers.
-    """
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    def testSetUp(cls):
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        _reconnect_sqlos()
-
-    @classmethod
-    def testTearDown(cls):
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
 
 
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
@@ -413,7 +384,7 @@ class FunctionalLayer(BaseLayer):
         transaction.abort()
 
 
-class ZopelessLayer(LaunchpadLayer):
+class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
     loaded using execute_zcml_for_scrips()
     """
@@ -475,9 +446,7 @@ class ZopelessLayer(LaunchpadLayer):
         logout()
 
 
-class LaunchpadFunctionalLayer(
-        DatabaseLayer, LibrarianLayer, FunctionalLayer, SQLOSLayer
-        ):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     def setUp(cls):
@@ -492,6 +461,10 @@ class LaunchpadFunctionalLayer(
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+
+        # Connect SQLOS
+        _reconnect_sqlos()
 
     @classmethod
     def testTearDown(cls):
@@ -505,10 +478,12 @@ class LaunchpadFunctionalLayer(
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
 
+        # Disconnect SQLOS so it doesn't get in the way of database resets
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
 
-class LaunchpadZopelessLayer(
-        ZopelessLayer, DatabaseLayer, LibrarianLayer, SQLOSLayer
-        ):
+
+class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """
@@ -538,6 +513,10 @@ class LaunchpadZopelessLayer(
         cls.txn = initZopeless()
         LaunchpadZopelessTestSetup.txn = cls.txn
 
+        # Connect SQLOS
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        _reconnect_sqlos()
+
     @classmethod
     def testTearDown(cls):
         cls.txn.abort()
@@ -546,6 +525,8 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
 
     @classmethod
     def commit(cls):
@@ -610,12 +591,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         pass
 
 
-# XXX - Note that DatabaseLayer needs to be mentioned as a base class
-# explicitly, even though its already a base of LaunchpadZopelessLayer. This is
-# so that the Zope testrunner will load the DatabaseLayer.testSetUp before
-# SQLOSLayer.testSetUp, which depends on DatabaseLayer.
-# -- JonathanLange, 2007-03-08
-class TwistedLayer(LaunchpadZopelessLayer, DatabaseLayer):
+class TwistedLayer(LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
     @classmethod

@@ -968,13 +968,12 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(
-            register="Register your project so it can benefit from "
-                     "Launchpad&rsquo;s features."),
+        ProductsButton(register="Register your project to encourage "
+            "community collaboration."),
         Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
-        Button(
-            blueprints="Track specifications to approval and implementation."),
+        Button(blueprints="Track blueprints through approval and "
+            "implementation."),
         Button(translations="Localize software into your favorite language."),
         Button(answers="Ask and answer questions about software.")
         ]

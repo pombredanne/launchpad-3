@@ -70,6 +70,14 @@ project name.
     >>> anon_browser.title
     'Search all bug reports'
 
+It's also possible to go to the search page directly, without submitting
+the form at the front page.
+
+    >>> search_url, query = anon_browser.url.split('?', 1)
+    >>> anon_browser.open(search_url)
+    >>> anon_browser.title
+    'Search all bug reports'
+
 == Searching one project ==
 
 If the user chooses to search only one project, he will be forwarded to

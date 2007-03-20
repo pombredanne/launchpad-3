@@ -77,8 +77,9 @@ ownership of the newly created pofile is set to Rosetta Admins.
   ...     '/trunk/+pots/evolution-2.2/cy')
   >>> translation_portlet = find_portlet(
   ...     browser.contents, 'Translation file details')
-  >>> translation_portlet.firstText('Creator:').findNext('a').string
-  u'Rosetta Administrators'
+  >>> t = extract_text(translation_portlet.firstText('Creator:').findNext('a'))
+  >>> u'Rosetta Administrators' in t
+  True
 
 But if we request an export from a valid translator, he gets the ownership.
 We test using the Swedish (sv) language which doesn't have a pofile for
@@ -101,8 +102,11 @@ evolution yet; it will be created at the moment the export is requested.
 
   >>> translation_portlet = find_portlet(
   ...     browser.contents, 'Translation file details')
-  >>> translation_portlet.firstText('Creator:').findNext('a').string
-  u'Carlos Perell\xf3 Mar\xedn'
+  >>> carlos = u'Carlos Perell\xf3 Mar\xedn'
+  >>> creator = extract_text(
+  ...     translation_portlet.firstText('Creator:').findNext('a'))
+  >>> carlos in creator
+  True
 
 Request the same pofile again won't crash. (See bug
 https://launchpad.net/rosetta/+bug/1558).

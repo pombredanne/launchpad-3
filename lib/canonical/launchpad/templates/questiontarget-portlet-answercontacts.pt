@@ -5,7 +5,7 @@
   <div class="portletBody portletContent"
        tal:define="answer_contacts context/direct_answer_contacts">
 
-    <ul class="people" tal:condition="answer_contacts">
+    <ul class="person" tal:condition="answer_contacts">
       <li tal:repeat="answer_contact answer_contacts">
         <a href="#"
            tal:content="answer_contact/browsername"
