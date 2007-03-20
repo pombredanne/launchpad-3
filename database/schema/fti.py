@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """
 Add full text indexes to the launchpad database
@@ -196,7 +196,7 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     execute(con, r"""UPDATE %s SET fti=NULL""" % table)
 
     # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
+    execute(con, "CREATE INDEX %s ON %s USING gin(fti)" % (
         index, table
         ))
 
