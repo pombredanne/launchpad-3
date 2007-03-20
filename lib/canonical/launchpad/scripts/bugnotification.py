@@ -142,8 +142,6 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         # We don't want bugs preventing all bug notifications from
         # being sent, so catch and log all exceptions.
         try:
-            # We don't want bugs preventing all bug notifications from
-            # being sent, so catch and log all exceptions.
             yield construct_email_notifications(notification_batch)
         except:
             _log_exception_and_restart_transaction()
