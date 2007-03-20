@@ -61,7 +61,9 @@ unassigned bug tasks.
      (5, 'UNCONFIRMED', None),
      (7, 'UNCONFIRMED', u'name16'),
      (9, 'CONFIRMED', None),
-     (10, 'UNCONFIRMED', None)]
+     (10, 'UNCONFIRMED', None),
+     (11, 'UNCONFIRMED', None),
+     (12, 'CONFIRMED', None)]
 
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
@@ -82,7 +84,9 @@ assigned.
      (3, 'UNCONFIRMED', None),
      (5, 'UNCONFIRMED', None),
      (9, 'CONFIRMED', None),
-     (10, 'UNCONFIRMED', None)]
+     (10, 'UNCONFIRMED', None),
+     (11, 'UNCONFIRMED', None),
+     (12, 'CONFIRMED', None)]
 
 Using the advanced form we can also query for closed bugs reported by someone.
 Let's first close a bug setting its status to 'Rejected'.
