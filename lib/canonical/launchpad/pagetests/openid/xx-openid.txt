@@ -134,7 +134,7 @@ URL for the checkid_setup from the result of the previous test.
 >>> print '\n' + anon_browser.contents
 <BLANKLINE>
 ...
-<form method="post" action=".">
+<form method="get" action=".">
     <input type="hidden" name="token" value="..." />
     <input type="submit" name="action" value="Allow Once" />
 </form>
@@ -160,14 +160,21 @@ Now, lets do that again but allow the request, which will first require us
 to log in to Launchpad and then redirect us back to the consumer saying
 the request is valid.
 
+>>> anon_browser.handleErrors = True
 >>> anon_browser.open(setup_url)
 >>> anon_browser.getControl('Allow Once').click()
 
-XXX: This should actually fail, redirecting user to the login page
-
 >>> print anon_browser.url
+http://openid.launchpad.dev/+openid/+login?...
+>>> anon_browser.handleErrors = False
+>>> anon_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
+>>> anon_browser.getControl('Password', index=0).value = 'test'
+>>> anon_browser.getControl('Log In', index=0).click()
+>>> sabdfl_browser = anon_browser # We are now logged in
+
+>>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?...
->>> print anon_browser.contents
+>>> print sabdfl_browser.contents
 Consumer received GET
 openid.assoc_handle=...
 openid.identity=https://launchpad.dev/~sabdfl
@@ -176,6 +183,4 @@ openid.return_to=http://launchpad.dev/+openid-consumer
 openid.sig=...
 openid.signed=...
 <BLANKLINE>
-
-
 

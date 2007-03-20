@@ -23,7 +23,14 @@
 
     <table>
         <tr><td>
-            <form method="post" action=".">
+            <tal:comment condition="nothing">
+                The form method needs to be GET, as if we are not
+                authenticated the login system needs to issue redirects
+                (see canonical/launchpad/webapp/login.py 'Application error.
+                Unauthentiated user POSTing to page that requires
+                authentication.'
+            </tal:comment>
+            <form method="get" action=".">
                 <input type="hidden" name="token"
                     tal:attributes="value view/token" />
                 <input type="submit" name="action" value="Allow Once" />

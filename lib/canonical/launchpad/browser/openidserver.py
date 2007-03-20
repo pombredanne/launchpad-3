@@ -10,7 +10,9 @@ from tempfile import mkdtemp
 from time import time
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession
+from zope.component import getUtility
 from zope.interface import Interface, Attribute, implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.server.server import (
@@ -22,6 +24,7 @@ from openid.server.server import (
 # XXX: Temporary - switch to SQL -- StuartBishop 20070214
 from openid.store.filestore import FileOpenIDStore
 
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
@@ -55,7 +58,6 @@ class OpenIdView(LaunchpadView):
         if (self.request.form.has_key('action') and
                 self.request.form['action'] == 'Allow Once'
                 ):
-            # The user has selected "Allow Once" on the decide page
             return self.renderOpenIdResponse(self.allowOnce())
 
         # Not a form submission, so extract the OpenIDRequest from the request.
@@ -77,20 +79,34 @@ class OpenIdView(LaunchpadView):
 
             self.login = self.extractName(openid_request.identity)
             if self.login is None:
-                # XXX: Get the user name, or foo if not logged in.
-                # -- StuartBishop 20070301
-                self.login = 'foo'
+                # Failed to extract the username from the identity, which
+                # means this is not a valid Launchpad identity.
+                # Display an error message to the user and let them
+                # continue.
+                me = getUtility(ILaunchBag).user
+                if me is None:
+                    self.login = 'username'
+                else:
+                    self.login = me.name
                 return self.invalid_identity_template()
 
-            if self.isAuthorized(
-                openid_request.identity, openid_request.trust_root):
+            if self.isAuthorized():
+                # User has previously allowed auth to this site, or we
+                # wish to force auth to be allowed to this site
                 openid_response = openid_request.answer(True)
+
             elif openid_request.immediate:
+                # An immediate request has come through, but we can't
+                # approve it without asking the user. So report fail to
+                # the consumer.
                 openid_response = openid_request.answer(
                         False, allvhosts.configs['openid'].rooturl
                         )
             else:
+                # We have an interactive id check request (checkid_setup).
+                # Render a page allowing the user to choose how to proceed.
                 return self.showDecidePage()
+
         else:
             openid_response = self.openid_server.handleRequest(openid_request)
 
@@ -162,7 +178,7 @@ class OpenIdView(LaunchpadView):
         return self.decide_template(foo='foobar')
 
     def _sweep(self, now, session):
-        """Clean our Session of tokens older than 1 hour"""
+        """Clean our Session of tokens older than 1 hour."""
         to_delete = []
         for key, value in session.items():
             timestamp, session = value
@@ -171,22 +187,51 @@ class OpenIdView(LaunchpadView):
         for key in to_delete:
             del session[key]
 
-    def isAuthorized(self, identity, trust_root):
+    def isAuthenticated(self):
+        """Returns True if we are logged in as the owner of the identity."""
+        me = getUtility(ILaunchBag).user
+        # Not authenticated if the user is not logged in
+        if me is None:
+            return False
+
+        # Not authenticated if we are logged in as someone other than
+        # the identity's owner
+        return me.name == self.login
+
+    def isAuthorized(self):
+        if not self.isAuthenticated():
+            return False
+
+        # XXX: Implement this
+        trust_root = self.openid_request.trust_root
+
         return False
 
     def allowOnce(self):
+        """Handle "Allow Once" selection from the decide page.
+
+        Returns an OpenIDResponse.
+        """
         token = self.request.form['token']
         session = self._getSession()
         try:
-            timestamp, openid_request = session['token_' + token]
+            timestamp, self.openid_request = session['token_' + token]
         except LookupError:
             # The token has expired. Just show the user the decide page again.
             return self.showDecidePage()
 
-        assert zisinstance(openid_request, CheckIDRequest), \
-                'Invalid request in session %s' % repr(openid_request)
+        # If the user is not authenticated as the user owning the
+        # identifier, bounce them to the login page.
+        self.login = self.extractName(self.openid_request.identity)
+        if not self.isAuthenticated():
+            raise Unauthorized(
+                    "You are not yet authorized to use this OpenID identifier."
+                    )
 
-        return openid_request.answer(True)
+        assert zisinstance(self.openid_request, CheckIDRequest), \
+                'Invalid request in session'
+
+        return self.openid_request.answer(True)
 
     def _getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
