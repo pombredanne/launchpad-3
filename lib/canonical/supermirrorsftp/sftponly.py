@@ -5,6 +5,7 @@ from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
+from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 from twisted.internet import defer
@@ -253,7 +254,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         # Add callback to try find the authorised key
         authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
         return authorizedKeys
-                
+
     def _cb_hasAuthorisedKey(self, keys, credentials):
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
@@ -262,6 +263,14 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         else:
             # unknown key type
             return False
+
+        # XXX - this might also be because the user has no SSH keys registered.
+        # The authserver needs to be changed to return more information in this
+        # case.
+        # Jonathan Lange, 2007-03-20
+        if len(keys) == 0:
+            raise UnauthorizedLogin(
+                "No such Launchpad account: %s" % credentials.username)
 
         for keytype, keytext in keys:
             if keytype != wantKeyType:
@@ -272,7 +281,9 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             except binascii.Error:
                 continue
 
-        return False
+        raise UnauthorizedLogin(
+            "Your SSH key does not match any key registered for Launchpad "
+            "user %s" % credentials.username)
 
 
 class BazaarFileTransferServer(filetransfer.FileTransferServer):

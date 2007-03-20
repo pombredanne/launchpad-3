@@ -227,7 +227,15 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check)
 
 
-class TestAuthenticationErrors(TrialTestCase, SSHKeyMixin):
+class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
+    """Tests for the SFTP server authentication mechanism.
+
+    PublicKeyFromLaunchpadChecker accepts the SSH authentication information
+    and contacts the authserver to determine if the given details are valid.
+
+    Any authentication errors are displayed back to the user via an SSH
+    MSG_USERAUTH_BANNER message.
+    """
 
     layer = TwistedLayer
 
@@ -253,6 +261,56 @@ class TestAuthenticationErrors(TrialTestCase, SSHKeyMixin):
                               self.sigData, self.signature)
         d = self.checker.requestAvatarId(creds)
         return d.addCallback(self.assertEqual, self.valid_login)
+
+    def test_noSuchUser(self):
+        # When someone signs in with a non-existent user, they should be told
+        # that. The usual security issues don't apply here because the list of
+        # Launchpad user names is public.
+        creds = SSHPrivateKey('no-such-user', 'ssh-dss', self.public_key,
+                              self.sigData, self.signature)
+        d = self.checker.requestAvatarId(creds)
+        d = self.assertFailure(d, UnauthorizedLogin)
+        d.addCallback(
+            lambda exception:
+            self.assertEqual(str(exception),
+                             'No such Launchpad account: no-such-user'))
+        return d
+
+    def test_noKeys(self):
+        # When you sign into an existing account with no SSH keys, the SFTP
+        # server should inform you that the account has no keys.
+        creds = SSHPrivateKey('mark', 'ssh-dss', self.public_key,
+                              self.sigData, self.signature)
+        d = self.checker.requestAvatarId(creds)
+        d = self.assertFailure(d, UnauthorizedLogin)
+        d.addCallback(
+            lambda exception:
+            self.assertEqual(
+                str(exception),
+                "Launchpad user %r doesn't have a registered SSH key"
+                % 'mark'))
+        return d
+    test_noKeys.todo = ("Authserver doesn't give enough information to "
+                        "distinguish this from no-such-user.")
+
+    def test_wrongKey(self):
+        # When you sign into an existing account using the wrong key, you
+        # should be told that the key you're using doesn't match any of the
+        # keys that Launchpad has for that account.
+
+        # Cheat a little and also don't provide a valid signature. This is OK
+        # because the "no matching public key" failure occurs before the
+        # "bad signature" failure.
+        creds = SSHPrivateKey(self.valid_login, 'ssh-dss', 'invalid key',
+                              None, None)
+        d = self.checker.requestAvatarId(creds)
+        d = self.assertFailure(d, UnauthorizedLogin)
+        d.addCallback(lambda exception: str(exception))
+        d.addCallback(
+            self.assertEqual,
+            "Your SSH key does not match any key registered for Launchpad "
+            "user %s" % (self.valid_login,))
+        return d
 
 
 def test_suite():
