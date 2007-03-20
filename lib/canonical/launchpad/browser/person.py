@@ -69,6 +69,7 @@ __all__ = [
     ]
 
 import cgi
+import copy
 import urllib
 from operator import attrgetter, itemgetter
 
