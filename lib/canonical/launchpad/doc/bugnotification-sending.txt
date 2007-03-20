@@ -2,9 +2,11 @@ Sending the Bug Notifications
 =============================
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
-notification to be added. These notifications should be assembled to an
-email notification, and sent to the appropriate people. Let's start by
-adding a comment to a bug:
+notification to be added. These notifications should be assembled into
+an email notification, and sent to the appropriate people.
+
+Before we start, let's ensure that there are no pending notifications to
+be sent:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
@@ -13,6 +15,25 @@ adding a comment to a bug:
     >>> from canonical.launchpad.interfaces import IBugNotificationSet
     >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
     0
+
+And let's define a function to make printing out the notifications
+easier.
+
+    >>> def print_notification(email_notification):
+    ...     for header in ['To', 'From', 'Subject',
+    ...                    'X-Launchpad-Message-Rationale']:
+    ...         print "%s: %s" % (header, email_notification[header])
+    ...     print
+    ...     print email_notification.get_payload(decode=True)
+    ...     print "-" * 70
+
+You'll note that we are printing out an X-Launchpad-Message-Rationale
+header. This header is a simple string that allows people to filter
+bugmail according to the reason they are getting emailed. For instance,
+the person may want to specially filter mail for bugs which they are
+assigned to.
+
+Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
@@ -29,14 +50,6 @@ adding a comment to a bug:
 
 If we pass these notifications to get_email_notifications, we get a
 list of emails to send:
-
-    >>> def print_notification(email_notification):
-    ...     for header in ['To', 'From', 'Subject',
-    ...                    'X-Launchpad-Message-Rationale']:
-    ...         print "%s: %s" % (header, email_notification[header])
-    ...     print
-    ...     print email_notification.get_payload(decode=True)
-    ...     print "-" * 70
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
