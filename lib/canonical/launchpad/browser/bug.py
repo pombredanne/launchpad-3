@@ -252,7 +252,7 @@ class MaloneView(LaunchpadFormView):
         return getUtility(ICveSet).getBugCveCount()
 
 
-class BugView:
+class BugView(LaunchpadView):
     """View class for presenting information about an IBug.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -264,12 +264,6 @@ class BugView:
     all the pages off IBugTask instead of IBug.
     """
 
-    def __init__(self, context, request):
-        self.current_bugtask = context
-        self.context = IBug(context)
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
     def currentBugTask(self):
         """Return the current IBugTask.
 
@@ -280,7 +274,7 @@ class BugView:
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""
-        user = getUtility(ILaunchBag).user
+        user = self.user
         if user is None:
             return False
         return self.context.isSubscribed(user)
@@ -696,14 +690,18 @@ class BugEditViewBase(LaunchpadEditFormView):
 
     schema = IBug
 
-    def __init__(self, context, request):
-        self.current_bugtask = context
-        context = IBug(context)
-        LaunchpadEditFormView.__init__(self, context, request)
+    def setUpWidgets(self):
+        """Set up the widgets using the bug as the context."""
+        LaunchpadEditFormView.setUpWidgets(self, context=self.context.bug)
+
+    def updateBugFromData(self, data):
+        """Update the bug using the values in the data dictionary."""
+        LaunchpadEditFormView.updateContextFromData(
+            self, data, context=self.context.bug)
 
     @property
     def next_url(self):
-        return canonical_url(self.current_bugtask)
+        return canonical_url(self.context)
 
 
 class BugEditView(BugEditViewBase):
@@ -728,7 +726,7 @@ class BugEditView(BugEditViewBase):
         if confirm_action.submitted():
             # Validation is needed only for the change action.
             return
-        bugtarget = self.current_bugtask.target
+        bugtarget = self.context.target
         newly_defined_tags = set(data['tags']).difference(
             bugtarget.getUsedBugTags())
         # Display the confirm button in a notification message. We want
@@ -748,8 +746,8 @@ class BugEditView(BugEditViewBase):
     @action('Change', name='change')
     def edit_bug_action(self, action, data):
         if not self._confirm_new_tags:
-            self.updateContextFromData(data)
-            self.next_url = canonical_url(self.current_bugtask)
+            self.updateBugFromData(data)
+            self.next_url = canonical_url(self.context)
 
     @action('Yes, define new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
@@ -770,7 +768,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        self.updateBugFromData(data)
 
 
 class BugSecrecyEditView(BugEditViewBase):
@@ -781,7 +779,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        self.updateBugFromData(data)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
