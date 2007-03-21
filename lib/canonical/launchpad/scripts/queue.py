@@ -15,6 +15,7 @@ __all__ = [
 import os
 import sys
 import tempfile
+import errno
 from email import message_from_string
 import pytz
 from datetime import datetime
@@ -501,10 +502,22 @@ class QueueActionFetch(QueueAction):
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
                 # do not overwrite files on disk (bug # 62976)
-                if os.path.exists(libfile.filename):
+                try:
+                    existing_file = open(libfile.filename, "r")
+                except IOError, e:
+                    if not e.errno == errno.ENOENT:
+                        raise
+                    # File does not already exist, so read file from librarian
+                    # and write to disk.
+                    libfile.open()
+                    out_file = open(libfile.filename, "w")
+                    for chunk in filechunks(libfile):
+                        out_file.write(chunk)
+                    out_file.close()
+                    libfile.close()
+                else:
                     # Check sha against existing file (bug #67014)
                     existing_sha = sha()
-                    existing_file = open(libfile.filename, "r")
                     for chunk in filechunks(existing_file):
                         existing_sha.update(chunk)
                     existing_file.close()
@@ -517,14 +530,6 @@ class QueueActionFetch(QueueAction):
                     else:
                         self.display("%s already on disk and checksum "
                                      "matches, skipping.")
-                else:
-                    # read library file directly to its new place
-                    libfile.open()
-                    out_file = open(libfile.filename, "w")
-                    for chunk in filechunks(libfile):
-                        out_file.write(chunk)
-                    out_file.close()
-                    libfile.close()
 
         self.displayRule()
         self.displayBottom()
