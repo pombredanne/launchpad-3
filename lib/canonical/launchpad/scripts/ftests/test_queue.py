@@ -246,7 +246,7 @@ class TestQueueTool(TestQueueBase):
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
         target_queue = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.UNAPPROVED,
+            status=PackageUploadStatus.UNAPPROVED,
             pocket= PackagePublishingPocket.BACKPORTS)[0]
         self.assertEqual(10, target_queue.id)
 
@@ -291,8 +291,8 @@ class TestQueueTool(TestQueueBase):
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
         target_queue = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.UNAPPROVED,
-            pocket= PackagePublishingPocket.PROPOSED)[0]
+            status=PackageUploadStatus.UNAPPROVED,
+            pocket=PackagePublishingPocket.PROPOSED)[0]
         self.assertEqual(12, target_queue.id)
         source = target_queue.sources[0].sourcepackagerelease
         self.assertEqual('translations', source.section.name)

@@ -101,7 +101,7 @@ class DeathRow:
         live_source_files = SourcePackageFilePublishing.select(
             """
             distribution = %s AND
-            archive = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             publishingstatus != %s AND
             SourcePackagePublishingHistory.id =
             SourcePackageFilePublishing.sourcepackagepublishing AND
@@ -117,7 +117,7 @@ class DeathRow:
         live_binary_files = BinaryPackageFilePublishing.select(
             """
             distribution = %s AND
-            archive = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             publishingstatus != %s AND
             BinaryPackagePublishingHistory.id =
             BinaryPackageFilePublishing.binarypackagepublishing AND

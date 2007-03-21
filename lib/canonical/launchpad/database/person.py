@@ -2013,7 +2013,7 @@ class PersonSet:
         # It need to be done manually, probably by reasinning all publications
         # to the old PPA to the new one, performing a careful_publishing on it
         # and removing the old one from disk. See bug #87098
-        skip.append(('archive', 'person'))
+        skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
