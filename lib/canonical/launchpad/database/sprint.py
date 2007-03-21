@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = [
     'Sprint',
     'SprintSet',
+    'HasSprintsMixin',
     ]
 
 
@@ -16,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IHasGotchiAndEmblem, ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote)
+    SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -320,4 +321,32 @@ class SprintSet:
             time_ends=time_ends, summary=summary, driver=driver,
             home_page=home_page, gotchi=gotchi, emblem=emblem,
             gotchi_heading=gotchi_heading)
+
+
+class HasSprintsMixin:
+    """A mixin class implementing the common methods for any class
+    implementing IHasSprints.
+    """
+
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        """Return the base SQL query and the clauseTables to be used when
+        querying sprints related to this object.
+
+        Subclasses must overwrite this method if it doesn't suit them.
+        """
+        query = """
+            Specification.%s = %s
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            """ % (self._table, self.id)
+        return query, ['Specification', 'SprintSpecification']
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends > 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='time_starts',
+            distinct=True, limit=5)
 
