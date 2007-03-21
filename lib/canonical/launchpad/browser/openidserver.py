@@ -21,10 +21,11 @@ from openid.server.server import (
     ENCODE_URL,
     CheckIDRequest,
     )
+from openid.server.trustroot import TrustRoot
 # XXX: Temporary - switch to SQL -- StuartBishop 20070214
 from openid.store.filestore import FileOpenIDStore
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, UnexpectedFormData
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
@@ -35,12 +36,16 @@ SESSION_PKG_KEY = 'openid'
 
 class IOpenIdView(Interface):
     openid_request = Attribute("OpenIDRequest")
+    trust_root = Attribute("TrustRoot")
 
 
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
 
     openid_server = Server(FileOpenIDStore(mkdtemp('openid')))
+
+    openid_request = None
+    trust_root = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
     decide_template = ViewPageTemplateFile("../templates/openid-decide.pt")
@@ -79,7 +84,6 @@ class OpenIdView(LaunchpadView):
             return self.default_template()
 
         if self.openid_request.mode in ['checkid_immediate', 'checkid_setup']:
-
             self.login = self.extractName(self.openid_request.identity)
             if self.login is None:
                 # Failed to extract the username from the identity, which
@@ -163,6 +167,9 @@ class OpenIdView(LaunchpadView):
         We need to explain what they are doing here and ask them if they
         want to allow Launchpad to authenticate them with the OpenID consumer.
         """
+        self.trust_root = TrustRoot.parse(self.openid_request.trust_root)
+        if self.trust_root is None:
+            raise UnexpectedFormData("Invalid trust root")
         # To ensure that the user has seen this page and it was actually the
         # user that clicks the 'Accept' button, we generate a token and
         # use it to store the openid_request in the session. The token

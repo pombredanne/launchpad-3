@@ -4,10 +4,16 @@
 <body tal:define="vhosts
     modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
     <p>A site identifying as
-        <strong tal:content="view/openid_request/trust_root" />
+        <em tal:content="view/openid_request/trust_root" />
         has asked us for confirmation that
-        <strong tal:content="view/openid_request/identity" />
+        <em tal:content="view/openid_request/identity" />
         is your identity URL.
+    </p>
+
+    <p class="warning message" tal:condition="not:view/trust_root/isSane">
+        <strong>Warning:</strong>
+        <em tal:content="view/openid_request/trust_root" /> does not look
+        like a trustworthy URL.
     </p>
 
     <p>If you click the <strong>Allow Once</strong> button, we will
