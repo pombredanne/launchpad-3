@@ -418,7 +418,7 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise ConversionError("Invalid value",
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
         return source

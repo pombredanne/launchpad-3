@@ -5,11 +5,10 @@
   method="post"
   enctype="multipart/form-data">
   <p
-    tal:define="errors view/errors|nothing"
-    tal:condition="errors"
+    tal:condition="view/getErrorMessage"
     class="error message"
     i18n:translate=""
-    tal:content = "view/errorMessage"
+    tal:content = "view/getErrorMessage"
   />
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
