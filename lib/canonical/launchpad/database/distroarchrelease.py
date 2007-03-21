@@ -203,7 +203,7 @@ class DistroArchRelease(SQLBase):
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
-        distroarchrelease=%s AND
+        distroarchrelease=%s
         """ % sqlvalues(binary_name, self))
 
         if pocket is not None:

@@ -17,11 +17,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingStatus, PackagePublishingPocket)
+    PackageUploadStatus, PackagePublishingStatus, PackagePublishingPocket)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
-    """ """
     name = 'baz'
     version = '1.0-1'
     distribution_name = None
@@ -98,9 +97,9 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         queues.
         """
         available_statuses = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.UNAPPROVED,
-            DistroReleaseQueueStatus.ACCEPTED,
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
+            PackageUploadStatus.ACCEPTED,
             ]
         for status in available_statuses:
             queue_items = self.distrorelease.getQueueItems(
@@ -154,7 +153,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         spr = sp[self.version]
         build = spr.createBuild(
             distroarchrelease=self.distrorelease[archtag],
-            pocket=self.pocket)
+            pocket=self.pocket, archive=self.distrorelease.main_archive)
         self.layer.txn.commit()
         return build
 

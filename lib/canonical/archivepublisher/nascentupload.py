@@ -2015,9 +2015,11 @@ class NascentUpload:
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
         # source package).
+        # XXX cprov 20070321: why do we to compare IDs for archives ?
+        # SQLBase comparing leads to mistakes.
         if (build.sourcepackagerelease != spr or
             build.pocket != self.pocket or
-             build.archive != self.archive or
+            build.archive.id != self.archive.id or
             build.distroarchrelease != dar):
             raise UploadError("Attempt to upload binaries specifying "
                               "build %s, where they don't fit" % build_id)
@@ -2124,7 +2126,7 @@ class NascentUpload:
         # PPA uploads are Auto-Accepted by default
         if self.is_ppa:
             self.logger.debug("Setting it to ACCEPTED")
-            queue_root.setAccepted()
+            self.queue_root.setAccepted()
             return
 
         # if it is known (already overridden properly), move it
@@ -2132,7 +2134,7 @@ class NascentUpload:
         if self.is_new():
             if self.policy.autoApproveNew(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
+                self.queue_root.setAccepted()
             else:
                 self.logger.debug("Leaving status as NEW")
         else:

@@ -32,17 +32,17 @@ from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
+    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    PackageUploadStatus, PackageUploadCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
-# There are imports below in DistroReleaseQueueCustom for various bits
+# There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
 

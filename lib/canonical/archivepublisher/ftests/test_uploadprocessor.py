@@ -46,8 +46,8 @@ class TestUploadProcessorBase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.queue_dir = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.queue_dir, "incoming"))
+        self.queue_folder = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
         self.test_files_dir = os.path.join(config.root,
             "lib/canonical/archivepublisher/tests/data/suite")
@@ -55,7 +55,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         import_public_test_keys()
 
         self.options = MockOptions()
-        self.options.base_fsroot = self.queue_dir
+        self.options.base_fsroot = self.queue_folder
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distrorelease = None
@@ -65,7 +65,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        shutil.rmtree(self.queue_dir)
+        shutil.rmtree(self.queue_folder)
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
@@ -103,12 +103,12 @@ class TestUploadProcessorBase(unittest.TestCase):
         Return the path to the upload queue entry directory created.
         """
         target_path = os.path.join(
-            self.queue_dir, "incoming", upload_name, relative_path)
+            self.queue_folder, "incoming", upload_name, relative_path)
         upload_dir = os.path.join(self.test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
-        return os.path.join(self.queue_dir, "incoming", upload_name)
+        return os.path.join(self.queue_folder, "incoming", upload_name)
 
     def processUpload(self, processor, upload_dir):
         """Process an upload queue entry directory.
