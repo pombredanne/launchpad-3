@@ -1,8 +1,8 @@
 = Joining a team =
 
-Foo Bar will join the newly created team.
+Karl will join the newly created team.
 
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail/')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -39,8 +39,7 @@ approved, though.
     >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
     >>> myemail = Person.selectOneBy(name='myemail')
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> myemail.syncUpdate()
 
     >>> browser = Browser()
     >>> browser.addHeader(
@@ -69,7 +68,7 @@ If it was a restricted team, users wouldn't even be able to ask to join the
 team.
 
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
-    >>> flush_database_updates()
+    >>> myemail.syncUpdate()
 
     >>> browser = Browser()
     >>> browser.addHeader('Authorization',
@@ -83,7 +82,7 @@ team.
     my own team is a restricted team.
     Only a team administrator can add new members.
 
-On the team's +members page we can now see Foo Bar as an approved member,
+On the team's +members page we can now see Karl as an approved member,
 James Blackwell as a proposed one and Jeff Waugh won't be there at all.
 
     >>> anon_browser.open('http://launchpad.dev/~myemail')
@@ -94,7 +93,7 @@ James Blackwell as a proposed one and Jeff Waugh won't be there at all.
     >>> contents = anon_browser.contents
     >>> for link in find_tag_by_id(contents, 'activemembers').findAll('a'):
     ...     print link.renderContents()
-    Foo Bar
+    Karl Tilbury 
     Sample Person
 
     >>> for link in find_tag_by_id(contents, 'proposedmembers').findAll('a'):

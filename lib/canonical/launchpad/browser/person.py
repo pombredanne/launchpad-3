@@ -1933,22 +1933,30 @@ class PersonEditView(BasePersonEditView):
 class TeamJoinView(PersonView):
 
     def processForm(self):
-        if self.request.method != "POST":
+        request = self.request
+        if request.method != "POST":
             # Nothing to do
             return
 
         user = self.user
         context = self.context
 
-        if self.request.form.get('join') and self.userCanRequestToJoin():
+        if request.form.get('join') and self.userCanRequestToJoin():
+            policy = context.subscriptionpolicy
+            assert policy != TeamSubscriptionPolicy.RESTRICTED, (
+                "Should not attempt to join restricted teams.")
             user.join(context)
-            if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-                self.request.response.addInfoNotification(
-                    _('Subscription request pending approval.'))
+            if policy == TeamSubscriptionPolicy.MODERATED:
+                notification = _('Subscription request pending approval.')
             else:
-                self.request.response.addInfoNotification(_(
-                    'Successfully joined %s.' % context.displayname))
-        self.request.response.redirect('./')
+                notification = _(
+                    'Successfully joined %s.' % context.displayname)
+        elif request.form.get('join'):
+            notification = _('You cannot join %s.' % context.displayname)
+        else:
+            raise UnexpectedFormData('No action specified')
+        request.response.addInfoNotification(notification)
+        self.request.response.redirect(canonical_url(context))
 
 
 class TeamLeaveView(PersonView):
