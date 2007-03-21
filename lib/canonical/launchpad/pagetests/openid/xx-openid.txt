@@ -136,11 +136,8 @@ URL for the checkid_setup from the result of the previous test.
 ...
 <form method="get" action=".">
     <input type="hidden" name="token" value="..." />
-    <input type="submit" name="action" value="Allow Once" />
-</form>
-...
-<form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel">
-    <input type="submit" value="Deny" />
+    <input type="submit" name="action_allow_once" value="Allow Once" />
+    <input type="submit" name="action_deny" value="Deny" />
 </form>
 ...
 
@@ -150,9 +147,10 @@ authentication.
 
 >>> anon_browser.getControl('Deny').click()
 >>> print anon_browser.url
-http://launchpad.dev/+openid-consumer
+http://launchpad.dev/+openid-consumer?openid.mode=cancel
 >>> print anon_browser.contents
 Consumer received GET
+openid.mode=cancel
 <BLANKLINE>
 
 

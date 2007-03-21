@@ -21,25 +21,18 @@
         without confirming your identity.
     </p>
 
-    <table>
-        <tr><td>
-            <tal:comment condition="nothing">
-                The form method needs to be GET, as if we are not
-                authenticated the login system needs to issue redirects
-                (see canonical/launchpad/webapp/login.py 'Application error.
-                Unauthentiated user POSTing to page that requires
-                authentication.'
-            </tal:comment>
-            <form method="get" action=".">
-                <input type="hidden" name="token"
-                    tal:attributes="value view/token" />
-                <input type="submit" name="action" value="Allow Once" />
-            </form>
-        </td><td>
-            <form tal:attributes="action view/openid_request/getCancelURL">
-                <input type="submit" value="Deny" />
-            </form>
-        </td></tr>
-    </table>
+    <tal:comment condition="nothing">
+        The form method needs to be GET, as if we are not
+        authenticated the login system needs to issue redirects
+        (see canonical/launchpad/webapp/login.py 'Application error.
+        Unauthentiated user POSTing to page that requires
+        authentication.'
+    </tal:comment>
+    <form method="get" action=".">
+        <input type="hidden" name="token"
+            tal:attributes="value view/token" />
+        <input type="submit" name="action_allow_once" value="Allow Once" />
+        <input type="submit" name="action_deny" value="Deny" />
+    </form>
 </body>
 </html>

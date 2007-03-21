@@ -55,29 +55,32 @@ class OpenIdView(LaunchpadView):
         self.request.response
         """
         # Detect submission of the decide page
-        if (self.request.form.has_key('action') and
-                self.request.form['action'] == 'Allow Once'
-                ):
-            return self.renderOpenIdResponse(self.allowOnce())
+        if self.request.form.has_key('token'):
+            self.restoreSessionOpenIdRequest()
+            if self.request.form.get('action_deny'):
+                return self.renderOpenIdResponse(self.deny())
+            elif self.request.form.get('action_allow_once'):
+                return self.renderOpenIdResponse(self.allowOnce())
+            else:
+                raise UnexpectedFormData("Invalid action")
 
         # Not a form submission, so extract the OpenIDRequest from the request.
         try:
             # NB: Will be None if there are no parameters in the request.
-            openid_request = self.openid_server.decodeRequest(self.request.form)
+            self.openid_request = self.openid_server.decodeRequest(
+                self.request.form
+                )
         except ProtocolError, exception:
             return self.renderProtocolError(exception)
 
-        # Store as an attribute so our templates can access it.
-        self.openid_request = openid_request
-
         # Not an OpenID request, so display a message explaining what this
         # is to nosy users.
-        if openid_request is None:
+        if self.openid_request is None:
             return self.default_template()
 
-        if openid_request.mode in ['checkid_immediate', 'checkid_setup']:
+        if self.openid_request.mode in ['checkid_immediate', 'checkid_setup']:
 
-            self.login = self.extractName(openid_request.identity)
+            self.login = self.extractName(self.openid_request.identity)
             if self.login is None:
                 # Failed to extract the username from the identity, which
                 # means this is not a valid Launchpad identity.
@@ -93,13 +96,13 @@ class OpenIdView(LaunchpadView):
             if self.isAuthorized():
                 # User has previously allowed auth to this site, or we
                 # wish to force auth to be allowed to this site
-                openid_response = openid_request.answer(True)
+                openid_response = self.openid_request.answer(True)
 
-            elif openid_request.immediate:
+            elif self.openid_request.immediate:
                 # An immediate request has come through, but we can't
                 # approve it without asking the user. So report fail to
                 # the consumer.
-                openid_response = openid_request.answer(
+                openid_response = self.openid_request.answer(
                         False, allvhosts.configs['openid'].rooturl
                         )
             else:
@@ -108,7 +111,9 @@ class OpenIdView(LaunchpadView):
                 return self.showDecidePage()
 
         else:
-            openid_response = self.openid_server.handleRequest(openid_request)
+            openid_response = self.openid_server.handleRequest(
+                    self.openid_request
+                    )
 
         return self.renderOpenIdResponse(openid_response)
 
@@ -166,7 +171,7 @@ class OpenIdView(LaunchpadView):
         # rather than the session of a malicious connection attempting a
         # man-in-the-middle attack.
         token = '%s' % generate_uuid()
-        session = self._getSession()
+        session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
         now = time()
@@ -207,19 +212,42 @@ class OpenIdView(LaunchpadView):
 
         return False
 
+    def restoreSessionOpenIdRequest(self):
+        """Get the OpenIDRequest from our session using the token in the
+        request.
+        """
+        try:
+            token = self.request.form['token']
+        except LookupError:
+            raise UnexpectedFormData("No token in request")
+        session = self.getSession()
+        try:
+            timestamp, self.openid_request = session['token_' + token]
+        except LookupError:
+            raise UnexpectedFormData("Invalid or expired token")
+
+        assert zisinstance(self.openid_request, CheckIDRequest), \
+                'Invalid OpenIDRequest in session'
+
+    def trashSessionOpenIdRequest(self):
+        """Remove the OpenIdRequest from the session using the token in the
+        request.
+        """
+        try:
+            token = self.request.form['token']
+        except LookupError:
+            raise UnexpectedFormData("No token in request")
+        session = self.getSession()
+        try:
+            del session['token_' + token]
+        except LookupError:
+            pass
+
     def allowOnce(self):
         """Handle "Allow Once" selection from the decide page.
 
         Returns an OpenIDResponse.
         """
-        token = self.request.form['token']
-        session = self._getSession()
-        try:
-            timestamp, self.openid_request = session['token_' + token]
-        except LookupError:
-            # The token has expired. Just show the user the decide page again.
-            return self.showDecidePage()
-
         # If the user is not authenticated as the user owning the
         # identifier, bounce them to the login page.
         self.login = self.extractName(self.openid_request.identity)
@@ -227,13 +255,20 @@ class OpenIdView(LaunchpadView):
             raise Unauthorized(
                     "You are not yet authorized to use this OpenID identifier."
                     )
-
-        assert zisinstance(self.openid_request, CheckIDRequest), \
-                'Invalid request in session'
-
         return self.openid_request.answer(True)
 
-    def _getSession(self):
+    def deny(self):
+        """Handle "Deny" choice from the decide page.
+
+        Returns a negative OpenIDResponse and removes the OpenIDRequest from
+        the session immediately.
+        """
+        try:
+            return self.openid_request.answer(False)
+        finally:
+            self.trashSessionOpenIdRequest()
+
+    def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
     def renderProtocolError(self, exception):
