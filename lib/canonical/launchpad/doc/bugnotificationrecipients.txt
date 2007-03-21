@@ -1,6 +1,7 @@
 
 BugNotificationRecipients instances store email addresses mapped to the
-reason for which they are being notified in a certain bug.
+reason for which they are being notified in a certain bug. It implements
+the INotificationRecipientSet interface for bug notifications.
 
 == How it's used ==
 
@@ -12,6 +13,14 @@ action:
   >>> bug_one = Bug.get(1)
   >>> bug_two = Bug.get(2)
   >>> recipients = bug_one.getBugNotificationRecipients()
+
+The instance of BugNotificationRecipients we get back correctly
+implements INotificationRecipientSet:
+
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import INotificationRecipientSet
+  >>> verifyObject(INotificationRecipientSet, recipients)
+  True
 
 This instance contains email addresses and rationales. Let's define a
 helper function so we can format this output:
