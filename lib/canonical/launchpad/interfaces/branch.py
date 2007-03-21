@@ -362,8 +362,12 @@ class IBranchSet(Interface):
         the user branches if native.
         """
 
-    def getBranchSummaryForProducts(products):
-        """Return the branch count and last commit time for the products."""
+    def getActiveUserBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products.
+
+        Only active branches are counted (i.e. not Merged or Abandoned),
+        and only non import branches are counted.
+        """
 
     def getRecentlyChangedBranches(branch_count):
         """Return a list of branches that have been recently updated.

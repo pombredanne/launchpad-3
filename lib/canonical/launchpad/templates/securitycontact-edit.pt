@@ -15,7 +15,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Change security contact</h1>
 </metal:heading>
 

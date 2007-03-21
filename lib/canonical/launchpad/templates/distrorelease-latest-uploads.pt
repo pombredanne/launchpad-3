@@ -15,9 +15,9 @@
            Mark Shuttleworth
        </tal:creator>
     </a>
-    <tal:dateuploaded replace="source/age/fmt:approximateduration">
-       116 weeks ago
-    </tal:dateuploaded> ago
+    <tal:dateuploaded replace="source/dateuploaded/fmt:displaydate">
+       3 minutes ago
+    </tal:dateuploaded>
   </li>
 </ul>
 

@@ -12,7 +12,6 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/browsername">Steve Alexander</h3>
   <h1>Register a branch</h1>
 </metal:heading>
 

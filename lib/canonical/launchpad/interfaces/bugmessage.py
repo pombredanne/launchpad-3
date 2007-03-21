@@ -86,4 +86,5 @@ class IBugComment(IMessage):
         readonly=True)
     text_for_display = Text(
         title=u'The comment text to be displayed in the UI.', readonly=True)
+    display_title = Attribute('Whether or not to show the title.')
 

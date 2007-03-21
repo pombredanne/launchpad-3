@@ -11,7 +11,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1>Register a new mirror</h1>
 </metal:heading>
 

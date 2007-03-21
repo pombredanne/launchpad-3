@@ -48,7 +48,6 @@
 
     <p></p>
 
-    <div class="left">
       <table
         tal:condition="view/matches"
         tal:define="results view/searchresults"
@@ -77,34 +76,25 @@
         were found.
       </p>
 
-    </div>
-
-    <div class="right">
-
-      <h2>No luck?</h2>
+      <h2>Haven&#8217;t found your project?</h2>
 
       <p id="application-summary">
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
-
-      <p>
-        <a href="+new">&raquo;
-          Register a project</a>
-      </p>
-
-      <p>
-        <a href="+all">&raquo;
-          Browse the listing of all (!) projects</a>
-      </p>
-
-
-    </div>
+      <ul class="rollover buttons">
+        <li>
+          <a href="+new">
+            <img
+              alt="Register a project"
+              src="/+icing/but-lrg-registerproj.gif"
+            />
+          </a>
+        </li>
+      </ul>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-
-    <p></p>
 
     <div class="left">
 
@@ -124,7 +114,7 @@
       <h2>Latest registrations</h2>
           <ul tal:condition="context/latest" class="product">
             <li tal:repeat="product context/latest">
-              <tal:date replace="product/datecreated/fmt:date" />:
+              <tal:date replace="product/datecreated/fmt:approximatedate" />:
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/displayname"

@@ -23,8 +23,7 @@ import email
 import urllib
 
 from zope.app.form.browser import TextWidget
-from zope.app.form.interfaces import IInputWidget, WidgetsError, InputErrors
-from zope.app.form.utility import setUpWidgets
+from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -38,14 +37,12 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
-    IProjectBugAddForm, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm)
+    CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
+    ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
+    IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
 
@@ -139,6 +136,9 @@ class FileBugViewBase(LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
+
+    def contextIsProduct(self):
+        return IProduct.providedBy(self.context)
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -363,6 +363,24 @@ class FileBugViewBase(LaunchpadFormView):
         """See IBrowserPublisher."""
         return self, ()
 
+    def getProductOrDistroFromContext(self):
+        """Return the product or distribution relative to the context.
+
+        For instance, if the context is an IDistroRelease, return the
+        distribution related to it. Will return None if the context is
+        not related to a product or a distro.
+        """
+        context = self.context
+        if IProduct.providedBy(context) or IDistribution.providedBy(context):
+            return context
+        elif IProductSeries.providedBy(context):
+            return context.product
+        elif (IDistroRelease.providedBy(context) or
+              IDistributionSourcePackage.providedBy(context)):
+            return context.distribution
+        else:
+            return None
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
@@ -433,6 +451,9 @@ class FileBugGuidedView(FileBugViewBase):
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
         return self.showFileBugForm()
 
     def getSearchContext(self):
@@ -540,7 +561,6 @@ class FileBugGuidedView(FileBugViewBase):
 
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
-
 
 class ProjectFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProject."""

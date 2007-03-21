@@ -13,8 +13,8 @@ He was wondering who created that when he saw a very proeminent link, saying
     >>> import re
     >>> soup = BeautifulSoup(browser.contents)
     >>> print re.sub(r'\s+', ' ', soup('h1')[0].findNext('p').renderContents())
-    Alexander Limi does not use Launchpad. This page was created on
-    2005-06-06 <strong>when importing bugs from 
+    Alexander Limi does not use Launchpad. This page was created...
+    ...2005-06-06...<strong>when importing bugs from 
     http://bugzilla.ubuntu.com/</strong>.
 
     >>> browser.getLink("Hey, I'm Alexander Limi").click()

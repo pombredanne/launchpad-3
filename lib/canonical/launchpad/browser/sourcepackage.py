@@ -79,7 +79,8 @@ def linkify_changelog(changelog, sourcepkgnametxt):
 class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
-        return self.context.distrorelease.displayname + ' source package:'
+        return self.context.distribution.displayname + ' ' + \
+               self.context.distrorelease.version + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename
