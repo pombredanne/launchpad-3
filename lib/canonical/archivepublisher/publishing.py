@@ -179,8 +179,8 @@ class Publisher(object):
 
         Otherwise, return False.
         """
-        if (self.allowed_suites and not
-            (distrorelease.name, pocket) in self.allowed_suites):
+        if (self.allowed_suites and
+            (distrorelease.name, pocket) not in self.allowed_suites):
             return False
         return True
 
