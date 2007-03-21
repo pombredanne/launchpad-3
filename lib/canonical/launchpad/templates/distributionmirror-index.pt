@@ -68,7 +68,7 @@
         <p>This mirror was last verified
           <span
             tal:attributes="title probe/date_created/fmt:datetime"
-            tal:content="probe/date_created/fmt:displaydate" />.
+            tal:content="probe/date_created/fmt:approximatedate" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
