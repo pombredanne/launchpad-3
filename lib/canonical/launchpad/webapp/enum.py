@@ -159,7 +159,7 @@ class DBSchemaItem:
             warnings.warn('comparison of DBSchema Item to an int: %r' % self,
                 stacklevel=stacklevel)
             return False
-        elif zope_isinstance(other, Item):
+        elif zope_isinstance(other, DBSchemaItem):
             return self.value == other.value and self.schema == other.schema
         else:
             return False

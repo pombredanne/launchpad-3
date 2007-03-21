@@ -472,7 +472,7 @@
     </class>
 
     <!-- enum classes Item and OrderedMapping -->
-    <class class="canonical.launchpad.webapp.enum.Item">
+    <class class="canonical.launchpad.webapp.enum.DBSchemaItem">
         <allow attributes="name title value description schema
                            schema_items schema_name sortkey __sqlrepr__" />
     </class>
