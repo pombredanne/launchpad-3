@@ -34,7 +34,7 @@ name appears in the 'Subscribers' portlet:
     >>> portlet.first('h2')
     <h2>Subscribers to question #2</h2>
     >>> portlet.first('ul')
-    <ul class="people">
+    <ul class="person">
       <li>
         <a href="http://answers.launchpad.dev/~no-priv">No Privileges
             Person</a>

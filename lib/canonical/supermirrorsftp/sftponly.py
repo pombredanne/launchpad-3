@@ -140,6 +140,8 @@ components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
 class Realm:
     implements(IRealm)
 
+    avatarFactory = SFTPOnlyAvatar
+
     def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot
         self.authserver = authserver
@@ -174,8 +176,8 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot, userDict,
-                                    self.authserver)
+            avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
+                                        self.authserver)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
@@ -254,8 +256,12 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         self._dirtyBranches.add(branchID)
 
     def sendMirrorRequests(self):
-        for branch in self._dirtyBranches:
-            self._launchpad.requestMirror(branch)
+        """Request that all changed branches be mirrored. Return a deferred
+        which fires when each request has received a response from the server.
+        """
+        deferreds = [self._launchpad.requestMirror(branch)
+                     for branch in self._dirtyBranches]
+        return defer.gatherResults(deferreds)
 
     def connectionLost(self, reason):
         self.sendMirrorRequests()

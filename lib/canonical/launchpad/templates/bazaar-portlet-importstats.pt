@@ -13,7 +13,6 @@
         <li>Syncing: <span tal:replace="view/syncing_count">3</span></li>
         <li>Stopped: <span tal:replace="view/stopped_count">3</span></li>
         <li>Total: <span tal:replace="view/import_count">23</span></li>
-        <li>HCT Enabled: <span tal:replace="view/hct_count">21</span></li>
       </ul>
     </div>
   </div>

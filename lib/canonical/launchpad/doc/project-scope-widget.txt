@@ -28,16 +28,26 @@ The widget complies to both IInputWidget and IBrowserWidget.
     >>> verifyObject(IBrowserWidget, widget)
     True
 
-When the request is empty, the widet doesn't have any input:
+When the request is empty, the widget doesn't have any input:
 
     >>> widget.hasInput()
     False
     >>> widget.hasValidInput()
     False
 
-It's a radio widget, so it assumes that it always will have input, so if
-it doesn't it raises UnexpectedFormData
+It's a radio widget, so it assumes that it always will have input. If
+the widget isn't required, getInputValue() returns None if there
+isn't any input.
 
+    >>> widget.required
+    False
+    >>> widget.getInputValue() is None
+    True
+
+If the widget is required, getInputValue() raises UnexpectedFormData if
+there is no input.
+
+    >>> widget.required = True
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -173,9 +183,11 @@ button, as well as displaying the product name in the project widget.
              onclick="document.getElementById('field.scope.target').focus();"
              type="radio" value="project" />
     ...
-      <input type="text" name="field.scope.target"
-             onkeypress="selectWidget('field.scope.option.project', event)"
-             value="mozilla" id="field.scope.target" size="20" />
+      <input type="text" value="mozilla" id="field.scope.target"
+             name="field.scope.target" size="20"
+             maxlength=""
+             onKeyPress="selectWidget('field.scope.option.project', event)" style=""
+             class="" />
     ...
 
 Setting the scope to None, will default to the 'All projects' option.
