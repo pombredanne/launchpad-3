@@ -342,18 +342,6 @@ class TestErrorHandling(unittest.TestCase):
         expected_msg = 'Unknown branch format:'
         self._runMirrorAndCheckError(expected_msg)
 
-## XXX - Commented out to resolve conflict. Let's find out if it works.
-## Jonathan Lange, 2007-03-21
-##         self.errors = []
-##         def stubOpenSourceBranch():
-##             raise UnknownFormatError(
-##                 format='Loads of junk\n with two or more\n newlines.')
-##         self.branch._openSourceBranch = stubOpenSourceBranch
-##         expected_msg = 'Not a branch'
-##         self._runMirrorAndCheckError(expected_msg)
-## =======
-## >>>>>>> MERGE-SOURCE
-
     def testParamikoNotPresent(self):
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')

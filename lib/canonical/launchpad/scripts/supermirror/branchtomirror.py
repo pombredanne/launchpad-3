@@ -158,13 +158,6 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnknownFormatError, e:
-## XXX - Commented out to resolve conflict. Let's find out if it works.
-## Jonathan Lange, 2007-03-21
-##             if e.format.count('\n') >= 2:
-##                 msg = 'Not a branch'
-##             else:
-##                 msg = 'Unknown branch format: %s' % e.format
-##             self._mirrorFailed(logger, msg)
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
