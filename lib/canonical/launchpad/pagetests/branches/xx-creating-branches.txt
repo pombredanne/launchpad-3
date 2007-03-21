@@ -8,7 +8,7 @@ First, check that the +addbranch link is visible on product overview page and
 the product code facet page.
 
   >>> user_browser.open('http://launchpad.dev/applets')
-  >>> link = user_browser.getLink('Register Bazaar Branch')
+  >>> link = user_browser.getLink('Register branch')
   >>> print link.url
   http://launchpad.dev/applets/+addbranch
 
@@ -18,7 +18,7 @@ the product code facet page.
 
 Let's make sure we can load the branch creation form on a product.
 
-  >>> user_browser.getLink('Register Bazaar Branch').click()
+  >>> user_browser.getLink('Register branch').click()
   >>> print user_browser.url
   http://code.launchpad.dev/applets/+addbranch
 
@@ -74,7 +74,7 @@ We can also create a branch from a person's page. First, check that the
 
   >>> user_browser.open('http://launchpad.dev/~lifeless')
   >>> user_browser.getLink('Code').click()
-  >>> print user_browser.getLink('Register Branch').url
+  >>> print user_browser.getLink('Register branch').url
   http://code.launchpad.dev/~lifeless/+addbranch
 
 
