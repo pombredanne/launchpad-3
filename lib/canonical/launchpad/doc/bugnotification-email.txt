@@ -536,11 +536,12 @@ The From address generator handles a few special cases. The trivial case
 is, well, trivial. Stuart has four email addresses:
 
     >>> stub = getUtility(IPersonSet).getByName("stub")
-    >>> [email.email for email in getUtility(IEmailAddressSet).getByPerson(stub)]
-    [u'stuart.bishop@canonical.com',
-     u'stuart@stuartbishop.net',
-     u'stub@fastmail.fm',
-     u'zen@shangri-la.dropbear.id.au']
+    >>> [(email.email, email.status.name) for email 
+    ...  in getUtility(IEmailAddressSet).getByPerson(stub)]
+    [(u'stuart.bishop@canonical.com', 'PREFERRED'),
+     (u'stuart@stuartbishop.net', 'VALIDATED'),
+     (u'stub@fastmail.fm', 'NEW'),
+     (u'zen@shangri-la.dropbear.id.au', 'OLD')]
 
 But we use his preferred one:
 
