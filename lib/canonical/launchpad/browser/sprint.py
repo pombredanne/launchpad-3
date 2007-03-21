@@ -8,8 +8,10 @@ __all__ = [
     'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
+    'SprintSetFacets',
     'SprintSetContextMenu',
     'SprintSetNavigation',
+    'SprintSetSOP',
     'SprintView',
     'SprintAddView',
     'SprintEditView',
@@ -20,27 +22,27 @@ __all__ = [
 import pytz
 
 from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
 
-from canonical.launchpad.interfaces import (
-    ISprint, ISprintSet, validate_date_interval)
-
+from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-
-from canonical.lp.dbschema import (
-    SpecificationFilter,
-    SpecificationPriority,
-    SpecificationSort,
-    SpecificationStatus,
-    )
-
+from canonical.launchpad.interfaces import ISprint, ISprintSet
 from canonical.launchpad.webapp import (
-    enabled_with_permission, canonical_url, ContextMenu, Link,
-    GeneralFormView, GetitemNavigation, Navigation, ApplicationMenu,
-    StandardLaunchpadFacets, LaunchpadView)
-
+    ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission)
 from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation)
+from canonical.lp.dbschema import (
+    SpecificationFilter, SpecificationPriority, SpecificationSort,
+    SpecificationStatus)
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -50,7 +52,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
@@ -70,18 +72,18 @@ class SprintOverviewMenu(ApplicationMenu):
     links = ['attendance', 'registration', 'edit']
 
     def attendance(self):
-        text = 'Register Yourself'
+        text = 'Register yourself'
         summary = 'Register as an attendee of the meeting'
         return Link('+attend', text, summary, icon='add')
 
     def registration(self):
-        text = 'Register Someone'
+        text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         summary = 'Modify the meeting description, dates or title'
         return Link('+edit', text, summary, icon='edit')
 
@@ -98,13 +100,13 @@ class SprintSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def declined(self):
-        text = 'Declined Topics'
+        text = 'List declined blueprints'
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
-        text = 'Set Topics'
+        text = 'Set agenda'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
 
@@ -122,14 +124,48 @@ class SprintSetNavigation(GetitemNavigation):
         return 'Meetings'
 
 
+class SprintSetFacets(StandardLaunchpadFacets):
+    """The facet menu for an ISprintSet."""
+
+    usedfor = ISprintSet
+    enable_only = ['overview', ]
+
+
+class SprintSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'Meetings and Sprints'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['new']
+    links = ['products', 'distributions', 'people', 'sprints', 'new']
 
     def new(self):
-        text = 'Register New Meeting'
+        text = 'Register a meeting'
         return Link('+new', text, icon='add')
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def sprints(self):
+        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
@@ -139,6 +175,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def initialize(self):
         self.notices = []
         self.latest_specs_limit = 5
+        self.tzinfo = pytz.timezone(self.context.time_zone)
 
     def attendance(self):
         """establish if this user is attending"""
@@ -171,71 +208,115 @@ class SprintView(HasSpecificationsView, LaunchpadView):
                     quantity=self.latest_specs_limit,
                     sort=SpecificationSort.DATE)
 
+    def formatDateTime(self, dt):
+        """Format a datetime value according to the sprint's time zone"""
+        dt = dt.astimezone(self.tzinfo)
+        return dt.strftime('%Y-%m-%d %H:%M:%S %Z')
 
-class BaseSprintView(GeneralFormView):
-    """Base View for Add and Edit sprint views"""
-
-    def validate(self, form_data):
-        """Verify that the starting date precedes the ending date."""
-        time_starts = form_data['time_starts']
-        time_ends = form_data['time_ends']
-        validate_date_interval(time_starts, time_ends)
-
-    def localize_dates(self, dates, timezone):
-        """Return a list of localized datetime objects."""
-        localized_dates = []
-        tz = pytz.timezone(timezone)
-        for date in dates:
-            localized_dates.append(tz.localize(date.replace(tzinfo=None)))
-        return localized_dates
+    def formatDate(self, dt):
+        """Format a date value according to the sprint's time zone"""
+        dt = dt.astimezone(self.tzinfo)
+        return dt.strftime('%Y-%m-%d')
 
 
-class SprintAddView(BaseSprintView):
+class SprintAddView(LaunchpadFormView):
+    """Form for creating sprints"""
 
-    def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None):
-        """Create a new Sprint."""
-        # localize dates to the timezone entered by the user.
-        time_starts, time_ends = self.localize_dates(
-            [time_starts, time_ends], time_zone)
-        sprint = getUtility(ISprintSet).new(self.user, name, title,
-            time_zone, time_starts, time_ends, summary=summary,
-            driver=driver, home_page=home_page)
-        self._nextURL = canonical_url(sprint)
+    schema = ISprint
+    label = "Register a meeting"
+    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'gotchi', 'emblem']
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('address', TextAreaWidget, height=3)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
+    sprint = None
 
-class SprintEditView(BaseSprintView):
+    def setUpWidgets(self):
+        LaunchpadFormView.setUpWidgets(self)
+        time_zone_widget = self.widgets['time_zone']
+        if time_zone_widget.hasValidInput():
+            tz = time_zone_widget.getInputValue()
+            self.widgets['time_starts'].timeZoneName = tz
+            self.widgets['time_ends'].timeZoneName = tz
+
+    def validate(self, data):
+        time_starts = data.get('time_starts')
+        time_ends = data.get('time_ends')
+        if time_starts and time_ends and time_ends < time_starts:
+            self.setFieldError(
+                'time_ends', "This event can't start after it ends")
+
+    @action(_('Add Sprint'), name='add')
+    def add_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
+        self.sprint = getUtility(ISprintSet).new(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            home_page=data['home_page'],
+            driver=data['driver'],
+            time_zone=data['time_zone'],
+            time_starts=data['time_starts'],
+            time_ends=data['time_ends'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
+            emblem=data['emblem'])
+        self.request.response.addInfoNotification('Sprint created.')
 
     @property
-    def initial_values(self):
-        sprint = self.context
-        time_starts, time_ends = self.localize_dates(
-            [sprint.time_starts, sprint.time_ends], sprint.time_zone)
-        return {
-            'name': sprint.name,
-            'title': sprint.title,
-            'time_zone': sprint.time_zone,
-            'time_starts': time_starts,
-            'time_ends': time_ends,
-            'summary': sprint.summary,
-            'driver': sprint.driver,
-            'home_page': sprint.home_page}
+    def next_url(self):
+        assert self.sprint is not None, 'No sprint has been created'
+        return canonical_url(self.sprint)
 
-    def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None, address=None):
-        """Edit a Sprint."""
-        sprint = self.context
-        # localize dates to the timezone entered by the user.
-        sprint.time_starts, sprint.time_ends = self.localize_dates(
-            [time_starts, time_ends], time_zone)
-        sprint.name = name
-        sprint.title = title
-        sprint.time_zone = time_zone
-        sprint.summary = summary
-        sprint.driver = driver
-        sprint.home_page = home_page
-        sprint.address = address
-        self._nextURL = canonical_url(sprint)
+
+class SprintEditView(LaunchpadEditFormView):
+    """Form for editing sprints"""
+
+    schema = ISprint
+    label = "Edit sprint details"
+    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'gotchi', 'emblem']
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('time_starts', LocalDateTimeWidget)
+    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('address', TextAreaWidget, height=3)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    def setUpWidgets(self):
+        LaunchpadEditFormView.setUpWidgets(self)
+        time_zone_widget = self.widgets['time_zone']
+        # What time zone are the start and end values relative to?
+        if time_zone_widget.hasValidInput():
+            tz = time_zone_widget.getInputValue()
+        else:
+            tz = self.context.time_zone
+        self.widgets['time_starts'].timeZoneName = tz
+        self.widgets['time_ends'].timeZoneName = tz
+
+    def validate(self, data):
+        time_starts = data.get('time_starts')
+        time_ends = data.get('time_ends')
+        if time_starts and time_ends and time_ends < time_starts:
+            self.setFieldError(
+                'time_ends', "This event can't start after it ends")
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):

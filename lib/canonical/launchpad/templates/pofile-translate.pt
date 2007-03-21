@@ -18,19 +18,36 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
-      <h1>
-        <tal:productseries
-          condition="exists:context/potemplate/productseries/displayname"
-          tal:replace="context/potemplate/productseries/displayname"
-        />
-        <tal:sourcepackage
-          condition="exists:context/potemplate/sourcepackagename"
-          replace="context/potemplate/sourcepackagename"
-        />
-        into
-        <tal:language replace="context/language/englishname" />
-      </h1>
+      <tal:notloggedin condition="not:request/lp:person">
+        <div>You are browsing</div>
+        <h1>
+          <tal:productseries
+            condition="exists:context/potemplate/productseries/displayname"
+            tal:replace="context/potemplate/productseries/displayname"
+          />
+          <tal:sourcepackage
+            condition="exists:context/potemplate/sourcepackagename"
+            replace="context/potemplate/sourcepackagename"
+          />
+          in
+          <tal:language replace="context/language/englishname" />
+        </h1>
+      </tal:notloggedin>
+      <tal:loggedin condition="request/lp:person">
+        <div>You are translating</div>
+        <h1>
+          <tal:productseries
+            condition="exists:context/potemplate/productseries/displayname"
+            tal:replace="context/potemplate/productseries/displayname"
+          />
+          <tal:sourcepackage
+            condition="exists:context/potemplate/sourcepackagename"
+            replace="context/potemplate/sourcepackagename"
+          />
+          in
+          <tal:language replace="context/language/englishname" />
+        </h1>
+      </tal:loggedin>
       <div class="discreet">
         Template: <tal:template replace="context/title" />
       </div>
@@ -63,11 +80,9 @@
           <!-- the hidden elements -->
           <input tal:condition="view/second_lang_code"
                  tal:replace="structure view/alternative_language_widget/hidden" />
-          <input type="hidden" name="start" value=""
-                 tal:attributes="value view/start" />
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
-          <label>Show:</label>
+          <label for="show_selector">Show:</label>
 
           <tal:comment tal:replace="nothing">
             The 'selected' attribute value in next select means basically
@@ -82,7 +97,8 @@
             'translated'.
           </tal:comment>
 
-          <select name="show" title="Choose which items to show">
+          <select id="show_selector" name="show"
+                  title="Choose which items to show">
             <option value="all"
               tal:attributes="selected
               request/htmlform:show/selected/all"
@@ -120,17 +136,15 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="+translate">
+          <form method="POST" action="">
             <!-- the hidden elements -->
-            <input tal:condition="view/second_lang_code"
-                   tal:replace="structure view/alternative_language_widget/hidden" />
-            <input type="hidden" name="show"
-                   tal:condition="view/show"
-                   tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
+            <input type="hidden" name="lock_timestamp" value=""
+                   tal:condition="request/lp:person"
+                   tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
                 <tr class="results">
@@ -140,25 +154,24 @@
                   </td>
                 </tr>
               </thead>
-              <tbody class="greater">
+              <tbody class="greater" id="messages_to_translate">
                 <tal:loop repeat="pomsgset_view view/pomsgset_views">
                   <div tal:replace="structure pomsgset_view" />
                 </tal:loop>
               </tbody>
               <tfoot>
-                <tr>
+                <tr tal:condition="request/lp:person">
                   <th colspan="5">
                     <tal:review
                       condition="not: view/user_is_official_translator"
                     >
-                      Your translations will be held for review by the official
-                      translators for this file.
+                      Your translations will be held for review by the
+                      official translators for this file.
                     </tal:review>
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"
-                           tabindex="1" />
+                           style="text-align: right;"/>
                   </th>
                 </tr>
               </tfoot>

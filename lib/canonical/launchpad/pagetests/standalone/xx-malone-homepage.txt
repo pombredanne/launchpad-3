@@ -1,12 +1,9 @@
-Say hello to Malone. :)
+Say hello to Bugs. :)
 
-  >>> print http(r"""
-  ... GET /malone HTTP/1.1
-  ... Cookie: wstyle=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...<h2>Bugs...</h2>
+  >>> browser.open('http://bugs.launchpad.dev/')
+  >>> browser.url
+  'http://bugs.launchpad.dev/'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Bug tracking...
   ...

@@ -4,7 +4,7 @@ the Debian task on bug #1.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
 
 There's currently a bug watch linked to the task.
@@ -51,7 +51,7 @@ been reset to Unconfirmed.
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
@@ -67,7 +67,7 @@ Let's try to actually edit the status to see that it works:
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
@@ -76,7 +76,7 @@ Let's try to actually edit the status to see that it works:
 From the edit page we can also create a new bug watch:
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
@@ -92,17 +92,19 @@ From the edit page we can also create a new bug watch:
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
-    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'
+    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
 
-We can see that the Debian task is linked to the newly created bug
-watch.
+The Debian task is linked to the newly created bug watch.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> debian_tr = soup.first('tr', {'class': 'highlight'})
+    >>> debian_link = soup.first(
+    ...     'a',
+    ...     {'href': 'http://localhost/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
+    >>> debian_tr = debian_link.parent.parent.parent
     >>> for td_tag in debian_tr('td'):
     ...     print td_tag
-    <td...> <a...>mozilla-firefox (Debian)</a> </td>
+    <td...>...<a...>mozilla-firefox (Debian)</a>...</td>
     ...
     <td...> <a...> debbugs #1 </a> </td>
 
@@ -110,7 +112,7 @@ If we try to add an already existing bug watch, a new one won't be
 created, instead the old one will be used.
 
     >>> browser.open(
-    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     'http://localhost/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
@@ -126,7 +128,7 @@ created, instead the old one will be used.
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
-    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'
+    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
 
     >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.fetch('li'):
@@ -136,4 +138,3 @@ created, instead the old one will be used.
     mozilla.org #42
     debbugs #1
     debbugs #304014
-

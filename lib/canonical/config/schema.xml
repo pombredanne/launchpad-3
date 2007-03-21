@@ -102,10 +102,30 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="script_errorreports">
+        <key name="errordir" datatype="string" required="no">
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
+        <key name="oops_prefix" datatype="string" required="yes">
+            <description>
+                A prefix for "OOPS" codes for this script.
+k            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
+    </sectiontype>
+
+
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
-            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            default="demo.launchpad.net, staging.launchpad.net, launchpad.net, launchpad.dev">
             <description>
                 Session cookies being sent to a subdomain of the parent
                 domains listed here will be sent to the parent domain,
@@ -171,6 +191,15 @@
                 puller to use, not for public URLs.
             </description>
         </key>
+        <key name="codebrowse_root" datatype="canonical.config.urlbase"
+             default="http://codebrowse.launchpad.net/">
+            <description>
+                The URL prefix for links to the Bazaar code browser.
+                Links are formed by appending the branch's unique name
+                to the root URL.
+            </description>
+            <example>http://codebrowse.launchpad.net/</example>
+        </key>
         <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
                 Number of seconds a blob stored in the temporary blob storage
@@ -197,6 +226,13 @@
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
+        <key name="beta_testers_redirection_host" datatype="string"
+             required="no">
+            <description>
+                If set, the host name to redirect beta testers to.
+            </description>
+            <example>beta.launchpad.net</example>
+        </key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>
@@ -472,6 +508,12 @@
             Configuration for Rosetta admin tools
         </description>
         <key name="dbuser" datatype="string" default="rosettaadmin" />
+        <key name="email" datatype="string" default="rosetta@launchpad.net">
+            <description>
+                From-address used in PO import, export and language pack
+                notifications.
+            </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="poimport">
@@ -502,11 +544,18 @@
             This utility is resposible for GPG operations like:
         sign/verify and encrypt/decrypt. it needs a "home" to allocate
         the runtime build configuration file and keyring and an
-        addresss, "host:port",  pointing a reliable keyserver.
+        address, "host:port",  pointing a reliable keyserver.
         </description>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
                 Host running PKS-like (SKS) keyserver Application.
+            </description>
+        </key>
+        <key name="public_host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                A public host running PKS-like (SKS) keyserver Application.
+                This option is used to display links in the UI referring to
+                the public keyserver.
             </description>
         </key>
         <key name="port" datatype="port-number" required="yes">
@@ -559,6 +608,13 @@
                 reply.
             </description>
         </key>
+        <key name="localhost_only" datatype="boolean" default="false">
+            <description>
+                If true, the mirror prober will only try to connect to
+                localhost; all other hosts it'll return a success without
+                even trying to connect.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="expiredmembershipsflagger">
@@ -607,7 +663,7 @@
         </key>
     </sectiontype>
 
-    <sectiontype name="tickettracker">
+    <sectiontype name="answertracker">
         <key name="dbuser" datatype="string" default="tickettracker">
             <description>
                 The database user wich will be used to expire tickets.
@@ -744,6 +800,10 @@
              default="noreply@launchpad.net"/>
     </sectiontype>
 
+    <sectiontype name="mirror_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="upload_puller_errorreports" extends="script_errorreports" />
+    <sectiontype name="import_puller_errorreports" extends="script_errorreports" />
+
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
@@ -762,6 +822,12 @@
                 URL prepended to branch ids to obtain internal branch URLs.
             </description>
         </key>
+        <section name="*" type="mirror_puller_errorreports"
+            attribute="mirror_errorreports" required="no" />
+        <section name="*" type="upload_puller_errorreports"
+            attribute="upload_errorreports" required="no" />
+        <section name="*" type="import_puller_errorreports"
+            attribute="import_errorreports" required="no" />
     </sectiontype>
 
     <sectiontype name="branchscanner">
@@ -770,6 +836,8 @@
                 The database user for the branch-scanner to update branches.
             </description>
         </key>
+        <section name="*" type="script_errorreports" attribute="errorreports"
+            required="no" />
     </sectiontype>
 
     <sectiontype name="supermirrorsftp">
@@ -830,7 +898,7 @@
         <section name="*" type="targetnamecacheupdater"
             attribute="targetnamecacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
-        <section name="*" type="tickettracker" attribute="tickettracker" />
+        <section name="*" type="answertracker" attribute="answertracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />

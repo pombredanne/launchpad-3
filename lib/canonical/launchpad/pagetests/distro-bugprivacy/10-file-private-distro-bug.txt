@@ -3,7 +3,7 @@ redirected to the bug page. (Note that only the advanced bug
 filing page, not the simple one, supports filing security bugs.)
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
 will be subscribed instead.
@@ -22,7 +22,7 @@ will be subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/11
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/13
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -30,12 +30,12 @@ will be subscribed instead.
 
 Foo Bar sees the private bug he filed.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...
     ...Ubuntu Linux...
-    ...<a...>...11...</a>...
+    ...<a...>...13...</a>...
 
 Foo Bar and the Ubuntu Team are subscribed to the bug.
 
@@ -45,7 +45,7 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(11)
+    >>> bug = getUtility(IBugSet).get(13)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'ubuntu-team']
@@ -55,11 +55,11 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 Now let's set an Ubuntu security team, and see how the filebug page and
 subscriptions differ.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+securitycontact")
+    >>> browser.open("http://launchpad.dev/ubuntu/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name12"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -75,13 +75,13 @@ subscriptions differ.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/12
+    http://launchpad.dev/ubuntu/+source/evolution/+bug/14
 
 Now only the reporter and /security contact/ are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(12)
+    >>> bug = getUtility(IBugSet).get(14)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']

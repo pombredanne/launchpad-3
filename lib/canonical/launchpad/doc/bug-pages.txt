@@ -232,14 +232,14 @@ duplicate link remains in the current context.
 
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> bug_six = bugset.get(6)
 
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
     >>> print bug_page_view.getDupeBugLink(bug_six)
-    http://.../products/firefox/+bug/6
+    http://.../firefox/+bug/6
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.
@@ -248,11 +248,10 @@ and see how the returned link changes.
     >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
-
 
 Bug Navigation
 --------------
@@ -356,58 +355,189 @@ we can't know if the user is subscribed or not.
     >>> bug_menu.subscription().icon
     'edit'
 
-Subscribers from duplicates have the option to unsubscribe as well. For
-example, Steve Alexander can currently subscribe to bug #3.
+    Subscribers from duplicates have the option to unsubscribe as well. For
+    example, Steve Alexander can currently subscribe to bug #3.
 
-    >>> bug_three = bugset.get(3)
-    >>> bug_three_bugtask = bug_three.bugtasks[0]
-    >>> getUtility(IOpenLaunchBag).clear()
-    >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
+        >>> bug_three = bugset.get(3)
+        >>> bug_three_bugtask = bug_three.bugtasks[0]
+        >>> getUtility(IOpenLaunchBag).clear()
+        >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
 
-    >>> login("steve.alexander@ubuntulinux.com")
+        >>> login("steve.alexander@ubuntulinux.com")
 
-    >>> bug_menu = BugContextMenu(bug_three_bugtask)
-    >>> bug_menu.subscription().text
-    'Subscribe'
+        >>> bug_menu = BugContextMenu(bug_three_bugtask)
+        >>> bug_menu.subscription().text
+        'Subscribe'
 
-Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
-a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-is presented with the Unsubscribe link.
+    Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
+    a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
+    is presented with the Unsubscribe link.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
+        >>> from canonical.launchpad.ftests import syncUpdate
 
-    >>> bug_two.duplicateof = bug_three
-    >>> syncUpdate(bug_two)
+        >>> bug_two.duplicateof = bug_three
+        >>> syncUpdate(bug_two)
 
-    >>> bug_menu.subscription().text
-    'Unsubscribe'
+        >>> bug_menu.subscription().text
+        'Unsubscribe'
 
-Now, let's revert that duplicate marking and demonstrate it again, this
-time where the subscription from the duplicate is of a /team/ of which
-the current user is a member. So, for Foo Bar, bug #3 has a simple
-Subscribe link initially.
+    Now, let's revert that duplicate marking and demonstrate it again, this
+    time where the subscription from the duplicate is of a /team/ of which
+    the current user is a member. So, for Foo Bar, bug #3 has a simple
+    Subscribe link initially.
 
-    >>> bug_two.duplicateof = None
-    >>> syncUpdate(bug_two)
+        >>> bug_two.duplicateof = None
+        >>> syncUpdate(bug_two)
+
+        >>> login("foo.bar@canonical.com")
+
+        >>> bug_menu.subscription().text
+        'Subscribe'
+
+    Now let's subscribe Ubuntu Team directly to bug #2. When bug #2 is duped
+    against bug #3, the link changes to Subscribe/Unsubscribe, because Foo
+    Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
+    indirectly subscribed to bug #3 from the dupe, bug #2.
+
+        >>> bug_two.subscribe(getUtility(IPersonSet).getByName("ubuntu-team"))
+        <BugSubscription...>
+
+        >>> bug_two.duplicateof = bug_three
+        >>> syncUpdate(bug_two)
+
+        >>> bug_menu.subscription().text
+        'Subscribe/Unsubscribe'
+
+BugTasks and Nominations Table
+------------------------------
+
+A table is rendered at the top of the bug page which shows both bugtasks
+and nominations. This table is rendered with the
++bugtasks-and-nomination-table view.
+
+    >>> request = LaunchpadTestRequest()
+
+    >>> bugtasks_and_nominations_view = getView(
+    ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
+
+The getBugTasksAndNominations method returns a list of bugtasks and
+nominations to render in the table, sorted by bugtargetname. Approved
+nominations are not included in the returned results, because an
+approved nomination will have created a task anyway.
+
+    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+
+    >>> def get_object_type(task_or_nomination):
+    ...     if IBugTask.providedBy(task_or_nomination):
+    ...         return "bugtask"
+    ...     elif IBugNomination.providedBy(task_or_nomination):
+    ...         return "nomination"
+    ...     else:
+    ...         return "unknown"
+
+    >>> def print_tasks_and_nominations(tasks_and_nominations):
+    ...     for task_or_nomination in tasks_and_nominations:
+    ...         print "%s, %s, %s" % (
+    ...             get_object_type(task_or_nomination),
+    ...             task_or_nomination.status.title,
+    ...             task_or_nomination.target.bugtargetname)
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Nominated, Ubuntu Hoary
+
+Let's nominate the bug for upstream and an Ubuntu release and see how
+the list changes.
+
+(Login as an unprivileged user to be able to nominate.)
+
+    >>> login("no-priv@canonical.com")
+
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> firefox_trunk = firefox.getSeries("trunk")
+
+    >>> bug_one.addNomination(current_user, target=ubuntu_warty)
+    <BugNomination ...>
+    >>> bug_one.addNomination(current_user, target=firefox_trunk)
+    <BugNomination ...>
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
+
+Let's add another affected package in Ubuntu to the bug.
+
+    >>> evolution = ubuntu.getSourcePackage("evolution")
+
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> bugtaskset.createTask(
+    ...     owner=current_user, bug=bug_one,
+    ...     distribution=evolution.distribution,
+    ...     sourcepackagename=evolution.sourcepackagename)
+    <BugTask ...>
+
+A nomination row will be included for evolution now too.
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Nominated, Ubuntu Hoary
+    nomination, Nominated, Ubuntu Warty
+
+When a nomination is approved, it turns into a task; the nomination is
+no longer shown. Declined nominations continue to be shown.
+
+(First, login as an admin, to ensure we have the privileges to
+approve/decline nominations.)
 
     >>> login("foo.bar@canonical.com")
+    >>> current_user = getUtility(ILaunchBag).user
 
-    >>> bug_menu.subscription().text
-    'Subscribe'
+    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
+    >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
 
-Now let's subscribe Ubuntu Team directly to bug #2. When bug #2 is duped
-against bug #3, the link changes to Subscribe/Unsubscribe, because Foo
-Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
-indirectly subscribed to bug #3 from the dupe, bug #2.
+    >>> hoary_nomination.approve(current_user)
+    >>> warty_nomination.decline(current_user)
 
-    >>> bug_two.subscribe(getUtility(IPersonSet).getByName("ubuntu-team"))
-    <BugSubscription...>
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
-    >>> bug_two.duplicateof = bug_three
-    >>> syncUpdate(bug_two)
-
-    >>> bug_menu.subscription().text
-    'Subscribe/Unsubscribe'
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Nominated, firefox 1.0 (upstream)
+    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
 
 Bug Edit Page
 =============

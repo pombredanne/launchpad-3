@@ -3,11 +3,11 @@
 It is possible to create a link between a specification with the "Link
 Branch" menu item on the specification page:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/distros/ubuntu/'
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
   ...                   '+spec/media-integrity-check')
   >>> user_browser.getLink('Link branch').click()
   >>> print user_browser.url
-  http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+linkbranch
+  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+linkbranch
 
 When creating a link to a branch, the link must not already exist.
 There exists a link between the media-integrity-check branch and the
@@ -17,7 +17,7 @@ junk.dev branch, so we get an error:
   >>> user_browser.getControl('Summary').value = 'Summary text'
   >>> user_browser.getControl('Link to Specification').click()
   >>> print user_browser.url
-  http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+linkbranch
+  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+linkbranch
 
   >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
   ...     print tag.renderContents()
@@ -31,7 +31,7 @@ link:
   >>> user_browser.getControl('Branch').value = '~name12/+junk/junk.contrib'
   >>> user_browser.getControl('Link to Specification').click()
   >>> print user_browser.url
-  http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check
+  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
 
 
 == Linked Branches Portlet ==
@@ -43,13 +43,13 @@ portlet will be visible:
   <...
   <ul class="branch">
   <li>
-  <a href="http://blueprints.launchpad.dev/people/name12/+branch/+junk/junk.dev">Ubuntu Junk Code</a>
-  <a href="http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.dev">Ubuntu Junk Code</a>
+  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>This branch should fix the issue</i>
   </li>
   <li>
-  <a href="http://blueprints.launchpad.dev/people/name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>Summary text</i>
   </li>
   </ul>
@@ -58,12 +58,12 @@ portlet will be visible:
 Note that the edit links are not displayed if the user is not logged
 in:
 
-  >>> anon_browser.open('http://blueprints.launchpad.dev/distros/ubuntu/'
+  >>> anon_browser.open('http://blueprints.launchpad.dev/ubuntu/'
   ...                   '+spec/media-integrity-check')
   >>> print find_portlet(anon_browser.contents, 'Branches')
   <...
   <li>
-  <a href="http://blueprints.launchpad.dev/people/name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
   <br />
   <i>Summary text</i>
   </li>
@@ -73,13 +73,12 @@ in:
 Similar to the portlet on the specification page, there is a list of
 linked specifications on the branch page:
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/'
-  ...                   '+junk/junk.contrib')
-  >>> print find_portlet(user_browser.contents, 'Specifications')
+  >>> user_browser.open('http://launchpad.dev/~name12/+junk/junk.contrib')
+  >>> print find_portlet(user_browser.contents, 'Blueprints')
   <...
   <li>
-  <a href="http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check">CD Media Integrity Check</a>
-  <a href="http://launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check">CD Media Integrity Check</a>
+  <a href="http://launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this blueprint link" /></a><br />
   <i>Summary text</i>
   </li>
   ...
@@ -90,21 +89,21 @@ linked specifications on the branch page:
 The edit link in the branches portlet takes us to a form that can be
 used to edit the summary of the branch link:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/distros/ubuntu/'
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
   ...                   '+spec/media-integrity-check/+branch/name12/'
   ...                   '+junk/junk.contrib')
   >>> user_browser.getControl('Summary', index=0).value = 'New summary'
   >>> user_browser.getControl('Change Summary').click()
   >>> print user_browser.url
-  http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check
+  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
 
 The new summary now appears in the branches portlet:
 
   >>> print find_portlet(user_browser.contents, 'Branches')
   <...
   <li>
-  <a href="http://blueprints.launchpad.dev/people/name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>New summary</i>
   </li>
   ...
@@ -114,12 +113,12 @@ The new summary now appears in the branches portlet:
 
 Users can delete the branch link from the branch link page:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/distros/ubuntu/'
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
   ...                   '+spec/media-integrity-check/+branch/name12/'
   ...                   '+junk/junk.contrib')
   >>> user_browser.getControl('Delete Link').click()
   >>> print user_browser.url
-  http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check
+  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
 
 
 The branch is now no longer listed in the portlet:

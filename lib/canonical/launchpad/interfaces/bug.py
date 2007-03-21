@@ -11,14 +11,18 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IFrontPageBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -31,7 +35,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None):
+                 binarypackagename=None, tags=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -48,6 +52,7 @@ class CreateBugParams:
         self.distribution = None
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
+        self.tags = tags
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -130,19 +135,6 @@ class IBug(IMessageTarget):
     owner = Attribute("The owner's IPerson")
     duplicateof = BugField(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
-    communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True, default=0)
-    communitytimestamp = Datetime(
-        title=_('Community Timestamp'), required=True, readonly=True)
-    hits = Int(
-        title=_('Hits'), required=True, readonly=True, default=0)
-    hitstimestamp = Datetime(
-        title=_('Hits Timestamp'), required=True, readonly=True)
-    activityscore = Int(
-        title=_('Activity Score'), required=True, readonly=True,
-        default=0)
-    activitytimestamp = Datetime(
-        title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -159,6 +151,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -169,7 +163,7 @@ class IBug(IMessageTarget):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
-    tickets = Attribute("List of support tickets related to this bug.")
+    questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
@@ -288,12 +282,52 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
+
+    def addNomination(owner, target):
+        """Nominate a bug for an IDistroRelease or IProductSeries.
+
+        :owner: An IPerson.
+        :target: An IDistroRelease or IProductSeries.
+
+        This method creates and returns a BugNomination. (See
+        canonical.launchpad.database.bugnomination.BugNomination.)
+        """
+
+    def canBeNominatedFor(nomination_target):
+        """Can this bug nominated for this target?
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+
+        Returns True or False.
+        """
+
+    def getNominationFor(nomination_target):
+        """Return the IBugNomination for the target.
+
+        If no nomination is found, a NotFoundError is raised.
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+        """
+
+    def getNominations(target=None):
+        """Return a list of all IBugNominations for this bug.
+
+        The list is ordered by IBugNominations.target.bugtargetname.
+
+        Optional filtering arguments:
+
+        :target: An IProduct or IDistribution.
+        """
+
     def getBugWatch(bugtracker, remote_bug):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
         """
-
 
 
 class IBugDelta(Interface):
@@ -361,6 +395,21 @@ class IBugAddForm(IBug):
         required=True)
 
 
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Product"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
+
+
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
+        required=True)
+
+
 class IBugSet(Interface):
     """A set of bugs."""
 
@@ -387,7 +436,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, bug_params):
+    def createBug(bug_params):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.

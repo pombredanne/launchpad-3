@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
@@ -9,8 +9,9 @@ import unittest
 import os
 import datetime
 
-from importd.Job import Job, CopyJob
+from canonical.lp.dbschema import ImportStatus
 from importd import JobStrategy
+from importd.Job import Job, CopyJob
 from importd.tests import testutil, helpers
 
 
@@ -201,7 +202,12 @@ class MockBuild(object):
     pass
 
 
-class TestImpordDBuild(helpers.ZopelessTestCase):
+class TestImportDBImplementor(helpers.ZopelessTestCase):
+    """Assorted test cases for ImportDBImplementor.
+
+    This class is responsible for updating the Launchpad database when buildbot
+    jobs complete.
+    """
 
     def setUp(self):
         helpers.ZopelessTestCase.setUp(self)
@@ -210,7 +216,6 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
         self._refreshBuilderRerun = None
 
     def tearDown(self):
-        from canonical.lp.dbschema import ImportStatus
         self.series().dateautotested = None
         self.series().importstatus = ImportStatus.PROCESSING
         self.txnManager().commit()
@@ -238,6 +243,30 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
     def series(self):
         return self.implementor().getSeries()
 
+    def setUpTesting(self):
+        """Set up the series to have importstatus = TESTING."""
+        series = self.series()
+        series.dateprocessapproved = None
+        series.datesyncapproved = None
+        series.datelastsynced = None
+        series.importstatus = ImportStatus.TESTING
+
+    def setUpProcessing(self):
+        """Set up the series to have importstatus == PROCESSING."""
+        series = self.series()
+        series.datesyncapproved = None
+        series.datelastsynced = None
+        series.certifyForSync()
+        assert series.importstatus == ImportStatus.PROCESSING
+        assert series.datesyncapproved is None
+
+    def setUpSyncing(self):
+        """Set up the series to have importstatus == SYNCING."""
+        self.setUpProcessing()
+        series = self.series()
+        series.enableAutoSync()
+        assert series.importstatus == ImportStatus.SYNCING
+
     def txnManager(self):
         import importd.util
         return importd.util.getTxnManager()
@@ -256,7 +285,6 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
 
     def testSetAutotestedSuccess(self):
         """ImportDBImplementor.setAutotested works on success."""
-        from canonical.lp.dbschema import ImportStatus
         self.series().dateautotested = None
         self.implementor().setAutotested(True)
         self.series().sync() # turn dateautotested into a datetime object
@@ -267,7 +295,6 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
 
     def testSetAutotestedFailure(self):
         """ImportDBImplementor.setAutotested works on failure."""
-        from canonical.lp.dbschema import ImportStatus
         self.series().dateautotested = None
         self.implementor().setAutotested(False)
         self.assertEqual(self.series().importstatus, ImportStatus.TESTFAILED)
@@ -277,10 +304,7 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
 
     def testProcessingCompleteSuccess(self):
         """ImportDBImplementor.processingComplete works on success."""
-        from canonical.lp.dbschema import ImportStatus
-        self.series().importstatus = ImportStatus.PROCESSING
-        self.series().datesyncapproved = None
-        self.series().syncinterval = datetime.timedelta(1)
+        self.setUpProcessing()
         self.implementor().processingComplete(True)
         self.series().sync() # turn datesyncapproved into a datetime object
         self.assertEqual(self.series().importstatus, ImportStatus.SYNCING)
@@ -290,10 +314,7 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
 
     def testProcessingCompleteFailure(self):
         """ImportDBImplementor.processingComplete works on failure."""
-        from canonical.lp.dbschema import ImportStatus
-        self.series().importstatus = ImportStatus.PROCESSING
-        self.series().datesyncapproved = None
-        self.assertEqual(self.series().importstatus, ImportStatus.PROCESSING)
+        self.setUpProcessing()
         self.implementor().processingComplete(False)
         self.assertEqual(self.series().datesyncapproved, None)
         self.failIf(self._refreshedBuilder)
@@ -313,7 +334,6 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
 
     def testBuildFinished(self):
         """ImportDBImplementor.buildFinished sets series and commits."""
-        from canonical.lp.dbschema import ImportStatus
         self.txnManager().begin()
         self.series().datefinished = None
         self.series().importstatus = ImportStatus.TESTING
@@ -326,6 +346,56 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
             self.txnManager().abort() # discard uncommitted changes
         self.assert_(self.series().datefinished is not None)
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
+
+    def testBuildFinishedTestingSuccess(self):
+        # buildFinished does not set datelastsynced when successful and the
+        # status was TESTING (or anything but PROCESSING or SYNCING).
+        self.txnManager().begin()
+        self.setUpTesting()
+        assert self.series().datelastsynced == None
+        self.txnManager().commit()
+        self.implementor().buildFinished(True)
+        self.assertEqual(self.series().datelastsynced, None)
+
+    def testBuildFinishedProcessingSuccess(self):
+        # buildFinished sets datelastsynced when successful and the status was
+        # PROCESSING.
+        self.txnManager().begin()
+        self.setUpProcessing()
+        assert self.series().datelastsynced == None
+        self.txnManager().commit()
+        self.implementor().buildFinished(True)
+        self.assertNotEqual(self.series().datelastsynced, None)
+
+    def testBuildFinishedProcessingFailure(self):
+        # buildFinished does not set datelastsynced when failing and the
+        # status was PROCESSING.
+        self.txnManager().begin()
+        self.setUpProcessing()
+        assert self.series().datelastsynced == None
+        self.txnManager().commit()
+        self.implementor().buildFinished(False)
+        self.assertEqual(self.series().datelastsynced, None)
+
+    def testBuildFinishedSyncingSuccess(self):
+        # buildFinished sets datelastsynced when successful and the status
+        # was SYNCING.
+        self.txnManager().begin()
+        self.setUpSyncing()
+        self.series().datelastsynced = None
+        self.txnManager().commit()
+        self.implementor().buildFinished(True)
+        self.assertNotEqual(self.series().datelastsynced, None)
+
+    def testBuildFinishedSyncingFailure(self):
+        # buildFinished does not set datelastsynced when failing and the status
+        # was SYNCING.
+        self.txnManager().begin()
+        self.setUpSyncing()
+        self.series().datelastsynced = None
+        self.txnManager().commit()
+        self.implementor().buildFinished(False)
+        self.assertEqual(self.series().datelastsynced, None)
 
 
 testutil.register(__name__)

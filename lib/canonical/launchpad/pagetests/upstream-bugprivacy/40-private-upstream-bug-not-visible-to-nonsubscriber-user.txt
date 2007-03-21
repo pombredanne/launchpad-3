@@ -3,7 +3,7 @@ Bar cannot see in this listing the private bug that Sample Person
 submitted earlier.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs HTTP/1.1
+  ... GET /firefox/+bugs HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

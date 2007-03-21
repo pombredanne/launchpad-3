@@ -5,6 +5,7 @@ __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 import os
 from md5 import md5
 from sha import sha
+from Crypto.Hash.SHA256 import new as sha256
 from datetime import datetime
 
 from canonical.archivepublisher.domination import Dominator
@@ -227,6 +228,9 @@ class Publisher(object):
         f.write("SHA1:\n")
         for file_name in all_files:
             self._writeSumLine(full_name, f, file_name, sha)
+        f.write("SHA256:\n")
+        for file_name in all_files:
+            self._writeSumLine(full_name, f, file_name, sha256)
 
         f.close()
 

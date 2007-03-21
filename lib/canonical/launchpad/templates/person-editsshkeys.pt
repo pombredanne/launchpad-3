@@ -1,4 +1,3 @@
-<tal:do-this-first condition="view/form_action" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -20,7 +19,7 @@
 
     <p>You need to register an SSH key with Launchpad to be able to publish
     your Bazaar code branches in the Bazaar supermirror. For more
-    information, read about <a href="/bazaar/">The Bazaar</a>.
+    information, read about <a href="/+code/">The Bazaar</a>.
     </p>
 
     <p tal:condition="view/error_message" tal:content="view/error_message"

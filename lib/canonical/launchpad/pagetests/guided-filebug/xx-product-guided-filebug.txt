@@ -2,8 +2,8 @@ Malone does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
 already been reported.
 
-    >>> user_browser.open("http://bugs.launchpad.dev/products/firefox")
-    >>> user_browser.getLink('Report a Bug').click()
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox")
+    >>> user_browser.getLink('Report a bug').click()
 
 If no title is entered, the user is asked to supply one.
 
@@ -11,7 +11,7 @@ If no title is entered, the user is asked to supply one.
     ''
     >>> user_browser.getControl("Continue").click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/products/firefox/+filebug'
+    'http://bugs.launchpad.dev/firefox/+filebug'
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -30,7 +30,7 @@ The form is self-posting, so the user is still at +filebug. This makes
 it difficult to bypass the search-for-dupes bit.
 
     >>> print user_browser.url
-    http://bugs.launchpad.dev/products/firefox/+filebug
+    http://bugs.launchpad.dev/firefox/+filebug
 
 After searching, the user is presented with a list of similar bugs and
 a list of most common bugs in the current context.
@@ -52,7 +52,7 @@ If no description is entered, an error message is displayed.
     ''
     >>> user_browser.getControl("Submit Bug Report").click()
     >>> print user_browser.url
-    http://bugs.launchpad.dev/products/firefox/+filebug
+    http://bugs.launchpad.dev/firefox/+filebug
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
@@ -65,7 +65,7 @@ will be displayed as well.
     >>> user_browser.getControl(name="field.title").value = ''
     >>> user_browser.getControl("Submit Bug Report").click()
     >>> print user_browser.url
-    http://bugs.launchpad.dev/products/firefox/+filebug
+    http://bugs.launchpad.dev/firefox/+filebug
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
@@ -78,4 +78,4 @@ With both values set, the bug is created.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
-    http://bugs.launchpad.dev/products/firefox/+bug/...
+    http://bugs.launchpad.dev/firefox/+bug/...

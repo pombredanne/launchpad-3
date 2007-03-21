@@ -17,6 +17,14 @@ from sqlobject import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase, quote, sqlvalues)
+
+from canonical.lp.dbschema import (
+    ImportStatus, PackagingType, RevisionControlSystems,
+    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
+    SpecificationStatus)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
@@ -29,17 +37,40 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.specification import Specification
-from canonical.database.sqlbase import (
-    SQLBase, quote, sqlvalues)
-
-from canonical.lp.dbschema import (
-    EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationStatus)
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 
 
-class ProductSeries(SQLBase):
+class NoImportBranchError(Exception):
+    """Raised when ProductSeries.importUpdated finds not import branch.
+
+    This exception should never be caught. It exists only for unit testing.
+    """
+
+
+class DatePublishedSyncError(Exception):
+    """Raised by ProductSeries.importUpdated if datepublishedsync
+    should not be set.
+
+    If import_branch.date_last_mirrored is NULL, datepublishedsync should not
+    have been set because the import has not been published yet.
+
+    This exception should never be caught. It exists only for unit testing.
+    """
+
+
+class ProductSeriesSet:
+    implements(IProductSeriesSet)
+
+    def get(self, productseriesid):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(productseriesid)
+        except SQLObjectNotFound:
+            raise NotFoundError(productseriesid)
+
+
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -58,8 +89,6 @@ class ProductSeries(SQLBase):
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -76,6 +105,11 @@ class ProductSeries(SQLBase):
     datefinished = UtcDateTimeCol(default=None)
     dateprocessapproved = UtcDateTimeCol(default=None)
     datesyncapproved = UtcDateTimeCol(default=None)
+    # controlling the freshness of an import
+    syncinterval = IntervalCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
+    datepublishedsync = UtcDateTimeCol(
+        dbName='date_published_sync', default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
@@ -87,6 +121,11 @@ class ProductSeries(SQLBase):
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -278,6 +317,28 @@ class ProductSeries(SQLBase):
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.productseries = %s" % sqlvalues(self), user)
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.productseries = %s' % sqlvalues(self)
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
@@ -351,6 +412,46 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
+
+    def importUpdated(self):
+        """See IProductSeries."""
+        # Update the timestamps after an import has successfully completed, so
+        # we can always know at what time the currently published branch was
+        # last imported.
+        #
+        # Importd updates branches to match the foreign VCS, then uploads them
+        # to an internal server. Then the branch-puller copies the branches
+        # from the internal server to the public server.
+        #
+        # * datelastsynced: time when importd last updated the internal branch
+        #   to match the foreign VCS.
+        # * import_branch.last_mirrored: time when branch-puller last updated
+        #   the published branch to match the internal branch.
+        # * datepublishedsync: time when the /published/ branch was last
+        #   updated from the foreign VCS, at the time when the /internal/
+        #   branch was last updated from the foreign VCS.
+        #
+        # Sorry if that breaks your brain.
+        if self.import_branch is None:
+            raise NoImportBranchError(
+                "importUpdated called for series %d,"
+                " but import_branch is NULL." % (self.id,))
+        if (self.import_branch.last_mirrored is None
+                and self.datepublishedsync is not None):
+            raise DatePublishedSyncError(
+                "importUpdated called for series %d,"
+                " where datepublishedsync is set,"
+                " but import_branch.last_mirror is NULL."
+                % (self.id,))
+        if self.datelastsynced is None:
+            # datepublishedsync SHOULD be None, but we reset it just in case.
+            self.datepublishedsync = None
+        if (self.datelastsynced is not None
+                and self.import_branch.last_mirrored is not None
+                and self.datelastsynced < self.import_branch.last_mirrored):
+            self.datepublishedsync = self.datelastsynced
+        self.datelastsynced = UTC_NOW
+
 
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""

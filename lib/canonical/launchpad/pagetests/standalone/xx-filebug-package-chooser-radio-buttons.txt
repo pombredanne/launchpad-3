@@ -6,7 +6,7 @@ The default on the distribution +filebug page is "I don't know". We
 will use the advanced filebug form to skip searching for dupes.
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/distros/ubuntu/+filebug-advanced")
+    ...     "http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> print user_browser.getControl(name="packagename_option").value
     ['none']
@@ -17,7 +17,7 @@ the bug summary and description are required.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
-    http://launchpad.dev/distros/ubuntu/+filebug-advanced
+    http://launchpad.dev/ubuntu/+filebug-advanced
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -37,7 +37,7 @@ you're returned to the page, with the "choose" radio button selected.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> user_browser.url
-    'http://launchpad.dev/distros/ubuntu/+filebug-advanced'
+    'http://launchpad.dev/ubuntu/+filebug-advanced'
 
     >>> print user_browser.getControl(name="packagename_option").value
     ['choose']
@@ -45,7 +45,7 @@ you're returned to the page, with the "choose" radio button selected.
 On the package +filebug page, the package name is populated by default.
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug-advanced")
 
     >>> print user_browser.getControl(name="packagename_option").value

@@ -53,7 +53,7 @@ on with the registration process.
 
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://launchpad.dev/'
+    'http://launchpad.dev'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('div', 'informational message'):
@@ -70,7 +70,7 @@ email address before), they /do/ have a preferred email and we need to handle
 this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
-    >>> user_browser.open('http://launchpad.dev/people/spiv')
+    >>> user_browser.open('http://launchpad.dev/~spiv')
     >>> print user_browser.contents
     <...
     ...<a...Hey, I'm Andrew Bennetts</a>...
@@ -102,7 +102,7 @@ this.
     >>> anon_browser.getControl('Continue').click()
 
     >>> anon_browser.url
-    'http://launchpad.dev/'
+    'http://launchpad.dev'
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()

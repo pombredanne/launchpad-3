@@ -11,6 +11,7 @@ from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
@@ -22,6 +23,7 @@ from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
+from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
@@ -34,7 +36,6 @@ from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.pomsgidsighting import *
 from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
@@ -44,6 +45,7 @@ from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackagerelease import *
 from canonical.launchpad.database.binarypackagerelease import *
 from canonical.launchpad.database.binarypackagename import *
+from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distributionbounty import *
@@ -60,7 +62,6 @@ from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.distroarchreleasebinarypackage import *
 from canonical.launchpad.database.distroarchreleasebinarypackagerelease import *
 from canonical.launchpad.database.person import *
-from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
@@ -70,6 +71,7 @@ from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
 from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
@@ -92,7 +94,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
-from canonical.launchpad.database.supportcontact import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
@@ -104,11 +105,11 @@ from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
-from canonical.launchpad.database.ticket import *
-from canonical.launchpad.database.ticketbug import *
-from canonical.launchpad.database.ticketmessage import *
-from canonical.launchpad.database.ticketreopening import *
-from canonical.launchpad.database.ticketsubscription import *
+from canonical.launchpad.database.question import *
+from canonical.launchpad.database.questionbug import *
+from canonical.launchpad.database.questionmessage import *
+from canonical.launchpad.database.questionreopening import *
+from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *

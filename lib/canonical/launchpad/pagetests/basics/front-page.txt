@@ -1,26 +1,26 @@
+Launchpad's front page
 
-We would like to test various features of the home page. This will prevent
-accidental regressions in the layout of the home page.
+  >>> browser.open('http://launchpad.dev/')
+  >>> browser.url
+  'http://launchpad.dev/'
 
-First, we should be seeing a translation box for Ubuntu Hoary into
-Afrikaans:
+should include buttons for the main applications
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Afrikaans:...
-  .../distros/ubuntu/hoary/+lang/af...
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Register your project...
+  ...Publish your code...
+  ...
 
+a search form
 
-Next, we also expect to see the top contributors (by Karma) listed on the
-home page.
+  >>> '<input type="submit" value="Search"' in browser.contents
+  True
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Sample Person...
+and lists of featured projects and marketing material.
 
-
+  >>> 'Featured projects' in browser.contents
+  True
+  
+  'More about Launchpad' in browser.contents
+  True

@@ -323,7 +323,7 @@ class CalendarContextMenu(ContextMenu):
     links = ['addevent', 'subscribe']
 
     def addevent(self):
-        text = 'Add Event'
+        text = 'Add event'
         return Link('+add', text, icon='add')
 
     def subscribe(self):
@@ -331,7 +331,7 @@ class CalendarContextMenu(ContextMenu):
         # database, so has no ID.  Therefore, it can't be subscribed to,
         # so we leave out the link.
         enabled = (self.context.id is not None)
-        text = 'Subscribe to This Calendar'
+        text = 'Subscribe to this calendar'
         return Link('+subscribe', text, icon='edit', enabled=enabled)
 
 

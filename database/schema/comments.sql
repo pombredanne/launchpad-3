@@ -11,6 +11,16 @@ COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mir
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
+COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
+COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
+
+/* BranchSubscription*/
+
+COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
+COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';
+COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
+COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
+COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 
 /* Bug */
 
@@ -28,17 +38,31 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
+/* BugNomination */
+COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
+COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
+COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
+COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
+COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
+COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
+COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
+
 /* BugTag */
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
 COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
 
-/* BugTask */
+/* OfficialBugTag */
+COMMENT ON TABLE OfficialBugTag IS 'Bug tags that have been officially endorced by this product''s or distribution''s lead';
 
+/* BugTask */
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN BugTask.productseries IS 'The product series to which the bug is targeted';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
@@ -181,6 +205,11 @@ active.';
 COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or other integer values, keyed by names. The names are unique and the values can be any integer. Each field has a place to store the timestamp when it was last updated, so it is possible to know how far out of date any given statistic is.';
 
 
+-- MentoringOffer
+COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
+COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
+
+
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
@@ -205,6 +234,10 @@ COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles se
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
+COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
+COMMENT ON COLUMN Product.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a product.';
+COMMENT ON COLUMN Product.gotchi IS 'The library file alias of a gotchi image to display as the icon of a product, on its home page.';
+COMMENT ON COLUMN Product.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
 
 -- ProductRelease
 
@@ -269,8 +302,9 @@ which had no apparent difficulty in being imported.';
 COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
 initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
-completed an import test or sync of this upstream repository. If this is
-NULL and datestarted is NOT NULL, then there is a sync in progress.';
+completed an import test or sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch\'s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
 this product series.  If user_branch is not set, then this is considered the
 product series branch.';
@@ -310,6 +344,10 @@ language) to the completely closed (only designated translators can make any
 changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 /* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
+COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
+COMMENT ON COLUMN Project.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a project.';
+COMMENT ON COLUMN Project.gotchi IS 'The library file alias of a gotchi image to display as the icon of a project, on its home page.';
+COMMENT ON COLUMN Project.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
 
 
 -- ProjectRelationship
@@ -323,6 +361,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
 COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -340,6 +379,8 @@ COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName 
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
+COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
+COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -354,23 +395,6 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-
--- POSelection
-COMMENT ON TABLE POSelection IS 'This table captures the full set
-of all the translations ever submitted for a given pomsgset and pluralform.
-It also indicates which of those is currently active.';
-COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
-which we are recording a selection.';
-COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
-this selected translation.';
-COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
-this the active translation in rosetta for this pomsgset and pluralform.';
-COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
-we noted this as the current translation published in revision control (or
-in the public po files for this translation template, in the package or
-tarball or branch which is considered the source of it).';
-COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
-COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
@@ -392,6 +416,8 @@ translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
 COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
+COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
+COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -410,12 +436,17 @@ same status for the last published pofile we pulled in.';
 COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
-
+COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
+COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
+COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
+COMMENT ON COLUMN Sprint.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a sprint.';
+COMMENT ON COLUMN Sprint.gotchi IS 'The library file alias of a gotchi image to display as the icon of a sprint, on its home page.';
+COMMENT ON COLUMN Sprint.gotchi_heading IS 'The library file alias of a smaller version of this sprint\'s gotchi.';
 
 
 /* SprintAttendance */
@@ -620,20 +651,6 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards v
 COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
 COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 
-/* SourcePackagePublishing and BinaryPackagePublishing */
-
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcePackageRelease progressed from a pending publication to being published in the respective DistroRelease';
-
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
-
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
-
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
-
-COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
-
-COMMENT ON COLUMN BinaryPackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
-
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
@@ -707,15 +724,9 @@ COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions o
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
 COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
 COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.product IS 'The Project to which this Product belongs.  An entry on this table with a non-NULL Project and a NULL Product represents the total karma of the person across all products of that project..';
 COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
 COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
-
--- KarmaPersonCategoryCacheView
-COMMENT ON VIEW KarmaPersonCategoryCacheView IS 'A View to store a cached value of a person\'s karma points, grouped by the action category.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.id IS 'The id in this view is the smallest id of all KarmaCache entries for a given person and category. We need to do this because SQLObject requires an id column and we use a GROUP BY when creating the view.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.Person IS 'The person which performed the actions of this category, and thus got the karma.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.Category IS 'The category of the actions.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
@@ -729,7 +740,8 @@ COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.'
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
-COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.gotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.gotchi_heading IS 'The library file alias of a smaller version of this person\'s gotchi.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
@@ -776,8 +788,6 @@ COMMENT ON COLUMN MessageChunk.sequence IS 'Order of a particular chunk. Chunks 
 -- Comments on Lucille views
 COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
 COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
-COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying BinaryPackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 
 -- SourcePackageRelease
 
@@ -940,6 +950,10 @@ COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distributio
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
 COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
+COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
+COMMENT ON COLUMN Distribution.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a distribution.';
+COMMENT ON COLUMN Distribution.gotchi IS 'The library file alias of a gotchi image to display as the icon of a distribution, on its home page.';
+COMMENT ON COLUMN Distribution.gotchi_heading IS 'The library file alias of a smaller version of this distributions\'s gotchi.';
 
 -- DistroRelease
 
@@ -990,31 +1004,9 @@ COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. 
 COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 
--- PackagePublishing
-
-COMMENT ON VIEW BinaryPackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This view represents the publishing of each binarypackage not yet deleted from the distroarchrelease.';
-COMMENT ON COLUMN BinaryPackagePublishing.binarypackagerelease IS 'The binarypackage which is being published';
-COMMENT ON COLUMN BinaryPackagePublishing.distroarchrelease IS 'The distroarchrelease in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.component IS 'The component in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.section IS 'The section in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.priority IS 'The priority at which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distroarchrelease';
-COMMENT ON COLUMN BinaryPackagePublishing.status IS 'The current status of the packagepublishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
-
--- SourcePackagePublishing
-
-COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SecureSourcePackagePublishingHistory.';
-COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
-COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
-COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
-COMMENT ON COLUMN SourcePackagePublishing.component IS 'The component in which the sourcepackagerelease is published';
-COMMENT ON COLUMN SourcePackagePublishing.section IS 'The section in which the sourcepackagerelease is published';
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distrorelease.';
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'THIS COLUMN IS PROBABLY UNUSED';
-
 -- SourcePackageReleaseFile
 
-COMMENT ON TABLE SourcePackageReleaseFile IS 'SourcePackageReleaseFile: A soyuz source package release file. This table links sourcepackagerelease records to the files which comprise the input.';
+COMMENT ON TABLE SourcePackageReleaseFile IS 'SourcePackageReleaseFile: A soyuz source package release file. This table links sourcepackagereleasehistory records to the files which comprise the input.';
 COMMENT ON COLUMN SourcePackageReleaseFile.libraryfile IS 'The libraryfilealias embodying this file';
 COMMENT ON COLUMN SourcePackageReleaseFile.filetype IS 'The type of the file. E.g. TAR, DIFF, DSC';
 COMMENT ON COLUMN SourcePackageReleaseFile.sourcepackagerelease IS 'The sourcepackagerelease that this file belongs to';
@@ -1280,6 +1272,7 @@ COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of reques
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
+COMMENT ON COLUMN Language.uuid IS 'Mozilla language pack unique ID';
 COMMENT ON COLUMN Language.englishname IS 'The english name for this language';
 COMMENT ON COLUMN Language.nativename IS 'The name of this language in the language itself';
 COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this language has';
@@ -1346,6 +1339,7 @@ COMMENT ON COLUMN MirrorProbeRecord.date_created IS 'The date and time the probe
 COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
 COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
 COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.format IS 'The file format of the content that is being imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
 COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';

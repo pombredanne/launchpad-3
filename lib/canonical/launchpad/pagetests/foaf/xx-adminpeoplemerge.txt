@@ -73,7 +73,7 @@ And finally we choose two valid accounts to merge
   ... merge=Merge&dupe_name=debonzi&target_name=cprov""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/cprov
+  Location: http://localhost:9000/~cprov
   ...
   ..."informational message">Merge completed...
   ...
@@ -90,7 +90,7 @@ account.
 Now we check that we can't access the duplicated account page.
 
   >>> print http(r"""
-  ... GET /people/debonzi HTTP/1.1
+  ... GET /~debonzi HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 404 Not Found 
@@ -102,7 +102,7 @@ Now we check that we can't access the duplicated account page.
 And can access the target page which now has the email from the dupe account.
 
   >>> print http(r"""
-  ... GET /people/cprov/+editemails HTTP/1.1
+  ... GET /~cprov/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

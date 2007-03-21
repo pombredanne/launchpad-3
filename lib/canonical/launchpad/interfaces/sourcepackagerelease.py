@@ -74,21 +74,19 @@ class ISourcePackageRelease(Interface):
     manifest = Attribute("Manifest of branches imported for this release")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
-    
+
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')
+    age = Attribute('Time passed since the source package release '
+                    'is present in Launchpad')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
     failed_builds = Attribute("A (potentially empty) list of build "
         "failures that happened for this source package " "release, or None")
     needs_building = Attribute("A boolean that indicates whether this package "
         "still needs to be built (on any architecture)")
-
-    open_ticket_count = Attribute(
-        "The number of open support tickets on the distrorelease and "
-        "sourcepackagename of this SourcePackageRelease")
 
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
@@ -102,9 +100,6 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroReleaseSourcePackageReleases.")
-
-    def branches():
-        """Return the list of branches in a source package release"""
 
     # XXX: What do the following methods and attributes do?
     #      These were missing from the interfaces, but being used

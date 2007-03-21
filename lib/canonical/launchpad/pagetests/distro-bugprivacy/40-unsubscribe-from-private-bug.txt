@@ -9,7 +9,7 @@ Foo Bar, an admin, subscribe Sample Person to a private bug.
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11"
+    ...     "http://localhost:9000/ubuntu/+source/evolution/+bug/13"
     ...     "/+addsubscriber")
     >>> browser.getControl("Person").value = "name12"
     >>> browser.getControl("Add").click()
@@ -22,12 +22,12 @@ permission to see the private bug.
 
     >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11"
+    ...     "http://localhost:9000/ubuntu/+source/evolution/+bug/13"
     ...     "/+subscribe")
     >>> browser.getControl("Continue").click()
 
     >>> browser.url
-    'http://localhost:9000/distros/ubuntu/+source/evolution/+bugs'
+    'http://localhost:9000/ubuntu/+source/evolution/+bugs'
 
     >>> "You have been unsubscribed" in browser.contents
     True
@@ -40,12 +40,12 @@ the private bug, because admins can see all bugs.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11"
+    ...     "http://localhost:9000/ubuntu/+source/evolution/+bug/13"
     ...     "/+subscribe")
     >>> browser.getControl("Continue").click()
 
     >>> browser.url
-    'http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11/'
+    'http://localhost:9000/ubuntu/+source/evolution/+bug/13/'
 
     >>> "You have been unsubscribed" in browser.contents
     True

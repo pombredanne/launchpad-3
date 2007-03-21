@@ -197,8 +197,13 @@ class Bugzilla(ExternalBugTracker):
         url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        url = urllib2.urlopen(request, data=post_data)
-        page_contents = url.read()
+        page = urllib2.urlopen(request, data=post_data)
+        page_contents = page.read()
+        if page.url != url:
+            # If the URL wasn't the same as we expected, give up --
+            # urllib2 shouldn't redirect POSTs as it doesn't know how to.
+            raise BugTrackerConnectError(self.baseurl,
+                    "POST was redirected from %s to %s" % (url, page.url))
         return page_contents
 
     def _parseDOMString(self, contents):
@@ -245,8 +250,9 @@ class Bugzilla(ExternalBugTracker):
         else:
             resolution = ''
 
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA']:
+        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
+            # STARTED: OOO Issuezilla
            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:

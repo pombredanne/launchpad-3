@@ -22,6 +22,7 @@ See IPOTemplateExporter and IDistroReleasePOExporter.
 
 __metaclass__ = type
 
+import codecs
 import datetime
 import gettextpo
 import logging
@@ -37,11 +38,9 @@ from zope.interface import implements
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.interfaces import IPOTemplateExporter
-from canonical.launchpad.interfaces import IDistroReleasePOExporter
-from canonical.launchpad.interfaces import IPOFileOutput
-from canonical.launchpad.interfaces import IVPOExportSet
-from canonical.launchpad.interfaces import IVPOTExportSet
+from canonical.launchpad.interfaces import (
+    IPOTemplateExporter, IDistroReleasePOExporter, IPOFileOutput,
+    IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
 
 from canonical.launchpad.components.poparser import POMessage, POHeader
 
@@ -176,14 +175,6 @@ class OutputPOFile:
         except UnicodeEncodeError:
             # Got any message that cannot be represented by its default
             # encoding, need to force a UTF-8 export.
-            # We log it.
-            export_logger = logging.getLogger('poexport-user-warnings')
-            export_logger.warn(
-                'Had to recode the file as UTF-8 as it has characters that'
-                ' cannot be represented using the %s charset' % 
-                    self.header.charset
-                )
-            # Export the file as UTF-8 as a workaround to this problem.
             self.header['Content-Type'] = 'text/plain; charset=UTF-8'
             self.header.updateDict()
             return self.export_string()
@@ -429,7 +420,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 pot_header['Content-Type'] = 'text/plain; charset=UTF-8'
                 pot_header.updateDict()
 
-            if row.pofile is not None:
+            pofile = row.pofile
+            if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
                     commentText=row.potopcomment,
@@ -461,32 +453,42 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 # We are exporting an IPOTemplate.
                 header = pot_header
 
+            try:
+                codecs.getdecoder(header.charset)
+            except LookupError:
+                # The codec we are using to do the export is not valid,
+                # we default to UTF-8 for the export.
+                header.charset = u'UTF-8'
+                header['Content-Type'] = 'text/plain; charset=UTF-8'
+                header.updateDict()
+
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
-            if (row.pofile is not None and
-                row.pofile.latestsubmission is not None):
+            if (pofile is not None and
+                pofile.last_touched_pomsgset is not None and
+                pofile.last_touched_pomsgset.reviewer is not None):
                 # Update the last translator field.
+                last_touched_pomsgset = pofile.last_touched_pomsgset
 
-                submission = row.pofile.latestsubmission
-                header['Last-Translator'] = (
-                    last_translator_text(submission.person))
+                header['Last-Translator'] = last_translator_text(
+                    last_touched_pomsgset.reviewer)
 
                 # Update the revision date field.
 
                 header['PO-Revision-Date'] = (
-                    submission.datecreated.strftime('%F %R%z'))
+                    last_touched_pomsgset.date_reviewed.strftime('%F %R%z'))
 
             if row.potemplate.hasPluralMessage():
-                if row.pofile.language.pluralforms is not None:
+                if pofile.language.pluralforms is not None:
                     # We have pluralforms information for this language so we
                     # update the header to be sure that we use the language
                     # information from our database instead of use the one
                     # that we got from upstream. We check this information so
                     # we are sure it's valid.
                     header['Plural-Forms'] = 'nplurals=%d; plural=(%s);' % (
-                        row.pofile.language.pluralforms,
-                        row.pofile.language.pluralexpression)
+                        pofile.language.pluralforms,
+                        pofile.language.pluralexpression)
             elif 'Plural-Forms' in header:
                 # There is no plural forms here but we have a 'Plural-Forms'
                 # header, we remove it because it's not needed.
@@ -498,7 +500,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header['X-Rosetta-Export-Date'] = dt.strftime('%F %R%z')
+            header[EXPORT_DATE_HEADER] = dt.strftime('%F %T%z')
 
             # Create the new PO file.
 
@@ -547,8 +549,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # There is an active submission, the plural form is higher than
             # the last imported plural form.
 
-            if (row.pofile.language.pluralforms is not None and
-                row.translationpluralform >= row.pofile.language.pluralforms):
+            if (pofile.language.pluralforms is not None and
+                row.translationpluralform >= pofile.language.pluralforms):
                 # The plural form index is higher than the number of plural
                 # form for this language, so we should ignore it.
                 continue

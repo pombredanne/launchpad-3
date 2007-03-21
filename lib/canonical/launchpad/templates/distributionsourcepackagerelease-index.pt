@@ -27,7 +27,7 @@
          tal:content="context/sourcepackage/name"/>:
     </p>
 
-    <ul class="packages">
+    <ul class="binary package">
       <li tal:repeat="drbp context/sample_binary_packages">
         <a tal:attributes="href drbp/fmt:url">
            <span tal:replace="drbp/name">apache-utils</span>:
@@ -70,7 +70,7 @@
         <li tal:repeat="file files">
           <a
             tal:content="file/libraryfile/filename"
-            tal:attributes="href file/libraryfile/url">evolution_2.tar.gz</a>
+            tal:attributes="href file/libraryfile/http_url">evolution_2.tar.gz</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>

@@ -8,7 +8,7 @@
   Adding the new contact email address...
 
   >>> print http(r"""
-  ... GET /people/ubuntu-team/+editemail HTTP/1.1
+  ... GET /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -20,7 +20,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -30,7 +30,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...An email message was sent to...
+  ...A confirmation message has been sent to...
   ...
 
   Get the token we'll have to use to finish the registration process.
@@ -84,7 +84,7 @@
   ... VALIDATE=Ok""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/ubuntu-team
+  Location: http://localhost:9000/~ubuntu-team
   ...
   ...informational message">Contact email address validated successfully...
   ...
@@ -93,7 +93,7 @@
   Now that we have a contact email address, I want to change it...
 
   >>> print http(r"""
-  ... GET /people/ubuntu-team/+editemail HTTP/1.1
+  ... GET /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -107,7 +107,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -117,7 +117,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...An email message was sent to...
+  ...A confirmation message has been sent to...
   ...
 
 
@@ -172,7 +172,7 @@
   ... VALIDATE=Ok""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/ubuntu-team
+  Location: http://localhost:9000/~ubuntu-team
   ...
   ...informational message">Contact email address validated successfully...
   ...
@@ -182,7 +182,7 @@
   Finally, remove the new contact email address.
 
   >>> print http(r"""
-  ... GET /people/ubuntu-team/+editemail HTTP/1.1
+  ... GET /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -196,7 +196,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -217,14 +217,14 @@ registered.
 Team sets a new contact email address.
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... newcontactemail=foo%40bar.com&ADD_EMAIL=Add""")
   HTTP/1.1 200 Ok
   ...
-  ...An email message was sent to...
+  ...A confirmation message has been sent to...
   ...
 
 Get the token related to the validation of team email
@@ -246,14 +246,14 @@ Get the token related to the validation of team email
 Person adds a new email address(same as the team).
 
   >>> print http(r"""
-  ... POST /people/name16/+editemails HTTP/1.1
+  ... POST /~name16/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... newemail=foo%40bar.com&ADD_EMAIL=Add""")
   HTTP/1.1 200 Ok
   ...
-  ...An email message was sent to...
+  ...A confirmation message has been sent to...
   ...
 
 Get the token related to the validation of person email
@@ -301,7 +301,7 @@ Person validates the email address using the token.
   ... password=test&SUBMIT_CHANGES=Submit""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name16
+  Location: http://localhost:9000/~name16
   ...
   ...informational message">Email address successfully confirmed...
   ...
@@ -345,18 +345,18 @@ We get an error message
 Now 'name16' add the ubuntu-team@baz.com email address to the team.
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
   ... newcontactemail=ubuntu-team%40baz.com&ADD_EMAIL=Add""")
   HTTP/1.1 200 Ok
   ...
-  ...An email message was sent to...
+  ...A confirmation message has been sent to...
   ...
 
 
   >>> print http(r"""
-  ... POST /people/ubuntu-team/+editemail HTTP/1.1
+  ... POST /~ubuntu-team/+editemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
   ... UNVALIDATED_SELECTED=ubuntu-team%40baz.com&REMOVE_UNVALIDATED=Remove""")

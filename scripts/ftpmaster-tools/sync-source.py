@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # "Sync" a source package by generating an upload
 # Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>
@@ -21,29 +21,27 @@ import re
 import shutil
 import stat
 import string
-import sys
 import tempfile
 import time
 import urllib
-
 import apt_pkg
-
-import dak_utils
 
 import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (sqlvalues, cursor)
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database.publishing import SourcePackageFilePublishing
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,logger, logger_options)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet)
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.interfaces import IDistributionSet
 from canonical.lp import (dbschema, initZopeless)
-
 from contrib.glock import GlobalLock
+from canonical.launchpad.scripts.ftpmaster import (
+    SyncSource, SyncSourceError)
+
+import dak_utils
 
 ################################################################################
 
@@ -572,75 +570,8 @@ origins = {
 
 whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
 
-uid_mappings = {
-    "auto": whoami,
-    "minghua": "Ming Hua <minghua@rice.edu>",
-    "lucas": "Lucas Nussbaum <lucas@ubuntu.com>",
-    "laserjock": "Jordan Mantha <mantha@chem.unr.edu>",
-    "zakame": "Zak B Elep <zakame@ubuntu.com>",
-    "lifeless": "Robert Collins <robert.collins@ubuntu.com>",
-    "rimbert": "Michael Rimbert <rimbert@purdue.edu>",
-    "salty": "Fabio Marzocca <thesaltydog@gmail.com>",
-    "dredg": "Niall Sheridan <niall@evil.ie>",
-    "potyra": "Stefan Potyra <daemon@poleboy.de>",
-    "wasabi": "Jerry Haltom <wasabi@larvalstage.net>",
-    "iwj": "Ian Jackson <iwj@ubuntu.com>",
-    "kobold": "Fabio Tranchitella <kobold@ubuntu.com>",
-    "jordi": "Jordi Mallach <jordi@ubuntu.com>",
-    "bmonty": "Benjamin Montgomery <bmontgom@montynet.org>",
-    "pef": "Loic Pefferkorn <loic@dev.erodia.net>",
-    "bd": "Barry deFreese <bddebian@comcast.net>",
-    "ivoks": "Ante Karamatiæ <ivoks@grad.hr>",
-    "jbailey": "Jeff Bailey <jbailey@ubuntu.com>",
-    "lathiat": "Trent Lloyd <lathiat@ubuntu.com>",
-    "nafallo": "Christian BjÃ¤levik <nafallo@magicalforest.se>",
-    "riddell": "Jonathan Riddell <jonathan.riddell@ubuntu.com>",
-    "corey": "Corey Burger <corey.burger@gmail.com>",
-    "droge": "Sebastian DrÃ¶ge <slomo@ubuntu.com>",
-    "mjg59": "Matthew Garrett <mjg59@srcf.ucam.org>",
-    "mbreit": "Moritz Breit <mail@mobr.de>",
-    "sh": "Stephan Hermann <sh@sourcecode.de>",
-    "herve": "Hervé Cauwelier <hcauwelier@oursours.net>",
-    "chmj": "Charles Majola <charles@ubuntu.com>",
-    "siretart": "Reinhard Tartler <siretart@tauware.de>",
-    "daniels": "Daniel Stone <daniel.stone@ubuntu.com>",
-    "fabbione": "Fabio Massimo Di Nitto <fabbione@ubuntu.com>",
-    "infinity": "Adam Conrad <adconrad@0c3.net>",
-    "azeem": "Michael Banck <mbanck@debian.org>",
-    "dag": "Dagfinn Ilmari Mannsaker <ilmari@ilmari.org>",
-    "adam": "Adam Israel <adam@battleaxe.net>",
-    "diamond": "Stephen Shirley <diamond@nonado.net>",
-    "reinhard": "Reinhard Tartler <siretart@tauware.de>", 
-    "crimsun": "Daniel T Chen <crimsun@fungus.sh.nu>",
-    "jani": "Jani Monoses <jani@ubuntu.com>",
-    "keybuk": "Scott James Remnant <scott@ubuntu.com>",
-    "mvo": "Michael Vogt <michael.vogt@ubuntu.com>",
-    "thibaut": "Thibaut Varene <varenet@debian.org>",
-    "ajmitch": "Andrew Mitchell <ajmitch@gnu.org>",
-    "amu": "Andreas Mueller <amu@ubuntu.com>",
-    "jdub": "Jeff Waugh <jeff.waugh@ubuntu.com>",
-    "thom": "Thom May <thom@ubuntu.com>",
-    "tseng": "Brandon Hale <brandon@smarterits.com>",
-    "smurfix": "Matthias Urlichs <smurf@debian.org>",
-    "dholbach": "Daniel Holbach <dh@mailempfang.de>",
-    "kamion": "Colin Watson <cjwatson@ubuntu.com>",
-    "tollef": "Tollef Fog Heen <tfheen@canonical.com>",
-    "ogra": "Oliver Grawert <oliver.grawert@ubuntu.com>",
-    "treenaks": "Martijn van de Streek <martijn@foodfight.org>",
-    "pitti": "Martin Pitt <martin.pitt@ubuntu.com>",
-    "seb128": "Sebastien Bacher <seb128@ubuntu.com>",
-    "mdz": "Matt Zimmerman <mdz@ubuntu.com>",
-    "doko": "Matthias Klose <doko@ubuntu.com>",
-    "lamont": "LaMont Jones <lamont@ubuntu.com>",
-    }
-
 ################################################################################
 
-def md5sum_file(filename):
-    file_handle = open(filename)
-    md5sum = apt_pkg.md5sum(file_handle)
-    file_handle.close()
-    return md5sum
 
 ################################################################################
 
@@ -661,8 +592,8 @@ def sign_changes(changes, dsc):
     filehandle.write(changes)
     filehandle.close()
 
-    output_filename = "%s_%s_source.changes" % (dsc["source"],
-                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
+    sane_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    output_filename = "%s_%s_source.changes" % (dsc["source"], sane_version)
 
     cmd = "gpg --no-options --batch --no-tty --secret-keyring=%s --keyring=%s --default-key=0x%s --output=%s --clearsign %s" % (secret_keyring, pub_keyring, keyid, output_filename, temp_filename)
     (result, output) = commands.getstatusoutput(cmd)
@@ -676,7 +607,7 @@ def sign_changes(changes, dsc):
 ################################################################################
 
 def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
-                     priority, description, have_orig_tar_gz, requested_by,
+                     priority, description, requires_orig, requested_by,
                      origin):
     """Generate a .changes as a string"""
 
@@ -705,7 +636,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and have_orig_tar_gz:
+        if filename.endswith(".orig.tar.gz") and requires_orig:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -908,7 +839,7 @@ def check_dsc(dsc, current_sources, current_binaries):
 ########################################
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               requires_orig, requested_by, origin, current_sources,
                current_binaries):
     dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
     dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
@@ -918,36 +849,40 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
     dsc_base_filename = os.path.basename(dsc_filename)
     dsc_files.setdefault(dsc_base_filename, {})
-    dsc_files[dsc_base_filename]["md5sum"] = md5sum_file(dsc_filename)
+    dsc_files[dsc_base_filename]["md5sum"] = SyncSource.generateMD5Sum(dsc_filename)
     dsc_files[dsc_base_filename]["size"] = os.stat(dsc_filename)[stat.ST_SIZE]
 
     (old_cwd, tmpdir) = extract_source(dsc_filename)
     
     # Get the upstream version
-    upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
-    if re_strip_revision.search(upstr_version):
-        upstr_version = re_strip_revision.sub('', upstr_version)
- 
+    version_minus_epoch = dak_utils.re_no_epoch.sub('', dsc["version"])
+    if re_strip_revision.search(version_minus_epoch):
+        base_version = re_strip_revision.sub('', version_minus_epoch)
+    else:
+        base_version = version_minus_epoch
+
     # Ensure the changelog file exists
-    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], upstr_version)
+    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], base_version)
 
     # Parse it and then adapt it for .changes
     (changelog, urgency, closes) = parse_changelog(changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
     # Parse the control file
-    control_filename = "%s-%s/debian/control" % (dsc["source"], upstr_version)
+    control_filename = "%s-%s/debian/control" % (dsc["source"], base_version)
     (section, priority, description) = parse_control(control_filename)
 
     cleanup_source(tmpdir, old_cwd, dsc)
 
     changes = generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                               section, priority, description, have_orig_tar_gz,
+                               section, priority, description, requires_orig,
                                requested_by, origin)
 
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
-    output_filename = "%s_%s_source.changes" % (dsc["source"], upstr_version)
+    output_filename = (
+        "%s_%s_source.changes" % (dsc["source"], version_minus_epoch))
+
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
     #     unsigned changes with our forked copy of parse_changes
@@ -1088,73 +1023,32 @@ def read_Sources(filename, origin):
     return S
 
 ################################################################################
-
-def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
-               current_sources, current_binaries):
+def add_source(pkg, Sources, previous_version, suite, requested_by,
+               origin, current_sources, current_binaries):
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
-        
-    have_orig_tar_gz = False
 
     # Download the source
     files = Sources[pkg]["files"]
-    for filename in files:
-        clauseTables = ['SourcePackageFilePublishing']
-        # XXX: this query should at least restrict to distro/archive.
-        query = "SourcePackageFilePublishing.libraryfilealiasfilename = %s" % \
-                sqlvalues(filename)
-        spfp_l = shortlist(SourcePackageFilePublishing.select(
-            query, clauseTables=clauseTables, distinct=True))
-        if spfp_l:
-            if not filename.endswith("orig.tar.gz"):
-                dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
-            if len(spfp_l) != 1:
-                # check if multiple library file alias point to the same
-                # content, this case is harmless, although nasty.
-                library_content_set = set(
-                    [spfp.libraryfilealias.content.id for spfp in spfp_l])
-                # Only dismiss if the contents diverge.
-                if len(library_content_set) > 1:
-                    dak_utils.fubar(
-                        "%s (from %s) returns multiple IDs for orig.tar.gz."
-                        "Help?" % (filename, pkg))
 
-            spfp = spfp_l[0]
-            have_orig_tar_gz = filename
-            print "  - <%s: already in distro - downloading from librarian>" % (filename)
-            output_file = open(filename, 'w')
-            librarian_input = Library.getFileByAlias(spfp.libraryfilealias)
-            output_file.write(librarian_input.read())
-            output_file.close()
-            continue
+    # local debug function to be passed to SyncSource
+    def local_debug(message):
+        print message
 
-        # Download the file
-        download_f = "%s%s" % (origin["url"], files[filename]["remote filename"])
-        if not os.path.exists(filename):
-            print "  - <%s: downloading from %s>" % (filename, origin["url"])
-            sys.stdout.flush()
-            urllib.urlretrieve(download_f, filename)
-        else:
-            print "  - <%s: cached>" % (filename)
+    # Use the SyncSource helper class.
+    sync_source = SyncSource(
+        files=files, origin=origin, debug=local_debug,
+        downloader=urllib.urlretrive)
 
-        # Check md5sum and size match Source
-        actual_md5sum = md5sum_file(filename)
-        expected_md5sum = files[filename]["md5sum"]
-        if actual_md5sum != expected_md5sum:
-            dak_utils.fubar("%s: md5sum check failed (%s [actual] vs. %s [expected])." \
-                        % (filename, actual_md5sum, expected_md5sum))
-        actual_size = os.stat(filename)[stat.ST_SIZE]
-        expected_size = int(files[filename]["size"])
-        if actual_size != expected_size:
-            dak_utils.fubar("%s: size mismatch (%s [actual] vs. %s [expected])." \
-                        % (filename, actual_size, expected_size))
-
-        # Remember the name of the .dsc file
-        if filename.endswith(".dsc"):
-            dsc_filename = os.path.abspath(filename)
+    try:
+        orig_filename = sync_source.fetchLibrarianFiles()
+        dsc_filename = sync_source.fetchSyncFiles()
+        sync_source.checkDownloadedFiles()
+    except SyncSourceError, info:
+        dak_utils.fubar(info)
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -1162,13 +1056,17 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         signing_rules = 0
     else:
         signing_rules = -1
-    
-    import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
-               current_binaries)
 
-    if have_orig_tar_gz:
-        os.unlink(have_orig_tar_gz)
+    # if the orig was found in librarian, it got fetched on disk, but it's
+    # not necessary and won't be included in the changesfile, so
+    # it *can/should* be removed.
+    if orig_filename:
+        os.unlink(orig_filename)
+
+    requires_orig = orig_filename is None
+    import_dsc(dsc_filename, suite, previous_version, signing_rules,
+               requires_orig, requested_by, origin, current_sources,
+               current_binaries)
 
 ################################################################################
 
@@ -1283,11 +1181,11 @@ def options_setup():
 
     # Options controlling where to sync packages to:
 
-    parser.add_option("-c", "--in-component", dest="incomponent",
+    parser.add_option("-c", "--in-component", dest="target_component",
                       help="limit syncs to packages in COMPONENT")
-    parser.add_option("-d", "--to-distro", dest="todistro",
+    parser.add_option("-d", "--to-distro", dest="target_distro",
                       help="sync to DISTRO")
-    parser.add_option("-s", "--to-suite", dest="tosuite",
+    parser.add_option("-s", "--to-suite", dest="target_suite",
                       help="sync to SUITE (aka distrorelease)")
 
     # Options controlling where to sync packages from:
@@ -1324,37 +1222,51 @@ def options_setup():
     if not Options.all and not arguments:
         dak_utils.fubar("Need -a/--all or at least one package name as an argument.")
         
-    if not Options.requestor:
-        if Options.action and not Options.all:
-            dak_utils.fubar("Need -a/--all or an argument for -b/--requested-by.")
-        else:
-            Options.requestor = whoami
-    else:
-        if not uid_mappings.has_key(Options.requestor):
-            dak_utils.fubar("Unknown uid '%s', please update uid_mappings dictionary." 
-                        % (Options.requestor))
-        Options.requestor = uid_mappings[Options.requestor]
-
     return arguments
 
 ################################################################################
 
 def objectize_options():
-    # Convert 'todistro', 'tosuite' and 'incomponent' to objects rather than strings
+    """Parse given options.
 
-    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
+    Convert 'target_distro', 'target_suite' and 'target_component' to objects
+    rather than strings.
+    """
+    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
 
-    if not Options.tosuite:
-        Options.tosuite = Options.todistro.currentrelease.name
-    Options.tosuite = Options.todistro.getRelease(Options.tosuite)
+    if not Options.target_suite:
+        Options.target_suite = Options.target_distro.currentrelease.name
+    Options.target_suite = Options.target_distro.getRelease(Options.target_suite)
 
-    valid_components = dict([(c.name,c) for c in Options.tosuite.components])
-    if Options.incomponent:
-        if Options.incomponent not in valid_components:
-            dak_utils.fubar("%s is not a valid component for %s/%s."
-                            % (Options.incomponent, Options.todistro.name,
-                               Options.tosuite.name))
-        Options.incomponent = valid_components[Options.incomponent]
+    valid_components = (
+        dict([(c.name,c) for c in Options.target_suite.components]))
+    if (Options.target_component and
+        Options.target_component not in valid_components):
+        dak_utils.fubar(
+            "%s is not a valid component for %s/%s."
+            % (Options.target_component, Options.target_distro.name,
+               Options.target_suite.name))
+    Options.target_component = valid_components[Options.target_component]
+
+    # Fix up Options.requestor
+    if Options.requestor:
+        PersonSet = getUtility(IPersonSet)
+        person = PersonSet.getByName(Options.requestor)
+        if not person:
+            dak_utils.fubar("Unknown LaunchPad user id '%s'."
+                            % (Options.requestor))
+        Options.requestor = "%s <%s>" % (person.displayname,
+                                         person.preferredemail.email)
+        # XXX cprov 20061113: is it ensuring RFC-822 sentence is
+        # ASCII ? Don't we support unicodes ?
+        Options.requestor = str(Options.requestor)
+    else:
+        if Options.action and not Options.all:
+            dak_utils.fubar(
+                "Need -a/--all or an argument for -b/--requested-by.")
+        else:
+            Options.requestor = whoami
+
 
 ########################################
 
@@ -1402,8 +1314,9 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
-    current_binaries = read_current_binaries(Options.tosuite)
+    Suite = read_current_source(
+        Options.target_suite, Options.target_component, arguments)
+    current_binaries = read_current_binaries(Options.target_suite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 
 ################################################################################

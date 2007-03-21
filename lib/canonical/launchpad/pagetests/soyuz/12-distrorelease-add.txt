@@ -3,15 +3,15 @@ We will test that we can add a distro release.
 First, we test that the link to add distro releases is not there
 when we are not logged in.
 
-  >>> anon_browser.open("http://localhost/distros/ubuntu")
-  >>> anon_browser.getLink("Add Release")
+  >>> anon_browser.open("http://localhost/ubuntu")
+  >>> anon_browser.getLink("Add release")
   Traceback (most recent call last):
   ...
   LinkNotFoundError 
   
 and that going directly to the page redirects to login
 
-  >>> anon_browser.open("http://localhost/distros/ubuntu/+addrelease")
+  >>> anon_browser.open("http://localhost/ubuntu/+addrelease")
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -21,17 +21,17 @@ This time we expect to be able to see the link and the page.
 
   >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-  >>> browser.open("http://localhost/distros/debian")
-  >>> browser.getLink("Add Release").click()
+  >>> browser.open("http://localhost/debian")
+  >>> browser.getLink("Add release").click()
   >>> browser.url
-  'http://localhost/distros/debian/+addrelease'  
+  'http://localhost/debian/+addrelease'  
 
 OK, let's test as Foo Bar, who is an administrator.
 
-  >>> admin_browser.open("http://localhost/distros/ubuntu")
-  >>> admin_browser.getLink("Add Release").click()
+  >>> admin_browser.open("http://localhost/ubuntu")
+  >>> admin_browser.getLink("Add release").click()
   >>> admin_browser.url
-  'http://localhost/distros/ubuntu/+addrelease'  
+  'http://localhost/ubuntu/+addrelease'  
 
 Now, lets fill out this form and add a release.
 
@@ -44,5 +44,5 @@ Now, lets fill out this form and add a release.
   >>> admin_browser.getControl("Parent Release").value = ['ubuntu/hoary']
   >>> admin_browser.getControl("Add").click()
   >>> admin_browser.url
-  'http://localhost/distros/ubuntu/fidgety'
+  'http://localhost/ubuntu/fidgety'
 

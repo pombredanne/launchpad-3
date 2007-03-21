@@ -3,7 +3,7 @@ contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
     >>> browser.open(
-    ...     "http://localhost:9000/products/firefox/+filebug-advanced")
+    ...     "http://localhost:9000/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -20,7 +20,7 @@ contact, the maintainer will be subscribed to the bug instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/11
+    http://localhost:9000/firefox/+bug/13
 
 Now the reporter and the maintainer are subscribed.
 
@@ -31,7 +31,7 @@ Now the reporter and the maintainer are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(11)
+    >>> bug = getUtility(IBugSet).get(13)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']
@@ -41,7 +41,7 @@ Now the reporter and the maintainer are subscribed.
 Of course, we're able to see the private bug we've just filed in the
 bug listing.
 
-    >>> browser.open("http://localhost:9000/products/firefox/+bugs")
+    >>> browser.open("http://localhost:9000/firefox/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...
@@ -58,19 +58,19 @@ bug listing.
     ...1...
     ...Low...
     ...
-    ...11...
+    ...13...
     ...Undecided...
 
 When the upstream has a security contact, the upstream will be
 subscribed instead.
 
-    >>> browser.open("http://launchpad.dev/products/firefox/+securitycontact")
+    >>> browser.open("http://launchpad.dev/firefox/+securitycontact")
 
     >>> browser.getControl("Security Contact").value = "sabdfl"
     >>> browser.getControl("Change").click()
 
     >>> browser.open(
-    ...     "http://localhost:9000/products/firefox/+filebug-advanced")
+    ...     "http://localhost:9000/firefox/+filebug-advanced")
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -87,11 +87,11 @@ subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/12
+    http://localhost:9000/firefox/+bug/14
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(12)
+    >>> bug = getUtility(IBugSet).get(14)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'sabdfl']

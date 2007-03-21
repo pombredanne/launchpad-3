@@ -17,7 +17,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Product Title</h3>
   <h1>Register a branch</h1>
 </metal:heading>
 
@@ -25,6 +24,9 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
+
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
 
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 

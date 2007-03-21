@@ -27,7 +27,7 @@ authenticated user as the owner of the branch.
 
     >>> branchset_api.register_branch(
     ...      'http://foo.com/branch', '', '', '', '', '')
-    'http://launchpad.dev/people/name16/+branch/+junk/branch'
+    'http://code.launchpad.dev/~name16/+junk/branch'
 
 Now we can see that a branch got registered:
 
@@ -63,7 +63,7 @@ well:
     >>> branchset_api.register_branch(
     ...      other_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
-    'http://launchpad.dev/people/name16/+branch/evolution/branch_name'
+    'http://code.launchpad.dev/~name16/evolution/branch_name'
 
     >>> new_branch = getUtility(IBranchSet).getByUrl(other_branch_url)
     >>> print new_branch.owner.displayname
@@ -105,7 +105,7 @@ gets removed from the stored URL:
     >>> branchset_api.register_branch(
     ...     new_branch_url + '/', 'new_branch', 'branch_title',
     ...     'branch_description', 'test@canonical.com', 'evolution')
-    'http://launchpad.dev/people/name16/+branch/evolution/new_branch'
+    'http://code.launchpad.dev/~name16/evolution/new_branch'
 
     >>> new_branch = getUtility(IBranchSet).getByUrl(new_branch_url)
     >>> print new_branch.url

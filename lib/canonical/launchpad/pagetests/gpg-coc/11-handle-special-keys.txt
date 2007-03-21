@@ -14,14 +14,15 @@ imported.
 
 Try to import a key which is already imported:
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
-  >>> user_browser.getControl(name='fingerprint').value = preimported
-  >>> user_browser.getControl(name='import').click()
-  >>> "A message has been sent" in user_browser.contents
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.getControl(name='fingerprint').value = preimported
+  >>> browser.getControl(name='import').click()
+  >>> "A message has been sent" in browser.contents
   False
   >>> stub.test_emails
   []
-  >>> print user_browser.contents
+  >>> print browser.contents
   <BLANKLINE>
   ...
   ...has already been imported...
@@ -29,17 +30,17 @@ Try to import a key which is already imported:
 Finally, a key which is sign-only. This one is actually supported and
 has a special validation email..
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
-  >>> user_browser.getControl(name='fingerprint').value = sign_only
-  >>> user_browser.getControl(name='import').click()
-  >>> print user_browser.contents
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.getControl(name='fingerprint').value = sign_only
+  >>> browser.getControl(name='import').click()
+  >>> print browser.contents
   <BLANKLINE>
   ...
   ...A message has been sent...
 
 ..which is not encrypted..
 
-  >>> "decrypt the message" in user_browser.contents
+  >>> "decrypt the message" in browser.contents
   False
 
 and looks like this:
@@ -49,8 +50,8 @@ and looks like this:
   >>> print msg.get_payload(decode=True)
   <BLANKLINE>
   ...
-  We received a request from Sample Person using email address 
-  test@canonical.com, trying to confirm an OpenPGP key for use in 
+  We received a request from Sample Person using email address
+  test@canonical.com, trying to confirm an OpenPGP key for use in
   Launchpad.
   <BLANKLINE>
   Key details:

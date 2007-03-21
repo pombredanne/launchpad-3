@@ -50,7 +50,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     current_distrorelease = ShipItDistroRelease.DAPPER
-    max_size_for_auto_approval = 39
+    max_size_for_auto_approval = 15
 
 
 class IEmptyDefaultChoice(IChoice):

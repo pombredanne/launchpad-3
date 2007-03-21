@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 """
 FindImports is a script that processes Python module dependencies.  Currently
 it can be used for finding unused imports and graphing module dependencies

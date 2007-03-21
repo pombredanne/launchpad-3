@@ -1,13 +1,15 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
   <!-- Sprint -->
   <content class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
+    <allow attributes="
+        default_gotchi_resource default_gotchi_heading_resource
+        default_emblem_resource" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />
@@ -16,7 +18,8 @@
   <browser:menus
       module="canonical.launchpad.browser.sprint"
       classes="SprintFacets SprintOverviewMenu 
-               SprintSpecificationsMenu SprintSetContextMenu"
+               SprintSpecificationsMenu SprintSetContextMenu
+               SprintSetFacets"
       />
 
   <browser:navigation
@@ -50,6 +53,9 @@
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
+      name="+listing-simple"
+      template="../templates/sprint-listing-simple.pt" />
+    <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
     <browser:page
@@ -82,59 +88,29 @@
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
   </browser:pages>
 
-  <browser:generalform
-    name="+edit"
-    facet="overview"
-    schema="canonical.launchpad.interfaces.ISprint"
-    class="canonical.launchpad.browser.SprintEditView"
-    label="Edit sprint details"
-    fields="name title summary home_page driver time_zone
-            time_starts time_ends address"
-    arguments="name title time_zone time_starts time_ends"
-    keyword_arguments="summary home_page driver address"
-    permission="launchpad.Edit"
-    template="../templates/sprint-edit.pt">
-    <browser:widget
-      field="summary"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-    <browser:widget
-      field="address"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="3" />
-  </browser:generalform>
+  <browser:page
+      name="+edit"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintEditView"
+      permission="launchpad.Edit"
+      facet="overview"
+      template="../templates/sprint-edit.pt" />
 
-  <browser:generalform
-    name="+attend"
-    for="canonical.launchpad.interfaces.ISprint"
-    schema="canonical.launchpad.interfaces.ISprintAttendance"
-    facet="overview"
-    fields="attendee time_starts time_ends"
-    arguments="attendee time_starts time_ends"
-    class="canonical.launchpad.browser.SprintAttendanceAddView"
-    permission="launchpad.AnyPerson"
-    template="../templates/sprint-attend.pt"
-    >
-    <browser:widget
-      field="attendee"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:generalform>
+  <browser:page
+      name="+attend"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintAttendanceAttendView"
+      facet="overview"
+      permission="launchpad.AnyPerson"
+      template="../templates/sprint-attend.pt" />
 
-  <browser:generalform
-    name="+register"
-    for="canonical.launchpad.interfaces.ISprint"
-    schema="canonical.launchpad.interfaces.ISprintAttendance"
-    class="canonical.launchpad.browser.SprintAttendanceAddView"
-    facet="overview"
-    fields="attendee time_starts time_ends"
-    arguments="attendee time_starts time_ends"
-    title="Register someone else"
-    description="Register someone for attendance at the conference. Note
-                 that anybody can register anybody else as being an
-                 attendee."
-    permission="launchpad.AnyPerson"
-    template="../templates/sprint-register.pt"
-    />
+  <browser:page
+      name="+register"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintAttendanceRegisterView"
+      facet="overview"
+      permission="launchpad.AnyPerson"
+      template="../templates/sprint-register.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISprint"
@@ -156,6 +132,18 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+
+  <!-- IHasSprints -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSprints"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-coming-sprints"
+      template="../templates/hassprints-portlet-coming-sprints.pt" />
+  </browser:pages>
+
+
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
@@ -173,6 +161,13 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetSOP"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
@@ -184,6 +179,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -193,18 +189,12 @@
       template="../templates/sprints-portlet-details.pt" />
   </browser:pages>
 
-  <browser:generalform
+  <browser:page
     name="+new"
     for="canonical.launchpad.interfaces.ISprintSet"
-    schema="canonical.launchpad.interfaces.ISprint"
+    facet="overview"
     class="canonical.launchpad.browser.SprintAddView"
-    label="Register a meeting"
     permission="launchpad.AnyPerson"
-    fields="name title summary driver home_page time_zone time_starts time_ends"
-    arguments="name title time_zone time_starts time_ends"
-    keyword_arguments="summary driver home_page"
-    template="../templates/sprint-new.pt"
-    >
-  </browser:generalform>
+    template="../templates/sprint-new.pt" />
 
 </configure>

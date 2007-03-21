@@ -10,13 +10,13 @@ DistroRelease.
 SourcePackages are available through the web UI after traversing
 through a DistroRelease and SourceName. The URL schema is:
 
-$LP/distros/ubuntu/$DISTRORELEASE/+source/$SOURCENAME
+$LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME
 
 A SourcePackageRelease once published in a DistroRelease is
 represented by a DistroReleaseSourcePackageRelease and easily reached
 by traversing a SourcePackage instance with a valid version, like:
 
-$LP/distros/ubuntu/$DISTRORELEASE/+source/$SOURCENAME/$VERSION
+$LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME/$VERSION
 
 The path to click here is a bit involved, since the source package
 page can only be reached by searching or getting a list of all
@@ -25,15 +25,25 @@ published packages. We will do the last:
 Starting from distribution page:
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu')
+  ...     'http://localhost/ubuntu')
 
 We get a list of all published packages:
 
-  >>> browser.getLink("List All Packages").click()
+  >>> browser.getLink("List all packages").click()
 
 Click on the respective name to get in the DistributionSourcePackage:
+Let's have a look at the firefox DistributionSourcePackage.
 
+  # But mozilla-firefox is not on the current batch of results
   >>> browser.getLink("mozilla-firefox").click()
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  # Let's go to the next batch, where we can see it.
+  >>> browser.getLink("Next").click()
+  >>> browser.getLink("mozilla-firefox").click()
+
 
 There we can see the entire publishing history for the source and
 links to the pages with more specific (useful) information. By
@@ -42,7 +52,7 @@ SourcePackage page:
 
   >>> browser.getLink("warty").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox'
+  'http://localhost/ubuntu/warty/+source/mozilla-firefox'
 
 This page provides its versions publications organised by pocket, as
 we can see 'mozilla-firefox' is published twice in pocket RELEASE
@@ -59,10 +69,10 @@ we can see 'mozilla-firefox' is published twice in pocket RELEASE
       </p>
       <ul>
         <li>
-         <a href="http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
+         <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
         </li>
         <li>
-           <a href="http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
+           <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
         </li>
       </ul>
     </dd>
@@ -74,16 +84,16 @@ Product and Branches:
   >>> print find_tag_by_id(browser.contents, 'upstreams')
   <ul id="upstreams">
     <li>
-      <b>Project:</b>
-      <a href="/projects/mozilla">the Mozilla Project</a>
+      <b>Project Group:</b>
+      <a href="/mozilla">the Mozilla Project</a>
     </li>
-    <li><b>Product:</b>
-      <a href="/products/firefox">Mozilla Firefox</a>
+    <li><b>Project:</b>
+      <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>
-      <a href="http://localhost/products/firefox/trunk">trunk</a><br />
+      <a href="http://localhost/firefox/trunk">trunk</a><br />
     </li>
-    <small>(<a href="http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
+    <small>(<a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
   </ul>
 
 The user can also download the files for the "currentrelease" (last
@@ -118,7 +128,7 @@ a DistroArchReleaseBinaryPackage:
 
   >>> browser.getLink("i386").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/i386/mozilla-firefox'
+  'http://localhost/ubuntu/warty/i386/mozilla-firefox'
 
 More information about this page can be found at
 17-distroarchrelease-binpackages.txt.
@@ -126,7 +136,30 @@ More information about this page can be found at
 Move back to the SourcePackage page to continue the tests:
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox')
+  ...     'http://localhost/ubuntu/warty/+source/mozilla-firefox')
+
+
+PackageRelationships, 'builddepends' & 'builddependsindep', for the
+source in question are provided is this page:
+
+  >>> depends_section = find_tag_by_id(browser.contents, 'depends')
+
+  >>> parse_relationship_section(str(depends_section))
+  LINK: "alsa-utils" -> http://localhost/ubuntu/warty/+source/alsa-utils
+  TEXT: "gcc-3.4 (&gt;= 3.4.1-4sarge1)"
+  TEXT: "gcc-3.4 (&lt;&lt; 3.4.2)"
+  TEXT: "gcc-3.4-base"
+  TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
+  TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
+
+  >>> dependsindep_section = find_tag_by_id(browser.contents, 'dependsindep')
+
+  >>> parse_relationship_section(str(dependsindep_section))
+  LINK: "alsa-utils" -> http://localhost/ubuntu/warty/+source/alsa-utils
+  TEXT: "bacula-common (= 1.34.6-2)"
+  TEXT: "bacula-director-common (= 1.34.6-2)"
+  TEXT: "postgresql-client (&gt;= 7.4)"
+
 
 The '+changelog' page provides an aggregation of the changelogs for
 SourcePackageReleases published in this DistroRelease.
@@ -143,9 +176,9 @@ The text is generated automatically by appending:
 
 for each published version.
 
-  >>> browser.getLink("Change Log").click()
+  >>> browser.getLink("View changelog").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/+changelog'
+  'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 
   >>> print find_tag_by_id(browser.contents, 'changelog')
   <pre id="changelog">
@@ -160,14 +193,14 @@ for each published version.
 Back to the SourcePackage page:
 
   >>> browser.open(
-  ...     'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox')
+  ...     'http://localhost/ubuntu/warty/+source/mozilla-firefox')
 
 We can visit a specific published release of "mozilla-firefox", this
 page is provided by an DistroReleaseSourcePackageRelease instance:
 
   >>> browser.getLink("mozilla-firefox 0.9").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/+source/mozilla-firefox/0.9'
+  'http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9'
 
 There we can see the respective 'changelog' content for this version:
 
@@ -203,7 +236,7 @@ And also download the files contained in this source, like '.orig',
 Let's check how the page behaves if we no files are present:
 
   >>> browser.open(
-  ...     'http://launchpad.dev/distros/ubuntu/hoary/+source/cnews')
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/cnews')
   >>> browser.getLink("cnews cr.g7-37").click()
 
 A string is presented in both 'changesfile' and 'files' sections,

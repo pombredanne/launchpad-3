@@ -6,19 +6,19 @@ distribution in Launchpad. This should take the form of a portlet on the
 product or distribution home page, showing latest specs.
 
   >>> print http(r"""
-  ... GET /products/firefox HTTP/1.1
+  ... GET /firefox HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Latest specifications...
+  ...Latest proposed features...
   ...Support E4X in EcmaScript...
 
 If there are no specifications, then we should not see the "latest
 specifications" portlet.
 
   >>> result = http(r"""
-  ... GET /distros/debian/ HTTP/1.1
+  ... GET /debian/ HTTP/1.1
   ... """)
-  >>> 'Latest specifications' not in str(result)
+  >>> 'Latest proposed features' not in str(result)
   True
 
 
@@ -28,7 +28,7 @@ specifications, at +specs.
 First, let's check on product.
 
   >>> print http(r"""
-  ... GET /products/evolution/+specs HTTP/1.1
+  ... GET /evolution/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -36,7 +36,7 @@ First, let's check on product.
 Now, on distribution.
 
   >>> print http(r"""
-  ... GET /distros/debian/+specs HTTP/1.1
+  ... GET /debian/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -48,7 +48,7 @@ And we should see the latest specifications available for the whole system:
   ... GET /specs/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Recent specifications...
+  ...Recently registered...
 
 
 Which should also support searching:
@@ -57,7 +57,7 @@ Which should also support searching:
   ... GET /specs/?searchtext=svg HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Specification search results...
+  ...blueprint(s) matching...svg...
   ...Support Native SVG Objects...
 
 

@@ -16,7 +16,7 @@
         interface="canonical.launchpad.layers.LaunchpadLayer"/>
     <browser:skin
         name="rosetta"
-        interface="canonical.launchpad.layers.RosettaLayer"/>
+        interface="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:skin
         name="shipit"
         interface="canonical.launchpad.layers.ShipItLayer"/>
@@ -53,6 +53,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.LaunchpadRootIndexView"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
@@ -86,7 +87,7 @@
     <!-- virtual host: code -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="bazaar"
+        name="+code"
         layer="canonical.launchpad.layers.CodeLayer"
         />
     <browser:page
@@ -101,7 +102,7 @@
     <!-- virtual host: translations -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="rosetta"
+        name="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
     <browser:page
@@ -116,7 +117,7 @@
     <!-- virtual host: bugs -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="malone"
+        name="bugs"
         layer="canonical.launchpad.layers.BugsLayer"
         />
     <browser:page

@@ -12,15 +12,15 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, URIField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
-    validate_url)
+    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
+    IHasDrivers, validate_url)
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -69,13 +69,6 @@ def validate_cvs_branch(branch):
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
 
-def validate_svn_repo(repo):
-    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
-        return True
-    else:
-        raise LaunchpadValidationError(
-            'Please give valid Subversion server details.')
-
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
         return True
@@ -83,7 +76,8 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
+class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -204,36 +198,35 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         "have any revision control data for this series, otherwise it "
         "will reflect our current status for importing and syncing the "
         "upstream code and publishing it as a Bazaar branch.")
-    datelastsynced = Attribute("The date on which we last "
-        "successfully synced the upstream RCS into the Bazaar branch "
-        "in .branch.")
-    syncinterval = Attribute("The time between sync attempts for this "
-        "series. In some cases we might want to sync once a week, in "
-        "others, several times per day.")
     rcstype = Choice(title=_("Type of RCS"),
         required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
-    cvsroot = TextLine(title=_("Repository root"), required=False,
+    cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
-        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
-                      '/cvs/gnome'))
+        description=_('The CVSROOT. '
+            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
     cvsmodule = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module)
+        constraint=validate_cvs_module,
+        description=_('The path to import within the repository.'
+            ' Usually, it is the name of the product.'))
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
-    cvsbranch = TextLine(title=_("Branch name"), required=False,
+    cvsbranch = TextLine(title=_("Branch"), required=False,
         constraint=validate_cvs_branch,
-        description=_('The branch representing the upstream codebase for '
-                      'this product series.'))
-    svnrepository = TextLine(title=_("Repository"), required=False,
-        constraint=validate_svn_repo,
-        description=_('The URL (Internet address) of the repository and '
-                      'branch to be imported, in svn:// or http(s):// '
-                      'format. This must be the correct upstream branch '
-                      'for the trunk series of Evolution.'))
+        description=_("The branch in this module."
+            " Only MAIN branches are imported."))
+    svnrepository = URIField(title=_("Branch"), required=False,
+        description=_("The URL of a Subversion branch, starting with svn:// or"
+            " http(s)://. Only trunk branches are imported."),
+        allowed_schemes=["http", "https", "svn", "svn+ssh"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
@@ -243,6 +236,7 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
                       'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
+    # Key dates on the road to import happiness
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
     datestarted = Attribute("The timestamp when we started the latest "
@@ -253,6 +247,17 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
         "of this upstream source.")
     datesyncapproved = Attribute("The date when we approved syncing of "
         "this upstream source into a public Bazaar branch.")
+    # Controlling the freshness of an import
+    syncinterval = Attribute(_("The time between sync attempts for this "
+        "series. In some cases we might want to sync once a week, in "
+        "others, several times per day."))
+    datelastsynced = Attribute(_("The date on which we last "
+        "successfully synced the upstream RCS. The date of the currently "
+        "published branch data if it is older than "
+        "import_branch.last_mirrored"))
+    datepublishedsync = Attribute(_("The date of the currently published "
+        "branch data, in case import_branch.last_mirrored is older than "
+        "datelastsynced."))
 
     def syncCertified():
         """is the series source sync enabled?"""
@@ -262,6 +267,16 @@ class IProductSeries(IHasDrivers, IHasOwner, ISpecificationGoal):
 
     def autoTestFailed():
         """has the series source failed automatic testing by roomba?"""
+
+    def importUpdated():
+        """Import or sync run completed successfully, update last-synced times.
+
+        If datelastsynced is set, and import_branch.last_mirrored is more
+        recent, then this is the date of the currently published import. Save
+        it into datepublishedsync.
+
+        Then, set datelastsynced to the current time.
+        """
 
 
 class IProductSeriesSourceAdmin(Interface):

@@ -7,13 +7,6 @@
 >
   <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
-  <h3 metal:fill-slot="pageheading"
-      tal:content="context/title">Spec Title</h3>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">

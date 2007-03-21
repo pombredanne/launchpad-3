@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IDistributionSet, IBugTrackerSet,
-    IProductSet, NotFoundError)
+    IProductSet, NotFoundError, IDistributionMirrorSet)
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -97,5 +97,28 @@ class LaunchpadCelebrities:
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
-    support_tracker_janitor = CelebrityDescriptor(IPersonSet,
-                                                  'support-tracker-janitor')
+    launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
+    answer_tracker_janitor = CelebrityDescriptor(
+        IPersonSet, 'support-tracker-janitor')
+    team_membership_janitor = CelebrityDescriptor(
+        IPersonSet, 'team-membership-janitor')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
+
+    @property
+    def ubuntu_archive_mirror(self):
+        mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
+            'http://archive.ubuntu.com/ubuntu/')
+        if mirror is None:
+            raise MissingCelebrityError('http://archive.ubuntu.com/ubuntu/')
+        assert mirror.isOfficial(), "Main mirror must be an official one."
+        return mirror
+
+    @property
+    def ubuntu_release_mirror(self):
+        mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
+            'http://releases.ubuntu.com/')
+        if mirror is None:
+            raise MissingCelebrityError('http://releases.ubuntu.com/')
+        assert mirror.isOfficial(), "Main mirror must be an official one."
+        return mirror

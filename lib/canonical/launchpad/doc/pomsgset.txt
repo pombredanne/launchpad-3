@@ -1,20 +1,19 @@
-POMsgSet
-========
+= POMsgSet =
 
 A POMsgSet represents a concrete msgset translation from a POFile.
 
 It's linked with a POTMsgSet that has the English strings that are being
 translated.
 
-POMsgSet.updateTranslationSet
------------------------------
+== updateTranslationSet ==
 
 This method is used to handle translation submission into the system, either
 from the web UI or using the upload feature.
 
 Get the PO msgid we will be working with.
 
-  >>> from canonical.launchpad.database import POMsgSet, POMsgID, Language
+  >>> from canonical.launchpad.database import (
+  ...     POTMsgSet, POMsgSet, POMsgID, Language)
   >>> from canonical.launchpad.database import POTemplate
   >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
 
@@ -61,8 +60,12 @@ And the fuzzy flags should also be disabled
 
 Let's add a fuzzy translation.
 
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foo'}, fuzzy=True, published=True)
+  ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now it should appear as active and as published.
 
@@ -81,7 +84,8 @@ And also, the fuzzy flag should be set in both cases.
 Now let's think that upstream removed that translation completely...
 
   >>> upstream_pomsgset.updateTranslationSet(
-  ...     carlos, {0: u''}, fuzzy=False, published=True)
+  ...     carlos, {0: u''}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 The active text should still have it as we never remove anything from Rosetta
 if upstream does it
@@ -118,7 +122,8 @@ editor for this POFile.
 
   >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
   >>> pomsgset.updateTranslationSet(
-  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False)
+  ...     no_priv, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 Now, we should have one extra suggestion.
 
@@ -138,17 +143,18 @@ And the active translation is not the one we suggested.
 
 And previous reviewer was
 
-  >>> selection = pomsgset.getSelection(0)
-  >>> selection.reviewer.name
+  >>> pomsgset.reviewer.name
   u'carlos'
 
 Now, Foo Bar, a translator with permissions, is going to approve that new
 suggestion.
 
   >>> pomsgset.updateTranslationSet(
-  ...     foobar, {0: u'test string'}, fuzzy=False, published=False)
+  ...     foobar, {0: u'test string'}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
 
 We don't have any suggestion newer than the new active translation
+
   >>> suggested = pomsgset.getSuggestedSubmissions(0)
   >>> suggested.count()
   0
@@ -163,13 +169,11 @@ And the active translation is now the one from no-priv user.
 
 Also, we should have Foo Bar as the reviewer of that translation.
 
-  >>> selection = pomsgset.getSelection(0)
-  >>> selection.reviewer.displayname
+  >>> pomsgset.reviewer.displayname
   u'Foo Bar'
 
 
-POMsgSet.pluralforms
---------------------
+== pluralforms ==
 
 This attribute tell us the amount of plural forms we have in the language
 associated with this message set.
@@ -218,3 +222,75 @@ We can guess the pluralforms for this language thru ILanguage.pluralforms:
   3
   >>> ru_dummypomsgset.active_texts
   [None, None, None]
+
+
+== isNewerThan ==
+
+This method tells us whether the active translation was reviewed after the
+given timestamp.
+
+  >>> from datetime import datetime
+  >>> from pytz import UTC
+  >>> from canonical.launchpad.interfaces import TranslationConstants
+  >>> pomsgset = POMsgSet.get(2)
+  >>> pomsgset.date_reviewed.isoformat()
+  '2005-04-07T13:19:17.601068+00:00'
+  >>> pomsgset.isNewerThan(datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
+  True
+  >>> pomsgset.isNewerThan(datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
+  False
+
+== getWikiSubmissions ==
+
+This method returns a set of submissions that have translations for the
+same msgid as the given IPOMsgSet across the whole system.
+
+  # Get a message that has an active translation.
+  >>> pomsgset_translated = POMsgSet.get(752)
+  >>> print pomsgset_translated.pofile.title
+  Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+  >>> pomsgid = pomsgset_translated.potmsgset.getPOMsgIDs()[0]
+  >>> print pomsgid.msgid
+  test man page
+  >>> pomsgset_translated.active_texts
+  [u'just a translation']
+
+It doesn't return other submissions done in the given IPOMsgSet as the 'wiki'
+space is for any submission done outside that IPOMsgSet.
+
+  # There is no other message with the same msgid in our system that has a non
+  # active submission.
+  >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
+  >>> wiki_submissions.count()
+  0
+
+  # Now, we get a dummy message that has the same msgid as the previous one.
+  # It's dummy, which means it doesn't exist in our database, so is impossible
+  # to have a submission already for it.
+  >>> potmsgset = POTMsgSet.get(167)
+  >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
+  >>> print pomsgset_untranslated.pofile.title
+  Spanish (es) translation of man in Ubuntu Hoary package "pmount"
+  >>> pomsgid = potmsgset.getPOMsgIDs()[0]
+  >>> print pomsgid.msgid
+  test man page
+
+  # As expected, is not translated.
+  >>> pomsgset_untranslated.active_texts
+  [None]
+
+This other IPOMsgSet though, will get all submissions done in
+pomsgset_translated as it's another context.
+
+  # And we get as a suggestions submissions for previous message.
+  >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+  >>> wiki_submissions.count()
+  3
+  >>> for submission in wiki_submissions:
+  ...     assert submission.pomsgset == pomsgset_translated, (
+  ...         "This wiki suggestion doesn't come from the expected IPOMgsSet")
+  ...     print submission.potranslation.translation
+  blah, blah, blah
+  lalalala
+  just a translation
+

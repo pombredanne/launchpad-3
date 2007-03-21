@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 #
 """Database schemas
 
@@ -18,14 +18,7 @@ __metaclass__ = type
 #
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
-
-# The DBSchema subclasses should be in alphabetical order, listed after
-# EnumCol and Item.  Please keep it that way.
 __all__ = (
-'EnumCol',
-'Item',
-'DBSchema',
-# DBSchema types follow.
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
@@ -33,8 +26,11 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchLifecycleStatus',
+'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -66,6 +62,11 @@ __all__ = (
 'PollSecrecy',
 'ProjectRelationship',
 'ProjectStatus',
+'QuestionAction',
+'QuestionParticipation',
+'QuestionPriority',
+'QuestionSort',
+'QuestionStatus',
 'RevisionControlSystems',
 'RosettaFileFormat',
 'RosettaImportStatus',
@@ -89,11 +90,6 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
-'TicketAction',
-'TicketParticipation',
-'TicketPriority',
-'TicketSort',
-'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -105,292 +101,7 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-import sys
-import warnings
-
-from zope.interface.advice import addClassAdvisor
-from zope.security.proxy import isinstance as zope_isinstance
-
-from sqlobject.col import SOCol, Col
-from sqlobject.include import validators
-import sqlobject.constraints as consts
-
-from canonical.database.constants import DEFAULT
-
-
-class SODBSchemaEnumCol(SOCol):
-
-    def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        if not issubclass(self.schema, DBSchema):
-            raise TypeError('schema must be a DBSchema: %r' % self.schema)
-        SOCol.__init__(self, **kw)
-        self.validator = validators.All.join(
-            DBSchemaValidator(schema=self.schema), self.validator)
-
-    def autoConstraints(self):
-        return [consts.isInt]
-
-    def _sqlType(self):
-        return 'INT'
-
-
-class DBSchemaEnumCol(Col):
-    baseClass = SODBSchemaEnumCol
-
-
-class DBSchemaValidator(validators.Validator):
-
-    def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        validators.Validator.__init__(self, **kw)
-
-    def fromPython(self, value, state):
-        """Convert from DBSchema Item to int.
-
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
-        25
-        >>> validator.fromPython(tuple(), None)
-        Traceback (most recent call last):
-        ...
-        TypeError: Not a DBSchema Item: ()
-        >>> validator.fromPython(ImportTestStatus.NEW, None)
-        Traceback (most recent call last):
-        ...
-        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
-        >>>
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        if isinstance(value, int):
-            raise TypeError(
-                'Need to set a dbschema Enum column to a dbschema Item,'
-                ' not an int')
-        if not zope_isinstance(value, Item):
-            # We use repr(value) because if it's a tuple (yes, it has been
-            # seen in some cases) then the interpolation would swallow that
-            # fact, confusing poor programmers like Daniel.
-            raise TypeError('Not a DBSchema Item: %s' % repr(value))
-        # Using != rather than 'is not' in order to cope with Security Proxy
-        # proxied items and their schemas.
-        if value.schema != self.schema:
-            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
-                value.schema, self.schema))
-        return value.value
-
-    def toPython(self, value, state):
-        """Convert from int to DBSchema Item.
-
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
-        True
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        return self.schema.items[value]
-
-EnumCol = DBSchemaEnumCol
-
-def docstring_to_title_descr(string):
-    """When given a classically formatted docstring, returns a tuple
-    (title,x description).
-
-    >>> class Foo:
-    ...     '''
-    ...     Title of foo
-    ...
-    ...     Description of foo starts here.  It may
-    ...     spill onto multiple lines.  It may also have
-    ...     indented examples:
-    ...
-    ...       Foo
-    ...       Bar
-    ...
-    ...     like the above.
-    ...     '''
-    ...
-    >>> title, descr = docstring_to_title_descr(Foo.__doc__)
-    >>> print title
-    Title of foo
-    >>> for num, line in enumerate(descr.splitlines()):
-    ...    print "%d.%s" % (num, line)
-    ...
-    0.Description of foo starts here.  It may
-    1.spill onto multiple lines.  It may also have
-    2.indented examples:
-    3.
-    4.  Foo
-    5.  Bar
-    6.
-    7.like the above.
-
-    """
-    lines = string.splitlines()
-    # title is the first non-blank line
-    for num, line in enumerate(lines):
-        line = line.strip()
-        if line:
-            title = line
-            break
-    else:
-        raise ValueError
-    assert not lines[num+1].strip()
-    descrlines = lines[num+2:]
-    descr1 = descrlines[0]
-    indent = len(descr1) - len(descr1.lstrip())
-    descr = '\n'.join([line[indent:] for line in descrlines])
-    return title, descr
-
-
-class OrderedMapping:
-
-    def __init__(self, mapping):
-        self.mapping = mapping
-
-    def __getitem__(self, key):
-        if key in self.mapping:
-            return self.mapping[key]
-        else:
-            for k, v in self.mapping.iteritems():
-                if v.name == key:
-                    return v
-            raise KeyError, key
-
-    def __iter__(self):
-        L = self.mapping.items()
-        L.sort()
-        for k, v in L:
-            yield v
-
-
-class ItemsDescriptor:
-
-    def __get__(self, inst, cls=None):
-        return OrderedMapping(cls._items)
-
-
-class Item:
-    """An item in an enumerated type.
-
-    An item has a name, title and description.  It also has an integer value.
-
-    An item has a sortkey, which defaults to its integer value, but can be
-    set specially in the constructor.
-
-    """
-
-    def __init__(self, value, title, description=None, sortkey=None):
-        frame = sys._getframe(1)
-        locals = frame.f_locals
-
-        # Try to make sure we were called from a class def
-        if (locals is frame.f_globals) or ('__module__' not in locals):
-            raise TypeError("Item can be used only from a class definition.")
-
-        addClassAdvisor(self._setClassFromAdvice)
-        try:
-            self.value = int(value)
-        except ValueError:
-            raise TypeError("value must be an int, not %r" % (value,))
-        if description is None:
-            self.title, self.description = docstring_to_title_descr(title)
-        else:
-            self.title = title
-            self.description = description
-        if sortkey is None:
-            self.sortkey = self.value
-        else:
-            self.sortkey = sortkey
-
-    def _setClassFromAdvice(self, cls):
-        self.schema = cls
-        names = [k for k, v in cls.__dict__.iteritems() if v is self]
-        assert len(names) == 1
-        self.name = names[0]
-        if not hasattr(cls, '_items'):
-            cls._items = {}
-        cls._items[self.value] = self
-        return cls
-
-    def __int__(self):
-        raise TypeError("Cannot cast Item to int.  Use item.value instead.")
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return "<Item %s (%d) from %s>" % (self.name, self.value, self.schema)
-
-    def __sqlrepr__(self, dbname):
-        return repr(self.value)
-
-    def __eq__(self, other, stacklevel=2):
-        if isinstance(other, int):
-            warnings.warn('comparison of DBSchema Item to an int: %r' % self,
-                stacklevel=stacklevel)
-            return False
-        elif zope_isinstance(other, Item):
-            return self.value == other.value and self.schema == other.schema
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other, stacklevel=3)
-
-    def __lt__(self, other):
-        return self.sortkey < other.sortkey
-
-    def __gt__(self, other):
-        return self.sortkey > other.sortkey
-
-    def __le__(self, other):
-        return self.sortkey <= other.sortkey
-
-    def __ge__(self, other):
-        return self.sortkey >= other.sortkey
-
-    def __hash__(self):
-        return self.value
-
-    # These properties are provided as a way to get at the other
-    # schema items and name from a security wrapped Item instance when
-    # there are no security declarations for the DBSchema class.  They
-    # are used by the enumvalue TALES expression.
-    @property
-    def schema_items(self):
-        return self.schema.items
-
-    @property
-    def schema_name(self):
-        return self.schema.__name__
-
-# TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
-#       and makes the introspectible.
-#       Also, makes the description the same as the docstring.
-#       Also, sets the name on each Item based on its name.
-#       (Done by crufty class advice at present.)
-#       Also, set the name on the DBSchema according to the class name.
-#
-#       Also, make item take just one string, optionally, and parse that
-#       to make something appropriate.
-
-class DBSchema:
-    """Base class for database schemas."""
-
-    # TODO: Make description a descriptor that automatically refers to the
-    #       docstring.
-    description = "See body of class's __doc__ docstring."
-    title = "See first line of class's __doc__ docstring."
-    name = "See lower-cased-spaces-inserted class name."
-    items = ItemsDescriptor()
-
+from canonical.launchpad.webapp.enum import DBSchema, Item
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
@@ -1671,155 +1382,152 @@ class SprintSpecificationStatus(DBSchema):
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketParticipation(DBSchema):
-    """The different ways a person can be involved in a ticket.
+class QuestionParticipation(DBSchema):
+    """The different ways a person can be involved in a question.
 
-    This enumeration is part of the ITicketActor.searchTickets() API.
+    This enumeration is part of the IPerson.searchTickets() API.
     """
 
     OWNER = Item(10, """
         Owner
 
-        The person created the ticket.
+        The person created the question.
         """)
 
     SUBSCRIBER = Item(15, """
         Subscriber
 
-        The person subscribed to the ticket.
+        The person subscribed to the question.
         """)
 
     ASSIGNEE = Item(20, """
         Assignee
 
-        The person is assigned to the ticket.
+        The person is assigned to the question.
         """)
 
     COMMENTER = Item(25, """
         Commenter
 
-        The person commented on the ticket.
+        The person commented on the question.
         """)
 
     ANSWERER = Item(30, """
         Answerer
 
-        The person answered the ticket.
+        The person answered the question.
         """)
 
 
-class TicketPriority(DBSchema):
-    """The Priority with a Support Request must be handled.
+class QuestionPriority(DBSchema):
+    """The Priority with a Question must be handled.
 
-    This enum is used to prioritise work done in the Launchpad support
-    request management system.
+    This enum is used to prioritise work done in the Launchpad Answert Tracker
+    management system.
     """
 
     WISHLIST = Item(0, """
         Wishlist
 
-        This support ticket is really a request for a new feature. We will
-        not take it further as a support ticket, it should be closed, and a
-        specification created and managed in the Launchpad Specification
-        Tracker.
+        This question is really a request for a new feature. We will not take
+        it further as a question, it should be closed, and a specification
+        created and managed in the Launchpad Specification tracker.
         """)
 
     NORMAL = Item(10, """
         Normal
 
-        This support ticket is of normal priority. We should respond to it
-        in due course.
+        This question is of normal priority. We should respond to it in due
+        course.
         """)
 
     HIGH = Item(70, """
         High
 
-        This support ticket has been flagged as being of higher than normal
-        priority. It should always be prioritised over a "normal" support
-        request.
+        This question has been flagged as being of higher than normal
+        priority. It should always be prioritised over a "normal" question.
         """)
 
     EMERGENCY = Item(90, """
         Emergency
 
-        This support ticket is classed as an emergency. No more than 5% of
-        requests should fall into this category. Support engineers should
+        This question is classed as an emergency. No more than 5% of
+        questions should fall into this category. Support engineers should
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
         """)
 
 
-class TicketAction(DBSchema):
-    """An enumeration of the possible actions done on a ticket.
+class QuestionAction(DBSchema):
+    """An enumeration of the possible actions done on a question.
 
     This enumeration is used to tag the action done by a user with
-    each TicketMessage. Most of these action indicates a status change
-    on the ticket.
+    each QuestionMessage. Most of these action indicates a status change
+    on the question.
     """
 
     REQUESTINFO = Item(10, """
         Request for more information
 
-        This message asks for more information about the support
-        request.
+        This message asks for more information about the question.
         """)
 
     GIVEINFO = Item(20, """
         Give more information
 
         In this message, the submitter provides more information about the
-        request.
+        question.
         """)
 
     COMMENT = Item(30, """
         Comment
 
         User commented on the message. This is use for example for messages
-        added to a ticket in the SOLVED state.
+        added to a question in the SOLVED state.
         """)
 
     ANSWER = Item(35, """
         Answer
 
-        This message provides an answer to the support request.
+        This message provides an answer to the question.
         """)
 
     CONFIRM = Item(40, """
         Confirm
 
-        This message confirms that an answer solved the problem.
+        This message confirms that an answer solved the question.
         """)
 
     REJECT = Item(50, """
         Reject
 
-        This message rejects a support request as invalid.
+        This message rejects a question as invalid.
         """)
 
     EXPIRE = Item(70, """
         Expire
 
-        Automatic message created when the ticket is expired.
+        Automatic message created when the question is expired.
         """)
 
     REOPEN = Item(80, """
         Reopen
 
-        Message from the submitter that reopens the ticket with more
-        information concerning the request.
+        Message from the submitter that reopens the question while providing
+        more information.
         """)
 
     SETSTATUS = Item(90, """
         Change status
 
-        Message from an administrator that explain why the ticket status
+        Message from an administrator that explain why the question status
         was changed.
         """)
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketSort(DBSchema):
-    """An enumeration of the valid ticket search sort order.
+class QuestionSort(DBSchema):
+    """An enumeration of the valid question search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
@@ -1828,13 +1536,13 @@ class TicketSort(DBSchema):
     RELEVANCY = Item(5, """
     by relevancy
 
-    Sort by relevancy of the ticket toward the search text.
+    Sort by relevancy of the question toward the search text.
     """)
 
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Sort questions by status: Open, Needs information, Answered, Solved,
     Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
@@ -1843,22 +1551,28 @@ class TicketSort(DBSchema):
     NEWEST_FIRST = Item(15, """
     newest first
 
-    Sort ticket from newest to oldest.
+    Sort questions from newest to oldest.
     """)
 
     OLDEST_FIRST = Item(20, """
     oldest first
 
-    Sort tickets from oldset to newest.
+    Sort questions from oldset to newest.
+    """)
+
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort questions that recently received new information from the owner first.
     """)
 
 
-class TicketStatus(DBSchema):
-    """The current status of a Support Request
+class QuestionStatus(DBSchema):
+    """The current status of a Question.
 
-    This enum tells us the current status of the support ticket.
+    This enum tells us the current status of the question.
 
-    The lifecycle of a support request is documented in
+    The lifecycle of a question is documented in
     https://help.launchpad.net/SupportRequestLifeCycle, so remember
     to update that document for any pertinent changes.
     """
@@ -1866,14 +1580,14 @@ class TicketStatus(DBSchema):
     OPEN = Item(10, """
         Open
 
-        The request is waiting for an answer. This could be a new request
-        or a request where the given answer was refused by the submitter.
+        The question is waiting for an answer. This could be a new question
+        or a question where the given answer was refused by the submitter.
         """)
 
     NEEDSINFO = Item(15, """
         Needs information
 
-        A user requested more information from the submitter. The request
+        A user requested more information from the submitter. The question
         will be moved back to the OPEN state once the submitter provides the
         answer.
         """)
@@ -1881,29 +1595,30 @@ class TicketStatus(DBSchema):
     ANSWERED = Item(18, """
         Answered
 
-        An answer was given on this request. We assume that the answer
-        is the correct one. The user will post back changing the ticket's
+        An answer was given on this question. We assume that the answer
+        is the correct one. The user will post back changing the question's
         status back to OPEN if that is not the case.
         """)
 
     SOLVED = Item(20, """
         Solved
 
-        The submitter confirmed that an answer solved his problem.
+        The submitter confirmed that an answer solved his question.
         """)
 
     EXPIRED = Item(25, """
         Expired
 
-        The ticket has been expired after 15 days without comments in the
+        The question has been expired after 15 days without comments in the
         OPEN or NEEDSINFO state.
         """)
 
     INVALID = Item(30, """
         Invalid
 
-        This ticket isn't a support request. It could be a duplicate request,
-        spam or anything that should not appear in the support tracker.
+        This question isn't a valid question. It could be a duplicate
+        question, spam or anything that should not appear in the
+        Answer Tracker.
         """)
 
 
@@ -1912,67 +1627,62 @@ class ImportStatus(DBSchema):
     on."""
 
     DONTSYNC = Item(1, """
-        Do Not Sync
+        Do Not Import
 
-        We do not want to attempt to test or sync this upstream repository
-        or branch. The ProductSeries can be set to DONTSYNC from any state
-        other than SYNCING. Once it is Syncing, it can be STOPPED but should
-        not be set to DONTSYNC. This prevents us from forgetting that we
-        were at one stage SYNCING the ProductSeries.  """)
+        Launchpad will not attempt to make a Bazaar import.
+        """)
 
     TESTING = Item(2, """
         Testing
 
-        New entries should start in this mode. We will try to import the
-        given upstream branch from CVS or SVN automatically. When / if this
-        ever succeeds it should set the status to AUTOTESTED.  """)
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
 
     TESTFAILED = Item(3, """
         Test Failed
 
-        This sourcesource has failed its test import run. Failures can be
-        indicative of a problem with the RCS server, or a problem with the
-        actual data in their RCS system, or a network error.""")
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
 
     AUTOTESTED = Item(4, """
-        Auto Tested
+        Test Successful
 
-        The automatic testing system ("roomba") has successfully imported
-        and in theory verified its import of the upstream revision control
-        system. This ProductSeries is a definite candidate for manual review
-        and should be switched to PROCESSING.  """)
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
 
     PROCESSING = Item(5, """
         Processing
 
-        This ProductSeries is nearly ready for syncing. We will run it
-        through the official import process, and then manually review the
-        results. If they appear to be correct, then the
-        ProductSeries.bazimportstatus can be set to SYNCING.  """)
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
     SYNCING = Item(6, """
-        Syncing
+        Online
 
-        This ProductSeries is in Sync mode and SHOULD NOT BE EDITED OR
-        CHANGED.  At this point, protection of the data related to the
-        upstream revision control system should be extreme, with only
-        launchpad.Special (in this case the vcs-imports team) able to affect
-        these fields. If it is necessary to stop the syncing then the status
-        must be changed to STOPPED, and not to DONTSYNC.  """)
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
 
     STOPPED = Item(7, """
         Stopped
 
-        This state is used for ProductSeries that were in SYNCING mode and
-        it was necessary to stop the sync activity. For example, when an
-        upstream uses the same branch for versions 1, 2 and 3 of their
-        product, we should put the ProductSeries into STOPPED after each
-        release, create a new ProductSeries for the next version with the
-        same branch details for upstream revision control system. That way,
-        if they go back and branch off the previous release tag, we can
-        amend the previous ProductSeries.  In theory, a STOPPED
-        ProductSeries can be set to Sync again, but this requires serious
-        Bazaar fu, and the vcs-imports team.  """)
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
 
 class SourcePackageFileType(DBSchema):
@@ -2657,6 +2367,76 @@ class BranchLifecycleStatus(DBSchema):
         """, sortkey=50)
 
 
+# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
+# until I find a better way of extending an existing list.
+# The dbschema refactoring should make this all become simple.
+class BranchLifecycleStatusFilter(DBSchema):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+
+    CURRENT = Item(-1, """
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item(0, """
+        Any Status
+
+        Show all the branches.
+        """)
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """, sortkey=60)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """, sortkey=30)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """, sortkey=20)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """, sortkey=10)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """, sortkey=40)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """, sortkey=50)
+
+
+
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -2704,6 +2484,71 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
+        """)
+
+
+
+class BranchSubscriptionNotificationLevel(DBSchema):
+    """Branch Subscription Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to modifications
+    to branches whether it be to branch attributes in the UI, or
+    to the contents of the branch found by the branch scanner.
+    """
+
+    NOEMAIL = Item(0, """
+        No email
+
+        Do not send any email about changes to this branch.
+        """)
+
+    ATTRIBUTEONLY = Item(1, """
+        Branch attribute notifications only
+
+        Only send notifications for branch attribute changes such
+        as name, description and whiteboard.
+        """)
+
+    DIFFSONLY = Item(2, """
+        Branch diff notifications only
+
+        Only send notifications about new revisions added to this
+        branch.
+        """)
+
+    FULL = Item(3, """
+        Branch attribute and diff notifications
+
+        Send notifications for both branch attribute updates
+        and new revisions added to the branch.
+        """)
+
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = Item(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
         """)
 
 
@@ -3204,73 +3049,79 @@ class MirrorPulseType(DBSchema):
 class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
-    S128K = Item(1, """
+    S128K = Item(10, """
         128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
-    S256K = Item(2, """
+    S256K = Item(20, """
         256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
-    S512K = Item(3, """
+    S512K = Item(30, """
         512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
-    S1M = Item(4, """
+    S1M = Item(40, """
         1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
-    S2M = Item(5, """
+    S2M = Item(50, """
         2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
-    S10M = Item(6, """
+    S10M = Item(60, """
         10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
-    S100M = Item(7, """
+    S45M = Item(65, """
+        45 Mbps
+
+        The upstream link of this mirror can make up to 45 Mb per second.
+        """)
+
+    S100M = Item(70, """
         100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
         """)
 
-    S1G = Item(8, """
+    S1G = Item(80, """
         1 Gbps
 
         The upstream link of this mirror can make up to 1 gigabit per second.
         """)
 
-    S2G = Item(9, """
+    S2G = Item(90, """
         2 Gbps
 
         The upstream link of this mirror can make up to 2 gigabit per second.
         """)
 
-    S4G = Item(10, """
+    S4G = Item(100, """
         4 Gbps
 
         The upstream link of this mirror can make up to 4 gigabit per second.
         """)
 
-    S10G = Item(11, """
+    S10G = Item(110, """
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
-    S20G = Item(12, """
+    S20G = Item(120, """
         20 Gbps
 
         The upstream link of this mirror can make up to 20 gigabits per second.

@@ -2,107 +2,109 @@
 
 There are several views of the branches related to a person.
 
+Branch lists for people also include branches that are owned by
+teams that the person is participating in.
+
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
-  >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.open('http://code.launchpad.dev/~name12')
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Sample Person...
+  ...Bazaar branches...
 
-Then get the detailed branch listing (related branches) for an user which has
-branches in each lifecycle.
-
-  >>> print http(r"""
-  ... GET /people/name12/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<h2>Mature</h2>...
-  ...<h2>Development</h2>...
-  ...<h2>Experimental</h2>...
-  ...<h2>Merged</h2>...
-  ...<h2>Abandoned</h2>...
-  ...<h2>New</h2>...
-
-
-If a person does not have any related branches, we should print an informative
+If a person does not have any related branches, we print an informative
 message.
 
-  >>> print http(r"""
-  ... GET /people/ddaa/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...There are no branches related to David Allouche...
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There may be branches related to Daniel Silverstone but none 
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status".
 
-This informative message should also appear in the detailed branch listing.
+OK, lets follow the advice.
 
-  >>> print http(r"""
-  ... GET /people/ddaa/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...There are no branches related to David Allouche...
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There are no branches related to Daniel Silverstone in Launchpad today.
+  You can use Launchpad as a registry for Bazaar branches, and encourage
+  broader community participation in your project using
+  distributed version control.
 
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site is the 
+normal branch listing view for that person.
+
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There may be branches related to Daniel Silverstone but none 
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status".
+
+
+== Team Branches ==
+
+Branches that are owned by a team that the user is a member of, they are
+shown as 'Team Branch'.
+
+   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main   60 New   evolution   Team Branch
+  
+  
 == Authored Branches ==
 
-There should be a link in the branch context menu for person which points to
+There is a link in the branch context menu for person which points to
 the authored branches page.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+authoredbranches">Branches Authored</a>...
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show authored branches').click()
+   >>> print browser.title
+   Authored branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main         60 New           firefox
+   klingon      30 Experimental  gnome-terminal
+   junk.contrib 60 New
+      2005-10-31 12:03:57 ... weeks ago
 
-And we can load the authored branches page.
-
-  >>> print http(r"""
-  ... GET /people/name12/+authoredbranches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
 
 == Registered Branches ==
 
-There should also be a link which points to the registered branches page.
+There is also a link which points to the registered branches page.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+registeredbranches">Branches Registered</a>...
-
-And we can load the registered branches page.
-
-  >>> print http(r"""
-  ... GET /people/name12/+registeredbranches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show registered branches').click()
+   >>> print browser.title
+   Registered branches for Sample Person 
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   2.6                   Mature       gnome-terminal
+   main                  Development  gnome-terminal
+   mirrored              New          gnome-terminal
+   pushed                New          gnome-terminal
+   scanned               New          gnome-terminal
 
 == Subscribed branches ==
 
-  >>> print http(r"""
-  ... GET /people/name12/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+subscribedbranches">Branches Subscribed</a>...
+From the persons main listing page, there is also a link to subscribed
+branches.
 
-And we can load the subscribed branches page.
-
-  >>> print http(r"""
-  ... GET /people/name12/+subscribedbranches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show subscribed branches').click()
+   >>> print browser.title
+   Subscribed branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   launchpad   Launchpad Developers 60 New gnome-terminal
+   junk.dev    Ubuntu Team          30 Experimental
+      2005-10-31 12:03:57 ... weeks ago

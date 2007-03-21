@@ -5,10 +5,10 @@ Check if the Distribution Search Packages link is present, and
 the page is not broken.
 This page is used to search packages in a distribution context.
 
-  >>> browser.open("http://localhost/distros/ubuntu")
-  >>> browser.getLink("Search Packages").click()
+  >>> browser.open("http://localhost/ubuntu")
+  >>> browser.getLink("Search packages").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/+search'
+  'http://localhost/ubuntu/+search'
 
 Search for a package and check if the result page is not broken
 
@@ -22,13 +22,13 @@ Follow pmount source package path
 
   >>> browser.getLink('pmount').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/+source/pmount'
+  'http://localhost/ubuntu/+source/pmount'
 
 Get pmount 0.1-1 version
 
   >>> browser.getLink("0.1-1").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/+source/pmount/0.1-1'
+  'http://localhost/ubuntu/+source/pmount/0.1-1'
 
 
 

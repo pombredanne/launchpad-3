@@ -1,7 +1,7 @@
 This pagetest tests if we can access the CVE tracker index page
 
   >>> print http(r"""
-  ... GET /malone/cve/ HTTP/1.1
+  ... GET /bugs/cve/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -12,7 +12,7 @@ This pagetest tests if we can access the CVE tracker index page
 Now we try to access the All Registered CVEs page
 
   >>> print http(r"""
-  ... GET /malone/cve/+all HTTP/1.1
+  ... GET /bugs/cve/+all HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

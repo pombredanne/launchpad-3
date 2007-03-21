@@ -1,64 +1,39 @@
-<div class="portlet">
-
-  <h2><span tal:replace="context/displayname">Warty
-      </span> release details</h2>
-
-  <div class="portletBody portletContent">
-
-    <b>Distribution:</b><br />
-    <a tal:attributes="href context/distribution/fmt:url">
-    <span tal:replace="context/distribution/displayname" /></a><br />
-
-    <b>Registrant:</b><br />
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-       tal:content="context/owner/browsername">owner name</a><br />
-
-    <b>Drivers:</b><br />
-    <tal:per_driver repeat="driver context/drivers">
-      <img alt="" src="/@@/user" />
-      <a tal:content="driver/browsername"
-         tal:attributes="href driver/fmt:url">Carlos Perello</a>
-      <br />
-    </tal:per_driver>
-
-    <b>Status:</b><br />
-    <span tal:replace="context/releasestatus/title">Status</span><br />
-
-    <b>Release Date:</b><br />
-    <span
-        tal:condition="context/datereleased"
-        tal:replace="context/datereleased/fmt:date">release date</span>
-    <span
-        tal:condition="not: context/datereleased">When it's
-        done.</span>
-    <br />
-
-    <b>Package counts:</b><br />
-    <span tal:replace="context/sourcecount" /> source<br />
-    <span tal:replace="context/binarycount" /> binary<br />
-
-    <span tal:condition="context/parentrelease" tal:omit-tag>
-      <b>Derives from:</b><br />
-      <a tal:attributes="href context/parentrelease/fmt:url">
-      <span tal:replace="context/parentrelease/distribution/name" />
-      <span tal:replace="context/parentrelease/name" /></a> <br />
-    </span> 
-
-    <span tal:condition="context/architectures" tal:omit-tag>
-      <b>Architectures:</b><br />
-        <ul>
-          <li tal:repeat="arch context/architectures"
-              class="architecture">
-              <a tal:attributes="href arch/fmt:url">
-                <span tal:replace="arch/architecturetag"/>
-                <tal:official condition="arch/official">
-                   (official)
-                </tal:official>
-              </a>
-          </li>
-        </ul>
-    </span>
-   
-  </div>
-</div>
+<table class="summary">
+  <tbody>
+    <tr>
+      <th>Drivers:</th>
+      <td>
+        <tal:has_drivers condition="context/drivers">
+          <tal:per_driver repeat="driver context/drivers">
+            <a tal:replace=" structure driver/fmt:link">Carlos
+            Perello</a><br />
+          </tal:per_driver>
+        </tal:has_drivers>
+        <tal:none condition="not:context/drivers">None appointed</tal:none>
+      </td>
+    </tr>
+    <tr>
+      <th>Status:</th>
+      <td tal:content="context/releasestatus/title" />
+    </tr>
+    <tr>
+      <th>Source packages:</th>
+      <td tal:content="context/sourcecount" />
+    </tr>
+    <tr>
+      <th>Binary packages:</th>
+      <td tal:content="context/binarycount" />
+    </tr>
+    <tr tal:condition="context/parentrelease">
+      <th>Derives from:</th>
+      <td>
+        <a tal:attributes="href context/parentrelease/fmt:url">
+          <tal:distro
+            replace="context/parentrelease/distribution/displayname"
+          />
+          <tal:distrorelease replace="context/parentrelease/displayname" />
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>

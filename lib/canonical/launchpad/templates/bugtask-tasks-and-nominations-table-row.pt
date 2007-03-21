@@ -1,0 +1,120 @@
+<tal:bugtask define="can_edit_bugtask not: context/conjoined_master;
+                     indent_task view/shouldIndentTask;
+                     tasklink view/taskLink;
+                     form_row_id string:task${context/id}">
+  <tr tal:attributes="class view/getTaskRowCSSClass">
+    <td style="padding: 0.3em 0em 0.3em 1.5em"
+        tal:condition="indent_task"
+        tal:define="release_targetname view/getReleaseTargetName">
+      <img src="/@@/milestone" alt="Targeted to" />
+      <span tal:condition="context/conjoined_master"
+            tal:content="release_targetname">
+        Edgy
+      </span>
+      <tal:not-conjoined-task condition="not: context/conjoined_master">
+      <a
+        tal:condition="can_edit_bugtask"
+        tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+        tal:content="release_targetname"
+      />
+      <a
+        tal:condition="not:can_edit_bugtask"
+        tal:attributes="href tasklink"
+        tal:content="release_targetname"
+      />
+      </tal:not-conjoined-task>
+    </td>
+    <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
+      <span style="display: block; padding: 0.25em">
+        <img src="/@@/package-source" alt="package"
+             tal:condition="view/shouldShowPackageIcon" />
+        <img src="/@@/product" alt="project"
+             tal:condition="view/shouldShowProductIcon" />
+        <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
+          <a
+            tal:condition="can_edit_bugtask"
+            tal:attributes="
+                href tasklink;
+                onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+            tal:content="context/targetname"
+          />
+          <a
+            tal:condition="not:can_edit_bugtask"
+            tal:attributes="href tasklink"
+            tal:content="context/targetname"
+          />
+        </tal:not-conjoined-task>
+        <tal:conjoined-task
+            tal:condition="context/conjoined_master"
+            tal:replace="context/targetname">
+          evolution (Ubuntu)
+        </tal:conjoined-task>
+      </span>
+    </td>
+
+    <tal:conjoined-task condition="context/conjoined_master">
+    <td colspan="3" style="vertical-align: middle">
+      <span class="discreet lesser" style="font-size: 100%">
+        Status tracked in
+        <tal:master tal:replace="view/getConjoinedMasterName">
+          Hoary
+        </tal:master>
+      </span>
+    </td>
+    </tal:conjoined-task>
+
+    <tal:not-conjoined-task condition="not:context/conjoined_master">
+    <td tal:attributes="class string:status${context/status/name}"
+        tal:content="context/status/title">
+       $BugTask.status
+    </td>
+
+    <td tal:attributes="class string:importance${context/importance/name}"
+        tal:content="context/importance/title">
+       Critical
+    </td>
+
+    <td style="margin: 0; padding: 0; vertical-align: middle">
+      <tal:has_watch condition="context/bugwatch">
+        <a style="display: block; text-decoration: none; padding: 0.25em"
+           tal:attributes="href context/bugwatch/url">
+          <img
+            alt="Linked to "
+            src="/@@/bug-remote"
+          />
+          <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
+          #<span tal:replace="context/bugwatch/remotebug">123</span>
+        </a>
+      </tal:has_watch>
+      <tal:has_no_watch condition="not: context/bugwatch">
+
+        <tal:has_assignee condition="context/assignee">
+          <a
+            style="display: block; padding: 0.25em; text-decoration: none;"
+            tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
+          >
+            <img tal:attributes="src context/assignee/default_emblem_resource"
+                 style="padding-bottom: 2px"
+                 alt="" />
+            <span tal:replace="context/assignee/browsername">
+              assignee.browsername
+            </span>
+          </a>
+        </tal:has_assignee>
+        <tal:no_assignee condition="not: context/assignee">
+          &mdash;
+        </tal:no_assignee>
+      </tal:has_no_watch>
+    </td>
+    </tal:not-conjoined-task>
+  </tr>
+  <tr
+    tal:attributes="id form_row_id"
+    tal:condition="can_edit_bugtask"
+    style="display: none"
+  >
+   <td colspan="5" tal:content="structure context/@@+edit-form" />
+  </tr>
+</tal:bugtask>

@@ -6,7 +6,7 @@
   <div class="portletContent">
 
     <ul>
-      <li class="languages">
+      <li class="language">
         <span tal:replace="context/language/englishname">Language</span>
         <tal:block condition="context/language/nativename">
           (<span tal:replace="context/language/nativename">native</span>)
@@ -15,9 +15,7 @@
     </ul>
     <tal:has_owner condition="context/owner">
       <b>Creator:</b><br />
-      <img src="/@@/user" />
-      <a tal:content="context/owner/browsername"
-         tal:attributes="href context/owner/fmt:url">Creator</a>
+      <a tal:replace="structure context/owner/fmt:link">Creator</a>
       <br />
     </tal:has_owner>
     <tal:has_series condition="context/potemplate/productseries">
@@ -31,19 +29,19 @@
         <b>Translation group:</b><br />
         <a tal:content="product/translationgroup/title"
            tal:attributes="href
-             string:/rosetta/groups/${product/translationgroup/name}/"
+             string:/translations/groups/${product/translationgroup/name}/"
              >Ubuntu Translation Group</a><br />
       </tal:has_prod_translationgrp>
       <tal:has_project condition="product/project"
                        define="project product/project">
         <b>Project:</b>
           <a tal:content="project/displayname"
-             tal:attributes="href string:/projects/${project/name}/" /><br />
+             tal:attributes="href string:/${project/name}/" /><br />
         <tal:has_proj_translationgrp condition="project/translationgroup">
           <b>Project translation group:</b><br />
           <a tal:content="project/translationgroup/title"
              tal:attributes="href
-                 string:/rosetta/groups/${project/translationgroup/name}/"
+                 string:/translations/groups/${project/translationgroup/name}/"
                >Ubuntu Translation Group</a><br />
         </tal:has_proj_translationgrp>
       </tal:has_project>
@@ -53,14 +51,14 @@
     <tal:block define="distro context/potemplate/distrorelease/distribution">
     <b>Distribution:</b>
     <a tal:content="distro/displayname"
-       tal:attributes="href string:/distros/${distro/name}/" /><br />
+       tal:attributes="href string:/${distro/name}/" /><br />
     <b>Release:</b>
     <a tal:content="context/potemplate/distrorelease/name"
        tal:attributes="href
-         string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/" /><br />
+         string:/${distro/name}/${context/potemplate/distrorelease/name}/" /><br />
     <b>Source package:</b><br />
     <a tal:attributes="href
-         string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/+sources/${context/potemplate/sourcepackagename/name}/">
+         string:/${distro/name}/${context/potemplate/distrorelease/name}/+sources/${context/potemplate/sourcepackagename/name}/">
       <span tal:replace="context/potemplate/sourcepackagename/name" />
       <span tal:replace="context/potemplate/sourcepackageversion" />
     </a><br />
@@ -68,7 +66,7 @@
     <tal:block condition="distro/translationgroup">
       <a tal:content="distro/translationgroup/title"
          tal:attributes="href
-           string:/rosetta/groups/${distro/translationgroup/name}/"
+           string:/translations/groups/${distro/translationgroup/name}/"
            >Distro Translation Group</a>
     </tal:block>
     <tal:block condition="not: distro/translationgroup">

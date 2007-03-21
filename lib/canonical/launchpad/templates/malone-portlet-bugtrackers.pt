@@ -11,7 +11,7 @@
     </ul>
     <ul class="list">
       <li>
-        <a href="/malone/bugtrackers">All 
+        <a href="/bugs/bugtrackers">All 
         <span tal:replace="context/bugtracker_count">15</span>...</a>
       </li>
     </ul>

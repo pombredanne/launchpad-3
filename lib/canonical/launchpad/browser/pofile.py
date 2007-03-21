@@ -32,7 +32,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
 
-
 from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
@@ -92,6 +91,8 @@ class POFileNavigation(Navigation):
 
 
 class POFileFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POFile is not a structural object. It should
+    # inherit all navigation from its product or source package.
     usedfor = IPOFile
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']
@@ -132,11 +133,11 @@ class POFileAppMenus(ApplicationMenu):
         return Link('+translate', text, icon='languages')
 
     def switchlanguages(self):
-        text = 'Switch Languages'
+        text = 'Switch languages'
         return Link('../', text, icon='languages')
 
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('+upload', text, icon='edit')
 
     def download(self):
@@ -144,7 +145,7 @@ class POFileAppMenus(ApplicationMenu):
         return Link('+export', text, icon='download')
 
     def viewtemplate(self):
-        text = 'View Template'
+        text = 'View template'
         return Link('../', text, icon='languages')
 
 
@@ -212,9 +213,6 @@ class POFileUploadView(POFileView):
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
-
-        if not helpers.check_permission('launchpad.Admin', self.context):
-            raise UnexpectedFormData('Only admins can use this form.')
 
         file = self.form['file']
 
@@ -284,7 +282,7 @@ class POFileTranslateView(BaseTranslationView):
     """The View class for a POFile or a DummyPOFile.
 
     This view is based on BaseTranslationView and implements the API
-    defined by tht class.
+    defined by that class.
 
     Note that DummyPOFiles are presented if there is no POFile in the
     database but the user wants to translate it. See how POTemplate

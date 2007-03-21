@@ -19,7 +19,7 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ICanonicalUrlData, ILaunchBag, IPOFileSet, 
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, 
     IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
@@ -27,6 +27,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class POTemplateNavigation(Navigation):
@@ -60,6 +61,8 @@ class POTemplateNavigation(Navigation):
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POTemplate is not a structural object. It should
+    # inherit all navigation from its product or distro release.
 
     usedfor = IPOTemplate
 
@@ -94,16 +97,16 @@ class POTemplateAppMenus(POFileAppMenus):
     links = ['overview', 'upload', 'download', 'edit', 'administer']
 
     def download(self):
-        text = 'Download Translations'
+        text = 'Download translations'
         return Link('+export', text, icon='download')
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
-        text = 'Admin Edit'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 
@@ -222,8 +225,16 @@ class POTemplateView(LaunchpadView):
 
         if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
+            if filename.endswith('.po'):
+                # It's a .po file attached to the template at self.context,
+                # we don't override its path.
+                path = filename
+            else:
+                # It's a template, we override it to have exactly the same
+                # path as the entry has in our database.
+                path = self.context.path
             translation_import_queue.addOrUpdateEntry(
-                self.context.path, content, True, self.user,
+                path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries,

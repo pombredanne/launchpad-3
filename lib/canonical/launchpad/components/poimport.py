@@ -8,15 +8,20 @@ import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, TranslationConstants
-        )
+        IPOTemplate, IPOFile, IPersonSet, TranslationConstants,
+        TranslationConflict)
 from canonical.launchpad.components.poparser import POParser
-
 from canonical.lp.dbschema import PersonCreationRationale
+from canonical.launchpad.webapp import canonical_url
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
+
+
+class NotExportedFromRosetta(Exception):
+    """Raised when a PO file imported lacks the export time from Rosetta."""
 
 
 def getLastTranslator(parser, pofile):
@@ -95,6 +100,13 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             raise OldPOImported(
                 'Previous imported file is newer than this one.')
         else:
+            lock_timestamp = parser.header.getRosettaExportDate()
+
+            if not published and lock_timestamp is None:
+                # We got a .po file from offline translation (not published)
+                # and it misses the export time.
+                raise NotExportedFromRosetta
+
             # Expire old messages
             pofile.expireAllMessages()
             # Update the header
@@ -105,6 +117,7 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
                 last_translator = importer
+
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
@@ -158,7 +171,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                         'pomessage': pomessage,
                         'error-message': ("The msgid_Plural field has changed"
                             " since last time this .po file was\ngenerated,"
-                            " please notify this error to rosetta@ubuntu.com")
+                            " please report this error to %s" %
+                                          config.rosetta.rosettaadmin.email)
                     }
 
                     errors.append(error)
@@ -242,19 +256,30 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             # just suggestions.
             is_editor = pofile.canEditTranslations(importer)
             try:
-                pomsgset.updateTranslationSet(last_translator,
-                                              translations,
-                                              fuzzy, published,
-                                              force_edition_rights=is_editor)
+                pomsgset.updateTranslationSet(
+                    last_translator, translations, fuzzy, published,
+                    lock_timestamp, force_edition_rights=is_editor)
+            except TranslationConflict:
+                error = {
+                    'pomsgset': pomsgset,
+                    'pomessage': pomessage,
+                    'error-message': (
+                        "This message was updated by someone else after you"
+                        " got the .po file.\n This translation is now stored"
+                        " as a suggestion, if you want to set it\n as the"
+                        " used one, go to\n %s/+translate\n and"
+                        " approve it." % canonical_url(pomsgset))
+                }
+
+                errors.append(error)
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
                 # errors.
-                pomsgset.updateTranslationSet(last_translator,
-                                              translations,
-                                              fuzzy, published,
-                                              ignore_errors=True,
-                                              force_edition_rights=is_editor)
+                pomsgset.updateTranslationSet(
+                    last_translator, translations, fuzzy, published,
+                    lock_timestamp, ignore_errors=True,
+                    force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {

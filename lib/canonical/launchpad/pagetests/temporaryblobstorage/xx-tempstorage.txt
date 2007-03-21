@@ -22,6 +22,12 @@ middle of the data so we can ensure binary data is handled correctly.
     True
     >>> ticket = match.group(1)
 
+For easy access to the token in scripts, it's also stored in a HTTP
+header in the response: X-Launchpad-Blob-Token
+
+    >>> anon_browser.headers['X-Launchpad-Blob-Token'] == ticket
+    True
+
 Retrieve the blob and make sure it got stored correctly.
 
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS

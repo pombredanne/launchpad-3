@@ -5,20 +5,23 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTaskSearchParams',
+    'ConjoinedBugTaskEditError',
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
     'IAddBugTaskForm',
     'IPersonBugTaskSearch',
+    'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
+    'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
-    'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'RESOLVED_BUGTASK_STATUSES']
+    'RESOLVED_BUGTASK_STATUSES',
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -52,12 +55,18 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.REJECTED)
 
 
+class ConjoinedBugTaskEditError(Exception):
+    """An error raised when trying to modify a conjoined bugtask."""
+
+
 class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
 
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
+    productseries = Choice(
+        title=_('Product Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -123,6 +132,13 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
+    pillar = Attribute(
+        "The LP pillar (product or distribution) associated with this "
+        "task.")
+    other_affected_pillars = Attribute(
+        "The other pillars (products or distributions) affected by this bug. "
+        "This returns a list of pillars OTHER THAN the pillar associated "
+        "with this particular bug.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -132,6 +148,11 @@ class IBugTask(IHasDateCreated, IHasBug):
     bug_subscribers = Field(
         title=_("A list of IPersons subscribed to the bug, whether directly or "
         "indirectly."), readonly=True)
+
+    conjoined_master = Attribute(
+        "The series- or release-specific bugtask in a conjoined relationship")
+    conjoined_slave = Attribute(
+        "The generic bugtask in a conjoined relationship")
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
@@ -153,8 +174,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson
-        object, the dateassigned is set on the task. If the assignee
-        value is set to None, dateassigned is also set to None.
+        object, the date_assigned is set on the task. If the assignee
+        value is set to None, date_assigned is also set to None.
         """
 
     def updateTargetNameCache():
@@ -178,6 +199,16 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
+        """
+
+    def getDelta(old_task):
+        """Compute the delta from old_task to this task.
+
+        old_task and this task are either both IDistroBugTask's or both
+        IUpstreamBugTask's, otherwise a TypeError is raised.
+
+        Returns an IBugTaskDelta or None if there were no changes between
+        old_task and this task.
         """
 
 
@@ -229,6 +260,10 @@ class IBugTaskSearchBase(Interface):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
+    has_cve = Bool(
+        title=_('Show only bugs associated with a CVE'), required=False)
+    bug_contact = Choice(
+        title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -259,6 +294,13 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
+class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+
+    scope = Choice(
+        title=u"Search Scope", required=False,
+        vocabulary="DistributionOrProductOrProject")
+
+
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen).
 
@@ -266,6 +308,7 @@ class IBugTaskDelta(Interface):
 
     Likewise, if sourcepackagename is not None, product must be None.
     """
+    targetname = Attribute("Where this change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -307,15 +350,18 @@ class IBugTaskDelta(Interface):
         if no change was made to the assignee.
         """)
     statusexplanation = Attribute("The new value of the status notes.")
+    bugwatch = Attribute("The bugwatch which governs this task.")
 
 
+# XXX, Brad Bollenbach, 2006-08-03: This interface should be
+# renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular product."""
+    """A bug needing fixing in a product."""
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular package."""
+    """A bug needing fixing in a distribution, possibly a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         description=_("The source package in which the bug occurs. "
@@ -326,13 +372,20 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroReleaseBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular realease."""
+    """A bug needing fixing in a distrorealease, possibly a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
+
+
+class IProductSeriesBugTask(IBugTask):
+    """A bug needing fixing a productseries."""
+    productseries = Choice(
+        title=_("Product Series"), required=True,
+        vocabulary='ProductSeries')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
@@ -387,6 +440,7 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
@@ -394,7 +448,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False):
+                 tag=None, has_cve=False, bug_contact=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -415,36 +469,30 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-
-        self._has_context = False
+        self.bug_contact = bug_contact
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.product = product
-        self._has_context = True
 
     def setProject(self, project):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.project = project
-        self._has_context = True
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
-        assert not self._has_context
         self.distribution = distribution
-        self._has_context = True
 
     def setDistributionRelease(self, distrorelease):
         """Set the distrorelease context on which to filter the search."""
-        assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        self.productseries = productseries
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
-        assert not self._has_context
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro release.
             self.distrorelease = sourcepackage.distrorelease
@@ -452,7 +500,6 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
-        self._has_context = True
 
 
 class IBugTaskSet(Interface):
@@ -488,13 +535,16 @@ class IBugTaskSet(Interface):
         the BugTaskSearchParams argument supplied.
         """
 
-    def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, status=None,
+    def createTask(bug, product=None, productseries=None, distribution=None,
+                   distrorelease=None, sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
         subscribed.
+
+        If the bug has any accepted release nominations for a supplied
+        distribution, release tasks will be created for them.
 
         Exactly one of product, distribution or distrorelease must be provided.
         """

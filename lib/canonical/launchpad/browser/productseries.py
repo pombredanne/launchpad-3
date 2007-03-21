@@ -3,53 +3,56 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesOverviewMenu',
+           'ProductSeriesSOP',
            'ProductSeriesFacets',
+           'ProductSeriesOverviewMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
-           'ProductSeriesAppointDriverView',
            'ProductSeriesSourceView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
+           'ProductSeriesShortLink',
            'get_series_branch_error']
 
 import cgi
-import re
 
 from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
-    browserLanguages, check_permission, is_tar_filename, request_languages)
+    browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, validate_url, IProductSeries,
+    ISourcePackageNameSet, IProductSeries,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
     LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
 
 
-class ProductSeriesNavigation(Navigation):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
 
@@ -72,10 +75,32 @@ class ProductSeriesNavigation(Navigation):
         return self.context.getRelease(name)
 
 
+class ProductSeriesSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.product.displayname + ' series:'
+
+    def getMainHeading(self):
+        return self.context.name
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Releases, most recent first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
 class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    enable_only = ['overview', 'specifications', 'translations']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):
@@ -88,7 +113,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change Series Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -99,39 +124,39 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.EditSource')
     def editsource(self):
-        text = 'Edit Source'
+        text = 'Edit source'
         return Link('+source', text, icon='edit')
 
     def ubuntupkg(self):
-        text = 'Link to Ubuntu Package'
+        text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='edit')
 
     def add_package(self):
-        text = 'Link to Any Package'
+        text = 'Link to other package'
         return Link('+addpackage', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_milestone(self):
-        text = 'Add Milestone'
+        text = 'Add milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
     def add_release(self):
-        text = 'Register a Release'
+        text = 'Register a release'
         return Link('+addrelease', text, icon='add')
 
     def rdf(self):
-        text = 'Download RDF Metadata'
+        text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
     def add_potemplate(self):
-        text = 'Add Translation Template'
+        text = 'Add translation template'
         return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):
-        text = 'Review Series Details'
+        text = 'Review details'
         return Link('+review', text, icon='edit')
 
 
@@ -149,24 +174,24 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'setgoals', 'listdeclined']
 
     def listall(self):
-        text = 'Show All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def listaccepted(self):
-        text = 'Show Approved'
+        text = 'List approved blueprints'
         return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
-        text = 'Show Proposed'
+        text = 'List proposed blueprints'
         return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
-        text = 'Show Declined'
+        text = 'List declined blueprints'
         summary = 'Show the goals which have been declined'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def setgoals(self):
-        text = 'Set Goals'
+        text = 'Set series goals'
         summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, summary, icon='edit')
 
@@ -190,7 +215,7 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
     links = ['translationupload', ]
 
     def translationupload(self):
-        text = 'Upload Translations'
+        text = 'Upload translations'
         return Link('+translations-upload', text, icon='add')
 
 
@@ -405,14 +430,6 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-
-class ProductSeriesAppointDriverView(SQLObjectEditView):
-    """View class that lets you appoint a driver for a ProductSeries object."""
-
-    def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
@@ -662,3 +679,8 @@ class ProductSeriesSourceSetView:
             html += ' selected'
         html += '>Stopped</option>\n'
 
+
+class ProductSeriesShortLink(DefaultShortLink):
+
+    def getLinkText(self):
+        return self.context.displayname

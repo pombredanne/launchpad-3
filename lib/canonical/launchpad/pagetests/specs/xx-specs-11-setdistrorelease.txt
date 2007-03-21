@@ -8,10 +8,10 @@ First we try to access the addspec page.
 
   >>> user_browser = browser
   >>> user_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> url = 'http://blueprints.launchpad.dev/distros/ubuntu/+addspec'
+  >>> url = 'http://blueprints.launchpad.dev/ubuntu/+addspec'
   >>> user_browser.open(url)
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/+addspec'
+  'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
 Then we try to add a specification to that distro
 
@@ -29,28 +29,28 @@ Then we try to add a specification to that distro
 We're redirected to the Specification page
 
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/+spec/testspec'
+  'http://blueprints.launchpad.dev/ubuntu/+spec/testspec'
 
 Now we try to open the +setrelease page, where there is a form to
 target the newly created spec to a distribution.
 
 
-  >>> url = 'http://blueprints.launchpad.dev/distros/ubuntu/+spec/testspec/+setrelease'
+  >>> url = 'http://blueprints.launchpad.dev/ubuntu/+spec/testspec/+setrelease'
   >>> user_browser.open(url)
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/+spec/testspec/+setrelease'
+  'http://blueprints.launchpad.dev/ubuntu/+spec/testspec/+setrelease'
  
 We are able to target a specification to a distrorelease. We expect to be
 redirected back to the spec page when we are done.
 
   >>> user_browser.open(
-  ... 'http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+setrelease')
+  ... 'http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+setrelease')
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check/+setrelease'
+  'http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+setrelease'
   >>> user_browser.getControl('Release Goal').value = ['5']
   >>> user_browser.getControl('Continue').click()
   >>> user_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/+spec/media-integrity-check'
+  'http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check'
  
 
 After the POST we should see the release goal on the specification page, as
@@ -68,7 +68,7 @@ The spec will not show up immediately as a Grumpy goal since it must
 first be approved.
 
   >>> result = unicode(http(r"""
-  ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
+  ... GET /ubuntu/hoary/+specs HTTP/1.1
   ... """))
   >>> '<td>CD Media Integrity Check' not in result
   True
@@ -76,19 +76,19 @@ first be approved.
 However, we can expect to find it on the approvals page.
 
   >>> user_browser.open(
-  ... 'http://blueprints.launchpad.dev/distros/ubuntu/grumpy/+specs')
+  ... 'http://blueprints.launchpad.dev/ubuntu/grumpy/+specs')
   >>> "CD Media Integrity Check" in user_browser.contents
   False
 
 We will accept it:
 
-  >>> admin_browser.open('http://blueprints.launchpad.dev/distros/ubuntu/grumpy/+setgoals')
+  >>> admin_browser.open('http://blueprints.launchpad.dev/ubuntu/grumpy/+setgoals')
   >>> 'CD Media Integrity' in admin_browser.contents
   True
   >>> admin_browser.getControl('CD Media Integrity Check').selected = True
   >>> admin_browser.getControl('Accept').click()
   >>> admin_browser.url
-  'http://blueprints.launchpad.dev/distros/ubuntu/grumpy'
+  'http://blueprints.launchpad.dev/ubuntu/grumpy'
   >>> 'Accepted 1 specification(s)' in admin_browser.contents
   True
 

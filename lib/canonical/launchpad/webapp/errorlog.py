@@ -19,13 +19,14 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
+from canonical.launchpad.webapp.interfaces import (
+    IErrorReport, IErrorReportRequest)
+from canonical.launchpad.webapp.opstats import OpStats
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.utc
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -354,6 +355,38 @@ class ErrorReportRequest:
     oopsid = None
 
 
+class ScriptRequest(ErrorReportRequest):
+    """Fake request that can be passed to ErrorReportingUtility.raising.
+
+    It can be used by scripts to enrich error reports with context information
+    and a representation of the resource on which the error occured. It also
+    gives access to the generated OOPS id.
+
+    The resource for which the error occured MAY be identified by an URL. This
+    URL should point to a human-readable representation of the model object,
+    such as a page on launchpad.net, even if this URL does not occur as part of
+    the normal operation of the script.
+
+    :param data: context information relevant to diagnosing the error. It is
+        recorded as request-variables in the OOPS.
+    :type data: iterable of (key, value) tuples. Keys need not be unique.
+    :param URL: initial value of the URL instance variable.
+
+    :ivar URL: pointer to a representation of the resource for which the error
+        occured. Defaults to None.
+    :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
+        set to None.
+    """
+
+    def __init__(self, data, URL=None):
+        self._data = list(data)
+        self.oopsid = None
+        self.URL = URL
+
+    def items(self):
+        return self._data
+
+
 class SoftRequestTimeout(RequestExpired):
     """Soft request timeout expired"""
 
@@ -362,6 +395,8 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
+        OpStats.stats['soft timeouts'] += 1
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+

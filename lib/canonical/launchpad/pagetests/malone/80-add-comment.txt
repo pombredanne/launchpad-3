@@ -9,7 +9,7 @@ Bar. First, let's clear out the notification table:
   >>> BugNotification.clearTable()
 
   >>> user_browser.open(
-  ...     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2')
+  ...     'http://localhost/debian/+source/mozilla-firefox/+bug/2')
   >>> user_browser.getControl('Subject').value = (
   ...     'Test Comment Subject')
   >>> user_browser.getControl('Comment', index=-1).value = (
@@ -17,11 +17,10 @@ Bar. First, let's clear out the notification table:
   >>> user_browser.getControl('Save Changes', index=-1).click()
 
   >>> user_browser.url
-  'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2'
+  'http://localhost/debian/+source/mozilla-firefox/+bug/2'
 
   >>> print user_browser.contents
   <...
-  ...Test Comment Subject...
   ...This is a test comment...
 
 

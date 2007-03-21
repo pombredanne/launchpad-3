@@ -34,44 +34,44 @@ i.e., they provide the expected arguments/features in different contexts:
 
 For Distribution, it's possible to filter build results by state and name:
 
-  >>> browser.open("http://launchpad.dev/distros/ubuntu")
+  >>> browser.open("http://launchpad.dev/ubuntu")
   >>> browser.getLink("Builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For Distrorelease, same as Distribution:
 
-  >>> browser.open("http://launchpad.dev/distros/ubuntu/hoary")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary")
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For DistroArchRelease, same as Distribution:
 
-  >>> browser.open("http://launchpad.dev/distros/ubuntu/hoary/i386")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary/i386")
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For Builder, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/+builds/bob")
-  >>> browser.getLink("Build History").click()
+  >>> browser.getLink("Show build history").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For SourcePackage, it's only possible to filter by state.
 
   >>> browser.open(
-  ...   "http://launchpad.dev/distros/ubuntu/hoary/+source/pmount")
-  >>> browser.getLink("View Builds").click()
+  ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State present, Name not present
 
 
 Check the contents of the distro builds list page.
 
-  >>> browser.open("http://launchpad.dev/distros/ubuntu/+builds")
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
 
 Check the presence of some build titles, specially the 'not
 initialised' one (fix bug #52704)
@@ -82,25 +82,30 @@ initialised' one (fix bug #52704)
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...NEEDSBUILD...
+  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  <...
+  ...NEEDSBUILD...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE...
+
+  # We had too many results. Some of them are on the second batch.
+  >>> browser.getLink("Next").click()
+  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  <...
   ...SUPERSEDED...
-  ... i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
+  ...i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
   ...MANUALDEPWAIT...
   ...i386 build of libstdc++ b8p in ubuntu hoary RELEASE...
-  ...Missing Dependencies...
-  ...cpp (&gt;= 4:4.0.1-3), gcc-4.0 (&gt;= 4.0.1-2)...
-  ...Build started:...
-  ...2006-02-27 23:53:59 UTC...
-  ...Bob The Builder...
-  ...Build finished:...
-  ...2006-02-28 00:00:01 UTC...
-  ...six minutes...see the log...'
+  ...Missing dep...
+  ...cpp...gcc-4.0...
+  ...Build star...
+  ...2006-02-27...
+  ...finis...
+  ...2006-02-28...
+  ...six minutes...see the log...
 
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
@@ -150,7 +155,7 @@ to raise the correct exception:
 Check if page still working for sourcepackages with no builds. (bug #62545)
 
   >>> browser.open(
-  ...    "http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+builds")
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
 
@@ -163,7 +168,7 @@ Check if page still working for sourcepackages with no builds. (bug #62545)
 Checking that we show the right message for a distribution that
 doesn't have any builds.
 
-  >>> browser.open("http://launchpad.dev/distros/debian/+builds")
+  >>> browser.open("http://launchpad.dev/debian/+builds")
   >>> browser.contents
   '...No Currently building builds for Debian GNU/Linux...'
 
@@ -171,3 +176,5 @@ doesn't have any builds.
   >>> browser.getControl("Update").click()
   >>> browser.contents
   '...No builds for Debian GNU/Linux...'
+
+

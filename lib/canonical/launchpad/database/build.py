@@ -12,9 +12,15 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
+
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
+
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -26,8 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
+
 
 
 class Build(SQLBase):
@@ -255,7 +260,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.url
+            buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
 
         template = get_email_template('build-notification.txt')
@@ -269,6 +274,8 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': canonical_url(
+                              self.distributionsourcepackagerelease),
             }
         message = template % replacements
 

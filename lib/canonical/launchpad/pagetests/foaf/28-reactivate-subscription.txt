@@ -4,7 +4,7 @@ just deactivated.
 Go to the member's page.
 
   >>> browser.addHeader("Authorization", "Basic foo@baz.com:f")
-  >>> browser.open("http://launchpad.dev/people/myemail/+member/name16")
+  >>> browser.open("http://launchpad.dev/~myemail/+member/name16")
   >>> print browser.contents
   <...
   <BLANKLINE>
@@ -17,7 +17,7 @@ Open a second Browser on the same page:
   >>> from zope.testbrowser.testing import Browser
   >>> browser2 = Browser()
   >>> browser2.addHeader("Authorization", "Basic foo@baz.com:f")
-  >>> browser2.open("http://launchpad.dev/people/myemail/+member/name16")
+  >>> browser2.open("http://launchpad.dev/~myemail/+member/name16")
 
 XXX: See test 27's comment on bug 68655.
 
@@ -32,7 +32,7 @@ Reactivate the subscription:
 And check the results:
 
   >>> browser.url
-  'http://launchpad.dev/people/myemail/+members'
+  'http://launchpad.dev/~myemail/+members'
 
   >>> print browser.contents
   <...
@@ -55,7 +55,7 @@ error message:
   >>> browser2.getControl(name="year").value = ["2049"]
   >>> browser2.getControl("Reactivate").click()
   >>> browser2.url
-  'http://launchpad.dev/people/myemail/+member/name16/+index'
+  'http://launchpad.dev/%7Emyemail/+member/name16/+index'
   >>> print browser2.contents
   <BLANKLINE>
   ...

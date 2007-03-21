@@ -1,0 +1,35 @@
+
+To provide information about archive mirrors to the ubuntu.com website (and
+any other application/website who may want to list the existing mirrors) we
+provide an RSS feed with information about all official archive mirrors.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+archivemirrors-rss')
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+archivemirrors-rss'
+    >>> print browser.headers['content-type']
+    text/xml;charset=utf-8
+
+    >>> print browser.contents
+    <?xml version="1.0" encoding="utf-8"?>
+    <rss xmlns:mirror="https://launchpad.net/" version="2.0">
+      <channel>
+        <title>Ubuntu Archive Mirrors Status</title>
+        <link>http://launchpad.dev/ubuntu/+archivemirrors-rss</link>
+        <description>Status of Ubuntu Archive Mirrors</description>
+        ...
+        <item>
+          <title>Archive-mirror</title>
+          <link>http://localhost:11375/valid-mirror/</link>
+          <description>
+          </description>
+          <mirror:bandwidth>...</mirror:bandwidth>
+          <mirror:location>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
+            <mirror:countrycode>FR</mirror:countrycode>
+          </mirror:location>
+          <guid>http://localhost:11375/valid-mirror/</guid>
+        </item>
+        ...
+      </channel>
+    </rss>

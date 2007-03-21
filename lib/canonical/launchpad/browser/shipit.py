@@ -182,7 +182,6 @@ class ShipItRequestView(GeneralFormView):
         if self.flavour == ShipItFlavour.UBUNTU:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.PPC: 'ubuntu_quantityppc',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
         elif self.flavour == ShipItFlavour.KUBUNTU:
             self.quantity_fields_mapping = {
@@ -479,7 +478,6 @@ class ShipItRequestView(GeneralFormView):
         new_total_of_cds = current_order.getTotalCDs()
         shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
         if new_total_of_cds > max_size_for_auto_approval:
-            assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
             if (current_order.isApproved() and

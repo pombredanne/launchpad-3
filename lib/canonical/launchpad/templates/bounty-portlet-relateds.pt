@@ -10,13 +10,13 @@
           <a href="#"
              tal:content="distribution/displayname"
              tal:attributes="href
-               string:/distros/${distribution/name}">Ubuntu</a>
+               string:/${distribution/name}">Ubuntu</a>
         </li>
       </ul>
 
     </div>
 
-    <h2 tal:condition="context/products">Related products</h2>
+    <h2 tal:condition="context/products">Related projects</h2>
 
     <div tal:condition="context/products"
          class="portletBody portletContent">
@@ -26,7 +26,7 @@
           <a href="#"
              tal:content="product/displayname"
              tal:attributes="href
-             string:/products/${product/name}">Mozilla Firefox</a>
+             string:/${product/name}">Mozilla Firefox</a>
         </li>
       </ul>
 
@@ -42,7 +42,7 @@
           <a href="#"
              tal:content="project/displayname"
              tal:attributes="href
-             string:/projects/${project/name}">Gnome</a>
+             string:/${project/name}">Gnome</a>
         </li>
       </ul>
 

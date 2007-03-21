@@ -1,50 +1,82 @@
 <tal:block condition="context/submissions">
-  <tr class="secondary translation">
+  <tr class="discreet secondary translation">
     <th colspan="3" style="border: inherit;">
       <label tal:content="string:${context/title}:" />
     </th>
-    <td class="icon left right" />
+  </tr>
+  <tal:submission repeat="submission context/submissions">
+  <tr class="discreet secondary">
+    <td colspan="3" />
+    <td class="icon left right">
+      <tal:logged-in condition="request/lp:person">
+      <tal:user-is-official-translator
+        condition="context/user_is_official_translator">
+        <input
+          type="radio"
+          tal:attributes="
+            name string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_radiobutton;
+            id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_radiobutton;
+            value string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index};
+            onClick string:
+              javascript:copyInnerHTMLById(
+                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}',
+                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new')
+            " />
+      </tal:user-is-official-translator>
+      <tal:user-is-not-official-translator condition="not:context/user_is_official_translator">
+        <a href=""
+          tal:attributes="
+            onClick string:
+              javascript:copyInnerHTMLById(
+                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}',
+                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new');;
+              selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new_select', event);;
+            return false;;
+          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+      </tal:user-is-not-official-translator>
+      </tal:logged-in>
+    </td>
     <td>
-      <tal:block condition="not: context/is_multi_line">
-        <tal:submission repeat="submission context/submissions">
-          <metal:macro define-macro="submission_text">
-            <div tal:define="submissionlang submission/pomsgset/pofile/language"
-                 tal:attributes="lang submissionlang/dashedcode;
-                                 dir submissionlang/abbreviated_text_dir"
-                 tal:content="submission/potranslation/translation">suggestion</div>
-            <div class="discreet">
-              &mdash; By
-              <a tal:content="submission/person/browsername"
-                 tal:attributes="href submission/person/fmt:url" >Foo</a> to
-              <a tal:content="submission/pomsgset/potmsgset/potemplate/displayname"
-                 tal:attributes="href submission/pomsgset/potmsgset/potemplate/fmt:url" >Foo</a> on
-              <span tal:replace="submission/datecreated/fmt:datetime">
-                2006-08-05 01:04 UTC
-              </span>
-              <metal:extra define-slot="extra" />
-            </div>
-          </metal:macro>
-        </tal:submission>
-      </tal:block>
-      <tal:block condition="context/is_multi_line">
-        <tal:maxentries condition="context/max_entries">
-          <tal:define define="submission python:context.submissions[0]">
-            <metal:macro use-macro="template/macros/submission_text">
-              <tal:block
-                metal:fill-slot="extra"
-                define="submissions_remaining python:len(context.submissions)-1"
-                condition="submissions_remaining">
-                (<span tal:replace="submissions_remaining">3</span> more)
-              </tal:block>
-            </metal:macro>
-          </tal:define>
-        </tal:maxentries>
-        <tal:maxentries condition="not: context/max_entries">
-          <tal:submission repeat="submission context/submissions">
-            <metal:macro use-macro="template/macros/submission_text" />
-          </tal:submission>
-        </tal:maxentries>
-      </tal:block>
+      <div
+        tal:condition="not:context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </div>
+      <label
+        style="white-space: normal"
+        tal:condition="context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index};
+          for string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_radiobutton;"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </label>
     </td>
   </tr>
+  <tr class="suggestion secondary">
+    <th colspan="3">
+      Coming from:
+    </th>
+    <td class="icon left right" />
+    <td style="overflow: auto;">
+      <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
+         tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
+        Spanish translation for evolution
+      </a> by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/datecreated/fmt:datetime"
+        tal:content="submission/datecreated/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+  </tr>
+  </tal:submission>
 </tal:block>

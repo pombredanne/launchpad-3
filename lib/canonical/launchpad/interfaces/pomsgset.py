@@ -1,14 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool
+from zope.schema import Bool, Object, Datetime
+from canonical.launchpad.interfaces.person import IPerson
 
 __metaclass__ = type
 
 __all__ = [
     'IPOMsgSet',
     'IPOMsgSetSuggestions',
+    'TranslationConflict',
 ]
+
+
+class TranslationConflict(Exception):
+    """Someone updated the translation we are trying to update."""
+
 
 class IPOMsgSet(Interface):
 
@@ -63,21 +70,40 @@ class IPOMsgSet(Interface):
         plurals. This depends on the language and in some cases even the
         specific text being translated per po-file.""")
 
-    selections = Attribute(
-        """All IPOSelection associated with this IPOMsgSet.""")
+    reviewer = Object(
+        title=u'The person who did the review and accepted current active'
+              u'translations.',
+        required=False, schema=IPerson)
+
+    date_reviewed = Datetime(
+        title=u'The date when this message was reviewed for last time.',
+        required=False)
+
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
-    def getSelection(pluralform):
-        """Return the IPOSelection for this PO msgset or None.
+    def isNewerThan(timestamp):
+        """Whether the active translations are newer than the given timestamp.
 
-        :arg pluralform: The plural form that we want to get the selection
-            from.
+        :arg timestamp: A DateTime object with a timestamp.
+
+        """
+
+    def setActiveSubmission(pluralform, submission):
+        """Set given submission as the active one.
+
+        If submission is None, no submissions will be active.
         """
 
     def getActiveSubmission(pluralform):
         """Return the published translation submission for this po
         msgset and plural form or None.
+        """
+
+    def setPublishedSubmission(pluralform, submission):
+        """Set given submission as the published one.
+
+        If submission is None, no submissions will be published.
         """
 
     def getPublishedSubmission(pluralform):
@@ -101,28 +127,33 @@ class IPOMsgSet(Interface):
         one was submitted."""
 
     def getCurrentSubmissions(pluralform):
-        """Return an iterator over each of the submissions out there that
-        are currently published or active in any PO file for the same
-        language and prime msgid.
+        """Return a list of submissions currently published or active.
+
+        It will come from any PO file for the same language and prime msgid
+        in our whole database.
 
         So, for example, this will include submissions that are current
-        upstream, or in other distributions."""
+        upstream, or in other distributions.
+        """
 
     def updateTranslationSet(person, new_translations, fuzzy, published,
-        ignore_errors=False, force_edition_rights=False):
+        lock_timestamp, ignore_errors=False, force_edition_rights=False):
         """Update a pomsgset using the set of translations provided.
 
-        person is the author of the translations.
-        new_translations is a dictionary of plural forms, with the integer
-        plural form number as the key and the translation as the value.
-        fuzzy is a flag that tells us if the translations are fuzzy or not.
-        published indicates whether this update is coming from a published po
-        file.
-        ignore_errors is a flag that controlls if the translations should be
-        stored even when an error is detected.
-        force_edition_rights is a flag that 'forces' that this submition
-        is handled as coming from an editor, no matter if it's really an
-        editor or not
+        :arg person: is the author of the translations.
+        :arg new_translations: is a dictionary of plural forms, with the
+            integer plural form number as the key and the translation as the
+            value.
+        :arg fuzzy: A flag that tells us whether the translations are fuzzy.
+        :arg published: indicates whether this update is coming from a
+            published po file.
+        :arg lock_timestamp: The timestamp when we checked the values we want
+            to update.
+        :arg ignore_errors: A flag that controlls whether the translations
+            should be stored even when an error is detected.
+        :arg force_edition_rights: A flag that 'forces' that this submition
+            is handled as coming from an editor, no matter whether is really
+            an editor.
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
@@ -132,6 +163,19 @@ class IPOMsgSet(Interface):
         """Update the complete and fuzzy flags for this IPOMsgSet.
 
         The new values will reflect current status of this entry.
+        """
+
+    def updateReviewerInfo(reviewer):
+        """Update a couple of fields to note there was an update.
+
+        :arg reviewer: The person who just reviewed this IPOMsgSet.
+
+        The updated fields are:
+            - self.pofile.last_touched_pomsgset: To cache which message was
+              the last one updated so we can know when was an IPOFile last
+               updated.
+            - self.reviewer: To note who did last review for this message.
+            - self.date_reviewed: To note when was done last review.
         """
 
 
@@ -147,4 +191,6 @@ class IPOMsgSetSuggestions(Interface):
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")
     submissions = Attribute("An iterable of POSubmission objects")
-
+    user_is_official_translator = Bool(
+        title=(u'Whether the user is an official translator.'),
+        required=True)

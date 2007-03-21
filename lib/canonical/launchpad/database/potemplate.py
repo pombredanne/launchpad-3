@@ -13,6 +13,8 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
+from canonical.config import config
+
 from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
@@ -20,11 +22,13 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 
+import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError)
+from canonical.launchpad.mail import simple_sendmail
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -41,6 +45,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
+from canonical.launchpad.webapp import canonical_url
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright %(copyright)s %(year)s
@@ -202,7 +207,8 @@ class POTemplate(SQLBase, RosettaStats):
         "See IPOTemplate"
         return POTemplate.select('''
             id <> %s AND
-            potemplatename = %s
+            potemplatename = %s AND
+            iscurrent = TRUE
             ''' % sqlvalues (self.id, self.potemplatename.id),
             orderBy=['datecreated'])
 
@@ -212,14 +218,16 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
-                productseries = %s
+                productseries = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
         elif self.distrorelease and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
                 distrorelease = %s AND
-                sourcepackagename = %s
+                sourcepackagename = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id,
                     self.distrorelease.id, self.sourcepackagename.id),
                 orderBy=['id'])
@@ -346,7 +354,7 @@ class POTemplate(SQLBase, RosettaStats):
                    quote(language_code)),
             clauseTables=['Language'],
             prejoinClauseTables=['Language'],
-            prejoins=["latestsubmission"])
+            prejoins=["last_touched_pomsgset"])
 
     def messageCount(self):
         """See IRosettaStats."""
@@ -455,9 +463,10 @@ class POTemplate(SQLBase, RosettaStats):
             path_variant = '@%s' % variant
 
         # By default, we set as the path directory the same as the POTemplate
-        # one.
+        # one and set as the file name the translation domain + language.
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s%s.po' % (potemplate_dir, language.code, path_variant)
+        path = '%s/%s-%s%s.po' % (potemplate_dir,
+            self.potemplatename.translationdomain,language.code, path_variant)
 
         pofile = POFile(
             potemplate=self,
@@ -537,6 +546,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOTemplate."""
+        flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 potemplate=self,
                 status=RosettaImportStatus.APPROVED,
@@ -554,15 +564,43 @@ class POTemplate(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
+        template_mail = None
         try:
             import_po(self, file, entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
-            entry_to_import.status = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
+            template_mail = 'poimport-syntax-error.txt'
+
+            replacements = {
+                'importer': entry_to_import.importer.displayname,
+                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+                'elapsedtime': entry_to_import.getElapsedTimeText(),
+                'file_link': entry_to_import.content.http_url,
+                'import_title': self.displayname
+                }
+
+            # We got an error that prevented us to import the template, we
+            # need to notify the user and set the status to FAILED.
+            subject = 'Import problem - %s' % self.displayname
+
+            # Send the email.
+            template = helpers.get_email_template(template_mail)
+            message = template % replacements
+
+            fromaddress = 'Rosetta SWAT Team <%s>' % (
+                config.rosetta.rosettaadmin.email)
+            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+
+            simple_sendmail(fromaddress, toaddress, subject, message)
+
+            entry_to_import.status = RosettaImportStatus.FAILED
+
+
+            # We don't have anything to do here...
             return
 
         # The import has been done, we mark it that way.

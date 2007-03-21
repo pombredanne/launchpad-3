@@ -3,7 +3,7 @@ why we need to be a Rosetta Expert or a Launchpad admin to use it.
 
 Check to be sure that an unpriviledged user cannot reach this page
 
-  >>> user_browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin')
+  >>> user_browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+admin')
   Traceback (most recent call last):
   ...
   Unauthorized:...
@@ -12,9 +12,9 @@ Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate admin
 page.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin')
+  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+admin')
   >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin
+  http://localhost/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
 a Rosetta Expert to administrate it.
@@ -38,7 +38,7 @@ a Rosetta Expert to administrate it.
   >>> browser.getControl(name='field.iscurrent').value
   True
   >>> browser.getControl(name='field.owner').value
-  'rosetta@launchpad.net'
+  'rosetta-admins'
   >>> browser.getControl(name='field.productseries').value
   'evolution/trunk'
   >>> browser.getControl(name='field.distrorelease').value
@@ -56,9 +56,9 @@ a Rosetta Expert to administrate it.
 
 Check to be sure that an admin can reach the POTemplate admin page.
 
-  >>> admin_browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin')
+  >>> admin_browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+admin')
   >>> print admin_browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin
+  http://localhost/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
 an admin to administrate it.
@@ -82,7 +82,7 @@ an admin to administrate it.
   >>> admin_browser.getControl(name='field.iscurrent').value
   True
   >>> admin_browser.getControl(name='field.owner').value
-  'rosetta@launchpad.net'
+  'rosetta-admins'
   >>> admin_browser.getControl(name='field.productseries').value
   'evolution/trunk'
   >>> admin_browser.getControl(name='field.distrorelease').value
@@ -103,7 +103,7 @@ And that we are able to POST it.
   >>> admin_browser.getControl(name='field.languagepack').value = True
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print admin_browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2
+  http://localhost/evolution/trunk/+pots/evolution-2.2
 
 Lets create a new template to rename evolution-2.2 to.
 
@@ -121,7 +121,7 @@ Lets create a new template to rename evolution-2.2 to.
 
 Finally, lets rename 'evolution-2.2' to 'evolution-renamed'.
 
-  >>> admin_browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin')
+  >>> admin_browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/+admin')
 
 Lets use this opportunity to check if languagepack was changed successfully
 above.
@@ -134,4 +134,4 @@ And now lets get back to renaming.
   >>> admin_browser.getControl(name='field.potemplatename').value = 'evolution-renamed'
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print admin_browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-renamed
+  http://localhost/evolution/trunk/+pots/evolution-renamed

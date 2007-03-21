@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -21,7 +21,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
+    IProductSeries, IProductSeriesBugTask, NominationError,
+    NominationReleaseObsoleteError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -29,20 +31,27 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnomination import BugNomination
 from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
+    BugTask,
+    BugTaskSet,
+    bugtask_sort_key,
+    get_bug_privacy_filter,
+    NullBugTask,
+    )
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
-
+from canonical.lp.dbschema import (
+    BugAttachmentType, DistributionReleaseStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -129,15 +138,6 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
-                                        notNull=True, default=DEFAULT)
-    hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = UtcDateTimeCol(dbName='hitstimestamp', notNull=True,
-                                   default=DEFAULT)
-    activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
-                                       notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
     security_related = BoolCol(notNull=True, default=False)
 
@@ -147,7 +147,7 @@ class Bug(SQLBase):
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
-                           orderBy='datecreated')
+                           orderBy=['datecreated', 'id'])
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = SQLMultipleJoin(
@@ -169,7 +169,7 @@ class Bug(SQLBase):
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
+    questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
@@ -188,6 +188,14 @@ class Bug(SQLBase):
         result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def affected_pillars(self):
+        """See IBug."""
+        result = set()
+        for task in self.bugtasks:
+            result.add(task.pillar)
+        return sorted(result, key=pillar_sort_key)
 
     @property
     def initial_message(self):
@@ -306,8 +314,11 @@ class Bug(SQLBase):
                     also_notified_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
-                assert IUpstreamBugTask.providedBy(bugtask)
-                product = bugtask.product
+                if IUpstreamBugTask.providedBy(bugtask):
+                    product = bugtask.product
+                else:
+                    assert IProductSeriesBugTask.providedBy(bugtask)
+                    product = bugtask.productseries.product
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
                 else:
@@ -380,7 +391,7 @@ class Bug(SQLBase):
                 remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
-                      is_patch=False):
+                      is_patch=False, content_type=None):
         """See IBug."""
         filecontent = file_.read()
 
@@ -389,8 +400,9 @@ class Bug(SQLBase):
             content_type = 'text/plain'
         else:
             attach_type = BugAttachmentType.UNSPECIFIED
-            content_type, encoding = guess_content_type(
-                name=filename, body=filecontent)
+            if content_type is None:
+                content_type, encoding = guess_content_type(
+                    name=filename, body=filecontent)
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
@@ -472,6 +484,108 @@ class Bug(SQLBase):
             orderBy=["Message.datecreated", "Message.id",
                      "MessageChunk.sequence"])
         return chunks
+
+    def getNullBugTask(self, product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """See IBug."""
+        return NullBugTask(bug=self, product=product,
+                           productseries=productseries, 
+                           sourcepackagename=sourcepackagename,
+                           distribution=distribution,
+                           distrorelease=distrorelease)
+
+    def addNomination(self, owner, target):
+        """See IBug."""
+        distrorelease = None
+        productseries = None
+        if IDistroRelease.providedBy(target):
+            distrorelease = target
+            target_displayname = target.fullreleasename
+            if target.releasestatus == DistributionReleaseStatus.OBSOLETE:
+                raise NominationReleaseObsoleteError(
+                    "%s is an obsolete release" % target_displayname)
+        else:
+            assert IProductSeries.providedBy(target)
+            productseries = target
+            target_displayname = target.title
+
+        if not self.canBeNominatedFor(target):
+            raise NominationError(
+                "This bug cannot be nominated for %s" % target_displayname)
+
+        return BugNomination(
+            owner=owner, bug=self, distrorelease=distrorelease,
+            productseries=productseries)
+
+    def canBeNominatedFor(self, nomination_target):
+        """See IBug."""
+        try:
+            self.getNominationFor(nomination_target)
+        except NotFoundError:
+            # No nomination exists. Let's see if the bug is already
+            # directly targeted to this nomination_target.
+            if IDistroRelease.providedBy(nomination_target):
+                target_getter = operator.attrgetter("distrorelease")
+            elif IProductSeries.providedBy(nomination_target):
+                target_getter = operator.attrgetter("productseries")
+            else:
+                raise AssertionError(
+                    "Expected IDistroRelease or IProductSeries target. "
+                    "Got %r." % nomination_target)
+
+            for task in self.bugtasks:
+                if target_getter(task) == nomination_target:
+                    # The bug is already targeted at this
+                    # nomination_target.
+                    return False
+
+            # No nomination or tasks are targeted at this
+            # nomination_target.
+            return True
+        else:
+            # The bug is already nominated for this nomination_target.
+            return False
+
+    def getNominationFor(self, nomination_target):
+        """See IBug."""
+        if IDistroRelease.providedBy(nomination_target):
+            filter_args = dict(distroreleaseID=nomination_target.id)
+        else:
+            filter_args = dict(productseriesID=nomination_target.id)
+
+        nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
+
+        if nomination is None:
+            raise NotFoundError(
+                "Bug #%d is not nominated for %s" % (
+                self.id, nomination_target.displayname))
+
+        return nomination
+
+    def getNominations(self, target=None):
+        """See IBug."""
+        # Define the function used as a sort key.
+        def by_bugtargetname(nomination):
+            return nomination.target.bugtargetname.lower()
+
+        nominations = BugNomination.selectBy(bugID=self.id)
+        if IProduct.providedBy(target):
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.productseries and
+                    nomination.productseries.product == target):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
+        elif IDistribution.providedBy(target):
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.distrorelease and
+                    nomination.distrorelease.distribution == target):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
+
+        return sorted(nominations, key=by_bugtargetname)
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See IBug."""
@@ -593,7 +707,7 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers"])
+                "product", "status", "subscribers", "tags"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -641,6 +755,8 @@ class BugSet:
             security_related=params.security_related)
 
         bug.subscribe(params.owner)
+        if params.tags:
+            bug.tags = params.tags
 
         if params.product == celebs.landscape:
             # Subscribe the Landscape bugcontact to all Landscape bugs,

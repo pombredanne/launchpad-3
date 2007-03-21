@@ -1,18 +1,18 @@
 We need to login in order to add attachments.
 
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+bug/1')
-  >>> anon_browser.getLink('Comment/Attach File').click()
+  >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> anon_browser.getLink('Comment or attach file').click()
   Traceback (most recent call last):
   ...
   Unauthorized:...
 
 When we're logged in we can access the page.
 
-  >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
-  >>> user_browser.getLink('Comment/Attach File').click()
+  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> user_browser.getLink('Comment or attach file').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1/+addcomment'
+  'http://launchpad.dev/firefox/+bug/1/+addcomment'
 
 Let's add an attachment. First create a file-like object.
 
@@ -45,7 +45,7 @@ trailing whitespace to test that we strip them:
 After we added the attachment, we get redirected to the bug page.
 
   >>> user_browser.url
-  'http://launchpad.dev/products/firefox/+bug/1'
+  'http://launchpad.dev/firefox/+bug/1'
 
 We can check that the attachment is there
 

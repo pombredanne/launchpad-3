@@ -10,27 +10,27 @@
                   <a href="#"
                      tal:content="distribution/displayname"
                      tal:attributes="href
-                       string:/distros/${distribution/name}">Ubuntu</a>
+                       string:/${distribution/name}">Ubuntu</a>
                 </li>
             </ul>
 
-            <h5 tal:condition="context/products">Products:</h5>
+            <h5 tal:condition="context/products">Projects:</h5>
             <ul>
                 <li tal:repeat="product context/products">
                   <a href="#"
                      tal:content="product/displayname"
                      tal:attributes="href
-                     string:/products/${product/name}">Mozilla Firefox</a>
+                     string:/${product/name}">Mozilla Firefox</a>
                 </li>
             </ul>
 
-            <h5 tal:condition="context/projects">Projects:</h5>
+            <h5 tal:condition="context/projects">Project Groups:</h5>
             <ul>
                 <li tal:repeat="project context/projects">
                   <a href="#"
                      tal:content="project/displayname"
                      tal:attributes="href
-                     string:/projects/${project/name}">Gnome</a>
+                     string:/${project/name}">Gnome</a>
                 </li>
             </ul>
 

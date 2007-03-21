@@ -28,6 +28,7 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
@@ -66,7 +67,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
@@ -90,7 +92,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -136,33 +139,33 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         # Create a source branch in knit format, and check that the mirror is in
         # knit format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the mirror
         # is in metaweave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repository.RepositoryFormat6()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
         self._testMirrorFormat()
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
         
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._createSourceBranch()
 
         # Mirror again.  The mirrored branch should now be in knit format.
@@ -183,7 +186,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
-        to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
+        to_mirror = BranchToMirror(
+            'src-branch', 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
@@ -236,7 +240,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         dest_dir = "dest-dir"
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1)
+            non_existant_branch, dest_dir, client, 1, None)
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
@@ -246,7 +250,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1)
+            non_existant_branch, "anothernonsensedir", client, 1, None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -270,7 +274,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            'missingrevision', "missingrevisiontarget", client, 1)
+            'missingrevision', "missingrevisiontarget", client, 1, None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -280,9 +284,9 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class TestErrorHandling(unittest.TestCase):
 
     def setUp(self):
-        self.errors = []
         client = BranchStatusClient()
-        self.branch = BranchToMirror('foo', 'bar', client, 1)
+        self.branch = BranchToMirror(
+            'foo', 'bar', client, 1, 'owner/product/foo')
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
         self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
@@ -291,19 +295,23 @@ class TestErrorHandling(unittest.TestCase):
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
+        self.errors = []
 
     def tearDown(self):
         reset_logging()
 
     def _runMirrorAndCheckError(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
         self.branch.mirror(logging.getLogger())
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
         if not error.startswith(expected_error):
             self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+        return error
 
     def testHTTPError(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED, 
@@ -314,7 +322,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testSocketErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -322,7 +329,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnsupportedFormatErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -330,23 +336,25 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnknownFormatError(self):
-        self.errors = []
         def stubOpenSourceBranch():
-            raise UnknownFormatError(format='Some junk')
+            raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Unknown branch format:'
         self._runMirrorAndCheckError(expected_msg)
 
-        self.errors = []
-        def stubOpenSourceBranch():
-            raise UnknownFormatError(
-                format='Loads of junk\n with two or more\n newlines.')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'Not a branch'
-        self._runMirrorAndCheckError(expected_msg)
+## XXX - Commented out to resolve conflict. Let's find out if it works.
+## Jonathan Lange, 2007-03-21
+##         self.errors = []
+##         def stubOpenSourceBranch():
+##             raise UnknownFormatError(
+##                 format='Loads of junk\n with two or more\n newlines.')
+##         self.branch._openSourceBranch = stubOpenSourceBranch
+##         expected_msg = 'Not a branch'
+##         self._runMirrorAndCheckError(expected_msg)
+## =======
+## >>>>>>> MERGE-SOURCE
 
     def testParamikoNotPresent(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -354,15 +362,31 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testNotBranchError(self):
-        self.errors = []
+        # Should receive a user-friendly message we are asked to mirror a
+        # non-branch.
         def stubOpenSourceBranch():
             raise NotBranchError('/foo/baz/')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Not a branch:'
         self._runMirrorAndCheckError(expected_msg)
 
+    def testNotBranchErrorGivesURL(self):
+        # The not-a-branch error message should *not* include the Branch id
+        # from the database. Instead, the path should be translated to a
+        # user-visible location.
+        split_id = split_branch_id(self.branch.branch_id)
+        def stubOpenSourceBranch():
+            raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
+                                 % split_id)
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        observed_msg = self._runMirrorAndCheckError('Not a branch:')
+        self.failIf(split_id in observed_msg,
+                    "%r in %r" % (split_id, observed_msg))
+        url = ('sftp://bazaar.launchpad.net/~%s'
+               % self.branch.branch_unique_name)
+        self.assertEqual('Not a branch: %s' % url, observed_msg)
+
     def testBzrErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch

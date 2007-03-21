@@ -3,7 +3,7 @@ Bug listing search results should default to open bugtasks.
   >>> okay200 = 'HTTP/1.1 200 Ok'
 
   >>> search_page_content = str(http("""
-  ... GET /distros/debian/+bugs?field.searchtext=&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.searchtext=&search=Search HTTP/1.1
   ... """))
   >>> okay200 in search_page_content 
   True

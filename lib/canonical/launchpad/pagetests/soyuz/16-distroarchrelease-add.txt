@@ -1,10 +1,10 @@
 
 We want to test that we can add a new DistroArchRelease (or "Port").
 
-  >>> admin_browser.open("http://localhost/distros/ubuntu/hoary")
-  >>> admin_browser.getLink("Add Port").click()
+  >>> admin_browser.open("http://localhost/ubuntu/hoary")
+  >>> admin_browser.getLink("Add architecture").click()
   >>> admin_browser.url
-  'http://localhost/distros/ubuntu/hoary/+addport'
+  'http://localhost/ubuntu/hoary/+addport'
 
 OK, so let's fill out the form and submit.
 
@@ -13,5 +13,5 @@ OK, so let's fill out the form and submit.
   >>> admin_browser.getControl("Official Support").selected = True
   >>> admin_browser.getControl("Add").click()
   >>> admin_browser.url
-  'http://localhost/distros/ubuntu/hoary/amd64'
+  'http://localhost/ubuntu/hoary/amd64'
 

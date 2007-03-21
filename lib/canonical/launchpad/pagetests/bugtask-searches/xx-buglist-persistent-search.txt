@@ -1,6 +1,6 @@
 The bug listing pages save their search criteria.
 
-    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
 
     >>> '4 results' in browser.contents
     True

@@ -1,7 +1,7 @@
-We export FOAF RDF metadata from the /people/$Person.name/+index document.
+We export FOAF RDF metadata from the /~Person.name/+index document.
 
   >>> print http(r"""
-  ... GET /people/name16 HTTP/1.1
+  ... GET /~name16 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +14,7 @@ And this is what the FOAF document for a person actually looks like.  It
 includes GPG information, if the user has any.
 
   >>> print http(r"""
-  ... GET /people/name16/+rdf HTTP/1.1
+  ... GET /~name16/+rdf HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -34,7 +34,7 @@ includes GPG information, if the user has any.
                   <wot:length>1024</wot:length>
                   <wot:fingerprint>ABCDEF0123456789ABCDDCBA0000111112345678</wot:fingerprint>
                   <wot:pubkeyAddress
-      rdf:resource="http://localhost:11371/pks/lookup?search=0x12345678&amp;op=index"/>
+      rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?search=0x12345678&amp;op=index"/>
               </wot:PubKey>
   ...
 
@@ -43,7 +43,7 @@ Teams also have an RDF export, which includes information for each member of the
 team.
 
   >>> print http(r"""
-  ... GET /people/ubuntu-team/+rdf HTTP/1.1
+  ... GET /~ubuntu-team/+rdf HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

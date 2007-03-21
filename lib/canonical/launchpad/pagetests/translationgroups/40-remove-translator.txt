@@ -4,7 +4,7 @@ should be redirected to the polyglot page, with a removal message hint being
 passed.
 
   >>> print http(r"""
-  ... POST /rosetta/groups/polyglot/+rm HTTP/1.1
+  ... POST /translations/groups/polyglot/+rm HTTP/1.1
   ... Content-Length: 31
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -19,7 +19,7 @@ passed.
 And on that page, we should see the removal message.
 
   >>> print http(r"""
-  ... GET /rosetta/groups/polyglot/?removed=ab-name21 HTTP/1.1
+  ... GET /translations/groups/polyglot/?removed=ab-name21 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

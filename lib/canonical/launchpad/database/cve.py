@@ -16,14 +16,15 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import IBugLinkTarget, ICve, ICveSet
-from canonical.launchpad.validators.cve import valid_cve
+from canonical.lp.dbschema import CveStatus
 
-from canonical.lp.dbschema import EnumCol, CveStatus
-
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import IBugLinkTarget, ICve, ICveSet
+from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.cvereference import CveReference
@@ -171,4 +172,8 @@ class CveSet:
             BugCve.bug IN %s""" % sqlvalues(bug_ids),
             prejoins=["cve"],
             orderBy=['bug', 'cve'])
+
+    def getBugCveCount(self):
+        """See ICveSet."""
+        return BugCve.select().count()
 
