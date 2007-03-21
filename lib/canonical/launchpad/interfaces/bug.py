@@ -228,14 +228,14 @@ class IBug(IMessageTarget):
         """
 
     def getBugNotificationRecipients(duplicateof=None):
-        """Return a complete BugNotificationRecipients instance.
+        """Return a complete INotificationRecipientSet instance.
 
-        The BugNotificationRecipients instance will contain details of
+        The INotificationRecipientSet instance will contain details of
         all recipients for bug notifications sent by this bug; this
         includes email addresses and textual and header-ready
         rationales. See
         canonical.launchpad.interfaces.BugNotificationRecipients for
-        details.
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):
