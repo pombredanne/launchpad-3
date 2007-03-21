@@ -34,15 +34,17 @@ def identical_formats(branch_one, branch_two):
 class BranchToMirror:
     """This class represents a single branch that needs mirroring.
 
-    It has a source URL, a destination URL, a database id and a 
+    It has a source URL, a destination URL, a database id, a unique name and a
     status client which is used to report on the mirror progress.
     """
 
-    def __init__(self, src, dest, branch_status_client, branch_id):
+    def __init__(self, src, dest, branch_status_client, branch_id,
+                 branch_unique_name):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
+        self.branch_unique_name = branch_unique_name
         self._source_branch = None
         self._dest_branch = None
 
@@ -168,7 +170,9 @@ class BranchToMirror:
 
         except bzrlib.errors.NotBranchError, e:
             self._record_oops(logger)
-            self._mirrorFailed(logger, e)
+            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
+                   % self.branch_unique_name)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.BzrError, e:
             self._record_oops(logger)

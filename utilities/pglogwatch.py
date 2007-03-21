@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """
 Watch live PostgreSQL logs for interesting stuff
 """

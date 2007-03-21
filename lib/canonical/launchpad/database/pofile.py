@@ -211,8 +211,9 @@ class POFile(SQLBase, RosettaStats):
                                 default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    latestsubmission = ForeignKey(foreignKey='POSubmission',
-        dbName='latestsubmission', notNull=False, default=None)
+    last_touched_pomsgset = ForeignKey(
+        foreignKey='POMsgSet', dbName='last_touched_pomsgset',
+        notNull=False, default=None)
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
@@ -394,13 +395,13 @@ class POFile(SQLBase, RosettaStats):
             POTMsgSet.sequence > 0 AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POMsgSet.pofile = %s AND
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.publishedsubmission = POSubmission.id AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POSubmission.published IS TRUE AND
             POSubmission.pluralform = 0 AND
             POSubmission.validationstatus <> %s
             ''' % sqlvalues(self.potemplate.id, self.id,
                             TranslationValidationStatus.OK),
-            clauseTables=['POMsgSet', 'POSelection', 'POSubmission'],
+            clauseTables=['POMsgSet', 'POSubmission'],
             orderBy='POTmsgSet.sequence')
 
         if slice is not None:
@@ -482,15 +483,17 @@ class POFile(SQLBase, RosettaStats):
                 POMsgSet.publishedcomplete = TRUE AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 POTMsgSet.sequence > 0 AND
-                ActiveSubmission.id = POSelection.activesubmission AND
-                PublishedSubmission.id = POSelection.publishedsubmission AND
-                POSelection.pomsgset = POMsgSet.id AND
-                ActiveSubmission.datecreated > PublishedSubmission.datecreated
+                active_submission.pomsgset = POMsgSet.id AND
+                active_submission.active IS TRUE AND
+                published_submission.pomsgset = POMsgSet.id AND
+                published_submission.published IS TRUE AND
+                active_submission.pluralform = published_submission.pluralform
+                AND
+                active_submission.datecreated > published_submission.datecreated
                 ''' % sqlvalues(self.id),
-                clauseTables=['POSelection',
-                              'POTMsgSet',
-                              'POSubmission AS ActiveSubmission',
-                              'POSubmission AS PublishedSubmission']).count()
+                clauseTables=['POTMsgSet',
+                              'POSubmission AS active_submission',
+                              'POSubmission AS published_submission']).count()
             if updates != updates_from_first_principles:
                 raise AssertionError('Failure in update statistics.')
 
@@ -730,43 +733,12 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        # XXX DaniloSegan 20070115: doing this with latestsubmission is just
-        # a workaround; see bug #78501 for suggestion about using
-        # latestselection instead
-        #
-        # When an active submission is deactivated, POSelection
-        # corresponding to a certain pomsgset (and plural form) is set
-        # to have active_submission as None.  Similarly for published
-        # submission.
-        #
-        # If such a POSelection without active_submission but with
-        # published_submission is deactivated, self.latestsubmission
-        # would be set to None.  In this situation the data model has
-        # no easy way of indication when the latest update was done,
-        # and we therefore return False to be on the safe side.
-        if self.latestsubmission is None:
+        if self.last_touched_pomsgset is None:
+            # There are no translations at all, we invalidate the cache just
+            # in case.
             return False
 
-        # If there are no activeselections, yet latestsubmission is defined,
-        # it must have been the case of deactivated translation (bug #78501)
-        po_selections = list(self.latestsubmission.active_selections)
-        # If there is any of the active or published submissions,
-        # we can get to a "root" POMsgSet which was last updated,
-        # and thus we can go through all the POSelections to find
-        # out the last updated date.
-        if len(po_selections) == 0:
-            # If there are no activeselections, then a publishedselection
-            # was deactivated, so lets use them to get at pomsgset
-            po_selections = list(self.latestsubmission.published_selections)
-            if len(po_selections) == 0:
-                # Again, if we can't get at the POMsgSet, we're simply
-                # returning False to be on the safe side
-                return False
-
-        # Otherwise, we can get the POMsgSet itself through any of the
-        # active selections, and then easily get to all POSelection's
-        # and check their last update date which is guaranteed to be correct
-        return not po_selections[0].pomsgset.isNewerThan(self.exporttime)
+        return not self.last_touched_pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -866,14 +838,6 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         self.exportfile = None
 
-    def recalculateLatestSubmission(self):
-        """See IPOFile."""
-        self.latestsubmission = POSubmission.selectFirst('''
-            POSelection.activesubmission = POSubmission.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMSgSet.pofile = %s''' % sqlvalues(self),
-            orderBy=['-datecreated'], clauseTables=['POSelection', 'POMsgSet'])
-
 
 class DummyPOFile(RosettaStats):
     """Represents a POFile where we do not yet actually HAVE a POFile for
@@ -885,7 +849,7 @@ class DummyPOFile(RosettaStats):
         self.potemplate = potemplate
         self.language = language
         self.variant = variant
-        self.latestsubmission = None
+        self.last_touched_pomsgset = None
         self.lasttranslator = None
         self.contributors = []
 

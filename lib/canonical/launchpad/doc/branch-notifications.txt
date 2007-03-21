@@ -369,7 +369,7 @@ names just now, we'll pass them through anyway
     <BLANKLINE>
     --
     Mozilla Firefox Mainline
-    http://launchpad.dev/~name12/+branch/firefox/main
+    http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You received this email because you are subscribed to this branch.
     To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
@@ -435,8 +435,81 @@ something like this:
     <BLANKLINE>
     --
     New title
-    http://launchpad.dev/~name12/+branch/firefox/new-name
+    http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
     You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
-    nch/firefox/new-name/+edit-subscription.
+    To unsubscribe from this branch use go to http://launchpad.dev/~name12/fire=
+    fox/new-name/+edit-subscription.
+
+
+If the revision_id is still the same at the tip of the branch, then the
+branch hasn't changed.
+
+
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.dev')
+
+Now make it have less revisions, and set a bogus last scanned id
+
+    >>> revision_count = branch.revision_count
+    >>> last_id = branch.last_scanned_id
+    >>> branch.revision_count -= 2
+    >>> branch.last_scanned_id = 'something different'
+
+Snapshot it for the delta
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+    >>> branch.revision_count = revision_count
+    >>> branch.last_scanned_id = last_id
+    >>> another_person = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
+    >>> branch.subscribe(
+    ...     another_person,
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...>
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, ['revision_count', 'last_scanned_id']))
+
+    >>> transaction.commit()
+
+Since there is a subscriber to this branch, it should go to 
+both the author and the subscriber
+
+    >>> len(stub.test_emails)
+    2
+    >>> all_recipients = set()
+    >>> for addresses in [recipients for fromaddr, recipients, body
+    ...                    in stub.test_emails]:
+    ...     all_recipients.update(addresses)
+    >>> for address in sorted(all_recipients):
+    ...     print address
+    support@ubuntu.com
+    test@canonical.com
+
+    >>> from_address, recipients, body = stub.test_emails.pop(0)
+    >>> print body
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/+junk/junk.dev] Ubuntu Junk Code
+    ...
+        Revision count: 4 =3D> 6
+    <BLANKLINE>
+    Log entry of last revision:
+    <BLANKLINE>
+    fix bug in bar
+    <BLANKLINE>
+    --
+    Ubuntu Junk Code
+    http://code.launchpad.dev/~name12/+junk/junk.dev
+    <BLANKLINE>
+    You received this email because you are subscribed to this branch.
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
+    /+junk/junk.dev/+subscribe.
+
+    >>> from_address, recipients, body2 = stub.test_emails.pop()
+
+Make sure that the same email body goes out to both people.  The body
+is separated from the headers by a blank line.
+
+    >>> body.split('\n\n', 1)[1] == body2.split('\n\n', 1)[1]
+    True

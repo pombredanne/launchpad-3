@@ -34,7 +34,7 @@ includes GPG information, if the user has any.
                   <wot:length>1024</wot:length>
                   <wot:fingerprint>ABCDEF0123456789ABCDDCBA0000111112345678</wot:fingerprint>
                   <wot:pubkeyAddress
-      rdf:resource="http://localhost:11371/pks/lookup?search=0x12345678&amp;op=index"/>
+      rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?search=0x12345678&amp;op=index"/>
               </wot:PubKey>
   ...
 

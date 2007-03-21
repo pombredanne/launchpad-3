@@ -96,15 +96,15 @@ Let's see some examples of how this works:
   >>> test_task.transitionToAssignee(foobar)
   >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
   >>> render_bugtask_status(test_task)
-  u'Unconfirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'Unconfirmed, assigned to <img alt="" src="/@@/person" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> render_bugtask_status(test_task)
-  u'Confirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'Confirmed, assigned to <img alt="" src="/@@/person" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
   >>> render_bugtask_status(test_task)
-  u'Rejected by <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'Rejected by <img alt="" src="/@@/person" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToAssignee(None)
   >>> render_bugtask_status(test_task)
@@ -116,12 +116,11 @@ Let's see some examples of how this works:
 
   >>> test_task.transitionToAssignee(foobar)
   >>> render_bugtask_status(test_task)
-  u'Fix released, assigned to <img alt="" src="/@@/user" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
+  u'Fix released, assigned to <img alt="" src="/@@/person" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 This code also works for null bug tasks:
 
-  >>> from canonical.launchpad.components.bugtask import NullBugTask
-  >>> from canonical.launchpad.database import Bug, Product
+  >>> from canonical.launchpad.database import Bug, NullBugTask, Product
   >>> bug_one = Bug.get(1)
   >>> netapplet = Product.selectOneBy(name="netapplet")
   >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)

@@ -1,19 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
-           'RevisionSet']
+__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionSet']
 
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
-from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
-from canonical.launchpad.helpers import shortlist
-
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import (
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 
 class Revision(SQLBase):
@@ -70,22 +69,6 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
-class RevisionNumber(SQLBase):
-    """The association between a revision and a branch."""
-
-    implements(IRevisionNumber)
-
-    _table = 'RevisionNumber'
-    _idSequence = 'branchrevision_id_seq'
-    
-    branch = ForeignKey(
-        dbName='branch', foreignKey='Branch', notNull=True)
-
-    sequence = IntCol()
-    revision = ForeignKey(
-        dbName='revision', foreignKey='Revision', notNull=True)
-
-
 class RevisionSet:
 
     implements(IRevisionSet)
@@ -116,18 +99,3 @@ class RevisionSet:
                            parent_id=parent_id)
         
         return revision
-
-    def getRevisionHistoryForBranch(self, branch):
-        """See IRevsionSet."""
-        cur = cursor()
-        cur.execute("""
-            SELECT BranchRevision.sequence, Revision.revision_id
-            FROM Revision
-            JOIN BranchRevision ON Revision.id = BranchRevision.revision
-            WHERE BranchRevision.branch=%s
-              AND BranchRevision.sequence IS NOT NULL
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(branch))
-        history = [rev_id for seq, rev_id in cur.fetchall()]
-        return history
-        

@@ -2,15 +2,20 @@
      class="boardComment">
 
   <div class="boardCommentDetails">
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure comment/owner/fmt:link" />
+    </tal:comment_has_owner>
+    said
+    <span
+      tal:attributes="title comment/datecreated/fmt:datetime"
+      tal:content="comment/datecreated/fmt:displaydate">
+      7 minutes ago
+    </span>:
     <a tal:attributes="href comment/fmt:url">
-    <strong tal:content="comment/title">$Bugcomment.title</strong>
+      <strong tal:condition="comment/display_title"
+              tal:content="comment/title" />
+      (permalink)
     </a>
-
-    from <a href="#" tal:attributes="href comment/owner/fmt:url"
-                          tal:content="comment/owner/browsername|string:(none)">
-      $Person.browsername</a>
-    at <span tal:replace="comment/datecreated/fmt:datetime">Thursday
-    13:21</span>
   </div>
 
   <div class="boardCommentBody">

@@ -11,7 +11,7 @@ doesn't have access to that feature.
     # We can't use user_browser here because he is Firefox's registrant.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> browser.getLink('Reject Question')
+    >>> browser.getLink('Reject question')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
@@ -28,7 +28,7 @@ error.
 To reject the question, the user clicks on the 'Reject Question' link.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> admin_browser.getLink('Reject Question').click()
+    >>> admin_browser.getLink('Reject question').click()
     >>> admin_browser.getControl('Reject').click()
 
 He needs to enter a message explaining the rejection:
@@ -69,22 +69,22 @@ case, you should link the question to the bug!
 
 Users who have administrative privileges on the question (product or
 distribution registrant and Launchpad admins) can correct errors like
-these by using the 'Change Status' action. This page enables a user to
+these by using the 'Change status' action. This page enables a user to
 set the question status to an arbitrary value without workflow constraint.
 
 That action isn't available to a non-privileged user:
 
     >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> browser.getLink('Change Status')
+    >>> browser.getLink('Change status')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
 The change status form is available to an adminsitrator through the
-'Change Status' link.
+'Change status' link.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+ticket/2')
-    >>> admin_browser.getLink('Change Status').click()
+    >>> admin_browser.getLink('Change status').click()
 
 The form has a select widget displaying the current status.
 

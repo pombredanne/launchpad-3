@@ -3,8 +3,7 @@
 """Revision interfaces."""
 
 __metaclass__ = type
-__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent',
-           'IRevisionNumber', 'IRevisionSet']
+__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionSet']
 
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
@@ -45,16 +44,6 @@ class IRevisionParent(Interface):
     revision = Attribute("The child revision.")
     sequence = Attribute("The order of the parent of that revision.")
     parent_id = Attribute("The revision_id of the parent revision.")
-
-
-class IRevisionNumber(Interface):
-    """The association between a revision and a branch."""
-
-    sequence = Int(
-        title=_("Revision Number"), required=True,
-        description=_("The index of a revision within a branch's history."))
-    branch = Attribute("The branch this revision number belongs to.")
-    revision = Attribute("The revision with that index in this branch.")
 
 
 class IRevisionSet(Interface):
