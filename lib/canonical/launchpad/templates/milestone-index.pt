@@ -15,14 +15,8 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3>
-    <span tal:content="context/target/title">Ubuntu Linux</span>
-    <tal:has_series condition="context/series_target">
-    : <span tal:content="context/series_target/title">Hoary</span>
-    </tal:has_series>
-  </h3>
   <h1>
-    Milestone &ldquo;<tal:name replace="context/name">1.0</tal:name>&rdquo;
+    Milestone overview
   </h1>
 </metal:heading>
 

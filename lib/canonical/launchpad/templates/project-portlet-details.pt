@@ -19,7 +19,7 @@
         </tr>
         <tr>
           <th>Driver:</th>
-          <td tal:condition="not:context/driver">Not yet assigned</td>
+          <td tal:condition="not:context/driver">Not yet appointed</td>
           <td tal:condition="context/driver">
             <a
               tal:content="context/driver/browsername"

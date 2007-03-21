@@ -80,9 +80,8 @@
                           <div>
                         </form>
                         <p id="application-summary">
-                          Launchpad&rsquo;s Answers system lets people
-                          ask questions about projects,
-                          and lets anyone help answer those questions.
+                          Launchpad&rsquo;s Answers system helps you build a
+                          community support network for your project.
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div id="latest-questions-asked" class="left">
@@ -107,13 +106,32 @@
       </table>
 
                         </div>
-                        <p id="application-footer" i18n:translate="">
-                          <tal:count
-                            i18n:name="count"
-                            tal:content="view/questions_count"
-                          >318</tal:count>
-                          questions asked
-                        </p>
+                        <div id="application-footer" i18n:translate="">
+                          <div>
+                            <strong
+                              i18n:name="answered_question_count"
+                              tal:content="view/answered_question_count"
+                            >52</strong>
+                            questions answered and
+                            <strong
+                              i18n:name="solved_question_count"
+                              tal:content="view/solved_question_count"
+                            >52</strong>
+                            questions solved out of
+                          </div>
+                          <div>
+                            <strong
+                              i18n:name="question_count"
+                              tal:content="view/question_count"
+                            >318</strong>
+                            questions asked across
+                            <strong
+                              i18n:name="projects_with_questions_count"
+                              tal:content="view/projects_with_questions_count"
+                            >28</strong>
+                            projects
+                          </div>
+                        </div>
                       </div><!--container-->
                     </div><!--z-->
                   </div><!--y-->

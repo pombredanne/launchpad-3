@@ -108,7 +108,15 @@
               Firefox is too slow for my laptop
             </a>
           </td>
-          <td tal:content="question/datecreated/fmt:date">2006-07-17</td>
+          <td>
+            <span class="sortkey"
+              tal:content="question/datecreated/fmt:datetime" />
+            <span
+              tal:attributes="title question/datecreated/fmt:datetime"
+              tal:content="question/datecreated/fmt:approximatedate">
+              2006-07-17
+            </span>
+          </td>
           <td><a tal:replace="structure question/owner/fmt:link">Foo Bar</a></td>
           <td class="question-target"
               tal:condition="view/display_target_column"

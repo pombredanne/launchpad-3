@@ -12,8 +12,8 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Upstream links for <span tal:replace="context/displayname">foobar in
-  hoary</span></h2>
+  <h1>Upstream links for <span tal:replace="context/displayname">foobar in
+  hoary</span></h1>
 
   <p>
     Links from distribution packages to upstream product series let

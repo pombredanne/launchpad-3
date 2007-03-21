@@ -68,7 +68,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         """See zope.app.form.interfaces.IInputWidget."""
         try:
             self.getInputValue()
-            return True
+            return self.hasInput()
         except (InputErrors, UnexpectedFormData, LaunchpadValidationError):
             return False
 
@@ -90,8 +90,10 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
                     "There is no project named '%s' registered in"
                     " Launchpad", entered_name)
                 raise self._error
-        else:
+        elif self.required:
             raise UnexpectedFormData("No valid option was selected.")
+        else:
+            return None
 
     def setRenderedValue(self, value):
         """See IWidget."""

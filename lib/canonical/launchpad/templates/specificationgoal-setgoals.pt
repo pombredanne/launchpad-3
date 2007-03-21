@@ -74,7 +74,9 @@
                 <span tal:replace="context/displayname">Edgy</span>
                 by
                 <a tal:replace="structure spec/goal_proposer/fmt:link" />
-                on <span tal:replace="spec/date_goal_proposed/fmt:date" />.
+                <span
+                  tal:attributes="title spec/date_goal_proposed/fmt:datetime"
+                  tal:content="spec/date_goal_proposed/fmt:displaydate" />.
               </div>
             </td>
           </tr>
@@ -83,7 +85,7 @@
     </table>
 
     <p tal:condition="view/specs">
-      Select the specifications that you wish to accept or decline.
+      Select the blueprints that you wish to accept or decline.
     </p>
 
     <div class="actions">
