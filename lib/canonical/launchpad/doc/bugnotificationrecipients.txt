@@ -263,11 +263,15 @@ a pathological example:
   >>> recipients.addDirectSubscriber(test)
   >>> recipients.addAssignee(test)
   >>> recipients.addUpstreamRegistrant(test, gnomebaker)
+  >>> recipients.addDirectSubscriber(foo_bar)
 
 This guy is emailed because he's a direct subscriber, an assignee and an
 upstream registrant. However, if we ask the rationales instance:
 
   >>> print_rationales(recipients)
+  foo.bar@canonical.com
+      Subscriber
+      You received this bug notification because you are a direct subscriber of the bug.
   test@canonical.com
       Subscriber
       You received this bug notification because you are a direct subscriber of the bug.
@@ -279,9 +283,13 @@ update this set of recipients with another one:
   >>> recipients2.addDupeSubscriber(test)
   >>> recipients2.update(recipients)
 
-The rationales in the 'recipients' instance just don't matter:
+The rationales for test@canonical.com in the 'recipients' instance just
+don't matter:
 
   >>> print_rationales(recipients2)
+  foo.bar@canonical.com
+      Subscriber
+      You received this bug notification because you are a direct subscriber of the bug.
   test@canonical.com
       Subscriber of Duplicate
       You received this bug notification because you are a direct subscriber of a duplicate bug.

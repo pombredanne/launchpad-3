@@ -127,13 +127,13 @@ class BugNotificationRecipients:
                 # in the class docstring.
                 self._reasons[email] = (reason, header)
 
-    def update(self, rationale):
+    def update(self, recipients):
         """See INotificationRecipientSet"""
-        for k, v in rationale._reasons.items():
-            if k not in self._reasons:
+        for email in recipients.getEmails():
+            if email not in self._reasons:
                 # For the same reason as in _addReason, we don't clobber
                 # existing _reasons.
-                self._reasons[k] = v
+                self._reasons[email] = recipients.getReason(email)
 
     def getReason(self, email):
         """See INotificationRecipientSet"""
