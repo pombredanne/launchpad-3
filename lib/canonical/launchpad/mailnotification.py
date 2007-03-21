@@ -153,7 +153,7 @@ def _send_bug_details_to_new_bugcontacts(
 
     # XXX: We send this notification as if it was from the bug owner. I
     # hope this isn't too confusing to people receiving this
-    # notification; it may be better to use a celebrity.
+    # notification; it may be better to use a celebrity. See bug 94321.
     #   -- kiko, 2007-03-20
     from_addr = get_bugmail_from_address(bug.owner, bug)
     # Now's a good a time as any for this email; don't use the original
