@@ -52,7 +52,7 @@
           </tal:not_assignee>
           <tal:assignee condition="personspec/assignee">
             <td width="40" class="highlighted" align="center">
-              <img src="/@@/spec" alt="X" />
+              <img src="/@@/blueprint" alt="X" />
             </td>
           </tal:assignee>
           <tal:not_drafter condition="not: personspec/drafter">
@@ -60,7 +60,7 @@
           </tal:not_drafter>
           <tal:drafter condition="personspec/drafter">
             <td width="40" class="highlighted" align="center">
-              <img src="/@@/spec" alt="X" />
+              <img src="/@@/blueprint" alt="X" />
             </td>
           </tal:drafter>
           <tal:not_approver condition="not: personspec/approver">
@@ -68,7 +68,7 @@
           </tal:not_approver>
           <tal:approver condition="personspec/approver">
             <td width="40" class="highlighted" align="center">
-              <img src="/@@/spec" alt="X" />
+              <img src="/@@/blueprint" alt="X" />
             </td>
           </tal:approver>
         </tal:spec>

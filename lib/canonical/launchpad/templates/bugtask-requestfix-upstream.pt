@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -35,7 +35,7 @@
           <a tal:attributes="href product/fmt:url"
              tal:content="product/bugtargetname">
             firefox (upstream)
-          </a> (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another product</a>)
+          </a> (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another project</a>)
           <input type="hidden" tal:replace="structure product_widget/hidden" />
         </div>
       </div>

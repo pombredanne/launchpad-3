@@ -14,7 +14,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
@@ -133,6 +135,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     @property
     def archive_mirrors(self):

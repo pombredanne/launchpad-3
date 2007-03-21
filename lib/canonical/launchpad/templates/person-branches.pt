@@ -39,7 +39,10 @@
 
     <li>The <strong>author</strong> is the person being given credit for the
       branch. The author cannot modify the branch in any way, and should
-      normally be the same as the registrant.</li>
+      normally be the same as the registrant. We have both fields to allow
+      you to register a branch which is useful for you and the community,
+      and which you want to monitor through Launchpad, but for which you
+      are not the author.</li>
 
     <li>A <strong>subscriber</strong> is a person expressing interest in a
       branch. Subscribing to a branch does not give any right, and is only

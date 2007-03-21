@@ -231,7 +231,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+packages', text, icon='info')
 
     def series_add(self):
-        text = 'Add series'
+        text = 'Register a release series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -390,7 +390,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall', 'withcode']
+             'register', 'listall']
 
     def register(self):
         text = 'Register a project'
@@ -411,12 +411,6 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def withcode(self):
-        text = 'Show projects with code'
-        productset = getUtility(IProductSet)
-        return Link(canonical_url(
-            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:
@@ -639,7 +633,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             if message:
                 self.setFieldError('user_branch', message)
 
-    @action(_('Add Series'), name='add')
+    @action(_('Register Series'), name='add')
     def add_action(self, action, data):
         self.series = self.context.newSeries(
             owner=self.user,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 # A script to import metadata about the Zope 3 specs into Launchpad

@@ -63,7 +63,7 @@ class IPillarNameSet(Interface):
 class PillarNameField(BlacklistableContentNameField):
 
     errormessage = _(
-            "%s is already in use by another product, project or distribution"
+            "%s is already in use by another project"
             )
 
     def _getByName(self, name):
