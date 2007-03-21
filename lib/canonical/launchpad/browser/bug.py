@@ -836,6 +836,12 @@ class BugTextView(LaunchpadView):
         else:
             text.append('duplicate-of: ')
 
+        if bug.duplicates:
+            dupes = ' '.join(str(dupe.id) for dupe in bug.duplicates)
+            text.append('duplicates: %s' % dupes)
+        else:
+            text.append('duplicates: ')
+
         text.append('subscribers: ')
 
         for subscription in bug.subscriptions:

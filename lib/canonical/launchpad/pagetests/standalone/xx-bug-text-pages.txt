@@ -12,6 +12,7 @@ Get text page for a single bug.
   title: Firefox does not support SVG
   reporter: Sample Person (name12)
   duplicate-of: 
+  duplicates: 
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
@@ -50,6 +51,21 @@ Check a bug that is a duplicate.
   bug: 6
   ...
   duplicate-of: 5
+  ...
+
+Check the duplicate target.
+
+  >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
+  >>> anon_browser.url
+  'http://launchpad.dev/bugs/5/+text'
+  >>> print anon_browser.headers['content-type']
+  text/plain;charset=utf-8 
+
+  >>> print anon_browser.contents
+  bug: 5
+  ...
+  duplicate-of: 
+  duplicates: 6
   ...
 
 Get bug text page for a product.
