@@ -114,15 +114,6 @@
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
-    <td tal:condition="view/user">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')" >
-        [edit]
-      </a>
-    </td>
   </tr>
   <tr
     tal:attributes="id form_row_id"

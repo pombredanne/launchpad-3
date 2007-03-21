@@ -20,7 +20,6 @@
       <th>Status</th>
       <th>Importance</th>
       <th>Assigned To</th>
-      <th tal:condition="view/user"></th>
     </tr>
   </thead>
 
