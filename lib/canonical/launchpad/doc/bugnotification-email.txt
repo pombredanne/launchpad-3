@@ -1,5 +1,4 @@
-Bug Notification Email
-======================
+== Bug Notification Email ==
 
 This document describes the internal workings of how bug notification
 emails are generated and how said emails are formatted. It does not
@@ -32,8 +31,7 @@ examples that follow:
     ...     ICve, IEmailAddressSet)
     >>> from canonical.launchpad.components.bug import BugDelta
 
-Filing a bug
-------------
+= Filing a bug =
 
 generate_bug_add_email accepts one argument: the IBug that was just
 added. With that, it generates an appropriately-formatted notification
@@ -83,8 +81,7 @@ as well.
     ** Tags: bar foo
 
 
-Editing a bug
--------------
+= Editing a bug =
 
 get_bug_edit_notification_texts accepts an object that provides
 IBugDelta, and returns a list of text representations of the changes
@@ -234,8 +231,7 @@ If we change one tag, it's basically removing one and adding another:
     ** Tags removed: bar
     -----------------------------
 
-Adding a new bug task
----------------------
+= Adding a new bug task =
 
 Because adding a new task is sort of like "editing" a bug,
 get_bug_edit_notification_texts generates text representations when a
@@ -258,8 +254,7 @@ pretend we had just added task five:
            Status: Unconfirmed
     -----------------------------
 
-Editing a bug task
-------------------
+= Editing a bug task =
 
 As you might expect, get_bug_edit_notification_texts handles generating the
 text representations of the changes when a bug task is edited.
@@ -310,8 +305,7 @@ edited:
          Assignee: Sample Person => (unassigned)
     -----------------------------
 
-Adding and editing web links
-----------------------------
+= Adding and editing web links =
 
 Adding a web link can be seen as "editing" a bug.
 
@@ -365,8 +359,7 @@ modified link as having been "Added" (though no actual "adding" or
     ** Web link added: http://www.example.com/foo/bar
     -----------------------------
 
-Adding and editing bug watches
-------------------------------
+= Adding and editing bug watches =
 
 Here's an example that demonstrates the notification email that gets
 generated when a bug watch is added:
@@ -445,8 +438,7 @@ We can also add a bugwatch while adding a new bugtask.
     -----------------------------
 
 
-Adding and editing CVE relationships
-------------------------------------
+= Adding and editing CVE relationships =
 
 Adding a CVE will generate a notification that looks as follows:
 
@@ -500,8 +492,7 @@ Similarly, removing a CVE ref will result in an email:
     ** CVE removed: http://cve.mitre.org/whatsit?id=CVE-2004-0719
     -----------------------------
 
-Adding attachments
-------------------
+= Adding attachments =
 
 Adding an attachment will generate a notification that looks as follows:
 
@@ -528,8 +519,7 @@ Adding an attachment will generate a notification that looks as follows:
        http://foo.com/screenshot.png
     -----------------------------
 
-Generation of From: and Reply-To: addresses
--------------------------------------------
+= Generation of From: and Reply-To: addresses =
 
 The Reply-To: and From: addresses used to send email are generated in a
 pair of handy functions defined in mailnotification.py:
