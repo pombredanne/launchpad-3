@@ -88,10 +88,9 @@ Before we can display the revisions, a branch needs to be mirrored (or
 'published') and scanned. When a branch is not yet mirrored, we'll see a
 helpful message.
 
-  >>> print http(r"""
-  ... GET /~name12/firefox/main HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+  >>> print find_main_content(browser.contents)
+  <...
   ...Recent revisions...
   ...This branch has not been mirrored yet...
 
@@ -100,10 +99,9 @@ We don't want to use the word 'mirrored' for hosted or imported branches,
 because those branches are only mirrored internally. "Published" is a better
 word for these.
 
-  >>> print http(r"""
-  ... GET /~name12/gnome-terminal/pushed HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
+  >>> print find_main_content(browser.contents)
+  <...
   ...Recent revisions...
   ...This branch has not been published yet...
 
@@ -112,10 +110,9 @@ If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
 available for download as soon as they are published.
 
-  >>> print http(r"""
-  ... GET /~name12/gnome-terminal/mirrored HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/mirrored')
+  >>> print find_main_content(browser.contents)
+  <...
   ...Recent revisions...
   ...This branch has not been scanned yet...
 
@@ -123,9 +120,8 @@ available for download as soon as they are published.
 If a branch has been mirrored and scanned, and has no revisions, then it is
 empty.
 
-  >>> print http(r"""
-  ... GET /~name12/gnome-terminal/scanned HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+  >>> print find_main_content(browser.contents)
+  <...
   ...Recent revisions...
   ...This branch is empty...
