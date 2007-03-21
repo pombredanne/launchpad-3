@@ -11,7 +11,8 @@ import _pythonpath
 from canonical.archivepublisher.uploadpolicy import policy_options
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript, LaunchpadScriptFailure
+from canonical.launchpad.scripts.base import (
+    LaunchpadScript, LaunchpadScriptFailure)
 
 
 class ProcessUpload(LaunchpadScript):
@@ -53,12 +54,17 @@ class ProcessUpload(LaunchpadScript):
         self.logger.debug("Initialising connection.")
         UploadProcessor(self.options, self.txn, self.logger).processUploadQueue()
 
+    @property
+    def lockfilename(self):
+        """Return specific lockfilename according the policy used.
+
+        Each different p-u policy requires and uses a different lockfile.
+        This is because they are run by different users and are independent
+        of each other.
+        """
+        return "process-upload-%s.lock" % self.options.context
 
 if __name__ == '__main__':
     script = ProcessUpload('process-upload', dbuser=config.uploader.dbuser)
-    # Each different p-u policy requires and uses a different lockfile.
-    # This is because they are run by different users and are
-    # independent of each other.
-    script.lockfilename = "process-upload-%s" % script.options.context
     script.lock_and_run()
 
