@@ -165,8 +165,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
-        # have one push branch: a branch named "pushed" on the "gnome-terminal"
-        # product.
+        # have three push branches: "pushed", "mirrored" and "scanned" on the
+        # "gnome-terminal" product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
         self.assertEqual(1, len(branches))
@@ -174,7 +174,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
         self.assertEqual(6, gnomeTermID)
         self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+        self.assertEqual(
+            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
+            set(gnomeTermBranches))
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no

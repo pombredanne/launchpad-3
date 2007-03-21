@@ -101,6 +101,10 @@
           class="two column section"
           tal:content="structure context/@@+portlet-latestspecs"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
       </div>
     </div>
   </body>

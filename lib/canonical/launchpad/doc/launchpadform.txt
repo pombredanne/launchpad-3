@@ -123,6 +123,24 @@ attribute:
   <...PasswordChangeWidget object at ...>
 
 
+Using Another Context
+---------------------
+
+setUpWidgets() uses the view's context by default when setting up the
+widgets, but it's also possible to specify the context explicitly.
+
+  >>> view_context = FormTest()
+  >>> another_context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView3(view_context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets(context=another_context)
+  >>> view.widgets['displayname'].context.context is view_context
+  False
+  >>> view.widgets['displayname'].context.context is another_context
+  True
+
+
 Actions
 -------
 
@@ -409,4 +427,12 @@ object for us too:
 
   >>> context.displayname
   u'James Henstridge'
+
+By default updateContextFromData() uses the view's context, but it's
+possible to pass in a specific context to use instead:
+
+  >>> custom_context = FormTest()
+  >>> view.updateContextFromData({'displayname': u'New name'}, custom_context)
+  >>> custom_context.displayname
+  u'New name'
 

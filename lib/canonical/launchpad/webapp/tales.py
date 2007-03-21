@@ -14,6 +14,7 @@ import os.path
 import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
+from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -25,9 +26,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
+import pytz
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
+    IBugNomination)
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
@@ -282,6 +286,8 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'approximatedate',
+        'displaydate',
         'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
@@ -388,7 +394,7 @@ class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         resource = person.default_emblem_resource
-        return '<a href="%s"><img alt="" src="%s" />%s</a>' % (
+        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
             url, resource, person.browsername)
 
 
@@ -526,6 +532,55 @@ class DateTimeFormatterAPI:
         if value.tzinfo:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
+
+    def displaydate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = abs(now - self._datetime)
+        if delta > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return 'on ' + self.date()
+        return self.approximatedate()
+
+    def approximatedate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = now - self._datetime
+        if abs(delta) > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return self.date()
+        future = delta < timedelta(0, 0, 0)
+        delta = abs(delta)
+        days = delta.days
+        hours = delta.seconds / 3600
+        minutes = (delta.seconds - (3600*hours)) / 60
+        seconds = delta.seconds % 60
+        result = ''
+        comma = ''
+        if future:
+            result += 'in '
+        if days != 0:
+            result += '%d days' % days
+            comma = ', '
+        if days == 0 and hours != 0:
+            result += '%s%d hours' % (comma, hours)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes != 0:
+            result += '%s%d minutes' % (comma, minutes)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes == 0:
+            result += '%s%d seconds' % (comma, seconds)
+        if not future:
+            result += ' ago'
+        return result
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
@@ -1301,6 +1356,7 @@ class GotoStructuralObject:
     def structuralobject(self):
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
+            IBugNomination.providedBy(self.context) or
             IBugExternalRef.providedBy(self.context)):
             use_context = self.view.current_bugtask
         else:

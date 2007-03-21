@@ -87,11 +87,11 @@ There is also a link which points to the registered branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   10 Mature       gnome-terminal
-   main                  20 Development  gnome-terminal
-   pushed                60 New          gnome-terminal
-   junk.dev Ubuntu Team  30 Experimental
-      2005-10-31 12:03:57 ... weeks ago
+   2.6                   Mature       gnome-terminal
+   main                  Development  gnome-terminal
+   mirrored              New          gnome-terminal
+   pushed                New          gnome-terminal
+   scanned               New          gnome-terminal
 
 == Subscribed branches ==
 
