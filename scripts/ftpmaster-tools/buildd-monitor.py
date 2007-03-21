@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """ Copyright Canonical Limited 2005
  Author: Daniel Silverstone <daniel.silverstone@canonical.com>
          Celso Providelo <celso.providelo@canonical.com>
