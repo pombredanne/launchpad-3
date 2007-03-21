@@ -320,13 +320,14 @@ def generate_bug_add_email(bug, new_recipients=False):
                     "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
         visibility = visibility.lower()
+        # XXX: we should really have a centralized way of adding this
+        # footer, but right now we lack a INotificationRecipientSet for this
+        # particular situation. -- kiko, 2007-03-21
+        contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
     else:
         contents = ("%(visibility)s bug reported:\n\n"
                     "%(description)s\n\n%(bug_info)s")
-    # XXX: we should really have a centralized way of adding this
-    # footer, but right now we lack a INotificationRecipientSet for this
-    # particular email. -- kiko, 2007-03-21
-    contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
+
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
