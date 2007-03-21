@@ -323,13 +323,13 @@ indirect_subscribers will include only martin-pitt.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Martin Pitt
-    
+
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Martin Pitt
 
 To find out which email addresses should receive a notification email on
-a bug, and why, IBug.getBugNotificationRecipients() assembles a
-BugNotificationRecipients instance for us:
+a bug, and why, IBug.getBugNotificationRecipients() assembles an
+INotificationRecipientSet instance for us:
 
    >>> recipients = linux_source_bug.getBugNotificationRecipients()
 
