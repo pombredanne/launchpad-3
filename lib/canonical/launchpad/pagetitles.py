@@ -411,6 +411,8 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+hassprints_sprints = ContextTitle("Events related to %s")
+
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
 people_mergerequest_sent = 'Merge request sent'

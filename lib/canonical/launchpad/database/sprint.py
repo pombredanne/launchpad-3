@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IHasGotchiAndEmblem, ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -340,6 +340,13 @@ class HasSprintsMixin:
             AND SprintSpecification.sprint = Sprint.id
             """ % (self._table, self.id)
         return query, ['Specification', 'SprintSpecification']
+
+    @property
+    def sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts', distinct=True)
 
     @property
     def coming_sprints(self):
