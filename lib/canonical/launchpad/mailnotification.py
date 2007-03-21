@@ -30,8 +30,7 @@ from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (TeamMembershipStatus, QuestionAction,
-    EmailAddressStatus)
+from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction
 
 CC = "CC"
 
@@ -324,9 +323,13 @@ def generate_bug_add_email(bug, new_recipients=False):
     else:
         contents = ("%(visibility)s bug reported:\n\n"
                     "%(description)s\n\n%(bug_info)s")
+    # XXX: we should really have a centralized way of adding this
+    # footer, but right now we lack a INotificationRecipientSet for this
+    # particular email. -- kiko, 2007-03-21
+    contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
     contents = contents % {
-        'visibility' : visibility, 'bugurl' : canonical_url(bug),
-        'bug_info': "\n".join(bug_info),
+        'visibility' : visibility, 'bug_url' : canonical_url(bug),
+        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
         'description': mailwrapper.format(bug.description)}
 
     contents = contents.rstrip()
