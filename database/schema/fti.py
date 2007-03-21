@@ -88,6 +88,10 @@ ALL_FTI = [
             ('description', D),
             ]),
 
+    ('productreleasefile', [
+            ('description', D),
+            ]),
+
     ('project', [
             ('name', A),
             ('displayname', A),

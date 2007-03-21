@@ -3,6 +3,7 @@ SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
 SET client_min_messages = warning;
 SET escape_string_warning = off;
+SET standard_conforming_strings = off;
 
 SET search_path = public, pg_catalog;
 
@@ -7769,8 +7770,8 @@ ALTER TABLE productrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
 
-INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id) VALUES (5, 3, 1, 2);
-INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id) VALUES (7, 1, 1, 1);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description) VALUES (5, 3, 1, 2, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description) VALUES (7, 1, 1, 1, NULL);
 
 
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;

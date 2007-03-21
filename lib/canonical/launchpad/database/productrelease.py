@@ -80,6 +80,8 @@ class ProductReleaseFile(SQLBase):
     filetype = EnumCol(dbName='filetype', schema=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
 
+    description = StringCol(notNull=False, default=None)
+
 
 class ProductReleaseSet(object):
     """See IProductReleaseSet""" 

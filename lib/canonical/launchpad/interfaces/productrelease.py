@@ -92,6 +92,9 @@ class IProductReleaseFile(Interface):
                       vocabulary='UpstreamFileType',
                       default=UpstreamFileType.CODETARBALL)
 
+    description = Text(title=_("Description"), required=False,
+        description=_('A detailed description of the file contents'))
+
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
