@@ -216,15 +216,18 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=True,
         vocabulary='TranslationPermission')
 
-    autoupdate = Bool(title=_('Automatic update'),
-        description=_("""Whether or not this product's attributes are
-        updated automatically."""))
+    autoupdate = Bool(
+        title=_('Automatic update'),
+        description=_("Whether or not this product's attributes are "
+            "updated automatically."))
 
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this product is considered active."""))
+    active = Bool(
+        title=_('Active'), 
+        description=_("Whether or not this product is considered active."))
 
-    reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
-        this product has been reviewed."""))
+    reviewed = Bool(
+        title=_('Reviewed'), 
+        description=_("Whether or not this product has been reviewed."))
 
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
@@ -234,26 +237,27 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         project bug tracker instead.
         """
 
-    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-        vocabulary='BugTracker',
-        description=_(
-            "The external bug tracker this product uses, if it's different"
-            " from its Project's bug tracker."))
+    bugtracker = Choice(
+        title=_('Bug Tracker'), required=False, vocabulary='BugTracker',
+        description=_("The external bug tracker this product uses, if "
+            "it's different from its Project's bug tracker."))
 
-    official_answers = Bool(title=_('Uses Answers Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this project officially uses Answers for community support.'))
+    official_answers = Bool(
+        title=_('Uses Answers Officially'), required=True, 
+        description=_("Check this box to indicate that this project officially "
+            "uses Answers for community support."))
         
-    official_malone = Bool(title=_('Uses Malone Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Malone for bug tracking '
-        'upstream. This will remove the caution from the product page.'))
+    official_malone = Bool(
+        title=_('Uses Malone Officially'), required=True, 
+        description=_("Check this box to indicate that this application "
+            "officially uses Malone for bug tracking upstream. "
+            "This will remove the caution from the product page."))
 
-    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Rosetta for upstream '
-        'translation. This will remove the caution from the '
-        'pages for this product in Launchpad.'))
+    official_rosetta = Bool(
+        title=_('Uses Rosetta Officially'), required=True, 
+        description=_("Check this box to indicate that this application "
+            "officially uses Rosetta for upstream translation. This will "
+            "remove the caution from the pages for this product in Launchpad."))
 
     sourcepackages = Attribute(_("List of distribution release packages for "
         "this product"))

@@ -107,36 +107,39 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
-    translationgroup = ForeignKey(dbName='translationgroup',
-        foreignKey='TranslationGroup', notNull=False, default=None)
-    translationpermission = EnumCol(dbName='translationpermission',
-        notNull=True, schema=TranslationPermission,
-        default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
-                              default=None)
-    upload_sender = StringCol(dbName='upload_sender', notNull=False,
-                              default=None)
-    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
-                              default=None, notNull=False)
+    translationgroup = ForeignKey(
+        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
+        default=None)
+    translationpermission = EnumCol(
+        dbName='translationpermission', notNull=True, 
+        schema=TranslationPermission, default=TranslationPermission.OPEN)
+    lucilleconfig = StringCol(
+        dbName='lucilleconfig', notNull=False, default=None)
+    upload_sender = StringCol(
+        dbName='upload_sender', notNull=False, default=None)
+    upload_admin = ForeignKey(
+        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
+    milestones = SQLMultipleJoin(
+        'Milestone', joinColumn='distribution', 
         orderBy=['dateexpected', 'name'])
-    uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution', prejoins=["uploader", "component"])
-    official_answers = BoolCol(dbName='official_answers', notNull=True,
-        default=False)
-    official_malone = BoolCol(dbName='official_malone', notNull=True,
-        default=False)
-    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
-        default=False)
-    translation_focus = ForeignKey(dbName='translation_focus',
-        foreignKey='DistroRelease', notNull=False, default=None)
-    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
-                                            joinColumn="distribution",
-                                            orderBy="name",
-                                            prejoins=['sourcepackagename'])
+    uploaders = SQLMultipleJoin(
+        'DistroComponentUploader', joinColumn='distribution', 
+        prejoins=["uploader", "component"])
+    official_answers = BoolCol(
+        dbName='official_answers', notNull=True, default=False)
+    official_malone = BoolCol(
+        dbName='official_malone', notNull=True, default=False)
+    official_rosetta = BoolCol(
+        dbName='official_rosetta', notNull=True, default=False)
+    translation_focus = ForeignKey(
+        dbName='translation_focus', foreignKey='DistroRelease', notNull=False, 
+        default=None)
+    source_package_caches = SQLMultipleJoin(
+        'DistributionSourcePackageCache',  joinColumn="distribution",
+        orderBy="name", prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     @property
