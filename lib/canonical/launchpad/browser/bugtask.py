@@ -735,7 +735,8 @@ class BugTaskEditView(GeneralFormView):
         return read_only_field_names
 
     def getErrorMessage(self):
-        assert self.errors
+        if not self.errors:
+            return ""
         text = ("There %s with the information you entered. "
                 "Please fix %s and try again.")
         count = len(self.errors)
