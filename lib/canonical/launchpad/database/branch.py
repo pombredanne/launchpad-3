@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
