@@ -16,7 +16,7 @@
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-latestquestions" />
     <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-hctstatus" />
+    <div tal:replace="structure context/@@+portlet-upstream" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -54,29 +54,29 @@
   <ul id="upstreams" tal:define="series context/productseries">
     <tal:has_series condition="series">
       <li tal:condition="series/product/project">
-       <b>Project:</b>
+       <b>Project Group:</b>
          <a tal:define="project series/product/project"
           tal:content="project/displayname"
           tal:attributes="href string:/${project/name}">
           Project</a>
       </li>
-      <li><b>Product:</b>
+      <li><b>Project:</b>
          <a tal:condition="series/product"
             tal:content="series/product/displayname"
             tal:attributes="href string:/${series/product/name}">
-         Product</a>
+         Project</a>
       </li>
       <li><b>Branch: </b>
       <a tal:define="productseries context/productseries"
          tal:content="productseries/name"
          tal:attributes="href productseries/fmt:url">
-         ProductSeries</a><br />
+         ProjectSeries</a><br />
       </li>
     </tal:has_series>
     <tal:has_no_series condition="not: context/productseries">
-       <li><b>Related product:</b>
+       <li><b>Related project:</b>
        <i>
-         No product associated with this sourcepackage
+         No project associated with this sourcepackage
        </i>
     </tal:has_no_series>
     <small>(<a tal:attributes="href string:${context/fmt:url}/+packaging">update</a>)</small>

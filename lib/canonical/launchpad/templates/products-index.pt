@@ -44,7 +44,6 @@
 
   <tal:searching condition="view/searchrequested">
 
-    <div class="left">
       <table
         tal:condition="view/matches"
         tal:define="results view/searchresults"
@@ -73,17 +72,12 @@
         were found.
       </p>
 
-    </div>
-
-    <div class="right">
-
-      <h2>No luck?</h2>
+      <h2>Haven&#8217;t found your project?</h2>
 
       <p>
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
-
       <p>
         <a href="+new">&raquo;
           Register a project</a>
@@ -93,9 +87,6 @@
         <a href="+all">&raquo;
           Browse the listing of all (!) projects</a>
       </p>
-
-
-    </div>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
@@ -120,7 +111,7 @@
       <h2>Latest registrations</h2>
           <ul tal:condition="context/latest" class="product">
             <li tal:repeat="product context/latest">
-              <tal:date replace="product/datecreated/fmt:date" />:
+              <tal:date replace="product/datecreated/fmt:approximatedate" />:
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/displayname"

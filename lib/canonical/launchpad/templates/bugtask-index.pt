@@ -26,7 +26,14 @@
 
       <div>
         <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
+        first reported
+        <span
+          tal:attributes="title context/bug/datecreated/fmt:datetime"
+          tal:content="context/bug/datecreated/fmt:displaydate" />
+        by
+        <a tal:attributes="href context/bug/owner/fmt:url"
+           tal:content="context/bug/owner/browsername">Foo Bar</a>
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
@@ -66,7 +73,7 @@
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
        tal:content="context/targetname">upstream firefox</a>
-    <tal:product condition="context/product">product.</tal:product>
+    <tal:product condition="context/product">project.</tal:product>
     <tal:package condition="context/sourcepackagename">package.</tal:package>
     <tal:distribution
       condition="python: (not context.product) and (not context.sourcepackagename)"
@@ -90,7 +97,10 @@
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
       <div class="report">
-        <h2>Bug description <small>(<a href="+edit">edit</a>)</small></h2>
+        <h2>Bug description
+          <a href="+edit"
+          ><img src="/@@/edit" alt="[edit]" title="Edit this description"
+          /></a></h2>
 
     <div id="bug-description" style="font-family: monospace;"
          tal:content="structure context/bug/description/fmt:text-to-html" />

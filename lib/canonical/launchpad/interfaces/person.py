@@ -118,8 +118,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
+    # The emblem is only used for teams; that's why we use /@@/team as the
+    # default image resource.
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/team',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
@@ -127,15 +130,17 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/person-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a great big grinning "
-            "image of your mug. Make the most of it."))
+            "than 50k in size. Traditionally this is a logo, small picture, "
+            "or personal mascot."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
+        default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
+            "An image, maximum 150x150 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))
@@ -693,6 +698,7 @@ class ITeam(IPerson):
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/team-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this team's home page. It should be no bigger than 100k in "

@@ -265,7 +265,7 @@ As you might expect, get_bug_edit_notification_texts handles generating the
 text representations of the changes when a bug task is edited.
 
     >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
-    >>> from canonical.launchpad.components.bugtask import BugTaskDelta
+    >>> from canonical.launchpad.database.bugtask import BugTaskDelta
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)

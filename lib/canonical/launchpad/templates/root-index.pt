@@ -2,6 +2,28 @@
 <html metal:use-macro="template/macro:page/freeform" i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
+
+  <div class="informational message" tal:condition="view/isBetaUser">
+    <tal:redirect_inhibited condition="view/isRedirectInhibited">
+      <script type="text/javascript"
+              tal:content="view/getEnableRedirectScript"></script>
+      <p>As a member of the Launchpad Beta Testers team, you would
+      normally be redirected to the beta site when viewing Launchpad
+      pages.  However, you currently have this disabled.</p>
+      <p><button onclick="enable_beta_redirect()">Enable beta site
+      redirection</button></p>
+    </tal:redirect_inhibited>
+    <tal:redirect_enabled condition="not:view/isRedirectInhibited">
+      <script type="text/javascript"
+              tal:content="view/getInhibitRedirectScript"></script>
+      <p>As a member of the Launchpad Beta Testers team, you will be
+      redirected to the beta site when viewing Launchpad pages other
+      than the front page.</p>
+      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      for 2 hours</button></p>
+    </tal:redirect_enabled>
+  </div>
+
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
         class="central"
@@ -18,7 +40,7 @@
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
             We make it easy to <strong>collaborate 
-            across multiple upstream projects</strong>,
+            across multiple projects</strong>
             in the free software world.
             <a href="/+tour">Learn more&#8230;</a>
           </p>
@@ -50,10 +72,10 @@
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
             <li class="product"><a href="/jokosher">Jokosher</a></li>
+            <li class="product"><a href="/upstart">Upstart</a></li>
+            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
           </ul>
         </div>
       </div>

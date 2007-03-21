@@ -173,7 +173,7 @@
             </p><p>
             Launchpad is a large, monolithic, web application. We would
             be happy to release the code for the Registry, for example,
-            which keeps track of all upstream products and their series
+            which keeps track of all upstream projects and their series
             and releases; however, that code will not run without the
             distribution management code, which is part of of the
             service that Canonical provides to other companies that make

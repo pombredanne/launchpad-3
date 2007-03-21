@@ -225,7 +225,7 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=10):
+    def getMostRecentlyFixedBugs(self, limit=5):
         """Return the ten most recently fixed bugs."""
         fixed_bugs = []
         search_params = BugTaskSearchParams(
@@ -378,9 +378,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                     sourcepackage = distrorelease.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
-                        'Please select the appropriate upstream product.'
+                        'Please select the appropriate upstream project.'
                         ' This step can be avoided by'
-                        ' <a href="%(package_url)s/+packaging">updating'
+                        ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
                         full_package_name=bugtask.targetname,

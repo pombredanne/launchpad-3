@@ -164,7 +164,7 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
-    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
+    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
 
 buglinktarget_linkbug = 'Link to bug report'
 
@@ -513,6 +513,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+notification_test = 'Notification test'
+
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
@@ -535,7 +537,8 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
@@ -662,7 +665,7 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
-product_code_index = 'Projects with Code'
+product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
@@ -852,12 +855,12 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('%s HCT status')
+sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define upstream series for %s')
+sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 

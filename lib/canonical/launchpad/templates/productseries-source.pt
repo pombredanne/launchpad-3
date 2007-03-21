@@ -15,7 +15,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Upstream source import</h1>
 </metal:heading>
 
@@ -25,10 +24,8 @@
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
       Once you enter the details of the
       <abbr title="revision control system">RCS</abbr> you use for
-      this product series, Launchpad can attempt to import that code
-      and publish it as a Bazaar branch.  This lets distributors share
-      code with you more efficiently, and also allows distributed
-      upstream development.
+      this product series, Launchpad Administrators will attempt to import that
+      code and publish it as a Bazaar branch.
     </p>
 
     <metal:formbody fill-slot="widgets">

@@ -234,6 +234,18 @@
 
 </facet>
 
+<facet facet="branches">
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+project-cloud"
+      class="canonical.launchpad.browser.BazaarProductView"
+      template="../templates/product-code-index.pt"
+      permission="zope.Public"
+      />
+  
+</facet>
+
 <!--
 Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
