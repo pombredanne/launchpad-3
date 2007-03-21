@@ -37,6 +37,7 @@ SESSION_PKG_KEY = 'openid'
 class IOpenIdView(Interface):
     openid_request = Attribute("OpenIDRequest")
     trust_root = Attribute("TrustRoot")
+    current_user = Attribute("Currently authenticated IPerson")
 
 
 class OpenIdView(LaunchpadView):
@@ -45,13 +46,16 @@ class OpenIdView(LaunchpadView):
     openid_server = Server(FileOpenIDStore(mkdtemp('openid')))
 
     openid_request = None
-    trust_root = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
     decide_template = ViewPageTemplateFile("../templates/openid-decide.pt")
     invalid_identity_template = ViewPageTemplateFile(
             "../templates/openid-invalid-identity.pt"
             )
+
+    @property
+    def current_user(self):
+        return getUtility(ILaunchBag).user
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -90,11 +94,10 @@ class OpenIdView(LaunchpadView):
                 # means this is not a valid Launchpad identity.
                 # Display an error message to the user and let them
                 # continue.
-                me = getUtility(ILaunchBag).user
-                if me is None:
+                if self.current_user is None:
                     self.login = 'username'
                 else:
-                    self.login = me.name
+                    self.login = self.current_user.name
                 return self.invalid_identity_template()
 
             if self.isAuthorized():
@@ -160,6 +163,13 @@ class OpenIdView(LaunchpadView):
         else:
             return match.group(1)
 
+    @property
+    def trust_root(self):
+        try:
+            return TrustRoot.parse(self.openid_request.trust_root)
+        except AttributeError:
+            return None
+
     def showDecidePage(self):
         """Render the 'do you want to authenticate' page.
 
@@ -167,7 +177,6 @@ class OpenIdView(LaunchpadView):
         We need to explain what they are doing here and ask them if they
         want to allow Launchpad to authenticate them with the OpenID consumer.
         """
-        self.trust_root = TrustRoot.parse(self.openid_request.trust_root)
         if self.trust_root is None:
             raise UnexpectedFormData("Invalid trust root")
         # To ensure that the user has seen this page and it was actually the
@@ -201,23 +210,29 @@ class OpenIdView(LaunchpadView):
 
     def isAuthenticated(self):
         """Returns True if we are logged in as the owner of the identity."""
-        me = getUtility(ILaunchBag).user
         # Not authenticated if the user is not logged in
-        if me is None:
+        if self.current_user is None:
             return False
 
         # Not authenticated if we are logged in as someone other than
         # the identity's owner
-        return me.name == self.login
+        return self.current_user.name == self.login
 
     def isAuthorized(self):
+        """Check if the identity is authorized for the trust_root"""
+        # Can't be authorized if we are logged in, or logged in as a
+        # user other than the identity owner.
         if not self.isAuthenticated():
             return False
 
-        # XXX: Implement this
-        trust_root = self.openid_request.trust_root
+        client_id = getUtility(IClientIdManager).getClientId(self.request)
 
-        return False
+        auth_set = getUtility(IOpenIdAuthorizationSet)
+        return auth_set.isAuthorized(
+                self.current_user,
+                self.trust_root,
+                client_id
+                )
 
     def restoreSessionOpenIdRequest(self):
         """Get the OpenIDRequest from our session using the token in the
@@ -282,7 +297,7 @@ class OpenIdView(LaunchpadView):
         # XXX: Is this tested? -- StuartBishop 20070226
         response = self.request.response
         if exception.whichEncoding() == ENCODE_URL:
-            url = excecption.encodeToURL()
+            url = exception.encodeToURL()
             response.redirect(url)
         else:
             response.setStatus(200)

@@ -1,9 +1,5 @@
-<configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+<configure xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
 
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
@@ -14,4 +10,19 @@
         allowed_interface="canonical.launchpad.browser.openidserver.IOpenIdView"
         />
 
+    <content class="canonical.launchpad.database.OpenIdAuthorization">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIdAuthorization"
+            />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.OpenIdAuthorizationSet"
+        provides="canonical.launchpad.interfaces.IOpenIdAuthorizationSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIdAuthorizationSet"
+            />
+    </securedutility>
+
 </configure>
+

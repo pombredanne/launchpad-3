@@ -50,7 +50,8 @@ XXX: Break most of this out into a helper -- StuartBishop 20070302
 >>> from zope.app.testing.ztapi import browserView
 >>> browserView(None, '+openid-consumer', ConsumerView)
 
-NB. If this fails, your Z3 tree isn't up to date enough.
+NB. The plus is in the query to ensure this test is running with an up to
+date enough Zope3
 
 >>> anon_browser.open('http://launchpad.dev/+openid-consumer?foo=%2Bbar')
 >>> print anon_browser.contents
@@ -154,6 +155,7 @@ openid.mode=cancel
 <BLANKLINE>
 
 
+
 Now, lets do that again but allow the request, which will first require us
 to log in to Launchpad and then redirect us back to the consumer saying
 the request is valid.
@@ -183,5 +185,20 @@ openid.signed=...
 <BLANKLINE>
 
 
-XXX: Confirm warning message if inSane trust root
+Note that the return_to URL must be in the trust_root, or an error is
+returned.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'http://launchpad.dev/~sabdfl',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     'openid.trust_root': 'http://com',
+...     'whatever': 'blah',
+...     })
+>>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print anon_browser.contents
+Consumer received GET
+openid.error=return_to u'http://launchpad.dev/+openid-consumer' not under trust_root u'http://com'
+openid.mode=error
+<BLANKLINE>
 
