@@ -331,7 +331,7 @@ class BzrSync:
                 or (revision_count != self.db_branch.revision_count)):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
 
-    def get_diff_lines(self, bzr_revision):
+    def getDiffLines(self, bzr_revision):
         repo = self.bzr_branch.repository
         if bzr_revision.parent_ids:
             ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
@@ -345,7 +345,7 @@ class BzrSync:
         show_diff_trees(tree_old, tree_new, diff_content)
         return diff_content.getvalue().split("\n")
 
-    def get_revision_message(self, bzr_revision):
+    def getRevisionMessage(self, bzr_revision):
         outf = StringIO()
         lf = log_formatter('long', to_file=outf)
         rev_id = bzr_revision.revision_id
