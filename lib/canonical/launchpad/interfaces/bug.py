@@ -202,45 +202,29 @@ class IBug(IMessageTarget):
         duplicate of this bug, otherwise False.
         """
 
-    def getDirectSubscribers(recipients=None):
+    def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
-
-        If a BugNotificationRecipients instance is supplied as an
-        argument, the relevant subscribers and rationales will be
-        registered on it.
         """
 
-    def getIndirectSubscribers(recipients=None):
+    def getIndirectSubscribers():
         """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
         dupes, etc.
-
-        If a BugNotificationRecipients instance is supplied as an
-        argument, the relevant subscribers and rationales will be
-        registered on it.
         """
 
-    def getAlsoNotifiedSubscribers(recipients=None):
+    def getAlsoNotifiedSubscribers():
         """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
-
-        If a BugNotificationRecipients instance is supplied as an
-        argument, the relevant subscribers and rationales will be
-        registered on it.
         """
 
-    def getSubscribersFromDuplicates(recipients=None):
+    def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug.
-
-        If a BugNotificationRecipients instance is supplied as an
-        argument, the relevant subscribers and rationales will be
-        registered on it.
         """
 
     def getBugNotificationRecipients(duplicateof=None):

@@ -248,7 +248,13 @@ class Bug(SQLBase):
                 person = %d""" % (self.id, person.id)))
 
     def getDirectSubscribers(self, recipients=None):
-        """See canonical.launchpad.interfaces.IBug."""
+        """See canonical.launchpad.interfaces.IBug.
+
+        The recipients argument is private and not exposed in the
+        inerface. If a BugNotificationRecipients instance is supplied,
+        the relevant subscribers and rationales will be registered on
+        it.
+        """
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -260,7 +266,11 @@ class Bug(SQLBase):
         return subscribers
 
     def getIndirectSubscribers(self, recipients=None):
-        """See canonical.launchpad.interfaces.IBug."""
+        """See canonical.launchpad.interfaces.IBug.
+
+        See the comment in getDirectSubscribers for a description of the
+        recipients argument.
+        """
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
         indirect_subscribers = (
@@ -271,7 +281,11 @@ class Bug(SQLBase):
             indirect_subscribers, key=operator.attrgetter("displayname"))
 
     def getSubscribersFromDuplicates(self, recipients=None):
-        """See IBug."""
+        """See canonical.launchpad.interfaces.IBug.
+
+        See the comment in getDirectSubscribers for a description of the
+        recipients argument.
+        """
         if self.private:
             return []
 
@@ -295,7 +309,11 @@ class Bug(SQLBase):
         return sorted(dupe_subscribers, key=operator.attrgetter("displayname"))
 
     def getAlsoNotifiedSubscribers(self, recipients=None):
-        """See IBug."""
+        """See canonical.launchpad.interfaces.IBug.
+
+        See the comment in getDirectSubscribers for a description of the
+        recipients argument.
+        """
         if self.private:
             return []
 
