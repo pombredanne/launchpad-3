@@ -1,4 +1,4 @@
-<tal:bugtask define="can_edit_bugtask context/required:launchpad.Edit;
+<tal:bugtask define="can_edit_bugtask not: context/conjoined_master;
                      indent_task view/shouldIndentTask;
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
@@ -27,10 +27,10 @@
       </tal:not-conjoined-task>
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
-      <span style="display: block; padding: 3px">
+      <span style="display: block; padding: 0.25em">
         <img src="/@@/package-source" alt="package"
              tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" alt="product"
+        <img src="/@@/product" alt="project"
              tal:condition="view/shouldShowProductIcon" />
         <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
           <a
@@ -78,10 +78,8 @@
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
-        <a style="display: block; text-decoration: none; padding: 3px"
+        <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img tal:condition="context/assignee"
-               src="/@@/user" alt="" />
           <img
             alt="Linked to "
             src="/@@/bug-remote"
@@ -94,10 +92,10 @@
 
         <tal:has_assignee condition="context/assignee">
           <a
-            style="display: block; text-decoration: none;"
+            style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <img src="/@@/user"
+            <img tal:attributes="src context/assignee/default_emblem_resource"
                  style="padding-bottom: 2px"
                  alt="" />
             <span tal:replace="context/assignee/browsername">

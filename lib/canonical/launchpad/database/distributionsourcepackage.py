@@ -1,4 +1,4 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -16,11 +16,11 @@ from zope.interface import implements
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
+    DeleteBugContactError)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -32,15 +32,12 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
-    SourcePackage, SourcePackageTicketTargetMixin)
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+    SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageTicketTargetMixin):
+                                SourcePackageQuestionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -48,7 +45,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, ITicketTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -301,3 +298,8 @@ class DistributionSourcePackage(BugTargetBase,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distribution, self.sourcepackagename))

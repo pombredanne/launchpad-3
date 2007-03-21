@@ -567,7 +567,7 @@ initial message of the bug, it will result in a bug filed notification:
     ...     print_notification(to_addresses, email)
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 11] subject
+    Subject: [Bug 13] subject
     <BLANKLINE>
     Public bug reported:
     <BLANKLINE>
@@ -579,7 +579,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/11
+    http://launchpad.dev/bugs/13
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -607,7 +607,7 @@ top of the email:
     To: foo.bar@canonical.com, marilize@hbd.com, mark@hbd.com,
         test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 11] subject
+    Subject: [Bug 13] subject
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
     <BLANKLINE>
@@ -615,7 +615,7 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/11
+    http://launchpad.dev/bugs/13
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a

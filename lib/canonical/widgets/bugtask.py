@@ -177,10 +177,7 @@ class BugTaskAssigneeWidget(Widget):
         field = self.context
         bugtask = field.context
         if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+            return bugtask.assignee.unique_displayname
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.
@@ -446,7 +443,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))

@@ -61,18 +61,12 @@ class IPOFile(IRosettaStats):
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
-    latest_sighting = Attribute("""Of all the translation sightings belonging
-        to PO messages sets belonging to this PO file, return the one which
-        was most recently modified (greatest datelastactive), or None if
-        there are no sightings belonging to this PO file.""")
-
     datecreated = Attribute("The fate this file was created.")
 
-    latestsubmission = Field(
-        title=u'Translation submission which was most recently added.',
-        description=(u'Translation submission which was most recently added,'
-            u' or None if there are no submissions belonging to this IPOFile.'
-            ),
+    last_touched_pomsgset = Field(
+        title=u'Translation message which was most recently touched.',
+        description=(u'Translation message which was most recently touched,'
+            u' or None if there are no translations active in this IPOFile.'),
         required=False)
 
     translators = Attribute("A list of Translators that have been "
@@ -181,7 +175,15 @@ class IPOFile(IRosettaStats):
         Rosetta."""
 
     def validExportCache():
-        """Does this PO file have a cached export that is up to date?"""
+        """Does this PO file have a cached export that is up to date?
+
+        Using stale cache can result in exporting outdated data (eg.
+        translations which have been changed or deactivated in the
+        meantime would end up exported).
+
+        So, 'False' is the more conservative choice: if we're not sure
+        if the cache is valid, returning False is the way to go.
+        """
 
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
@@ -257,9 +259,6 @@ class IPOFile(IRosettaStats):
         If a logger argument is given, any problem found with the
         import will be logged there.
         """
-
-    def recalculateLatestSubmission():
-        """Update IPOFile.latestsubmission with latest submission."""
 
 
 class IPOFileAlternativeLanguage(Interface):

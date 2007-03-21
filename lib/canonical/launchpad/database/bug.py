@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -37,10 +37,16 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
+    BugTask,
+    BugTaskSet,
+    bugtask_sort_key,
+    get_bug_privacy_filter,
+    NullBugTask,
+    )
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -141,7 +147,7 @@ class Bug(SQLBase):
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
-                           orderBy='datecreated')
+                           orderBy=['datecreated', 'id'])
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = SQLMultipleJoin(
@@ -163,7 +169,7 @@ class Bug(SQLBase):
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
+    questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
@@ -182,6 +188,14 @@ class Bug(SQLBase):
         result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def affected_pillars(self):
+        """See IBug."""
+        result = set()
+        for task in self.bugtasks:
+            result.add(task.pillar)
+        return sorted(result, key=pillar_sort_key)
 
     @property
     def initial_message(self):
@@ -377,7 +391,7 @@ class Bug(SQLBase):
                 remotebug=remotebug, owner=owner)
 
     def addAttachment(self, owner, file_, description, comment, filename,
-                      is_patch=False):
+                      is_patch=False, content_type=None):
         """See IBug."""
         filecontent = file_.read()
 
@@ -386,8 +400,9 @@ class Bug(SQLBase):
             content_type = 'text/plain'
         else:
             attach_type = BugAttachmentType.UNSPECIFIED
-            content_type, encoding = guess_content_type(
-                name=filename, body=filecontent)
+            if content_type is None:
+                content_type, encoding = guess_content_type(
+                    name=filename, body=filecontent)
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
@@ -469,6 +484,16 @@ class Bug(SQLBase):
             orderBy=["Message.datecreated", "Message.id",
                      "MessageChunk.sequence"])
         return chunks
+
+    def getNullBugTask(self, product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """See IBug."""
+        return NullBugTask(bug=self, product=product,
+                           productseries=productseries, 
+                           sourcepackagename=sourcepackagename,
+                           distribution=distribution,
+                           distrorelease=distrorelease)
 
     def addNomination(self, owner, target):
         """See IBug."""
@@ -682,7 +707,7 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers"])
+                "product", "status", "subscribers", "tags"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -730,6 +755,8 @@ class BugSet:
             security_related=params.security_related)
 
         bug.subscribe(params.owner)
+        if params.tags:
+            bug.tags = params.tags
 
         if params.product == celebs.landscape:
             # Subscribe the Landscape bugcontact to all Landscape bugs,

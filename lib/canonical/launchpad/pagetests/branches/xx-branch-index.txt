@@ -1,0 +1,78 @@
+= Branch Details =
+
+== Recent Revisions ==
+
+On the Code site, registered branches are reached by
+/<owner>/<product>/<branch-name>.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+  >>> main = find_tag_by_id(browser.contents, 'mainarea')
+
+
+=== Heading ===
+
+We display the recent revisions of a branch if it has been scanned. There's a
+"Recent revisions" heading:
+
+  >>> for heading in main.fetch('h2'):
+  ...     print heading.renderContents()
+  Recent revisions
+  ...
+
+
+=== Revision information ===
+
+Underneath that heading we see the ten most-recent revisions of the branch in
+reverse-chronological order.
+
+  >>> for revision_list in main.fetch('ol'):
+  ...     for revision in revision_list.fetch('li'):
+  ...         revno = str(revision['value'])
+  ...         for heading in revision.fetch('div'):
+  ...             print revno, heading.renderContents()
+  6...By...foo &lt;foo@localhost&gt;...2005-10-31...
+  5...By...foo &lt;foo@localhost&gt;...2005-10-31...
+  4...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
+  3...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
+  2...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
+  1...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
+
+
+
+
+=== Excursis ===
+
+In terms of HTML, each commit is contained in a <div> with an id of "revN",
+where "N" is the revision sequence number.
+
+The revision number, author and date are all contained in a heading (h3), and
+the commit message follows as a number of paragraphs.
+
+  >>> def get_commit_message(sequence):
+  ...     revision = find_tag_by_id(browser.contents, 'rev%s' % (sequence,))
+  ...     return revision.fetch('p')
+
+
+=== Commit messages ===
+
+The commit message is displayed in paragraphs underneath the revision id and
+author.
+
+  >>> for paragraph in get_commit_message(6):
+  ...     print paragraph.renderContents()
+  fix bug in bar
+
+
+When a commit message refers to a bug using the form "bug <bugnumber>", a link
+to that bug is created.
+
+  >>> for paragraph in get_commit_message(3):
+  ...     print paragraph.renderContents()
+  fix <a ...>bug 1</a>
+
+
+This link can be followed to the bug's details page.
+
+  >>> browser.getLink('bug 1').click()
+  >>> print browser.title
+  Bug #1 in firefox (upstream)...

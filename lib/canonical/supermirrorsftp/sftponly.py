@@ -60,13 +60,15 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self._productIDs = {}
         self._productNames = {}
 
-        self.filesystem = FileSystem(SFTPServerRoot(self))
+        # XXX: See AdaptFileSystemUserToISFTP below.
+        #  -- Andrew Bennetts 2007-01-26.
+        self.filesystem = None
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
+        self.subsystemLookup = {'sftp': BazaarFileTransferServer}
 
     def fetchProductID(self, productName):
         """Fetch the product ID for productName.
@@ -98,6 +100,8 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
+        # XXX: Why convert the number to a string here?
+        #  -- Andrew Bennetts, 2007-01-26
         productID = str(productID)
         self._productIDs[productName] = productID
         self._productNames[productID] = productName
@@ -117,13 +121,26 @@ class SFTPOnlyAvatar(avatar.ConchUser):
             r = func(*args, **kw)
         return r
 
+    def makeFileSystem(self):
+        return FileSystem(SFTPServerRoot(self))
 
-components.registerAdapter(sftp.AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
+# XXX This is nasty.  We want a filesystem per SFTP session, not per avatar, so
+# we let the standard adapter grab a per avatar object, and immediately override
+# with the one we want it to use.
+# -- Andrew Bennetts, 2007-01-26
+class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
+    def __init__(self, avatar):
+        sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
+        self.filesystem = avatar.makeFileSystem()
+
+components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
 
 class Realm:
     implements(IRealm)
+
+    avatarFactory = SFTPOnlyAvatar
 
     def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot
@@ -159,8 +176,8 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot, userDict,
-                                    self.authserver)
+            avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
+                                        self.authserver)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
@@ -220,7 +237,35 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
                 continue
 
         return False
-        
+
+
+class BazaarFileTransferServer(filetransfer.FileTransferServer):
+
+    def __init__(self, data=None, avatar=None):
+        filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self._dirtyBranches = set()
+        self.client.filesystem.root.setListenerFactory(self.makeListener)
+        self._launchpad = self.client.avatar._launchpad
+
+    def makeListener(self, branchID):
+        def flag_as_dirty():
+            self.branchDirtied(branchID)
+        return flag_as_dirty
+
+    def branchDirtied(self, branchID):
+        self._dirtyBranches.add(branchID)
+
+    def sendMirrorRequests(self):
+        """Request that all changed branches be mirrored. Return a deferred
+        which fires when each request has received a response from the server.
+        """
+        deferreds = [self._launchpad.requestMirror(branch)
+                     for branch in self._dirtyBranches]
+        return defer.gatherResults(deferreds)
+
+    def connectionLost(self, reason):
+        self.sendMirrorRequests()
+
 
 if __name__ == "__main__":
     # Run doctests.

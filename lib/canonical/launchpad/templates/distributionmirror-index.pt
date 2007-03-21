@@ -65,12 +65,14 @@
       </tal:no-last-probe>
 
       <tal:has-last-probe condition="probe">
-        <p>This mirror was last verified on 
-          <span tal:replace="probe/date_created/fmt:date" />.
+        <p>This mirror was last verified
+          <span
+            tal:attributes="title probe/date_created/fmt:datetime"
+            tal:content="probe/date_created/fmt:displaydate" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
-            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            <a tal:attributes="href probe/log_file/http_url">log file</a> of the
             probe.
           </tal:is-owner>
         </p>

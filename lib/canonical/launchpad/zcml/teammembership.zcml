@@ -1,6 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -19,7 +18,7 @@
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
                         reviewercomment statusname is_admin is_owner
-                        isExpired " />
+                        isExpired sendExpirationWarningEmail" />
         <require 
             permission="launchpad.Edit"
             attributes="setStatus" />
@@ -45,7 +44,6 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TeamMembershipEditView"
         template="../templates/teammembership-index.pt"
-        lp:url="/people/$team/+member/$member/+index">
-    </browser:page>
+        />
 
 </configure>

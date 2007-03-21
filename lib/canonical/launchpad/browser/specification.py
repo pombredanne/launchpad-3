@@ -18,7 +18,8 @@ __all__ = [
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
-    'SpecificationTreeDotOutput'
+    'SpecificationTreeDotOutput',
+    'SpecificationSetView',
     ]
 
 from subprocess import Popen, PIPE
@@ -36,13 +37,16 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
-
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.widgets.project import ProjectScopeWidget
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -83,32 +87,14 @@ class SpecificationNavigation(Navigation):
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['alltarget', 'allgoal', 'edit', 'people', 'status', 'priority',
+    links = ['edit', 'people', 'status', 'priority',
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
-             'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
+             'linkbug', 'unlinkbug', 'linkbranch',
+             'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget', 'administer', 'linkbranch']
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-    def alltarget(self):
-        text = 'Other %s features' % self.context.target.displayname
-        return Link(canonical_url(self.context.target), text, icon='list')
-
-    def allgoal(self):
-        enabled = self.context.goal is not None
-        text = ''
-        link = Link('dummy', 'dummy', enabled=enabled)
-        if enabled:
-            text = 'Other %s features' % self.context.goal.displayname
-            link = Link(canonical_url(self.context.goal), text,
-                icon='list', enabled=enabled)
-        return link
+             'retarget']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -834,3 +820,21 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
+    """View for the Blueprints index page."""
+
+    @action('Find blueprints', name="search")
+    def search_action(self, action, data):
+        """Redirect to the proper search page based on the scope widget."""
+        scope = data['scope']
+        search_text = data['search_text']
+        if scope is None:
+            url = '/'
+        else:
+            url = canonical_url(scope)
+        if search_text is not None:
+            url += '?searchtext=' + search_text
+        self.next_url = url
+

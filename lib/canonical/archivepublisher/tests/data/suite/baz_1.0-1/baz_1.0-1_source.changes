@@ -1,3 +1,6 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
 Format: 1.7
 Date: Thu, 16 Feb 2006 15:34:09 +0000
 Source: baz
@@ -15,6 +18,14 @@ Changes:
  .
    * Initial version
 Files: 
- 5567e1de41d09821e0e97a60c9719549 514 devel optional baz_1.0-1.dsc
+ 50eaf003ebbb8d966568f2aa29cafe9c 512 devel optional baz_1.0-1.dsc
  0b76d55ba3a0664e47b276fd616976f4 166 devel optional baz_1.0.orig.tar.gz
  9c7965de3fdb4b0ff2af81c73b300103 555 devel optional baz_1.0-1.diff.gz
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFt7Iijn63CGxkqMURAlfjAJ40tC19LGx/DTlRQckIsu7ol+8YIQCfex7x
+WSmObE76/yfYFIU9Dh4kkKc=
+=BEMI
+-----END PGP SIGNATURE-----

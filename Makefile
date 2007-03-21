@@ -3,6 +3,7 @@
 
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
+IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 
 TESTFLAGS=-p -v
@@ -25,11 +26,15 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build check importdcheck hctcheck
+check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+dbfreeze_check:
+	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
+	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -37,10 +42,15 @@ check_not_a_ui_merge:
 check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
-	# term solution, the long term solution will need to be 
+	# term solution, the long term solution will need to be
 	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
+	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_merge_ui: build check importdcheck hctcheck
+	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
@@ -139,14 +149,14 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
-	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib ipython -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
-	database/schema/fti.py -d launchpad_dev --force
+	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
@@ -186,5 +196,5 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge hctcheck
+		check_launchpad_on_merge hctcheck check_merge_ui
 

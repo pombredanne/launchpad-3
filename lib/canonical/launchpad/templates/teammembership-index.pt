@@ -66,7 +66,13 @@
           <table>
           <tr>
             <th>Member since:</th>
-            <td tal:content="context/datejoined/fmt:date" />
+            <td>
+              <span
+                tal:attributes="title context/datejoined/fmt:datetime"
+                tal:content="context/datejoined/fmt:approximatedate">
+                2005-09-13
+              </span>
+            </td>
           </tr>
 
           <tr>
@@ -103,7 +109,8 @@
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
               <span tal:condition="context/dateexpires"
-                    tal:replace="context/dateexpires/fmt:date" />
+                    tal:attributes="title context/dateexpires/fmt:datetime"
+                    tal:content="context/dateexpires/fmt:approximatedate" />
               <span tal:condition="not: context/dateexpires">Never</span>
             </td>
           </tr>
@@ -139,14 +146,26 @@
         <form action="" method="POST" name="editinactive">
           <table>
           <tr>
-            <th>Became member in:</th>
-            <td tal:content="context/datejoined/fmt:date" />
+            <th>Became member:</th>
+            <td>
+              <span
+                tal:attributes="title context/datejoined/fmt:datetime"
+                tal:content="context/datejoined/fmt:approximatedate">
+                2005-09-13
+              </span>
+            </td>
           </tr>
 
           <tal:expired condition="view/isExpired">
             <tr>
-              <th>Subscription expired in:</th>
-              <td tal:content="context/dateexpires/fmt:date"></td>
+              <th>Subscription expired:</th>
+              <td>
+                <span
+                  tal:attributes="title context/dateexpires/fmt:datetime"
+                  tal:content="context/dateexpires/fmt:approximatedate">
+                  2006-09-13
+                </span>
+              </td>
             </tr>
 
             <metal:error use-macro="template/macros/error" />
@@ -205,14 +224,20 @@
         <form action="" method="POST" name="editproposed">
           <table>
             <tr>
-              <th>Membership applied for:</th>
-              <td tal:content="context/datejoined/fmt:date" />
+              <th>Applied:</th>
+              <td>
+                <span
+                  tal:attributes="title context/datejoined/fmt:datetime"
+                  tal:content="context/datejoined/fmt:approximatedate">
+                  2005-09-13
+                </span>
+              </td>
             </tr>
 
             <metal:error use-macro="template/macros/error" />
 
             <tr>
-              <th>Subscription expires:</th>
+              <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserForProposedMembers" />

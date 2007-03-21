@@ -9,6 +9,7 @@ __all__ = [
     'QueueInconsistentStateError',
     'QueueSourceAcceptError',
     'QueueBuildAcceptError',
+    'IPackageUploadQueue',
     'IDistroReleaseQueue',
     'IDistroReleaseQueueBuild',
     'IDistroReleaseQueueSource',
@@ -51,6 +52,15 @@ class QueueBuildAcceptError(Exception):
     """
 
 
+class IPackageUploadQueue(Interface):
+    """Used to establish permission to a group of package uploads.
+
+    Recieves an IDistroRelease and a DistroReleaseQueueStatus dbschema
+    on initiliazation.
+    No attributes exposed via interface, only used to check permissions.
+    """
+
+
 class IDistroReleaseQueue(Interface):
     """A Queue item for Lucille"""
 
@@ -72,6 +82,8 @@ class IDistroReleaseQueue(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
+
+    signing_key = Attribute("Changesfile Signing Key.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
@@ -334,6 +346,9 @@ class IDistroReleaseQueueSet(Interface):
 
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
+
+    def getPackageUploadQueue(state):
+        """Return an IPackageUploadeQueue occording the given state."""
 
     def getQueueItems(status=None, name=None, version=None,
                       exact_match=False, pocket=None):

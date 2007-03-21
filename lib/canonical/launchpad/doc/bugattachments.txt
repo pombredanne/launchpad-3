@@ -175,7 +175,7 @@ Let's try uploading a file with some weird characters in them:
     Attachment added: u'fo\xf6 bar'
     >>> bug_one.attachments[-1].libraryfile.filename
     u'fo\xf6 bar'
-    >>> bug_one.attachments[-1].libraryfile.url
+    >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../fo%C3%B6%20bar'
 
 If a filename contains a slash, it will be converted to a dash instead.
@@ -198,7 +198,7 @@ from the librarian.
     Attachment added: u'foo-bar-baz'
     >>> bug_one.attachments[-1].libraryfile.filename
     u'foo-bar-baz'
-    >>> bug_one.attachments[-1].libraryfile.url
+    >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
     >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
@@ -338,3 +338,39 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
+Deleting attachments
+--------------------
+
+It's also possible to delete attachments.
+
+    >>> file_ = StringIO(filecontent)
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> attachment = bug_two.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="foo.baz",
+    ...     description="Attachment to be deleted",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    >>> for attachment in bug_two.attachments:
+    ...     print attachment.title
+    Attachment to be deleted
+
+    >>> attachment.removeFromBug()
+    >>> bug_two.attachments.count()
+    0
+
+Deleting an attachment causes a notification to be sent. It's worth
+noting that the notification still includes the URL to the attachment,
+which will be valid until the Librarian garbage collector kicks in and
+deletes the file entirely. This gives people a chance of undoing an
+incorrect removal by downloading and re-attach the file.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Attachment removed: "Attachment to be deleted"
+       http://.../foo.baz

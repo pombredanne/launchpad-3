@@ -2,7 +2,7 @@
 
   >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
   >>> browser.open('http://launchpad.dev/people/')
-  >>> browser.getLink('Register a Team').click()
+  >>> browser.getLink('Register a team').click()
 
   >>> browser.url
   'http://launchpad.dev/people/+newteam'
@@ -13,9 +13,8 @@
   >>> browser.getControl(name='field.name').value = 'myemail'
   >>> browser.getControl('Display Name').value = 'my own team'
   >>> browser.getControl('Team Description').value = 'my own team description'
-  >>> browser.getControl('Number of days a subscription lasts').value = '365'
-  >>> browser.getControl(
-  ...     'Number of days a renewed subscription lasts').value = '365'
+  >>> browser.getControl('Subscription period').value = '365'
+  >>> browser.getControl('Renewal period').value = '365'
   >>> browser.getControl('Subscription Policy').value = ['Open Team']
   >>> browser.getControl('Add').click()
 
@@ -25,15 +24,16 @@
   >>> browser.title
   'my own team in Launchpad'
 
-  >>> team_portlet = find_portlet(browser.contents, 'my own team')
-  >>> team_portlet.find(text='Team Owner:').findNext('a').string
-  u'foobar'
+  >>> print browser.contents
+  <!...
+  ...Team owner:...foobar...
+  ...
 
 The owner of a team is always added as an administrator of his team. Let's
 make sure that's true.
 
   >>> from canonical.launchpad.database import Person
-  >>> [a.name for a in Person.byName('myemail').administrators]
+  >>> [a.name for a in Person.byName('myemail').adminmembers]
   [u'foo']
 
 When creating a new team you can optionally provide a contact email address
@@ -77,4 +77,4 @@ Now we enter a valid email address that's not registered in Launchpad.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...     tag.renderContents()
-  "A confirmation message has been sent to 'team-foo@bar.com'. Follow the instructions in that message to confirm the new contact address for this team. (If your mail provider uses 'greylisting', it might take an hour or two for the message to arrive.)"
+  "A confirmation message has been sent to 'team-foo@bar.com'. Follow the instructions in that message to confirm the new contact address for this team. (If the message doesn't arrive in a few minutes, your mail provider might use 'greylisting', which could delay the message for up to an hour or two.)"

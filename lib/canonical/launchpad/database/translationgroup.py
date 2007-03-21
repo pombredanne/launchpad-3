@@ -7,7 +7,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
+    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import (
@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.translator import Translator
 
@@ -31,7 +32,7 @@ class TranslationGroup(SQLBase):
     name = StringCol(unique=True, alternateID=True, notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    datecreated = DateTimeCol(notNull=True, default=DEFAULT)
+    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins

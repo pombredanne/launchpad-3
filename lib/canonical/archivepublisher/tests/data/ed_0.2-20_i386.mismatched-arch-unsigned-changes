@@ -1,6 +1,3 @@
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
 Format: 1.7
 Date: Wed,  2 Apr 2003 17:19:47 +0100
 Source: ed
@@ -51,10 +48,3 @@ Files:
  f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
  0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.0.6 (GNU/Linux)
-
-iEYEARECAAYFAj6LDswACgkQgD/uEicUG7DH4ACfaoftMKmyz/XQ4E+dv93/zVms
-qZAAoJuP4onIXWtKQcWiLaGMtvotXG6w
-=v4gi
------END PGP SIGNATURE-----

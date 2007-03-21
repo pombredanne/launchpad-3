@@ -19,16 +19,19 @@ from sqlobject import SQLObjectNotFound
 import canonical
 from canonical.config import config
 from canonical.lp.dbschema import PackagePublishingPocket
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
+from canonical.launchpad.scripts import distributionmirror_prober
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, MirrorProberCallbacks, BadResponseCode,
+    ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror)
+    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
+    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
+    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -58,24 +61,66 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocol(TwistedTestCase):
+class TestProberProtocolAndFactory(TwistedTestCase):
 
     def setUp(self):
-        self.urls = {'timeout': u'http://localhost:11375/timeout',
-                     '200': u'http://localhost:11375/valid-mirror',
-                     '500': u'http://localhost:11375/error',
-                     '404': u'http://localhost:11375/invalid-mirror'}
+        self.orig_proxy = os.getenv('http_proxy')
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
-        self.port = reactor.listenTCP(11375, site)
+        self.listening_port = reactor.listenTCP(0, site)
+        self.port = self.listening_port.getHost().port
+        self.urls = {'timeout': u'http://localhost:%s/timeout' % self.port,
+                     '200': u'http://localhost:%s/valid-mirror' % self.port,
+                     '500': u'http://localhost:%s/error' % self.port,
+                     '404': u'http://localhost:%s/invalid-mirror' % self.port}
 
     def tearDown(self):
-        return self.port.stopListening()
+        restore_http_proxy(self.orig_proxy)
+        return self.listening_port.stopListening()
 
     def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
         return prober.probe()
+
+    def test_environment_http_proxy_is_handled_correctly(self):
+        os.environ['http_proxy'] = 'http://squid.internal:3128'
+        prober = ProberFactory(self.urls['200'])
+        self.failUnlessEqual(prober.request_host, 'localhost')
+        self.failUnlessEqual(prober.request_port, self.port)
+        self.failUnlessEqual(prober.request_path, '/valid-mirror')
+        self.failUnlessEqual(prober.connect_host, 'squid.internal')
+        self.failUnlessEqual(prober.connect_port, 3128)
+        self.failUnlessEqual(prober.connect_path, self.urls['200'])
+
+    def _test_connect_to_host(self, url, host):
+        """Check that a ProberFactory created with the given url will actually
+        connect to the given host.
+        """
+        prober = ProberFactory(url)
+        def fakeConnect(host, port, factory):
+            factory.connecting_to = host
+            factory.succeeded('200')
+        prober.connecting_to = None
+        orig_connect = reactor.connectTCP
+        reactor.connectTCP = fakeConnect
+        def restore_connect(result, orig_connect):
+            self.failUnlessEqual(prober.connecting_to, host)
+            reactor.connectTCP = orig_connect
+            return None
+        deferred = prober.probe()
+        return deferred.addCallback(restore_connect, orig_connect)
+
+    def test_connect_to_proxy_when_http_proxy_exists(self):
+        os.environ['http_proxy'] = 'http://squid.internal:3128'
+        self._test_connect_to_host(self.urls['200'], 'squid.internal')
+
+    def test_connect_to_host_when_http_proxy_does_not_exist(self):
+        try:
+            del os.environ['http_proxy']
+        except KeyError:
+            pass
+        self._test_connect_to_host(self.urls['200'], 'localhost')
 
     def test_probe_sets_up_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
@@ -85,28 +130,27 @@ class TestProberProtocol(TwistedTestCase):
         return deferred
 
     def test_redirectawareprober_follows_http_redirect(self):
-        url = 'http://localhost:11375/redirect-to-valid-mirror'
+        url = 'http://localhost:%s/redirect-to-valid-mirror' % self.port
         prober = RedirectAwareProberFactory(url)
         self.failUnless(prober.redirection_count == 0)
-        self.failUnless(
-            prober.url == 'http://localhost:11375/redirect-to-valid-mirror')
+        self.failUnless(prober.url == url)
         deferred = prober.probe()
         def got_result(result):
             self.failUnless(prober.redirection_count == 1)
             self.failUnless(
-                prober.url == 'http://localhost:11375/valid-mirror')
+                prober.url == 'http://localhost:%s/valid-mirror' % self.port)
             self.failUnless(result == str(httplib.OK))
         return deferred.addCallback(got_result)
 
     def test_redirectawareprober_detects_infinite_loop(self):
         prober = RedirectAwareProberFactory(
-            'http://localhost:11375/redirect-infinite-loop')
+            'http://localhost:%s/redirect-infinite-loop' % self.port)
         deferred = prober.probe()
         return self.assertFailure(deferred, InfiniteLoopDetected)
 
     def test_redirectawareprober_fail_on_unknown_scheme(self):
         prober = RedirectAwareProberFactory(
-            'http://localhost:11375/redirect-unknown-url-scheme')
+            'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
         return self.assertFailure(deferred, UnknownURLScheme)
 
@@ -171,6 +215,155 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
+    """Tests to ensure we stop issuing requests on a given host if the
+    requests/timeouts ratio on that host is too low.
+
+    The tests here will stub the prober's connect() method, so that we can
+    easily check whether it was called or not without actually issuing any
+    connections.
+    """
+
+    host = 'foo.bar'
+
+    def setUp(self):
+        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+
+    def tearDown(self):
+        # Restore the globals that our tests fiddle with.
+        distributionmirror_prober.host_requests = self.orig_host_requests
+        distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+
+    def _createProberStubConnectAndProbe(self, requests, timeouts):
+        """Create a ProberFactory object with a URL inside self.host and call
+        its probe() method.
+
+        Before the prober.probe() method is called, we stub the connect
+        method, because all we want is to check whether that method was called
+        or not --we don't want to actually connect.
+        """
+        def connect():
+            prober.connectCalled = True
+        distributionmirror_prober.host_requests = {self.host: requests}
+        distributionmirror_prober.host_timeouts = {self.host: timeouts}
+        prober = ProberFactory('http://%s/baz' % self.host)
+        prober.connectCalled = False
+        prober.failed = lambda error: None
+        prober.connect = connect
+        prober.probe()
+        return prober
+
+    def test_connect_is_called_if_not_enough_requests(self):
+        """Test that only a small ratio is not enough to cause a host to be
+        skipped; we also need to have a considerable number of requests.
+        """
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO - 1
+        timeouts = requests
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failUnless(prober.connectCalled)
+        # Ensure the number of requests and timeouts we're using should
+        # _NOT_ cause a given host to be skipped.
+        self.failIf(should_skip_host(self.host))
+
+    def test_connect_is_not_called_after_too_many_timeouts(self):
+        """If we get a small requests/timeouts ratio on a given host, we'll
+        stop issuing requests on that host.
+        """
+        # If the ratio is small enough and we have a considerable number of
+        # requests, we won't issue more connections on that host.
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failIf(prober.connectCalled)
+        # Ensure the number of requests and timeouts we're using should
+        # actually cause a given host to be skipped.
+        self.failUnless(should_skip_host(self.host))
+
+    def test_connect_is_called_if_not_many_timeouts(self):
+        # If the ratio is not too small we consider it's safe to keep 
+        # issuing connections on that host.
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) - 2)
+        prober = self._createProberStubConnectAndProbe(requests, timeouts)
+        self.failUnless(prober.connectCalled)
+        # Ensure the number of requests and timeouts we're using should
+        # _NOT_ cause a given host to be skipped.
+        self.failIf(should_skip_host(self.host))
+
+
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
+    """Tests to ensure we stop issuing requests on a given host if the
+    requests/timeouts ratio on that host is too low.
+
+    The tests here will check that we'll record a timeout whenever we get a
+    ProberTimeout from twisted, as well as checking that twisted raises
+    ConnectionSkipped when it finds a URL that should not be probed. This
+    means that we need a test HTTP server as well as the twisted magic to
+    actually connect to the server.
+    """
+
+    def setUp(self):
+        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+        distributionmirror_prober.host_requests = {}
+        distributionmirror_prober.host_timeouts = {}
+        root = DistributionMirrorTestHTTPServer()
+        site = server.Site(root)
+        site.displayTracebacks = False
+        self.listening_port = reactor.listenTCP(0, site)
+        self.port = self.listening_port.getHost().port
+
+    def tearDown(self):
+        # Restore the globals that our tests fiddle with.
+        distributionmirror_prober.host_requests = self.orig_host_requests
+        distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+        return self.listening_port.stopListening()
+
+    def _createProberAndProbe(self, url):
+        prober = ProberFactory(url)
+        return prober.probe()
+
+    def test_timeout_is_recorded(self):
+        host = 'localhost'
+        d = self._createProberAndProbe(
+            u'http://%s:%s/timeout' % (host, self.port))
+        def got_error(error):
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_requests)
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_timeouts)
+        return d.addErrback(got_error)
+
+    def test_non_timeout_is_recorded(self):
+        host = 'localhost'
+        d = self._createProberAndProbe(
+            u'http://%s:%s/valid-mirror' % (host, self.port))
+        def got_result(result):
+            self.failUnlessEqual(
+                {host: 1}, distributionmirror_prober.host_requests)
+            self.failUnlessEqual(
+                {host: 0}, distributionmirror_prober.host_timeouts)
+        return d.addCallback(got_result)
+
+    def test_failure_after_too_many_timeouts(self):
+        host = 'foo.bar'
+        requests = MIN_REQUESTS_TO_CONSIDER_RATIO
+        timeouts = (
+            (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
+        distributionmirror_prober.host_requests = {host: requests}
+        distributionmirror_prober.host_timeouts = {host: timeouts}
+        # Ensure the number of requests and timeouts we're using should
+        # cause a given host to be skipped.
+        self.failUnless(should_skip_host(host))
+
+        d = self._createProberAndProbe(
+            u'http://%s:%s/timeout' % (host, self.port))
+        return self.assertFailure(d, ConnectionSkipped)
+
+
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
     def test_redirect_resets_timeout(self):
@@ -178,7 +371,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.timeoutCall = FakeTimeOutCall()
         prober.connect = lambda: None
         self.failIf(prober.timeoutCall.resetCalled)
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failUnless(prober.timeoutCall.resetCalled)
 
     def _createFactoryAndStubConnectAndTimeoutCall(self):
@@ -190,22 +383,40 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.connect = connect
         return prober
 
+    def test_connect_depends_on_localhost_only_config(self):
+        # If localhost_only is True and the host to which we would connect is
+        # not localhost, the connect() method is not called.
+        orig_config = config.distributionmirrorprober.localhost_only
+        config.distributionmirrorprober.localhost_only = True
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        self.failUnless(prober.connect_host != 'localhost')
+        prober.probe()
+        self.failIf(prober.connectCalled)
+
+        # If localhost_only is False, then it doesn't matter the host to which
+        # we'll connect to --the connect() method will be called.
+        config.distributionmirrorprober.localhost_only = False
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.probe()
+        self.failUnless(prober.connectCalled)
+        config.distributionmirrorprober.localhost_only = orig_config
+
     def test_noconnection_is_made_when_infiniteloop_detected(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
         prober.redirection_count = MAX_REDIRECTS
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failIf(prober.connectCalled)
 
     def test_noconnection_is_made_when_url_scheme_is_not_http_or_ftp(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
-        prober.redirect('ssh://localhost/valid-mirror')
+        prober.redirect('ssh://bar.foo')
         self.failIf(prober.connectCalled)
 
     def test_connection_is_made_on_successful_redirect(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
-        prober.redirect('http://localhost:11375/valid-mirror')
+        prober.redirect('http://bar.foo')
         self.failUnless(prober.connectCalled)
 
     def test_connection_is_closed_on_redirect(self):
@@ -259,6 +470,15 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
         # the return value
         self.failIf(isinstance(failure, Failure))
 
+    def test_connection_skipped_is_not_propagated(self):
+        # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
+        # propagate ConnectionSkipped
+        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+            [(defer.FAILURE, Failure(ConnectionSkipped()))])
+        # Twisted callbacks may raise or return a failure; that's why we check
+        # the return value
+        self.failIf(isinstance(failure, Failure))
+
     def test_badresponse_is_not_propagated(self):
         # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
         # propagate BadResponseCode failures.
@@ -269,15 +489,15 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
         # the return value
         self.failIf(isinstance(failure, Failure))
 
-    def test_anything_but_timeouts_and_badresponses_are_propagated(self):
-        # Any failure that is not a ProberTimeout or a BadResponseCode
-        # should be propagated.
+    def test_anything_but_timeouts_badresponses_and_skips_are_propagated(self):
+        # Any failure that is not a ProberTimeout, a BadResponseCode or a
+        # ConnectionSkipped should be propagated.
         self.assertRaises(
             Failure, self.callbacks.ensureOrDeleteMirrorCDImageRelease,
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
 
 
-class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
+class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
 
     def setUp(self):
         mirror = DistributionMirror.get(1)
@@ -286,12 +506,12 @@ class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
         component = warty.components[0]
         log_file = StringIO()
         url = 'foo'
-        self.callbacks = MirrorProberCallbacks(
+        self.callbacks = ArchiveMirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorRelease() does not propagate
-        # ProberTimeout or BadResponseCode failures.
+        # ProberTimeout, BadResponseCode or ConnectionSkipped failures.
         try:
             self.callbacks.deleteMirrorRelease(
                 Failure(ProberTimeout('http://localhost/', 5)))
@@ -302,14 +522,20 @@ class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
             self.fail("A bad response code shouldn't be propagated. Got %s" % e)
+        try:
+            self.callbacks.deleteMirrorRelease(Failure(ConnectionSkipped()))
+        except Exception, e:
+            self.fail("A ConnectionSkipped exception shouldn't be "
+                      "propagated. Got %s" % e)
 
         # Make sure that deleteMirrorRelease() propagate any failure that is
-        # not a ProberTimeout or BadResponseCode.
+        # not a ProberTimeout, a BadResponseCode or a ConnectionSkipped.
         d = defer.Deferred()
         d.addErrback(self.callbacks.deleteMirrorRelease)
         def got_result(result):
             self.fail(
-                "Any failure that's not a timeout should be propagated.")
+                "Any failure that's not a timeout/bad-response/skipped "
+                "should be propagated.")
         ok = []
         def got_failure(failure):
             ok.append(1)
@@ -369,9 +595,9 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         probe_archive_mirror.
         """
         host_semaphores = {}
-        mirror1_host = Url(mirror1.base_url).hostname
-        mirror2_host = Url(mirror2.base_url).hostname
-        mirror3_host = Url(mirror3.base_url).hostname
+        mirror1_host = URI(mirror1.base_url).host
+        mirror2_host = URI(mirror2.base_url).host
+        mirror3_host = URI(mirror3.base_url).host
 
         probe_function(
             mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
@@ -379,7 +605,8 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         # Deferred with a limit of 1, to ensure we don't issue simultaneous
         # connections on that mirror.
         self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(host_semaphores[mirror1_host].limit, 1)
+        self.assertEquals(
+            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
 
         probe_function(
             mirror2, StringIO(), [], logging, host_semaphores=host_semaphores)
@@ -387,7 +614,8 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         # so we'll still have a single semaphore in host_semaphores.
         self.assertEquals(mirror2_host, mirror1_host)
         self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(host_semaphores[mirror1_host].limit, 1)
+        self.assertEquals(
+            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
 
         probe_function(
             mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
@@ -395,8 +623,28 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         # semaphore added to host_semaphores.
         self.failUnless(mirror3_host != mirror1_host)
         self.assertEquals(len(host_semaphores), 2)
-        self.assertEquals(host_semaphores[mirror3_host].limit, 1)
+        self.assertEquals(
+            host_semaphores[mirror3_host].limit, PER_HOST_REQUESTS)
 
+        # When using an http_proxy, even though we'll actually connect to the
+        # proxy, we'll use the mirror's host as the key to find the semaphore
+        # that should be used
+        orig_proxy = os.getenv('http_proxy')
+        os.environ['http_proxy'] = 'http://squid.internal:3128/'
+        probe_function(
+            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
+        self.assertEquals(len(host_semaphores), 2)
+        restore_http_proxy(orig_proxy)
+
+
+def restore_http_proxy(http_proxy):
+    if http_proxy is None:
+        try:
+            del os.environ['http_proxy']
+        except KeyError:
+            pass
+    else:
+        os.environ['http_proxy'] = http_proxy
 
 
 def test_suite():
