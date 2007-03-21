@@ -20,8 +20,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import BranchRevision
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     BranchRelationships, BranchLifecycleStatus)
@@ -31,8 +32,9 @@ class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch)
-
     _table = 'Branch'
+    _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
     summary = StringCol(notNull=True)
@@ -79,19 +81,11 @@ class Branch(SQLBase):
 
     @property
     def revision_history(self):
-        """See IBranch."""
-        query = self._get_revision_history_query()
-        return query.prejoin(['revision'])
-
-    def _get_revision_history_query(self):
-        # XXX: David Allouche 2007-02-09.
-        # Transitional helper for revision_history and latest_revisions.
-        # Will be moved to BranchRevisionSet by the full implementation of
-        # CompleteBranchRevisions.
         return BranchRevision.select('''
             BranchRevision.branch = %s AND
             BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(self), orderBy='-sequence')
+            ''' % sqlvalues(self),
+            prejoins=['revision'], orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -164,8 +158,7 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        query = self._get_revision_history_query()
-        return query.limit(quantity)
+        return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
@@ -206,39 +199,43 @@ class Branch(SQLBase):
             person=person, branch=self)
         return subscription is not None
 
-    # revision number manipulation
     def getBranchRevision(self, sequence):
         """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(
-            branch=self, sequence=sequence)
+        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
-        return BranchRevision(branch=self, sequence=sequence, revision=revision)
-
-    def truncateHistory(self, from_rev):
-        """See IBranch.truncateHistory()"""
-        revnos = BranchRevision.select(AND(
-            BranchRevision.q.branchID == self.id,
-            BranchRevision.q.sequence >= from_rev))
-        did_something = False
-        # Since in the future we may not be storing the entire
-        # revision history, a simple count against BranchRevision
-        # may not be sufficient to adjust the revision_count.
-        for revno in revnos:
-            revno.destroySelf()
-            self.revision_count -= 1
-            did_something = True
-        return did_something
+        return BranchRevision(
+            branch=self, sequence=sequence, revision=revision)
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
-        
+
+    def getScannerData(self):
+        """See IBranch."""
+        cur = cursor()
+        cur.execute("""
+            SELECT BranchRevision.id, BranchRevision.sequence,
+                Revision.revision_id
+            FROM Revision, BranchRevision
+            WHERE Revision.id = BranchRevision.revision
+                AND BranchRevision.branch = %s
+            ORDER BY BranchRevision.sequence
+            """ % sqlvalues(self))
+        ancestry = set()
+        history = []
+        branch_revision_map = {}
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
+            ancestry.add(revision_id)
+            branch_revision_map[revision_id] = branch_revision_id
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history, branch_revision_map
 
 
 class BranchSet:
@@ -353,11 +350,14 @@ class BranchSet:
             clauseTables = ['Product', 'ProductSeries'])
         return query.prejoin(['author'])
             
-    def getBranchSummaryForProducts(self, products):
+    def getActiveUserBranchSummaryForProducts(self, products):
         """See IBranchSet."""
         product_ids = [product.id for product in products]
         if not product_ids:
             return []
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(
+            DEFAULT_BRANCH_STATUS_IN_LISTING)
         cur = cursor()
         cur.execute("""
             SELECT
@@ -366,8 +366,9 @@ class BranchSet:
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
             WHERE Branch.product in %s
+            AND Branch.owner <> %d %s
             GROUP BY Product
-            """ % sqlvalues(product_ids))
+            """ % (quote(product_ids), vcs_imports.id, lifecycle_clause))
         result = {}
         product_map = dict([(product.id, product) for product in products])
         for product_id, branch_count, last_commit in cur.fetchall():
@@ -384,7 +385,7 @@ class BranchSet:
             AND Branch.owner <> %d
             ''' % vcs_imports.id
         branches = Branch.select(
-            query, orderBy=['-last_scanned'], limit=branch_count)
+            query, orderBy=['-last_scanned', 'id'], limit=branch_count)
         return branches.prejoin(['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count):
@@ -417,7 +418,7 @@ class BranchSet:
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
             WHERE Branch.id IN %s
-            """ % sqlvalues(branch_ids))
+            """ % quote(branch_ids))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))
                      for branch in branches])
@@ -427,8 +428,73 @@ class BranchSet:
         owner_ids = [person.id for person in people]
         if not owner_ids:
             return []
-        branches = Branch.select('Branch.owner in %s' % sqlvalues(owner_ids))
+        branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
         return branches.prejoin(['product'])
+
+    def _lifecycleClause(self, lifecycle_statuses):
+        lifecycle_clause = ''
+        if lifecycle_statuses:
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in %s' %
+                quote(lifecycle_statuses))
+        return lifecycle_clause
+
+    def getBranchesForPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        owner_ids = [str(team.id) for team in person.teams_participated_in]
+        owner_ids.append(str(person.id))
+        owner_ids = ','.join(owner_ids)
+
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        subscribed_branches = Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person in (%s) %s
+            ''' % (owner_ids, lifecycle_clause),
+            clauseTables=['BranchSubscription'])
+
+        owner_author_branches = Branch.select(
+            '''(Branch.owner in (%s) OR
+            Branch.author = %s) %s
+            ''' % (owner_ids, person.id, lifecycle_clause))
+        
+        return subscribed_branches.union(
+            owner_author_branches, orderBy=Branch._defaultOrder)
+
+    def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            'Branch.author = %s %s' % (person.id, lifecycle_clause))
+
+    def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            '''Branch.owner = %s AND
+            (Branch.author is NULL OR
+             Branch.author != %s) %s''' %
+            (person.id, person.id, lifecycle_clause))
+
+    def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
+            clauseTables=['BranchSubscription'])
+
+    def getBranchesForProduct(self, product, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            'Branch.product = %s %s' % (product.id, lifecycle_clause))
+
 
 
 class BranchRelationship(SQLBase):

@@ -28,26 +28,14 @@
   <h1 tal:condition="not:context/isTeam"
   >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
   <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
-  <img
-    tal:condition="context/gotchi"
-    tal:attributes="src context/gotchi/getURL"
+  <div tal:condition="context/gotchi"
     style="float: right; margin: 0 0 0.5em 0.5em"
-    alt=""
-  />
+    tal:content="structure context/fmt:icon" />
   <tal:placeholder-shown-only-if-there-is-a-description
     condition="python: (not context.gotchi) and (context.homepage_content or context.teamdescription)"
   >
-    <img
-      tal:condition="not:context/isTeam"
-      alt=""
-      src="/@@/person-mugshot"
-      style="float: right; margin: 0 0 0.5em 0.5em"
-    />
-    <img
-      tal:condition="context/isTeam"
-      alt=""
-      src="/@@/team-mugshot"
-      style="float: right; margin: 0 0 0.5em 0.5em"
+    <img alt="" style="float: right; margin: 0 0 0.5em 0.5em"
+         tal:attributes="src context/default_gotchi_resource"
     />
   </tal:placeholder-shown-only-if-there-is-a-description>
 
@@ -57,49 +45,55 @@
       replace="structure context/teamdescription/fmt:text-to-html" />
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">
-  <div class="left">
-    <div tal:condition="not:context/isTeam" class="demo section">
+  <div class="left" tal:define="contributions view/contributions">
+    <tal:is-team condition="not:context/isTeam">
+    <div tal:condition="contributions" class="section">
     <div class="portlet">
-      <h2>Contributions</h2>
-      <table class="contributions">
+      <h2>Most active in</h2>
+      <table class="contributions" id="contributions">
         <tbody>
-          <tr class="odd">
-            <th>Example project 1</th>
-            <td><img alt="Code" src="/@@/branch" /></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td><img alt="Answers" src="/@@/question" /></td>
+          <tal:contributions repeat="contribution contributions">
+          <tr tal:define="project contribution/project;
+                          project_categories contribution/categories">
+            <th>
+              <a tal:attributes="href project/fmt:url"
+                 tal:content="project/title">Project</a>
+            </th>
+            <td tal:repeat="category view/contributed_categories">
+              <tal:icon condition="python: category in project_categories"
+                        replace="structure category/fmt:icon" />
+            </td>
           </tr>
-          <tr class="even">
-            <th>Example project 2</th>
-            <td></td>
-            <td></td>
-            <td><img alt="Blueprints" src="/@@/blueprint" /></td>
-            <td><img alt="Translations" src="/@@/translation" /></td>
-            <td><img alt="Answers" src="/@@/question" /></td>
-          </tr>
+          </tal:contributions>
         </tbody>
       </table>
     </div>
     </div>
+    </tal:is-team>
     <div tal:condition="not:context/isTeam" class="section">
     <div class="portlet">
       <h2>Team memberships</h2>
-      <ul tal:condition="context/myactivememberships" class="team">
-        <li tal:repeat="membership context/myactivememberships">
-          <div>
-            <a
-              tal:attributes="href membership/team/fmt:url"
-              tal:content="membership/team/browsername"
-            >Team name</a>
-          </div>
-          <div
-            tal:condition="membership/team/teamdescription"
-            tal:replace="structure membership/team/teamdescription/fmt:text-to-html"
-          >Team description</div>
-        </li>
-      </ul>
+      <table tal:condition="context/myactivememberships">
+        <tr tal:repeat="membership context/myactivememberships">
+          <td><img src="/@@/team" /></td>
+          <td>
+            <div>
+              <a
+                tal:attributes="
+                  href membership/team/fmt:url;
+                  title membership/team/teamdescription/fmt:shorten/80"
+                tal:content="membership/team/browsername"
+              >Team name</a>
+            </div>
+            <div>
+              Joined
+              <span
+                tal:attributes="title membership/datejoined/fmt:datetime"
+                tal:content="membership/datejoined/fmt:displaydate" />
+            </div>
+          </td>
+        </tr>
+      </table>
 
       <p tal:condition="not: context/myactivememberships">
         <span tal:replace="context/browsername">Foo Bar</span> is not an
@@ -206,10 +200,11 @@
     </div>
 
     <tal:not-team condition="not:context/isTeam">
-    <div id="working-on" class="section"
+    <div id="working-on"
          tal:define="bugtasks view/getBugsInProgress;
                      specs context/assigned_specs_in_progress"
          tal:condition="python: bugtasks or specs">
+    <div class="section">
     <div class="portlet">
       <h2>Working on&#8230;</h2>
       <ul class="bug">
@@ -223,9 +218,13 @@
       </ul>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-          Show all bugs in progress 
+          &raquo; Show all bugs in progress 
         </a>
       </div>
+    </div>
+    </div>
+    <div class="section">
+    <div class="portlet">
       <ul class="blueprint">
         <li tal:repeat="spec specs">
           <div>
@@ -242,9 +241,10 @@
           to the person. -- Guilherme Salgado, 2007-02-12
         </tal:comment>
         <a tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
-          Show all assigned specs
+          Show all assigned blueprints
         </a>
       </div>
+    </div>
     </div>
     </div>
     </tal:not-team>
@@ -324,8 +324,10 @@
   <tal:invalid-person condition="not: context/is_valid_person_or_team">
     <p><span tal:replace="context/browsername" /> does not use Launchpad.
       <tal:block condition="context/creation_comment">
-        This page was created on
-        <span tal:replace="context/datecreated/fmt:date" />
+        This page was created
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate" />
         <tal:user-created
           condition="context/creation_rationale/enumvalue:USER_CREATED">
           by <a tal:attributes="href context/registrant/fmt:url">
@@ -340,8 +342,10 @@
         </tal:not-user-created>
       </tal:block>
       <tal:block condition="not: context/creation_comment">
-        (This page was created on
-        <span tal:replace="context/datecreated/fmt:date" />.)
+        This page was created
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate" />.
       </tal:block>
     </p>
 

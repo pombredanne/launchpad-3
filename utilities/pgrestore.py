@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """
 Restore a full database dump. This script should become unnecessary
 when we are running PostgreSQL 8 as it will correctly order its dumps.

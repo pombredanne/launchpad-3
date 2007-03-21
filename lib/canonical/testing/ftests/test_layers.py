@@ -241,8 +241,8 @@ class ZopelessTestCase(BaseTestCase):
     layer = ZopelessLayer
 
     want_component_architecture = True
-    want_launchpad_database = True
-    want_librarian_running = True
+    want_launchpad_database = False
+    want_librarian_running = False
     want_zopeless_flag = True
 
 

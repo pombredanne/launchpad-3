@@ -62,6 +62,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    date_created = Attribute("The date this release was registered.")
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -341,7 +342,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive):
+                         archive, signingkey=None):
         """Create a queue item attached to this distrorelease.
 
         Create a new records respecting the given pocket and archive.
@@ -351,6 +352,9 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
+
+        'signingkey' is the IGPGKey used to sign the changesfile or None if
+        the changesfile is unsigned.
         """
 
     def newArch(architecturetag, processorfamily, official, owner):

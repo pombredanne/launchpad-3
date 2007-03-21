@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """
 Cron job to run daily to check all of the BugWatches
 """

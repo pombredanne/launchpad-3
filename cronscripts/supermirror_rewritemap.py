@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 """Generate a file mapping ~user/product/branch to on-disk paths, suitable for

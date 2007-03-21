@@ -15,12 +15,11 @@ import shutil
 import tempfile
 
 from zope.interface import implements
-
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.librarian.utils import copy_and_close
-
+from canonical.archivepublisher.customupload import CustomUploadError
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
@@ -33,17 +32,17 @@ from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix)
-
-from canonical.librarian.interfaces import DownloadFailed
-
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.librarian.interfaces import DownloadFailed
+from canonical.librarian.utils import copy_and_close
+from canonical.lp.dbschema import (
+    DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    PackagePublishingPocket, PackagePublishingStatus)
 
-from canonical.cachedproperty import cachedproperty
-
-# There are imports below in PackageUploadCustom for various bits
+# There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
 
@@ -83,7 +82,10 @@ class PackageUpload(SQLBase):
                              foreignKey="LibraryFileAlias")
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-    
+
+    signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
+                             notNull=False)
+
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
@@ -295,7 +297,11 @@ class PackageUpload(SQLBase):
         for queue_build in self.builds:
             queue_build.publish(logger)
         for customfile in self.customfiles:
-            customfile.publish(logger)
+            try:
+                customfile.publish(logger)
+            except CustomUploadError, e:
+                logger.error("Queue item ignored: %s" % e)
+                return
 
         self.setDone()
 
@@ -385,6 +391,7 @@ class PackageUploadBuild(SQLBase):
                     archive=self.packageupload.archive
                     )
                 published_binaries.append(sbpph)
+        return published_binaries
 
 
 class PackageUploadSource(SQLBase):

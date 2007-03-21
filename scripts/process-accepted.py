@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Queue/Accepted processor
 
 Given a distribution to run on, obtains all the queue items for the

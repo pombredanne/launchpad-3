@@ -56,7 +56,7 @@ class IQuestion(IHasOwner):
     # XXX flacoste 2006/10/28 It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
-        title=_('Language'), vocabulary='LanguageVocabulary',
+        title=_('Language'), vocabulary='Language',
         description=_('The language in which this question is written.'))
     owner = Choice(
         title=_('Owner'), required=True, readonly=True,

@@ -14,8 +14,8 @@
           interface="canonical.launchpad.interfaces.IPackageUpload" />
       <require
           permission="launchpad.View"
-          attributes="id status distrorelease pocket changesfile archive
-                      sources builds customfiles
+          attributes="id status distrorelease pocket changesfile
+                      signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
                       containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader

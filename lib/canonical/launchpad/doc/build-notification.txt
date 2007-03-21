@@ -1,6 +1,6 @@
 = Build Notification System =
 
-IBuild instance implements the 'notify' method which sends and status
+IBuild instance implements the 'notify' method which sends a status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
@@ -61,7 +61,16 @@ The maintainer is notified:
   >>> to_addrs
   ['mark@hbd.com']
 
-Let's check the notification content:
+Let's check the notification content.  It should contain:
+ * The source package name
+ * The source package version
+ * The build architecture
+ * The build state
+ * The duration of the build
+ * A link to the build log
+ * A link to the build page
+ * A link to the source page
+This same basic content applies to all types of notification.
 
   >>> print raw_msg
   Content-Type: text/plain; charset="utf-8"
@@ -86,6 +95,7 @@ Let's check the notification content:
    * Duration: three minutes
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
+   * Source: http://launchpad.dev/ubuntu/+source/pmount/0.1-1
   <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
@@ -159,6 +169,7 @@ Check the notification content:
    * Duration: not available
    * Build Log: not available
    * Builder: not available
+   * Source: http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1
   <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
@@ -233,6 +244,7 @@ Check the notification content:
    * Duration: not finished
    * Build Log: see builder page
    * Builder: http://launchpad.dev/+builds/bob
+   * Source: http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9
   <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
@@ -306,6 +318,7 @@ Check the notification content:
    * Duration: not available
    * Build Log: not available
    * Builder: not available
+   * Source: http://launchpad.dev/ubuntu/+source/at/0.00
   <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.

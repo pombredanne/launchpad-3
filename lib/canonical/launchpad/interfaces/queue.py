@@ -83,10 +83,8 @@ class IPackageUpload(Interface):
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
-    archive = Int(
-            title=_("Archive"), required=True, readonly=True,
-            )
-
+    signing_key = Attribute("Changesfile Signing Key.")
+    archive = Int(title=_("Archive"), required=True, readonly=True)
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
     customfiles = Attribute("Custom upload files associated with this "

@@ -126,8 +126,8 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def specifications(self):
         target = '+specs'
-        text = 'Features'
-        summary = 'Feature specifications and plans'
+        text = 'Blueprints'
+        summary = 'Blueprints and specifications'
         return Link(target, text, summary)
 
     def bounties(self):
