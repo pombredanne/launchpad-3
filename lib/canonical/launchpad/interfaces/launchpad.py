@@ -10,10 +10,12 @@ import zope.exceptions
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Int, Choice
+from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    BaseImageUpload, LargeImageUpload, SmallImageUpload)
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX These import shims are actually necessary if we don't go over the
@@ -26,19 +28,45 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 __all__ = [
-    'NotFoundError', 'ILaunchpadRoot', 'ILaunchBag', 'IOpenLaunchBag',
-    'NameNotAvailable', 'UnexpectedFormData',
-    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
-    'IWriteZODBAnnotation', 'IZODBAnnotation',
-    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
-    'IHasProductAndAssignee', 'IAging', 'IHasDateCreated', 'IHasBug',
-    'ICrowd', 'ILaunchpadCelebrities', 'IAuthApplication',
-    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-    'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'IHasAppointedDriver',
+    'AfterTraverseEvent',
+    'BeforeTraverseEvent',
+    'IAfterTraverseEvent',
+    'IAging',
+    'IAppFrontPageSearchForm',
+    'IAuthApplication',
+    'IBasicLaunchpadRequest',
+    'IBazaarApplication',
+    'IBeforeTraverseEvent',
+    'IBreadcrumb',
+    'ICrowd',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasGotchiAndEmblem',
+    'IHasOwner',
+    'IHasProduct',
+    'IHasProductAndAssignee',
+    'IHasSecurityContact',
+    'ILaunchBag',
+    'ILaunchpadCelebrities',
+    'ILaunchpadRoot',
+    'IMaloneApplication',
+    'IOpenLaunchBag',
+    'IPasswordChangeApp',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IReadZODBAnnotation',
+    'IRegistryApplication',
+    'IRosettaApplication',
+    'IShipItApplication',
     'IStructuralObjectPresentation',
+    'IWriteZODBAnnotation',
+    'IZODBAnnotation',
+    'NameNotAvailable',
+    'NotFoundError',
+    'UnexpectedFormData',
     ]
 
 
@@ -72,6 +100,9 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad product.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
+    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -96,10 +127,17 @@ class ICrowd(Interface):
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
 
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
+
     bug_count = Attribute("The number of bugs recorded in Malone")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Malone")
+    projects_with_bugs_count = Attribute("The number of products and "
+        "distributions which have bugs in Launchpad.")
+    shared_bug_count = Attribute("The number of bugs that span multiple "
+        "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
@@ -292,6 +330,42 @@ class IHasSecurityContact(Interface):
         required=False, vocabulary='ValidPersonOrTeam')
 
 
+class IHasGotchiAndEmblem(Interface):
+    """An object that has a gotchi and an emblem."""
+
+    default_gotchi_resource = TextLine(
+        title=_("Default gotchi resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi."))
+    default_gotchi_heading_resource = TextLine(
+        title=_("Default heading resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a gotchi_heading."))
+    default_emblem_resource = TextLine(
+        title=_("Default emblem resource"), required=True, readonly=True,
+        description=_("The zope3 resource to be used in case this object "
+                      "doesn't have a emblem."))
+
+    emblem = SmallImageUpload(
+        title=_("Emblem"), required=False,
+        description=_(
+            "A small image, max 16x16 pixels and 25k in file size, that can "
+            "be used to refer to this object."))
+    # This field should not be used on forms, so we use a BaseImageUpload here
+    # only for documentation purposes.
+    gotchi_heading = BaseImageUpload(
+        title=_("Heading icon"), required=False,
+        description=_(
+            "An image, maximum 64x64 pixels, that will be displayed on "
+            "the header of all pages related to this object. It should be "
+            "no bigger than 50k in size.")) 
+    gotchi = LargeImageUpload(
+        title=_("Icon"), required=False,
+        description=_(
+            "An image, maximum 170x170 pixels, that will be displayed on this "
+            "object's home page. It should be no bigger than 100k in size. "))
+
+
 class IAging(Interface):
     """Something that gets older as time passes."""
 
@@ -328,4 +402,14 @@ class IStructuralObjectPresentation(Interface):
 
     def countAltChildren():
         """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProject')
+
 

@@ -101,7 +101,7 @@
   Note that even though the http_url we used didn't contain a trailing slash,
   the value stored in our database will contain it.
 
-  >>> browser.getLink('Edit Details').click()
+  >>> browser.getLink('Change details').click()
   >>> http_url + "/" == browser.getControl('HTTP URL').value
   True
 

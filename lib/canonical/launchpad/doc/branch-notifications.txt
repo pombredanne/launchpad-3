@@ -64,11 +64,10 @@ names just now, we'll pass them through anyway
     <BLANKLINE>
     --
     Mozilla Firefox Mainline
-    http://launchpad.dev/~name12/+branch/firefox/main
+    http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
-    nch/firefox/main/+subscribe.
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=    /firefox/main/+subscribe.
     
 
 The fields that are currently tracked with the delta, and cause
@@ -135,11 +134,10 @@ something like this:
     <BLANKLINE>
     --
     New title
-    http://launchpad.dev/~name12/+branch/firefox/new-name
+    http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
     You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
-    nch/firefox/new-name/+subscribe.
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=    /firefox/new-name/+subscribe.
 
 
 If the revision_id is still the same at the tip of the branch, then the
@@ -200,11 +198,11 @@ both the author and the subscriber
     <BLANKLINE>
     --
     Ubuntu Junk Code
-    http://launchpad.dev/~name12/+branch/+junk/junk.dev
+    http://code.launchpad.dev/~name12/+junk/junk.dev
     <BLANKLINE>
     You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://launchpad.dev/~name12/+bra=
-    nch/+junk/junk.dev/+subscribe.
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
+    /+junk/junk.dev/+subscribe.
 
     >>> from_address, recipients, body2 = stub.test_emails.pop()
 

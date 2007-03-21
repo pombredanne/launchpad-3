@@ -28,7 +28,7 @@ In order to subscribe to a branch, the user must be logged in.
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main')
+  >>> user_browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
 Initially there should be no subscribers.
 

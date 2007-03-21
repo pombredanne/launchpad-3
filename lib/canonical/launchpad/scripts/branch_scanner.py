@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
@@ -57,7 +57,7 @@ class BranchScanner:
             self.logScanFailure(branch, "No branch found")
             return
         try:
-            bzrsync.syncHistoryAndClose()
+            bzrsync.syncBranchAndClose()
         except ConnectionError:
             # A network glitch occured. Yes, that does happen.
             self.logScanFailure(branch, "Internal network failure")

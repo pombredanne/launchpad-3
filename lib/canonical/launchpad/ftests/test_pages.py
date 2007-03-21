@@ -105,26 +105,6 @@ def find_main_content(content):
 def extract_text(soup):
     """Return the text stripped of all tags.
 
-    >>> soup = BeautifulSoup('<html><h1>Title</h1><p>foo bar</p></html>')
-    >>> extract_text(soup)
-    u'Titlefoo bar'
-    """
-    # XXX Tim Penhey 22-01-2007
-    # At the moment this does not nicely give whitespace between
-    # tags that would have visual separation when rendered.
-    # eg. <p>foo</p><p>bar</p>
-    result = u''
-    for node in soup:
-        if isinstance(node, NavigableString):
-            result = result + unicode(node)
-        else:
-            result = result + extract_text(node)
-    return result
-
-
-def extract_text(soup):
-    """Return the text stripped of all tags.
-
     >>> soup = BeautifulSoup(
     ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
     >>> extract_text(soup)

@@ -14,6 +14,7 @@ import os.path
 import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
+from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -21,17 +22,17 @@ from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
+import pytz
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IBugSet, NotFoundError, IBug, IBugAttachment,
-    IBugExternalRef
-    )
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag
-    )
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -284,6 +285,8 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'approximatedate',
+        'displaydate',
         'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
@@ -325,6 +328,75 @@ class ObjectFormatterAPI:
         return canonical_url(self._context, request)
 
 
+class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+
+    def icon(self):
+        """Return the appropriate <img> tag for this object's gotchi."""
+        context = self._context
+        if context.gotchi is not None:
+            url = context.gotchi.getURL()
+        else:
+            url = context.default_gotchi_resource
+        return '<img alt="" class="mugshot" src="%s" />' % url
+
+    def heading_icon(self):
+        """Return the appropriate <img> tag for this object's heading img."""
+        context = self._context
+        if context.gotchi_heading is not None:
+            url = context.gotchi_heading.getURL()
+        else:
+            url = context.default_gotchi_heading_resource
+        return '<img alt="" class="mugshot" src="%s" />' % url
+
+    def emblem(self):
+        """Return the appropriate <img> tag for this object's emblem."""
+        context = self._context
+        if context.emblem is not None:
+            url = context.emblem.getURL()
+        else:
+            url = context.default_emblem_resource
+        return '<img alt="" src="%s" />' % url
+
+
+# Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
+# subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
+# when we're adapting a person object.
+class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'emblem',
+        'heading_icon',
+        'icon',
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        person = self._context
+        url = canonical_url(person)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        resource = person.default_emblem_resource
+        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
+            url, resource, person.browsername)
+
+
 class BugTaskFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBugTask objects to a formatted string.
 
@@ -358,6 +430,21 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             icon += image_template % ("", "Private", "/@@/locked")
 
         return icon
+
+
+class KarmaCategoryFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IKarmaCategory objects to a formatted string."""
+
+    icons_for_karma_categories = {
+        'bugs': '/@@/bug',
+        'translations': '/@@/translation',
+        'specs': '/@@/blueprint',
+        'support': '/@@/question'}
+
+    def icon(self):
+        icon = self.icons_for_karma_categories[self._context.name]
+        return ('<img alt="" title="%s" src="%s" />'
+                % (self._context.title, icon))
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
@@ -444,6 +531,55 @@ class DateTimeFormatterAPI:
         if value.tzinfo:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
+
+    def displaydate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = abs(now - self._datetime)
+        if delta > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return 'on ' + self.date()
+        return self.approximatedate()
+
+    def approximatedate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = now - self._datetime
+        if abs(delta) > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return self.date()
+        future = delta < timedelta(0, 0, 0)
+        delta = abs(delta)
+        days = delta.days
+        hours = delta.seconds / 3600
+        minutes = (delta.seconds - (3600*hours)) / 60
+        seconds = delta.seconds % 60
+        result = ''
+        comma = ''
+        if future:
+            result += 'in '
+        if days != 0:
+            result += '%d days' % days
+            comma = ', '
+        if days == 0 and hours != 0:
+            result += '%s%d hours' % (comma, hours)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes != 0:
+            result += '%s%d minutes' % (comma, minutes)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes == 0:
+            result += '%s%d seconds' % (comma, seconds)
+        if not future:
+            result += ' ago'
+        return result
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
@@ -1100,6 +1236,109 @@ class PermissionRequiredQuery:
                     "There should be no further path segments after "
                     "required:permission")
         return check_permission(name, self.context)
+
+
+class PageMacroDispatcher:
+    """Selects a macro, while storing information about page layout.
+
+        view/macro:page
+        view/macro:page/applicationhome
+        view/macro:page/pillarindex
+        view/macro:page/freeform
+
+        view/macro:pagehas/actionsmenu
+        view/macro:pagehas/portletcolumn
+        view/macro:pagehas/applicationtabs
+        view/macro:pagehas/applicationborder
+        view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/heading
+
+    """
+
+    implements(ITraversable)
+
+    master = ViewPageTemplateFile('../templates/main-template.pt')
+
+    def __init__(self, context):
+        # The context of this object is a view object.
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if name == 'page':
+            if len(furtherPath) == 1:
+                pagetype = furtherPath.pop()
+            elif not furtherPath:
+                pagetype = 'default'
+            else:
+                raise TraversalError("Max one path segment after macro:page")
+
+            return self.page(pagetype)
+
+        if name == 'pagehas':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "Exactly one path segment after macro:haspage")
+
+            layoutelement = furtherPath.pop()
+            return self.haspage(layoutelement)
+
+        raise TraversalError()
+
+    def page(self, pagetype):
+        if pagetype not in self._pagetypes:
+            raise TraversalError('unknown pagetype: %s' % pagetype)
+        self.context.__pagetype__ = pagetype
+        return self.master.macros['master']
+
+    def haspage(self, layoutelement):
+        pagetype = getattr(self.context, '__pagetype__', None)
+        if pagetype is None:
+            pagetype = 'unset'
+        return self._pagetypes[pagetype][layoutelement]
+
+    class LayoutElements:
+
+        def __init__(self,
+            actionsmenu=False,
+            portletcolumn=False,
+            applicationtabs=False,
+            applicationborder=False,
+            applicationbuttons=False,
+            heading=False,
+            pagetypewasset=True
+            ):
+            self.elements = vars()
+
+        def __getitem__(self, name):
+            return self.elements[name]
+
+    _pagetypes = {
+        'unset':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationtabs=True,
+                applicationborder=True,
+                pagetypewasset=False),
+        'default':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationtabs=True,
+                applicationborder=True),
+        'applicationhome':
+            LayoutElements(
+                applicationbuttons=True,
+                heading=True),
+        'pillarindex':
+            LayoutElements(
+                actionsmenu=True,
+                portletcolumn=True,
+                applicationbuttons=True,
+                heading=True),
+        'freeform':
+            LayoutElements(),
+        }
 
 
 class GotoStructuralObject:

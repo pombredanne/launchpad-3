@@ -234,8 +234,20 @@
 
 </facet>
 
+<facet facet="branches">
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+project-cloud"
+      class="canonical.launchpad.browser.BazaarProductView"
+      template="../templates/product-code-index.pt"
+      permission="zope.Public"
+      />
+  
+</facet>
+
 <!--
-Operational statistics. Note that these are publicly available, 
+Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
 these URLs in Apache.
 -->
@@ -298,12 +310,6 @@ these URLs in Apache.
     template="../templates/launchpad-structuralfooter.pt"
   />
 </browser:pages>
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+applications"
-  permission="zope.Public"
-  template="../templates/app-buttons.pt"
-  />
 
 <browser:page
   for="*"
@@ -328,5 +334,11 @@ these URLs in Apache.
   class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
+
+<class class="canonical.launchpad.webapp.publisher.RenamedView">
+  <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+          attributes="__call__"
+    />
+</class>
 
 </configure>

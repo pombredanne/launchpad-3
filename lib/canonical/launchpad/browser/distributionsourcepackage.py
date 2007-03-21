@@ -55,7 +55,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
     links = ['reportbug', 'managebugcontacts']
 
     def reportbug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
     def managebugcontacts(self):
