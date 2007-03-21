@@ -10,7 +10,7 @@ Normal users should not be able to do this:
 But an admin user should be able to do it:
 
   >>> admin_browser.open('http://launchpad.dev/projects')
-  >>> admin_browser.getLink('Register a Project').click()
+  >>> admin_browser.getLink('Register a project').click()
   >>> admin_browser.url
   'http://launchpad.dev/projects/+new'
 
@@ -45,7 +45,7 @@ Testing if the validator is working for the name field.
 
   >>> admin_browser.getControl('Name', index=0).value = 'ubuntu'
   >>> admin_browser.getControl('Add').click()
-  >>> ("ubuntu is already in use by another product, project or distribution"
+  >>> ("ubuntu is already in use by another project"
   ... in admin_browser.contents)
   True
 
@@ -83,7 +83,7 @@ project.
 
 The uploaded icon and emblem can be seen on the project's edit page:
 
-  >>> admin_browser.getLink('Edit Project Details').click()
+  >>> admin_browser.getLink('Change details').click()
   >>> admin_browser.url
   'http://launchpad.dev/test-project/+edit'
   >>> find_tag_by_id(

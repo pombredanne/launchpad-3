@@ -85,7 +85,8 @@ class LinkData:
         The 'enabled' argument is boolean for whether this link is enabled.
 
         The 'icon' is the name of the icon to use, or None if there is no
-        icon.
+        icon. This is currently unused in the Actions menu, but will likely
+        be used when menu links are embedded in the page (bug 5313).
 
         The 'site' is None for whatever the current site is, and 'main' or
         'blueprint' for a specific site.

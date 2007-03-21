@@ -36,7 +36,6 @@ from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.pomsgidsighting import *
 from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
@@ -72,6 +71,7 @@ from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
 from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *

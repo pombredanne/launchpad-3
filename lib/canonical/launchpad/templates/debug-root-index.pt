@@ -5,8 +5,8 @@
             <ul>
                 <li><a href="real-index.html">The Official Home Page</a></li>
                 <li><a href="people">People</a></li>
-                <li><a href="products">Products</a></li>
-                <li><a href="projects">Projects</a></li>
+                <li><a href="products">Projects</a></li>
+                <li><a href="projects">Project Groups</a></li>
                 <li><a href="distros">Distributions</a></li>
                 <li><a href="changelog.html">Changelog</a></li>
                 <li><a href="++apidoc++">Zope3 online developers

@@ -17,6 +17,7 @@ from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
     IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -30,7 +31,7 @@ class ProjectNameField(PillarNameField):
 
 
 class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
-               IKarmaContext):
+               IKarmaContext, IHasSprints):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -130,6 +131,7 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
 
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/product',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this project."))
@@ -138,6 +140,7 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/product-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to this project. It should be "
@@ -145,6 +148,7 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/product-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this project's home page. It should be no bigger than 100k in "

@@ -12,6 +12,24 @@ To find a sprint by name, use:
 
     >>> ubz = sprintset["gentoo"]
 
+The major pillars, product, distribution and project, can all provide a
+listing of up to 5 relevant events that are up-and-coming:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IProjectSet, IDistributionSet)
+    >>> productset = getUtility(IProductSet)
+    >>> projectset = getUtility(IProjectSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> firefox = productset.getByName('firefox')
+    >>> for e in firefox.coming_sprints: print e.name
+    futurista
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> for e in ubuntu.coming_sprints: print e.name
+    futurista
+    >>> mozilla = projectset.getByName('mozilla')
+    >>> for e in mozilla.coming_sprints: print e.name
+    futurista
+
 
 Specification Listings
 ======================

@@ -5,7 +5,7 @@ Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
   >>> browser.addHeader(
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://launchpad.dev/ubuntu/hoary')
-  >>> browser.getLink('Appoint Driver').click()
+  >>> browser.getLink('Appoint driver').click()
 
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+driver'
@@ -28,5 +28,6 @@ message inform him of the driver change.
 Sample Person is listed as the driver of Hoary.
 
   >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     tag.find(text='Drivers:').findNext('a').string
-  u'Sample Person'
+  ...     'Sample Person' in str(tag.find(text='Drivers:').findNext('td'))
+  True
+

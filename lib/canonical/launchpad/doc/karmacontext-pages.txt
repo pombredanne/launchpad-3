@@ -20,10 +20,11 @@ contributors on a given context and the top contributors by category.
     [(u'name16', 175), (u'sabdfl', 22), (u'carlos', 9)]
 
     >>> contributors = topcontributors.top_contributors_by_category
-    >>> for category, contribs in contributors.items():
+    >>> categories = sorted(contributors.keys())
+    >>> for category in categories:
     ...     print category, [(contrib.person.name, contrib.karmavalue)
-    ...                      for contrib in contribs]
-    Specification Tracking [(u'sabdfl', 22)]
+    ...                      for contrib in contributors[category]]
     Bug Management [(u'name16', 11)]
+    Specification Tracking [(u'sabdfl', 22)]
     Translations in Rosetta [(u'name16', 164), (u'carlos', 9)]
 

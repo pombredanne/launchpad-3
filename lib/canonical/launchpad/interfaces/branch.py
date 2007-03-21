@@ -5,10 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
-    'IBranchLifecycleFilter'
+    'IBranchLifecycleFilter',
+    'IBranchBatchNavigator',
     ]
 
 from zope.interface import Interface, Attribute
@@ -27,6 +29,15 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.validation import valid_branch_url
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+
+
+DEFAULT_BRANCH_STATUS_IN_LISTING = (
+    BranchLifecycleStatus.NEW,
+    BranchLifecycleStatus.EXPERIMENTAL,
+    BranchLifecycleStatus.DEVELOPMENT,
+    BranchLifecycleStatus.MATURE)
+
 
 class BranchURIField(URIField):
 
@@ -49,6 +60,11 @@ class BranchURIField(URIField):
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
@@ -57,6 +73,10 @@ class BranchURIField(URIField):
             raise LaunchpadValidationError(
                 message, canonical_url(branch), branch.displayname)
 
+
+class IBranchBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate branch listings."""
+    
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
@@ -223,7 +243,14 @@ class IBranch(IHasOwner):
     spec_links = Attribute("Specifications linked to this branch")
 
     # Joins
-    revision_history = Attribute("The sequence of revisions in that branch.")
+    revision_history = Attribute(
+        """The sequence of BranchRevision for the mainline of that branch.
+
+        They are ordered with the most recent revision first, and the list
+        only contains those in the "leftmost tree", or in other words
+        the revisions that match the revision history from bzrlib for this
+        branch.
+        """)
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
@@ -252,24 +279,14 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
-    # revision number manipulation
-    def getRevisionNumber(sequence):
-        """Gets the RevisionNumber for the given sequence number.
+    def getBranchRevision(sequence):
+        """Gets the BranchRevision for the given sequence number.
 
-        If no such RevisionNumber exists, None is returned.
+        If no such BranchRevision exists, None is returned.
         """
 
-    def createRevisionNumber(sequence, revision):
-        """Create a RevisionNumber mapping sequence to revision."""
-
-    def truncateHistory(from_rev):
-        """Truncate the history of the given branch.
-
-        RevisionNumber objects with sequence numbers greater than or
-        equal to from_rev are destroyed.
-
-        Returns True if any RevisionNumber objects were destroyed.
-        """
+    def createBranchRevision(sequence, revision):
+        """Create a new BranchRevision for this branch."""
 
     def getTipRevision():
         """Returns the Revision associated with the last_scanned_id.
@@ -284,6 +301,24 @@ class IBranch(IHasOwner):
         A single entry point that is called solely from the branch scanner
         script.
         """
+
+    def getScannerData():
+        """Retrieve the full ancestry of a branch for the branch scanner.
+
+        The branch scanner script is the only place where we need to retrieve
+        all the BranchRevision rows for a branch. Since the ancestry of some
+        branches is into the tens of thousands we don't want to materialise
+        BranchRevision instances for each of these.
+
+        :return: tuple of three items.
+            1. Ancestry set of bzr revision-ids.
+            2. History list of bzr revision-ids. Similar to the result of
+               bzrlib.Branch.revision_history().
+            3. Dictionnary mapping bzr bzr revision-ids to the database ids of
+               the corresponding BranchRevision rows for this branch.
+        """
+
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -314,7 +349,7 @@ class IBranchSet(Interface):
             summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
@@ -331,6 +366,20 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getProductDevelopmentBranches(products):
+        """Return branches that are associated with the products dev series.
+
+        The branches will be either the import branches if imported, or
+        the user branches if native.
+        """
+
+    def getActiveUserBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products.
+
+        Only active branches are counted (i.e. not Merged or Abandoned),
+        and only non import branches are counted.
+        """
 
     def getRecentlyChangedBranches(branch_count):
         """Return a list of branches that have been recently updated.
@@ -357,6 +406,71 @@ class IBranchSet(Interface):
 
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""
+
+    def getBranchesForPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with person with appropriate lifecycle.
+
+        All associated branches are returned, whether they be registered
+        by the person, authored by the person, subscribed by the person
+        or any team that the person is a member of.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        XXX: thumper 2007-03-07
+        This has been shown to be a bad idea, see bug 87878.
+        """
+        
+    def getBranchesAuthoredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches authored by person with appropriate lifecycle.
+
+        Only branches that are authored by the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesRegisteredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches registered by person with appropriate lifecycle.
+
+        Only branches registered by the person but *NOT* authored by
+        the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesSubscribedByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches subscribed by person with appropriate lifecycle.
+
+        All branches where the person has subscribed to the branch
+        are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesForProduct(
+        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with product with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
 
 
 class IBranchDelta(Interface):

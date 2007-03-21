@@ -187,7 +187,7 @@ On success, redirect to Sample Person's home page.
 
 Check that the key has been imported:
 
-  >>> browser.getLink('OpenPGP Keys').click()
+  >>> browser.getLink('Update OpenPGP keys').click()
 
   >>> browser.title
   "Sample Person's OpenPGP keys"
