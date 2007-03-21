@@ -9,7 +9,7 @@ import unittest
 from canonical.launchpad.scripts.supermirror import branchtomirror
 from canonical.launchpad.database import Branch
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 # Define a bunch of different fake format classes to pass to identical_formats
@@ -123,7 +123,7 @@ class TestBranchKind(unittest.TestCase):
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def testCanonicalUrlConsistent(self):
         # BranchToMirror._canonical_url is consistent with
