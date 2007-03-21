@@ -4,6 +4,7 @@
 #         David Allouche <david@allouche.net>
 
 import datetime
+import os
 import shutil
 import sys
 import time
@@ -167,19 +168,25 @@ class BzrSyncTestCase(TestCaseWithTransport):
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
 
-    def commitRevision(self, message=None, committer=None,
-                       extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None,
-                       filename="file", contents=None):
-        file = open(os.path.join(self.bzr_branch_abspath, filename), "w")
+    def writeToFile(self, filename="file", contents=None):
+        """Set the contents of the specified file.
+
+        This also adds the file to the bzr working tree if
+        it isn't already there.
+        """
+        file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
         if contents is None:
             file.write(str(time.time()+random.random()))
         else:
             file.write(contents)
         file.close()
-        inventory = self.bzr_tree.read_working_inventory()
-        if not inventory.has_filename(filename):
+        if not self.bzr_tree.has_filename(filename):
             self.bzr_tree.add(filename)
+
+    def commitRevision(self, message=None, committer=None,
+                       extra_parents=None, rev_id=None,
+                       timestamp=None, timezone=None,
+                       filename="file", contents=None):
         if message is None:
             message = self.LOG
         if committer is None:
@@ -364,19 +371,19 @@ class TestBzrSync(BzrSyncTestCase):
 
     def test_email_format(self):
         first_revision = 'rev-1'
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n")
         self.commitRevision(rev_id=first_revision,
                             message="Log message",
                             committer="Joe Bloggs <joe@example.com>",
-                            filename="hello.txt",
-                            contents="Hello World\n",
                             timestamp=1000000000.0,
                             timezone=0)
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n\nFoo Bar\n")
         second_revision = 'rev-2'
         self.commitRevision(rev_id=second_revision,
                             message="Extended contents",
                             committer="Joe Bloggs <joe@example.com>",
-                            filename="hello.txt",
-                            contents="Hello World\n\nFoo Bar\n",
                             timestamp=1000100000.0,
                             timezone=0)
         
