@@ -9,6 +9,9 @@ you can't know to which comment the new comment was a reply to.
 
 Let's add add change notification and see how it works:
 
+    >>> from canonical.launchpad.database import MessageSet
+    >>> from canonical.database.sqlbase import flush_database_updates
+
     >>> login('test@canonical.com')
 
     >>> import pytz
@@ -25,12 +28,20 @@ Let's add add change notification and see how it works:
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> emails = [
-    ...     email_notification
-    ...     for dummy, dummy, email_notification in get_email_notifications(
-    ...         notifications)]
-    >>> len(emails)
+
+    >>> messages = [emails for dummy, emails in
+    ...     get_email_notifications(notifications)]
+    >>> len(messages)
     1
+
+There are three recipients for this message, so we get:
+
+    >>> emails = messages[0]
+    >>> len(emails)
+    3
+
+The three emails have identical headers for our purposes, so:
+
     >>> notification = emails[0]
 
 The email has the message id of the change notification, and it
@@ -53,12 +64,13 @@ id:
     >>> bug_one.addChangeNotification(
     ...     '** Some other change.', sample_person, when=ten_minutes_ago)
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> emails = [
-    ...     email_notification
-    ...     for dummy, dummy, email_notification in get_email_notifications(
-    ...         notifications)]
-    >>> len(emails)
+    >>> messages = [emails for dummy, emails in
+    ...     get_email_notifications(notifications)]
+    >>> len(messages)
     1
+    >>> emails = messages[0]
+    >>> len(emails)
+    3
     >>> notification = emails[0]
 
     >>> notification['Message-Id'] == comment.rfc822msgid
@@ -66,15 +78,13 @@ id:
     >>> notification['References'] == bug_one.initial_message.rfc822msgid
     True
 
+Refresh the dates, and create a new reply to ensure that the references
+are chained together properly:
 
-XXX
-
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> for notification in notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-    >>> from canonical.launchpad.database import MessageSet
     >>> reply = MessageSet().fromText(
     ...     'Re: subject', 'reply', sample_person, datecreated=ten_minutes_ago)
     >>> reply.parent = comment
@@ -82,13 +92,16 @@ XXX
     >>> bug_one.linkMessage(reply)
     <...>
 
+Grab the notifications:
+
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> emails = [
-    ...     email_notification
-    ...     for dummy, dummy, email_notification in get_email_notifications(
-    ...         notifications)]
-    >>> len(emails)
+    >>> messages = [emails for dummy, emails in
+    ...     get_email_notifications(notifications)]
+    >>> len(messages)
     1
+    >>> emails = messages[0]
+    >>> len(emails)
+    3
     >>> notification = emails[0]
     >>> notification['Message-Id'] == reply.rfc822msgid
     True
@@ -97,3 +110,4 @@ XXX
     True
     >>> comment.rfc822msgid in references
     True
+
