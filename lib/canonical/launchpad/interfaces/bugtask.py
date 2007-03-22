@@ -237,8 +237,6 @@ class IBugTaskSearchBase(Interface):
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    owner = Choice(
-        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
     bug_reporter = Choice(
         title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(

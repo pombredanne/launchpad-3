@@ -1334,7 +1334,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
-                "owner", "omit_dupes", "has_patch", "bug_reporter",
+                "omit_dupes", "has_patch", "bug_reporter",
                 "milestone", "component", "has_no_package",
                 "status_upstream", "tag", "has_cve", "bug_contact"
                 ]

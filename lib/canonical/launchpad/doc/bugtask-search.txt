@@ -119,8 +119,8 @@ certain person.
     >>> reported_by_foo_bar.setDistribution(ubuntu)
     >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
     >>> for bugtask in found_bugtasks:
-    ...     print "%s# in %s reported by %s" % (
+    ...     print "#%s in %s reported by %s" % (
     ...         bugtask.bug.id, bugtask.targetname,
     ...         bugtask.bug.owner.displayname)
-    9# in thunderbird (Ubuntu) reported by Foo Bar
-    10# in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
+    #9 in thunderbird (Ubuntu) reported by Foo Bar
+    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar

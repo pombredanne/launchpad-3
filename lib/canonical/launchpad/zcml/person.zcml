@@ -235,7 +235,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -247,7 +247,7 @@
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
@@ -272,7 +272,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone bug_reporter
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -284,7 +284,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone bug_reporter
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
