@@ -169,12 +169,15 @@ class BugNominationTableRowView(LaunchpadView):
 class BugNominationEditView(LaunchpadView):
     """Browser view class for approving and declining nominations."""
 
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.current_bugtask = getUtility(ILaunchBag).bugtask
+
     def getFormAction(self):
         """Get the string used as the form action."""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return (
             "%s/nominations/%d/+edit-form" % (
-                canonical_url(current_bugtask), self.context.id))
+                canonical_url(self.current_bugtask), self.context.id))
 
     def processNominationDecision(self):
         """Process the decision, Approve or Decline, made on this nomination."""
