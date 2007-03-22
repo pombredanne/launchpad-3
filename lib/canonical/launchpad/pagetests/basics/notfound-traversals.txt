@@ -146,7 +146,8 @@ Test the DARBPR page for a REMOVED package:
 >>> check_not_found("/ubuntu/+source/evolution/+translations")
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/ubuntu/hoary/+source/evolution/+packaging")
+>>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 >>> check("/ubuntu/hoary/+source/evolution/+translate")
 >>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots")
@@ -176,9 +177,6 @@ Test the DARBPR page for a REMOVED package:
 
 >>> check("/ubuntu/hoary/i386")
 >>> check("/ubuntu/hoary/i386/+search")
-
-# FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
-#>>> check("/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -306,6 +304,11 @@ or distrosourcepackage filebug page.
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
 
+Approving/declining a bug nomination.
+
+>>> check("/firefox/+bug/1/nominations/2/+editstatus", auth=True)
+
+
 Test /people traversals.
 
 >>> check("/people/")
@@ -393,6 +396,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
+>>> check_not_found("/@@popup-window")
 
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")

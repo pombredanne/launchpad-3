@@ -182,7 +182,6 @@ class ShipItRequestView(GeneralFormView):
         if self.flavour == ShipItFlavour.UBUNTU:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.PPC: 'ubuntu_quantityppc',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
         elif self.flavour == ShipItFlavour.KUBUNTU:
             self.quantity_fields_mapping = {

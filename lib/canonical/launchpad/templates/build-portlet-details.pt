@@ -31,13 +31,21 @@
     <span tal:replace="context/buildstate/title">Fully built</span>
     <br />
 
-    <b>Date recorded:</b><br />
-    <span tal:replace="context/datecreated/fmt:datetime">2005-10-05 5:45</span>
+    <b>Queued:</b><br />
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:approximatedate">
+      2005-10-05 5:45
+    </span>
     <br />
 
     <tal:is_build condition="context/datebuilt">
-      <b>Date built:</b><br />
-      <span tal:replace="context/datebuilt/fmt:datetime">2005-10-05 5:45</span>
+      <b>Built:</b><br />
+    <span
+      tal:attributes="title context/datebuilt/fmt:datetime"
+      tal:content="context/datebuilt/fmt:approximatedate">
+      2005-10-05 5:45
+    </span>
       <br />
     </tal:is_build>
 

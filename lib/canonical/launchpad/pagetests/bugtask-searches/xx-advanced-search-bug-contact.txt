@@ -6,14 +6,14 @@ On the advanced search there's a field for specifying a bug contact.
     >>> anon_browser.getControl('Bug contact') is not None
     True
 
-If an non-existant person is entered there, an error message is
+If an non-existent person is entered there, an error message is
 displayed.
 
-    >>> anon_browser.getControl('Bug contact').value = 'non-existant'
+    >>> anon_browser.getControl('Bug contact').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existant'
+    There's no person with the name or email address 'non-existent'
 
 Entering an existing person shows all bugs that or on packages or
 products that person is a bug contact for. Since we're in the ubuntu

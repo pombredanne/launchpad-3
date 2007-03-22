@@ -32,7 +32,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.question import IQuestionCollection
+from canonical.launchpad.interfaces.question import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -117,8 +118,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
+    # The emblem is only used for teams; that's why we use /@@/team as the
+    # default image resource.
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/team',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
@@ -126,15 +130,17 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/person-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a great big grinning "
-            "image of your mug. Make the most of it."))
+            "than 50k in size. Traditionally this is a logo, small picture, "
+            "or personal mascot."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
+        default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
+            "An image, maximum 150x150 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))
@@ -425,6 +431,20 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    def getProjectsAndCategoriesContributedTo(limit=10):
+        """Return a list of dicts with projects and the contributions made
+        by this person on that project.
+
+        The list is limited to the :limit: projects this person is most
+        active.
+
+        The dictionaries containing the following keys:
+            - project:    The project, which is either an IProduct or an
+                          IDistribution.
+            - categories: A dictionary mapping KarmaCategory titles to
+                          the icons which represent that category.
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.
@@ -648,7 +668,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchQuestions(**search_criteria):
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
         """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
@@ -675,6 +698,7 @@ class ITeam(IPerson):
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/team-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this team's home page. It should be no bigger than 100k in "

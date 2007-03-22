@@ -210,7 +210,7 @@ enter a confirmation message at that stage.
 Since no confirmation message was given, a default one was used.
 
     >>> print firefox_question.messages[-1].text_contents
-    User confirmed that the question is solved.
+    Thanks No Privileges Person, that solved my question.
 
 Once in the SOLVED state, the owner can now only either add a comment
 or reopen the question:
@@ -306,7 +306,7 @@ the user is subscribed to the bug.
     >>> makebug.initialize()
     >>> makebug.process_form()
     >>> sorted(bug.id for bug in question_three.bugs)
-    [11L]
+    [13L]
     >>> print question_three.bugs[0].title
     Bug title
     >>> print question_three.bugs[0].description
@@ -316,7 +316,7 @@ the user is subscribed to the bug.
     >>> question_three.bugs[0].isSubscribed(makebug.user)
     True
     >>> [n.message for n in request.notifications]
-    [u'Thank you! Bug #11 created.']
+    [u'Thank you! Bug #13 created.']
 
 
     >>> notifications = pop_notifications()
@@ -325,7 +325,7 @@ the user is subscribed to the bug.
     >>> print notifications[0].get_payload(decode=True)
     Your question #3...
     ...
-        Linked to bug: #11
+        Linked to bug: #13
     ...
 
 If the question already has bugs linked to it, no new bug can be created.
@@ -776,3 +776,14 @@ It works also with user submitted values:
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
+
+== QuestionCollectionOpenCountView ==
+
+There is a helper view that is available on all IQuestionCollection
+that returns the number of questions in the Open and Needs information
+states on that target.
+
+    >>> view = getView(
+    ...     firefox, '+open_questions_count', LaunchpadTestRequest())
+    >>> view()
+    u'4'

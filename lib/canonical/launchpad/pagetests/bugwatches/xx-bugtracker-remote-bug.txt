@@ -11,13 +11,9 @@ use a URL of the form /bugs/bugtrackers/$bugtrackername/$remotebug.
 If there are multiple Launchpad bugs watching a particular remote bug,
 then a list of the relevant Launchpad bugs:
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
+  >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/42')
+  >>> print browser.contents
+  <!DOCTYPE...
   <title>Remote Bug #42 in The Mozilla.org Bug Tracker</title>
   ...
   <a href=".../bugs/1">#1: Firefox does not support SVG</a>
@@ -29,26 +25,19 @@ then a list of the relevant Launchpad bugs:
 If there is only a single bug watching the remote bug, then we skip
 the list page and redirect the user directly to that bug's page:
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/2000 HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/plain;charset=utf-8
-  Location: .../bugs/1
-  <BLANKLINE>
-
+  >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
+  >>> print browser.url
+  http://launchpad.dev/firefox/+bug/1
 
 If there are no bug watches for a particular remote bug, then a Not
 Found page is generated:
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/99999 HTTP/1.1
-  ... """)
-  HTTP/1.1 404 Not Found
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> browser.handleErrors = True
+  >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/99999')
+  Traceback (most recent call last):
   ...
+  HTTPError: HTTP Error 404: Not Found
+  >>> browser.handleErrors = False
 
 
 Private Bugs
@@ -72,12 +61,9 @@ Mark bug 1 as private:
 
 List Launchpad bugs watching Mozilla bug 42:
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/42')
+  >>> print anon_browser.contents
+  <!DOCTYPE...
   ...
   <title>Remote Bug #42 in The Mozilla.org Bug Tracker</title>
   ...
@@ -89,13 +75,9 @@ List Launchpad bugs watching Mozilla bug 42:
 
 The bug title is still provided if the user can view the private bug:
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/42 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/42')
+  >>> print browser.contents
+  <!DOCTYPE...
   ...
   <title>Remote Bug #42 in The Mozilla.org Bug Tracker</title>
   ...
@@ -109,15 +91,14 @@ For the case where the private bug is the only one watching the given
 remote bug, we still perform a redirect (which will lead to a page
 telling the user they are unauthorised to view the bug):
 
-  >>> print http(r"""
-  ... GET /bugs/bugtrackers/mozilla.org/2000 HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  Content-Type: text/plain;charset=utf-8
-  Location: .../bugs/1
-  <BLANKLINE>
-
+  >>> anon_browser.handleErrors = True
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
+  >>> print anon_browser.contents
+  <!DOCTYPE...
+  ...To continue, you must log in to Launchpad...
+  ...<input type="hidden" name="redirection_url"
+  value="http://launchpad.dev/firefox/+bug/1/+index" />...
+  
 
 Set the bug back to public:
 

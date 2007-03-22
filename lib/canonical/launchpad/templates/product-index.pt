@@ -11,8 +11,8 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Name of product</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+  <h1 tal:content="context/title">Name of product</h1>
+  <span tal:replace="structure context/fmt:icon" />
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -100,7 +100,7 @@
         </div>
         <div
           class="section"
-          tal:content="structure context/@@+portlet-packages"
+          tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
           class="section"
@@ -119,10 +119,13 @@
         />
         <div
           class="section"
-          tal:content="structure context/@@+portlet-latestspecs"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
         />
       </div>
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress needs mugshot (salgado) -->

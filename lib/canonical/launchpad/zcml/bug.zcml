@@ -14,10 +14,10 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks pillar_bugtasks
+        <allow attributes="id private bugtasks affected_pillars
                            subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
-                           getIndirectSubscribers" />
+                           getIndirectSubscribers getNullBugTask" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
@@ -27,7 +27,7 @@
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
                         attachments questions specifications followup_subject
-                        isSubscribed messages notificationRecipientAddresses
+                        isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch
@@ -85,26 +85,11 @@
         template="../templates/bug-listing-detailed.pt"
         permission="zope.Public" />
 
-    <!-- BugSet -->
-    <content class="canonical.launchpad.database.BugSet">
-        <allow interface="canonical.launchpad.interfaces.IBugSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.BugSet"
-        provides="canonical.launchpad.interfaces.IBugSet">
-        <allow interface="canonical.launchpad.interfaces.IBugSet" />
-    </securedutility>
-
     <browser:pages
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
 
-      <!-- Bug Portlets. Note: These are also registered in
-      bugtask.zcml so that the bug page doesn't break in several
-      places due to the fact that its context is now an IBugTask,
-      rather than an IBug. -->
       <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
@@ -129,21 +114,23 @@
       <browser:page
           name="+portlet-attachments"
           template="../templates/bug-portlet-attachments.pt" />
+      <browser:page
+          name="+portlet-subscribers"
+          template="../templates/bug-portlet-subscribers.pt" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.BugView"
-        name="+portlet-subscribers"
-        template="../templates/bug-portlet-subscribers.pt"
-        permission="zope.Public" />
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.BugTaskView"
-        name="+portlet-search"
-        template="../templates/bugtarget-portlet-search.pt"
-        permission="zope.Public" />
+
+    <!-- BugSet -->
+    <content class="canonical.launchpad.database.BugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.BugSet"
+        provides="canonical.launchpad.interfaces.IBugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
+    </securedutility>
 
     <browser:navigation
         module="canonical.launchpad.browser"

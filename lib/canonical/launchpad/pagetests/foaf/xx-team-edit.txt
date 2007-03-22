@@ -27,11 +27,11 @@ details of that team.
     >>> browser.getControl(name='field.gotchi.action').value
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-    u'/@@/nyet-mugshot'
+    u'/@@/team-mugshot'
     >>> browser.getControl(name='field.emblem.action').value
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
-    u'/@@/nyet-mini'
+    u'/@@/team'
 
 Now we'll change some values.
 
