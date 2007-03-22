@@ -24,7 +24,7 @@ class DebianInstallerAlreadyExists(CustomUploadError):
     def __init__(self, build_type, arch, version):
         message = ('%s build %s for architecture %s already exists' %
                    (build_type, arch, version))
-        DebianInstallerError.__init__(self, message)
+        CustomUploadError.__init__(self, message)
 
 
 class DebianInstallerUpload(CustomUpload):
@@ -68,8 +68,8 @@ class DebianInstallerUpload(CustomUpload):
             '%s-%s' % (build_type, self.arch))
 
         if os.path.exists(os.path.join(self.targetdir, self.version)):
-            raise DebianInstallerAlreadyExists(build_type, self.arch,
-                                               self.version)
+            raise DebianInstallerAlreadyExists(
+                build_type, self.arch, self.version)
 
     def extract(self):
         CustomUpload.extract(self)
