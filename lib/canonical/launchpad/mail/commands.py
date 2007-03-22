@@ -224,10 +224,10 @@ class SecurityEmailCommand(EditEmailCommand):
 
     def convertArguments(self):
         """See EmailCommand."""
-        private_arg = self.string_args[0]
-        if private_arg == 'yes':
+        [security_flag] = self.string_args
+        if security_flag == 'yes':
             return {'security_related': True, 'private': True}
-        elif private_arg == 'no':
+        elif security_flag == 'no':
             return {'security_related': False}
         else:
             raise EmailProcessingError(
