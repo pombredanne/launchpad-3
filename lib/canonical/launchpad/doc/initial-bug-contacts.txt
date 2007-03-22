@@ -182,7 +182,7 @@ importance, etc.
     >>> msg['Subject']
     '[Bug 1] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
-    Public bug reported:
+    You have been subscribed to a public bug:
     <BLANKLINE>
     Firefox needs to support embedded SVG images, now that the standard has
     been finalised.
@@ -389,7 +389,7 @@ report:
     >>> msg['Subject']
     '[Bug 2] Blackhole Trash folder'
     >>> print msg.get_payload(decode=True)
-    Public bug reported:
+    You have been subscribed to a public bug:
     ...
     ** Affects: firefox (upstream)
     ...

@@ -3,5 +3,5 @@ package's +packaging page.
 
   >>> browser.open("http://localhost/ubuntu/hoary/+source/mozilla-firefox/+packaging")
   >>> browser.contents
-  '...<h2>Upstream links for Hoary mozilla-firefox</h2>...'
+  '...<h1>Upstream links for Hoary mozilla-firefox</h1>...'
 

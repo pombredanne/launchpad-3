@@ -62,6 +62,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    date_created = Attribute("The date this release was registered.")
     driver = Choice(
         title=_("Driver"),
         description=_(

@@ -19,11 +19,23 @@
         </span>
         <span tal:replace="context/remotestatus">6642</span><br />
     <b>Changed:</b>
-      <span tal:replace="context/lastchanged/fmt:date">12 Jan 2004</span><br />
+      <span
+        tal:attributes="title context/lastchanged/fmt:datetime"
+        tal:content="context/lastchanged/fmt:approximatedate">
+        12 Jan 2004
+       </span><br />
     <b>Checked:</b>
-      <span tal:replace="context/lastchecked/fmt:date">13 Jan 2004</span><br />
+      <span
+        tal:attributes="title context/lastchecked/fmt:datetime"
+        tal:content="context/lastchecked/fmt:approximatedate">
+        13 Jan 2004
+       </span><br />
     <b>Created:</b>
-      <span tal:replace="context/datecreated/fmt:date">15 Feb 2003</span><br />
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:approximatedate">
+        15 Jan 2003
+       </span><br />
     <b>By:</b>
       <a tal:replace="structure context/owner/fmt:link" /><br />
     </div>

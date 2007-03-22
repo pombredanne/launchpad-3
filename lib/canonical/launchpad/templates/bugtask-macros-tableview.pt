@@ -210,9 +210,12 @@
        tal:content="task/milestone/name|string:-">
        milestone
   </td>
-  <td tal:condition="python:'submittedon' in listing_columns"
-       tal:content="task/datecreated/fmt:date">
+  <td tal:condition="python:'submittedon' in listing_columns">
+    <span
+      tal:attributes="title task/datecreated/fmt:datetime"
+      tal:content="task/datecreated/fmt:displaydate">
        date
+    </span>
   </td>
   <td tal:condition="python:'submittedby' in listing_columns"
        tal:content="task/owner/browsername|string:-">
