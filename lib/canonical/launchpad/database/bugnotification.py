@@ -66,3 +66,4 @@ class BugNotificationSet:
             ]
         pending_notifications.reverse()
         return pending_notifications
+

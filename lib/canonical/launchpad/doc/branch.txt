@@ -421,13 +421,18 @@ IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
 >>> from canonical.launchpad.interfaces import IBranchRevision
->>> count = junk.revision_count
->>> count
+>>> junk.revision_count
 6
 >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
->>> [revno.sequence for revno in junk.revision_history]
-[6, 5, 4, 3, 2, 1]
+>>> for branch_revision in junk.revision_history:
+...     print branch_revision.sequence, branch_revision.revision.id
+6 9
+5 8
+4 7
+3 6
+2 5
+1 4
 
 There are two methods for getting only the the latest items of the revision
 history.
