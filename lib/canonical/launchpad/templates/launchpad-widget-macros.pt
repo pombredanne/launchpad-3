@@ -55,14 +55,17 @@
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
         :widget: The widget that's going to be rendered.
+        :omit_required: Omit the required message
   </tal:comment>
 
   <div tal:attributes="class python:error and 'error' or None"
        tal:define="error widget/error">
     <span tal:replace="structure widget" />
-    <span tal:condition="widget/required"
-          class="fieldRequired"
-          title="Required">(Required)</span>
+    <tal:display_required condition="not: omit_required|nothing">
+      <span tal:condition="widget/required"
+            class="fieldRequired"
+            title="Required">(Required)</span>
+    </tal:display_required>
     <div tal:condition="error" tal:content="structure error" />
   </div>
 </metal:display_raw_widget>

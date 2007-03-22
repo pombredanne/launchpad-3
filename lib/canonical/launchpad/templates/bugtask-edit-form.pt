@@ -36,7 +36,8 @@
           </td>
         </tr>
       </tal:distrotask>
-      <tal:upstreamtask condition="python:context.product">
+      <tal:upstreamtask condition="python:context.product"
+                        define="omit_required default">
         <tr tal:condition="view/product_widget">
           <td colspan="2">
             <label style="font-weight: bold"
