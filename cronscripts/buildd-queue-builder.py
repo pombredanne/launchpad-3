@@ -28,18 +28,33 @@ from canonical.launchpad.scripts.base import (LaunchpadScript,
 class QueueBuilder(LaunchpadScript):
 
     def add_my_options(self):
-        self.parser.add_option("-n", "--dry-run", action="store_true",
-                          dest="dryrun", metavar="DRY_RUN", default=False,
-                          help="Whether to treat this as a dry-run or not.")
+        self.parser.add_option(
+            "-n", "--dry-run", action="store_true",
+            dest="dryrun", metavar="DRY_RUN", default=False,
+            help="Whether to treat this as a dry-run or not.")
+
+    def lock_or_quit(self):
+        """Redefine lock_or_quit to check cron.daily lockfile.
+
+        If it finds the cron.daily lockfile it should simply exit quietly.
+        We don't want to run queue-builder simultaneously with the cron.daily
+        because it might be a huge source of mistakes, but in the same way we
+        don't want to recieve email warnings (buildd-sequencer) for this event.
+        """
+        if os.path.exists(config.builddmaster.crondaily_lockfile):
+            sys.exit(0)
+
+        LaunchpadScript.lock_or_quit(self)
 
     def main(self):
+        """Invoke rebuildQueue.
+
+        Check if the cron.daily is running, quietly exits if true.
+        Force isolation level to READ_COMMITTED_ISOLATION.
+        Deals with the current transaction according the dry-run option.
+        """
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
-
-        # XXX: Quick and dirty "don't start if the publisher is
-        # here", we should really do this in a nicer way, kiko 2007-02-05
-        if os.path.exists("/srv/launchpad.net/ubuntu-archive/cron.daily.lock"):
-            sys.exit(0)
 
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
@@ -73,10 +88,8 @@ class QueueBuilder(LaunchpadScript):
 
         buildMaster = BuilddMaster(self.logger, local_txn)
 
-        # Simple container
-        distroreleases = set()
-
         # For every distroarchrelease we can find; put it into the build master
+        distroreleases = set()
         for archrelease in getUtility(IDistroArchReleaseSet):
             distroreleases.add(archrelease.distrorelease)
             buildMaster.addDistroArchRelease(archrelease)
@@ -105,7 +118,6 @@ class QueueBuilder(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    # Note the use of the same lockfilename as the slave scanner.
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     script.run()
