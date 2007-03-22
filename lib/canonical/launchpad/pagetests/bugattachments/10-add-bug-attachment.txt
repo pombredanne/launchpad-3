@@ -19,8 +19,6 @@ Let's add an attachment. First create a file-like object.
   >>> from cStringIO import StringIO
   >>> foo_file = StringIO('Traceback...')
 
-We try again with a proper title, note that we leave some leading and
-trailing whitespace to test that we strip them:
 Leading and trailing whitespace are stripped from the description of the
 attachment.
 
