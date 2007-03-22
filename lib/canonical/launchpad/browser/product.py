@@ -50,11 +50,12 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot, IBranchSet)
+    ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.bugtask import (
+    BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
@@ -538,6 +539,12 @@ class ProductView:
                                              key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
         return series_list
+
+    def getClosedBugsURL(self, series):
+        status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
+        url = canonical_url(series) + '/+bugs'
+        return get_buglisting_search_filter_url(url, status=status)
+
 
 class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
