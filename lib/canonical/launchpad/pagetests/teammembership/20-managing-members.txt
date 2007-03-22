@@ -5,8 +5,7 @@ Any team administrator can manage the members of that team.
     >>> def print_members(contents, type):
     ...     table = find_tag_by_id(contents, type)
     ...     for link in table.findAll('a'):
-    ...         if link.renderContents() != 'Edit':
-    ...             import pdb; pdb.set_trace()
+    ...         if link.renderContents() != 'Edit' and not link.find('img'):
     ...             print link.renderContents()
 
 == Approving a proposed member ==
