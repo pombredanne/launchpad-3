@@ -913,8 +913,11 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
     def search(self):
+        # Specify both owner and bug_reporter to try to prevent the same
+        # bug (but different tasks) being displayed.
         return BugTaskSearchListingView.search(
-            self, extra_params={'owner': self.context})
+            self,
+            extra_params={'owner': self.context,'bug_reporter': self.context})
 
     def getSearchPageHeading(self):
         """The header for the search page."""
