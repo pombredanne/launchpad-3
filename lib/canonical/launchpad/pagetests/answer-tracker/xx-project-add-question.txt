@@ -26,7 +26,7 @@ Like for the regular workflow, the user enter a short summary of his
 problem in the language of his choice:
 
     >>> print user_browser.getControl('Language').displayValue
-    ['English (en)']
+    ['English (en) *']
     >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
     >>> user_browser.getControl('Continue').click()
