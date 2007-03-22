@@ -16,7 +16,7 @@ Luckily for us, many is 5 in the tests.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...6...of 8 results...
+   ...1...&rarr;...6...of 10 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.thead.fetch('tr'):
@@ -34,17 +34,19 @@ and are really just branch metadata without the revisions behind them.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   pushed                         New          gnome-terminal  Registrant
+   mirrored                       New          gnome-terminal  Registrant
 
    >>> browser.getLink('Next').click()
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...7...&rarr;...8...of 8 results...
+   ...7...&rarr;...10...of 10 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
+   pushed                     New          gnome-terminal Registrant
+   scanned                    New          gnome-terminal Registrant
    junk.dev     Ubuntu Team   Experimental                
       2005-10-31 12:03:57 ... weeks ago  Registrant
    junk.contrib Sample Person New                         
@@ -75,7 +77,7 @@ Merged or Abandoned branches are not shown.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   pushed                         New          gnome-terminal  Registrant
+   mirrored                       New          gnome-terminal  Registrant
 
 There is a select control that is used to define which
 subset of the branches are shown.
@@ -101,7 +103,7 @@ Now all types of branches should be shown.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...6...of 10 results...
+   ...1...&rarr;...6...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
@@ -117,17 +119,19 @@ Now all types of branches should be shown.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...7...&rarr;...10...of 10 results...
+   ...7...&rarr;...12...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
    launchpad    Launchpad Developers New          gnome-terminal Subscriber
+   mirrored                          New          gnome-terminal Registrant
    pushed                            New          gnome-terminal Registrant
+   scanned                           New          gnome-terminal Registrant
    junk.dev     Ubuntu Team          Experimental                
-      2005-10-31 12:03:57 ... weeks ago  Registrant
+      2005-10-31 12:03:57 ... weeks ago                          Registrant
    junk.contrib Sample Person        New                         
-      2005-10-31 12:03:57 ... weeks ago  Author
+      2005-10-31 12:03:57 ... weeks ago                          Author
 
 
 Selecting an individual lifecycle status from the select control 
@@ -155,7 +159,7 @@ status value, it will default to current branches.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   pushed                         New          gnome-terminal  Registrant
+   mirrored                       New          gnome-terminal  Registrant
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
@@ -191,4 +195,4 @@ We display badges for associated bugs.
   http://code.launchpad.dev/~name12/gnome-terminal/main
   http://code.launchpad.dev/~name12/gnome-terminal/klingon
   http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
-  http://code.launchpad.dev/~name12/gnome-terminal/pushed
+  http://code.launchpad.dev/~name12/gnome-terminal/mirrored

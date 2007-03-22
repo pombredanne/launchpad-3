@@ -210,9 +210,12 @@
        tal:content="task/milestone/name|string:-">
        milestone
   </td>
-  <td tal:condition="python:'submittedon' in listing_columns"
-       tal:content="task/datecreated/fmt:date">
+  <td tal:condition="python:'submittedon' in listing_columns">
+    <span
+      tal:attributes="title task/datecreated/fmt:datetime"
+      tal:content="task/datecreated/fmt:displaydate">
        date
+    </span>
   </td>
   <td tal:condition="python:'submittedby' in listing_columns"
        tal:content="task/owner/browsername|string:-">
@@ -321,7 +324,7 @@
                 <table>
                   <tr>
                     <td>
-                        <label for="field.owner">Reporter:</label>
+                        <label for="field.bug_reporter">Reporter:</label>
                     </td>
                   </tr>
                   <tr>
@@ -330,11 +333,34 @@
                         <div tal:attributes="class python:view.owner_error
                                                           and 'error' or
                                                           ''">
-                        <span tal:content="structure view/owner_widget" />
+                        <span tal:content="structure view/bug_reporter_widget" />
                         <div tal:condition="view/owner_error"
                              class="message"
                              tal:content="view/owner_error">An error on
                              owner widget </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                        <label
+                            tal:attributes="for view/bug_contact_widget/name">
+                          Bug contact:
+                        </label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="white-space: nowrap"
+                        tal:define="error view/bug_contact_error">
+                      <div class="field">
+                        <div tal:attributes="
+                            class python: error and 'error' or None">
+                        <tal:widget tal:content="structure view/bug_contact_widget" />
+                        <div tal:condition="error"
+                             class="message"
+                             tal:content="error">An error on
+                             Bug contact widget </div>
                         </div>
                       </div>
                     </td>

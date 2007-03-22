@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 """Script to generate reports with data from ShipIt orders."""

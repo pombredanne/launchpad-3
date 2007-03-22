@@ -237,8 +237,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    owner = Choice(
-        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
+    bug_reporter = Choice(
+        title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
@@ -262,6 +262,8 @@ class IBugTaskSearchBase(Interface):
         vocabulary="AdvancedBugTaskUpstreamStatus")
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
+    bug_contact = Choice(
+        title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -295,7 +297,7 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 class IFrontPageBugTaskSearch(IBugTaskSearchBase):
 
     scope = Choice(
-        title=u"Search Scope", required=True,
+        title=u"Search Scope", required=False,
         vocabulary="DistributionOrProductOrProject")
 
 
@@ -446,7 +448,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False):
+                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -467,42 +469,31 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-
-        self._has_context = False
+        self.bug_contact = bug_contact
+        self.bug_reporter = bug_reporter
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.product = product
-        self._has_context = True
 
     def setProject(self, project):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.project = project
-        self._has_context = True
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
-        assert not self._has_context
         self.distribution = distribution
-        self._has_context = True
 
     def setDistributionRelease(self, distrorelease):
         """Set the distrorelease context on which to filter the search."""
-        assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
 
     def setProductSeries(self, productseries):
         """Set the productseries context on which to filter the search."""
-        assert not self._has_context
         self.productseries = productseries
-        self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
-        assert not self._has_context
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro release.
             self.distrorelease = sourcepackage.distrorelease
@@ -510,7 +501,6 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
-        self._has_context = True
 
 
 class IBugTaskSet(Interface):

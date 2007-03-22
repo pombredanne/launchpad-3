@@ -165,7 +165,9 @@ class PillarNameSet:
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
                 AND active IS TRUE
 
-            ORDER BY rank DESC
+            /* we order by rank AND name to break ties between pillars with
+               the same rank in a consistent fashion */
+            ORDER BY rank DESC, name
             """ % sqlvalues(text=text)
         count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
         query = "%s LIMIT %d" % (base_query, limit)

@@ -6,7 +6,7 @@ Test to add a product series
   >>> print browser.url
   http://launchpad.dev/firefox/+addseries
 
-  >>> 'Register another product series' in browser.contents
+  >>> 'Register another release series' in browser.contents
   True
 
 After checking that the page +addseries is there, we try to add a new series.

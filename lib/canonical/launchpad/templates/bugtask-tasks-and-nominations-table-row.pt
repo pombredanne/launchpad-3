@@ -1,22 +1,25 @@
-<tal:bugtask define="can_edit_bugtask context/required:launchpad.Edit;
+<tal:bugtask define="can_edit_bugtask not: context/conjoined_master;
                      indent_task view/shouldIndentTask;
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
+    <td width="14"><a tal:condition="can_edit_bugtask"
+           tal:attributes="
+              href tasklink;
+              onclick string:return toggleFormVisibility('${form_row_id}')"
+          ><img tal:attributes="id string:${form_row_id}-edit"
+               width="14" height="14"
+               src="/@@/treeCollapsed" alt="edit" /></a></td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="release_targetname view/getReleaseTargetName">
       <img src="/@@/milestone" alt="Targeted to" />
-      <span tal:condition="context/conjoined_master"
-            tal:content="release_targetname">
-        Edgy
-      </span>
       <tal:not-conjoined-task condition="not: context/conjoined_master">
       <a
         tal:condition="can_edit_bugtask"
         tal:attributes="
             href tasklink;
-            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+            onclick string:return toggleFormVisibility('${form_row_id}')"
         tal:content="release_targetname"
       />
       <a
@@ -28,7 +31,7 @@
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 0.25em">
-        <img src="/@@/pkg-source" alt="package"
+        <img src="/@@/package-source" alt="package"
              tal:condition="view/shouldShowPackageIcon" />
         <img src="/@@/product" alt="project"
              tal:condition="view/shouldShowProductIcon" />
@@ -37,7 +40,7 @@
             tal:condition="can_edit_bugtask"
             tal:attributes="
                 href tasklink;
-                onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+                onclick string:return toggleFormVisibility('${form_row_id}')"
             tal:content="context/targetname"
           />
           <a
@@ -80,8 +83,6 @@
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img tal:condition="context/assignee"
-               src="/@@/user" alt="" />
           <img
             alt="Linked to "
             src="/@@/bug-remote"
@@ -97,7 +98,7 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <img src="/@@/user"
+            <img tal:attributes="src context/assignee/default_emblem_resource"
                  style="padding-bottom: 2px"
                  alt="" />
             <span tal:replace="context/assignee/browsername">

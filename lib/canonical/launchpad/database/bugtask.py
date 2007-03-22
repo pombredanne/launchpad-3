@@ -455,7 +455,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         if self._isConjoinedBugTask():
             raise ConjoinedBugTaskEditError(
-                "This task cannot be edited directly.")
+                "This task cannot be edited directly, it should be"
+                " edited through its conjoined_master.")
         # The conjoined slave is updated before the master one because,
         # for distro tasks, conjoined_slave does a comparison on
         # sourcepackagename, and the sourcepackagenames will not match
@@ -1067,6 +1068,31 @@ class BugTaskSet:
                     search_value_to_where_condition(params.tag))
             extra_clauses.append(tags_clause)
             clauseTables.append('BugTag')
+
+        if params.bug_contact:
+            bug_contact_clause = """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, Product
+                WHERE BugTask.product = Product.id
+                    AND Product.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id
+                FROM BugTask, PackageBugContact
+                WHERE BugTask.distribution = PackageBugContact.distribution
+                    AND BugTask.sourcepackagename =
+                        PackageBugContact.sourcepackagename
+                    AND PackageBugContact.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, Distribution
+                WHERE BugTask.distribution = Distribution.id
+                    AND Distribution.bugcontact = %(bug_contact)s
+                )""" % sqlvalues(bug_contact=params.bug_contact)
+            extra_clauses.append(bug_contact_clause)
+
+        if params.bug_reporter:
+            bug_reporter_clause = (
+                "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
+                    params.bug_reporter))
+            extra_clauses.append(bug_reporter_clause)
 
         clause = get_bug_privacy_filter(params.user)
         if clause:

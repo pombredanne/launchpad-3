@@ -89,9 +89,10 @@ There is also a link which points to the registered branches page.
    ...     print extract_text(row)
    2.6                   10 Mature       gnome-terminal
    main                  20 Development  gnome-terminal
+   mirrored              60 New          gnome-terminal
    pushed                60 New          gnome-terminal
-   junk.dev Ubuntu Team  30 Experimental
-      2005-10-31 12:03:57 ... weeks ago
+   scanned               60 New          gnome-terminal
+   junk.dev Ubuntu Team  30 Experimental  2005-10-31 12:03:57 ... weeks ago
 
 == Subscribed branches ==
 

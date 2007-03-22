@@ -78,19 +78,19 @@ Reflects the available distribution releases.  Results are ordered by
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
-            ubuntu/breezy-autotest Breezy Badger Autotest
-                     ubuntu/grumpy The Grumpy Groundhog Release
-                      ubuntu/hoary The Hoary Hedgehog Release
-                      ubuntu/warty The Warty Warthog Release
-                      debian/sarge Sarge
-                        debian/sid Sid
-                      debian/woody WOODY
-                    guadalinex/2k5 Guada 2005
-                    kubuntu/krunch The Krunchy Kangaroo
-                        redhat/7.0 Seven
-                        redhat/six Six Six Six
-        ubuntutest/breezy-autotest Breezy Badger Autotest
-             ubuntutest/hoary-test Mock Hoary
+            ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest
+                     ubuntu/grumpy Ubuntu: The Grumpy Groundhog Release
+                      ubuntu/hoary Ubuntu: The Hoary Hedgehog Release
+                      ubuntu/warty Ubuntu: The Warty Warthog Release
+                      debian/sarge Debian: Sarge
+                        debian/sid Debian: Sid
+                      debian/woody Debian: WOODY
+                    guadalinex/2k5 GuadaLinex: Guada 2005
+                    kubuntu/krunch Kubuntu: The Krunchy Kangaroo
+                        redhat/7.0 Red Hat: Seven
+                        redhat/six Red Hat: Six Six Six
+        ubuntutest/breezy-autotest ubuntutest: Breezy Badger Autotest
+             ubuntutest/hoary-test ubuntutest: Mock Hoary
 
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
     u'The Hoary Hedgehog Release'
@@ -350,8 +350,11 @@ It has however been nominated for 1.0:
 This means that if we iterate through the vocabulary with bug one, only
 the trunk will be nominatable:
 
+    >>> firefox_bug_one = bug_one.bugtasks[0]
+    >>> firefox_bug_one.target.name
+    u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     bug_one, 'BugNominatableReleases')
+    ...     firefox_bug_one, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     trunk: Trunk
@@ -368,8 +371,11 @@ No series is targeted or nominated on bug 4:
 
 So if we give bug four to the vocabulary, all releases will be returned:
 
+    >>> firefox_bug_four = bug_four.bugtasks[0]
+    >>> firefox_bug_four.target.name
+    u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     bug_four, 'BugNominatableReleases')
+    ...     firefox_bug_four, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     1.0: 1.0
@@ -395,8 +401,11 @@ Bug one is nominated for Ubuntu Hoary:
 
 So Hoary isn't included in the vocabulary:
 
+    >>> ubuntu_bug_one = bug_one.bugtasks[1]
+    >>> ubuntu_bug_one.distribution.name
+    u'ubuntu'
     >>> releases_vocabulary = vocabulary_registry.get(
-    ...     bug_one, 'BugNominatableReleases')
+    ...     ubuntu_bug_one, 'BugNominatableReleases')
     >>> for term in releases_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest
@@ -418,8 +427,11 @@ The same is true for bug two, where the bug is targeted to Hoary.
     ...     print nomination.target.name
     hoary
 
+    >>> ubuntu_bug_two = bug_two.bugtasks[1]
+    >>> ubuntu_bug_two.distribution.name
+    u'ubuntu'
     >>> releases_vocabulary = vocabulary_registry.get(
-    ...     bug_two, 'BugNominatableReleases')
+    ...     ubuntu_bug_two, 'BugNominatableReleases')
     >>> for term in releases_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest

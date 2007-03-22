@@ -64,12 +64,19 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    def browse(self):
+        text = 'Browse code'
+        # Only enable the link if we've ever mirrored the branch.
+        enabled = self.context.last_mirrored_id is not None
+        url = config.launchpad.codebrowse_root + self.context.unique_name
+        return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):

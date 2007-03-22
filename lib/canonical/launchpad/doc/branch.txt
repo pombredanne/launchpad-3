@@ -62,10 +62,15 @@ u'launchpad'
 
 If it doesn't exist an exception NotFoundError is raised
 
+>>> import sys
 >>> try:
 ...     branchset[-1]
+...     print 'ERROR: No exception raised'
 ... except NotFoundError:
-...     pass
+...     print 'NotFoundError raised'
+... except:
+...     print 'A different exception was raised: %r' % sys.exc_info()
+NotFoundError raised
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
@@ -133,7 +138,7 @@ None
 The IBranchSet can tell us how many branches there are registered.
 
 >>> branchset.count()
-27
+29
 
 (25 in the sample data, and two added above.)
 
@@ -169,11 +174,13 @@ using the web UI, or by pushing a new branch directly to the supermirror.
 In order to determine changes in the branches the last_scanned timestamp
 is used.  This is set by the branch scanner when it has finished
 scanning the branches and recording the branch data in the launchpad
-database.  The sample data doesn't have this value set, so we'll fake
-it here to get some interesting results instead of nothing.
+database.  Some of the sample data has this value set, but it was introduced
+after this document was written, so we'll fake it here anyway to get some
+interesting results.
 
->>> list(branchset.getRecentlyChangedBranches(5))
-[]
+>>> for branch in branchset.getRecentlyChangedBranches(5):
+...     print branch.unique_name
+~name12/gnome-terminal/scanned
 >>> list(branchset.getRecentlyImportedBranches(5))
 []
 
@@ -189,9 +196,13 @@ it here to get some interesting results instead of nothing.
 >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
 >>> branch.last_scanned = today - timedelta(1)
 >>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+>>> branch.last_scanned = today
+>>> syncUpdate(branch)
 
 >>> for branch in branchset.getRecentlyChangedBranches(5):
 ...   print branch.unique_name
+~name12/gnome-terminal/scanned
 ~ddaa/+junk/junkcode
 ~ddaa/gnome-terminal/dev
 
@@ -410,13 +421,18 @@ IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
 >>> from canonical.launchpad.interfaces import IBranchRevision
->>> count = junk.revision_count
->>> count
+>>> junk.revision_count
 6
 >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
->>> [revno.sequence for revno in junk.revision_history]
-[6, 5, 4, 3, 2, 1]
+>>> for branch_revision in junk.revision_history:
+...     print branch_revision.sequence, branch_revision.revision.id
+6 9
+5 8
+4 7
+3 6
+2 5
+1 4
 
 There are two methods for getting only the the latest items of the revision
 history.
@@ -573,13 +589,13 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
-  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
   >>> for product in products:
   ...     print "%s %s %s" % (
   ...         product.name,
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
-  evolution      2 None
+  evolution      1 None
   firefox        5 2005-03-09 15:50:00
   gnome-terminal 8 None
   iso-codes      1 None
@@ -639,7 +655,9 @@ return all branches associated with that person:
   Development ~name12/gnome-terminal/main
   Experimental ~name12/gnome-terminal/klingon
   New ~launchpad/gnome-terminal/launchpad
+  New ~name12/gnome-terminal/mirrored
   New ~name12/gnome-terminal/pushed
+  New ~name12/gnome-terminal/scanned
   Experimental ~name12/+junk/junk.dev
   New ~name12/+junk/junk.contrib
 
@@ -655,7 +673,9 @@ return all branches associated with that person:
   Abandoned ~name12/gnome-terminal/2.4
   Mature ~name12/gnome-terminal/2.6
   Development ~name12/gnome-terminal/main
+  New ~name12/gnome-terminal/mirrored
   New ~name12/gnome-terminal/pushed
+  New ~name12/gnome-terminal/scanned
   Experimental ~name12/+junk/junk.dev
 
   >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
@@ -680,7 +700,9 @@ extra display information.
   Experimental ~name12/gnome-terminal/klingon
   New ~launchpad/gnome-terminal/launchpad
   New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/mirrored
   New ~name12/gnome-terminal/pushed
+  New ~name12/gnome-terminal/scanned
 
   >>> branches = branchset.getBranchesForProduct(gnome_terminal)
   >>> for branch in branches:
@@ -692,7 +714,9 @@ extra display information.
   Experimental ~name12/gnome-terminal/klingon
   New ~launchpad/gnome-terminal/launchpad
   New ~ddaa/gnome-terminal/dev
+  New ~name12/gnome-terminal/mirrored
   New ~name12/gnome-terminal/pushed
+  New ~name12/gnome-terminal/scanned
 
   >>> branches = branchset.getBranchesForProduct(
   ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
