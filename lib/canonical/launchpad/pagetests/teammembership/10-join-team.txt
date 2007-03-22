@@ -3,14 +3,14 @@
 Karl will join the newly created team.
 
     >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~myemail/')
+    >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
     'http://launchpad.dev/~myemail/+join'
 
     >>> browser.getControl(name='join').click()
     >>> browser.url
-    'http://launchpad.dev/~myemail/'
+    'http://launchpad.dev/~myemail'
 
 Since this is an open team, he's automatically approved.
 
@@ -44,7 +44,7 @@ approved, though.
     >>> browser = Browser()
     >>> browser.addHeader(
     ...     'Authorization', 'Basic james.blackwell@ubuntulinux.com:jblack')
-    >>> browser.open('http://launchpad.dev/~myemail/')
+    >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
     'http://launchpad.dev/~myemail/+join'
@@ -58,7 +58,7 @@ approved, though.
 
     >>> browser.getControl(name='join').click()
     >>> browser.url
-    'http://launchpad.dev/~myemail/'
+    'http://launchpad.dev/~myemail'
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     print tag.renderContents()
