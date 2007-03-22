@@ -70,7 +70,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
         self.setUpBzrBranch()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        # LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
         self.setUpDBBranch()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.txn = LaunchpadZopelessLayer.txn
@@ -267,7 +267,9 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing an empty branch does nothing.
         self.syncAndCount()
         self.assertEqual(self.db_branch.revision_count, 0)
-        self.assertEqual(len(stub.test_emails), 0)
+        self.assertEqual(len(stub.test_emails), 1)
+        self.failUnless('First scan of the branch detected 0 revisions'
+                        in stub.test_emails[0][2])
             
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
@@ -298,7 +300,11 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(self.db_branch.revision_count, 1)
         self.assertEqual(len(stub.test_emails), 1)
         self.uncommitRevision()
-        self.commitRevision('second')
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n")
+        self.commitRevision('second',
+                            timestamp=1000000000.0,
+                            timezone=0)
         self.syncAndCount(new_revisions=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
@@ -312,8 +318,8 @@ class TestBzrSync(BzrSyncTestCase):
             'committer: Revision Author <author@example.com>',
             'branch nick: bzr_branch',
             'message:\n  second',
-            'added:\n  file',
-            "=3D=3D=3D added file 'file'",
+            'added:\n  hello.txt',
+            "=3D=3D=3D added file 'hello.txt'",
             ]
         for bit in body_bits:
             self.failUnless(bit in body, '%s missing from %s' % (bit, body))
