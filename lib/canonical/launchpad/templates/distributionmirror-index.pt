@@ -24,6 +24,16 @@
 
 <div metal:fill-slot="main">
 
+    <tal:is-admin condition="context/required:launchpad.Admin">
+      <p tal:define="owner context/owner">
+        Registered by
+        <a tal:attributes="href owner/fmt:url"
+           tal:content="string: ${owner/displayname} (${owner/preferredemail/email})">
+          Foo Bar</a>
+        <span tal:content="context/date_created/fmt:displaydate" />
+      </p>
+    </tal:is-admin>
+
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">

@@ -1945,8 +1945,6 @@ class TeamJoinView(PersonView):
 
         if request.form.get('join') and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
-            assert policy != TeamSubscriptionPolicy.RESTRICTED, (
-                "Should not attempt to join restricted teams.")
             user.join(context)
             if policy == TeamSubscriptionPolicy.MODERATED:
                 notification = _('Subscription request pending approval.')
