@@ -17,12 +17,14 @@ import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
+# XXX -- Unused, but needed to work-around bug in bzr 0.11
+# Jonathan Lange, 2007-03-22
+from bzrlib.tests import blackbox
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp, ssh
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
-from bzrlib.builtins import cmd_push
 
 from twisted.internet import defer, threads
 from twisted.python.util import sibpath
@@ -203,6 +205,17 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         TestCaseInTempDir.TEST_ROOT = None
         signal.signal(signal.SIGCHLD, self._oldSigChld)
 
+    def closeAllConnections(self):
+        """Closes all open bzrlib SFTP connections.
+
+        bzrlib doesn't provide a facility for closing sftp connections. The
+        closest it gets is clearing the connection cache and forcing the
+        connection objects to be garbage collected. This means that this method
+        won't actually close a connection if a reference to it is still around.
+        """
+        sftp.clear_connection_cache()
+        gc.collect()
+
 
 class AcceptanceTests(SFTPTestCase):
     """
@@ -234,16 +247,12 @@ class AcceptanceTests(SFTPTestCase):
         user has permission to read or write to those URLs.
         """
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        remote_revision = self._pushThenGetLastRevision(remote_url)
+        remote_revision = self._push(remote_url)
         self.assertEqual(self.local_branch.last_revision(),
                          remote_revision)
 
     def test_1_bzr_sftp(self):
         return self._test_1_bzr_sftp()
-
-    def _pushThenGetLastRevision(self, remote_url):
-        self._push(remote_url)
-        return bzrlib.branch.Branch.open(remote_url).last_revision()
 
     def _push(self, remote_url):
         # Do not run this in the main thread! It does a blocking read from the
@@ -253,10 +262,12 @@ class AcceptanceTests(SFTPTestCase):
         try:
             push_done = threading.Event()
             self.server.setConnectionLostEvent(push_done)
-            cmd_push().run_argv([remote_url])
+            self.run_bzr_captured(['push', remote_url], retcode=None)
+            result = bzrlib.branch.Branch.open(remote_url).last_revision()
             push_done.wait()
         finally:
             os.chdir(old_dir)
+        return result
 
     @deferToThread
     def _test_bzr_push_again(self):
@@ -267,13 +278,13 @@ class AcceptanceTests(SFTPTestCase):
         """
         # Initial push.
         remote_url = self.server_base + '~testuser/+junk/test-branch'
-        remote_revision = self._pushThenGetLastRevision(remote_url)
+        remote_revision = self._push(remote_url)
         self.assertEqual(remote_revision, 'rev1')
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
         # Push the new revision.
-        remote_revision = self._pushThenGetLastRevision(remote_url)
+        remote_revision = self._push(remote_url)
         self.assertEqual(remote_revision, 'rev2')
 
     def test_bzr_push_again(self):
@@ -341,7 +352,7 @@ class AcceptanceTests(SFTPTestCase):
         # Force bzrlib to make a new SFTP connection.
         sftp.clear_connection_cache()
 
-        remote_revision = self._pushThenGetLastRevision(remote_url)
+        remote_revision = self._push(remote_url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
         # Assign to a different product in the database. This is
@@ -420,7 +431,7 @@ class AcceptanceTests(SFTPTestCase):
     @deferToThread
     def _test_push_team_branch(self):
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
-        remote_revision = self._pushThenGetLastRevision(remote_url)
+        remote_revision = self._push(remote_url)
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
