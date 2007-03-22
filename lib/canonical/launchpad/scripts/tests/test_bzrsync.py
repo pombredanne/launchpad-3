@@ -296,6 +296,10 @@ class TestBzrSync(BzrSyncTestCase):
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.
+        # When scanning the uncommit and new commit
+        # there should be an email generated saying that
+        # 1 (in this case) revision has been removed,
+        # and another email with the diff and log message.
         self.commitRevision('first')
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
