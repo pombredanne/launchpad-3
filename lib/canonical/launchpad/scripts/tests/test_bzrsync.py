@@ -191,7 +191,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         else:
             file.write(contents)
         file.close()
-        if not self.bzr_tree.has_filename(filename):
+        inventory = self.bzr_tree.read_working_inventory()
+        if not inventory.has_filename(filename):
             self.bzr_tree.add(filename)
 
     def commitRevision(self, message=None, committer=None,
@@ -302,9 +303,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
                          contents="Hello World\n")
-        self.commitRevision('second',
-                            timestamp=1000000000.0,
-                            timezone=0)
+        self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
