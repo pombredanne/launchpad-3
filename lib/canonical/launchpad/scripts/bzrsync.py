@@ -24,6 +24,7 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
+from canonical.launchpad.mailnotification import notify_branch_revisions
 
 UTC = pytz.timezone('UTC')
 
@@ -49,9 +50,6 @@ class BzrSync:
         self.logger = logger
         
         self.db_branch = branch
-        self.db_revision_history = getUtility(
-            IRevisionSet).getRevisionHistoryForBranch(branch)
-        
         if branch_url is None:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
@@ -135,7 +133,7 @@ class BzrSync:
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
         # of a branch, not one for each revision.
-        self.initial_scan = not bool(db_history)
+        self.initial_scan = not bool(self.db_history)
 
 
     def retrieveBranchDetails(self):
@@ -416,10 +414,10 @@ class BzrSync:
 
         if self.initial_scan:
             revision_count = len(self.bzr_history)
-            if len(revision_count) == 1:
+            if revision_count == 1:
                 revisions = '1 revision'
             else:
-                revisions = '%d revisions' % len(revision_count)
+                revisions = '%d revisions' % revision_count
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)

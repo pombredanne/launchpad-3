@@ -67,12 +67,13 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.txn = LaunchpadZopelessLayer.txn
         self.setUpBzrBranch()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
         self.setUpDBBranch()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.txn = LaunchpadZopelessLayer.txn
         self.setUpAuthor()
         stub.test_emails = []
         self.bzrsync = None
@@ -96,7 +97,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
-        self.txn.begin()
+        LaunchpadZopelessLayer.txn.begin()
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
             name="test",
@@ -110,7 +111,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
             test_user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.FIVEKLINES)
-        self.txn.commit()
+        LaunchpadZopelessLayer.txn.commit()
 
     def setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
@@ -195,8 +196,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None,
-                       filename="file", contents=None):
+                       timestamp=None, timezone=None):
         if message is None:
             message = self.LOG
         if committer is None:
