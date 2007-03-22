@@ -4,14 +4,12 @@
 #         David Allouche <david@allouche.net>
 
 import datetime
-import shutil
-import sys
 import time
 import unittest
 
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport
 import pytz
 from zope.component import getUtility
 
@@ -23,33 +21,7 @@ from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import LaunchpadZopelessLayer
-
-
-class BzrlibZopelessLayer(LaunchpadZopelessLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""
-
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        # Remove the test directory created by TestCaseInTempDir.
-        # Copied from bzrlib.tests.TextTestRunner.run.
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None:
-            test_root = test_root.encode(sys.getfilesystemencoding())
-            shutil.rmtree(test_root)
-
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
+from canonical.testing import LaunchpadZopelessLayer, BzrlibZopelessLayer
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
