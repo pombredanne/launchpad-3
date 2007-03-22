@@ -23,7 +23,7 @@
       </span><br />
     </tal:block>
     <tal:block condition="context/productseries">
-      This template is for the following <b>upstream</b> product branch:
+      This template is for the following <b>upstream</b> project branch:
       <br />
       <tal:block condition="context/productseries/product/project">
         <b>Project:</b>
@@ -31,7 +31,7 @@
           Apache
         </span><br />
       </tal:block>
-      <b>Product:</b>
+      <b>Project:</b>
       <span tal:replace="context/productseries/product/displayname">
         Apache Web Server
       </span><br />

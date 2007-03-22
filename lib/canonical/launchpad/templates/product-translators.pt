@@ -15,7 +15,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Select a new translation group</h1>
 </metal:heading>
 

@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
+  <p>
     Launchpad recommends the following sequence of feature implementations.
   </p>
 
@@ -27,8 +27,10 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <div tal:repeat="spec view/specPlan"
-         tal:replace="structure spec/@@+listing-simple" />
+    <table>
+      <tr tal:repeat="spec view/specPlan"
+          tal:replace="structure spec/@@+listing-simple" />
+    </table>
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">

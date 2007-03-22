@@ -21,9 +21,11 @@
     <span tal:replace="structure context/owner/fmt:link" />
     <br />
 
-    <b>Reported on:</b><br />
-    <span tal:replace="context/datecreated/fmt:datetime">
-      2004-12-12 12:12:12
+    <b>Reported:</b><br />
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:approximatedate">
+      2004-12-17
     </span><br />
 
     <div title="Can be seen only by the bug subscribers"
