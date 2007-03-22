@@ -93,17 +93,8 @@ to the list of all bugs having that tag in this context.
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_bugtasks(text):
-    ...     """Print all the bugtasks in the text."""
-    ...     soup = BeautifulSoup(anon_browser.contents)
-    ...     table = soup.first('table', {'id': 'buglisting'})
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         icon, id, description = tr('td', limit=3)
-    ...         print id.string, description.a.string
-
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder 
+      &mdash; Medium Unconfirmed
 
