@@ -173,10 +173,6 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         self.server_base = 'sftp://testuser@localhost:22222/'
 
     def tearDown(self):
-        d = deferToThread(self.closeAllConnections)()
-        return d.addCallback(self._tearDown)
-
-    def _tearDown(self, ignored):
         # Undo setUp.
         self.server.stopService()
 

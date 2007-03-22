@@ -607,6 +607,10 @@ class TwistedLayer(LaunchpadZopelessLayer):
     def tearDown(cls):
         # TrialSuite._bail cleans up the threadpool and initiates a reactor
         # shutdown event. This ensures that the process will terminate cleanly.
+
+        # XXX - this may not be necessary given the code in testSetUp and
+        # testTearDown. Experiment.
+        # -- Jonathan Lange, 2007-03-22
         TrialSuite()._bail()
 
     @classmethod
