@@ -160,13 +160,14 @@ class TestPublisher(TestNativePublishingBase):
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
-        # retrieve the publishing record again otherwise it would remain
+        # Retrieve the publishing record again otherwise it would remain
         # unchanged since domination procedure purges caches and does
         # other bad things for sqlobject.
         from canonical.launchpad.database.publishing import (
             SourcePackagePublishingHistory)
         pub_source = SourcePackagePublishingHistory.get(pub_source.id)
 
+        # Publishing record got scheduled for removal
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
 
@@ -189,11 +190,12 @@ class TestPublisher(TestNativePublishingBase):
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
-        # see comment above.
+        # See comment above.
         from canonical.launchpad.database.publishing import (
             SourcePackagePublishingHistory)
         pub_source = SourcePackagePublishingHistory.get(pub_source.id)
 
+        # Publishing record got scheduled for removal.
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
 
