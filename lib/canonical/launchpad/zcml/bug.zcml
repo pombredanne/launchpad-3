@@ -27,7 +27,7 @@
                         productinfestations packageinfestations watches
                         externalrefs cves cve_links duplicates
                         attachments questions specifications followup_subject
-                        isSubscribed messages notificationRecipientAddresses
+                        isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch

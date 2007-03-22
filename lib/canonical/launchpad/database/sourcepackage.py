@@ -432,15 +432,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """See ISourcePackage."""
         result = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.distrorelease,
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(self.distrorelease, self.sourcepackagename,
                             self.distrorelease.main_archive,
-                            self.sourcepackagename,
-                            PackagePublishingStatus.REMOVED),
+                            PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}
