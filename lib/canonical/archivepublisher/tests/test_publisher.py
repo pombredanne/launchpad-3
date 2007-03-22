@@ -144,6 +144,59 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
+    def testCarefulDominationOnDevelopmentRelease(self):
+        """Test the careful domination procedure.
+
+        Check if it works on a development release.
+        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        pub_source = self.getPubSource(
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        publisher.B_dominate(True)
+        self.layer.txn.commit()
+
+        # retrieve the publishing record again otherwise it would remain
+        # unchanged since domination procedure purges caches and does
+        # other bad things for sqlobject.
+        from canonical.launchpad.database.publishing import (
+            SourcePackagePublishingHistory)
+        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+
+    def testCarefulDominationOnObsoleteRelease(self):
+        """Test the careful domination procedure.
+
+        Check if it works on a obsolete release.
+        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest)
+
+        self.ubuntutest['breezy-autotest'].releasestatus = (
+            DistributionReleaseStatus.OBSOLETE)
+
+        pub_source = self.getPubSource(
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        publisher.B_dominate(True)
+        self.layer.txn.commit()
+
+        # see comment above.
+        from canonical.launchpad.database.publishing import (
+            SourcePackagePublishingHistory)
+        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+
     def testReleaseFile(self):
         """Test release file writing.
 
