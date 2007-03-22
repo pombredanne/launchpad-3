@@ -30,7 +30,8 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
+    IBugNomination)
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
@@ -393,7 +394,7 @@ class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         resource = person.default_emblem_resource
-        return '<a href="%s"><img alt="" src="%s" />%s</a>' % (
+        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
             url, resource, person.browsername)
 
 
@@ -1355,6 +1356,7 @@ class GotoStructuralObject:
     def structuralobject(self):
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
+            IBugNomination.providedBy(self.context) or
             IBugExternalRef.providedBy(self.context)):
             use_context = self.view.current_bugtask
         else:

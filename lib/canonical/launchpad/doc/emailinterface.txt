@@ -19,16 +19,16 @@ the email you have tell on what you file a bug, either a product or a
 distribution. You do so by issuing an 'affects' command. The simplest
 case is either:
 
-    affects /products/$product_name
+    affects $product_name
 
 to file a bug on a product, or:
 
-    affects /distros/$distribution_name
+    affects $distribution_name
 
 to file a bug on a distribution. And if you want to file a bug on a
 specific source package in a distribution:
 
-    affects /distros/$distribution_name/$sourcepackage_name
+    affects $distribution_name/$sourcepackage_name
 
 But if you want you can use any of the available commands as well.
 
@@ -41,7 +41,7 @@ Let's take an example where we file a bug on Firefox:
     ...
     ... There is a bug in Firefox.
     ...
-    ...  affects /products/firefox"""
+    ...  affects firefox"""
 
 Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
@@ -89,7 +89,7 @@ bug got submitted correctly:
     >>> print bug.description
     There is a bug in Firefox.
     <BLANKLINE>
-     affects /products/firefox
+     affects firefox
 
 Also, an upstream bug task was added to it:
 
@@ -109,7 +109,7 @@ And the entire body of the email was added as a comment:
     >>> print comment.text_contents
     There is a bug in Firefox.
     <BLANKLINE>
-     affects /products/firefox
+     affects firefox
 
 The owner of the bug was set to the submitter:
 
@@ -125,11 +125,18 @@ A notification was added:
     >>> bug_notification.message == bug.initial_message
     True
 
+We define a helper to pretty-print the notification recipients:
+
+    >>> from canonical.launchpad.interfaces.bugnotification import BugNotificationRecipients
+    >>> def getSubscribers(bug):
+    ...     recipients = bug.getBugNotificationRecipients()
+    ...     return recipients.getEmails()
+
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly", because he's the product owner.
 
     >>> added_bug = bug_notification.bug
-    >>> sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 If we would file a bug on Ubuntu instead, we would submit a mail like
@@ -142,7 +149,7 @@ this:
     ... Subject: A bug in Ubuntu's Mozilla package
     ...
     ... There's a bug in Ubuntu.
-    ...  affects /distros/ubuntu/mozilla-firefox
+    ...  affects ubuntu/mozilla-firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
@@ -169,7 +176,7 @@ Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly" since he's a bug contact for the mozilla
 package:
 
-    >>> print sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 It's possible to file a bug on more than product/package at once:
@@ -180,10 +187,10 @@ It's possible to file a bug on more than product/package at once:
     ... Subject: Affects many packages
     ...
     ... A widespread bug.
-    ...  affects /distros/debian/evolution
-    ...  affects /distros/debian/mozilla-firefox
-    ...  affects /products/evolution
-    ...  affects /products/firefox
+    ...  affects debian/evolution
+    ...  affects debian/mozilla-firefox
+    ...  affects evolution
+    ...  affects firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
@@ -208,7 +215,7 @@ unfolded before the bug subject is assigned.
     ... Subject: A folded
     ...  email subject
     ...
-    ...  affects /products/firefox
+    ...  affects firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
@@ -757,9 +764,9 @@ XXX: This section should be split into four different sections, one for
 Change the state of a bug in a specific context. $path can be of
 the following form:
 
-    /products/$productname
-    /distros/$distroname
-    /distros/$distroname/$sourcepackagename
+    $productname
+    $distroname
+    $distroname/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -769,7 +776,7 @@ created:
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     False
-    >>> submit_commands(bug_four, 'affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects debian')
     >>> len(bug_four.bugtasks)
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -786,7 +793,7 @@ A notification was added:
 Submitting the same thing again doesn't do anything, since the task
 already exists:
 
-    >>> submit_commands(bug_four, 'affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects debian')
     >>> len(bug_four.bugtasks)
     2
 
@@ -794,7 +801,7 @@ We can change the assignee, status, and importance using the sub
 commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands(
-    ...     bug_four, 'affects /distros/debian',
+    ...     bug_four, 'affects debian',
     ...     'importance critical','status confirmed',
     ...     'assignee test@canonical.com')
 
@@ -811,14 +818,14 @@ commands. It's possible to have these sub commands on separate lines:
 Like the web UI, we can assign a bug to nobody.
 
     >>> submit_commands(
-    ...     bug_four, 'affects /distros/debian',
+    ...     bug_four, 'affects debian',
     ...     'assignee nobody')
     >>> debian_task.assignee is None
     True
 
 To set which source package the bug affects, we use:
 
-    >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
+    >>> submit_commands(bug_four, 'affects debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
     2
     >>> debian_task = bug_four.bugtasks[-1]
@@ -828,7 +835,7 @@ To set which source package the bug affects, we use:
 If we specify another source package in the same distribution, a new
 task will be created:
 
-    >>> submit_commands(bug_four, 'affects /distros/debian/evolution')
+    >>> submit_commands(bug_four, 'affects debian/evolution')
     >>> len(bug_four.bugtasks)
     3
     >>> evolution_task = bug_four.bugtasks[-2]
@@ -842,7 +849,7 @@ together:
 
     >>> submit_commands(
     ...     bug_four,
-    ...     'affects /products/firefox',
+    ...     'affects firefox',
     ...     'importance critical',
     ...     'subscribe no-priv',
     ...     'status confirmed', 'assignee test@canonical.com')
@@ -905,7 +912,7 @@ launchpad/mail/commands.py).
 Trying to use the obsolete "severity" or "priority" commands:
 
     >>> stub.test_emails = []
-    >>> submit_commands(bug_four, 'affects /products/firefox', 'severity major')
+    >>> submit_commands(bug_four, 'affects firefox', 'severity major')
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -918,7 +925,7 @@ Trying to use the obsolete "severity" or "priority" commands:
     fields. There is now an "importance" field...
     ...
 
-    >>> submit_commands(bug_four, 'affects /products/firefox', 'priority low')
+    >>> submit_commands(bug_four, 'affects firefox', 'priority low')
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -1145,7 +1152,7 @@ Submit a bug on a distribution that doesn't exist:
     ... Subject: A bug with a non existing distribution
     ...
     ... There's a nasty bug in Foo.
-    ...  affects /distros/foo"""
+    ...  affects foo"""
     >>> process_email(submit_mail_distro_not_found)
     >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
     Subject: Submit Request Failure
@@ -1153,10 +1160,9 @@ Submit a bug on a distribution that doesn't exist:
     <BLANKLINE>
     ...
     Failing command:
-        affects /distros/foo
+        affects foo
     ...
-    The path you specified isn't valid. 'foo' in the path '/distros/foo'
-    couldn't be found.
+    There is no project named 'foo' registered in Launchpad.
     ...
 
 

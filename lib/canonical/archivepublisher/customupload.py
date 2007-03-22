@@ -109,8 +109,8 @@ class CustomUpload:
                     os.symlink(os.readlink(source), dest)
                 else:
                     shutil.copy(source, dest)
-                # Make the file group writable
-                os.chmod(dest, 0664)
+                    # Make the file group writable
+                    os.chmod(dest, 0664)
                 extracted = True
         if not extracted:
             raise CustomUploadTarballInvalidTarfile(self.tarfile_path,
