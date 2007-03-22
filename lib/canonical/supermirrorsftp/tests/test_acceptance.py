@@ -173,6 +173,10 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         self.server_base = 'sftp://testuser@localhost:22222/'
 
     def tearDown(self):
+        d = deferToThread(self.closeAllConnections)()
+        return d.addCallback(self._tearDown)
+
+    def _tearDown(self, ignored):
         # Undo setUp.
         self.server.stopService()
 
@@ -213,6 +217,9 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         connection objects to be garbage collected. This means that this method
         won't actually close a connection if a reference to it is still around.
         """
+        for client in sftp._connected_hosts.values():
+            client.close()
+            client.sock.transport.close()
         sftp.clear_connection_cache()
         gc.collect()
 
@@ -264,6 +271,7 @@ class AcceptanceTests(SFTPTestCase):
             self.server.setConnectionLostEvent(push_done)
             self.run_bzr_captured(['push', remote_url], retcode=None)
             result = bzrlib.branch.Branch.open(remote_url).last_revision()
+            self.closeAllConnections()
             push_done.wait()
         finally:
             os.chdir(old_dir)
@@ -350,7 +358,7 @@ class AcceptanceTests(SFTPTestCase):
         LaunchpadZopelessTestSetup().txn.commit()
 
         # Force bzrlib to make a new SFTP connection.
-        sftp.clear_connection_cache()
+        self.closeAllConnections()
 
         remote_revision = self._push(remote_url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
@@ -362,7 +370,7 @@ class AcceptanceTests(SFTPTestCase):
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
-        sftp.clear_connection_cache()
+        self.closeAllConnections()
 
         self.assertRaises(
             NotBranchError,
