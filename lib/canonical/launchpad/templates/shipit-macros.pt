@@ -64,7 +64,7 @@
     >Label:</label>
   </th>
   <td>
-    <span metal:use-macro="context/@@+launchpad-widget-macros/display_raw_widget" />
+    <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
   </td>
 </metal:display_widget>
 
