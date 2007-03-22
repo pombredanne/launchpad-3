@@ -22,14 +22,8 @@ from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.webapp import canonical_url
 
 UTC = pytz.timezone('UTC')
 
@@ -62,6 +56,10 @@ class BzrSync:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
         self.bzr_branch.lock_read()
+        # We want to generate the email contents as close to the source
+        # of the email as possible, but we don't want to send them until
+        # the information has been committed.
+        self.pending_emails = []
 
     def close(self):
         """Explicitly release resources."""
@@ -116,6 +114,8 @@ class BzrSync:
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
+        # Now that these changes have been committed, send the pending emails.
+        self.sendRevisionNotificationEmails()
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -132,6 +132,11 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
             self.db_branch.getScannerData())
+        # If db_history is empty, then this is the initial scan of the
+        # branch.  We only want to send one email for the initial scan
+        # of a branch, not one for each revision.
+        self.initial_scan = not bool(db_history)
+
 
     def retrieveBranchDetails(self):
         """Retrieve ancestry from the the bzr branch on disk."""
@@ -180,6 +185,19 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
+        # When the history is shortened, and email is sent that says this.
+        # This will never happen for a newly scanned branch, so not checking
+        # that here.
+        number_removed = len(removed_history)
+        if number_removed > 0:
+            if number_removed == 1:
+                contents = '1 revision was removed from the branch.'
+            else:
+                contents = ('%d revisions were removed from the branch.'
+                            % number_removed)
+            # No diff is associated with the removed email.
+            self.pending_emails.append((contents, ''))
+
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
         new_merged = bzr_ancestry.difference(bzr_history)
@@ -221,7 +239,6 @@ class BzrSync:
                 continue
             self.syncOneRevision(revision)
 
-        # self.sendRevisionNotificationEmails()
 
     def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -329,6 +346,20 @@ class BzrSync:
             db_revision = revision_set.getByRevisionId(revision_id)
             self.db_branch.createBranchRevision(sequence, db_revision)
 
+            # Generate an email if the revision is in the revision_history
+            # for the branch.  If the sequence is None then the revision
+            # is just in the ancestry so no email is generated.
+            if sequence is not None and not self.initial_scan:
+                try:
+                    revision = self.bzr_branch.repository.get_revision(
+                        revision_id)
+                except NoSuchRevision:
+                    self.logger.debug("%d of %d: %s is a ghost",
+                                      self.curr, self.last, revision_id)
+                    continue
+                self.pending_emails.append(
+                    (self.getRevisionMessage(revision), self.getDiff(revision)))
+
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
@@ -377,109 +408,24 @@ class BzrSync:
         return outf.getvalue()
 
     def sendRevisionNotificationEmails(self):
-        initial = self.db_revision_history
-        updated = getUtility(
-            IRevisionSet).getRevisionHistoryForBranch(self.db_branch)
-        # Almost all the time the initial revision history
-        # will be a subset of the updated history.
-        if initial == updated:
-            # Nothing to do here.
-            return
+        """Send out the pending emails.
 
-        # An individual may be subscribed to a branch
-        # more than once (like through a team).
-        # Only send the email once, and use the maximum
-        # line count.
-        email_details = {}
-        for subscription in self.db_branch.subscriptions:
-            if subscription.notification_level in (
-                    BranchSubscriptionNotificationLevel.DIFFSONLY,
-                    BranchSubscriptionNotificationLevel.FULL):
-                addresses = contactEmailAddresses(subscription.person)
-                for address in addresses:
-                    curr = email_details.get(
-                        address, BranchSubscriptionDiffSize.NODIFF)
-                    email_details[address] = max(
-                        curr, subscription.max_diff_lines)
+        If this is the first scan of a branch, then we send out a simple
+        notification email saying that the branch has been scanned.
+        """
 
-        if not email_details:
-            # No one is interested.
-            return
-
-        if len(initial) == 0:
-            # This is the first scan of a new branch.
-            if len(updated) == 1:
+        if self.initial_scan:
+            revision_count = len(self.bzr_history)
+            if len(revision_count) == 1:
                 revisions = '1 revision'
             else:
-                revisions = '%d revisions' % len(updated)
-            contents = ('First scan of the branch detected %s'
-                        ' in the revision history of the branch.' %
-                        revisions)
-            for address in email_details:
-                self.sendEmail(address, contents)
-            return
-
-        size = len(initial)
-        if updated[:len(initial)] == initial:
-            updated = updated[len(initial):]
+                revisions = '%d revisions' % len(revision_count)
+            message = ('First scan of the branch detected %s'
+                       ' in the revision history of the branch.' %
+                       revisions)
+            notify_branch_revisions(
+                self.db_branch, self.email_from, message, '')
         else:
-            # Branch has been overwritten.
-            updated = self.sendReductionEmail(email_details, updated)        
-
-        # From here the following holds true:
-        #   updated only holds the revision ids of the
-        #   new revisions
-        for rev_id in updated: 
-            revision = self.bzr_branch.repository.get_revision(rev_id)
-            diff = self.getDiff(revision)
-            message = self.getRevisionMessage(revision)
-            for address, max_diff in email_details.iteritems():
-                self.sendDiffEmail(address, max_diff, diff, message)
-                
-    def sendReductionEmail(self, email_details, updated):
-        # First thing to do is to work out the number
-        # of revisions removed.
-        initial = self.db_revision_history
-        match_position = min(len(updated), len(initial))
-        while match_position > 0 and (
-                initial[:match_position] != updated[:match_position]):
-            match_position -= 1
-        number_removed = len(initial) - match_position
-
-        if number_removed == 1:
-            contents = '1 revision was removed from the branch.'
-        else:
-            contents = ('%d revisions were removed from the branch.'
-                        % number_removed)
-        for address in email_details:
-            self.sendEmail(address, contents)
-
-        return updated[match_position:]
-
-    def sendDiffEmail(self, address, max_diff, diff, message):
-        diff_size = diff.count('\n') + 1
-
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                diff = ''
-            elif diff_size >  max_diff.value:
-                diff = ('The size of the diff (%d lines) is larger than your '
-                        'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-
-        contents = "%s\n%s" % (message, diff)
-        self.sendEmail(address, contents)
-
-    def sendEmail(self, address, contents):
-        branch = self.db_branch
-        subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
-        headers = {}
-        headers["X-Launchpad-Branch"] = branch.unique_name
-
-        body = get_email_template('branch-modified.txt') % {
-            'contents': contents,
-            'branch_title': branch.title,
-            'branch_url': canonical_url(branch),
-            'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
-       
-        simple_sendmail(self.email_from, address, subject, body)
+            for message, diff in self.pending_emails:
+                notify_branch_revisions(
+                    self.db_branch, self.email_from, message, diff)
