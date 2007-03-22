@@ -43,7 +43,8 @@ class BugWidget(IntWidget):
             input = input.strip()
             # Bug ids are often prefixed with '#', but getByNameOrID
             # doesn't accept such ids.
-            input = input.lstrip('#')
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
