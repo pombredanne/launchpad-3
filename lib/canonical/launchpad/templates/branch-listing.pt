@@ -19,7 +19,6 @@ function submit_filter()
 
 var field = document.getElementById('field.lifecycle');
 field.onchange = submit_filter;
-field.focus();
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
