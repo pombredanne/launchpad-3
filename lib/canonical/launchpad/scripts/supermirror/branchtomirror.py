@@ -23,12 +23,10 @@ __all__ = ['BranchToMirror', 'BadUrlSsh', 'BadUrlLaunchpad']
 
 class BadUrlSsh(Exception):
     """Raised when trying to mirror a branch from sftp or bzr+ssh."""
-    pass
 
 
 class BadUrlLaunchpad(Exception):
     """Raised when trying to mirror a branch from lanchpad.net."""
-    pass
 
 
 def identical_formats(branch_one, branch_two):
@@ -68,9 +66,9 @@ class BranchToMirror:
         """
         uri = URI(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
-            raise BadUrlSsh()
+            raise BadUrlSsh(self.source)
         if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
-            raise BadUrlLaunchpad()
+            raise BadUrlLaunchpad(self.source)
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""

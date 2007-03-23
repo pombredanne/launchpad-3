@@ -318,6 +318,18 @@ class ErrorHandlingTestCase(unittest.TestCase):
 
 
 class TestBadUrl(ErrorHandlingTestCase):
+    """Test that BranchToMirror does not try mirroring from bad URLs.
+
+    Bad URLs use schemes like sftp or bzr+ssh that usually require
+    authentication, and hostnames in the launchpad.net domains.
+
+    That prevents errorspam produced by ssh when it cannot connect and saves
+    timing out when trying to connect to chinstrap, sodium (always using a
+    ssh-based scheme) or launchpad.net.
+
+    That also allows us to display a more informative error message to the
+    user.
+    """
 
     def testBadUrlSftp(self):
         # If the scheme of the source url is sftp, _openSourceBranch raises
