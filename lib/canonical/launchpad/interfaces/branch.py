@@ -399,17 +399,27 @@ class IBranchSet(Interface):
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
         """Branches associated with person with appropriate lifecycle.
 
-        All associated branches are returned, whether they be registered
-        by the person, authored by the person, subscribed by the person
-        or any team that the person is a member of.
+        The intent here is to just show interesting branches for the
+        person.
+
+        XXX: thumper 2007-03-23
+        Following a chat with lifeless we'd like this to be listed and
+        ordered by interest and last activity where activity is defined
+        as linking a bug or spec, changing the status of said link,
+        updating ui attributes of the branch, committing code to the
+        branch.
+
+        Branches of most interest to a person are their subscribed
+        branches, and the branches that they have registered and authored.
+
+        Branches that have been registered by a person but not authored
+        by them are not *that* interesting, or branches that are authored
+        by the person but registered by someone else.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
-
-        XXX: thumper 2007-03-07
-        This has been shown to be a bad idea, see bug 87878.
         """
         
     def getBranchesAuthoredByPerson(

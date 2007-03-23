@@ -441,22 +441,18 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
-        owner_ids = [str(team.id) for team in person.teams_participated_in]
-        owner_ids.append(str(person.id))
-        owner_ids = ','.join(owner_ids)
-
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         subscribed_branches = Branch.select(
             '''Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person in (%s) %s
-            ''' % (owner_ids, lifecycle_clause),
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
             clauseTables=['BranchSubscription'])
 
         owner_author_branches = Branch.select(
-            '''(Branch.owner in (%s) OR
-            Branch.author = %s) %s
-            ''' % (owner_ids, person.id, lifecycle_clause))
+            '''(Branch.owner = %s
+            AND Branch.author = %s) %s
+            ''' % (person.id, person.id, lifecycle_clause))
         
         return subscribed_branches.union(
             owner_author_branches, orderBy=Branch._defaultOrder)
