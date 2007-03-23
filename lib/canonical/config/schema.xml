@@ -783,6 +783,13 @@ k            </description>
                 Directory to be created to store build results.
             </description>
         </key>
+        <key name="crondaily_lockfile" datatype="string"
+             default="/srv/launchpad.net/ubuntu-archive/cron.daily.lock">
+            <description>
+             cron.daily lockfile path, it's probed in order to suppress
+             buildd-queue-builder runs during the publication process.
+            </description>
+        </key>
         <key name="send_build_notification" datatype="boolean"
              default="yes">
             <description>
