@@ -196,7 +196,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         @output BranchToMirror - A branch object representing the strawman
                                     branch
         """
-        branchdir = os.path.join(self.testdir, relativedir)
+        branchdir = 'file://' + os.path.join(self.testdir, relativedir)
         createbranch(branchdir)
         if target == None:
             targetdir = None
