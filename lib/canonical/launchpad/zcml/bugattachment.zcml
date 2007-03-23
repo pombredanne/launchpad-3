@@ -26,22 +26,13 @@
         name="+edit"
         />
 
-    <browser:editform
-        schema="canonical.launchpad.interfaces.IBugAttachmentEditForm"
+    <browser:page
         for="canonical.launchpad.interfaces.IBugAttachment"
-        class="canonical.launchpad.browser.BugRelatedObjectEditView"
+        class="canonical.launchpad.browser.BugAttachmentEditView"
         facet="bugs"
-        label="Change bug attachment information"
         name="+edit"
         permission="launchpad.AnyPerson"
-        fields="title patch contenttype"
         template="../templates/bug-attachment-edit.pt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugAttachment"
-        provides="canonical.launchpad.interfaces.IBugAttachmentEditForm"
-        factory="canonical.launchpad.browser.BugAttachmentEdit"
         />
 
     <!-- BugAttachmentSet -->

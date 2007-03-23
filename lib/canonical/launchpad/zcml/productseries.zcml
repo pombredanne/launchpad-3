@@ -118,8 +118,8 @@
             template="../templates/productseries-ubuntupkg.pt"
             />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt"
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt"
             />
     </browser:pages>
 

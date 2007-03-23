@@ -20,7 +20,7 @@
 <table>
 <tbody>
 <tr>
-<td width="75%">
+<td width="75%" style="vertical-align: top;" id="main-content">
 
 <tal:shipit-is-open condition="view/standardShipItRequests">
 
@@ -120,12 +120,6 @@
         based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
         EM64T Xeon).
       </li>
-
-      <li tal:condition="not: view/is_kubuntu">
-        <strong>Mac</strong> Edition, for Apple Macintosh
-        G3, G4, and G5 computers, including iBooks and PowerBooks.
-      </li> 
-    </ul>
   </tal:not-edubuntu>
 
   <tal:custom-request condition="view/should_show_custom_request">
@@ -152,10 +146,10 @@
         accept-charset="UTF-8"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
-  <table>
+  <table class="headers-right-aligned">
   <tbody>
   <tr>
-    <th>I would like:</th>
+    <th style="vertical-align: top;">I would like:</th>
     <td tal:define="selected_id view/selected_standardrequest">
 
       <tal:standard-request condition="not: view/should_show_custom_request">

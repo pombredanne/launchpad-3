@@ -22,11 +22,7 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <img src="/@@/user" />
-        <a href="#"
-           tal:content="subscription/person/browsername"
-           tal:attributes="
-             href subscription/person/fmt:url">Dafydd Harries</a>
+        <a tal:replace="structure subscription/person/fmt:link"/>
       </div>
 
   </div>

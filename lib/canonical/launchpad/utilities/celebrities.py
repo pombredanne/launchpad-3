@@ -102,6 +102,8 @@ class LaunchpadCelebrities:
         IPersonSet, 'support-tracker-janitor')
     team_membership_janitor = CelebrityDescriptor(
         IPersonSet, 'team-membership-janitor')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
 
     @property
     def ubuntu_archive_mirror(self):

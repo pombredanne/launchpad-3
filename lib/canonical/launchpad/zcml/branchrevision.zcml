@@ -1,0 +1,18 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <content class="canonical.launchpad.database.BranchRevision">
+    <allow interface="canonical.launchpad.interfaces.IBranchRevision" />
+  </content>
+
+  <!-- BranchRevisionSet -->
+  <content class="canonical.launchpad.database.BranchRevisionSet">
+    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.BranchRevisionSet"
+      provides="canonical.launchpad.interfaces.IBranchRevisionSet" >
+    <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
+  </securedutility>
+
+</configure>

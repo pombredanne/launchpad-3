@@ -20,7 +20,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
 import time
@@ -32,6 +32,8 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
+
+from twisted.trial.runner import TrialSuite
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -248,10 +250,6 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     def setUp(cls):
         cls.force_dirty_database()
-        if is_ca_available():
-            raise LayerInvariantError(
-                    "Component architecture should not be available"
-                    )
 
     @classmethod
     def tearDown(cls):
@@ -312,31 +310,6 @@ class DatabaseLayer(BaseLayer):
     def _dropDb(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         return LaunchpadTestSetup().dropDb()
-
-
-class SQLOSLayer(BaseLayer):
-    """Maintains the SQLOS connection.
-
-    This Layer is not useful by itself, but it intended to be used as
-    a mixin to the Functional and Zopeless Layers.
-    """
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    def testSetUp(cls):
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        _reconnect_sqlos()
-
-    @classmethod
-    def testTearDown(cls):
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
 
 
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
@@ -411,7 +384,7 @@ class FunctionalLayer(BaseLayer):
         transaction.abort()
 
 
-class ZopelessLayer(LaunchpadLayer):
+class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
     loaded using execute_zcml_for_scrips()
     """
@@ -473,9 +446,7 @@ class ZopelessLayer(LaunchpadLayer):
         logout()
 
 
-class LaunchpadFunctionalLayer(
-        DatabaseLayer, LibrarianLayer, FunctionalLayer, SQLOSLayer
-        ):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     def setUp(cls):
@@ -490,6 +461,10 @@ class LaunchpadFunctionalLayer(
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+
+        # Connect SQLOS
+        _reconnect_sqlos()
 
     @classmethod
     def testTearDown(cls):
@@ -503,10 +478,12 @@ class LaunchpadFunctionalLayer(
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
 
+        # Disconnect SQLOS so it doesn't get in the way of database resets
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
 
-class LaunchpadZopelessLayer(
-        ZopelessLayer, DatabaseLayer, LibrarianLayer, SQLOSLayer
-        ):
+
+class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """
@@ -536,6 +513,10 @@ class LaunchpadZopelessLayer(
         cls.txn = initZopeless()
         LaunchpadZopelessTestSetup.txn = cls.txn
 
+        # Connect SQLOS
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        _reconnect_sqlos()
+
     @classmethod
     def testTearDown(cls):
         cls.txn.abort()
@@ -544,6 +525,8 @@ class LaunchpadZopelessLayer(
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
 
     @classmethod
     def commit(cls):
@@ -607,3 +590,24 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def testTearDown(cls):
         pass
 
+
+class TwistedLayer(LaunchpadZopelessLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # TrialSuite._bail cleans up the threadpool and initiates a reactor
+        # shutdown event. This ensures that the process will terminate cleanly.
+        TrialSuite()._bail()
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass

@@ -31,11 +31,19 @@
         <span tal:condition="context/importstatus"
               tal:replace="context/importstatus/title">Syncing</span><br />
         <tal:block condition="context/datestarted">
-          <b>Date last sync started:</b>
-          <span tal:replace="context/datestarted/fmt:date">4-03-05</span>
+          <b>Last sync started:</b>
+          <span
+            tal:attributes="title context/datestarted/fmt:datetime"
+            tal:content="context/datestarted/fmt:approximatedate">
+            4-03-05
+          </span>
           <br />
-          <b>Date last sync finished:</b>
-          <span tal:replace="context/datefinished/fmt:date">4-03-05</span>
+          <b>Last sync finished:</b>
+          <span
+            tal:attributes="title context/datefinished/fmt:datetime"
+            tal:content="context/datefinished/fmt:approximatedate">
+            4-03-05
+          </span>
           <br />
         </tal:block>
       </tal:block>

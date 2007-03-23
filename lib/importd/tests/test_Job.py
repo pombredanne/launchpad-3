@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>

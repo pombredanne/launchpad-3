@@ -34,15 +34,17 @@ def identical_formats(branch_one, branch_two):
 class BranchToMirror:
     """This class represents a single branch that needs mirroring.
 
-    It has a source URL, a destination URL, a database id and a 
+    It has a source URL, a destination URL, a database id, a unique name and a
     status client which is used to report on the mirror progress.
     """
 
-    def __init__(self, src, dest, branch_status_client, branch_id):
+    def __init__(self, src, dest, branch_status_client, branch_id,
+                 branch_unique_name):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
+        self.branch_unique_name = branch_unique_name
         self._source_branch = None
         self._dest_branch = None
 
@@ -116,9 +118,22 @@ class BranchToMirror:
             ('source', self.source),
             ('dest', self.dest),
             ('error-explanation', message)])
-        request.URL = 'database:/branch/%d' % self.branch_id
+        request.URL = self._canonical_url()
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         logger.info('Recorded %s', request.oopsid)
+
+    def _canonical_url(self):
+        """Custom implementation of canonical_url(branch) for error reporting.
+
+        The actual canonical_url method cannot be used because we do not have
+        access to real content objects.
+        """
+        if config.launchpad.vhosts.use_https:
+            scheme = 'https'
+        else:
+            scheme = 'http'
+        hostname = config.launchpad.vhosts.code.hostname
+        return scheme + '://' + hostname + '/~' + self.branch_unique_name
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into
@@ -168,7 +183,9 @@ class BranchToMirror:
 
         except bzrlib.errors.NotBranchError, e:
             self._record_oops(logger)
-            self._mirrorFailed(logger, e)
+            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
+                   % self.branch_unique_name)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.BzrError, e:
             self._record_oops(logger)
