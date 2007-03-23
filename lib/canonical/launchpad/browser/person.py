@@ -66,6 +66,7 @@ __all__ = [
     'PersonAuthoredBranchesView',
     'PersonRegisteredBranchesView',
     'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
     ]
 
 import cgi
@@ -2786,3 +2787,13 @@ class PersonSubscribedBranchesView(BranchListingView):
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, self.selected_lifecycle_status)
+
+
+class PersonTeamBranchesView(LaunchpadView):
+    """View for team branches portlet."""
+
+    @cachedproperty
+    def teams_with_branches(self):
+        return [team for team in self.context.teams_participated_in
+                if team.branches.count() > 0]
+    
