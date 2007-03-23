@@ -10,7 +10,7 @@ import sqlobject.constraints as consts
 
 from canonical.database.constants import DEFAULT
 
-from canonical.launchpad.webapp.enum import DBSchema
+from canonical.launchpad.webapp.enum import DBSchema, DBEnumeratedType, DBItem
 from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 __all__ = [
@@ -19,13 +19,28 @@ __all__ = [
 
 class SODBSchemaEnumCol(SOCol):
 
+    enum = None
+    
     def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        if not issubclass(self.schema, DBSchema):
-            raise TypeError('schema must be a DBSchema: %r' % self.schema)
+        # XXX: thumper 2007-03-23
+        # While it would be great to just switch everything over at once,
+        # in reality it just isn't feasible, so look initially for a key
+        # enum, and fall back to schema.
+        try:
+            self.enum = kw.pop('enum')
+            if not issubclass(self.enum, DBEnumeratedType):
+                raise TypeError(
+                    'enum must be a DBEnumeratedType: %r' % self.enum)
+        except KeyError:
+            self.schema = kw.pop('schema')
+            if not issubclass(self.schema, DBSchema):
+                raise TypeError('schema must be a DBSchema: %r' % self.schema)
         SOCol.__init__(self, **kw)
-        self.validator = validators.All.join(
-            DBSchemaValidator(schema=self.schema), self.validator)
+        if self.enum is not None:
+            validator = DBEnumeratedTypeValidator(self.enum)
+        else:
+            validator = DBSchemaValidator(schema=self.schema)
+        self.validator = validators.All.join(validator, self.validator)
 
     def autoConstraints(self):
         return [consts.isInt]
@@ -94,6 +109,64 @@ class DBSchemaValidator(validators.Validator):
         if value is DEFAULT:
             return value
         return self.schema.items[value]
+
+
+class DBEnumeratedTypeValidator(validators.Validator):
+            
+    def __init__(self, enum):
+        validators.Validator.__init__(self)
+        self.enum = enum
+
+    def fromPython(self, value, state):
+        """Convert from DBSchema Item to int.
+
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
+        25
+        >>> validator.fromPython(tuple(), None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Not a DBSchema Item: ()
+        >>> validator.fromPython(ImportTestStatus.NEW, None)
+        Traceback (most recent call last):
+        ...
+        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
+        >>>
+
+        """
+        if value is None:
+            return None
+        if value is DEFAULT:
+            return value
+        if isinstance(value, int):
+            raise TypeError(
+                'Need to set an EnumeratedType Enum column to an Item,'
+                ' not an int')
+        if not zope_isinstance(value, DBItem):
+            # We use repr(value) because if it's a tuple (yes, it has been
+            # seen in some cases) then the interpolation would swallow that
+            # fact, confusing poor programmers like Daniel.
+            raise TypeError('Not a DBItem: %s' % repr(value))
+        # Using != rather than 'is not' in order to cope with Security Proxy
+        # proxied items and their schemas.
+        if not self.enum.name in value.used_in_enums:
+            raise TypeError('DBItem from wrong type, %r not in %r' % (
+                self.enum.name, value.used_in_enums))
+        return value.db_value
+    
+    def toPython(self, value, state):
+        """Convert from int to DBSchema Item.
+
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
+        True
+
+        """
+        if value is None:
+            return None
+        if value is DEFAULT:
+            return value
+        return self.enum.getTerm(value)
 
 EnumCol = DBSchemaEnumCol
 

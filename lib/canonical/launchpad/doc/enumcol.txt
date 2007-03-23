@@ -1,9 +1,4 @@
-
-Using EnumCol
-=============
-
-*Note:* This document is about canonical.lp.dbschema.EnumCol, not SQLObject's
-builtin EnumCol.
+= An example of EnumCol with EnumeratedTypes =
 
 Test imports and setup.
 
@@ -11,8 +6,9 @@ Test imports and setup.
     >>> from canonical.database.constants import DEFAULT
     >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 
-Let's make a example table to demonstrate EnumCol with.  Enumerations are stored
-in the database as integers, and we'll give the column a default value.
+Let's make a example table to demonstrate EnumCol with.  
+Enumerations are stored in the database as integers, 
+and we'll give the column a default value.
 
     >>> connection = LaunchpadTestSetup().connect()
     >>> cursor = connection.cursor()
@@ -28,29 +24,29 @@ in the database as integers, and we'll give the column a default value.
 
 Let's define a schema for that column.
 
-    >>> from canonical.launchpad.webapp.enum import DBSchema
-    >>> from canonical.launchpad.webapp.enum import DBSchemaItem as Item
-    >>> class FooSchema(DBSchema):
-    ...     """Schema for the foo column."""
-    ...     ONE = Item(1, """
+    >>> from canonical.launchpad.webapp.enum import (
+    ...     EnumeratedType, DBEnumeratedType, DBItem, Item, extends)
+    >>> class FooType(DBEnumeratedType):
+    ...     """Enumerated type for the foo column."""
+    ...     ONE = DBItem(1, """
     ...         One
     ... 
     ...         Number one.
     ...         """)
     ...
-    ...     TWO = Item(2, """
-    ...         TWO
+    ...     TWO = DBItem(2, """
+    ...         Two
     ... 
     ...         Number two.
     ...         """)
  
-Now let's define an SQLObject for that table, using FooSchema as the schema for
+Now let's define an SQLObject for that table, using FooType as the schema for
 the foo column.  We declare the default value for the foo column to be whatever
 the database's default is.
 
     >>> from canonical.database.enumcol import EnumCol
     >>> class Test(SQLBase):
-    ...     foo = EnumCol(schema=FooSchema, default=DEFAULT)
+    ...     foo = EnumCol(enum=FooType, default=DEFAULT)
 
 Create a row in the table.
  
@@ -59,7 +55,7 @@ Create a row in the table.
 The value of the foo column has been set to the default defined in the database,
 because we didn't specify one.
 
-    >>> t.foo == FooSchema.ONE
+    >>> t.foo == FooType.ONE
     True
 
 You cannot use integers or strings as EnumCol values:
@@ -67,27 +63,68 @@ You cannot use integers or strings as EnumCol values:
     >>> t.foo = 2
     Traceback (most recent call last):
     ...
-    TypeError: Need to set a dbschema Enum column to a dbschema Item, not an int
+    TypeError: Need to set an EnumeratedType Enum column to an Item, not an int
 
     >>> t.foo = "TWO"
     Traceback (most recent call last):
     ...
-    TypeError: Not a DBSchema Item: 'TWO'
+    TypeError: Not a DBItem: 'TWO'
 
 You can of course use items from FooSchema.
 
-    >>> t.foo = FooSchema.TWO
+    >>> t.foo = FooType.TWO
+    >>> t.foo
+    <DBItem FooType.TWO, (2) Two>
 
 But not items from another schema.
 
-    >>> class AnotherSchema(DBSchema):
-    ...     ONE = Item(1, """
+    >>> class AnotherType(DBEnumeratedType):
+    ...     ONE = DBItem(1, """
     ...         One
     ... 
     ...         Number one.
     ...         """)
-    >>> t.foo = AnotherSchema.ONE
+    >>> t.foo = AnotherType.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBSchema Item from wrong class, <class 'AnotherSchema'> != <class 'FooSchema'>
+    TypeError: DBItem from wrong type, 'FooType' not in ['AnotherType']
+
+But it will allow setting from an item from an enumerated type that 
+inherits or extends the original enumerated type where the item was in
+that original type.
+
+    >>> class FooBarType(FooType):
+    ...     THREE = DBItem(3, "Three")
+
+    >>> t.foo = FooBarType.ONE
+
+Even though the assignment is from a derived enumeration, the value
+that is available through the EnumCol is the item from the assigned
+enumeration.
+
+    >>> t.foo
+    <DBItem FooType.ONE, (1) One>
+    >>> t.foo = FooBarType.THREE
+    Traceback (most recent call last):
+    ...
+    TypeError: DBItem from wrong type, 'FooType' not in ['FooBarType']
+
+    >>> class FooBazType(EnumeratedType):
+    ...     extends(FooType)
+    ...     THREE = DBItem(3, "Three")
+    ...     FOUR = Item("Four")
+
+    >>> t.foo = FooBazType.ONE
+    >>> t.foo
+    <DBItem FooType.ONE, (1) One>
+    
+    >>> t.foo = FooBazType.THREE
+    Traceback (most recent call last):
+    ... 
+    TypeError: DBItem from wrong type, 'FooType' not in ['FooBazType']
+
+    >>> t.foo = FooBazType.FOUR
+    Traceback (most recent call last):
+    ...
+    TypeError: Not a DBItem: <Item FooBazType.FOUR, Four>
 

@@ -249,6 +249,35 @@ Or limit the items to those specified:
     Mirrored
 
 
+Equality of Items takes into consideration the extending of enumerated
+types through either inheritance or the extends function.
+
+    >>> BranchType.HOSTED == UIBranchType.HOSTED
+    True
+
+However if another enumerated type is created that doesn't use the same
+item, but does look identical, they are not the same.
+
+    >>> class BranchType2(DBEnumeratedType):
+    ...     HOSTED = DBItem(1, """
+    ...         Hosted
+    ...         
+    ...         Hosted braches use the supermirror as the main repository
+    ...         for the branch.""")
+    ...         
+    ...     MIRRORED = DBItem(2, """
+    ...         Mirrored
+    ...         
+    ...         Mirrored branches are "pulled" from a remote location.""")
+    ...         
+    ...     IMPORTED = DBItem(3, """
+    ...         Imported
+    ...         
+    ...         Imported branches are natively maintained in CVS or SVN""")
+
+    >>> BranchType.HOSTED == BranchType2.HOSTED
+    False
+
 == Getting from an item back to the enumerated type ==
 
 Each Item in an EnumeratedType has a reference back to the EnumeratedType.
@@ -267,13 +296,5 @@ Each Item in an EnumeratedType has a reference back to the EnumeratedType.
 
 
 
-
-
-
-
 XXX: thumper 2007-03-20:
-  Make sure than an EnumeratedType that extends a DBEnumerateType can
-be adapted back to the DBEnumeratedType for assignment to the EnumCol
-
 XXX: demonstrate IChoice use, EnumCol ...
-

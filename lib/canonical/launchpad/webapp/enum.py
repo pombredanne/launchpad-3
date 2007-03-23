@@ -271,13 +271,22 @@ class MetaEnum(type):
         item_lookup = {}
         for name, item in items:
             item.token = name
-            item.schema = classname
+            item.used_in_enums.append(classname)
             if item_lookup.get(item.value) is not None:
                 raise TypeError(
                     'Item value "%s" is already defined in type %s.%s' %
-                    (classdict['__module__'], classname))
+                    (item.value, classdict['__module__'], classname))
             else:
                 item_lookup[item.value] = item
+            # If the item has a db_value, add that to the lookup
+            if hasattr(item, 'db_value'):
+                if item_lookup.get(item.db_value) is not None:
+                    raise TypeError(
+                        'DBItem value (%d) is already defined in type %s.%s' %
+                        (item.db_value, classdict['__module__'], classname))
+                else:
+                    item_lookup[item.db_value] = item
+                
         classdict['_item_lookup'] = item_lookup
         classdict['items'] = sorted([item for name, item in items],
                                     key=operator.attrgetter('sort_order'))
@@ -339,8 +348,7 @@ class MetaEnum(type):
 class Item:
     """Items are the primary elements of the enumerated types.
 
-
-    The schema attibute is a reference to the enumerated type that the
+    The enum attibute is a reference to the enumerated type that the
     Item is a member of.
 
     The token attribute is the name assigned to the Item.
@@ -350,7 +358,6 @@ class Item:
 
     implements(ITokenizedTerm)
 
-    schema = None
     sort_order = 0
     token = None
     value = None
@@ -366,8 +373,10 @@ class Item:
 
         self.sort_order = Item.sort_order
         Item.sort_order += 1
-
+        # The Item knows which enums it is a member of.
+        self.used_in_enums = []
         self.value = value
+        
         self.description = description
 
         if self.description is None:
@@ -385,7 +394,8 @@ class Item:
                 stacklevel=stacklevel)
             return False
         elif zope_isinstance(other, Item):
-            return self.token == other.token and self.schema == other.schema
+            return (self.token == other.token and
+                    self.used_in_enums == other.used_in_enums)
         else:
             return False
 
@@ -412,7 +422,7 @@ class Item:
     
     def __repr__(self):
         return "<Item %s.%s, %s>" % (
-            self.schema, self.token, self.value)
+            self.enum.name, self.token, self.value)
 
 
 class DBItem(Item):
@@ -430,7 +440,7 @@ class DBItem(Item):
 
     def __repr__(self):
         return "<DBItem %s.%s, (%d) %s>" % (
-            self.schema, self.token, self.db_value, self.value)
+            self.enum.name, self.token, self.db_value, self.value)
 
     def __sqlrepr__(self, dbname):
         return repr(self.db_value)
