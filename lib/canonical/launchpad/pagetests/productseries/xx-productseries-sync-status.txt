@@ -7,6 +7,10 @@ Since the attributes we are interested in are only modified by non-web
 services, such as importd and the supermirror, we need to poke the database
 directly to set up the various cases we are interested in testing.
 
+XXX: We need to use flush_database_updates before every commit for the test
+browser to see the changes we make to the content object. See bug 3989.
+-- David Allouche 2007-03-23
+
 >>> import transaction
 >>> from canonical.lp.dbschema import ImportStatus
 >>> from canonical.database.constants import UTC_NOW
