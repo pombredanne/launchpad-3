@@ -186,9 +186,8 @@ class QuestionLanguageVocabularyFactory:
         """Create a QuestionLanguageVocabularyFactory.
 
         :param view: The view provides the request used to determine the user 
-        languages. The view will provide the widgets that contains the
-        Product selected by the user in the case where a question is asked in 
-        the context of a Project 
+        languages. The view contains the Product widget selected by the user 
+        in the case where a question is asked in the context of a Project 
         """
         self.view = view
 
@@ -210,7 +209,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
         elif (IProject.providedBy(context) and 
-            self.view.continue_action.submitted()):
+            self.view.question_target is not None):
             
             # projects do not implement IQuestionTarget--the user must
             # choose a product while asking a question

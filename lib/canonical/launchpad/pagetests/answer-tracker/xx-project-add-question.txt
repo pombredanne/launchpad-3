@@ -11,6 +11,9 @@ The user must login to proceed:
       ...
     Unauthorized...
 
+    >>> from zope.testbrowser.testing import Browser
+    >>> user_browser = Browser()
+    >>> user_browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
@@ -19,14 +22,18 @@ The user must login to proceed:
 The workflow is identical to the regular one, except that the user has
 to select the project's product for which a question is asked .
 
-    >>> print user_browser.getControl('Project').displayValue
-    ['Mozilla Firefox']
+    >>> print user_browser.getControl('Project').displayOptions
+    ['Mozilla Firefox', 'Mozilla Thunderbird']
 
 Like for the regular workflow, the user enter a short summary of his
-problem in the language of his choice:
+problem in the language of his choice. Note that only English is listed
+as supported--Projects are not QuestionTargets can thus we cannot show
+the full list of supported languages until after a Product is selected
 
-    >>> print user_browser.getControl('Language').displayValue
-    ['English (en) *']
+    >>> user_browser.getControl('Project').value = ['firefox']
+    >>> print user_browser.getControl('Language').displayOptions
+    ['English (en) *', 'Welsh (cy)', 'Japanese (ja)']
+    >>> user_browser.getControl('Language').value = ['en']
     >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
     >>> user_browser.getControl('Continue').click()
@@ -39,11 +46,23 @@ He's shown a list of similar questions in the product selected:
     ...     print row.a.renderContents()
     Problem showing the SVG demo on W3C site
 
+The list of supported languages matches the selected product.
+
+    >>> print user_browser.getControl('Project').displayValue
+    ['Mozilla Firefox']
+    >>> print user_browser.getControl('Language').displayOptions
+    ['English (en) *', 'Welsh (cy)', 'Japanese (ja)']
+    
 The user can still change the product against which he's asking the
 question.
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
+    
+The list of supported languages matches the selected product.
 
+    >>> print user_browser.getControl('Language').displayOptions
+    ['English (en) *', 'Welsh (cy)', 'Japanese (ja)']
+    
 If he empties the title, he'll get redirected to the first page.
 
     >>> user_browser.getControl('Summary').value = ''
@@ -56,11 +75,16 @@ An error will inform him that the summary is missing:
     >>> print soup.first('div', 'message').renderContents()
     You must enter a summary of your problem.
 
-The newly selected product is still selected, and when the user enters
-his problem again, similar questions against that product will be shown.
+The newly selected product is still selected, and the list of supported
+languages matches the product. When the user enters his problem
+again, similar questions against that product will be shown.
 
     >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
+    >>> print user_browser.getControl('Language').displayOptions
+    ['English (en) *', 'Welsh (cy) *', 'Japanese (ja) *']    
+    
+    >>> user_browser.getControl('Project').value = ['thunderbird']
     >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
     >>> user_browser.getControl('Continue').click()

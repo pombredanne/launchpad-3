@@ -415,7 +415,6 @@ class ProjectAddQuestionView(QuestionAddView):
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
         
