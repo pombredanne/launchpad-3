@@ -40,6 +40,11 @@ class BugWidget(IntWidget):
         if input == self._missing:
             return self.context.missing_value
         else:
+            input = input.strip()
+            # Bug ids are often prefixed with '#', but getByNameOrID
+            # doesn't accept such ids.
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):

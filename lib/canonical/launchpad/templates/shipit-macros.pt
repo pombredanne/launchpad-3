@@ -156,15 +156,25 @@
 
   <ul>
     <li tal:repeat="pastorder user/pastShipItRequests">
-      <span tal:replace="pastorder/getTotalCDs" /> CDs requested in
-      <span tal:replace="pastorder/daterequested/fmt:date" />.
+      <span tal:replace="pastorder/getTotalCDs" /> CDs requested
+      <span
+        tal:attributes="title pastorder/daterequested/fmt:datetime"
+        tal:content="pastorder/daterequested/fmt:displaydate">
+        2005-12-31
+      </span>.
       <span tal:condition="pastorder/isCancelled">This request was
         cancelled, so no CDs were shipped.</span>
       <tal:notcancelled tal:condition="not: pastorder/isCancelled">
         <tal:shipped condition="pastorder/shipment">
           <span tal:replace="pastorder/getTotalApprovedCDs" />
-          CDs approved and sent to the shipping company in
-          <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
+          CDs were approved and sent to the shipping company
+          <span
+            tal:attributes="
+              title pastorder/shipment/shippingrun/datecreated/fmt:datetime"
+            tal:content="
+              pastorder/shipment/shippingrun/datecreated/fmt:displaydate">
+          2006-02-13
+          </span>.
           <strong>Please note requests usually take from 4 to 6 weeks to
             deliver, depending on the country of shipping.</strong>
         </tal:shipped>

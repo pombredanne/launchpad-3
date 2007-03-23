@@ -23,11 +23,21 @@
           <div tal:replace="structure pf/@@+barchart" />
         </td>
         <td>
-          <tal:block
-            condition="pf/last_touched_pomsgset"
-            replace="pf/last_touched_pomsgset/date_reviewed/fmt:date">
+          <span class="sortkey"
+            tal:condition="pf/last_touched_pomsgset"
+            tal:content="
+              pf/last_touched_pomsgset/date_reviewed/fmt:datetime">
+            time sort key
+          </span>
+          <span
+            tal:condition="pf/last_touched_pomsgset"
+            tal:attributes="
+              title pf/last_touched_pomsgset/date_reviewed/fmt:datetime"
+            tal:content="
+              pf/last_touched_pomsgset/date_reviewed/fmt:approximatedate"
+            >
             2007-02-10
-          </tal:block>
+          </span>
           <tal:block condition="not: pf/last_touched_pomsgset">
               &mdash;
           </tal:block>

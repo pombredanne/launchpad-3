@@ -66,6 +66,7 @@ __all__ = [
     'PersonAuthoredBranchesView',
     'PersonRegisteredBranchesView',
     'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
     ]
 
 import cgi
@@ -912,8 +913,11 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
     def search(self):
+        # Specify both owner and bug_reporter to try to prevent the same
+        # bug (but different tasks) being displayed.
         return BugTaskSearchListingView.search(
-            self, extra_params={'owner': self.context})
+            self,
+            extra_params={'owner': self.context, 'bug_reporter': self.context})
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -1130,12 +1134,15 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)
         owner_params = copy.copy(params)
-        # Only override the assignee and subscriber if they were not specified
+        # Only override the assignee and owner if they were not specified
         # by the user.
         if assignee_params.assignee is None:
             assignee_params.assignee = context
         if owner_params.owner is None:
+            # Specify both owner and bug_reporter to try to prevent the same
+            # bug (but different tasks) being displayed.
             owner_params.owner = context
+            owner_params.bug_reporter = context
         tasks = self.context.searchTasks(
             assignee_params, subscriber_params, owner_params)
         return BugListingBatchNavigator(
@@ -1365,11 +1372,6 @@ class PersonView(LaunchpadView):
 
         return self.user.inTeam(self.context.teamowner)
 
-    def userHasMembershipEntry(self):
-        """Return True if the logged in user has a TeamMembership entry for
-        this Team."""
-        return bool(self._getMembershipForUser())
-
     def findUserPathToTeam(self):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
@@ -1388,18 +1390,11 @@ class PersonView(LaunchpadView):
         """Return True if the user is an active member of this team."""
         return userIsActiveTeamMember(self.context)
 
-    def membershipStatusDesc(self):
-        tm = self._getMembershipForUser()
-        assert tm is not None, (
-            'This method is not meant to be called for users which are not '
-            'members of this team.')
-
-        description = tm.status.description
-        if (tm.status == TeamMembershipStatus.DEACTIVATED and
-            tm.reviewercomment):
-            description += ("The reason for the deactivation is: '%s'"
-                            % tm.reviewercomment)
-        return description
+    def userIsProposedMember(self):
+        """Return True if the user is a proposed member of this team."""
+        if self.user is None:
+            return False
+        return self.user in self.context.proposedmembers
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
@@ -1411,32 +1406,12 @@ class PersonView(LaunchpadView):
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
 
-        The user can request if this is not a RESTRICTED team or if he never
-        asked to join this team, if he already asked and the subscription
-        status is DECLINED.
+        The user can request if this is not a RESTRICTED team and if he's
+        not an active member of this team.
         """
-        if (self.context.subscriptionpolicy ==
-            TeamSubscriptionPolicy.RESTRICTED):
+        if not self.joinAllowed():
             return False
-
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return True
-
-        adminOrApproved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
-        if (tm.status == TeamMembershipStatus.DECLINED or
-            (tm.status not in adminOrApproved and
-             tm.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN)):
-            return True
-        else:
-            return False
-
-    def _getMembershipForUser(self):
-        if self.user is None:
-            return None
-        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            self.user, self.context)
+        return not (self.userIsActiveMember() or self.userIsProposedMember())
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1996,22 +1971,28 @@ class PersonEditView(BasePersonEditView):
 class TeamJoinView(PersonView):
 
     def processForm(self):
-        if self.request.method != "POST":
+        request = self.request
+        if request.method != "POST":
             # Nothing to do
             return
 
         user = self.user
+        context = self.context
 
-        if self.request.form.get('join') and self.userCanRequestToJoin():
-            user.join(self.context)
-            if (self.context.subscriptionpolicy ==
-                TeamSubscriptionPolicy.MODERATED):
-                self.request.response.addInfoNotification(
-                    _('Subscription request pending approval.'))
+        if request.form.get('join') and self.userCanRequestToJoin():
+            policy = context.subscriptionpolicy
+            user.join(context)
+            if policy == TeamSubscriptionPolicy.MODERATED:
+                notification = _('Subscription request pending approval.')
             else:
-                self.request.response.addInfoNotification(_(
-                    'Successfully joined %s.' % self.context.displayname))
-        self.request.response.redirect('./')
+                notification = _(
+                    'Successfully joined %s.' % context.displayname)
+        elif request.form.get('join'):
+            notification = _('You cannot join %s.' % context.displayname)
+        else:
+            raise UnexpectedFormData('No action specified')
+        request.response.addInfoNotification(notification)
+        self.request.response.redirect(canonical_url(context))
 
 
 class TeamLeaveView(PersonView):
@@ -2838,3 +2819,13 @@ class PersonSubscribedBranchesView(BranchListingView):
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, self.selected_lifecycle_status)
+
+
+class PersonTeamBranchesView(LaunchpadView):
+    """View for team branches portlet."""
+
+    @cachedproperty
+    def teams_with_branches(self):
+        return [team for team in self.context.teams_participated_in
+                if team.branches.count() > 0]
+    

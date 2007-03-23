@@ -13,24 +13,28 @@ lists the bug assigned to that person.
 Note that we may see each bug more than once in case it's reported against
 more than one target (https://launchpad.net/bugs/1357).
 
-    >>> def print_bugs(contents):
-    ...     table = find_tag_by_id(contents, 'buglisting')
-    ...     for link in table.findAll('a'):
-    ...         if '+bug/' in link['href']:
-    ...             print link.renderContents()
-    >>> print_bugs(anon_browser.contents)
-    Firefox install instructions should be complete
-    Reflow problems with complex page layouts
-    Firefox install instructions should be complete
-    Firefox does not support SVG
-    Bug Title Test
-    Bug Title Test
-    Blackhole Trash folder
-    Thunderbird crashes
-    Firefox does not support SVG
-    Blackhole Trash folder
-    Firefox does not support SVG
-    Blackhole Trash folder
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+        firefox (upstream) Critical Unconfirmed
+    4 Reflow problems with complex page layouts
+        firefox (upstream) Medium Unconfirmed
+    5 Firefox install instructions should be complete
+        mozilla-firefox (Ubuntu Warty) Medium Unconfirmed
+    1 Firefox does not support SVG
+        mozilla-firefox (Ubuntu) Medium Unconfirmed
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian Woody) Medium Unconfirmed
+    9 Thunderbird crashes
+        thunderbird (Ubuntu) Medium Confirmed
+    1 Firefox does not support SVG
+        firefox (upstream) Low Unconfirmed
+    2 Blackhole Trash folder
+        ubuntu (upstream) Low Unconfirmed
+    1 Firefox does not support SVG
+        mozilla-firefox (Debian) Low Confirmed
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian) Low Confirmed
 
 This report is also the default page in the person context on the bugs
 virtual host:
@@ -52,9 +56,11 @@ person.
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+assignedbugs
 
-    >>> print_bugs(anon_browser.contents)
-    Firefox install instructions should be complete
-    Blackhole Trash folder
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+        firefox (upstream) Critical Unconfirmed
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian) Low Confirmed
 
 === Reported bugs ===
 
@@ -64,17 +70,23 @@ person.
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+reportedbugs
 
-    >>> print_bugs(anon_browser.contents)
-    Firefox install instructions should be complete
-    Reflow problems with complex page layouts
-    Firefox install instructions should be complete
-    Bug Title Test
-    Bug Title Test
-    Blackhole Trash folder
-    Firefox does not support SVG
-    Blackhole Trash folder
-    Firefox does not support SVG
-    Blackhole Trash folder
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+        firefox (upstream) Critical Unconfirmed
+    4 Reflow problems with complex page layouts
+        firefox (upstream) Medium Unconfirmed
+    5 Firefox install instructions should be complete
+        mozilla-firefox (Ubuntu Warty) Medium Unconfirmed
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian Woody) Medium Unconfirmed
+    1 Firefox does not support SVG
+        firefox (upstream) Low Unconfirmed
+    2 Blackhole Trash folder
+        ubuntu (upstream) Low Unconfirmed
+    1 Firefox does not support SVG
+        mozilla-firefox (Debian) Low Confirmed
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian) Low Confirmed
 
 === Subscribed bugs ===
 
@@ -84,10 +96,15 @@ person.
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+subscribedbugs
 
-    >>> print_bugs(anon_browser.contents)
-    Reflow problems with complex page layouts
-    Firefox does not support SVG
-    Thunderbird crashes
-    Firefox does not support SVG
-    Firefox does not support SVG
+    >>> print_bugtasks(anon_browser.contents)
+    4 Reflow problems with complex page layouts
+        firefox (upstream) Medium Unconfirmed
+    1 Firefox does not support SVG
+        mozilla-firefox (Ubuntu) Medium Unconfirmed
+    9 Thunderbird crashes
+        thunderbird (Ubuntu) Medium Confirmed
+    1 Firefox does not support SVG
+        firefox (upstream) Low Unconfirmed
+    1 Firefox does not support SVG
+        mozilla-firefox (Debian) Low Confirmed
 

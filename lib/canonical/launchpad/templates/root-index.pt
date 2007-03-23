@@ -53,7 +53,7 @@
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
             We make it easy to <strong>collaborate 
-            across multiple upstream projects</strong>,
+            across multiple projects</strong>
             in the free software world.
             <a href="/+tour">Learn more&#8230;</a>
           </p>
@@ -85,10 +85,10 @@
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
             <li class="product"><a href="/jokosher">Jokosher</a></li>
+            <li class="product"><a href="/upstart">Upstart</a></li>
+            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
           </ul>
         </div>
       </div>

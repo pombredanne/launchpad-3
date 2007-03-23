@@ -157,7 +157,7 @@ class UpdateStatsTest(LaunchpadTestCase):
             'potemplate_count', 'pofile_count', 'pomsgid_count',
             'translator_count', 'language_count', 'bug_count', 'bugtask_count',
             'people_count', 'teams_count', 'rosetta_translator_count',
-            'products_with_potemplates', 'products_with_bugs',
+            'products_with_potemplates', 'projects_with_bugs',
             'products_using_malone', 'products_using_rosetta',
             ]
 

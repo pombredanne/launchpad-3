@@ -184,6 +184,8 @@ For a person:
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
      u'firefox 1.0 (upstream)',
+     u'jokosher (upstream)',
+     u'jokosher (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (Debian)',
      u'mozilla-firefox (Ubuntu)',
@@ -193,7 +195,7 @@ It's also possible to search bugs that a person is subscribed to:
 
     >>> params = BugTaskSearchParams(user=None, subscriber=foobar, orderby="id")
     >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 7, 9, 9, 10]
+    [7, 7, 9, 9, 10, 11, 12]
 
 We can even search bugs that a person reported OR that are assigned to that
 person.
@@ -334,7 +336,7 @@ Let's get all bugs on either main or universe:
     ...     component=any(main, universe), user=None)
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
     >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
-    [1, 10, 11L]
+    [1, 10, 13L]
 
 You can also filter your search on other bugtasks. Let's show only bugs
 where a bug watch is needed. This means that we should show only bugs
@@ -384,7 +386,7 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
     ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugtask.bug.id, bugtask.targetname
     10 linux-source-2.6.15 (Ubuntu)
-    11 cnews (Ubuntu)
+    13 cnews (Ubuntu)
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
@@ -823,12 +825,14 @@ The generic tasks are not directly editable.
     >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToStatus', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
     >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
 
 A conjoined relationship can be broken, though. If the development

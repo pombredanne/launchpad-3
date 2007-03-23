@@ -226,7 +226,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonRelatedBugsView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -238,7 +238,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -250,7 +250,7 @@
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
@@ -275,7 +275,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -287,7 +287,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -497,6 +497,14 @@
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonTeamBranchesView"
+    name="+portlet-teambranches"
+    template="../templates/person-portlet-teambranches.pt"
+    permission="zope.Public"
+    />
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
