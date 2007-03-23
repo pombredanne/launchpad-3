@@ -41,7 +41,7 @@ Now, post the branch creation form for the product.
 The specified URL has a trailing slash. In the next test, we will check that it
 has been stripped.
 
-  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main'
+  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main/'
 
 The branch author should default to the current user. We clear it away so we
 can test the context links on the new branch page.

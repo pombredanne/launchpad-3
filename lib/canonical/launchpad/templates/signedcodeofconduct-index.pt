@@ -18,8 +18,10 @@
        <span tal:omit-tag="" tal:condition="not:context/active">Inactive</span>
       </p>
 
-      <p><dfn>Date created:</dfn> 
-         <span tal:replace="context/datecreated/fmt:datetime">DATE</span></p>
+      <p><dfn>Created:</dfn> 
+         <span
+           tal:attributes="title context/datecreated/fmt:datetime"
+           tal:content="context/datecreated/fmt:approximatedate">DATE</span></p>
 
       <tal:block condition="context/recipient">
          <p><dfn>Recipient:</dfn> 

@@ -9,9 +9,8 @@
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
-      media="screen"
+      media="screen, print"
       tal:content="string:@import url(${rooturl}+icing/style.css);"/>
-    <link type="text/css" media="print" href="/+icing/print.css" />
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"
@@ -47,7 +46,7 @@
       <ul class="home">
         <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
       </ul>
-      <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <div style="color:white;font-size:110%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
     </div>
 
     <div id="locationbar">
@@ -177,11 +176,13 @@
                           use-macro="context/@@+main-template-macros/notifications" />
                       </tal:notifications>
                       <metal:block define-slot="main" />
+                      <tal:no_children replace="nothing">
                       <div
                         tal:define="structuralobject CONTEXTS/lp:structuralobject" 
                         tal:condition="structuralobject"
                         tal:replace="structure structuralobject/@@+structural-footer"
-                      />
+                        />
+                      </tal:no_children>
                     </div>
                     <div id="portlets">
                       <tal:menu replace="structure CONTEXTS/@@+menubox" />
@@ -228,7 +229,7 @@
         <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
       </div>
       <div id="colophon">
-        <a href="/legal">Copyright&nbsp;&amp;&nbsp;Terms&nbsp;of&nbsp;use</a> |
+        <a href="/legal">Conditions&nbsp;of&nbsp;Use</a> |
         <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
         <a href="/faq">FAQ</a>
       </div>

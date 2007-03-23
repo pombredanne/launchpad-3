@@ -16,6 +16,7 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
+    'JoinNotAllowed',
     ]
 
 
@@ -134,13 +135,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a great big grinning "
-            "image of your mug. Make the most of it."))
+            "than 50k in size. Traditionally this is a logo, small picture, "
+            "or personal mascot."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
+            "An image, maximum 150x150 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))
@@ -529,9 +530,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         that case, though, all we have to do is use person.setPreferredEmail().
         """
 
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
-
     def hasParticipationEntryFor(team):
         """Tell if this person is a direct/indirect member of the given team."""
 
@@ -569,12 +567,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
-        """Add person as a member of this team.
+        """Add the given person as a member of this team.
 
-        Add a TeamMembership entry for this person with the given status,
-        reviewer, and reviewer comment. This method is also responsible for
-        filling the TeamParticipation table in case the status is APPROVED or
-        ADMIN.
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        The given status must be either Approved, Proposed or Admin.
 
         The reviewer is the user who made the given person a member of this
         team.
@@ -941,4 +940,8 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
 
