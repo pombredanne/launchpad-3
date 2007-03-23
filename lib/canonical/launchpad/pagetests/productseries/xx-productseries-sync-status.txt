@@ -110,10 +110,10 @@ Then set the attributes that matter to reasonable values.
 >>> series.datelastsynced = one_day_one_hour_ago
 >>> series.importstatus = ImportStatus.SYNCING
 
-If importstatus is less than SYNCING, we have not yet completed any
+If importstatus is less than PROCESSING, we have not yet completed any
 user-visible import.
 
->>> series.importstatus = ImportStatus.PROCESSING
+>>> series.importstatus = ImportStatus.TESTFAILED
 >>> flush_database_updates()
 >>> transaction.commit()
 >>> anon_browser.open('http://launchpad.dev/evolution/trunk')

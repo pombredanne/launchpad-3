@@ -414,7 +414,7 @@ class ProductSeriesView(LaunchpadView):
         """Whether we know if the the last import attempt was successful."""
         return (
             self.context.importstatus is not None
-            and self.context.importstatus >= ImportStatus.SYNCING
+            and self.context.importstatus >= ImportStatus.PROCESSING
             and self.context.datefinished is not None
             and self.context.datelastsynced is not None
             and self.context.datefinished >= self.context.datelastsynced)
