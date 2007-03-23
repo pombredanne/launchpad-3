@@ -122,7 +122,7 @@ user-visible import.
 None
 >>> series.importstatus = ImportStatus.SYNCING
 
-A fortiori if importstatus is unset.
+Especially if importstatus is unset.
 
 >>> series.importstatus = None
 >>> flush_database_updates()
