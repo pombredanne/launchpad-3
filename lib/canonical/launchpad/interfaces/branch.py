@@ -399,22 +399,19 @@ class IBranchSet(Interface):
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
         """Branches associated with person with appropriate lifecycle.
 
+        XXX: thumper 2007-03-23
         The intent here is to just show interesting branches for the
         person.
-
-        XXX: thumper 2007-03-23
         Following a chat with lifeless we'd like this to be listed and
         ordered by interest and last activity where activity is defined
         as linking a bug or spec, changing the status of said link,
         updating ui attributes of the branch, committing code to the
         branch.
-
         Branches of most interest to a person are their subscribed
         branches, and the branches that they have registered and authored.
 
-        Branches that have been registered by a person but not authored
-        by them are not *that* interesting, or branches that are authored
-        by the person but registered by someone else.
+        All branches that are either registered or authored by person
+        are shown, as well as their subscribed branches.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches

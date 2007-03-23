@@ -451,7 +451,7 @@ class BranchSet:
 
         owner_author_branches = Branch.select(
             '''(Branch.owner = %s
-            AND Branch.author = %s) %s
+            OR Branch.author = %s) %s
             ''' % (person.id, person.id, lifecycle_clause))
         
         return subscribed_branches.union(
