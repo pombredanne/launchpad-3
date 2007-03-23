@@ -86,6 +86,7 @@ This same basic content applies to all types of notification.
   Sender: bounces@canonical.com
   Errors-To: bounces@canonical.com
   Return-Path: bounces@canonical.com
+  Precedence: bulk
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
    * Source Package: pmount
@@ -160,6 +161,7 @@ Check the notification content:
   Sender: bounces@canonical.com
   Errors-To: bounces@canonical.com
   Return-Path: bounces@canonical.com
+  Precedence: bulk
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
    * Source Package: alsa-utils
@@ -235,6 +237,7 @@ Check the notification content:
   Sender: bounces@canonical.com
   Errors-To: bounces@canonical.com
   Return-Path: bounces@canonical.com
+  Precedence: bulk
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
    * Source Package: mozilla-firefox
@@ -309,6 +312,7 @@ Check the notification content:
   Sender: bounces@canonical.com
   Errors-To: bounces@canonical.com
   Return-Path: bounces@canonical.com
+  Precedence: bulk
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
    * Source Package: at
