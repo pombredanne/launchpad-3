@@ -977,6 +977,10 @@ class DummyPOFile(RosettaStats):
     def untranslatedPercentage(self):
         return 100.0
 
+    def validExportCache(self):
+        """See IPOFile."""
+        return False
+
 
 class POFileSet:
     implements(IPOFileSet)
