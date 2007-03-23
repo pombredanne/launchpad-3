@@ -141,9 +141,22 @@ class BranchToMirror:
             ('source', self.source),
             ('dest', self.dest),
             ('error-explanation', message)])
-        request.URL = 'database:/branch/%d' % self.branch_id
+        request.URL = self._canonical_url()
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         logger.info('Recorded %s', request.oopsid)
+
+    def _canonical_url(self):
+        """Custom implementation of canonical_url(branch) for error reporting.
+
+        The actual canonical_url method cannot be used because we do not have
+        access to real content objects.
+        """
+        if config.launchpad.vhosts.use_https:
+            scheme = 'https'
+        else:
+            scheme = 'http'
+        hostname = config.launchpad.vhosts.code.hostname
+        return scheme + '://' + hostname + '/~' + self.branch_unique_name
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into

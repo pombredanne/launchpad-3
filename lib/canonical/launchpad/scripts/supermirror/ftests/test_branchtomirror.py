@@ -241,7 +241,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         dest_dir = 'dest-dir'
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1, None)
+            non_existant_branch, dest_dir, client, 1, 'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
@@ -251,7 +251,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1, None)
+            non_existant_branch, "anothernonsensedir", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -276,7 +277,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client.mirrorComplete(1, NULL_REVISION)
         source_url = 'file://' + os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
-            source_url, "missingrevisiontarget", client, 1, None)
+            source_url, "missingrevisiontarget", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
