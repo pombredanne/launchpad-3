@@ -41,7 +41,7 @@ Now, post the branch creation form for the product.
 The specified URL has a trailing slash. In the next test, we will check that it
 has been stripped.
 
-  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main'
+  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main/'
 
 The branch author should default to the current user. We clear it away so we
 can test the context links on the new branch page.
@@ -61,7 +61,7 @@ registered branch. We check that the final slash of the URL was stripped by
 matching for the angle brackets of an enclosing tag.
 
   >>> user_browser.url
-  'http://launchpad.dev/~no-priv/+branch/applets/main'
+  'http://code.launchpad.dev/~no-priv/applets/main'
   >>> print user_browser.contents
   <!DOCTYPE...
   ...Gnome Panel Applets Mainline...
@@ -71,10 +71,9 @@ This page includes a link to other branches associated
 with that product, and a link to other branches maintained by that person.
 
   >>> user_browser.getLink('Other Gnome Applets branches').url
-  'http://launchpad.dev/applets/+branches'
-  >>> user_browser.getLink(
-  ...     'Other branches registered (and not authored) by No Privileges Person').url
-  'http://launchpad.dev/~no-priv/+registeredbranches'
+  'http://code.launchpad.dev/applets/+branches'
+  >>> user_browser.getLink('Other branches registered (and not authored) by No Privileges Person').url
+  'http://code.launchpad.dev/~no-priv/+registeredbranches'
 
 
 == Finding person/+addbranch ==
@@ -112,9 +111,9 @@ junk branch. Because it has no product, it has no link to other product
 branches.
 
   >>> user_browser.url
-  'http://launchpad.dev/~no-priv/+branch/+junk/pyresources'
+  'http://code.launchpad.dev/~no-priv/+junk/pyresources'
   >>> user_browser.getLink('Other branches authored by Robert Collins').url
-  'http://launchpad.dev/~lifeless/+authoredbranches'
+  'http://code.launchpad.dev/~lifeless/+authoredbranches'
 
 Also, the branch URL must appear with the trailing slash stripped.
 

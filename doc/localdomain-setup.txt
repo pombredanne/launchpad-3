@@ -44,12 +44,13 @@ Put the following text in there.
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev
+  LoadModule proxy_http_module /usr/lib/apache2/modules/mod_proxy_http.so
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
   </Proxy>
   ProxyPreserveHost on
-  ProxyPass / http://localhost:8085/
+  ProxyPass / http://localhost:8085/ retry=1
 </VirtualHost>
 }}}
 

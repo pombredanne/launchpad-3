@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Fetches mail from the mail box and feeds them to the handlers."""
 

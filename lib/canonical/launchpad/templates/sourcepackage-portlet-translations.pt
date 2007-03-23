@@ -8,7 +8,7 @@
         <div class="portletContent">
 
           <ul>
-            <li class="languages"
+            <li class="language"
                 tal:repeat="template context/currentpotemplates">
               <a tal:attributes="href template/fmt:url"
                  tal:content="template/title">template title</a>
@@ -18,7 +18,7 @@
           <ul style="text-align: right;">
             <li class="info">
               <a href="+translations"
-                 title="See more translation options for this product">
+                 title="See more translation options for this project">
                  More...
               </a>
             </li>
