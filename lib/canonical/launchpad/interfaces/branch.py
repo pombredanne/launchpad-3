@@ -49,11 +49,13 @@ class BranchURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
-        if supermirror_root.contains(uri):
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if (supermirror_root.contains(uri)
+            or uri.host.endswith(launchpad_domain)):
             message = _(
                 "Don't manually register a bzr branch on "
-                "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
-                "is registered automatically.")
+                "<code>%s</code>. Create it by SFTP, and it "
+                "is registered automatically." % uri.host)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
