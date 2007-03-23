@@ -44,8 +44,8 @@ class TestCronscriptBase(TestCase):
     def getBuilddMasterLock(self):
         """Returns a GlobalLock instance for build-master default lockfile."""
         from canonical.launchpad.scripts.base import LOCK_PATH
-        from canonical.buildmaster.master import master_lockfilename
-        lockfile_path = os.path.join(LOCK_PATH, master_lockfilename)
+        from canonical.buildmaster.master import builddmaster_lockfilename
+        lockfile_path = os.path.join(LOCK_PATH, builddmaster_lockfilename)
         return GlobalLock(lockfile_path)
 
     def assertRuns(self, runner, *args):
@@ -70,7 +70,7 @@ class TestCronscriptBase(TestCase):
         self.assertEqual(
             ['INFO    creating lockfile',
              'INFO    Lockfile /var/lock/build-master in use'],
-            err.splitlines(),
+            err.strip().splitlines(),
             "Not expected output:\n%s" % err)
         lock.release()
 

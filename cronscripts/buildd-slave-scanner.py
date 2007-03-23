@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.buildmaster.master import (
-    BuilddMaster, master_lockfilename)
+    BuilddMaster, builddmaster_lockfilename)
 
 from canonical.launchpad.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
@@ -58,7 +58,7 @@ class SlaveScanner(LaunchpadScript):
     @property
     def lockfilename(self):
         """Buildd master cronscript shares the same lockfile."""
-        return master_lockfilename
+        return builddmaster_lockfilename
 
 
 if __name__ == '__main__':

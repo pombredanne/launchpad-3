@@ -18,7 +18,7 @@ from sourcerer.deb.version import Version
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.config import config
 from canonical.buildmaster.master import (
-    BuilddMaster, master_lockfilename)
+    BuilddMaster, builddmaster_lockfilename)
 
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
 from canonical.launchpad.scripts.base import (LaunchpadScript,
@@ -58,15 +58,12 @@ class QueueBuilder(LaunchpadScript):
 
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
+        if self.options.dryrun:
+            self.logger.info("Dry run: changes will not be committed.")
+            self.txn = _FakeZTM()
+
         self.rebuildQueue()
-
-        if not self.options.dryrun:
-            self.logger.info("Buildd Queue Rebuilt. Committing changes")
-            self.txn.commit()
-            return
-
-        self.logger.info("Changes aborted")
-        self.txn.abort()
+        self.txn.commit()
 
     def rebuildQueue(self):
         """Look for and initialise new build jobs."""
@@ -80,13 +77,7 @@ class QueueBuilder(LaunchpadScript):
             def commit(self):
                 pass
 
-        if self.options.dryrun:
-            self.logger.info("Dry run: changes will not be committed.")
-            local_txn = _FakeZTM()
-        else:
-            local_txn = self.txn
-
-        buildMaster = BuilddMaster(self.logger, local_txn)
+        buildMaster = BuilddMaster(self.logger, self.txn)
 
         # For every distroarchrelease we can find; put it into the build master
         distroreleases = set()
@@ -114,7 +105,7 @@ class QueueBuilder(LaunchpadScript):
     @property
     def lockfilename(self):
         """Buildd master cronscript shares the same lockfile."""
-        return master_lockfilename
+        return builddmaster_lockfilename
 
 
 if __name__ == '__main__':

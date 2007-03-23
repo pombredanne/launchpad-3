@@ -188,7 +188,8 @@ class LaunchpadScript:
     def run(self, use_web_security=False, implicit_begin=True):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
-        self.txn = initZopeless(dbuser=self.dbuser, implicitBegin=implicit_begin)
+        self.txn = initZopeless(
+            dbuser=self.dbuser, implicitBegin=implicit_begin)
 
         try:
             self.main()

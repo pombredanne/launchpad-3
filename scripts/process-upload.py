@@ -21,7 +21,8 @@ class ProcessUpload(LaunchpadScript):
         self.parser.add_option(
             "-n", "--dry-run", action="store_true",
             dest="dryrun", metavar="DRY_RUN", default=False,
-            help="Whether to treat this as a dry-run or not. Also implies -KM.")
+            help=("Whether to treat this as a dry-run or not."
+                  "Also implies -KM."))
 
         self.parser.add_option(
             "-K", "--keep", action="store_true",
@@ -52,7 +53,8 @@ class ProcessUpload(LaunchpadScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initialising connection.")
-        UploadProcessor(self.options, self.txn, self.logger).processUploadQueue()
+        UploadProcessor(
+            self.options, self.txn, self.logger).processUploadQueue()
 
     @property
     def lockfilename(self):
