@@ -133,7 +133,7 @@ class FileBugViewBase(LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags']
+        field_names = ['title', 'comment', 'tags', 'security_related']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -144,11 +144,7 @@ class FileBugViewBase(LaunchpadFormView):
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
 
-        return field_names + self.extra_field_names
-
-    @property
-    def extra_field_names(self):
-        return []
+        return field_names
 
     @property
     def initial_values(self):
@@ -225,6 +221,10 @@ class FileBugViewBase(LaunchpadFormView):
             return self.context.distribution
         else:
             return self.context
+
+    def getSecurityContext(self):
+        """Return the context used for security bugs."""
+        return self.getMainContext()
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -422,10 +422,6 @@ class FileBugAdvancedView(FileBugViewBase):
         "../templates/bugtarget-filebug-advanced.pt")
     advanced_form = True
 
-    @property
-    def extra_field_names(self):
-        return ['security_related']
-
     def showFileBugForm(self):
         return self.template()
 
@@ -570,15 +566,23 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    @cachedproperty
-    def most_common_bugs(self):
-        """Return a list of the most duplicated bugs."""
+    def _getSelectedProduct(self):
+        """Return the product that's selected."""
         assert self.widgets['product'].hasValidInput(), (
             "This method should be called only when we know which"
             " product the user selected.")
-        selected_product = self.widgets['product'].getInputValue()
+        return self.widgets['product'].getInputValue()
+
+    @cachedproperty
+    def most_common_bugs(self):
+        """Return a list of the most duplicated bugs."""
+        selected_product = self._getSelectedProduct()
         return selected_product.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+    def getSecurityContext(self):
+        """See FileBugViewBase."""
+        return self._getSelectedProduct()
 
 
 class ProjectFileBugAdvancedView(FileBugAdvancedView):
@@ -614,6 +618,21 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
             self.setFieldError("bugtarget", error.doc())
             errors.append(error)
         return errors
+
+    def getSecurityContext(self):
+        """See FileBugViewBase."""
+        try:
+            bugtarget = self.widgets['bugtarget'].getInputValue()
+        except InputErrors, error:
+            return None
+        if IDistributionSourcePackage.providedBy(bugtarget):
+            return bugtarget.distribution
+        else:
+            assert (
+                IProduct.providedBy(bugtarget) or
+                IDistribution.providedBy(bugtarget)), (
+                "Unknown bug target: %r" % bugtarget)
+            return bugtarget
 
 
 class FrontPageFileBugAdvancedView(FileBugAdvancedView):
