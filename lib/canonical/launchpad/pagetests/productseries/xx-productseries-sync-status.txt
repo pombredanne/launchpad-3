@@ -97,7 +97,9 @@ two days ago
 In some situations, we cannot, or should not, display the success status. Check
 that the page behaves correctly in those situations.
 
-Some attributes do not actually matter here. Clear them out.
+Some attributes do not actually matter here. Clear them out. Code that depends
+on those being set to a meaningful value should always assert they are not
+None.
 
 >>> series.datepublishedsync = None
 >>> series.import_branch.last_mirrored = None
