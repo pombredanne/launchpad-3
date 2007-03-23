@@ -24,15 +24,7 @@ any bugs open on pmount.
     >>> anon_browser.getControl('Bug contact').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
-    >>> def print_bugtasks(soup):
-    ...     """Print all the bugtasks in the text."""
-    ...     table = soup.find('table', {'id': 'buglisting'})
-    ...     if table is None:
-    ...         return
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         print extract_text(tr)
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
       mozilla-firefox Medium Unconfirmed

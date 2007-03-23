@@ -208,7 +208,7 @@ We can add another upstream to the bug.
 But if we try to change it to the target of an existing upstream bugtask,
 our validator springs into action.
 
-    >>> user_browser.getLink("evolution (upstream)").click()
+    >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
     'http://launchpad.dev/evolution/+bug/3/+editstatus'
     >>> user_browser.getControl('Product').value = 'alsa-utils'
