@@ -11,7 +11,8 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup, Comment, NavigableString, PageElement
+from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
+    NavigableString, PageElement, ProcessingInstruction, Tag)
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -102,29 +103,57 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
+
+IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
+ELEMENTS_INTRODUCING_NEWLINE = [
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
+    'div', 'noscript', 'blockquote', 'form', 'hr', 'table', 'fieldset',
+    'address', 'li', 'dt', 'dd', 'th', 'td', 'caption', 'br']
+
+
+NORMALIZE_NEWLINES_RE = re.compile(u'\n+')
+STRIP_LINES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+NORMALIZE_WHITESPACE_RE = re.compile(u'[ \t]+')
+REPLACE_NBSP_RE = re.compile(u'&nbsp;|&#160;')
+
+
 def extract_text(content):
     """Return the text stripped of all tags.
 
     >>> soup = BeautifulSoup(
     ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
     >>> extract_text(soup)
-    u'Titlefoo bar'
+    u'''Title
+    foo bar'''
     """
-    # We accept either a string or a BeautifulSoup element.
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
     else:
         soup = content
 
-    result = u''
-    for node in soup:
-        if isinstance(node, Comment):
-            pass
+    result = []
+    nodes = list(soup)
+    while nodes:
+        node = nodes.pop(0)
+        if type(node) in IGNORED_ELEMENTS:
+            continue
         elif isinstance(node, NavigableString):
-            result = result + unicode(node)
+            result.append(unicode(node))
         else:
-            result = result + extract_text(node)
-    return result
+            if isinstance(node, Tag):
+                if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
+                    result.append(u'\n')
+            # Process this node's children next.
+            nodes[0:0] = list(node)
+
+    text = u''.join(result)
+    text = REPLACE_NBSP_RE.sub(' ', text)
+    text = NORMALIZE_WHITESPACE_RE.sub(' ', text)
+    text = STRIP_LINES_RE.sub('', text)
+    text = NORMALIZE_NEWLINES_RE.sub('\n', text)
+
+    # Remove possible newlines at beginning and end.
+    return text.strip()
 
 
 # XXX cprov 20070207: This function seems to be more specific to a particular
