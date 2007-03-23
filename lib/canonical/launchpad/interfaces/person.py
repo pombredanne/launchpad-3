@@ -426,7 +426,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         only the one with the oldest teams is returned.
 
         This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789.
+        https://launchpad.net/bugs/30789. It also can't be called if this
+        person is not an indirect member of the given team.
         """
 
     def isTeam():
