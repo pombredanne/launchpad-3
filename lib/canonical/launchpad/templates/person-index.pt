@@ -169,9 +169,9 @@
           <tr tal:condition="context/jabberids">
             <th>Jabber:</th>
             <td>
-              <tal:block repeat="jabber context/jabberids">
-                <span tal:replace="jabber/jabberid"
-                  /><span tal:condition="not: repeat/jabber/end">,</span>
+              <tal:block repeat="jabberid view/htmlJabberIDs">
+                <span tal:replace="structure jabberid"
+                  /><span tal:condition="not: repeat/jabberid/end">,</span>
               </tal:block>
             </td>
           </tr>
@@ -218,7 +218,7 @@
       </ul>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-          &raquo; Show all bugs in progress 
+          &raquo; Show all bugs in progress
         </a>
       </div>
     </div>
