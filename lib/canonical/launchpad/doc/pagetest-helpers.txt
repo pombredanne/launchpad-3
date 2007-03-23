@@ -269,15 +269,19 @@ Sometimes we are just interested in a portion of text that is displayed
 to the end user, and we don't want necessarily to check how the text
 is displayed (ie. bold, italics, coloured et al).
 
+    >>> extract_text = test.globs['extract_text']
+    >>> print extract_text(
+    ...     '<p>A paragraph with <b>inline</b> <i>style</i>.</p>')
+    A paragraph with inline style.
+
 The extract_text method is often used in conjunction with the other
-find_xxx helper methods to identify the text to display.  This is due
-to the function taking a BeautifulSoup instance as a parameter rather
-than a plain string.
+find_xxx helper methods to identify the text to display.  Because of
+this the function also accepts BeautifulSoup instance as a parameter
+rather than a plain string.
 
-  >>> extract_text = test.globs['extract_text']
-  >>> print extract_text(find_portlet(content, 'Portlet 2'))
-  Portlet 2 Contents of portlet 2
-
+    >>> print extract_text(find_portlet(content, 'Portlet 2'))
+    Portlet 2
+    Contents of portlet 2
 
 == parse_relationship_section ==
 

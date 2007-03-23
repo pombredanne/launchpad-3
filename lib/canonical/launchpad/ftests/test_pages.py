@@ -11,7 +11,7 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup, Comment, NavigableString
+from BeautifulSoup import BeautifulSoup, Comment, NavigableString, PageElement
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -102,7 +102,7 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
-def extract_text(soup):
+def extract_text(content):
     """Return the text stripped of all tags.
 
     >>> soup = BeautifulSoup(
@@ -110,10 +110,12 @@ def extract_text(soup):
     >>> extract_text(soup)
     u'Titlefoo bar'
     """
-    # XXX Tim Penhey 22-01-2007
-    # At the moment this does not nicely give whitespace between
-    # tags that would have visual separation when rendered.
-    # eg. <p>foo</p><p>bar</p>
+    # We accept either a string or a BeautifulSoup element.
+    if not isinstance(content, PageElement):
+        soup = BeautifulSoup(content)
+    else:
+        soup = content
+
     result = u''
     for node in soup:
         if isinstance(node, Comment):
