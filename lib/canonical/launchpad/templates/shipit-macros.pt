@@ -36,7 +36,7 @@
         <tal:is-not-header condition="not: repeat/cell/start">
           <td style="text-align: center">
             <tal:block condition="cell">
-              <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+              <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
             </tal:block>
             <span tal:condition="not: cell">n/a</span>
           </td>
