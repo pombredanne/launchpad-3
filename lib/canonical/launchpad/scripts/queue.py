@@ -15,9 +15,11 @@ __all__ = [
 import os
 import sys
 import tempfile
+import errno
 from email import message_from_string
 import pytz
 from datetime import datetime
+from sha import sha
 
 from zope.component import getUtility
 
@@ -482,19 +484,9 @@ class QueueActionFetch(QueueAction):
         self.displayTitle('Fetching')
         self.displayRule()
         for queue_item in self.items:
-            self.display("Constructing %s" % queue_item.changesfile.filename)
-            changes_file_alias = queue_item.changesfile
-            # do not overwrite files on disk (bug # 62976)
-            if os.path.exists(queue_item.changesfile.filename):
-                raise CommandRunnerError("%s already present on disk"
-                                         % queue_item.changesfile.filename)
-            changes_file_alias.open()
-            changes_file = open(queue_item.changesfile.filename, "w")
-            changes_file.write(changes_file_alias.read())
-            changes_file.close()
-            changes_file_alias.close()
-
             file_list = []
+            file_list.append(queue_item.changesfile)
+
             for source in queue_item.sources:
                 for spr_file in source.sourcepackagerelease.files:
                     file_list.append(spr_file.libraryfile)
@@ -510,15 +502,34 @@ class QueueActionFetch(QueueAction):
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
                 # do not overwrite files on disk (bug # 62976)
-                if os.path.exists(libfile.filename):
-                    raise CommandRunnerError("%s already present on disk"
-                                             % libfile.filename)
-                libfile.open()
-                out_file = open(libfile.filename, "w")
-                for chunk in filechunks(libfile):
-                    out_file.write(chunk)
-                out_file.close()
-                libfile.close()
+                try:
+                    existing_file = open(libfile.filename, "r")
+                except IOError, e:
+                    if not e.errno == errno.ENOENT:
+                        raise
+                    # File does not already exist, so read file from librarian
+                    # and write to disk.
+                    libfile.open()
+                    out_file = open(libfile.filename, "w")
+                    for chunk in filechunks(libfile):
+                        out_file.write(chunk)
+                    out_file.close()
+                    libfile.close()
+                else:
+                    # Check sha against existing file (bug #67014)
+                    existing_sha = sha()
+                    for chunk in filechunks(existing_file):
+                        existing_sha.update(chunk)
+                    existing_file.close()
+
+                    # bail out if the sha1 differs
+                    if libfile.content.sha1 != existing_sha.hexdigest():
+                        raise CommandRunnerError("%s already present on disk "
+                                                 "and differs from new file"
+                                                 % libfile.filename)
+                    else:
+                        self.display("%s already on disk and checksum "
+                                     "matches, skipping.")
 
         self.displayRule()
         self.displayBottom()
