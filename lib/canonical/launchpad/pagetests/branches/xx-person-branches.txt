@@ -46,18 +46,6 @@ normal branch listing view for that person.
   filtering on "Any Status".
 
 
-== Team Branches ==
-
-Branches that are owned by a team that the user is a member of, they are
-shown as 'Team Branch'.
-
-   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main   60 New   evolution   Team Branch
-  
-  
 == Authored Branches ==
 
 There is a link in the branch context menu for person which points to
