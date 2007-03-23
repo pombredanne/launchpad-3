@@ -130,6 +130,27 @@ class FileBugViewBase(LaunchpadFormView):
                 ' automatically.')
 
     @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        context = self.context
+        field_names = ['title', 'comment', 'tags']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif IMaloneApplication.providedBy(context):
+            field_names.append('bugtarget')
+        elif IProject.providedBy(context):
+            field_names.append('product')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
+
+        return field_names + self.extra_field_names
+
+    @property
+    def extra_field_names(self):
+        return []
+
+    @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
         if not IDistributionSourcePackage.providedBy(self.context):
@@ -402,16 +423,8 @@ class FileBugAdvancedView(FileBugViewBase):
     advanced_form = True
 
     @property
-    def field_names(self):
-        """Return the list of field names to display."""
-        context = self.context
-        field_names = ['title', 'comment', 'security_related', 'tags']
-        if (IDistribution.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context)):
-            field_names.append('packagename')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
-        return field_names
+    def extra_field_names(self):
+        return ['security_related']
 
     def showFileBugForm(self):
         return self.template()
@@ -434,19 +447,6 @@ class FileBugGuidedView(FileBugViewBase):
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
-
-    @property
-    def field_names(self):
-        """Return the list of field names to display."""
-        context = self.context
-        field_names = ['title', 'comment', 'tags']
-        if (IDistribution.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context)):
-            field_names.append('packagename')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
-
-        return field_names
 
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
@@ -570,8 +570,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'tags']
-
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
@@ -591,8 +589,6 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'security_related', 'tags']
-
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
     """Browser view class for the top-level +filebug page."""
@@ -605,10 +601,6 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
     @property
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    @property
-    def field_names(self):
-        return ['title', 'comment', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
@@ -636,10 +628,6 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     @property
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    @property
-    def field_names(self):
-        return ['title', 'comment', 'security_related', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
