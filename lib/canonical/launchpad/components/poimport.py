@@ -15,7 +15,8 @@ from canonical.launchpad.interfaces import (
         IPOTemplate, IPOFile, IPersonSet, TranslationConstants,
         TranslationConflict)
 from canonical.launchpad.components.poparser import POParser
-from canonical.lp.dbschema import PersonCreationRationale
+from canonical.lp.dbschema import (
+    RosettaFileFormat, PersonCreationRationale)
 from canonical.launchpad.webapp import canonical_url
 
 class OldPOImported(Exception):
@@ -69,6 +70,9 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
     header = file['header']
     messages = file['messages']
 
+    # This var will hold an special POFile for 'English' which will have the
+    # English strings to show instead of arbitrary IDs XXX
+    english_pofile = None
     if IPOFile.providedBy(pofile_or_potemplate):
         pofile = pofile_or_potemplate
         potemplate = pofile.potemplate
@@ -103,6 +107,11 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
+        potemplate.source_file_format = file['format']
+        if file['format'] == RosettaFileFormat.XPI:
+            english_pofile = potemplate.getPOFileByLang('en')
+            if english_pofile is None:
+                english_pofile = potemplate.newPOFile('en')
         # Expire old messages
         potemplate.expireAllMessages()
         if header is not None:
@@ -209,6 +218,22 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
             # Finally, we need to invalidate the cached .po files so new
             # downloads get the new messages from this import.
             potemplate.invalidateCache()
+
+            if english_pofile is not None:
+                # The English strings for this template are stored inside an
+                # IPOFile.
+                pomsgset = potmsgset.getPOMsgSet(english_pofile.language.code)
+                if pomsgset is None:
+                    # There is no such pomsgset.
+                    pomsgset = english_pofile.createMessageSetFromMessageSet(
+                        potmsgset)
+
+                pomsgset.sequence = count
+
+            # By default .pot uploads are done only by editors.
+            is_editor = True
+            last_translator = importer
+            lock_timestamp = None
         else:
             # The import is a .po file
             pomsgset = potmsgset.getPOMsgSet(
@@ -228,49 +253,54 @@ def translation_import(pofile_or_potemplate, file, importer, published=True):
 
             pomsgset.obsolete = pomsg['obsolete']
 
-            # Store translations
-            translations = pomsg['msgstr']
-            if not translations:
-                # We don't have anything to import.
-                continue
-
-            # Use the importer (rosetta-admins) rights to make sure the
-            # imported translations are actually accepted instead of being 
-            # just suggestions.
+            # Use the importer rights to make sure the imported translations
+            # are actually accepted instead of being just suggestions.
             is_editor = pofile.canEditTranslations(importer)
-            try:
-                pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy, published,
-                    lock_timestamp, force_edition_rights=is_editor)
-            except TranslationConflict:
-                error = {
-                    'pomsgset': pomsgset,
-                    'pomessage': pomessage,
-                    'error-message': (
-                        "This message was updated by someone else after you"
-                        " got the .po file.\n This translation is now stored"
-                        " as a suggestion, if you want to set it\n as the"
-                        " used one, go to\n %s/+translate\n and"
-                        " approve it." % canonical_url(pomsgset))
-                }
 
-                errors.append(error)
-            except gettextpo.error, e:
-                # We got an error, so we submit the translation again but
-                # this time asking to store it as a translation with
-                # errors.
-                pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy, published,
-                    lock_timestamp, ignore_errors=True,
-                    force_edition_rights=is_editor)
+        # Store translations
+        if pofile is None and english_pofile is None:
+            # It's not an IPOFile or an IPOTemplate that needs to store
+            # English strings in an IPOFile.
+            continue
 
-                # Add the pomsgset to the list of pomsgsets with errors.
-                error = {
-                    'pomsgset': pomsgset,
-                    'pomessage': pomsg,
-                    'error-message': e
-                }
+        translations = pomsg['msgstr']
+        if not translations:
+            # We don't have anything to import.
+            continue
 
-                errors.append(error)
+        try:
+            pomsgset.updateTranslationSet(
+                last_translator, translations, fuzzy, published,
+                lock_timestamp, force_edition_rights=is_editor)
+        except TranslationConflict:
+            error = {
+                'pomsgset': pomsgset,
+                'pomessage': pomessage,
+                'error-message': (
+                    "This message was updated by someone else after you"
+                    " got the .po file.\n This translation is now stored"
+                    " as a suggestion, if you want to set it\n as the"
+                    " used one, go to\n %s/+translate\n and"
+                    " approve it." % canonical_url(pomsgset))
+            }
+
+            errors.append(error)
+        except gettextpo.error, e:
+            # We got an error, so we submit the translation again but
+            # this time asking to store it as a translation with
+            # errors.
+            pomsgset.updateTranslationSet(
+                last_translator, translations, fuzzy, published,
+                lock_timestamp, ignore_errors=True,
+                force_edition_rights=is_editor)
+
+            # Add the pomsgset to the list of pomsgsets with errors.
+            error = {
+                'pomsgset': pomsgset,
+                'pomessage': pomsg,
+                'error-message': e
+            }
+
+            errors.append(error)
 
     return errors

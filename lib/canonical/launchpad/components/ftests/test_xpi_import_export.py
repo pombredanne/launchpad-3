@@ -109,9 +109,19 @@ class XpiTestCase(LaunchpadZopelessTestCase):
         # The status is now IMPORTED:
         self.failUnlessEqual(entry.status, RosettaImportStatus.IMPORTED)
 
-        # Once we've done this, the correct message IDs should show up in the
-        # template.
+        # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
+
+        # First, the list of singular texts.
+        self.failUnlessEqual(
+            [potmsgset.msgid for potmsgset in potmsgsets],
+            [u'foozilla.name', u'foozilla.play.fire', u'foozilla.play.ice',
+             u'foozilla.title', u'foozilla.happytitle', u'foozilla.nocomment',
+             u'foozilla.utf8', u'foozilla.menu.title',
+             u'foozilla.menu.accesskey', u'foozilla.menu.commandkey',
+             u'foozilla_something'])
+
+        # Now, the list of singular ids.
         self.failUnlessEqual(
             [potmsgset.singular_text for potmsgset in potmsgsets],
             [u'FooZilla!', u'Do you want to play with fire?',
@@ -120,9 +130,15 @@ class XpiTestCase(LaunchpadZopelessTestCase):
              u'foozilla.menu.accesskey', u'foozilla.menu.commandkey',
              u'SomeZilla'])
 
-        # File references are also stored
+        # Let's check the metadata.
         self.failUnlessEqual(
-            potmsgsets[2].filereferences, u'test1.dtd(foozilla.play.ice)')
+            potmsgsets[1].commenttext, None)
+        self.failUnlessEqual(
+            potmsgsets[1].filereferences, u'en-US.jar/test1.dtd:3')
+        self.failUnlessEqual(
+            potmsgsets[1].sourcecomment, u"Translators, don't play with fire!")
+        self.failUnlessEqual(
+            potmsgsets[1].flagscomment, u'')
 
 
 def test_suite():

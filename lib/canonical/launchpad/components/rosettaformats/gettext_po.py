@@ -92,7 +92,6 @@ class PoSupport:
         msgs = []
         for pomessage in parser.messages:
             message = {}
-            message['alt_msgid'] = None
             message['msgid'] = pomessage.msgid
             message['msgid_plural'] = pomessage.msgidPlural
             message['comment'] = pomessage.commentText
@@ -129,7 +128,6 @@ class PoSupport:
         msgs = []
         for pomessage in parser.messages:
             message = {}
-            message['alt_msgid'] = None
             message['msgid'] = pomessage.msgid
             message['msgid_plural'] = pomessage.msgidPlural
             message['comment'] = pomessage.commentText
@@ -146,7 +144,7 @@ class PoSupport:
                 translations = { 0: pomessage.msgstr }
             else:
                 # We don't have anything to import.
-                translation = None
+                translations = None
 
             message['msgstr'] = translations
 

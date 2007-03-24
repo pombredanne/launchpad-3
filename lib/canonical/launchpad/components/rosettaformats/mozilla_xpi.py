@@ -27,7 +27,7 @@ class LocalizableFile (DictMixin):
 
     def __init__(self, logger=None):
         self._data = []
-        self._alternative_ids = []
+        self._msgids = []
         self.logger = logger
 
     def __getitem__(self, key):
@@ -53,18 +53,15 @@ class LocalizableFile (DictMixin):
 
     def extend(self, newdata):
         for message in newdata:
-            if not message['altid'] in self._alternative_ids:
-                self._alternative_ids.append(message['altid'])
+            if not message['msgid'] in self._msgids:
+                self._msgids.append(message['msgid'])
                 self._data.append(message)
-            else:
-                if self.logger is not None:
-                    self.logger.info("Duplicate alternative ID '%s'." %
-                                     (message['altid']) )
+            elif self.logger is not None:
+                self.logger.info(
+                    "Duplicate message ID '%s'." % message['msgid'])
 
     def getLastTranslator(self):
         return None
-
-
 
 
 class MozillaZipFile (LocalizableFile):
@@ -135,7 +132,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
 
     def new_general_entity(self, name, value):
         if not self.started: return
-        self.messages.append({ 'altid' : name,
+        self.messages.append({ 'msgid' : name,
                                'sourcerefs' : [ "%s(%s)" % (self.filename,
                                                             name) ],
                                'content' : value,
@@ -211,7 +208,7 @@ class PropertyFile (LocalizableFile):
             value = value.encode('unicode_escape').decode('unicode_escape')
 
             count += 1
-            self._data.append({ 'altid' : key,
+            self._data.append({ 'msgid' : key,
                                 'sourcerefs' : [ "%s(%s)" % (self.filename,
                                                              key) ],
                                 'content' : value,
@@ -270,26 +267,29 @@ class MozillaSupport:
         messages = []
         for xpimsg in mozimport:
             msg = {}
-            alt_msgid = xpimsg['altid']
-            msg['alt_msgid'] = alt_msgid
-            msg['msgid'] = xpimsg['content']
+
+            msgid = xpimsg['msgid']
+            msg['msgid'] = msgid
             msg['msgid_plural'] = None
 
             msg['comment'] = None
             msg['filerefs'] = None
             msg['flags'] = []
             msg['obsolete'] = False
-            msg['msgstr'] = None
             msg['sourcecomment'] = None
 
-            # Special case accesskeys and commandkeys:
-            # these are single letter messages and lets display
-            # their alternative msgid as the msgid instead
-            if (alt_msgid.endswith('.accesskey')
-                or alt_msgid.endswith('.commandkey')):
-                msg['msgid'] = alt_msgid
-                msg['sourcecomment'] = ( u"Default key in en_US: '%s'" %
-                                         ( xpimsg['content'] ) )
+            if (msgid.endswith('.accesskey') or
+                msgid.endswith('.commandkey')):
+                # Special case accesskeys and commandkeys:
+                # these are single letter messages, lets display
+                # the value as a source comment.
+                msg['sourcecomment'] = u"Default key in en_US: '%s'" % (
+                    xpimsg['content'])
+                msg['msgstr'] = None
+            else:
+                # In other cases, store the content value as the 'en'
+                # translation.
+                msg['msgstr'] = { 0: xpimsg['content'] }
 
             if xpimsg['sourcerefs'] and len(xpimsg['sourcerefs']):
                 msg['filerefs'] = u" ".join(xpimsg['sourcerefs'])
@@ -314,8 +314,7 @@ class MozillaSupport:
         messages = []
         for xpimsg in mozimport:
             msg = {}
-            msg['alt_msgid'] = xpimsg['altid']
-            msg['msgid'] = None
+            msg['msgid'] = xpimsg['msgid']
             msg['msgid_plural'] = None
             msg['msgstr'] = { 0: xpimsg['content'] }
 

@@ -31,6 +31,12 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    msgid = Field(
+        title=_("The singular id for this message."), readonly=True)
+
+    msgid_plural = Field(
+        title=_("The plural id for this message or None."), readonly=True)
+
     singular_text = Field(
         title=_("The singular text for this message."), readonly=True)
 

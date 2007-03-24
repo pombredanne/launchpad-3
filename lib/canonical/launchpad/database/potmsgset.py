@@ -17,7 +17,8 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-
+from canonical.launchpad.interfaces import TranslationConstants
+from canonical.lp.dbschema import RosettaFileFormat
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -35,12 +36,12 @@ class POTMsgSet(SQLBase):
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
     @property
-    def singular_text(self):
+    def msgid(self):
         """See IPOTMsgSet."""
         return self.primemsgid_.msgid
 
     @property
-    def plural_text(self):
+    def msgid_plural(self):
         """See IPOTMsgSet."""
         plural = POMsgID.selectOne('''
             POMsgIDSighting.potmsgset = %s AND
@@ -53,6 +54,26 @@ class POTMsgSet(SQLBase):
             return plural.msgid
         else:
             return None
+
+    @property
+    def singular_text(self):
+        """See IPOTMsgSet."""
+        if self.potemplate.source_file_format == RosettaFileFormat.XPI:
+            # This format uses English translations as the way to store the
+            # singular_text.
+            pomsgset = self.getPOMsgSet('en')
+            if (pomsgset is not None and
+                pomsgset.active_texts[
+                    TranslationConstants.SINGULAR_FORM] is not None):
+                return pomsgset.active_texts[
+                    TranslationConstants.SINGULAR_FORM]
+        # By default, singular text is the msgid.
+        return self.msgid
+
+    @property
+    def plural_text(self):
+        """See IPOTMsgSet."""
+        return self.msgid_plural
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
