@@ -8858,6 +8858,8 @@ ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 ALTER TABLE supportcontact DISABLE TRIGGER ALL;
 
 INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, 8, NULL, NULL, 14, '2007-03-23 20:49:36.522334');
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, NULL, 5, NULL, 14, '2007-03-24 03:20:30.981082');
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, NULL, 1, 9, 14, '2007-03-24 03:24:03.301407');
 
 
 ALTER TABLE supportcontact ENABLE TRIGGER ALL;

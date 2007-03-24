@@ -352,8 +352,8 @@ words ('with', 'a').
 Target can have support contacts. The list of support contacts for a
 target is available through the answer_contacts attribute.
 
-    >>> list(target.answer_contacts)
-    []
+    >>> [p.name for p in target.answer_contacts]
+    [u'daf']
 
 There is also a direct_answer_contacts which includes only the
 support contacts registered explicitely on the question target. (In
@@ -362,8 +362,8 @@ IQuestionTarget implementations may inherit support contacts
 from other context. In these cases, that attribute would only contain
 the support contacts defined in the current IQuestionTarget context.)
 
-    >>> list(target.direct_answer_contacts)
-    []
+    >>> [p.name for p in target.direct_answer_contacts]
+    [u'daf']
 
 You add a support contact by using the addAnswerContact method. This
 is only available to registered users.
@@ -381,9 +381,9 @@ False when it was already on the list:
     >>> target.addAnswerContact(name18)
     True
     >>> [p.name for p in target.answer_contacts]
-    [u'name18']
+    [u'daf', u'name18']
     >>> [p.name for p in target.direct_answer_contacts]
-    [u'name18']
+    [u'daf', u'name18']
     >>> target.addAnswerContact(name18)
     False
 
@@ -394,10 +394,10 @@ list.
 
     >>> target.removeAnswerContact(name18)
     True
-    >>> list(target.answer_contacts)
-    []
-    >>> list(target.direct_answer_contacts)
-    []
+    >>> [p.name for p in target.answer_contacts]
+    [u'daf']
+    >>> [p.name for p in target.direct_answer_contacts]
+    [u'daf']
     >>> target.removeAnswerContact(name18)
     False
 
@@ -416,15 +416,10 @@ getSupportedLanguages(). The supported languages of a question target
 include English plus all languages spoken by at least one of its support
 contacts (with the exception of all English variations).
 
-    >>> [lang.code for lang in target.getSupportedLanguages()]
-    [u'en']
+    >>> sorted([lang.code for lang in target.getSupportedLanguages()])
+    [u'cy', u'en', u'ja']
 
 Let's add some support contacts which speak different languages.
-
-    >>> login('daf@canonical.com')
-    >>> daf = getUtility(IPersonSet).getByName('daf')
-    >>> target.addAnswerContact(daf)
-    True
 
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
@@ -435,7 +430,9 @@ Let's add some support contacts which speak different languages.
     [u'ca', u'es']
 
 Note that daf has en_GB as one of his preferred languages...
-
+    
+    >>> login('daf@canonical.com')
+    >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> [lang.code for lang in daf.languages]
     [u'en_GB', u'ja', u'cy']
 

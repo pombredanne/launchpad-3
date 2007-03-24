@@ -94,22 +94,22 @@ distribution list:
 The same principle applies to DistributionSourcePackage:
 
     >>> [person.name for person in evolution.direct_answer_contacts]
-    []
+    [u'daf']
     >>> [person.name for person in evolution.answer_contacts]
-    [u'name16']
+    [u'daf', u'name16']
     >>> evolution.addAnswerContact(sample_person)
     True
     >>> [person.name for person in evolution.direct_answer_contacts]
-    [u'name16']
+    [u'daf', u'name16']
     >>> [person.name for person in evolution.answer_contacts]
-    [u'name16']
+    [u'daf', u'name16']
     >>> evolution.removeAnswerContact(sample_person)
     True
     >>> [person.name for person in evolution.answer_contacts]
-    [u'name16']
+    [u'daf', u'name16']
     >>> evolution.removeAnswerContact(sample_person)
     False
     >>> [person.name for person in evolution.direct_answer_contacts]
-    []
+    [u'daf']
     >>> [person.name for person in evolution.answer_contacts]
-    [u'name16']
+    [u'daf', u'name16']
