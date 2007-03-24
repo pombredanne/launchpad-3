@@ -61,9 +61,15 @@ class BranchToMirror:
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
+        If the source is an absolute path, that means it represents a hosted
+        branch, and it does not make sense to check its scheme or hostname. So
+        let it pass.
+
         If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it is
         in the launchpad.net domain, raise BadUrlLaunchpad.
         """
+        if self.source.startswith('/'):
+            return
         uri = URI(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(self.source)

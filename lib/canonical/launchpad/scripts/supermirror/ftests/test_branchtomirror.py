@@ -68,7 +68,7 @@ class TestBranchToMirror(unittest.TestCase):
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            'file://' + srcbranchdir, destbranchdir, client, 1, None)
+            srcbranchdir, destbranchdir, client, 1, None)
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
@@ -93,7 +93,7 @@ class TestBranchToMirror(unittest.TestCase):
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            'file://' + srcbranchdir, destbranchdir, client, 1, None)
+            srcbranchdir, destbranchdir, client, 1, None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -186,7 +186,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
-        source_url = 'file://' + os.path.abspath('src-branch')
+        source_url = os.path.abspath('src-branch')
         to_mirror = BranchToMirror(
             source_url, 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
@@ -237,7 +237,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
-        non_existant_branch = 'file://' + os.path.abspath('nonsensedir')
+        non_existant_branch = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
         client = BranchStatusClient()
         mybranch = BranchToMirror(
@@ -246,7 +246,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
-        non_existant_branch = 'file://' + os.path.abspath('nonsensedir')
+        non_existant_branch = os.path.abspath('nonsensedir')
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
@@ -275,7 +275,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client = BranchStatusClient()
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
-        source_url = 'file://' + os.path.abspath('missingrevision')
+        source_url = os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
             source_url, "missingrevisiontarget", client, 1,
             'foo/bar/baz')
