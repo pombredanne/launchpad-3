@@ -135,7 +135,7 @@
     difficult to read. Checked with mptt about that. - David Allouche 2006-04-09
     -->
   </tal:comment>
-  <p tal:condition="context/mirror_failures"
+  <p tal:condition="context/mirror_failures" id="mirror-failure"
        class="warning message" style="font-weight: normal">
     Launchpad could not mirror this branch
     <span
