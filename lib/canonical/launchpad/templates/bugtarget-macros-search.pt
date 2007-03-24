@@ -45,6 +45,12 @@
 <metal:block define-macro="simple-search-form">
 <form method="get" name="search" class="primary search" action=""
       tal:attributes="action search_url|string:">
+  <div style="float: right;">
+    <a href="+filebug">
+      <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+    </a>
+  </div>
+
   <tal:searchbox replace="structure view/searchtext_widget" />
   <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
   <input type="submit" name="search" value="Search" />
