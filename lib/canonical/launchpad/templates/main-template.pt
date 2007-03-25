@@ -35,9 +35,9 @@
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader">
-      <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" src="/+icing/globalheader_home.gif" alt="Home" /></a>
+      <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_home.gif" alt="Home" /></a>
       <div class="sitemessage">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
-      <img class="launchpad" width="90" height="20" src="/+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
+      <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
 
     <div id="locationbar">
@@ -49,7 +49,7 @@
 
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    
+
     <div id="singlecolumn" tal:condition="columns1|nothing"> <!-- deprecated -->
       <metal:heading define-slot="pageheading" />
       <tal:XXX condition="nothing"
