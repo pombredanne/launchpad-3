@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Specification title</h1>
+      <h1 tal:content="context/title">Blueprint title</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -27,9 +27,9 @@
   </p>
 
   <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
+    This blueprint has been superseded. See the newer blueprint
     "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
+           tal:attributes="href context/superseded_by/fmt:url">new blueprint
     title</a></b>" for updated plans.
   </p>
 
@@ -129,7 +129,7 @@
       </tbody>
     </table>
     <tal:desc replace="structure context/summary/fmt:text-to-html">
-      The spec summary will go here.
+      The blueprint summary will go here.
     </tal:desc>
     <ul class="menu">
       <li class="link">
@@ -161,7 +161,7 @@
     <tal:block tal:replace="structure context/@@+deptreeimgtag" />
 
     <p class="discreet">
-      * Specifications in grey have been implemented.
+      * Blueprints in grey have been implemented.
     </p>
 
   </tal:deptree>
@@ -169,7 +169,7 @@
       <ul class="nearby menu" tal:condition="context/goal">
         <li>
           <a tal:attributes="href context/goal/fmt:url">
-            Other <tal:goal replace="context/goal/displayname" /> specifications
+            Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>
