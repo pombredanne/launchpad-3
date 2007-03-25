@@ -32,7 +32,7 @@
       initPortlets();
     "
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader">
       <div class="launchpad">
@@ -59,7 +59,7 @@
     <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
     
-    <div id="singlecolumn" tal:condition="columns1|nothing">
+    <div id="singlecolumn" tal:condition="columns1|nothing"> <!-- deprecated -->
       <metal:heading define-slot="pageheading" />
       <tal:XXX condition="nothing"
       >20061025 mpt: pageheading deprecated</tal:XXX>
@@ -73,8 +73,20 @@
       </tal:notifications>
       <metal:block define-slot="main" />
     </div>
+
     <tal:layout condition="not:columns1|nothing">
 
+    <table
+      tal:condition="view/macro:page/pillarindex"
+      id="applications"
+    >
+      <tbody>
+        <tr>
+          <th><h1 metal:define-slot="application-heading" /></th>
+          <td tal:content="structure context/@@+applicationbuttons/register" />
+        </tr>
+      </tbody>
+    </table>
     <div
       id="structuralobject"
       tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
@@ -111,6 +123,12 @@
               <div class="x">
                 <div class="y">
                   <div class="z">
+
+                    <div
+                      tal:condition="contextless|nothing"
+                      id="noapplicationchooser"
+                    >&nbsp;</div>
+
                     <tal:onlyincontexts condition="not:contextless|nothing">
 
                     <ul
@@ -155,10 +173,6 @@
                     </ul>
 
                     </tal:onlyincontexts>
-                    <div
-                      tal:condition="contextless|nothing"
-                      id="noapplicationchooser"
-                    >&nbsp;</div>
 
                     <br class="clear" />
 
@@ -192,7 +206,6 @@
                       <div class="clear"></div><!-- needed for Safari -->
                     </div>
                     <div class="clear"></div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -241,6 +254,29 @@
             <tal:block condition="not: revno">unknown</tal:block>
         </tal:block> |
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+      </div>
+      <br class="clear" />
+      <div>
+        <ul>
+            <li>Has actions menu:
+                <span tal:replace="template/macro:pagehas/actionsmenu" />
+            </li>
+            <li>Has portlet column:
+                <span tal:replace="template/macro:pagehas/portletcolumn" />
+            </li>
+            <li>Has application tabs:
+                <span tal:replace="template/macro:pagehas/applicationtabs" />
+            </li>
+            <li>Has application border:
+                <span tal:replace="template/macro:pagehas/applicationborder" />
+            </li>
+            <li>Has application buttons:
+                <span tal:replace="template/macro:pagehas/applicationbuttons" />
+            </li>
+            <li>Has heading:
+                <span tal:replace="template/macro:pagehas/heading" />
+            </li>
+        </ul>
       </div>
     </div>
     <div id="menupreload" style="visibility:hidden">

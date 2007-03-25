@@ -31,7 +31,7 @@ import pytz
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
-    IStructuralHeaderPresentation)
+    IStructuralHeaderPresentation, IBugNomination)
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
@@ -1255,6 +1255,8 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationbuttons
         view/macro:pagehas/heading
 
+        view/macro:pagetype
+
     """
 
     implements(ITraversable)
@@ -1284,6 +1286,9 @@ class PageMacroDispatcher:
             layoutelement = furtherPath.pop()
             return self.haspage(layoutelement)
 
+        if name == 'pagetype':
+            return self.pagetype()
+
         raise TraversalError()
 
     def page(self, pagetype):
@@ -1297,6 +1302,9 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def pagetype(self):
+        return getattr(self.context, '__pagetype__', 'unset')
 
     class LayoutElements:
 
@@ -1325,6 +1333,7 @@ class PageMacroDispatcher:
         'default':
             LayoutElements(
                 actionsmenu=True,
+                applicationbuttons=False,
                 portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True),
@@ -1362,6 +1371,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
+            IBugNomination.providedBy(self.context) or
             IBugExternalRef.providedBy(self.context)):
             return self.view.current_bugtask
         else:
