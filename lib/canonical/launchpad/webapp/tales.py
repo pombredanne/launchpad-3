@@ -1254,6 +1254,8 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationbuttons
         view/macro:pagehas/heading
 
+        view/macro:pagetype
+
     """
 
     implements(ITraversable)
@@ -1283,6 +1285,9 @@ class PageMacroDispatcher:
             layoutelement = furtherPath.pop()
             return self.haspage(layoutelement)
 
+        if name == 'pagetype':
+            return self.pagetype()
+
         raise TraversalError()
 
     def page(self, pagetype):
@@ -1296,6 +1301,9 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def pagetype(self):
+        return getattr(self.context, '__pagetype__', 'unset')
 
     class LayoutElements:
 
@@ -1324,6 +1332,7 @@ class PageMacroDispatcher:
         'default':
             LayoutElements(
                 actionsmenu=True,
+                applicationbuttons=False,
                 portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True),

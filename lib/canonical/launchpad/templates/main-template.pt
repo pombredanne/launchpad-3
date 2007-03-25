@@ -32,7 +32,7 @@
       initPortlets();
     "
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader">
       <div class="launchpad">
@@ -77,7 +77,7 @@
     <tal:layout condition="not:columns1|nothing">
 
     <table
-      tal:condition="template/macro:page/pillarindex"
+      tal:condition="view/macro:page/pillarindex"
       id="applications"
     >
       <tbody>
