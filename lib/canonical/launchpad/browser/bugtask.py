@@ -21,6 +21,7 @@ __all__ = [
     'BugTasksAndNominationsView',
     'BugTaskView',
     'get_sortorder_from_request',
+    'get_buglisting_search_filter_url',
     'BugTargetTextView',
     'upstream_status_vocabulary_factory',
     'BugsBugTaskSearchListingView']
@@ -1042,13 +1043,15 @@ class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
     def getOpenBugsURL(self):
         """Return the URL for open bugs on this bug target."""
-        return self.getSearchFilterURL(
+        return get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
         """Return the URL for bugs assigned to the current user on target."""
         if self.user:
-            return self.getSearchFilterURL(assignee=self.user.name)
+            return get_buglisting_search_filter_url(
+                self.request.URL, assignee=self.user.name)
         else:
             return str(self.request.URL) + "/+login"
 
@@ -1065,48 +1068,52 @@ class BugListingPortletView(LaunchpadView):
 
     def getCriticalBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        return self.getSearchFilterURL(
+        return get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=dbschema.BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        unresolved_tasks_query_string = self.getSearchFilterURL(
+        unresolved_tasks_query_string = get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
         return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getUnconfirmedBugsURL(self):
         """Return the URL for unconfirmed bugs on this bug target."""
-        return self.getSearchFilterURL(
-            status=dbschema.BugTaskStatus.UNCONFIRMED.title)
+        return get_buglisting_search_filter_url(
+            self.request.URL, status=dbschema.BugTaskStatus.UNCONFIRMED.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
-        all_status_query_string = self.getSearchFilterURL(
-            status=[status.title for status in all_statuses])
+        all_status_query_string = get_buglisting_search_filter_url(
+            self.request.URL, status=[status.title for status in all_statuses])
 
         # Add the bit that simulates the "omit dupes" checkbox being unchecked.
         return all_status_query_string + "&field.omit_dupes.used="
 
-    def getSearchFilterURL(self, assignee=None, importance=None, status=None):
-        """Return a URL with search parameters."""
-        search_params = []
 
-        if assignee:
-            search_params.append(('field.assignee', assignee))
-        if importance:
-            search_params.append(('field.importance', importance))
-        if status:
-            search_params.append(('field.status', status))
+def get_buglisting_search_filter_url(
+        url, assignee=None, importance=None, status=None):
+    """Return the given URL with the search parameters specified."""
+    search_params = []
 
-        query_string = urllib.urlencode(search_params, doseq=True)
+    if assignee:
+        search_params.append(('field.assignee', assignee))
+    if importance:
+        search_params.append(('field.importance', importance))
+    if status:
+        search_params.append(('field.status', status))
 
-        search_filter_url = str(self.request.URL) + "?search=Search"
-        if query_string:
-            search_filter_url += "&" + query_string
+    query_string = urllib.urlencode(search_params, doseq=True)
 
-        return search_filter_url
+    search_filter_url = str(url) + "?search=Search"
+    if query_string:
+        search_filter_url += "&" + query_string
+
+    return search_filter_url
 
 
 def getInitialValuesFromSearchParams(search_params, form_schema):

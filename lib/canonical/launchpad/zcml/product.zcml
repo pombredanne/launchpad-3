@@ -127,6 +127,11 @@
             template="../templates/product-packages.pt"
             />
         <browser:page
+            name="+series"
+            facet="overview"
+            template="../templates/product-series.pt"
+            />
+        <browser:page
             name="+distributions"
             facet="overview"
             template="../templates/product-distros.pt"
