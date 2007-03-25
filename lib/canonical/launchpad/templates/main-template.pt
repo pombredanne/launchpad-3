@@ -77,7 +77,7 @@
     <tal:layout condition="not:columns1|nothing">
 
     <table
-      tal:condition="view/macro:page/pillarindex"
+      tal:condition="view/macro:pagehas/applicationbuttons"
       id="applications"
     >
       <tbody>
@@ -124,12 +124,13 @@
                 <div class="y">
                   <div class="z">
 
+                    <tal:applicationtabs
+                      condition="view/macro:pagehas/applicationtabs"
+                    >
                     <div
-                      tal:condition="contextless|nothing"
+                      tal:condition="not:view/macro:pagehas/applicationtabs"
                       id="noapplicationchooser"
                     >&nbsp;</div>
-
-                    <tal:onlyincontexts condition="not:contextless|nothing">
 
                     <ul
                       id="applicationchooser"
@@ -172,7 +173,7 @@
                       </tal:facet>
                     </ul>
 
-                    </tal:onlyincontexts>
+                    </tal:applicationtabs>
 
                     <br class="clear" />
 
@@ -257,24 +258,22 @@
       </div>
       <br class="clear" />
       <div>
+        Page type: <tal:pagetype replace="view/macro:pagetype" />
         <ul>
-            <li>Has actions menu:
-                <span tal:replace="template/macro:pagehas/actionsmenu" />
-            </li>
             <li>Has portlet column:
-                <span tal:replace="template/macro:pagehas/portletcolumn" />
+                <span tal:replace="view/macro:pagehas/portletcolumn" />
             </li>
             <li>Has application tabs:
-                <span tal:replace="template/macro:pagehas/applicationtabs" />
+                <span tal:replace="view/macro:pagehas/applicationtabs" />
             </li>
             <li>Has application border:
-                <span tal:replace="template/macro:pagehas/applicationborder" />
+                <span tal:replace="view/macro:pagehas/applicationborder" />
             </li>
             <li>Has application buttons:
-                <span tal:replace="template/macro:pagehas/applicationbuttons" />
+                <span tal:replace="view/macro:pagehas/applicationbuttons" />
             </li>
             <li>Has heading:
-                <span tal:replace="template/macro:pagehas/heading" />
+                <span tal:replace="view/macro:pagehas/heading" />
             </li>
         </ul>
       </div>

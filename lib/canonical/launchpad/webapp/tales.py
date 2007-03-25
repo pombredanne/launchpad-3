@@ -1247,7 +1247,6 @@ class PageMacroDispatcher:
         view/macro:page/pillarindex
         view/macro:page/freeform
 
-        view/macro:pagehas/actionsmenu
         view/macro:pagehas/portletcolumn
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
@@ -1308,7 +1307,6 @@ class PageMacroDispatcher:
     class LayoutElements:
 
         def __init__(self,
-            actionsmenu=False,
             portletcolumn=False,
             applicationtabs=False,
             applicationborder=False,
@@ -1324,28 +1322,26 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                actionsmenu=True,
                 portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
-                actionsmenu=True,
-                applicationbuttons=False,
-                portletcolumn=True,
+                applicationborder=True,
                 applicationtabs=True,
-                applicationborder=True),
+                portletcolumn=True),
         'applicationhome':
             LayoutElements(
+                applicationborder=True,
                 applicationbuttons=True,
                 heading=True),
         'pillarindex':
             LayoutElements(
-                actionsmenu=True,
-                portletcolumn=True,
+                applicationborder=True,
                 applicationbuttons=True,
-                heading=True),
+                heading=True,
+                portletcolumn=True),
         'freeform':
             LayoutElements(),
         }
