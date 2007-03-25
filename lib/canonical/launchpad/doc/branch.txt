@@ -631,9 +631,8 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForPerson method on IBranchSet will 
 return all branches associated with that person:
-  - subscribed branches by person or team the person is a member of
-  - person is author of the branch
-  - owner is person or team the person is a member of
+  - subscribed branches by person
+  - person is author or owner of the branch
 
   >>> from canonical.launchpad.interfaces import (
   ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
@@ -641,7 +640,6 @@ return all branches associated with that person:
   ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
-  New ~vcs-imports/evolution/main
   New ~ddaa/gnome-terminal/dev
   New ~ddaa/+junk/junkcode
 
