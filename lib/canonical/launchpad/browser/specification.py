@@ -145,7 +145,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+status', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe someone'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
