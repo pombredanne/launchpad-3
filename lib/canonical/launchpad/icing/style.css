@@ -1393,6 +1393,7 @@ fieldset {
 
 table.latest th, table.latest td {padding-bottom: 2em;}
 table.summary {float: right; margin: 0 0 1em 1em;}
+table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
 table.summary tr {border: dotted #ccc; border-width: 1px 0;}
