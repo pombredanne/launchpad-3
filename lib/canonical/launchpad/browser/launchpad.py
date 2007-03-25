@@ -173,8 +173,7 @@ class Breadcrumbs(LaunchpadView):
         """Render the breadcrumbs text.
 
         The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
-        breadcrumb is made <strong>.
+        For each breadcrumb, breadcrumb.text is cgi escaped.
         """
         crumbs = list(self.request.breadcrumbs)
         if crumbs:

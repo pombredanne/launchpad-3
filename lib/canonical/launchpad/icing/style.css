@@ -315,17 +315,6 @@ hr {
   margin-left: 12px;
   margin-bottom: 8px;
 }
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-}
-ul#menuroot li {
-  display: inline;
-}
-ul#menuroot em {
-  margin-top: 0px;
-}
 #logincontrol {
   position: absolute;
   top: 21px;
@@ -1364,99 +1353,44 @@ th.descending {
  * The grey line at the top of the page.
  *
  */
-/*
 
-  This is the HTML from the global header.
-
-<div id="globalheader">
-  <div class="launchpad">
-    <img width="34" height="16" src="/+icing/globalheader_launchpad.gif" alt=""/>
-    <a href="http://launchpad.dev/">Launchpad</a>
-  </div>
-  <ul class="home">
-    <li>
-      <a href="http://launchpad.dev/" title="Home">Home</a>
-    </li>
-  </ul>
-  <div style="color: white; font-size: 110%;">
-    This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.
-  </div>
-</div>
-*/
-/* XXX: needs explanation. */
-#globalheader {
-  min-width: 760px;
-}
-/* XXX: there is no label in the global header. */
-#globalheader label {
-  display: none;
-}
-/* XXX: there is no .logo in the global header. */
-#globalheader .logo {
-  float: left;
-}
-/* XXX: needs explanation. */
+/* Appropriate appearance for global header.
+ */
 #globalheader {
   position: relative;
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0 auto;
-  background-color: #EEEEEE;
+  margin: 0;
+  background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
   background-position: top center;
-  text-align: left;
 }
-/* XXX: needs explanation.
- * Why do we include an image in the header, only to inhibit its display here?
- */
-#globalheader img {
-  display: none;
-}
-/* XXX: needs explanation.
- *
+/*
  * This is where the actual Launchpad graphic is included.
  */
-#globalheader div.launchpad a {
-  float: right;
+/* Home icon and link. */
+#globalheader a.home {
   display: block;
-  width: 90px;
-  height: 20px;
-  background-image: url(globalheader_launchpad_bg.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-/* Why is 'home' in a ul ? */
-#globalheader ul.home {
-  float: left;
-  width: 30px;
-  height: 20px;
-  overflow: hidden;
   margin: 0;
   padding: 0;
-  list-style: none;
 }
-/* Displays the 'home' image.
- *
- * XXX: why so complicated?
- */
-#globalheader ul.home li a {
+/* Site-specific message. */
+#globalheader .sitemessage {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  float: left;
-  display: block;
-  width: 30px;
-  height: 20px;
-  background-image: url(globalheader_home.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
+  top: 2px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
 }
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 /*
  * locationbar
  *
@@ -1465,41 +1399,65 @@ th.descending {
 
 /* XXX: needs explanation */
 #locationbar {
-  min-width: 760px;
-}
-/* XXX: needs explanation */
-#locationbar {
   float: left;
   width: 100%;
   height: 26px;
-  overflow: hidden;
   margin: 0;
   padding: 0;
   list-style: none;
   background-color: #AFDB1F;
   font-size: 11px;
   font-weight: bold;
-  color: #FFFFFF;
+  color: #FFF;
 }
 /* XXX: needs explanation */
-#locationbar strong {
-  margin-right: 16px;
-}
-/* XXX: needs explanation */
-#locationbar li a {
-  position: relative;
-  left: -16px;
-  margin: 0px -16px 0px 0px;
+ul#menuroot {
+  display: inline;
   float: left;
-  height: 26px;
-  display: block;
+  margin: 0;
+}
+/* XXX: needs explanation */
+ul#menuroot li {
+  display: inline;
+}
+/* Style for breadcrumb items.
+ *
+ * XXX: background stuff needs explanation.
+ *
+ * Negative right margin for breadcrumbs.
+ * This is part of how we make them look like arrows.
+ */
+ul#menuroot>li>a {
+  position: relative;
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1000px 0px;
+  display: block;
+  float: left;
+  margin-right: -16px;
+}
+/* "Your location:" text.
+ *
+ * The 1px negative right margin is to bring the first breadcrumb a little
+ * closer to the "Your location:" text.  It makes it look visually tighter
+ * because of the chevron shape of the highlights.
+ */
+#yourlocation {
+  float: left;
+  display: block;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1100px 0px;
+  padding: 6px 0 10px 10px;
+  margin-right: -1px;
+}
+/* Display dyn menu items and breadcrumbs with black text and as blocks. */
+#locationbar li a {
+  display: block;
   color: #000000;
 }
 /* XXX: needs explanation */
-#locationbar ul.menuroot>li>a>em { /* should be changed to not need em */
+ul#menuroot>li>a>em { /* should be changed to not need em */
   font-style: normal;
   float: left;
   display: block;
@@ -1510,31 +1468,11 @@ th.descending {
   cursor: hand;
   cursor: pointer;
 }
-/* XXX: needs explanation */
-#locationbar strong {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 10px 10px !important;
-  padding: 5px 0 10px 10px;
-}
-
-/*
- * SteveA's fix-ups for the dynamic menu.
- */
 
 /* Undo more generic formatting around ul elements. */
 #locationbar ul {
     margin: 0;
     padding: 0;
-}
-/* Negative right margin for breadcrumbs.
- * This is part of how we make them look like arrows.
- */
-#locationbar ul.menuroot>li>a {
-  margin-right: -16px;
 }
 /* General appearance of a dynamic menu item.
  * The area we actually see on the page is an <a> element.
@@ -1589,11 +1527,11 @@ th.descending {
   color: #000;
 }
 /* Set the appearance of breadcrumb items on mouse-over. */
-#locationbar ul.menuroot>li>a:hover {
+ul#menuroot>li>a:hover {
   color: #EEE;
 }
 /* Set the appearance of breadcrumb items when selected for opening. */
-#locationbar ul.menuroot>li.selected>a {
+ul#menuroot>li.selected>a {
   background-position: 0px 0px;
   color: #000;
 }
@@ -1620,10 +1558,6 @@ th.descending {
   left: auto;
   margin: 0px 0px 0px 0px;
   white-space: pre;
-}
-/* XXX: This rule appears to be unused. */
-#locationbar strong {
-  margin-right: -5px;
 }
 /* Clouds of links. */
 .cloud-size-small { 
