@@ -210,24 +210,10 @@ strong span {
   overflow: hidden;
   display: none;
 }
-hr, #globalheader label {
+hr {
   display: none;
 }
-#globalheader .logo {
-  float: left;
-}
-#globalheader {
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 auto;
-  background-color: #EEEEEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-  text-align: left;
-}
+
 #central_column {
   position: relative;
   width: 100%;
@@ -329,22 +315,6 @@ hr, #globalheader label {
   margin-left: 12px;
   margin-bottom: 8px;
 }
-#locationbar {
-  float: left;
-  width: 100%;
-  height: 26px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFFFFF;
-}
-#locationbar strong {
-  margin-right: 16px;
-}
 ul#menuroot {
   display: inline;
   float: left;
@@ -355,43 +325,6 @@ ul#menuroot li {
 }
 ul#menuroot em {
   margin-top: 0px;
-}
-#locationbar li a {
-  position: relative;
-  left: -16px;
-  margin: 0px -16px 0px 0px;
-  float: left;
-  height: 26px;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  color: #000000;
-}
-#locationbar li a:hover {
-  background-position: 0px 0px;
-  text-decoration: none;
-  color: #000000;
-}
-#locationbar li em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 10px 20px;
-  cursor: hand;
-  cursor: pointer;
-}
-#locationbar strong {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 10px 10px !important;
-  padding: 5px 0 10px 10px;
 }
 #logincontrol {
   position: absolute;
@@ -617,47 +550,6 @@ ul#applicationchooser li#applicationchooser_selected {
   background: transparent;
   width: auto !important;
   border: 0 !important;
-}
-#globalheader,
-#locationbar {
-  min-width: 760px;
-}
-#globalheader img {
-  display: none;
-}
-#globalheader div.launchpad a {
-  float: right;
-  display: block;
-  width: 90px;
-  height: 20px;
-  background-image: url(globalheader_launchpad_bg.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#globalheader ul.home {
-  float: left;
-  width: 30px;
-  height: 20px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-#globalheader ul.home li a {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  float: left;
-  display: block;
-  width: 30px;
-  height: 20px;
-  background-image: url(globalheader_home.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
 }
 #structuralobject, #applications {
   position: relative;
@@ -1466,12 +1358,188 @@ th.descending {
 /* Used to indicate a value to be used to sort cells in a row */
 .sortkey, .revsortkey {display: none;}
 
+/*
+ * Global header line.
+ *
+ * The grey line at the top of the page.
+ *
+ */
+/*
 
-/* SteveA's fix-ups for the dynamic menu */
-#locationbar ul {margin: 0; padding: 0;}
-#locationbar ul.menuroot li a {
+  This is the HTML from the global header.
+
+<div id="globalheader">
+  <div class="launchpad">
+    <img width="34" height="16" src="/+icing/globalheader_launchpad.gif" alt=""/>
+    <a href="http://launchpad.dev/">Launchpad</a>
+  </div>
+  <ul class="home">
+    <li>
+      <a href="http://launchpad.dev/" title="Home">Home</a>
+    </li>
+  </ul>
+  <div style="color: white; font-size: 110%;">
+    This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.
+  </div>
+</div>
+*/
+/* XXX: needs explanation. */
+#globalheader {
+  min-width: 760px;
+}
+/* XXX: there is no label in the global header. */
+#globalheader label {
+  display: none;
+}
+/* XXX: there is no .logo in the global header. */
+#globalheader .logo {
+  float: left;
+}
+/* XXX: needs explanation. */
+#globalheader {
+  position: relative;
+  width: 100%;
+  height: 21px;
+  overflow: hidden;
+  margin: 0 auto;
+  background-color: #EEEEEE;
+  background-image:  url(globalheader_bg.gif);
+  background-repeat: repeat-x;
+  background-position: top center;
+  text-align: left;
+}
+/* XXX: needs explanation.
+ * Why do we include an image in the header, only to inhibit its display here?
+ */
+#globalheader img {
+  display: none;
+}
+/* XXX: needs explanation.
+ *
+ * This is where the actual Launchpad graphic is included.
+ */
+#globalheader div.launchpad a {
+  float: right;
+  display: block;
+  width: 90px;
+  height: 20px;
+  background-image: url(globalheader_launchpad_bg.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+/* Why is 'home' in a ul ? */
+#globalheader ul.home {
+  float: left;
+  width: 30px;
+  height: 20px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Displays the 'home' image.
+ *
+ * XXX: why so complicated?
+ */
+#globalheader ul.home li a {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  float: left;
+  display: block;
+  width: 30px;
+  height: 20px;
+  background-image: url(globalheader_home.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+/*
+ * locationbar
+ *
+ * Includes breadcrumbs and dynamic menus.
+ */
+
+/* XXX: needs explanation */
+#locationbar {
+  min-width: 760px;
+}
+/* XXX: needs explanation */
+#locationbar {
+  float: left;
+  width: 100%;
+  height: 26px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: #AFDB1F;
+  font-size: 11px;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+/* XXX: needs explanation */
+#locationbar strong {
+  margin-right: 16px;
+}
+/* XXX: needs explanation */
+#locationbar li a {
+  position: relative;
+  left: -16px;
+  margin: 0px -16px 0px 0px;
+  float: left;
+  height: 26px;
+  display: block;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1000px 0px;
+  color: #000000;
+}
+/* XXX: needs explanation */
+#locationbar ul.menuroot>li>a>em { /* should be changed to not need em */
+  font-style: normal;
+  float: left;
+  display: block;
+  background-image: url(locationbar_em_bg.gif);
+  background-repeat: no-repeat;
+  background-position: right top;
+  padding: 6px 26px 10px 20px;
+  cursor: hand;
+  cursor: pointer;
+}
+/* XXX: needs explanation */
+#locationbar strong {
+  float: left;
+  display: block;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1100px 0px;
+  padding: 6px 0 10px 10px !important;
+  padding: 5px 0 10px 10px;
+}
+
+/*
+ * SteveA's fix-ups for the dynamic menu.
+ */
+
+/* Undo more generic formatting around ul elements. */
+#locationbar ul {
+    margin: 0;
+    padding: 0;
+}
+/* Negative right margin for breadcrumbs.
+ * This is part of how we make them look like arrows.
+ */
+#locationbar ul.menuroot>li>a {
   margin-right: -16px;
 }
+/* General appearance of a dynamic menu item.
+ * The area we actually see on the page is an <a> element.
+ * The <li> element takes up no space.
+ */
 #locationbar ul.menu li a {
   background-image: none;
   background-color: #AFDB1F;
@@ -1482,10 +1550,15 @@ th.descending {
   padding-bottom: 3px;
   height: auto;
 }
+/* General appearance of a dynamic menu item. */
 #locationbar ul.menu li {
   margin-bottom: 0px;
   padding-bottom: 0px;
 }
+/* Appearance of a dynamic menu or submenu.
+ * Note the 3d-effect border.
+ * Note the z-index so that they appear above all other content.
+ */
 #locationbar ul.menu {
   background-color: #AFDB1F;
   position: absolute;
@@ -1496,24 +1569,63 @@ th.descending {
   border-top: 1px solid #DCF58B;
   border-left: 1px solid #DCF58B;
   padding-left: 0px;
-  padding-right: 16px;
+  padding-right: 0px;
 }
-#locationbar ul.menu li.selected a {
+/* Inhibit underlines on all dyn menu items. */
+#locationbar li a:hover {
+  text-decoration: none;
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * on mouse-over.
+ */
+#locationbar ul.menu li>a:hover {
+  color: #EEE;
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * when selected and potentially opened.
+ */
+#locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
+  color: #000;
 }
+/* Set the appearance of breadcrumb items on mouse-over. */
+#locationbar ul.menuroot>li>a:hover {
+  color: #EEE;
+}
+/* Set the appearance of breadcrumb items when selected for opening. */
+#locationbar ul.menuroot>li.selected>a {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Make dyn menu items that are the source of submenus have a right-arrow
+ * on the far right, to show they can be opened.
+ *
+ * Does not include the breadcrumbs.
+ */
+#locationbar ul.menu li.container>a {
+  background-image: url(/@@/arrowRight);
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+/* Allow dyn menus to appear ouside of the locationbar, even though they
+ * overflow its bounds.
+ */
 #locationbar {
   overflow: visible;
 }
+/* Prevent the text in links in menu items from wrapping.
+ * Apply appropriate formatting to links in menu items.
+ */
 #locationbar li a {
   left: auto;
   margin: 0px 0px 0px 0px;
+  white-space: pre;
 }
+/* XXX: This rule appears to be unused. */
 #locationbar strong {
   margin-right: -5px;
 }
-#locationbar {
-  overflow: visible;
-}
+/* Clouds of links. */
 .cloud-size-small { 
   font-size: 1em;
 }

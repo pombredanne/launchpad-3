@@ -206,10 +206,10 @@ class Breadcrumbs(LaunchpadView):
 
                 # Disable these menus for now.  To be re-enabled on the ui 1.0
                 # branch.
-                L.append('<li class="item">'
+                L.append('<li class="item" lpm:mid="%s/+menudata">'
                          '<a href="%s"><em>%s</em></a>'
                          '</li>'
-                         % (crumb.url, cgi.escape(crumb.text)))
+                         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
 
             #L.append(
             #    '<li class="item">'

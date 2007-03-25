@@ -674,29 +674,92 @@ class ProductRdfView:
         return encodeddata
 
 
+import cgi
+class DynMenuLink:
+
+    def __init__(self, name, text, submenu=None):
+        self.name = name
+        self.text = text
+        self.submenu = submenu
+
+    def render(self, basepath):
+        L = []
+        if self.submenu:
+            L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (basepath, self.submenu))
+        else:
+            L.append('<li class="item">')
+        L.append('<a href="%s/%s">' %  (basepath, self.name))
+        L.append(cgi.escape(self.text))
+        L.append('</a>')
+        L.append('</li>')
+        return ''.join(L)
+
+
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.interface import implements
 class ProductDynMenu(LaunchpadView):
 
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request):
+        self.names = []
+        LaunchpadView.__init__(self, context, request)
+
+    # The following two zope methods publishTraverse and browserDefault
+    # allow this view class to take control of traversal from this point
+    # onwards.  Traversed names just end up in self.names.
+
+    def publishTraverse(self, request, name):
+        """Traverse to the given name."""
+        self.names.append(name)
+        return self
+
+    def browserDefault(self, request):
+        return self, ()
+
     def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(names[-1])
+
+        if not self.names:
+            return self.renderMainMenu()
+
+        [name] = self.names
+        if name == 'meetings':
+            return self.renderMeetingsMenu()
+
+        raise NotFoundError(name)
+
+    def renderMeetingsMenu(self):
         L = []
         L.append('<ul class="menu"')
-        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
-        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
-            % self.context.name)
-        L.append('>')
-
-        producturl = '/products/%s' % self.context.name
-
-        for link, name in [
-            ('+branches', 'Branches'),
-            ('+sprints', 'Meetings'),
-            ('+milestones', 'Milestones'),
-            ('+series', 'Product series')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        basepath = ''
+        for link in [
+            DynMenuLink('.', 'Meeting xxxxxxx')
             ]:
-            L.append('<li class="item container" lpm:midpart="%s">' % link)
-            L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
-            L.append('</li>')
+            L.append(link.render(basepath))
         L.append('</ul>')
         return u'\n'.join(L)
+
+    def renderMainMenu(self):
+        L = []
+        L.append('<ul class="menu"')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        #L.append('    lpm:midroot="%s/$$/+menudata"'
+        #    % self.context.name)
+        L.append('>')
+
+        basepath = '/%s' % self.context.name
+        for link in [
+            DynMenuLink('+sprints', 'Meetings', submenu='meetings'),
+            DynMenuLink('+milestones', 'Milestones', submenu='meetings'),
+            DynMenuLink('+series', 'Product series'),
+            ]:
+            L.append(link.render(basepath))
+        L.append('</ul>')
+        return u'\n'.join(L)
+
 
 class ProductSetDynMenu(LaunchpadView):
 
