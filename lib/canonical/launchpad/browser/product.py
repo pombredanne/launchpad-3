@@ -400,7 +400,7 @@ class ProductSetContextMenu(ContextMenu):
     def listall(self):
         text = 'List all projects'
         return Link('+all', text, icon='list')
-    
+
     def products(self):
         return Link('/products/', 'View projects')
 
@@ -684,22 +684,29 @@ class ProductRdfView:
 import cgi
 class DynMenuLink:
 
-    def __init__(self, name, text, submenu=None):
+    def __init__(self, context, name, text, submenu=None):
+        self.baseurl = canonical_url(context)
         self.name = name
         self.text = text
         self.submenu = submenu
 
-    def render(self, basepath):
+    def render(self):
+        basepath = self.baseurl
         L = []
         if self.submenu:
             L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (basepath, self.submenu))
         else:
             L.append('<li class="item">')
         L.append('<a href="%s/%s">' %  (basepath, self.name))
-        L.append(cgi.escape(self.text))
+        L.append(self.escape(self.text))
         L.append('</a>')
         L.append('</li>')
         return ''.join(L)
+
+    def escape(self, text):
+        escaped_text = cgi.escape(text)
+        escaped_text = escaped_text.replace('...', '&#8230;')
+        return escaped_text
 
 
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -712,6 +719,74 @@ class ProductDynMenu(LaunchpadView):
         self.names = []
         LaunchpadView.__init__(self, context, request)
 
+    def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(names[-1])
+
+        if not self.names:
+            return self.renderMainMenu()
+
+        [name] = self.names
+        if name == 'meetings':
+            return self.renderMeetingsMenu()
+        elif name == 'series':
+            return self.renderSeriesMenu()
+
+        raise NotFoundError(name)
+
+    def renderSeriesMenu(self):
+        L = []
+        L.append('<ul class="menu"')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        all_series = [
+            self.makeLink(series.title, context=series)
+            for series in self.context.serieslist
+            ]
+        for link in all_series + [
+            self.makeLink('Show all series...', page='+series')
+            ]:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+    def renderMeetingsMenu(self):
+        L = []
+        L.append('<ul class="menu"')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        basepath = canonical_url(self.context)
+        coming_sprints = [
+            self.makeLink(sprint.title, context=sprint)
+            for sprint in self.context.coming_sprints
+            ]
+        for link in coming_sprints + [
+                self.makeLink('Show all meetings...', page='+sprints')
+            ]:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+    def makeLink(self, text, context=None, page='', submenu=None):
+        if context is None:
+            context = self.context
+        return DynMenuLink(context, page, text, submenu)
+
+    def renderMainMenu(self):
+        L = []
+        L.append('<ul class="menu"')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        #L.append('    lpm:midroot="%s/$$/+menudata"'
+        #    % self.context.name)
+        L.append('>')
+
+        for link in [
+            self.makeLink('Meetings', page='+sprints', submenu='meetings'),
+            self.makeLink('Milestones', page='+milestones'),
+            self.makeLink('Product series', page='+series', submenu='series'),
+            ]:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
     # onwards.  Traversed names just end up in self.names.
@@ -723,68 +798,6 @@ class ProductDynMenu(LaunchpadView):
 
     def browserDefault(self, request):
         return self, ()
-
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMainMenu()
-
-        [name] = self.names
-        if name == 'meetings':
-            return self.renderMeetingsMenu()
-
-        raise NotFoundError(name)
-
-    def renderMeetingsMenu(self):
-        L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
-        basepath = ''
-        for link in [
-            DynMenuLink('.', 'Meeting xxxxxxx')
-            ]:
-            L.append(link.render(basepath))
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-    def renderMainMenu(self):
-        L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
-        #L.append('    lpm:midroot="%s/$$/+menudata"'
-        #    % self.context.name)
-        L.append('>')
-
-        basepath = '/%s' % self.context.name
-        for link in [
-            DynMenuLink('+sprints', 'Meetings', submenu='meetings'),
-            DynMenuLink('+milestones', 'Milestones', submenu='meetings'),
-            DynMenuLink('+series', 'Product series'),
-            ]:
-            L.append(link.render(basepath))
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-
-class ProductSetDynMenu(LaunchpadView):
-
-    def render(self):
-        L = []
-        L.append('<ul class="menu"')
-        L.append('    lpm:mid="/products/+menudata"')
-        L.append('>')
-        for product in self.context:
-            # given in full because there was an error in the JS when
-            # i use midpart / midbase.
-            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
-            L.append('<a href="/products/%s">' % product.name)
-            L.append(product.name)
-            L.append('</a>')
-            L.append('</li>')
-        L.append('</ul>')
-        return u'\n'.join(L)
 
 
 class ProductSetView(LaunchpadView):
