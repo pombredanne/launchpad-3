@@ -1,4 +1,3 @@
-<tal:layout define="contextless default">
 <html metal:use-macro="template/macro:page/pillarindex" i18n:domain="launchpad">
   <body>
 

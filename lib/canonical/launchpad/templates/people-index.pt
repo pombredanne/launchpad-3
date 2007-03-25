@@ -9,6 +9,8 @@
     <div tal:replace="structure context/@@+portlet-stats" />
   </metal:rightportlets>
 
+    <h1 metal:fill-slot="application-heading">People and teams</h1>
+
     <div metal:fill-slot="main">
       <h1>People and teams</h1>
       <tal:block define="bn view/searchPeopleBatchNavigator">
