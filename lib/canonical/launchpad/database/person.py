@@ -263,7 +263,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     def mentoring_offers(self):
         """See IPerson"""
         return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT DISTINCT MentoringOffer.id
+        (SELECT MentoringOffer.id
             FROM MentoringOffer
             LEFT OUTER JOIN BugTask ON
                 MentoringOffer.bug = BugTask.bug
@@ -282,7 +282,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     def team_mentorships(self):
         """See IPerson"""
         return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT DISTINCT MentoringOffer.id
+        (SELECT MentoringOffer.id
             FROM MentoringOffer
             JOIN TeamParticipation ON
                 MentoringOffer.team = TeamParticipation.person
