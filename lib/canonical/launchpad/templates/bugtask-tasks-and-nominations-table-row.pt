@@ -3,7 +3,7 @@
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
-    <td width="14" tal:condition="nothing  "><a tal:condition="can_edit_bugtask"
+    <td width="14" tal:condition="nothing"><a tal:condition="can_edit_bugtask"
            tal:attributes="
               href tasklink;
               onclick string:return toggleFormVisibility('${form_row_id}')"
@@ -15,18 +15,10 @@
         tal:define="release_targetname view/getReleaseTargetName">
       <img src="/@@/milestone" alt="Targeted to" />
       <tal:not-conjoined-task condition="not: context/conjoined_master">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')"
-        tal:content="release_targetname"
-      />
-      <a
-        tal:condition="not:can_edit_bugtask"
-        tal:attributes="href tasklink"
-        tal:content="release_targetname"
-      />
+        <a
+          tal:attributes="href context/target/fmt:url"
+          tal:content="release_targetname"
+        />
       </tal:not-conjoined-task>
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
@@ -37,15 +29,7 @@
              tal:condition="view/shouldShowProductIcon" />
         <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
           <a
-            tal:condition="can_edit_bugtask"
-            tal:attributes="
-                href tasklink;
-                onclick string:return toggleFormVisibility('${form_row_id}')"
-            tal:content="context/targetname"
-          />
-          <a
-            tal:condition="not:can_edit_bugtask"
-            tal:attributes="href tasklink"
+            tal:attributes="href context/target/fmt:url"
             tal:content="context/targetname"
           />
         </tal:not-conjoined-task>
