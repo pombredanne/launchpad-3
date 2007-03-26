@@ -206,18 +206,22 @@ person.
     >>> for bugtask in foobar.searchTasks(params_assignee, params_owner):
     ...     assignee = getattr(bugtask.assignee, 'name', None)
     ...     owner = getattr(bugtask.owner, 'name', None)
-    ...     print bugtask.targetname, assignee, owner
-    mozilla-firefox (Debian) None name16
-    mozilla-firefox (Ubuntu) None name16
-    evolution (upstream) name16 name16
-    mozilla-firefox (Debian) name16 name12
-    thunderbird (Ubuntu) None name16
-    linux-source-2.6.15 (Ubuntu) None name16
-    Ubuntu None name16
-    firefox 1.0 (upstream) None name16
-    evolution (Ubuntu) None name16
+    ...     print bugtask.bug.id, bugtask.targetname, assignee, owner
+     3 mozilla-firefox (Debian) None name16
+     1 mozilla-firefox (Ubuntu) None name16
+     7 evolution (upstream) name16 name16
+     8 mozilla-firefox (Debian) name16 name12
+     9 thunderbird (Ubuntu) None name16
+    10 linux-source-2.6.15 (Ubuntu) None name16
+     2 Ubuntu None name16
+     5 firefox 1.0 (upstream) None name16
+    11 jokosher (upstream) None name16
+    12 jokosher (upstream) None name16
+     1 evolution (Ubuntu) None name16
 
-How about the bugs reported by foobar, the ones he's subscribed to and the ones that are assigned to him --all of them together. That makes a nice list for a person's +bugs page.
+How about the bugs reported by foobar, the ones he's subscribed to and the
+ones that are assigned to him --all of them together. That makes a nice list
+for a person's +bugs page.
 
     >>> params_subscriber = BugTaskSearchParams(user=None, subscriber=foobar)
     >>> for bugtask in foobar.searchTasks(
@@ -227,21 +231,24 @@ How about the bugs reported by foobar, the ones he's subscribed to and the ones 
     ...     subscribed = ""
     ...     if foobar in bugtask.bug.getDirectSubscribers():
     ...         subscribed = "Subscribed"
-    ...     print bugtask.targetname, assignee, owner, subscribed
-    mozilla-firefox (Debian) None name16
-    mozilla-firefox (Ubuntu) None name16
-    evolution (upstream) name16 name16 Subscribed
-    mozilla-firefox (Debian) name16 name12
-    thunderbird (Ubuntu) None name16 Subscribed
-    thunderbird (upstream) None name12 Subscribed
-    linux-source-2.6.15 (Ubuntu) None name16 Subscribed
-    Ubuntu None name16
-    evolution (Debian) None name12 Subscribed
-    firefox 1.0 (upstream) None name16
-    evolution (Ubuntu) None name16
+    ...     print bugtask.bug.id, bugtask.targetname, assignee, owner, subscribed
+     3 mozilla-firefox (Debian) None name16
+     1 mozilla-firefox (Ubuntu) None name16
+     7 evolution (upstream) name16 name16 Subscribed
+     8 mozilla-firefox (Debian) name16 name12
+     9 thunderbird (Ubuntu) None name16 Subscribed
+     9 thunderbird (upstream) None name12 Subscribed
+    10 linux-source-2.6.15 (Ubuntu) None name16 Subscribed
+     2 Ubuntu None name16
+     7 evolution (Debian) None name12 Subscribed
+     5 firefox 1.0 (upstream) None name16
+    11 jokosher (upstream) None name16 Subscribed
+    12 jokosher (upstream) None name16 Subscribed
+     1 evolution (Ubuntu) None name16
 
 
-To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
+To provide null-matching search criteria, use
+canonical.launchpad.searchbuilder.NULL:
 
     >>> from canonical.launchpad.searchbuilder import NULL
     >>> params = BugTaskSearchParams(assignee=NULL, user=None)

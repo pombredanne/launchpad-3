@@ -324,7 +324,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
-        return Link('+bugs', text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
         text = 'Blueprints'
@@ -397,7 +397,12 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
+             'softwarebugs']
+
+    def relatedbugs(self):
+        text = 'Related'
+        return Link('', text, icon='bugs')
 
     def assignedbugs(self):
         text = 'Assigned'
@@ -420,7 +425,7 @@ class TeamBugsMenu(PersonBugsMenu):
 
     usedfor = ITeam
     facet = 'bugs'
-    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -917,7 +922,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         # bug (but different tasks) being displayed.
         return BugTaskSearchListingView.search(
             self,
-            extra_params={'owner': self.context, 'bug_reporter': self.context})
+            extra_params=dict(owner=self.context, bug_reporter=self.context))
 
     def getSearchPageHeading(self):
         """The header for the search page."""

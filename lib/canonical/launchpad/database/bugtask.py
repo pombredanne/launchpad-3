@@ -1143,12 +1143,11 @@ class BugTaskSet:
         # Build the tuples expected by sqlobject for each table we may need.
         joins = []
         for table in tables:
-            table_key = "%s.id" % table
             if table.lower() != 'bugtask':
                 foreignkey_col = table
             else:
                 foreignkey_col = 'id'
-            joins.append((table, foreignkey_col, table_key))
+            joins.append((table, 'id', foreignkey_col))
         return joins
 
     def createTask(self, bug, owner, product=None, productseries=None,
