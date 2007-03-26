@@ -252,6 +252,7 @@
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
       <br class="clear" />
+      <!--
       <div>
         Page type: <tal:pagetype replace="view/macro:pagetype" />
         <ul>
@@ -272,6 +273,7 @@
             </li>
         </ul>
       </div>
+      -->
     </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
