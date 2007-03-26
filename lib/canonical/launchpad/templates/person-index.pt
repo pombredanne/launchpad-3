@@ -135,8 +135,8 @@
   <div class="right">
     <div class="section">
     <div class="portlet">
-      <h2 tal:condition="not: context/is_team">Contact Details</h2>
-      <h2 tal:condition="context/is_team">Team and Membership Summary</h2>
+      <h2 tal:condition="not: context/isTeam">Contact details</h2>
+      <h2 tal:condition="context/isTeam">Team and membership summary</h2>
       <table class="summary">
         <tbody>
           <tr tal:condition="context/teamowner">
@@ -149,7 +149,7 @@
             </td>
           </tr>
           <tr tal:condition="context/teamowner">
-            <th>Members:</th>
+            <th>Membership:</th>
             <td>
               <span tal:replace="context/all_member_count">12</span>
               (<span
