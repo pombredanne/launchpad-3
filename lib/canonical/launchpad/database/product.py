@@ -258,7 +258,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return '%s (upstream)' % self.name
+        return self.displayname
 
     def getLatestBranches(self, quantity=5):
         """See IProduct."""

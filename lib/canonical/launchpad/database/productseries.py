@@ -125,7 +125,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
+        return "%s %s" % (self.product.displayname, self.name)
 
     @property
     def drivers(self):

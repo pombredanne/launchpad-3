@@ -1700,8 +1700,7 @@ class BugTargetTextView(LaunchpadView):
 
 def _by_targetname(bugtask):
     """Normalize the bugtask.targetname, for sorting."""
-    targetname = re.sub("(upstream)", "", bugtask.targetname, re.IGNORECASE)
-    return re.sub(r"\W", "", targetname)
+    return re.sub(r"\W", "", bugtask.targetname)
 
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
