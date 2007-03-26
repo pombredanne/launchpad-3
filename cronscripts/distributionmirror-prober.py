@@ -12,6 +12,7 @@ from twisted.internet import reactor
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
@@ -82,6 +83,7 @@ class DistroMirrorProber(LaunchpadScript):
 
         mirror_set = getUtility(IDistributionMirrorSet)
 
+        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
@@ -116,7 +118,6 @@ class DistroMirrorProber(LaunchpadScript):
             self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
             self.logger.info('No mirrors to probe.')
-        self.txn.commit()
 
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
@@ -137,7 +138,6 @@ class DistroMirrorProber(LaunchpadScript):
                     mirror.enabled = True
                     self.logger.info('Enabled %s' % canonical_url(mirror))
 
-        self.txn.commit()
         self.logger.info('Done.')
 
 
