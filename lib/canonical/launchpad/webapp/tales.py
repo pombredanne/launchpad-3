@@ -1310,6 +1310,7 @@ class PageMacroDispatcher:
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
+            globalsearch=False,
             heading=False,
             portletcolumn=False,
             structuralobject=False,
@@ -1325,6 +1326,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationtabs=True,
                 applicationborder=True,
+                globalsearch=True,
                 portletcolumn=True,
                 structuralobject=True,
                 pagetypewasset=False),
@@ -1332,17 +1334,20 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=True,
                 portletcolumn=True,
                 structuralobject=True),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=False,
                 heading=True,
                 portletcolumn=True),
         'freeform':

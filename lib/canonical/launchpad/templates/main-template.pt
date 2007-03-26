@@ -81,7 +81,7 @@
         <tal:no condition="not:structuralobject">No structural object</tal:no>
       </div>
       <form
-        tal:condition="not:view/macro:pagehas/applicationbuttons"
+        tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
         action="/+search"
         method="get"

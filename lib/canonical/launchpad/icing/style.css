@@ -681,20 +681,11 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+  position: relative;
+  top: -20px; /*- reduces pillargotchi~tab gap -*/
 }
-#singlecolumn #mainarea {
-  margin-left: 0;
-  margin-right: 0;
-}
-#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
 * html #mainarea {top: 0;}
-#singlecolumn #mainarea {top: -20px;}
-* html #singlecolumn #mainarea {top: 0;}
-#singlecolumn h1 {
-  padding-bottom: 0;
-  padding-top: 1em;
-}
-* html #singlecolumn h1 {padding-top: 0;}
+body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
 #mainarea div.t {
   width: 100%;
   background-image: url(mainarea_left.gif);
