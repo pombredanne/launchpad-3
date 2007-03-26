@@ -3,7 +3,7 @@
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
-    <td width="14"><a tal:condition="can_edit_bugtask"
+    <td width="14" tal:condition="nothing  "><a tal:condition="can_edit_bugtask"
            tal:attributes="
               href tasklink;
               onclick string:return toggleFormVisibility('${form_row_id}')"
@@ -31,9 +31,9 @@
     </td>
     <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <span style="display: block; padding: 0.25em">
-        <img src="/@@/package-source" alt="package"
+        <img src="/@@/package-source" alt=""
              tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" alt="project"
+        <img src="/@@/product" alt=""
              tal:condition="view/shouldShowProductIcon" />
         <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
           <a
@@ -69,14 +69,34 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
-    <td tal:attributes="class string:status${context/status/name}"
-        tal:content="context/status/title">
-       $BugTask.status
+    <td tal:attributes="class string:status${context/status/name}">
+      <tal:status replace="context/status/title">$BugTask.status</tal:status>
+      <a
+        tal:condition="can_edit_bugtask"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      ><img
+        tal:attributes="id string:${form_row_id}-edit"
+        src="/@@/arrowDown"
+        alt=""
+      /></a>
     </td>
 
-    <td tal:attributes="class string:importance${context/importance/name}"
-        tal:content="context/importance/title">
-       Critical
+    <td tal:attributes="class string:importance${context/importance/name}">
+      <tal:importance replace="context/importance/title" />
+      <a
+        tal:condition="can_edit_bugtask"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      ><img
+        tal:attributes="id string:${form_row_id}-edit"
+        src="/@@/arrowDown"
+        alt=""
+      /></a>
     </td>
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
@@ -112,6 +132,13 @@
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
+    <td class="icon right"><a tal:condition="can_edit_bugtask"
+           tal:attributes="
+              href tasklink;
+              onclick string:return toggleFormVisibility('${form_row_id}')"
+          ><img tal:attributes="id string:${form_row_id}-edit"
+               width="14" height="14"
+               src="/@@/edit" alt="[edit]" /></a></td>
   </tr>
   <tr
     tal:attributes="id form_row_id"

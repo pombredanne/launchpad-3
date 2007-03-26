@@ -4,10 +4,11 @@
     edit_icon = document.getElementById(row_id + "-edit")
     if (row.style.display=="none") {
       row.style.display = "table-row";
-      edit_icon.setAttribute("src","/@@/treeExpanded")
+      
+      /* edit_icon.setAttribute("src","/@@/treeExpanded") */
     } else {
       row.style.display = "none";
-      edit_icon.setAttribute("src", "/@@/treeCollapsed")
+      /* edit_icon.setAttribute("src", "/@@/treeCollapsed") */
     }
     return false;
   }
@@ -16,10 +17,11 @@
 <table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
   <thead>
     <tr>
-      <th colspan="2">Affects</th>
+      <th>Affects</th>
       <th>Status</th>
       <th>Importance</th>
       <th>Assigned To</th>
+      <th></th>
     </tr>
   </thead>
 
