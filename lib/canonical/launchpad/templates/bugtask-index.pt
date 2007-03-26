@@ -159,10 +159,7 @@
   </tal:comment>
 
   <tal:logged-in condition="view/user">
-    <fieldset class="collapsible collapsed">
-      <legend>Add a comment/attachment</legend>
-      <div tal:content="structure context/@@+addcomment-form" />
-    </fieldset>
+      <div tal:content="structure context/@@+addcomment-subform" />
   </tal:logged-in>
   <tal:not-logged-in condition="not: view/user">
     <div align="center">
