@@ -45,9 +45,13 @@
       <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
+      <table id="logincontrol">
+        <tr>
+          <td tal:content="structure context/@@login_status" />
+        </tr>
+      </table>
     </div>
 
-    <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
 
     <div id="singlecolumn" tal:condition="columns1|nothing"> <!-- deprecated -->
