@@ -74,7 +74,7 @@
       <metal:block define-slot="main" />
     </div>
 
-    <tal:layout condition="not:columns1|nothing">
+    <div id="nonhelp">
 
     <table
       tal:condition="view/macro:pagehas/applicationbuttons"
@@ -124,13 +124,13 @@
                 <div class="y">
                   <div class="z">
 
-                    <tal:applicationtabs
-                      condition="view/macro:pagehas/applicationtabs"
-                    >
                     <div
                       tal:condition="not:view/macro:pagehas/applicationtabs"
                       id="noapplicationchooser"
                     >&nbsp;</div>
+                    <tal:applicationtabs
+                      condition="view/macro:pagehas/applicationtabs"
+                    >
 
                     <ul
                       id="applicationchooser"
@@ -216,7 +216,7 @@
       </div>
     </div>
 
-    </tal:layout>
+    </div><!--id="nonhelp"-->
 
     <div id="help_panel" class="closed">
       <div class="help1">

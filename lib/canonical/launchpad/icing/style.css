@@ -213,6 +213,9 @@ strong span {
 hr, #globalheader label {
   display: none;
 }
+
+/* === Page layout === */
+
 #globalheader .logo {
   float: left;
 }
@@ -227,44 +230,6 @@ hr, #globalheader label {
   background-repeat: repeat-x;
   background-position: top center;
   text-align: left;
-}
-#central_column {
-  position: relative;
-  width: 100%;
-  margin: 0 auto;
-  background-color: #EEEEEE;
-  text-align: left;
-}
-#content_left {
-  position: relative;
-  float: left;
-  width: 175px;
-  background-color: #DDDDDD;
-}
-#content_right {
-  position: relative;
-  float: left;
-  width: 175px;
-  background-color: #CCCCCC;
-}
-#content_center {
-  position: relative;
-  float: left;
-  width: 410px;
-  background-color: #BBBBBB;
-}
-.content {
-  clear: both;
-  padding: 12px 14px 14px 14px;
-}
-#content_left .content {
-  width: 146px;
-}
-#content_right .content {
-  width: 146px;
-}
-#content_center .content {
-  width: 380px;
 }
 #globalfooter {
   border-top: 1px solid #ccc;
@@ -295,37 +260,6 @@ hr, #globalheader label {
   clear: both;
   height: 0px;
   overflow: hidden;
-}
-.clear_content {
-  clear: both;
-}
-.align_r {
-  text-align: right;
-}
-.align_c {
-  text-align: center;
-}
-.float_l {
-  float: left;
-}
-.float_r {
-  float: right;
-}
-.content_img_left {
-  float: left;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-right: 12px;
-  margin-bottom: 8px;
-}
-.content_img_right {
-  float: right;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-left: 12px;
-  margin-bottom: 8px;
 }
 #locationbar {
   float: left;
@@ -590,25 +524,6 @@ ul#applicationchooser li#applicationchooser_selected {
 #globalsearchscope label {
   display: block;
   padding: 0px 0px 2px 0px;
-}
-#content_center input,
-#content_center select,
-#content_center textarea {
-  width: 200px;
-  border: 1px solid #A5A5A5;
-  margin-bottom: 10px;
-}
-#content_center select {
-  width: 202px !important;
-  width: 204px;
-}
-#content_center label {
-  clear: both;
-  width: 110px;
-  display: block;
-  float: left;
-  padding-top: 2px;
-  font-weight: bold;
 }
 .check,
 .radio {
