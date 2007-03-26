@@ -698,14 +698,14 @@ class DynMenuLink:
         else:
             L.append('<li class="item">')
         L.append('<a href="%s/%s">' %  (basepath, self.name))
-        L.append(self.escape(self.text))
+        L.append(self.renderText())
         L.append('</a>')
         L.append('</li>')
         return ''.join(L)
 
-    def escape(self, text):
-        escaped_text = cgi.escape(text)
-        escaped_text = escaped_text.replace('...', '&#8230;')
+    def renderText(self):
+        escaped_text = cgi.escape(self.text)
+        escaped_text = escaped_text.replace('...', '&hellip;')
         return escaped_text
 
 
