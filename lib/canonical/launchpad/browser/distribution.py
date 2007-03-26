@@ -28,7 +28,7 @@ __all__ = [
     'DistributionSetSOP',
     ]
 
-from datetime import datetime
+import datetime
 import operator
 
 from zope.component import getUtility
@@ -594,7 +594,7 @@ class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
-        self.now = datetime.utcnow()
+        self.now = datetime.datetime.utcnow()
 
     def render(self):
         self.request.response.setHeader(
@@ -679,8 +679,14 @@ class DistributionDynMenu(DynMenu):
         yield self.makeLink('Show all releases...', page='+releases')
 
     def milestoneMenu(self):
+        """Show milestones more recently than one month ago,
+        or with no due date.
+        """
+        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
         for milestone in self.context.milestones:
-            yield self.makeLink(milestone.title, context=milestone)
+            if (milestone.dateexpected is None or
+                milestone.dateexpected > fairly_recent):
+                yield self.makeLink(milestone.title, context=milestone)
         yield self.makeLink('Show all milestones...', page='+milestones')
 
     def meetingsMenu(self):
