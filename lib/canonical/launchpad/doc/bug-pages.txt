@@ -232,7 +232,7 @@ duplicate link remains in the current context.
 
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> bug_six = bugset.get(6)
 
@@ -248,7 +248,7 @@ and see how the returned link changes.
     >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2

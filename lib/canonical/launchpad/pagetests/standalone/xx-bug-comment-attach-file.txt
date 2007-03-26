@@ -34,8 +34,7 @@ So let's login and add a comment.
     >>> get_feedback_messages(user_browser)
     [u'Thank you for your comment.']
 
-When an attachment is submitted, the comment is optional. A description,
-however, is required.
+When an attachment is submitted, the comment and description are optional.
 
     >>> from StringIO import StringIO
 
@@ -44,18 +43,6 @@ however, is required.
     >>> user_browser.getControl("Include attachment").selected = True
     >>> user_browser.getControl("File").add_file(
     ...     StringIO("a test file"), "text/plain", "foo.txt")
-    >>> user_browser.getControl("Save Changes").click()
-
-    >>> print user_browser.url
-    http://launchpad.dev/firefox/+bug/1/+addcomment
-
-    >>> get_feedback_messages(user_browser)
-    [u'An attachment requires a description.']
-
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
-    ...     StringIO("a test file"), "text/plain", "foo.txt")
-    >>> user_browser.getControl("Description").value = "some file"
     >>> user_browser.getControl("Save Changes").click()
 
     >>> get_feedback_messages(user_browser)

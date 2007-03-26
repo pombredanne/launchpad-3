@@ -59,6 +59,21 @@
     as long as accreditation and the Launchpad URL are given along with the
     data.</p>
 
+  <h2>Automated querying</h2>
+
+  <p>We allow you to use scripts or robots to access the data contained on this
+  website subject to the following conditions:</p>
+  <ul>
+    <li>Contact information for the organization running the script must be
+  included in the 'User-Agent' HTTP header.</li>
+
+    <li>If you think you will be requesting significantly more pages
+    in a given period of time than a regular user, you should discuss
+    this concern with us beforehand by sending an email to
+    <a href="mailto:automated_access@launchpad.net">
+       automated_access@launchpad.net</a>.
+  </ul>
+
 </div>
 
 </body>

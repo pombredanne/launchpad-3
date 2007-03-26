@@ -76,6 +76,19 @@ IBug.addAttachment's comment parameter can also be a string.
     Attachment added: u'foo.baz'
     <BugAttachment ...>
 
+If no description is given, the title is set to the filename.
+
+    >>> file_ = StringIO(filecontent)
+    >>> screenshot = bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="screenshot.jpg",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    Attachment added: u'screenshot.jpg'
+    >>> screenshot.title
+    u'screenshot.jpg'
+
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 

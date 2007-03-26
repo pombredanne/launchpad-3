@@ -458,11 +458,10 @@
     </tbody>
   </table>
 
-  <h2>Malone, the bug tracker</h2>
+  <h2>Bugs</h2>
 
   <p>
-    Malone is the bug tracking engine
-    in Launchpad. It enables projects to track their bugs and also to
+    Launchpad lets projects track their bugs, and
     collaborate with other people using their code on the fixes for those
     bugs.
   </p>
@@ -528,11 +527,10 @@
     </tbody>
   </table>
 
-  <h2>Rosetta, the translation engine</h2>
+  <h2>Translations</h2>
 
   <p>
-    Rosetta is the Launchpad
-    translation engine. It allows projects to invite translators to help make
+    Launchpad lets projects invite translators to help make
     their software work in any written language. Translators contribute new
     translations over the web which are then included in new releases of the
     software.
@@ -585,7 +583,7 @@
     </tbody>
   </table>
 
-  <h2>Blueprint, the feature tracking application</h2>
+  <h2>Blueprint</h2>
 
   <p>
     Blueprint is the Launchpad
@@ -611,12 +609,7 @@
     </tbody>
   </table>
 
-  <h2>Greenhouse, the code management system</h2>
-
-  <p>
-    "Greenhouse" is the Launchpad application that keeps track of software
-    source code.
-  </p>
+  <h2>Code</h2>
 
   <table class="listing">
     <tbody>

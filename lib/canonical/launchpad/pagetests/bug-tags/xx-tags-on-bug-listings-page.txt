@@ -19,20 +19,12 @@ If we click on a tag, only bugs with that tag are displayed:
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs?field.tag=crash'
 
-    >>> def print_bugtasks(text):
-    ...     """Print all the bugtasks in the text."""
-    ...     soup = BeautifulSoup(text)
-    ...     table = soup.find('table', {'id': 'buglisting'})
-    ...     if table is None:
-    ...         return
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         icon, id, description = tr('td', limit=3)
-    ...         print id.string, description.a.string
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     9 Thunderbird crashes
+      thunderbird Medium Confirmed
     10 another test bug
+       linux-source-2.6.15 Medium Unconfirmed
 
 Clicking on a tags shows only bugs that have that specific tag, so if
 we click on another tag, the bugs that were shown previously won't be
@@ -43,6 +35,7 @@ shown.
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed
 
 The links don't work as a filter to the existing listing, it's a filter
 of the default listing. So if we would show only the rejected bugs, and
@@ -59,3 +52,4 @@ then press the tag link again, only open bugs will be shown
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed

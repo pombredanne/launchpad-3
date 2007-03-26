@@ -1,0 +1,130 @@
+= Managing team members =
+
+Any team administrator can manage the members of that team.
+
+    >>> def print_members(contents, type):
+    ...     table = find_tag_by_id(contents, type)
+    ...     for link in table.findAll('a'):
+    ...         if link.renderContents() != 'Edit' and not link.find('img'):
+    ...             print link.renderContents()
+
+== Approving a proposed member ==
+
+We start by approving jblack's membership, which is not yet approved.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~myemail/+members')
+    >>> print_members(browser.contents, 'proposedmembers')
+    James Blackwell
+
+    >>> browser.open('http://launchpad.dev/~myemail/+member/jblack')
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+member/jblack'
+
+    >>> browser.getControl(name='day').value = ['14']
+    >>> browser.getControl(name='month').value = ['4']
+    >>> browser.getControl(name='year').value = ['2048']
+    >>> browser.getControl(name='approve').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+members'
+
+    >>> print_members(browser.contents, 'activemembers')
+    James Blackwell
+    Karl Tilbury
+    Sample Person
+
+== Promoting/Demoting an existing member ==
+
+We'll now promote jblack to an administrator of this team.
+
+    >>> browser.open('http://launchpad.dev/~myemail/+member/jblack')
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+member/jblack'
+
+    >>> browser.getControl(name='admin').value
+    ['no']
+    >>> browser.getControl(name='admin').value = ["yes"]
+    >>> browser.getControl(name='change').click()
+
+    >>> browser.open('http://launchpad.dev/~myemail/+member/jblack')
+    >>> browser.getControl(name='admin').value
+    ['yes']
+
+We can also demote him if he doesn't behave himself.
+
+    >>> browser.getControl(name='admin').value = ["no"]
+    >>> browser.getControl(name='change').click()
+
+    >>> browser.open('http://launchpad.dev/~myemail/+member/jblack')
+    >>> browser.getControl(name='admin').value
+    ['no']
+
+== Deactivating an existing member ==
+
+Karl Tilbury has made no contributions lately, so we'll deactivate his
+membership for now.
+
+    # We want to test concurrency here, so keep two browsers around:
+    # XXX: As per bug 68655, it would be nice to be able to clone the browser
+    # and not do the manual copy.
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser2 = Browser()
+    >>> browser2.addHeader("Authorization", "Basic test@canonical.com:test")
+    >>> browser2.open("http://launchpad.dev/~myemail/+member/karl")
+
+    >>> browser.open("http://launchpad.dev/~myemail/+member/karl")
+    >>> browser.getControl('Deactivate').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+members'
+
+    >>> print_members(browser.contents, 'inactivemembers')
+    Karl Tilbury
+
+Attempt to deactivate the user again using our original browser2
+instance. No crashes in sight:
+
+  >>> browser2.handleErrors = False
+  >>> browser2.getControl('Deactivate').click()
+  >>> browser2.url
+  'http://launchpad.dev/~myemail/+members'
+
+== Reactivating a deactivated member ==
+
+Later we may decide to reactivate Karl Tilbury's membership, so this must be
+possible.
+
+    # Again, keep a second browser open to test concurrency.
+    >>> browser2.open("http://launchpad.dev/~myemail/+member/karl")
+
+    >>> browser.open("http://launchpad.dev/~myemail/+member/karl")
+    >>> browser.getControl(name="expires").value = ["date"]
+    >>> browser.getControl(name="day").value = ["16"]
+    >>> browser.getControl(name="month").value = ["4"]
+    >>> browser.getControl(name="year").value = ["2049"]
+    >>> browser.getControl("Reactivate").click()
+
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+members'
+
+    >>> print find_tag_by_id(browser.contents, 'inactivemembers')
+    None
+    >>> print_members(browser.contents, 'activemembers')
+    James Blackwell
+    Karl Tilbury
+    Sample Person
+
+A second submission for reactivation should not crash but will print an
+error message:
+
+    >>> browser2.handleErrors = False
+    >>> browser2.getControl(name="expires").value = ["date"]
+    >>> browser2.getControl(name="day").value = ["16"]
+    >>> browser2.getControl(name="month").value = ["4"]
+    >>> browser2.getControl(name="year").value = ["2049"]
+    >>> browser2.getControl("Reactivate").click()
+    >>> browser2.url
+    'http://launchpad.dev/%7Emyemail/+member/karl/+index'
+    >>> for tag in find_tags_by_class(browser2.contents, 'error message'):
+    ...     print tag.renderContents()
+    The membership request for Karl Tilbury has already been processed.

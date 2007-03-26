@@ -16,7 +16,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, SQLConstant
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
@@ -50,7 +50,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem,
+    JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -590,13 +591,20 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def findPathToTeam(self, team):
         """See IPerson."""
+        # This is our guarantee that _getDirectMemberIParticipateIn() will
+        # never return None
+        assert self.hasParticipationEntryFor(team), (
+            "Only call this method when you're sure the person is an indirect"
+            " member of the team.")
         assert not self.isTeam()
         assert team.isTeam()
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
+        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
+            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -610,6 +618,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = AND(
             TeamMembership.q.teamID == team.id,
             TeamMembership.q.personID == Person.q.id,
+            OR(TeamMembership.q.status == TeamMembershipStatus.ADMIN,
+               TeamMembership.q.status == TeamMembershipStatus.APPROVED),
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
@@ -776,7 +786,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def is_valid_person(self):
         """See IPerson."""
-        if self.teamowner is not None:
+        if self.isTeam():
             return False
         return self.is_valid_person_or_team
 
@@ -838,7 +848,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
-        elif team.teamowner is not None and not team.teamowner.inTeam(team):
+        elif team.isTeam() and not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
@@ -849,15 +859,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         self._inTeam_cache[team.id] = in_team
         return in_team
 
-    def hasMembershipEntryFor(self, team):
-        """See IPerson."""
-        return bool(TeamMembership.selectOneBy(person=self,
-                                               team=team))
-
     def hasParticipationEntryFor(self, team):
         """See IPerson."""
-        return bool(TeamParticipation.selectOneBy(person=self,
-                                                  team=team))
+        return bool(TeamParticipation.selectOneBy(person=self, team=team))
 
     def leave(self, team):
         """See IPerson."""
@@ -880,7 +884,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             "Teams take no actions in Launchpad, thus they can't join() "
             "another team. Instead, you have to addMember() them.")
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
+        if self in team.activemembers:
+            return
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -889,29 +894,18 @@ class Person(SQLBase, HasSpecificationsMixin):
         deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            return False
+            raise JoinNotAllowed("This is a restricted team")
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
             status = proposed
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             status = approved
-
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        expires = team.defaultexpirationdate
-        if tm is None:
-            team.addMember(self, reviewer=self, status=status)
         else:
-            if (tm.status == declined and
-                team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED):
-                # The user is a DECLINED member, we just have to change the
-                # status to PROPOSED.
-                team.setMembershipData(self, status, self, expires)
-            elif (tm.status in [expired, deactivated, declined] and
-                  team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
-                team.setMembershipData(self, status, self, expires)
-            else:
-                return False
+            raise AssertionError(
+                "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        return True
+        self._inTeam_cache = {} # Flush the cache used by the inTeam method
+
+        team.addMember(self, reviewer=self, status=status)
 
     #
     # ITeam methods
@@ -931,7 +925,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def getTeamAdminsEmailAddresses(self):
         """See IPerson."""
-        assert self.teamowner is not None
+        assert self.isTeam()
         to_addrs = set()
         for person in self.getEffectiveAdministrators():
             to_addrs.update(contactEmailAddresses(person))
@@ -940,7 +934,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
         """See IPerson."""
-        assert self.teamowner is not None
+        assert self.isTeam()
 
         if person.isTeam():
             assert not self.hasParticipationEntryFor(person), (
@@ -948,17 +942,24 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
 
-        if person in self.activemembers:
-            # Make it a no-op if this person is already a member.
-            return
-
-        assert not person.hasMembershipEntryFor(self)
-
+        assert status in [TeamMembershipStatus.APPROVED,
+                          TeamMembershipStatus.PROPOSED,
+                          TeamMembershipStatus.ADMIN]
+        old_status = None
         expires = self.defaultexpirationdate
-        TeamMembershipSet().new(
-            person, self, status, dateexpires=expires, reviewer=reviewer,
-            reviewercomment=comment)
-        notify(JoinTeamEvent(person, self))
+        tm = TeamMembership.selectOneBy(person=person, team=self)
+        if tm is not None:
+            old_status = tm.status
+            tm.reviewer = reviewer
+            tm.dateexpires = expires
+            tm.reviewercomment = comment
+            if old_status != status:
+                tm.setStatus(status, reviewer)
+        else:
+            TeamMembershipSet().new(
+                person, self, status, dateexpires=expires, reviewer=reviewer,
+                reviewercomment=comment)
+            notify(JoinTeamEvent(person, self))
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
