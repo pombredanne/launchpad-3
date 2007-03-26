@@ -308,7 +308,7 @@ a.open, a.closed {
 }
 
 /*- The rest of the page is indented to keep clear of the help panel. -*/
-#nonhelp {margin: 0 20px 0 38px; border: 1px dotted green;}
+#nonhelp {margin: 0 20px 0 38px;}
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
