@@ -45,7 +45,6 @@ Now Sample Person proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> sampleperson.join(ubuntu_team)
-    True
     >>> membership = membershipset.getByPersonAndTeam(sampleperson, ubuntu_team)
     >>> membership.status.title
     'Proposed'
@@ -122,7 +121,6 @@ The same goes for approving a proposed member.
     
     >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> daf.join(ubuntu_team)
-    True
     >>> daf_membership = membershipset.getByPersonAndTeam(daf, ubuntu_team)
     >>> daf_membership.status.title
     'Proposed'
