@@ -82,20 +82,19 @@
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
-      <p>
-        <a href="+new">&raquo;
-          Register a project</a>
-      </p>
-
-      <p>
-        <a href="+all">&raquo;
-          Browse the listing of all (!) projects</a>
-      </p>
+      <ul class="rollover buttons">
+        <li>
+          <a href="+new">
+            <img
+              alt="Register a project"
+              src="/+icing/but-lrg-registerproj.gif"
+            />
+          </a>
+        </li>
+      </ul>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-
-    <p></p>
 
     <div class="left">
 

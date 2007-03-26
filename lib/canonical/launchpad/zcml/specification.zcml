@@ -172,7 +172,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit specification details"
+    label="Edit title and summary"
     fields="name title specurl summary informational whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
@@ -420,12 +420,9 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public">
-    <browser:page
-      name="+portlet-overview"
-      template="../templates/specifications-portlet-overview.pt" />
-    <browser:page
+    <!-- browser:page
       name="+portlet-details"
-      template="../templates/specifications-portlet-details.pt" />
+      template="../templates/specifications-portlet-details.pt" / -->
     <browser:page
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />

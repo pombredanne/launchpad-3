@@ -76,3 +76,52 @@ This link can be followed to the bug's details page.
   >>> browser.getLink('bug 1').click()
   >>> print browser.title
   Bug #1 in firefox (upstream)...
+
+
+== Unscanned branches ==
+
+Some branches won't have any revisions in the database. Sometimes, this is
+simply because the branch is empty. However, much of the time, the lack of
+revisions will be because of an error or delay in the scanning process.
+
+Before we can display the revisions, a branch needs to be mirrored (or
+'published') and scanned. When a branch is not yet mirrored, we'll see a
+helpful message.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been mirrored yet...
+
+
+We don't want to use the word 'mirrored' for hosted or imported branches,
+because those branches are only mirrored internally. "Published" is a better
+word for these.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been published yet...
+
+
+If a branch has been mirrored, but not scanned, we display a different message.
+This is helpful particularly for hosted and imported branches, which are
+available for download as soon as they are published.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/mirrored')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been scanned yet...
+
+
+If a branch has been mirrored and scanned, and has no revisions, then it is
+empty.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch is empty...

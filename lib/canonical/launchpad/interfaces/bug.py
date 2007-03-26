@@ -214,7 +214,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
     def getIndirectSubscribers():
-        """A list of IPersons that are indirectly subscribed to this bug.
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
@@ -222,21 +222,25 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
     def getAlsoNotifiedSubscribers():
-        """A list of IPersons in the "Also notified" subscriber list.
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
         """
 
     def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+        """Return IPersons subscribed from dupes of this bug.
+        """
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete INotificationRecipientSet instance.
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+        The INotificationRecipientSet instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):

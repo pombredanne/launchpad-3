@@ -1134,7 +1134,7 @@ class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
     """Base vocabulary class for releases for which a bug can be nominated."""
 
     def __iter__(self):
-        bug = self.context
+        bug = self.context.bug
 
         releases = self._getNominatableObjects()
 
