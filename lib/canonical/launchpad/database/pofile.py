@@ -618,7 +618,7 @@ class POFile(SQLBase, RosettaStats):
             # There is no new import waiting for being imported.
             return
 
-        file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -640,7 +640,7 @@ class POFile(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file,
+                    content=import_file.read(),
                     logger=logger)
             else:
                 importer = PoSupport(
@@ -649,7 +649,7 @@ class POFile(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file,
+                    content=import_file.read(),
                     logger=logger)
             newtranslation = importer.getTranslation(entry_to_import.
                                                      path,

@@ -130,15 +130,58 @@ class XpiTestCase(LaunchpadZopelessTestCase):
              u'foozilla.menu.accesskey', u'foozilla.menu.commandkey',
              u'SomeZilla'])
 
+        # Plural forms should be None as this format is not able to handle
+        # that.
+        self.failUnlessEqual(
+            [potmsgset.msgid_plural for potmsgset in potmsgsets],
+            [None, None, None, None, None, None, None, None, None, None, None]
+            )
+
+        self.failUnlessEqual(
+            [potmsgset.plural_text for potmsgset in potmsgsets],
+            [None, None, None, None, None, None, None, None, None, None, None]
+            )
+
         # Let's check the metadata.
         self.failUnlessEqual(
-            potmsgsets[1].commenttext, None)
+            [potmsgset.commenttext for potmsgset in potmsgsets],
+            [None, None, None, None, None, None, None, None, None, None, None]
+            )
+
         self.failUnlessEqual(
-            potmsgsets[1].filereferences, u'en-US.jar/test1.dtd:3')
+            [potmsgset.filereferences for potmsgset in potmsgsets],
+            [u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)',
+             u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.fire)',
+             u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.ice)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:1(foozilla.title)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:2'
+                 u'(foozilla.happytitle)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:3'
+                 u'(foozilla.nocomment)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:4(foozilla.utf8)',
+             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
+                 u'(foozilla.menu.title)',
+             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
+                 u'(foozilla.menu.accesskey)',
+             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
+                 u'(foozilla.menu.commandkey)',
+             u'en-US.xpi/chrome/en-US.jar/subdir/test2.properties:1'
+                 u'(foozilla_something)'])
+
         self.failUnlessEqual(
-            potmsgsets[1].sourcecomment, u"Translators, don't play with fire!")
+            [potmsgset.sourcecomment for potmsgset in potmsgsets],
+            [None, None, None, None,
+             u"Translators, if you're older than six, don't translate this",
+             None, None, None, u"Default key in en_US: 'M'",
+             u"Default key in en_US: 'm'",
+             u'Translators, what you are seeing now is a lovely, awesome,'
+                 u' multiline comment aimed at you directly from the streets'
+                 u' of a .properties file'])
+
+        # This format doesn't support any functionality like .po flags.
         self.failUnlessEqual(
-            potmsgsets[1].flagscomment, u'')
+            [potmsgset.flagscomment for potmsgset in potmsgsets],
+            [u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u''])
 
 
 def test_suite():

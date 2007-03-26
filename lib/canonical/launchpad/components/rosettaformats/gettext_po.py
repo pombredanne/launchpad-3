@@ -18,14 +18,14 @@ class PoSupport:
     implements(ITranslationImport)
 
     def __init__(self, path, productseries=None, distrorelease=None,
-                 sourcepackagename=None, is_published=False, file=None,
+                 sourcepackagename=None, is_published=False, content=None,
                  logger=None):
         self.basepath = path
         self.productseries = productseries
         self.distrorelease = distrorelease
         self.sourcepackagename = sourcepackagename
         self.is_published = is_published
-        self.file = file
+        self.content = content
         self.logger = logger
 
     @property
@@ -83,7 +83,7 @@ class PoSupport:
 
     def getTemplate(self, path):
         parser = POParser()
-        parser.write(self.file.read())
+        parser.write(self.content)
         parser.finish()
 
         translator_name = translator_email = None
@@ -114,7 +114,7 @@ class PoSupport:
 
     def getTranslation(self, path, language):
         parser = POParser()
-        parser.write(self.file.read())
+        parser.write(self.content)
         parser.finish()
 
         last_translator = self.getLastTranslator(parser)

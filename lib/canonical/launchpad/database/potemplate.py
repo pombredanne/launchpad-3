@@ -567,7 +567,7 @@ class POTemplate(SQLBase, RosettaStats):
             # There is no new import waiting for being imported.
             return
 
-        file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
         template_mail = None
         try:
@@ -578,7 +578,7 @@ class POTemplate(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file,
+                    content=import_file.read(),
                     logger=logger)
                 self.source_file = entry_to_import.content
                 self.source_file_format = entry_to_import.format
@@ -589,7 +589,7 @@ class POTemplate(SQLBase, RosettaStats):
                     distrorelease=entry_to_import.distrorelease,
                     sourcepackagename=entry_to_import.sourcepackagename,
                     is_published=entry_to_import.is_published,
-                    file=file,
+                    content=import_file.read(),
                     logger=logger)
             translation_import(self,
                                importer.getTemplate(entry_to_import.path),

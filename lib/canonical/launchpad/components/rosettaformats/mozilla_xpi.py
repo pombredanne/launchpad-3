@@ -6,9 +6,13 @@ __all__ = [
     'MozillaSupport'
     ]
 
+import os
+import re
+
 from UserDict import DictMixin
 from StringIO import StringIO
-
+from xml.parsers.xmlproc import dtdparser, xmldtd, utils
+from zipfile import ZipFile, ZipInfo
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -17,7 +21,6 @@ from canonical.launchpad.interfaces import ITranslationImport
 from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
 from canonical.launchpad.scripts import logger
 
-import os
 
 class LocalizableFile (DictMixin):
     """Class for reading translatable messages from different files.
@@ -28,6 +31,7 @@ class LocalizableFile (DictMixin):
     def __init__(self, logger=None):
         self._data = []
         self._msgids = []
+        self.filename = None
         self.logger = logger
 
     def __getitem__(self, key):
@@ -54,6 +58,10 @@ class LocalizableFile (DictMixin):
     def extend(self, newdata):
         for message in newdata:
             if not message['msgid'] in self._msgids:
+                if self.filename is not None:
+                    message['sourcerefs'] = [
+                        os.path.join(self.filename, sourceref)
+                        for sourceref in message['sourcerefs']]
                 self._msgids.append(message['msgid'])
                 self._data.append(message)
             elif self.logger is not None:
@@ -71,32 +79,29 @@ class MozillaZipFile (LocalizableFile):
     msgid's.  It handles embedded jar, dtd and properties files.
     """
 
-    def __init__(self, file, logger=None):
+    def __init__(self, filename, content, logger=None):
         LocalizableFile.__init__(self, logger=logger)
         self.last_translator = None
+        self.filename = filename
         self.logger = logger
 
-        from zipfile import ZipFile, ZipInfo
 
-        zip = ZipFile(file, 'r')
-        for file in zip.namelist():
-            if file.endswith('.properties'):
-                data = zip.read(file)
-                pf = PropertyFile(filename=file, file=StringIO(data),
-                                  logger=logger)
+        zip = ZipFile(StringIO(content), 'r')
+        for entry in zip.namelist():
+            if entry.endswith('.properties'):
+                data = zip.read(entry)
+                pf = PropertyFile(filename=entry, content=data, logger=logger)
                 self.extend(pf)
-            elif file.endswith('.dtd'):
-                data = zip.read(file)
-                dtdf = DtdFile(filename=file, file=StringIO(data),
-                               logger=logger)
+            elif entry.endswith('.dtd'):
+                data = zip.read(entry)
+                dtdf = DtdFile(filename=entry, content=data, logger=logger)
                 self.extend(dtdf)
-            elif file.endswith('.jar'):
-                data = zip.read(file)
-                jarf = MozillaZipFile(StringIO(data), logger)
+            elif entry.endswith('.jar'):
+                data = zip.read(entry)
+                jarf = MozillaZipFile(entry, data, logger=logger)
                 self.extend(jarf)
-            elif file == 'install.rdf':
-                import re
-                data = zip.read(file)
+            elif entry == 'install.rdf':
+                data = zip.read(entry)
                 match = re.match('<em:contributor>(.*)</em:contributor>', data)
                 if match:
                     self.last_translator = match.groups()[0]
@@ -106,7 +111,6 @@ class MozillaZipFile (LocalizableFile):
 
 
 
-from xml.parsers.xmlproc import dtdparser, xmldtd, utils
 class MozillaDtdConsumer (xmldtd.WFCDTD):
     """Mozilla DTD translatable message parser.
 
@@ -132,12 +136,17 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
 
     def new_general_entity(self, name, value):
         if not self.started: return
-        self.messages.append({ 'msgid' : name,
-                               'sourcerefs' : [ "%s(%s)" % (self.filename,
-                                                            name) ],
-                               'content' : value,
-                               'order' : self.started,
-                               'comment' : self.lastcomment })
+        # XXX CarlosPerelloMarin 20070326: xmldtd parser does an inline
+        # parsing which means that the content is all in a single line so we
+        # don't have a way to show the line number with the source reference.
+        self.messages.append({
+            'msgid' : name,
+            'sourcerefs' : [
+                "%s(%s)" % (self.filename, name)],
+            'content' : value,
+            'order' : self.started,
+            'comment' : self.lastcomment
+            })
         self.started += 1
         self.lastcomment = None
 
@@ -147,15 +156,16 @@ class DtdFile (LocalizableFile):
     It behaves as an iterator over messages in the file, indexed by entity
     names from the .dtd file.
     """
-    def __init__(self, filename, file, logger=None):
+    def __init__(self, filename, content, logger=None):
         self._data = []
+        self.filename = filename
         self.logger = logger
 
         parser=dtdparser.DTDParser()
         parser.set_error_handler(utils.ErrorCounter())
         dtd = MozillaDtdConsumer(parser, filename, self._data)
         parser.set_dtd_consumer(dtd)
-        parser.parse_string(file.read())
+        parser.parse_string(content)
 
 
 
@@ -165,20 +175,19 @@ class PropertyFile (LocalizableFile):
     from the .properties file.
     """
 
-    def __init__(self, filename, file, logger=None):
+    def __init__(self, filename, content, logger=None):
         """Constructs a dictionary from a .properties file.
-
-        It expects a file-like object "file".
+        XXX
+        It expects a file-like object "content_file".
         "filename" is used for source code references.
         """
         self.filename = filename
         self._data = []
         self.logger = logger
-        data = file.read()
 
         # .properties files are defined to be unicode-escaped, but
         # also allow direct UTF-8
-        udata = data.decode('utf-8')
+        udata = content.decode('utf-8')
 
         count = 0
         lastcomment = None
@@ -208,26 +217,28 @@ class PropertyFile (LocalizableFile):
             value = value.encode('unicode_escape').decode('unicode_escape')
 
             count += 1
-            self._data.append({ 'msgid' : key,
-                                'sourcerefs' : [ "%s(%s)" % (self.filename,
-                                                             key) ],
-                                'content' : value,
-                                'order' : count,
-                                'comment' : lastcomment })
+            self._data.append({
+                'msgid' : key,
+                'sourcerefs' : [
+                    "%s:%d(%s)" % (self.filename, count, key)],
+                'content' : value,
+                'order' : count,
+                'comment' : lastcomment
+                })
             lastcomment = None
 
 class MozillaSupport:
     implements(ITranslationImport)
 
     def __init__(self, path, productseries=None, distrorelease=None,
-                 sourcepackagename=None, is_published=False, file=None,
+                 sourcepackagename=None, is_published=False, content=None,
                  logger=None):
         self.basepath = path
         self.productseries = productseries
         self.distrorelease = distrorelease
         self.sourcepackagename = sourcepackagename
         self.is_published = is_published
-        self.file = file
+        self.content = content
         self.logger = logger
 
     @property
@@ -237,8 +248,6 @@ class MozillaSupport:
             return None
 
         entries = []
-
-        content = self.file.read()
 
         if os.path.basename(self.basepath) == 'en-US.xpi':
             # We need PO template entry
@@ -261,8 +270,7 @@ class MozillaSupport:
         return entries
 
     def getTemplate(self, path):
-        mozimport = MozillaZipFile(StringIO(self.file.read()), self.logger)
-        import sys
+        mozimport = MozillaZipFile(path, self.content, self.logger)
 
         messages = []
         for xpimsg in mozimport:
@@ -292,7 +300,7 @@ class MozillaSupport:
                 msg['msgstr'] = { 0: xpimsg['content'] }
 
             if xpimsg['sourcerefs'] and len(xpimsg['sourcerefs']):
-                msg['filerefs'] = u" ".join(xpimsg['sourcerefs'])
+                msg['filerefs'] = u' '.join(xpimsg['sourcerefs'])
 
             # Add source comments
             if xpimsg['comment'] is not None:
@@ -309,7 +317,7 @@ class MozillaSupport:
             }
 
     def getTranslation(self, path, language):
-        mozimport = MozillaZipFile(StringIO(self.file.read()), self.logger)
+        mozimport = MozillaZipFile(path, self.content, self.logger)
 
         messages = []
         for xpimsg in mozimport:
