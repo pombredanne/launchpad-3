@@ -1,4 +1,4 @@
-<html metal:use-macro="template/macro:page/pillarindex" i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
   <body>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -19,7 +19,7 @@
   </div>
 </metal:rightportlets>
 
-    <h1 metal:fill-slot="application-heading">Projects in Launchpad</h1>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
 <div metal:fill-slot="main">
 

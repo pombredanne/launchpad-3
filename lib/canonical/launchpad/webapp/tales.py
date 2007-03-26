@@ -1307,11 +1307,12 @@ class PageMacroDispatcher:
     class LayoutElements:
 
         def __init__(self,
-            portletcolumn=False,
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
             heading=False,
+            portletcolumn=False,
+            structuralobject=False,
             pagetypewasset=True
             ):
             self.elements = vars()
@@ -1322,15 +1323,17 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True,
+                portletcolumn=True,
+                structuralobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
-                portletcolumn=True),
+                portletcolumn=True,
+                structuralobject=True),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,

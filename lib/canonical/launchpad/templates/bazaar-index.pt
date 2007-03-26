@@ -1,19 +1,8 @@
 <tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="bazaar"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
   <body>
+    <h1 metal:fill-slot="heading">Code in branches</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Code in branches</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/code" />
-          </tr>
-        </tbody>
-      </table>
       <div id="mainarea" class="tab-code">
         <div class="t">
           <div class="u">
