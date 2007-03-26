@@ -313,17 +313,6 @@ hr {
   margin-left: 12px;
   margin-bottom: 8px;
 }
-#logincontrol {
-  float: right;
-  height: 100%;
-}
-#logincontrol td {
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: bold;
-  vertical-align: middle;
-}
-#logincontrol a {color: #000000;}
 ul#applicationchooser {
   float: right;
   width: 510px;
@@ -1468,7 +1457,6 @@ ul#menuroot>li>a>em { /* should be changed to not need em */
   cursor: hand;
   cursor: pointer;
 }
-
 /* Undo more generic formatting around ul elements. */
 #locationbar ul {
     margin: 0;
@@ -1515,9 +1503,10 @@ ul#menuroot>li>a>em { /* should be changed to not need em */
 }
 /* Set the appearance of dyn menu items other than the breadcrumbs
  * on mouse-over.
+ * The colour #EEE is sometimes used for debugging.
  */
 #locationbar ul.menu li>a:hover {
-  color: #EEE;
+  /* color: #EEE; */
 }
 /* Set the appearance of dyn menu items other than the breadcrumbs
  * when selected and potentially opened.
@@ -1526,9 +1515,14 @@ ul#menuroot>li>a>em { /* should be changed to not need em */
   background-color: #C8EF48;
   color: #000;
 }
-/* Set the appearance of breadcrumb items on mouse-over. */
+/* Set the appearance of breadcrumb items on mouse-over.
+ * This is the same as how they look when selected, so that
+ * they look right during the deliberate delay between being
+ * moused-over and actually activated.
+ */
 ul#menuroot>li>a:hover {
-  color: #EEE;
+  background-position: 0px 0px;
+  color: #000;
 }
 /* Set the appearance of breadcrumb items when selected for opening. */
 ul#menuroot>li.selected>a {
@@ -1558,6 +1552,26 @@ ul#menuroot>li.selected>a {
   left: auto;
   margin: 0px 0px 0px 0px;
   white-space: pre;
+}
+/* Login control goes on the right, taking up the full height of the
+ * locationbar.
+ */
+#logincontrol {
+  float: right;
+  height: 100%;
+}
+/* The control itself is actually in a table cell, vertically aligned to
+ * the middle of the locationbar.
+ */
+#logincontrol td {
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: bold;
+  vertical-align: middle;
+}
+/* Link text is black. */
+#logincontrol a {
+    color: #000000;
 }
 /* Clouds of links. */
 .cloud-size-small { 
