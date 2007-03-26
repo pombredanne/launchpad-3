@@ -10,12 +10,17 @@
 
   <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
     <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
       Select the release of
       <span tal:replace="context/distribution/displayname">Ubuntu</span>
-      for which this specification should be a feature goal.
+      for which this blueprint should be a feature goal.
     </p>
 
   </div>
