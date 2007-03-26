@@ -5,9 +5,6 @@ __all__ = ['LoginToken', 'LoginTokenSet']
 
 import random
 
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -24,7 +21,7 @@ from canonical.lp.dbschema import LoginTokenType
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, sendmail, format_address
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
 from canonical.launchpad.validators.email import valid_email
@@ -82,22 +79,25 @@ class LoginToken(SQLBase):
 
     def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
-        formatted_uids = ''
-        for email in key.emails:
-            formatted_uids += '\t%s\n' % email
+        separator = '\n    '
+        formatted_uids = '    ' + separator.join(key.emails)
 
         assert self.tokentype in (LoginTokenType.VALIDATEGPG,
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
-        # Craft the confirmation that will be sent to the user.  There are two
-        # parts, collected into a multipart/alternative.  Both sub-parts will
-        # be text/plain, but the encrypted part, which must come second, will
-        # have a charset of utf-8.  There's no perfect way to tell a mail
-        # browser to display the clear text message only if it can't decode
-        # the encrypted part, because with ASCII armor, both will be
-        # text/plain.  This is the best we can do.
+        # Craft the confirmation message that will be sent to the user.  There
+        # are two chunks of text that will be concatenated together into a
+        # single text/plain part.  The first chunk will be the clear text
+        # instructions providing some extra help for those people who cannot
+        # read the encrypted chunk that follows.  The encrypted chunk will
+        # have the actual confirmation token in it, however the ability to
+        # read this is highly dependent on the mail reader being used, and how
+        # that MUA is configured.
 
-        # Start with the encrypted part, which must come first.
+        # Here are the clear text instructions.
+        instructions = get_email_template('gpg-cleartext-instructions.txt')
+
+        # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
         replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -106,31 +106,34 @@ class LoginToken(SQLBase):
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}
 
-        body = template % replacements
+        token_text = template % replacements
         # Encrypt this part's content if requested
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            body = gpghandler.encryptContent(body.encode('utf-8'),
-                                             key.fingerprint)
-            encrypted_part = MIMEText(body, 'utf-8')
-        else:
-            # XXX: BarryWarsaw 23-Mar-2007 Should we even mail this
-            # confirmation if the registered key is not an encrypting key?
-            # Maybe we should send some other kind of confirmation message?
-            encrypted_part = MIMEText(body)
+            token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
+                                                   key.fingerprint)
 
-        # And now the clear text part
-        body = get_email_template('gpg-cleartext-instructions.txt')
-        cleartext_part = MIMEText(body)
+        # Concatenate the parts together, then send it.
+        simple_sendmail(format_address('Launchpad OpenPGP Key Confirmation',
+                                       config.noreply_from_address),
+                        str(self.email),
+                        'Launchpad: Confirm your OpenPGP Key',
+                        instructions + token_text +
+                        # The reason why the closing text is hardcoded here is
+                        # that it's a clear text chunk that follows some
+                        # encrypted text.  Thus it cannot be part of the
+                        # encrypted content, but the encrypted content should
+                        # follow the clear text instructions.  It seems ugly
+                        # to include this in the clear text part when the
+                        # encrypted part is successfully decrypted, and it
+                        # seems overkill to put this text in a separate file,
+                        # or otherwise make composition of all this text more
+                        # complicated.
+                        """
+Thanks,
 
-        # Put the parts together
-        outer = MIMEMultipart('alternative',
-                              _subparts=(cleartext_part, encrypted_part))
-        outer['From'] = format_address("Launchpad OpenPGP Key Confirmation",
-                                       config.noreply_from_address)
-        outer['To'] = str(self.email)
-        outer['Subject'] = "Launchpad: Confirm your OpenPGP Key"
-        sendmail(outer)
+The Launchpad Team
+launchpad@ubuntu.com""")
 
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
