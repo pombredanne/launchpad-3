@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductNavigation',
+    'ProductDynMenu',
     'ProductShortLink',
     'ProductSOP',
     'ProductFacets',
@@ -71,6 +72,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget
@@ -681,104 +683,6 @@ class ProductRdfView:
         return encodeddata
 
 
-import cgi
-class DynMenuLink:
-
-    def __init__(self, context, name, text, submenu=None,
-        contextsubmenu=False):
-        self.baseurl = canonical_url(context)
-        self.name = name
-        self.text = text
-        self.submenu = submenu
-        self.contextsubmenu = contextsubmenu
-
-    def render(self):
-        basepath = self.baseurl
-        L = []
-        if self.submenu:
-            L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (basepath, self.submenu))
-        elif self.contextsubmenu:
-            L.append('<li class="item container" lpm:mid="%s/+menudata">' % self.baseurl)
-        else:
-            L.append('<li class="item">')
-        L.append('<a href="%s/%s">' %  (basepath, self.name))
-        L.append(self.renderText())
-        L.append('</a>')
-        L.append('</li>')
-        return ''.join(L)
-
-    def renderText(self):
-        escaped_text = cgi.escape(self.text)
-        escaped_text = escaped_text.replace('...', '&hellip;')
-        return escaped_text
-
-
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.interface import implements
-class DynMenu(LaunchpadView):
-
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.names = []
-        LaunchpadView.__init__(self, context, request)
-
-    def getBreadcrumbText(self, obj):
-        from zope.component import queryMultiAdapter
-        from canonical.launchpad.webapp.interfaces import IBreadcrumbProvider
-        breadcrumbprovider = queryMultiAdapter(
-            (obj, self.request), IBreadcrumbProvider, default=None)
-        if breadcrumbprovider is None:
-            return None
-        else:
-            return breadcrumbprovider.breadcrumb()
-
-    def makeLink(self, text, context=None, page='', submenu=None,
-        contextsubmenu=False):
-        if context is None:
-            context = self.context
-        return DynMenuLink(context, page, text, submenu=submenu,
-            contextsubmenu=contextsubmenu)
-
-    # The following two zope methods publishTraverse and browserDefault
-    # allow this view class to take control of traversal from this point
-    # onwards.  Traversed names just end up in self.names.
-
-    def publishTraverse(self, request, name):
-        """Traverse to the given name."""
-        self.names.append(name)
-        return self
-
-    def browserDefault(self, request):
-        return self, ()
-
-
-class ProductSeriesDynMenu(DynMenu):
-
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMainMenu()
-
-        raise NotFoundError(name)
-
-    def renderMainMenu(self):
-        L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
-        #L.append('    lpm:midroot="%s/$$/+menudata"'
-        #    % self.context.name)
-        L.append('>')
-
-        for release in self.context.releases:
-            link = self.makeLink(release.title, context=release)
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-
 class ProductDynMenu(DynMenu):
 
     def render(self):
@@ -798,12 +702,10 @@ class ProductDynMenu(DynMenu):
 
     def renderSeriesMenu(self):
         L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        L.append('<ul class="menu">')
         all_series = []
         for series in self.context.serieslist:
-            link = self.makeLink(
-                self.getBreadcrumbText(series), context=series, contextsubmenu=True)
+            link = self.makeBreadcrumbLink(series)
             all_series.append(link)
 
         all_series.append(self.makeLink('Show all series...', page='+series'))
@@ -815,8 +717,7 @@ class ProductDynMenu(DynMenu):
 
     def renderMeetingsMenu(self):
         L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        L.append('<ul class="menu">')
         basepath = canonical_url(self.context)
         coming_sprints = [
             self.makeLink(sprint.title, context=sprint)
@@ -831,11 +732,7 @@ class ProductDynMenu(DynMenu):
 
     def renderMainMenu(self):
         L = []
-        L.append('<ul class="menu"')
-        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
-        #L.append('    lpm:midroot="%s/$$/+menudata"'
-        #    % self.context.name)
-        L.append('>')
+        L.append('<ul class="menu">')
 
         for link in [
             self.makeLink('Meetings', page='+sprints', submenu='meetings'),
@@ -845,6 +742,7 @@ class ProductDynMenu(DynMenu):
             L.append(link.render())
         L.append('</ul>')
         return u'\n'.join(L)
+
 
 class ProductSetView(LaunchpadView):
 

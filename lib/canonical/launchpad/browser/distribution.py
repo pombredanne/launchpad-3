@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
+    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -52,6 +53,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
 from canonical.widgets.image import (
@@ -650,3 +652,84 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+
+
+class DistributionDynMenu(DynMenu):
+
+    def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(names[-1])
+
+        if not self.names:
+            return self.renderMainMenu()
+
+        [name] = self.names
+        if name == 'meetings':
+            return self.renderMeetingsMenu()
+        elif name == 'releases':
+            return self.renderReleaseMenu()
+        elif name == 'milestones':
+            return self.renderMilestoneMenu()
+
+        raise NotFoundError(name)
+
+    def renderReleaseMenu(self):
+        L = []
+        L.append('<ul class="menu">')
+        all_releases = []
+        for release in self.context.releases:
+            link = self.makeBreadcrumbLink(release)
+            all_releases.append(link)
+
+        all_releases.append(self.makeLink('Show all releases...', page='+releases'))
+
+        for link in all_releases:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+    def renderMilestoneMenu(self):
+        L = []
+        L.append('<ul class="menu">')
+        all_milestones = []
+        for milestone in self.context.milestones:
+            link = self.makeLink(milestone.title, context=milestone)
+            all_milestones.append(link)
+
+        all_milestones.append(self.makeLink('Show all milestones...', page='+milestones'))
+
+        for link in all_milestones:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+    def renderMeetingsMenu(self):
+        # TODO: abstract this into a HasMeetingsMenu mix-in for use with
+        # an IHasMeetings.
+        L = []
+        L.append('<ul class="menu">')
+        basepath = canonical_url(self.context)
+        coming_sprints = [
+            self.makeLink(sprint.title, context=sprint)
+            for sprint in self.context.coming_sprints
+            ]
+        for link in coming_sprints + [
+                self.makeLink('Show all meetings...', page='+sprints')
+            ]:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+    def renderMainMenu(self):
+        L = []
+        L.append('<ul class="menu">')
+
+        for link in [
+            self.makeLink('Releases', page='+releases', submenu='releases'),
+            self.makeLink('Meetings', page='+sprints', submenu='meetings'),
+            self.makeLink(
+                'Milestones', page='+milestones', submenu='milestones'),
+            ]:
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
