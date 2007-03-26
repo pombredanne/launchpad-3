@@ -1,4 +1,3 @@
-
 This test verifies the basic claim a GPG key workflow.
 
   >>> import email, re
@@ -35,14 +34,42 @@ Claim OpenPGP key:
   link inside.
   ...
 
-Recover token URL..
+Recover token URL from the encrypted part, but also make sure there's a clear
+text part that provides useful information to users who -- for whatever reason -- cannot decrypt the token url.  Start by grabbing the confirmation message.
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
 
-..decoding the content, originally encoded in 'base-64' or 'quoted-printable':
+Ensure that the outer message is a multipart/alternative.  Actually, both
+sub-parts will be text/plain, but the encrypted part, which must come second,
+will have a charset of utf-8.  There's no perfect way to tell a mail browser
+to display the clear text message only if it can't decode the encrypted part,
+because with ASCII armor, both will be text/plain.  This is the best we can
+do.
 
-  >>> cipher_body = msg.get_payload(decode=True)
+  >>> msg.is_multipart()
+  True
+  >>> msg.get_content_type()
+  'multipart/alternative'
+  >>> instructions = msg.get_payload(0)
+  >>> encrypted_msg = msg.get_payload(1)
+
+Check that the clear text instructions has the help urls.
+
+  >>> instructions.get_content_type()
+  'text/plain'
+  >>> instructions.get_content_charset()
+  'us-ascii'
+  >>> body = instructions.get_payload()
+  >>> 'https://help.launchpad.net/ReadingOpenPgpMail' in body
+  True
+  >>> 'https://help.ubuntu.com/community/GnuPrivacyGuardHowto' in body
+  True
+
+Now decode the encrypted part, originally encoded in 'base-64' or
+'quoted-printable':
+
+  >>> cipher_body = encrypted_msg.get_payload(decode=True)
 
   >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)

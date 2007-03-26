@@ -1,0 +1,20 @@
+This message contains text that has been encrypted with the OpenPGP key you
+have attempted to register.  If you can only read this text and not see the
+unencrypted instructions for completing your key registration, it may be
+because your mail reader does not support automatic decryption of "ASCII
+Armored" encrypted text.
+
+Exact instructions for enabling this depends on the specific mail reader you
+are using.  Please see this support page for more information:
+
+    https://help.launchpad.net/ReadingOpenPgpMail
+
+For more general information on OpenPGP and related tools such as Gnu Privacy
+Guard (GPG), please see:
+
+    https://help.ubuntu.com/community/GnuPrivacyGuardHowto
+
+Thanks,
+
+The Launchpad Team
+launchpad@ubuntu.com

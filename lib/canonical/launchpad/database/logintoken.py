@@ -5,6 +5,9 @@ __all__ = ['LoginToken', 'LoginTokenSet']
 
 import random
 
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -21,7 +24,7 @@ from canonical.lp.dbschema import LoginTokenType
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import simple_sendmail, sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
 from canonical.launchpad.validators.email import valid_email
@@ -86,25 +89,48 @@ class LoginToken(SQLBase):
         assert self.tokentype in (LoginTokenType.VALIDATEGPG,
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
+        # Craft the confirmation that will be sent to the user.  There are two
+        # parts, collected into a multipart/alternative.  Both sub-parts will
+        # be text/plain, but the encrypted part, which must come second, will
+        # have a charset of utf-8.  There's no perfect way to tell a mail
+        # browser to display the clear text message only if it can't decode
+        # the encrypted part, because with ASCII armor, both will be
+        # text/plain.  This is the best we can do.
+
+        # Start with the encrypted part, which must come first.
         template = get_email_template('validate-gpg.txt')
-        fromaddress = format_address("Launchpad OpenPGP Key Confirmation",
-                                     config.noreply_from_address)
         replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname, 
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}
-        message = template % replacements
 
-        # encrypt message if requested
+        body = template % replacements
+        # Encrypt this part's content if requested
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            message = gpghandler.encryptContent(message.encode('utf-8'),
-                                                key.fingerprint)
+            body = gpghandler.encryptContent(body.encode('utf-8'),
+                                             key.fingerprint)
+            encrypted_part = MIMEText(body, 'utf-8')
+        else:
+            # XXX: BarryWarsaw 23-Mar-2007 Should we even mail this
+            # confirmation if the registered key is not an encrypting key?
+            # Maybe we should send some other kind of confirmation message?
+            encrypted_part = MIMEText(body)
 
-        subject = "Launchpad: Confirm your OpenPGP Key"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        # And now the clear text part
+        body = get_email_template('gpg-cleartext-instructions.txt')
+        cleartext_part = MIMEText(body)
+
+        # Put the parts together
+        outer = MIMEMultipart('alternative',
+                              _subparts=(cleartext_part, encrypted_part))
+        outer['From'] = format_address("Launchpad OpenPGP Key Confirmation",
+                                       config.noreply_from_address)
+        outer['To'] = str(self.email)
+        outer['Subject'] = "Launchpad: Confirm your OpenPGP Key"
+        sendmail(outer)
 
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
