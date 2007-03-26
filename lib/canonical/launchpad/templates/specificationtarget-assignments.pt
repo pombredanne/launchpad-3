@@ -78,8 +78,9 @@
     blueprints currently associated with 
     <span tal:replace="context/displayname">Mozilla</span>.
     The drafter is responsible for getting the specification correctly
-    written up and approved, the approver is usually the person who would
-    sign off on the spec.
+    written up and approved.
+    The approver is usually the person who would
+    sign off on the specification.
   </p>
 
 </div>

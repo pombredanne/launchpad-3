@@ -14,12 +14,18 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:heading fill-slot="heading">
-      <h1 i18n:translate="">Link specification to bug report</h1>
+
+        <div>
+          <img alt="" src="/@@/blueprint" />
+          <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+        </div>
+
+      <h1 i18n:translate="">Link to a bug report</h1>
     </metal:heading>
 
     <div metal:fill-slot="extra_info">
-      <p i18n:translate="">Enter the number or nickname of the Malone bug report
-        that should be linked to this specification.
+      <p i18n:translate="">Enter the number or nickname of the Launchpad
+        bug report that should be linked to this blueprint.
       </p>
 
       <p i18n:translate="">If you don't know the bug number, you can search for it
