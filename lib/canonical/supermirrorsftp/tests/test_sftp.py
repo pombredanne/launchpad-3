@@ -321,19 +321,16 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
         creds = SSHPrivateKey('no-such-user', 'ssh-dss', self.public_key,
                               self.sigData, self.signature)
         return self.assertLoginError(
-            creds,
-            'No such Launchpad account or no registered SSH keys: no-such-user')
+            creds, 'No such Launchpad account: no-such-user')
 
     def test_noKeys(self):
         # When you sign into an existing account with no SSH keys, the SFTP
         # server should inform you that the account has no keys.
-        creds = SSHPrivateKey('mark', 'ssh-dss', self.public_key,
+        creds = SSHPrivateKey('sabdfl', 'ssh-dss', self.public_key,
                               self.sigData, self.signature)
         return self.assertLoginError(
             creds,
-            "Launchpad user %r doesn't have a registered SSH key" % 'mark')
-    test_noKeys.todo = ("Authserver doesn't give enough information to "
-                        "distinguish this from no-such-user.")
+            "Launchpad user %r doesn't have a registered SSH key" % 'sabdfl')
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you

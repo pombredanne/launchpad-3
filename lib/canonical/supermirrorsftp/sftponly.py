@@ -249,13 +249,21 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
+        d = self.authserver.getUser(credentials.username)
+        return d.addCallback(self._checkUserExistence, credentials)
+
+    def _checkUserExistence(self, userDict, credentials):
+        if len(userDict) == 0:
+            raise UnauthorizedLogin(
+                "No such Launchpad account: %s" % credentials.username)
+
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
 
-        # Add callback to try find the authorised key
-        authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
+        # Add callback to try find the authorized key
+        authorizedKeys.addCallback(self._checkForAuthorizedKey, credentials)
         return authorizedKeys
 
-    def _cb_hasAuthorisedKey(self, keys, credentials):
+    def _checkForAuthorizedKey(self, keys, credentials):
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
         elif credentials.algName == 'ssh-rsa':
@@ -264,13 +272,9 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             # unknown key type
             return False
 
-        # XXX - this might also be because the user has no SSH keys registered.
-        # The authserver needs to be changed to return more information in this
-        # case.
-        # Jonathan Lange, 2007-03-20
         if len(keys) == 0:
             raise UnauthorizedLogin(
-                "No such Launchpad account or no registered SSH keys: %s"
+                "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 
         for keytype, keytext in keys:
