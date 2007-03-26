@@ -1,4 +1,4 @@
-   <tal:expanded define="expanded view/collapsedState">
+  <tal:expanded define="expanded view/collapsedState">
     <fieldset class="collapsible collapsed"
               tal:attributes="class string:collapsible ${expanded}"> 
       <legend tal:condition="view/shouldShowLegend">
@@ -9,19 +9,19 @@
     <div metal:use-macro="context/@@launchpad_form/form">
       <table class="form" metal:fill-slot="widgets">
 
-      <table>
-        <tal:subject
-            tal:define="widget nocall:view/widgets/subject|nothing"
-            tal:condition="widget">
-          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:subject>
+        <table>
+          <tal:subject
+              tal:define="widget nocall:view/widgets/subject|nothing"
+              tal:condition="widget">
+            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:subject>
 
-        <tal:comment
-            tal:define="widget nocall:view/widgets/comment|nothing"
-            tal:condition="widget">
-          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:comment>
-</table>
+          <tal:comment
+              tal:define="widget nocall:view/widgets/comment|nothing"
+              tal:condition="widget">
+            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:comment>
+        </table>
         <fieldset style="border: 1px solid; margin: 5em 1;padding: 1em">
           <legend>
             <label>
@@ -29,31 +29,31 @@
             </label>
           </legend>
 
-<table>
-          <tal:filecontent
-              tal:define="widget nocall:view/widgets/filecontent|nothing"
-              tal:condition="widget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:filecontent>
+          <table>
+            <tal:filecontent
+                tal:define="widget nocall:view/widgets/filecontent|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:filecontent>
 
-          <tal:patch
-              tal:define="widget nocall:view/widgets/patch|nothing"
-              tal:condition="widget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:patch>
+            <tal:patch
+                tal:define="widget nocall:view/widgets/patch|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:patch>
 
-          <tal:attachment_description
-              tal:define="widget nocall:view/widgets/attachment_description|nothing"
-              tal:condition="widget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:attachment_description>
+            <tal:attachment_description
+                tal:define="widget nocall:view/widgets/attachment_description|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:attachment_description>
 
-          <tal:email_me
-              tal:define="widget nocall:view/widgets/email_me|nothing"
-              tal:condition="python: widget and view.shouldShowEmailMeWidget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:email_me>
-      </table>
+            <tal:email_me
+                tal:define="widget nocall:view/widgets/email_me|nothing"
+                tal:condition="python: widget and view.shouldShowEmailMeWidget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:email_me>
+          </table>
         </fieldset>
 
       </table>
@@ -65,4 +65,4 @@
     </div>
 
     </fieldset>
-   </tal:expanded>
+  </tal:expanded>

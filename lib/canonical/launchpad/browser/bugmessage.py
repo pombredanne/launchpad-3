@@ -33,10 +33,11 @@ class BugMessageAddFormView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, data):
+        """Validate the form."""
         comment = data.get('comment', None)
         filecontent = data.get('filecontent', None)
         if not comment and not filecontent:
-            self.addError("Either a comment or attachment must be present")
+            self.addError("Either a comment or attachment must be provided.")
     
     @action(u"Save Changes", name='save')
     def save_action(self, action, data):
@@ -105,8 +106,9 @@ class BugMessageAddFormView(LaunchpadFormView):
 
 class BugMessageAddSubFormView(BugMessageAddFormView):
     """Browser view class for adding a bug comment/attachment.
-       This view is used when the form is contained at the bottom of
-       the index page. 
+
+    This view is used when the form is contained at the bottom of
+    the index page. 
     """
 
     def collapsedState(self):
