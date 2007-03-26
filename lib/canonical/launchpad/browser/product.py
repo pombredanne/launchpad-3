@@ -684,17 +684,21 @@ class ProductRdfView:
 import cgi
 class DynMenuLink:
 
-    def __init__(self, context, name, text, submenu=None):
+    def __init__(self, context, name, text, submenu=None,
+        contextsubmenu=False):
         self.baseurl = canonical_url(context)
         self.name = name
         self.text = text
         self.submenu = submenu
+        self.contextsubmenu = contextsubmenu
 
     def render(self):
         basepath = self.baseurl
         L = []
         if self.submenu:
             L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (basepath, self.submenu))
+        elif self.contextsubmenu:
+            L.append('<li class="item container" lpm:mid="%s/+menudata">' % self.baseurl)
         else:
             L.append('<li class="item">')
         L.append('<a href="%s/%s">' %  (basepath, self.name))
@@ -711,13 +715,71 @@ class DynMenuLink:
 
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.interface import implements
-class ProductDynMenu(LaunchpadView):
+class DynMenu(LaunchpadView):
 
     implements(IBrowserPublisher)
 
     def __init__(self, context, request):
         self.names = []
         LaunchpadView.__init__(self, context, request)
+
+    def getBreadcrumbText(self, obj):
+        from zope.component import queryMultiAdapter
+        from canonical.launchpad.webapp.interfaces import IBreadcrumbProvider
+        breadcrumbprovider = queryMultiAdapter(
+            (obj, self.request), IBreadcrumbProvider, default=None)
+        if breadcrumbprovider is None:
+            return None
+        else:
+            return breadcrumbprovider.breadcrumb()
+
+    def makeLink(self, text, context=None, page='', submenu=None,
+        contextsubmenu=False):
+        if context is None:
+            context = self.context
+        return DynMenuLink(context, page, text, submenu=submenu,
+            contextsubmenu=contextsubmenu)
+
+    # The following two zope methods publishTraverse and browserDefault
+    # allow this view class to take control of traversal from this point
+    # onwards.  Traversed names just end up in self.names.
+
+    def publishTraverse(self, request, name):
+        """Traverse to the given name."""
+        self.names.append(name)
+        return self
+
+    def browserDefault(self, request):
+        return self, ()
+
+
+class ProductSeriesDynMenu(DynMenu):
+
+    def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(names[-1])
+
+        if not self.names:
+            return self.renderMainMenu()
+
+        raise NotFoundError(name)
+
+    def renderMainMenu(self):
+        L = []
+        L.append('<ul class="menu"')
+        #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
+        #L.append('    lpm:midroot="%s/$$/+menudata"'
+        #    % self.context.name)
+        L.append('>')
+
+        for release in self.context.releases:
+            link = self.makeLink(release.title, context=release)
+            L.append(link.render())
+        L.append('</ul>')
+        return u'\n'.join(L)
+
+
+class ProductDynMenu(DynMenu):
 
     def render(self):
         if len(self.names) > 1:
@@ -738,13 +800,15 @@ class ProductDynMenu(LaunchpadView):
         L = []
         L.append('<ul class="menu"')
         #L.append('    lpm:mid="/%s/+menudata"' % self.context.name)
-        all_series = [
-            self.makeLink(series.title, context=series)
-            for series in self.context.serieslist
-            ]
-        for link in all_series + [
-            self.makeLink('Show all series...', page='+series')
-            ]:
+        all_series = []
+        for series in self.context.serieslist:
+            link = self.makeLink(
+                self.getBreadcrumbText(series), context=series, contextsubmenu=True)
+            all_series.append(link)
+
+        all_series.append(self.makeLink('Show all series...', page='+series'))
+
+        for link in all_series:
             L.append(link.render())
         L.append('</ul>')
         return u'\n'.join(L)
@@ -765,11 +829,6 @@ class ProductDynMenu(LaunchpadView):
         L.append('</ul>')
         return u'\n'.join(L)
 
-    def makeLink(self, text, context=None, page='', submenu=None):
-        if context is None:
-            context = self.context
-        return DynMenuLink(context, page, text, submenu)
-
     def renderMainMenu(self):
         L = []
         L.append('<ul class="menu"')
@@ -786,19 +845,6 @@ class ProductDynMenu(LaunchpadView):
             L.append(link.render())
         L.append('</ul>')
         return u'\n'.join(L)
-
-    # The following two zope methods publishTraverse and browserDefault
-    # allow this view class to take control of traversal from this point
-    # onwards.  Traversed names just end up in self.names.
-
-    def publishTraverse(self, request, name):
-        """Traverse to the given name."""
-        self.names.append(name)
-        return self
-
-    def browserDefault(self, request):
-        return self, ()
-
 
 class ProductSetView(LaunchpadView):
 
