@@ -661,75 +661,37 @@ class DistributionDynMenu(DynMenu):
             raise NotFoundError(names[-1])
 
         if not self.names:
-            return self.renderMainMenu()
+            return self.renderMenu(self.mainMenu())
 
         [name] = self.names
         if name == 'meetings':
-            return self.renderMeetingsMenu()
+            return self.renderMenu(self.meetingsMenu())
         elif name == 'releases':
-            return self.renderReleaseMenu()
+            return self.renderMenu(self.releaseMenu())
         elif name == 'milestones':
-            return self.renderMilestoneMenu()
+            return self.renderMenu(self.milestoneMenu())
 
         raise NotFoundError(name)
 
-    def renderReleaseMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-        all_releases = []
+    def releaseMenu(self):
         for release in self.context.releases:
-            link = self.makeBreadcrumbLink(release)
-            all_releases.append(link)
+            yield self.makeBreadcrumbLink(release)
+        yield self.makeLink('Show all releases...', page='+releases')
 
-        all_releases.append(self.makeLink('Show all releases...', page='+releases'))
-
-        for link in all_releases:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-    def renderMilestoneMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-        all_milestones = []
+    def milestoneMenu(self):
         for milestone in self.context.milestones:
-            link = self.makeLink(milestone.title, context=milestone)
-            all_milestones.append(link)
+            yield self.makeLink(milestone.title, context=milestone)
+        yield self.makeLink('Show all milestones...', page='+milestones')
 
-        all_milestones.append(self.makeLink('Show all milestones...', page='+milestones'))
-
-        for link in all_milestones:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-    def renderMeetingsMenu(self):
+    def meetingsMenu(self):
         # TODO: abstract this into a HasMeetingsMenu mix-in for use with
         # an IHasMeetings.
-        L = []
-        L.append('<ul class="menu">')
-        basepath = canonical_url(self.context)
-        coming_sprints = [
-            self.makeLink(sprint.title, context=sprint)
-            for sprint in self.context.coming_sprints
-            ]
-        for link in coming_sprints + [
-                self.makeLink('Show all meetings...', page='+sprints')
-            ]:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
+        for sprint in self.context.coming_sprints:
+            yield self.makeLink(sprint.title, context=sprint)
+        yield self.makeLink('Show all meetings...', page='+sprints')
 
-    def renderMainMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-
-        for link in [
-            self.makeLink('Releases', page='+releases', submenu='releases'),
-            self.makeLink('Meetings', page='+sprints', submenu='meetings'),
-            self.makeLink(
-                'Milestones', page='+milestones', submenu='milestones'),
-            ]:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
+    def mainMenu(self):
+        yield self.makeLink('Releases', page='+releases', submenu='releases')
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink(
+            'Milestones', page='+milestones', submenu='milestones')

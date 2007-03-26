@@ -690,58 +690,30 @@ class ProductDynMenu(DynMenu):
             raise NotFoundError(names[-1])
 
         if not self.names:
-            return self.renderMainMenu()
+            return self.renderMenu(self.mainMenu())
 
         [name] = self.names
         if name == 'meetings':
-            return self.renderMeetingsMenu()
+            return self.renderMenu(self.meetingsMenu())
         elif name == 'series':
-            return self.renderSeriesMenu()
+            return self.renderMenu(self.seriesMenu())
 
         raise NotFoundError(name)
 
-    def renderSeriesMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-        all_series = []
+    def seriesMenu(self):
         for series in self.context.serieslist:
-            link = self.makeBreadcrumbLink(series)
-            all_series.append(link)
+            yield self.makeBreadcrumbLink(series)
+        yield self.makeLink('Show all series...', page='+series')
 
-        all_series.append(self.makeLink('Show all series...', page='+series'))
+    def meetingsMenu(self):
+        for sprint in self.context.coming_sprints:
+            yield self.makeLink(sprint.title, context=sprint)
+        yield self.makeLink('Show all meetings...', page='+sprints')
 
-        for link in all_series:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-    def renderMeetingsMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-        basepath = canonical_url(self.context)
-        coming_sprints = [
-            self.makeLink(sprint.title, context=sprint)
-            for sprint in self.context.coming_sprints
-            ]
-        for link in coming_sprints + [
-                self.makeLink('Show all meetings...', page='+sprints')
-            ]:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
-
-    def renderMainMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-
-        for link in [
-            self.makeLink('Meetings', page='+sprints', submenu='meetings'),
-            self.makeLink('Milestones', page='+milestones'),
-            self.makeLink('Product series', page='+series', submenu='series'),
-            ]:
-            L.append(link.render())
-        L.append('</ul>')
-        return u'\n'.join(L)
+    def mainMenu(self):
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink('Milestones', page='+milestones')
+        yield self.makeLink('Product series', page='+series', submenu='series')
 
 
 class ProductSetView(LaunchpadView):

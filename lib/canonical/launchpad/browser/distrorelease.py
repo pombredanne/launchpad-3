@@ -350,23 +350,7 @@ class DistroReleaseAddView(AddView):
 
 class DistroReleaseDynMenu(DynMenu):
 
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMainMenu()
-
-        raise NotFoundError(name)
-
-    def renderMainMenu(self):
-        L = []
-        L.append('<ul class="menu">')
-
+    def mainMenu(self):
         for architecture in self.context.architectures:
-            link = self.makeBreadcrumbLink(architecture)
-            L.append(link.render())
-
-        L.append('</ul>')
-        return u'\n'.join(L)
+            yield self.makeBreadcrumbLink(architecture)
 
