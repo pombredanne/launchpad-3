@@ -1,42 +1,42 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """The processing of nascent uploads.
 
-# XXX: documentation on general design
-#   - want to log all possible errors to the end-user
-#   - changes file holds all uploaded files in a tree
-#   - changes.files and changes.dsc
-#   - DSC represents a source upload, and creates sources
-#   - but DSC holds DSCUploadedFiles, weirdly
-#   - binary represents a binary upload, and creates binaries
-#   - source files only exist for verify() purposes
-#   - NascentUpload is a motor that creates the changes file, does
-#     verifications, gets overrides, triggers creation or rejection and
-#     prepares the email message
+Documentation on general design
+  - want to log all possible errors to the end-user
+  - changes file holds all uploaded files in a tree
+  - changes.files and changes.dsc
+  - DSC represents a source upload, and creates sources
+  - but DSC holds DSCUploadedFiles, weirdly
+  - binary represents a binary upload, and creates binaries
+  - source files only exist for verify() purposes
+  - NascentUpload is a motor that creates the changes file, does
+    verifications, gets overrides, triggers creation or rejection and
+    prepares the email message
+
+XXX cprov 20070326: expand the list of features and add more detailed
+explanations.
 """
 
 __metaclass__ = type
 
 import apt_pkg
+import logging
 
 from zope.component import getUtility
 
+from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
+from canonical.archivepublisher.nascentuploadfile import (
+    UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
+    BaseBinaryUploadFile, DebBinaryUploadFile, UdebBinaryUploadFile)
+from canonical.archivepublisher.template_messages import (
+    rejection_template, new_template, accepted_template, announce_template)
 from canonical.config import config
 from canonical.encoding import guess as guess_encoding
-
-from canonical.lp.dbschema import (
-    PackagePublishingPocket)
-
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError)
-
-from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
-from canonical.archivepublisher.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile,
-    SourceUploadFile, BinaryUploadFile)
-from canonical.archivepublisher.template_messages import (
-    rejection_template, new_template, accepted_template, announce_template)
+from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class FatalUploadError(Exception):
@@ -70,8 +70,8 @@ class NascentUpload:
     insert into the database as a queued upload to be processed.
     """
     recipients = None
-    rejection_message = ""
-    warnings = ""
+    rejections = []
+    warnings = []
 
     # Defined in check_changes_consistency()
     sourceful = False
@@ -86,28 +86,25 @@ class NascentUpload:
     # Defined if we successfully do_accept() and store_objects_in_database()
     queue_root = None
 
-    def __init__(self, policy, fsroot, changes_filename, logger):
+    def __init__(self, changesfile_path, policy):
         """Setup a ChangesFile based on given changesfile path.
 
         May raise FatalUploadError due to unrecoverable problems building
         the ChangesFile object.
-        Also store given utilities like policy, logger and fsroot.
+        Also store given and initialized Upload Policy, as 'policy'
         """
-        self.fsroot = fsroot
+        self.changesfile_path = changesfile_path
         self.policy = policy
-        self.logger = logger
-
         self.librarian = getUtility(ILibraryFileAliasSet)
         try:
-            self.changes = ChangesFile(changes_filename,
-                            self.fsroot, self.policy, self.logger)
+            self.changes = ChangesFile(changesfile_path, self.policy)
         except UploadError, e:
             # We can't run reject() because unfortunately we don't have
             # the address of the uploader to notify -- we broke in that
             # exact step.
-            # XXX: we should really be emailing this rejection to
-            # the archive admins. For now, this will end up in the
-            # script log.
+            # XXX cprov 20070326: we should really be emailing this
+            # rejection to the archive admins. For now, this will end
+            # up in the script log.
             raise FatalUploadError(str(e))
 
     def process(self):
@@ -121,11 +118,10 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(
-                self.changes.distrorelease_and_pocket)
+            self.policy.setDistroReleaseAndPocket(self.changes.suite_name)
         except NotFoundError:
-            self.reject("Unable to find distrorelease: %s"
-                        % self.changes.distrorelease_and_pocket)
+            self.reject(
+                "Unable to find distrorelease: %s" % self.changes.suite_name)
 
         self.run_and_collect_errors(self.changes.process_files)
 
@@ -196,6 +192,16 @@ class NascentUpload:
     #
 
     @property
+    def logger(self):
+        """Return the common logger object."""
+        return logging.getLogger('upload')
+
+    @property
+    def filename(self):
+        """Return the changesfile name."""
+        return os.path.basename(self.changesfile_path)
+
+    @property
     def is_new(self):
         """Return true if any portion of the upload is NEW."""
         for uploaded_file in self.changes.files:
@@ -205,14 +211,16 @@ class NascentUpload:
 
     @property
     def sender(self):
+        """RFC822 sender header specified in LP configuration."""
         return "%s <%s>" % (
             config.uploader.default_sender_name,
             config.uploader.default_sender_address)
 
     @property
     def default_recipient(self):
+        """RFC822 default recipient specified in LP configuration. """
         return "%s <%s>" % (config.uploader.default_recipient_name,
-                         config.uploader.default_recipient_address)
+                            config.uploader.default_recipient_address)
 
     #
     # Overall consistency checks
@@ -254,16 +262,16 @@ class NascentUpload:
 
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, CustomUploadFile):
-                files_binaryful = files_binaryful or True
-            elif isinstance(uploaded_file, BinaryUploadFile):
-                files_binaryful = files_binaryful or True
+                files_binaryful = True
+            elif isinstance(uploaded_file, BaseBinaryUploadFile):
+                files_binaryful = True
                 files_archindep = files_archindep or uploaded_file.is_archindep
                 files_archdep = files_archdep or not uploaded_file.is_archindep
             elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
             else:
                 # This is already caught in ChangesFile.__init__
-                raise AssertionError()
+                raise AssertionError("Unknown uploaded file type.")
 
         if files_sourceful != think_sourceful:
             self.reject("Mismatch in sourcefulness. (arch) %s != (files) %s"
@@ -301,7 +309,8 @@ class NascentUpload:
         'hasorig' and 'native' attributes are set when an ORIG and/or an
         TAR file, respectively, are present.
         """
-        assert self.sourceful
+        assert self.sourceful, (
+            "Source consistency check called for a non-source upload")
 
         dsc = 0
         diff = 0
@@ -374,7 +383,7 @@ class NascentUpload:
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
-        UploadError(s) and UploadWarnings(s) are processed.
+        UploadError(s) and UploadWarnings(s) are handled.
         """
         try:
             callable()
@@ -387,43 +396,48 @@ class NascentUpload:
         """Run 'special' callable that generates a list of errors/warnings.
 
         The so called 'special' callables returns a generator containing all
-        exceptions occurred during it's process.
+        exceptions occurring during it's process.
 
         Currently it is used for {NascentUploadFile, ChangesFile}.verify()
         method.
 
         The rationale for this is that we want to collect as many
-        errors/warnings as possible, instead of interrupt the checks when we
-        find the first problem, when processing an upload.
+        errors/warnings as possible, instead of interrupting the checks
+        when we find the first problem, when processing an upload.
 
-        This methodology helps to avoids multiple upload retires to fix
-        multiple problems.
+        This methodology helps to avoid retrying an upload multiple times
+        because there are multiple problems.
         """
-        errors = callable()
-        for error in errors:
+        for error in callable():
             if isinstance(error, UploadError):
                 self.reject(str(error))
             elif isinstance(error, UploadWarning):
                 self.warn(str(error))
             else:
-                raise AssertionError
+                raise AssertionError("Unknown error occurred: %s" % str(error))
 
     def reject(self, msg):
         """Add the provided message to the rejection message."""
-        if len(self.rejection_message) > 0:
-            self.rejection_message += "\n"
-        self.rejection_message += msg
+        self.rejections.append(msg)
 
-    def warn(self, msg):
-        """Add the provided message to the warning message."""
-        if len(self.warnings) > 0:
-            self.warnings += "\n"
-        self.warnings += msg
+    @property
+    def rejection_message(self):
+        """Aggregates rejection messages."""
+        return '\n'.join(self.rejections)
 
     @property
     def is_rejected(self):
         """Returns whether or not this upload was rejected."""
-        return len(self.rejection_message) > 0
+        return len(self.rejections) > 0
+
+    def warn(self, msg):
+        """Add the provided message to the warning message."""
+        self.warnings.append(msg)
+
+    @property
+    def warning_message(self):
+        """Aggregates warning messages."""
+        return '\n'.join(self.warnings)
 
     #
     # Signature and ACL stuff
@@ -479,7 +493,7 @@ class NascentUpload:
             return
 
         for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, (DSCFile, BinaryUploadFile)):
+            if not isinstance(uploaded_file, (DSCFile, BaseBinaryUploadFile)):
                 # The only things that matter here are sources and
                 # binaries, because they are the only objects that get
                 # overridden and created in the database.
@@ -668,7 +682,7 @@ class NascentUpload:
                         "%s: (source) NEW" % (uploaded_file.package))
                     uploaded_file.new = True
 
-            elif isinstance(uploaded_file, BinaryUploadFile):
+            elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
                     %(uploaded_file.package, uploaded_file.version,
@@ -720,7 +734,7 @@ class NascentUpload:
                 "MAINTAINERFROM": self.sender,
                 "SENDER": self.sender,
                 "CHANGES": self.changes.filename,
-                "SUMMARY": self.build_summary(),
+                "SUMMARY": self.getNotificationSummary(),
                 "CHANGESFILE": guess_encoding(self.changes.filecontents),
                 "DISTRO": self.policy.distro.title,
                 "DISTRORELEASE": self.policy.distrorelease.name,
@@ -775,6 +789,8 @@ class NascentUpload:
                 accept_msg % interpolations,
                 announce_msg % interpolations]
 
+        except (SystemExit, KeyboardInterrupt):
+            raise
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
@@ -784,7 +800,7 @@ class NascentUpload:
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
-        assert self.is_rejected
+        assert self.is_rejected, "The upload is not rejected."
 
         interpolations = {
             "SENDER": self.sender,
@@ -792,15 +808,15 @@ class NascentUpload:
             "SUMMARY": self.rejection_message,
             "CHANGESFILE": guess_encoding(self.changes.filecontents)
             }
-        recipients = self.build_recipients()
+        recipients = self.getRecipients()
         interpolations['RECIPIENT'] = ", ".join(recipients)
         interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
         outgoing_msg = template % interpolations
 
         return [outgoing_msg]
 
-    def build_recipients(self):
-        """Build self.recipients up to include every address we trust."""
+    def getRecipients(self):
+        """Return a list of recipients including every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
         maintainer = self.changes.maintainer['person']
@@ -843,8 +859,8 @@ class NascentUpload:
             valid_recipients.append(recipient)
         return valid_recipients
 
-    def build_summary(self):
-        """List the files and build a summary as needed."""
+    def getNotificationSummary(self):
+        """List the files and build the notification summary as needed."""
         summary = []
         for uploaded_file in self.changes.files:
             if uploaded_file.new:
@@ -869,7 +885,7 @@ class NascentUpload:
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
         distrorelease = self.policy.distrorelease
-        queue_root = distrorelease.createQueueEntry(
+        self.queue_root = distrorelease.createQueueEntry(
             self.policy.pocket, self.changes.filename,
             self.changes.filecontents, self.changes.signingkey)
 
@@ -879,15 +895,16 @@ class NascentUpload:
         # UBinaryUploadFile.verify_sourcepackagerelease() for details.
         spr = None
         if self.sourceful:
-            assert self.changes.dsc
+            assert self.changes.dsc, "Sourceful upload lacks DSC."
             spr = self.changes.dsc.store_in_database()
-            queue_root.addSource(spr)
+            self.queue_root.addSource(spr)
 
         if self.binaryful:
 
             for custom_file in self.changes.custom_files:
                 libraryfile = custom_file.store_in_database()
-                queue_root.addCustom(libraryfile, custom_file.custom_type)
+                self.queue_root.addCustom(
+                    libraryfile, custom_file.custom_type)
 
             for binary_package_file in self.changes.binary_package_files:
                 if self.sourceful:
@@ -895,26 +912,27 @@ class NascentUpload:
                     # so late in the game is that in the
                     # mixed-upload case we only have a
                     # sourcepackagerelease to verify here!
-                    assert self.policy.can_upload_mixed
-                    assert spr
+                    assert self.policy.can_upload_mixed, (
+                        "Current policy does not allow mixed uploads.")
+                    assert spr, "No sourcepackagerelease was found."
                     binary_package_file.verify_sourcepackagerelease(spr)
                 else:
                     spr = binary_package_file.find_sourcepackagerelease()
 
                 build = binary_package_file.find_build(spr)
-                assert queue_root.pocket == build.pocket
+                assert self.queue_root.pocket == build.pocket, (
+                    "Binary was not build for the claimed pocket.")
                 binary_package_file.store_in_database(build)
-                queue_root.addBuild(build)
+                self.queue_root.addBuild(build)
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to
             # ACCEPTED state automatically
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.setAccepted()
+                self.queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.setUnapproved()
+                self.queue_root.setUnapproved()
 
-        self.queue_root = queue_root
 

@@ -1,23 +1,39 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Specific models for uploaded files"""
 
-import os
-import re
-import sys
-import md5
-import sha
-import time
+__metaclass__ = type
+
+__all__ = [
+    'UploadError',
+    'UploadWarning',
+    'NascentUploadFile',
+    'CustomUploadFile',
+    'PackageUploadFile',
+    'SourceUploadFile',
+    'BaseBinaryUploadFile',
+    'UdebBinaryUploadFile',
+    'DebBinaryUploadFile',
+    ]
+
 import apt_inst
 import apt_pkg
+import logging
+import os
+import md5
+import re
+import sha
 import subprocess
+import sys
+import time
 
 from zope.component import getUtility
 
-from canonical.encoding import guess as guess_encoding
-
 from canonical.archivepublisher.utils import prefix_multi_line_string
-from canonical.librarian.utils import filechunks
+from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
     IBinaryPackageNameSet)
+from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
     PackagePublishingPriority, DistroReleaseQueueCustomFormat,
     DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
@@ -50,20 +66,26 @@ class TarFileDateChecker:
     This was taken from jennifer in the DAK suite.
     """
     def __init__(self, future_cutoff, past_cutoff):
+        """Setup timestamp limits """
         self.reset()
         self.future_cutoff = future_cutoff
         self.past_cutoff = past_cutoff
 
     def reset(self):
+        """Reset local values."""
         self.future_files = {}
         self.ancient_files = {}
 
-    def callback(self, Kind, Name, Link, Mode,
-                 UID, GID, Size, MTime, Major, Minor):
-        if MTime > self.future_cutoff:
-            self.future_files[Name] = MTime
-        if MTime < self.past_cutoff:
-            self.ancient_files[Name] = MTime
+    def callback(self, kind, name, link, mode, uid, gid, size, mtime,
+                 major, minor):
+        """Callback designed to cope with apt_inst.debExtract.
+
+        It check and store timestamp details of the extracted DEB.
+        """
+        if mtime > self.future_cutoff:
+            self.future_files[name] = mtime
+        if mtime < self.past_cutoff:
+            self.ancient_files[name] = mtime
 
 
 class NascentUploadFile:
@@ -76,7 +98,7 @@ class NascentUploadFile:
 
     # Files need their content type for creating in the librarian.
     # This maps endings of filenames onto content types we may encounter
-    # in the processing of an upload
+    # in the processing of an upload.
     filename_ending_content_type_map = {
         ".dsc": "text/x-debian-source-package",
         ".deb": "application/x-debian-package",
@@ -85,19 +107,16 @@ class NascentUploadFile:
         ".tar.gz": "application/gzipped-tar"
         }
 
-    def __init__(self, filename, digest, size, component_and_section,
-                 priority, fsroot, policy, logger):
-        self.filename = filename
+    def __init__(self, filepath, digest, size, component_and_section,
+                 priority_name, policy):
+        self.filepath = filepath
         self.digest = digest
-        self.priority = priority
-        self.fsroot = fsroot
+        self.priority_name = priority_name
         self.policy = policy
-        self.logger = logger
 
         self.size = int(size)
-        self.component, self.section = self.split_component_and_section(
-            component_and_section)
-        self.full_filename = os.path.join(fsroot, filename)
+        self.component_name, self.section_name = (
+            self.split_component_and_section(component_and_section))
 
         self.librarian = getUtility(ILibraryFileAliasSet)
 
@@ -119,9 +138,25 @@ class NascentUploadFile:
     #
 
     @property
+    def logger(self):
+        """Return the common logger object."""
+        return logging.getLogger('upload')
+
+    @property
+    def filename(self):
+        """Return the NascentUpload filename."""
+        return os.path.basename(self.filepath)
+
+    @property
+    def dirname(self):
+        """Return the NascentUpload filename."""
+        return os.path.dirname(self.filepath)
+
+
+    @property
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
-        return os.path.exists(self.full_filename)
+        return os.path.exists(self.filepath)
 
     def split_component_and_section(self, component_and_section):
         """Split the component out of the section."""
@@ -141,10 +176,12 @@ class NascentUploadFile:
     # Verification
     #
 
-    def validate(self):
+    def verify(self):
+        """Implemented locally."""
         raise NotImplementedError
 
     def checkNameIsTaintFree(self):
+        """Verify if the filename contains forbidden characters."""
         if not re_taint_free.match(self.filename):
             raise UploadError("Tainted filename: '%s'." % (file))
 
@@ -154,7 +191,7 @@ class NascentUploadFile:
         Raise UploadError if the digest or size does not match or if the
         file is not found on the disk.
 
-        Populate self._sha_digest with the calculated sha1 digest of the
+        Populate self.sha_digest with the calculated sha1 digest of the
         file on disk.
         """
         if not self.exists_on_disk:
@@ -166,7 +203,7 @@ class NascentUploadFile:
         # the size of the file as read-in.
         digest = md5.md5()
         sha_cksum = sha.sha()
-        ckfile = open(self.full_filename, "r")
+        ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
             digest.update(chunk)
@@ -214,17 +251,22 @@ class CustomUploadFile(NascentUploadFile):
     @property
     def custom_type(self):
         """The custom upload type for this file. (None if not custom)."""
-        return self.custom_sections[self.section]
+        return self.custom_sections[self.section_name]
 
     def verify(self):
-        if self.section not in self.custom_sections:
+        """Verify CustomUploadFile.
+
+        Simply check is the given section is allowed for custom uploads.
+        """
+        if self.section_name not in self.custom_sections:
             yield UploadError(
-                "Unsupported custom section name %r" % self.section)
+                "Unsupported custom section name %r" % self.section_name)
 
     def store_in_database(self):
+        """Create and return the corresponding LibraryFileAlias reference."""
         libraryfile = self.librarian.create(
             self.filename, self.size,
-            open(self.full_filename, "rb"),
+            open(self.filepath, "rb"),
             self.content_type)
         return libraryfile
 
@@ -232,9 +274,8 @@ class CustomUploadFile(NascentUploadFile):
 class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """
 
-    def __init__(self, filename, digest, size, component_and_section,
-                 priority, package, version, changes, fsroot, policy,
-                 logger):
+    def __init__(self, filepath, digest, size, component_and_section,
+                 priority_name, package, version, changes, policy):
         """Check presence of the component and section from an uploaded_file.
 
         They need to satisfy at least the NEW queue constraints that includes
@@ -242,8 +283,8 @@ class PackageUploadFile(NascentUploadFile):
         Even if they might be overriden in the future.
         """
         NascentUploadFile.__init__(
-            self, filename, digest, size, component_and_section,
-            priority, fsroot, policy, logger)
+            self, filepath, digest, size, component_and_section,
+            priority_name, policy)
         self.package = package
         self.version = version
         self.changes = changes
@@ -252,32 +293,31 @@ class PackageUploadFile(NascentUploadFile):
                             getUtility(IComponentSet)]
         valid_sections = [section.name for section in getUtility(ISectionSet)]
 
-        if self.section not in valid_sections:
+        if self.section_name not in valid_sections:
             # We used to reject invalid sections; when testing stuff we
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
             default_section = 'misc'
             self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section, default_section))
-            self.section = default_section
+                      % (self.section_name, default_section))
+            self.section_name = default_section
 
-        if self.component not in valid_components:
+        if self.component_name not in valid_components:
             raise UploadError(
                 "%s: Component %r is not valid" % (
-                self.filename, self.component))
+                self.filename, self.component_name))
 
 
     @property
-    def converted_component(self):
-        return getUtility(IComponentSet)[self.component]
+    def component(self):
+        """Return an IComponent for self.component.name."""
+        return getUtility(IComponentSet)[self.component_name]
 
     @property
-    def converted_section(self):
-        return getUtility(ISectionSet)[self.section]
-
-    def verify(self):
-        raise NotImplementedError
+    def section(self):
+        """Return an ISection for self.section_name."""
+        return getUtility(ISectionSet)[self.section_name]
 
 
 class SourceUploadFile(PackageUploadFile):
@@ -291,8 +331,7 @@ class SourceUploadFile(PackageUploadFile):
     def verify(self):
         """Verify the uploaded source file.
 
-        Should not raise anything unless something unexpected happens. All
-        errors should be accumulated in the rejection message.
+        All exception should be accumulated in its generator.
         """
         self.logger.debug("Verifying source file %s" % self.filename)
 
@@ -311,8 +350,10 @@ class SourceUploadFile(PackageUploadFile):
                 % (filename_version, version_chopped))
 
 
-class UBinaryUploadFile(PackageUploadFile):
-    """Represents an uploaded binary package file."""
+class BaseBinaryUploadFile(PackageUploadFile):
+    """Base methods for binary upload modeling."""
+
+    format = None
 
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
@@ -329,8 +370,6 @@ class UBinaryUploadFile(PackageUploadFile):
         "-": PackagePublishingPriority.EXTRA
         }
 
-    format = BinaryPackageFormat.UDEB
-
     # These are divined when parsing the package file in verify(), and
     # then used to locate or create the relevant sources and build.
     control = None
@@ -338,15 +377,19 @@ class UBinaryUploadFile(PackageUploadFile):
     source_name = None
     source_version = None
 
-    def __init__(self, *args, **kwargs):
-        PackageUploadFile.__init__(self, *args, **kwargs)
+    def __init__(self, filepath, digest, size, component_and_section,
+                 priority_name, package, version, changes, policy):
 
-        if self.priority not in self.priority_map:
+        PackageUploadFile.__init__(
+            self, filepath, digest, size, component_and_section,
+            priority_name, package, version, changes, policy)
+
+        if self.priority_name not in self.priority_map:
             default_priority = 'extra'
             self.logger.warn(
                  "Unable to grok priority %r, overriding it with %s"
-                 % (self.priority, default_priority))
-            self.priority = default_priority
+                 % (self.priority_name, default_priority))
+            self.priority_name = default_priority
 
         # Yeah, this is weird. Where else can I discover this without
         # unpacking the deb file, though?
@@ -359,40 +402,67 @@ class UBinaryUploadFile(PackageUploadFile):
 
     @property
     def is_archindep(self):
+        """Check if the binary is targeted to architecture 'all'.
+
+        We call binaries in this condition 'architecture-independent', i.e.
+        They can be build in any architecture and the result will fit all
+        architectures available.
+        """
         return self.architecture.lower() == 'all'
 
     @property
     def archtag(self):
+        """Return the binary target architecture.
+
+        If the binary is architecture independent, return the architecture
+        of the machine that has built it (it is encoded in the changesfile
+        name).
+        """
         archtag = self.architecture
         if archtag == 'all':
             return self.changes.filename_archtag
         return archtag
 
     @property
-    def converted_priority(self):
+    def priority(self):
         """Checks whether the priority indicated is valid"""
-        return self.priority_map[self.priority]
+        return self.priority_map[self.priority_name]
 
     #
     # Binary file checks
     #
+    @property
+    def local_checks(self):
+        """Should be implemented locally."""
+        raise NotImplementedError
 
     def verify(self):
         """Verify the contents of the .deb or .udeb as best we can.
 
-        Should not raise anything itself but makes little effort to catch
-        exceptions raised in anything it calls apart from where apt_pkg or
-        apt_inst may go bonkers. Those are generally caught and swallowed.
+        Run the specified set of checks and collect errors.
+
+        All legit exceptions happened during the file verification are
+        stored and returned to the callsite once the method is finished.
         """
         self.logger.debug("Verifying binary %s" % self.filename)
-        # First thing we need to do is extract the control information.
-        # We can only really rely on what's in the control file, so this
-        # is why the UBinaryUploadFile has this weird dependency on
-        # verify() being called to be API complete.
-        deb_file = open(self.full_filename, "r")
+
+        # Run mandatory and local checks and collect errors.
+        mandatory_checks = [
+            self.extractAndParseControl,
+            ]
+        checks = mandatory_checks + self.local_checks
+        for check in checks:
+            for error in check():
+                yield error
+
+    def extractAndParseControl(self):
+        """Extract and parse tcontrol information."""
+        deb_file = open(self.filepath, "r")
         try:
             control_file = apt_inst.debExtractControl(deb_file)
             control_lines = apt_pkg.ParseSection(control_file)
+        except (SystemExit, KeyboardInterrupt):
+            raise
         except:
             deb_file.close()
             yield UploadError(
@@ -406,18 +476,28 @@ class UBinaryUploadFile(PackageUploadFile):
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
 
+        # XXX: we never use the Maintainer information in the control
+        # file for anything. Should we? -- kiko, 2007-02-15
         self.control = {}
         for key in control_lines.keys():
             self.control[key] = control_lines.Find(key)
 
-        # XXX: we never use the Maintainer information in the control
-        # file for anything. Should we? -- kiko, 2007-02-15
+        control_source = self.control.get("Source", None)
+        if control_source is not None:
+            if "(" in control_source:
+                src_match = re_extract_src_version.match(control_source)
+                self.source_name = src_match.group(1)
+                self.source_version = src_match.group(2)
+            else:
+                self.source_name = control_source
+                self.source_version = self.control.get("Version")
+        else:
+            self.source_name = self.control.get("Package")
+            self.source_version = self.control.get("Version")
 
-        #
-        # Check Package
-        #
-        binary_match = re_isadeb.match(self.filename)
-        control_package = control_lines.Find("Package");
+    def verifyPackage(self):
+        """Check if the binary is in changesfile and its name is valid."""
+        control_package = self.control.get("Package", '')
         if control_package not in self.changes.binaries:
             yield UploadError(
                 "%s: control file lists name as %r, which isn't in changes "
@@ -427,9 +507,9 @@ class UBinaryUploadFile(PackageUploadFile):
             yield UploadError("%s: invalid package name %r." % (
                 self.filename, control_package))
 
-
         # Ensure the filename matches the contents of the .deb
         # First check the file package name matches the deb contents.
+        binary_match = re_isadeb.match(self.filename)
         file_package = binary_match.group(1)
         if control_package != file_package:
             yield UploadError(
@@ -437,11 +517,9 @@ class UBinaryUploadFile(PackageUploadFile):
                 "package name in the control fields %r"
                 % (self.filename, file_package, control_package))
 
-
-        #
-        # Check Version
-        #
-        control_version = control_lines.Find("Version");
+    def verifyVersion(self):
+        """Check if contro version matches the changesfile and is valid."""
+        control_version = self.control.get("Version", '')
         if not re_valid_version.match(control_version):
             yield UploadError("%s: invalid version number %r." % (
                 self.filename, control_version))
@@ -451,16 +529,19 @@ class UBinaryUploadFile(PackageUploadFile):
                 "doesn't match version %r in changes file." % (
                 self.filename, control_version, self.version))
 
+        binary_match = re_isadeb.match(self.filename)
         filename_version = binary_match.group(2)
         changes_version_chopped = re_no_epoch.sub('', self.version)
         if filename_version != changes_version_chopped:
             yield UploadError("%s: should be %s according to changes file."
                 % (filename_version, changes_version_chopped))
 
-        #
-        # Check Architecture
-        #
-        control_arch = control_lines.Find('Architecture')
+    def verifyArchitecture(self):
+        """Check if the control architecture matches the changesfile.
+
+        Also check if it is a valid architecture in LP context.
+        """
+        control_arch = self.control.get("Architecture", '')
         valid_archs = [a.architecturetag
                        for a in self.policy.distrorelease.architectures]
         if control_arch not in valid_archs and control_arch != "all":
@@ -478,52 +559,42 @@ class UBinaryUploadFile(PackageUploadFile):
                 "agree with version %r in the filename."
                 % (self.filename, control_arch, self.architecture))
 
-        control_depends = control_lines.Find('Depends', "--unset-marker--")
+    def verifyDepends(self):
+        """Check if control depends field is present and not empty."""
+        control_depends = self.control.get('Depends', "--unset-marker--")
         if not control_depends:
             yield UploadError(
                 "%s: Depends field present and empty." % self.filename)
 
-        #
-        # Check Section and Priority
-        #
-
-        # Check the section & priority match those in the .changes Files entry
+    def verifySection(self):
+        """Check the section & priority match those in changesfile."""
+        control_section_and_component = self.control.get('Section', '')
         control_component, control_section = self.split_component_and_section(
-            control_lines.Find("Section"))
+            control_section_and_component)
         if ((control_component, control_section) !=
-            (self.component, self.section)):
+            (self.component_name, self.section_name)):
             yield UploadError(
                 "%s control file lists section as %s/%s but changes file "
                 "has %s/%s." % (self.filename, control_component,
-                                control_section, self.component,
-                                self.section))
-        control_priority = control_lines.Find("Priority")
-        if control_priority and self.priority != control_priority:
+                                control_section, self.component_name,
+                                self.section_name))
+
+    def verifyPriority(self):
+        """Check if priority matches changesfile."""
+        control_priority = self.control.get('Priority', '')
+        if control_priority and self.priority_name != control_priority:
             yield UploadError(
                 "%s control file lists priority as %s but changes file has %s."
-                % (self.filename, control_priority, self.priority))
+                % (self.filename, control_priority, self.priority_name))
 
-        #
-        # Fish our Source details
-        #
+    def verifyFormat(self):
+        """Check if the DEB format is sane.
 
-        control_source = self.control.get("Source", None)
-        if control_source is not None:
-            if "(" in control_source:
-                src_match = re_extract_src_version.match(control_source)
-                self.source_name = src_match.group(1)
-                self.source_version = src_match.group(2)
-            else:
-                self.source_name = control_source
-                self.source_version = self.control.get("Version")
-        else:
-            self.source_name = self.control.get("Package")
-            self.source_version = self.control.get("Version")
-
-        # Debian packages are in fact 'ar' files. Thus we run '/usr/bin/ar'
-        # to look at the contents of the deb files to confirm they make sense.
+        Debian packages are in fact 'ar' files. Thus we run '/usr/bin/ar'
+        to look at the contents of the deb files to confirm they make sense.
+        """
         ar_process = subprocess.Popen(
-            ["/usr/bin/ar", "t", self.full_filename],
+            ["/usr/bin/ar", "t", self.filepath],
             stdout=subprocess.PIPE)
         output = ar_process.stdout.read()
         result = ar_process.wait()
@@ -550,8 +621,7 @@ class UBinaryUploadFile(PackageUploadFile):
                 self.filename, control_tar))
         if data_tar == "data.tar.bz2":
             # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            found = False
-            control_pre_depends = control_lines.Find("Pre-Depends", "")
+            control_pre_depends = self.control.get('Pre-Depends', '')
             for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
                 # apt_pkg is weird and returns a list containing lists
                 # containing a single tuple.
@@ -580,12 +650,79 @@ class UBinaryUploadFile(PackageUploadFile):
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))
 
-        # That's all folks.
+    def verifyDebTimestamp(self):
+        """Check specific DEB format timestamp checks."""
+        self.logger.debug("Verifying timestamps in %s" % (self.filename))
+
+        future_cutoff = time.time() + self.policy.future_time_grace
+        earliest_year = time.strptime(str(self.policy.earliest_year), "%Y")
+        past_cutoff = time.mktime(earliest_year)
+
+        tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
+        tar_checker.reset()
+        try:
+            deb_file = open(self.filepath, "rb")
+            apt_inst.debExtract(deb_file, tar_checker.callback,
+                                "control.tar.gz")
+            deb_file.seek(0)
+            try:
+                apt_inst.debExtract(deb_file, tar_checker.callback,
+                                    "data.tar.gz")
+            except SystemError, error:
+                # If we can't find a data.tar.gz,
+                # look for data.tar.bz2 instead.
+                if re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
+                                 str(error)):
+                    deb_file.seek(0)
+                    apt_inst.debExtract(deb_file, tar_checker.callback,
+                                        "data.tar.bz2")
+                else:
+                    yield UploadError("Could not find data tarball in %s"
+                                       % self.filename)
+                    deb_file.close();
+                    return
+
+            deb_file.close();
+
+            future_files = tar_checker.future_files.keys()
+            if future_files:
+                first_file = future_files[0]
+                timestamp = time.ctime(tar_checker.future_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(future_files), first_file,
+                        timestamp))
+
+            ancient_files = tar_checker.ancient_files.keys()
+            if ancient_files:
+                first_file = ancient_files[0]
+                timestamp = time.ctime(tar_checker.ancient_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(ancient_files), first_file,
+                        timestamp))
+
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception, error:
+            # There is a very large number of places where we
+            # might get an exception while checking the timestamps.
+            # Many of them come from apt_inst/apt_pkg and they are
+            # terrible in giving sane exceptions. We thusly capture
+            # them all and make them into rejection messages instead
+            yield UploadError("%s: deb contents timestamp check failed: %s"
+                 % (self.filename, error))
+
+#
+#   Database relationship methods
+#
 
     def find_sourcepackagerelease(self):
         """Return the respective ISourcePackagRelease for this binary upload.
 
-        It inspect publicationin the targeted DistroRelease and also the
+        It inspect publication in the targeted DistroRelease and also the
         ACCEPTED queue for sources matching stored (source_name, source_version).
 
         It raises UploadError if the source was not found.
@@ -596,14 +733,14 @@ class UBinaryUploadFile(PackageUploadFile):
         """
         distrorelease = self.policy.distrorelease
         spphs = distrorelease.getPublishedReleases(
-                        self.source_name, version=self.source_version,
-                        include_pending=True)
+            self.source_name, version=self.source_version,
+            include_pending=True)
 
         sourcepackagerelease = None
         if spphs:
             # We know there's only going to be one release because
             # version is unique.
-            assert len(spphs) == 1
+            assert len(spphs) == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
             # XXX cprov 20060809: Building from ACCEPTED is special
@@ -632,7 +769,9 @@ class UBinaryUploadFile(PackageUploadFile):
 
     def verify_sourcepackagerelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""
-        assert 'source' in self.changes.architectures
+        assert 'source' in self.changes.architectures, (
+            "It should be a mixed upload, but no source part was found.")
+
         if self.source_version != sourcepackagerelease.version:
             raise UploadError(
                 "source version %r for %s does not match version %r "
@@ -699,8 +838,8 @@ class UBinaryUploadFile(PackageUploadFile):
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
         encoded = {}
-        for k, v in self.control.items():
-            encoded[k] = guess_encoding(v)
+        for key, value in self.control.items():
+            encoded[key] = guess_encoding(value)
 
         desclines = encoded['Description'].split("\n")
         summary = desclines[0]
@@ -726,9 +865,9 @@ class UBinaryUploadFile(PackageUploadFile):
             summary=summary,
             description=description,
             binpackageformat=self.format,
-            component=self.converted_component,
-            section=self.converted_section,
-            priority=self.converted_priority,
+            component=self.component,
+            section=self.section,
+            priority=self.priority,
             shlibdeps=shlibdeps,
             depends=encoded.get('Depends', ''),
             recommends=encoded.get('Recommends', ''),
@@ -743,79 +882,43 @@ class UBinaryUploadFile(PackageUploadFile):
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,
-             self.size, open(self.full_filename, "rb"), self.content_type)
+             self.size, open(self.filepath, "rb"), self.content_type)
         binary.addFile(library_file)
         return binary
 
 
-class BinaryUploadFile(UBinaryUploadFile):
+class UdebBinaryUploadFile(BaseBinaryUploadFile):
+    """Represents an uploaded binary package file in udeb format."""
+    format = BinaryPackageFormat.UDEB
 
+    @property
+    def local_checks(self):
+        """Checks to be executed on UDEBs."""
+        return [
+            self.verifyPackage,
+            self.verifyVersion,
+            self.verifyArchitecture,
+            self.verifyDepends,
+            self.verifySection,
+            self.verifyPriority,
+            self.verifyFormat,
+            ]
+
+
+class DebBinaryUploadFile(BaseBinaryUploadFile):
+    """Represents an uploaded binary package file in deb format."""
     format = BinaryPackageFormat.DEB
 
-    def verify(self):
-        for error in UBinaryUploadFile.verify(self):
-            yield error
-
-        self.logger.debug("Verifying timestamps in %s" % (
-            self.filename))
-
-        future_cutoff = time.time() + self.policy.future_time_grace
-
-        earliest_year = time.strptime(str(self.policy.earliest_year), "%Y")
-        past_cutoff = time.mktime(earliest_year)
-
-        tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
-
-        tar_checker.reset()
-        try:
-            deb_file = open(self.full_filename, "rb")
-            apt_inst.debExtract(deb_file, tar_checker.callback,
-                                "control.tar.gz")
-            deb_file.seek(0)
-            try:
-                apt_inst.debExtract(deb_file, tar_checker.callback,
-                                    "data.tar.gz")
-            except SystemError, e:
-                # If we can't find a data.tar.gz,
-                # look for data.tar.bz2 instead.
-                if re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
-                                 str(e)):
-                    deb_file.seek(0)
-                    apt_inst.debExtract(deb_file,tar_checker.callback,
-                                        "data.tar.bz2")
-                else:
-                    yield UploadError("Could not find data tarball in %s"
-                                       % self.filename)
-                    deb_file.close();
-                    return
-
-            deb_file.close();
-
-            future_files = tar_checker.future_files.keys()
-            if future_files:
-                first_file = future_files[0]
-                ts = time.ctime(tar_checker.future_files[first_file])
-                yield UploadError(
-                    "%s: has %s file(s) with a time stamp too "
-                    "far into the future (e.g. %s [%s])."
-                     % (self.filename, len(future_files), first_file, ts))
-
-            ancient_files = tar_checker.ancient_files.keys()
-            if ancient_files:
-                first_file = ancient_files[0]
-                ts = time.ctime(tar_checker.ancient_files[first_file])
-                yield UploadError(
-                    "%s: has %s file(s) with a time stamp too "
-                    "far into the future (e.g. %s [%s])."
-                     % (self.filename, len(ancient_files), first_file, ts))
-
-        except Exception, e:
-            # There is a very large number of places where we
-            # might get an exception while checking the timestamps.
-            # Many of them come from apt_inst/apt_pkg and they are
-            # terrible in giving sane exceptions. We thusly capture
-            # them all and make them into rejection messages instead
-            yield UploadError("%s: deb contents timestamp check failed: %s"
-                 % (self.filename, e))
-
-
+    @property
+    def local_checks(self):
+        """Checks to be executed on DEBs."""
+        return [
+            self.verifyPackage,
+            self.verifyVersion,
+            self.verifyArchitecture,
+            self.verifyDepends,
+            self.verifySection,
+            self.verifyPriority,
+            self.verifyFormat,
+            self.verifyDebTimestamp,
+            ]
