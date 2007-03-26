@@ -202,7 +202,8 @@ answer questions.
 For a person, it is the same list than its list of known languages,
 with the addition that English is always assumed to be supported:
 
-    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'foo.bar@canonical.com')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())
@@ -326,13 +327,14 @@ And questions on which the user commented:
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
 
-== getSupportedQuestionTargets() ==
+== getDirectAnswerQuestionTargets() ==
 
-IPerson defines getSupportedQuestionTargets that can be used to retrieve
-a list of IQuestionTargets for which a person is an answer contact.
+IPerson defines getDirectAnswerQuestionTargets that can be used to retrieve
+a list of IQuestionTargets that a person subscribed himself to as an
+answer contact.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv.getSupportedQuestionTargets()
+    >>> no_priv.getDirectAnswerQuestionTargets()
     []
     
     >>> from canonical.launchpad.interfaces import IProductSet
@@ -340,12 +342,15 @@ a list of IQuestionTargets for which a person is an answer contact.
     >>> firefox.addAnswerContact(no_priv)
     True
     
-    >>> for target in no_priv.getSupportedQuestionTargets():
+    >>> for target in no_priv.getDirectAnswerQuestionTargets():
     ...    print target.name
     firefox
+
+== getTeamAnswerQuestionTargets() ==
     
-The results also include QuestionTargets for which the answer contact is
-a team that the person is a members of.
+IPerson defines getTeamAnswerQuestionTargets that retreives a list of
+IQuestionTargets that the person is subscribed to indirectly as an
+answer contact through his team membership.
 
     >>> landscape_team = getUtility(IPersonSet).getByName(
     ...    "landscape-developers")
@@ -359,30 +364,25 @@ a team that the person is a members of.
     True
     
     >>> sorted([target.name
-    ...         for target in no_priv.getSupportedQuestionTargets()])
-    [u'firefox', u'ubuntu']
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'ubuntu']
     
 Indirect team membership is also taken in consideration. For example, 
-if No Privileges Person joins the Warty Security Team which itself is 
-member of the Ubuntu Gnome Team. So targets for which that last team is
-an answer contact will be included in No Privileges Person's supported 
-IQuestionTargets:
+the Landscape Team joins the Translator Team. So targets for which the
+Translator team is an answer contact will be included in No Privileges 
+Person's supported IQuestionTargets:
 
-    >>> warty_team = getUtility(IPersonSet).getByName('name20')
-    >>> warty_team.addMember(no_priv, foo_bar)
-    >>> gnome_team = getUtility(IPersonSet).getByName('name18')
-    >>> no_priv.inTeam(gnome_team)
-    True
-    >>> no_priv.hasMembershipEntryFor(gnome_team)
+    >>> translator_team = getUtility(IPersonSet).getByName('ubuntu-translators')
+    >>> no_priv.inTeam(translator_team)
     False
-    >>> evolution_package = ubuntu.getSourcePackage('evolution')
-    >>> evolution_package.addAnswerContact(gnome_team)
+    >>> translator_team.addMember(landscape_team, carlos)
+    >>> no_priv.hasParticipationEntryFor(translator_team)
     True
-    
-(Note that the Ubuntu Gnome Team is already registered as an answer 
-contact for two other products.)
-
+    >>> evolution_package = ubuntu.getSourcePackage('evolution')
+    >>> evolution_package.addAnswerContact(translator_team)
+    True
     >>> sorted([target.name
-    ...         for target in no_priv.getSupportedQuestionTargets()])
-    [u'applets', u'evolution', u'firefox', u'gnomebaker', u'ubuntu']
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'evolution', u'ubuntu']
+
     

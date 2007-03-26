@@ -2700,15 +2700,25 @@ class PersonAnswerContactForView(LaunchpadView):
     """
     
     @cachedproperty
-    def question_targets(self):
-        """List of IQuestionTargets that the context is an answer contact for.
+    def direct_question_targets(self):
+        """List of IQuestionTargets that the context is a direct answer contact.
         
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getSupportedQuestionTargets(), 
+            self.context.getDirectAnswerQuestionTargets(), 
             key=attrgetter('title'))
-            
+
+    @cachedproperty
+    def team_question_targets(self):
+        """List of IQuestionTargets for the context's team membership.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getTeamAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+                        
     def showRemoveYourselfLink(self):
         """The link is only shown when the page is in the user's own profile."""
         return self.user == self.context

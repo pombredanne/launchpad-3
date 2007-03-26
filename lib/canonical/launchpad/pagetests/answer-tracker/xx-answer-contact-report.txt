@@ -25,12 +25,17 @@ he registered for.
     Projects for which Foo Bar is an answer contact
     
     >>> content = find_tag_by_id(
-    ...     anon_browser.contents, "answer-contacts-for-list")
+    ...     anon_browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content)
     Gnome Baker
     Source Package "mozilla-firefox" in Ubuntu Linux
+
+    >>> content = find_tag_by_id(
+    ...     anon_browser.contents, "team-answer-contacts-for-list")
+    >>> print extract_text(content)
+    Gnome Baker
     The Gnome Panel Applets
-    
+        
 Clicking on the name of the project will show the project answers.
 
     >>> anon_browser.getLink('Gnome Baker').click()
@@ -47,12 +52,12 @@ he will see a link after each project to manage his registration.
     >>> print browser.title
     Projects for which Sample Person is an answer contact
     
-    >>> content = find_tag_by_id(browser.contents, "answer-contacts-for-list")
+    >>> content = find_tag_by_id(browser.contents, "team-answer-contacts-for-list")
     >>> print extract_text(content)
     Gnome Baker &mdash; Remove yourself
     The Gnome Panel Applets &mdash; Remove yourself
     
-    >>> browser.getLink(id="gnomebaker-setanswercontact").click()
+    >>> browser.getLink(id="gnomebaker-setteamanswercontact").click()
     >>> print browser.title
     Answer contact for Gnome Baker
     
@@ -65,9 +70,8 @@ link for other users
     >>> print browser.title
     Projects for which Foo Bar is an answer contact
     
-    >>> content = find_tag_by_id(browser.contents, "answer-contacts-for-list")
+    >>> content = find_tag_by_id(browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content)
     Gnome Baker
     Source Package "mozilla-firefox" in Ubuntu Linux
-    The Gnome Panel Applets
 

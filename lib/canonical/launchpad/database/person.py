@@ -459,13 +459,29 @@ class Person(SQLBase, HasSpecificationsMixin):
             )''' % sqlvalues(personID=self.id),
             clauseTables=['Ticket'], distinct=True))
 
-    def getSupportedQuestionTargets(self):
+    def getDirectAnswerQuestionTargets(self):
         """See IPerson."""
-        targets = []
+        answer_contacts = AnswerContact.select(
+            '''SupportContact.person = %s''' % sqlvalues(self.id))
+        return self._assembleAnswerContacts(answer_contacts)
+        
+    def getTeamAnswerQuestionTargets(self):
+        """See IPerson."""
         answer_contacts = AnswerContact.select(
             '''SupportContact.person = TeamParticipation.team
-            AND TeamParticipation.person = %s''' % sqlvalues(self.id),
+            AND TeamParticipation.person = %(personID)s
+            AND SupportContact.person != %(personID)s''' % sqlvalues(
+                personID=self.id),
             clauseTables=['TeamParticipation'], distinct=True)
+        return self._assembleAnswerContacts(answer_contacts)
+    
+    def _assembleAnswerContacts(self, answer_contacts):
+        """Return a list of valid IQuestionTargets.
+        
+        Provided AnswerContact query results, a distinct list of Products,
+        Distributions, and SourcePackages is returned.
+        """
+        targets = []
         for answer_contact in answer_contacts:
             if answer_contact.product is not None:
                 target = answer_contact.product
@@ -478,12 +494,12 @@ class Person(SQLBase, HasSpecificationsMixin):
             elif answer_contact.distribution is not None:
                 target = answer_contact.distribution
             else:
-                assert False, "Unknown IQuestionTarget."
+                raise AssertionError('Unknown IQuestionTarget.')
             
             if not target in targets:
                 targets.append(target)
             
-        return targets
+        return targets      
     
     @property
     def branches(self):

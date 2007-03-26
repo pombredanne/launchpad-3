@@ -21,23 +21,45 @@
 </metal:heading>
 
 <div metal:fill-slot="main">
-  <ul class="listing" id="answer-contacts-for-list"
-    tal:condition="view/question_targets">
-    <li tal:repeat="question_target view/question_targets">
-      <a href="#"
-        tal:attributes="href string:${question_target/fmt:url}"
-        tal:content="question_target/title">Project Title</a> 
-      <tal:link condition="view/showRemoveYourselfLink">
-        &mdash; 
-        <a id="project-setanswercontact" href="#"
-          tal:attributes="href string:${question_target/fmt:url}/+support-contact;
-          id string:${question_target/name}-setanswercontact">
-          Remove yourself</a>
-      </tal:link>
-    </li>
-  </ul>
-  
-  <p tal:condition="not: view/question_targets" i18n:translate="">
+  <div tal:condition="view/direct_question_targets">
+    <h2>Contact via self subscription</h2>
+
+    <ul class="listing" id="direct-answer-contacts-for-list">
+      <li tal:repeat="question_target view/direct_question_targets">
+        <a href="#"
+          tal:attributes="href string:${question_target/fmt:url}"
+          tal:content="question_target/title">Project Title</a> 
+        <tal:link condition="view/showRemoveYourselfLink">
+          &mdash; 
+          <a id="project-setanswercontact" href="#"
+            tal:attributes="href string:${question_target/fmt:url}/+support-contact;
+            id string:${question_target/name}-setdirectanswercontact">
+            Remove yourself</a>
+        </tal:link>
+      </li>
+    </ul>
+  </div>
+
+  <div tal:condition="view/team_question_targets">
+    <h2>Contact via team participation</h2>
+    
+    <ul class="listing" id="team-answer-contacts-for-list">
+      <li tal:repeat="question_target view/team_question_targets">
+        <a href="#"
+          tal:attributes="href string:${question_target/fmt:url}"
+          tal:content="question_target/title">Project Title</a> 
+        <tal:link condition="view/showRemoveYourselfLink">
+          &mdash; 
+          <a id="project-setanswercontact" href="#"
+            tal:attributes="href string:${question_target/fmt:url}/+support-contact;
+            id string:${question_target/name}-setteamanswercontact">
+            Remove yourself</a>
+        </tal:link>
+      </li>
+    </ul>
+  </div>
+    
+  <p tal:condition="not: view/team_question_targets | view/direct_question_targets" i18n:translate="">
     <span i18n:name="person_name" 
       tal:replace="context/browsername">Person Name</span> is not an answer 
       contact for any project.
