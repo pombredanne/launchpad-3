@@ -8,17 +8,19 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
 
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
+    <p metal:fill-slot="extra_info">
       The priority should reflect the views of the coordinating team of
       <span tal:replace="context/target/displayname">Ubuntu</span>.
-    </div>
+    </p>
 
   </div>
 

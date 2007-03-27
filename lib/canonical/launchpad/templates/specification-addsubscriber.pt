@@ -6,17 +6,13 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:cahs fill-slot="contentareaheadingsecondary">
-      <a
-        tal:attributes="href context/fmt:url"
-        tal:content="context/title"
-      >Specification title</a>
-    </metal:cahs>
-    <metal:cahp fill-slot="contentareaheadingprimary">
-      Subscribe someone else
-    </metal:cahp>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 

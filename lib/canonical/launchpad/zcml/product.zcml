@@ -394,17 +394,9 @@
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductSetDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
-    <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductDynMenu"
+        class="canonical.launchpad.browser.ProductDynMenu"
         attribute="__call__"
         name="+menudata"
         />

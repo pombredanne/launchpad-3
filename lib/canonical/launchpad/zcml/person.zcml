@@ -130,6 +130,10 @@
           template="../templates/person-index.pt"
           />
       <browser:page
+          name="+ask-a-question-button"
+          template="../templates/null.pt"
+          />
+      <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
           />
