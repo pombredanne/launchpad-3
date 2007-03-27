@@ -63,7 +63,7 @@ html {
   position: relative;
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8.5pt;
-  color: #606060;
+  color: #505050;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
@@ -1174,6 +1174,10 @@ table#applications td {padding-right: 20px; text-align: right;}
 .tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
+}
+.front_page label {
+  color: #303030;
+  font-size: 1.2em;
 }
 div.bordered {
   padding: 2em 4em;
