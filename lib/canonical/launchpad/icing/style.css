@@ -1451,12 +1451,16 @@ ul#menuroot>li>a>em { /* should be changed to not need em */
   font-style: normal;
   float: left;
   display: block;
-  background-image: url(locationbar_em_bg.gif);
+  background-image: url(locationbar_nodrop_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
   padding: 6px 26px 10px 20px;
   cursor: hand;
   cursor: pointer;
+}
+/* When a breadcrumb has a submenu, show a down-arrow. */
+ul#menuroot>li.container>a>em { /* should be changed to not need em */
+  background-image: url(locationbar_em_bg.gif);
 }
 /* Undo more generic formatting around ul elements. */
 #locationbar ul {
