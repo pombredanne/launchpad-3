@@ -173,44 +173,67 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         from canonical.launchpad.database.distribution import Distribution
         return Distribution.byName("ubuntu")
 
+    def _getPublishingHistory(self, version=None, include_status=None, 
+                              exclude_status=None, order_by=None):
+        """Build a query and return a list of SourcePackagePublishingHistory
+        objects.  This is mainly a helper function for this class so that 
+        code is not duplicated.  include_status and exclude_status must be
+        a sequence.
+        """
+        clauses = []
+        clauses.append(
+                """SourcePackagePublishingHistory.sourcepackagerelease =
+                   SourcePackageRelease.id AND
+                   SourcePackageRelease.sourcepackagename = %s AND
+                   SourcePackagePublishingHistory.distrorelease = %s
+                """ % sqlvalues(self.sourcepackagename, self.distrorelease))
+        if version:
+            clauses.append(
+                "SourcePackageRelease.version = %s" % sqlvalues(version))
+
+        if include_status:
+            if not isinstance(include_status, list):
+                include_status = list(include_status)
+            clauses.append("SourcePackagePublishingHistory.status IN %s"
+                       % sqlvalues(include_status))
+
+        if exclude_status:
+            if not isinstance(exclude_status, list):
+                exclude_status = list(exclude_status)
+            clauses.append("SourcePackagePublishingHistory.status NOT IN %s"
+                       % sqlvalues(exclude_status))
+
+        query = " AND ".join(clauses)
+
+        if not order_by:
+            order_by = '-datepublished'
+
+        return SourcePackagePublishingHistory.select(
+            query, orderBy=order_by, 
+            clauseTables=['SourcePackageRelease'])
+
     @property
     def currentrelease(self):
-        pkg = SourcePackagePublishingHistory.selectFirst("""
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.sourcepackagename,
-                            self.distrorelease,
-                            PackagePublishingStatus.REMOVED),
-            orderBy='-datepublished',
-            clauseTables=['SourcePackageRelease'])
-        if pkg is None:
+        packages = self._getPublishingHistory(
+                     exclude_status=[PackagePublishingStatus.REMOVED])
+        if packages:
+            latest_package = packages[0]
+            return DistroReleaseSourcePackageRelease(
+                    self.distrorelease, latest_package.sourcepackagerelease)
+        else:
             return None
-        currentrelease = DistroReleaseSourcePackageRelease(
-            distrorelease=self.distrorelease,
-            sourcepackagerelease=pkg.sourcepackagerelease)
-        return currentrelease
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkg = SourcePackagePublishingHistory.selectFirst("""
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.version = %s AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(version, self.sourcepackagename,
-                            self.distrorelease,
-                            PackagePublishingStatus.REMOVED),
-            orderBy='-datepublished',
-            clauseTables=['SourcePackageRelease'])
-        if pkg is None:
+        packages = self._getPublishingHistory(
+                     version=version,
+                     exclude_status=[PackagePublishingStatus.REMOVED])
+        if packages:
+            latest_package = packages[0]
+            return DistroReleaseSourcePackageRelease(
+                    self.distrorelease, latest_package.sourcepackagerelease)
+        else:
             return None
-        return DistroReleaseSourcePackageRelease(
-            self.distrorelease, pkg.sourcepackagerelease)
 
     @property
     def displayname(self):
@@ -254,11 +277,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         SourcePackagePublishingHistory.distrorelease =
            DistroRelease.Id AND
         SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.status != %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
            SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename, self.distrorelease,
-                        PackagePublishingStatus.REMOVED)
+        """ % sqlvalues(self.sourcepackagename, self.distrorelease)
 
         spreleases = SourcePackageRelease.select(
             query, clauseTables=clauseTables, orderBy='version').reversed()
@@ -284,40 +305,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     def releases(self):
         """See ISourcePackage."""
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
-        releases = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.status != %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
-                            PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory'],
-            orderBy=[SQLConstant(order_const),
-                     "SourcePackagePublishingHistory.datepublished"])
-
+        packages = self._getPublishingHistory(
+                     exclude_status=[PackagePublishingStatus.REMOVED],
+                     order_by=[SQLConstant(order_const),
+                       "SourcePackagePublishingHistory.datepublished"])
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
-                sourcepackagerelease=release) for release in releases]
-
-    @property
-    def releasehistory(self):
-        """See ISourcePackage."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
-        releases = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.status != %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename, self.distribution,
-                            PackagePublishingStatus.REMOVED),
-            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
-            orderBy=[SQLConstant(order_const),
-                     "SourcePackagePublishingHistory.datepublished"])
-        return releases
+                sourcepackagerelease=package.sourcepackagerelease) 
+                   for package in packages]
 
     @property
     def name(self):

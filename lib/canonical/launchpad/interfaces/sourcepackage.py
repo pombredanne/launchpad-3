@@ -67,11 +67,6 @@ class ISourcePackage(IBugTarget):
         distrorelease, or None if no source package with that name is
         published in this distrorelease.""")
 
-    releasehistory = Attribute("A list of all the source packages ever "
-        "published in this Distribution (across all distroreleases) with "
-        "this source package name. Note that the list spans "
-        "distroreleases, and should be sorted by version number.")
-
     direct_packaging = Attribute("Return the Packaging record that is "
         "explicitly for this distrorelease and source package name, "
         "or None if such a record does not exist. You should probably "
