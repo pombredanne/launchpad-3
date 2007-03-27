@@ -9,6 +9,7 @@ __all__ = [
     'ProjectAddQuestionView',
     'ProjectAddView',
     'ProjectNavigation',
+    'ProjectDynMenu',
     'ProjectEditView',
     'ProjectReviewView',
     'ProjectSetNavigation',
@@ -48,8 +49,10 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, structured)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -64,6 +67,35 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
     def traverse(self, name):
         return self.context.getProduct(name)
+
+
+class ProjectDynMenu(DynMenu):
+
+    MAX_SUB_PROJECTS = 8
+
+    def mainMenu(self):
+        """List products within this project.
+
+        List up to MAX_SUB_PROJECTS products.  If there are more than that
+        number of products, list up to MAX_SUB_PROJECTS products with
+        releases, and give a link to a page showing all products.
+        """
+        products = shortlist(self.context.products, 25)
+        num_products = len(products)
+        if num_products < self.MAX_SUB_PROJECTS:
+            for product in products:
+                yield self.makeBreadcrumbLink(product)
+        else:
+            # XXX: SteveAlexander, 2007-03-27.
+            # Use a database API for products-with-releases that prejoins.
+            count = 0
+            for product in products:
+                if product.releases:
+                    yield self.makeBreadcrumbLink(product)
+                    count += 1
+                    if count >= self.MAX_SUB_PROJECTS:
+                        break
+            yield self.makeLink('See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
