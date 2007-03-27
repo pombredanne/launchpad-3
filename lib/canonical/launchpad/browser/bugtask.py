@@ -33,7 +33,7 @@ from operator import attrgetter
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
@@ -802,11 +802,27 @@ class BugTaskEditView(GeneralFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
+        # XXX: this set of try/except blocks is to ensure that the
+        # widget gets the correct error message assigned to it. It's
+        # rather unfortunate that this is done this way but we need to
+        # convert over to a LaunchpadFormView to fix this the right way.
+        # It would also fix, incidentally, the fact that this hook is
+        # only called after all widget errors are solved (which causes
+        # the errors here to be hidden until widget errors are solved).
+        #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
-            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            try:
+                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            except WidgetsError, errors:
+                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
         if (product is not None and
             'product' in data and product != data['product']):
-            valid_upstreamtask(bugtask.bug, data['product'])
+            try:
+                valid_upstreamtask(bugtask.bug, data['product'])
+            except WidgetsError, errors:
+                self.product_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
 
         return data
 
