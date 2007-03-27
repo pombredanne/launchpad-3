@@ -16,12 +16,14 @@ __all__ = [
     'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
-    'StructuralObjectPresentationView',
+    'StructuralHeaderPresentationView',
+    'StructuralFooterPresentationView',
+    'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
     'DefaultShortLink',
-    'BrowserWindowDimensions'
+    'BrowserWindowDimensions',
     ]
 
 import cgi
@@ -80,6 +82,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     ISprintSet,
     IStructuralObjectPresentation,
+    IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
     NotFoundError,
@@ -170,8 +173,7 @@ class Breadcrumbs(LaunchpadView):
         """Render the breadcrumbs text.
 
         The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
-        breadcrumb is made <strong>.
+        For each breadcrumb, breadcrumb.text is cgi escaped.
         """
         crumbs = list(self.request.breadcrumbs)
         if crumbs:
@@ -203,10 +205,10 @@ class Breadcrumbs(LaunchpadView):
 
                 # Disable these menus for now.  To be re-enabled on the ui 1.0
                 # branch.
-                L.append('<li class="item">'
+                L.append('<li class="item" lpm:mid="%s/+menudata">'
                          '<a href="%s"><em>%s</em></a>'
                          '</li>'
-                         % (crumb.url, cgi.escape(crumb.text)))
+                         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
 
             #L.append(
             #    '<li class="item">'
@@ -797,7 +799,19 @@ class IcingFolder:
         return self, ()
 
 
-class StructuralObjectPresentationView(LaunchpadView):
+class StructuralHeaderPresentationView(LaunchpadView):
+
+    def initialize(self):
+        self.headerpresentation = IStructuralHeaderPresentation(self.context)
+
+    def getIntroHeading(self):
+        return self.headerpresentation.getIntroHeading()
+
+    def getMainHeading(self):
+        return self.headerpresentation.getMainHeading()
+
+
+class StructuralFooterPresentationView(LaunchpadView):
 
     # Object attributes used by the page template:
     #   num_lists: 0, 1 or 2
@@ -844,20 +858,10 @@ class StructuralObjectPresentationView(LaunchpadView):
         else:
             self.num_lists = 2
 
-    def getIntroHeading(self):
-        return self.structuralpresentation.getIntroHeading()
+class StructuralHeaderPresentation:
+    """Base class for StructuralHeaderPresentation adapters."""
 
-    def getMainHeading(self):
-        return self.structuralpresentation.getMainHeading()
-
-    def getGotchiURL(self):
-        return '/+not-found-gotchi'
-
-
-class StructuralObjectPresentation:
-    """Base class for StructuralObjectPresentation adapters."""
-
-    implements(IStructuralObjectPresentation)
+    implements(IStructuralHeaderPresentation)
 
     def __init__(self, context):
         self.context = context
@@ -867,6 +871,12 @@ class StructuralObjectPresentation:
 
     def getMainHeading(self):
         raise NotImplementedError()
+
+
+class StructuralObjectPresentation(StructuralHeaderPresentation):
+    """Base class for StructuralObjectPresentation adapters."""
+
+    implements(IStructuralObjectPresentation)
 
     def listChildren(self, num):
         return []

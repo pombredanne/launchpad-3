@@ -30,7 +30,7 @@ from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -73,11 +73,12 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   KarmaContextMixin):
+                   HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IHasBuildRecords, IQuestionTarget, IHasGotchiAndEmblem)
 
+    _table = 'Distribution'
     _defaultOrder = 'name'
     default_gotchi_resource = '/@@/distribution-mugshot'
     default_gotchi_heading_resource = '/@@/distribution-heading'
@@ -165,20 +166,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    DistributionMirror.q.official_approved==False)
         return DistributionMirror.select(
             AND(DistributionMirror.q.distributionID==self.id, query))
-
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Specification.distribution = %s AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
 
     @property
     def full_functionality(self):
