@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugFacets',
     'BugSetNavigation',
     'BugView',
     'MaloneView',
@@ -43,7 +44,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured)
+    Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -51,6 +52,18 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class BugFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IBug.
+
+    However, we never show this, but it does apply to things like
+    bug nominations, by 'acquisition'.
+    """
+
+    usedfor = IBug
+
+    enable_only = ['bugs']
 
 
 class BugSetNavigation(Navigation):

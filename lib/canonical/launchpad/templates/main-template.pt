@@ -252,10 +252,12 @@
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
       <br class="clear" />
-      <!--
-      <div>
-        Page type: <tal:pagetype replace="view/macro:pagetype" />
+      <div tal:condition="nothing">
         <ul>
+            <li>Page facet:
+                <tal:span replace="CONTEXTS/menu:selectedfacetname" />
+            <li>Page type:
+                <tal:pagetype replace="view/macro:pagetype" />
             <li>Has portlet column:
                 <span tal:replace="view/macro:pagehas/portletcolumn" />
             </li>
@@ -273,7 +275,6 @@
             </li>
         </ul>
       </div>
-      -->
     </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
