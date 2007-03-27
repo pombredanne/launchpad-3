@@ -277,9 +277,11 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     related to this product."""))
 
     milestones = Attribute(_(
-        """The release milestones associated with this product, useful in
-        particular to the maintainer, for organizing which bugs will be fixed
-        when."""))
+        "The visible release milestones associated with this product, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this product, ordered by "
+        "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

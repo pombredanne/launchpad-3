@@ -337,6 +337,8 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
+distribution_releases = ContextTitle("%s releases")
+
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = ContextTitle(
@@ -533,6 +535,8 @@ object_reassignment = ContextTitle('Reassign %s')
 object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
+
+object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 oops = 'Oops!'
 
