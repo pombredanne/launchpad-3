@@ -525,9 +525,11 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearchscope {padding: 4px 0 0;}
 #globalsearchscope label {display: block; padding: 0 0 2px;}
 
-#globalfooter {
+/* The last element is a standard footer. */
+#globalfooter {clear: both;}
+/* It has a top border if the page doesn't already have a rounded border. */
+body.freeform #globalfooter {
   border-top: 1px solid #ccc;
-  clear: both;
   padding-top: 0.5em;
 }
 
@@ -764,6 +766,7 @@ ul#applicationchooser li#applicationchooser_selected {
   position: relative;
   top: -20px; /*- reduces pillargotchi~tab gap -*/
 }
+body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
 body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
 #mainarea div.t {
@@ -1283,7 +1286,7 @@ div#applications {padding: 1em 0; text-align: center;}
 .central {
   clear: left; /* Bugs FP */
   font-size: 1.5em;
-  margin: auto;
+  margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }

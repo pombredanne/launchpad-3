@@ -196,7 +196,7 @@
           </div><!--id="u"-->
         </div><!--id="t"-->
       </div><!--id="mainarea"-->
-      <div tal:condition="not:view/macro:pagehas/applicationborder" id="mainarea">
+      <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications
           define="notifications request/notifications"
           condition="notifications"
@@ -204,8 +204,13 @@
             use-macro="context/@@+main-template-macros/notifications" />
         </tal:notifications>
         <metal:block define-slot="main" />
-      </div>
-      <div id="globalfooter" style="border: 2px dotted red;">
+        <div style="clear: both; height: 2em;">&nbsp;</div>
+        <tal:comment condition="nothing">
+          No easier way to put a gap before the footer, because in CSS a
+          top margin for a cleared item is ignored.
+        </tal:comment>
+      </tal:noborder>
+      <div id="globalfooter">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">
