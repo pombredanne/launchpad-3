@@ -2726,7 +2726,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, '1622db354faa9fa653804d018f3b9d5291e37d6b', false, 'e4a7193a8f72fa2755e2162512069093');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (53, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (54, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (55, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
@@ -3008,8 +3008,9 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, NULL, true, NULL, NULL, '2006-10-16 18:31:44.293448');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, NULL, true, NULL, NULL, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
 
 
 ALTER TABLE milestone ENABLE TRIGGER ALL;

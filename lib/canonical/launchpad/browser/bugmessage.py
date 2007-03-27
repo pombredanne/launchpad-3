@@ -25,19 +25,6 @@ class BugMessageAddFormView(GeneralFormView):
         return dict(
             subject=self.context.bug.followup_subject())
 
-    def validate(self, data):
-        """Verify that an attachment also includes a description."""
-        include_attachment = data.get("include_attachment")
-        filecontent = data.get("filecontent")
-        attachment_description = data.get("attachment_description")
-
-        if (include_attachment and filecontent and not attachment_description):
-            raise WidgetsError([
-                MissingInputError(
-                    self.attachment_description_widget.name,
-                    self.attachment_description_widget.label,
-                    "An attachment requires a description.")])
-
     def process(self, include_attachment=None, subject=None, filecontent=None,
                 patch=None, attachment_description=None, comment=None,
                 email_me=None):

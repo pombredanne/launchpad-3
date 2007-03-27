@@ -534,6 +534,8 @@ object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
+object_milestones = ContextTitle(smartquote("%s's milestones"))
+
 oops = 'Oops!'
 
 def package_bugs(context, view):

@@ -92,9 +92,9 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
-    Arbitrary headers can be set using the headers parameter. If the value for a
-    given key in the headers dict is a list or tuple, the header will be added
-    to the message once for each value in the list.
+    Arbitrary headers can be set using the headers parameter. If the value for
+    a given key in the headers dict is a list or tuple, the header will be
+    added to the message once for each value in the list.
 
     Returns the Message-Id.
     """
