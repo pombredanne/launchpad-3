@@ -239,6 +239,11 @@
             template="../templates/object-portlet-milestones.pt"
             />
         <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
+            />
+        <browser:page
             name="+portlet-translations"
             template="../templates/distribution-portlet-translations.pt"
             />
