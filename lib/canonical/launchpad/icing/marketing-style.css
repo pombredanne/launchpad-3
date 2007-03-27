@@ -1,7 +1,7 @@
 /*
 -----------------------------------------------
 Launchpad Marketing Master Style Sheet
------------------------------------------------ 
+-----------------------------------------------
 */
 
 
@@ -51,7 +51,7 @@ body {
   float: left;
   width: 764px;
   padding: 30px 30px 10px 30px;
-	background-color: #fff;
+  background-color: #fff;
 }
 
 #main #content {
@@ -96,7 +96,7 @@ body {
 	padding-left: 0;
 	display: inline;
 	border: none;
-} 
+}
 
 #breadcrumb dl dd ul li {
 	display: block;
@@ -398,20 +398,27 @@ body#home #main h2 {
 #main .feature h3 { margin-bottom: -2px; }
 #main .feature h4.byline { color: #999; font-size: 1.1em; margin-bottom: 10px;}
 
-#main ul#tools { overflow: hidden; width: 100%; margin-bottom: 20px;}
+#main ul#tools {
+  overflow: hidden;
+  width: 110%;
+  margin-bottom: 20px;
+  margin-left: -15px;
+}
 
-#main ul#tools li { display: inline; }
+#main ul#tools li {
+    display: block;
+    float: left;
+    padding-left: 10px;
+    width: 146px;
+}
 
 #main ul#tools li a {
-  float: left;
   display: block;
-  width: 129px; height: 192px;
-  margin-right: 15px;
+  height: 160px;
   background-position: bottom left;
   background-repeat: no-repeat;
-/*  text-indent: -1000em;*/
+  text-align: center;
   text-decoration: none;
-  padding-left: 10px;
   font-size: 1.45em;
 }
 
@@ -419,13 +426,30 @@ body#home #main h2 {
   text-decoration: underline;
 }
 
-#main ul#tools li.last a { margin-right: 0; }
+#main ul#tools li#liBlueprints a {
+    background-image: url(app-blueprints.gif);
+    color: #57A3C6;
+}
 
-#main ul#tools li#liSpec a { background-image: url(/+icing/tools-spec.png); color: #57A3C6; }
-#main ul#tools li#liBug a { background-image: url(/+icing/tools-bug.png); color: #B43242;}
-#main ul#tools li#liSupport a { background-image: url(/+icing/tools-support.png); color: #20209D;}
-#main ul#tools li#liTranslations a { background-image: url(/+icing/tools-translations.png); color: #A32377; }
-#main ul#tools li#liCode a { background-image: url(/+icing/tools-code.png); color: #BE7A35; }
+#main ul#tools li#liBugs a {
+    background-image: url(app-bugs.gif);
+    color: #B43242;
+}
+
+#main ul#tools li#liAnswers a {
+    background-image: url(app-answers.gif);
+    color: #20209D;
+}
+
+#main ul#tools li#liTranslations a {
+    background-image: url(app-translations.gif);
+    color: #A32377;
+}
+
+#main ul#tools li#liCode a {
+    background-image: url(app-code.gif);
+    color: #BE7A35;
+}
 
 #main h3.splash {
   display: block;
@@ -437,7 +461,7 @@ body#home #main h2 {
   color: #fff;
   text-align: center;
   font-size: 1.6em;
-} 
+}
 
 #main p { margin-bottom: 10px; }
 
