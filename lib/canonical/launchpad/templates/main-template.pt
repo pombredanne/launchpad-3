@@ -176,7 +176,10 @@
                             />
                           </tal:no_children>
                         </div>
-                        <div id="portlets">
+                        <div
+                          id="portlets"
+                          tal:condition="view/macro:pagehas/portlets"
+                        >
                           <tal:menu replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
@@ -233,7 +236,7 @@
           <li>Page type: <tal:pagetype replace="view/macro:pagetype" /></li>
 
             <li>Has portlet column:
-                <span tal:replace="view/macro:pagehas/portletcolumn" />
+                <span tal:replace="view/macro:pagehas/portlets" />
             </li>
             <li>Has application tabs:
                 <span tal:replace="view/macro:pagehas/applicationtabs" />

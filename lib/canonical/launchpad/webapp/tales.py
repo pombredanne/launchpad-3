@@ -1248,11 +1248,13 @@ class PageMacroDispatcher:
         view/macro:page/pillarindex
         view/macro:page/freeform
 
-        view/macro:pagehas/portletcolumn
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
         view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/portlets
+        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -1313,7 +1315,7 @@ class PageMacroDispatcher:
             applicationbuttons=False,
             globalsearch=False,
             heading=False,
-            portletcolumn=False,
+            portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True
             ):
@@ -1328,7 +1330,7 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 applicationborder=True,
                 globalsearch=True,
-                portletcolumn=True,
+                portlets=True,
                 structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
@@ -1336,7 +1338,7 @@ class PageMacroDispatcher:
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
-                portletcolumn=True,
+                portlets=True,
                 structuralheaderobject=True),
         'applicationhome':
             LayoutElements(
@@ -1350,7 +1352,7 @@ class PageMacroDispatcher:
                 applicationbuttons=True,
                 globalsearch=False,
                 heading=True,
-                portletcolumn=True),
+                portlets=True),
         'freeform':
             LayoutElements(),
         }
