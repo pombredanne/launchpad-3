@@ -537,7 +537,7 @@ def get_tsearch2_sql_path(con):
     else:
         raise RuntimeError('Unknown version %s' % pgversion)
 
-    assert os.path.exists(path), '%s does not exist'
+    assert os.path.exists(path), '%s does not exist' % path
     return path
 
 
