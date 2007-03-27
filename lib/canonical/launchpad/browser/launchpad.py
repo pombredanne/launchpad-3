@@ -926,6 +926,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
@@ -936,6 +938,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
@@ -946,6 +950,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="146"'
+            '    height="146"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s.gif"'
             '    title="%(text)s"'
