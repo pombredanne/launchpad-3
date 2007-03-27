@@ -869,6 +869,17 @@ k            </description>
         </key>
     </sectiontype>
 
+    <sectiontype name="mailman">
+        <key name="build"           datatype="boolean"  default="false" />
+        <key name="launch"          datatype="boolean"  default="false" />
+        <key name="prefix"          datatype="string"   required="yes"  />
+        <key name="var_dir"         datatype="string"   required="yes"  />
+        <key name="user_group"      datatype="string"   default="" />
+        <key name="site_list"       datatype="string"   default="" />
+        <key name="site_list_owner" datatype="string"   required="yes" />
+        <key name="host_name"       datatype="string"   default="" />
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -917,6 +928,7 @@ k            </description>
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
