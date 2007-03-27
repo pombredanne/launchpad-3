@@ -63,7 +63,7 @@ class BugFacets(StandardLaunchpadFacets):
 
     usedfor = IBug
 
-    enable_only = ['bugs']
+    enable_only = []
 
 
 class BugSetNavigation(Navigation):
