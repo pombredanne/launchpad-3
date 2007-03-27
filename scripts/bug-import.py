@@ -15,7 +15,7 @@ from canonical.launchpad.scripts.bugimport import BugImporter
 
 class BugImportScript(LaunchpadScript):
 
-    description = "Export bugs for a Launchpad product as XML"
+    description = "Import bugs into Launchpad from XML."
     loglevel = logging.INFO
 
     def add_my_options(self):
