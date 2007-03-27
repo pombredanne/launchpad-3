@@ -19,11 +19,11 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-    PillarNameField)
+    PillarNameField, IHasLogoAndMugshot, IHasIcon)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    LargeImageUpload, BaseImageUpload, SmallImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class ProductNameField(PillarNameField):
@@ -35,7 +35,7 @@ class ProductNameField(PillarNameField):
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints):
+               IHasSprints, IHasLogoAndMugshot, IHasIcon):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -169,30 +169,28 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
         default_image_resource='/@@/product',
         description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this product."))
+            "A small image of exactly 14x14 pixels and at most 25k in size, "
+            "that can be used to identify this project in listings."))
 
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/product-heading',
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/product-logo',
         description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this product. It should be "
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this project. It should be "
             "no bigger than 50k in size."))
 
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
         default_image_resource='/@@/product-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this product's home page. It should be no bigger than 100k in "
-            "size. "))
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this project's home page in Launchpad. It should be no "
+            "bigger than 100k in size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -372,7 +370,7 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, gotchi=None, gotchi_heading=None,
-                      emblem=None):
+                      icon=None):
         """Create and Return a brand new Product."""
 
     def forReview():

@@ -28,11 +28,18 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, LargeImageUpload, PasswordField,
-    BaseImageUpload, SmallImageUpload, StrippedTextLine)
+    BlacklistableContentNameField,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PasswordField,
+    StrippedTextLine,
+    )
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasLogoAndMugshot, IHasIcon)
 from canonical.launchpad.interfaces.question import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
@@ -86,7 +93,8 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection):
+class IPerson(IHasSpecifications, IQuestionCollection, IHasLogoAndMugshot,
+              IHasIcon):
     """A Person."""
 
     id = Int(
@@ -119,33 +127,24 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
-    # The emblem is only used for teams; that's why we use /@@/team as the
-    # default image resource.
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        default_image_resource='/@@/team',
+    # NB at this stage we do not allow individual people to have their own
+    # icon, only teams get that. People can however have a logo and mugshot
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/person-logo',
         description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this team."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/person-heading',
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to you. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50k in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
+        default_image_resource='/@@/product-mugshot',
         description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a logo, small picture, "
-            "or personal mascot."))
-    gotchi = LargeImageUpload(
-        title=_("Hackergotchi"), required=False,
-        default_image_resource='/@@/person-mugshot',
-        description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 100k in size. "
-            "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."))
-
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on your home page in Launchpad. Traditionally this is a great "
+            "big picture of your grinning face. Make the most of it! It "
+            "should be no bigger than 100k in size. "))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -690,20 +689,35 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         """
 
 
-class ITeam(IPerson):
+class ITeam(IPerson, IHasIcon):
     """ITeam extends IPerson.
 
     The teamowner should never be None.
     """
 
-    gotchi = LargeImageUpload(
+    # The icon is only used for teams; that's why we use /@@/team as the
+    # default image resource.
+    icon = IconImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/team',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 5k in size, "
+            "that can be used to identify this team in listings."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/team-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to the team. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50k in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
         default_image_resource='/@@/team-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this team's home page. It should be no bigger than 100k in "
-            "size."))
-
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on the team page in Launchpad. It "
+            "should be no bigger than 100k in size. "))
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(

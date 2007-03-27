@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasGotchiAndEmblem)
+    IHasLogoAndMugshot, IHasIcon)
 
 from sourcerer.deb.version import Version
 
@@ -76,13 +76,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget, IHasGotchiAndEmblem)
+        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IHasLogoAndMugshot, IHasIcon)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
-    default_gotchi_resource = '/@@/distribution-mugshot'
-    default_gotchi_heading_resource = '/@@/distribution-heading'
-    default_emblem_resource = '/@@/distribution'
+    default_mugshot_resource = '/@@/distribution-mugshot'
+    default_logo_resource = '/@@/distribution-logo'
+    default_icon_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -90,11 +91,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -858,7 +859,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, gotchi_heading, emblem):
+            members, owner, mugshot, logo, icon):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -869,7 +870,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 

@@ -330,8 +330,12 @@ class ObjectFormatterAPI:
         return canonical_url(self._context, request)
 
 
-class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+class HasIconFormatterAPI(ObjectFormatterAPI):
+    """Adapter for MOST IHasIcon objects to a formatted string. Some
+    IHasIcon objects use custom formatters so they can get variations of the
+    default depending on object status. For example, IPerson, which wants to
+    indicate the difference between an active person and an inactive person.
+    """
 
     def icon(self):
         """Return the appropriate <img> tag for this object's gotchi."""
@@ -341,6 +345,10 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
         else:
             url = context.default_gotchi_resource
         return '<img alt="" class="mugshot" src="%s" />' % url
+
+
+class HasLogoAndMugshotFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
 
     def heading_icon(self):
         """Return the appropriate <img> tag for this object's heading img."""

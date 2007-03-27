@@ -50,8 +50,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem,
-    JoinNotAllowed)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogoAndMugshot,
+    IHasIcon, JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -92,7 +92,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
+    implements(IPerson, ICalendarOwner, IHasLogoAndMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -102,11 +102,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
@@ -179,15 +179,15 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     # IHasGotchiAndEmblem attributes
     @property
-    def default_emblem_resource(self):
+    def default_icon_resource(self):
         return self._getDefaultIconResource()
 
     @property
-    def default_gotchi_resource(self):
+    def default_mugshot_resource(self):
         return self._getDefaultIconResource('mugshot')
 
     @property
-    def default_gotchi_heading_resource(self):
+    def default_logo_resource(self):
         return self._getDefaultIconResource('heading')
 
     def _getDefaultIconResource(self, suffix=''):

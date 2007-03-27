@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    LargeImageUpload, BaseImageUpload, SmallImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -129,30 +129,28 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
         default_image_resource='/@@/product',
         description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this project."))
+            "A small image of exactly 14x14 pixels and at most 5k in size, "
+            "that can be used to identify this project in listings."))
 
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/product-heading',
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/project-logo',
         description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this project. It should be "
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this project. It should be "
             "no bigger than 50k in size."))
 
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
         default_image_resource='/@@/product-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this project's home page. It should be no bigger than 100k in "
-            "size. "))
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this project's home page in Launchpad. It should be no "
+            "bigger than 100k in size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),

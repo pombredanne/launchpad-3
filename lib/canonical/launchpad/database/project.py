@@ -20,7 +20,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogoAndMugshot,
+    IHasIcon)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -46,12 +47,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasGotchiAndEmblem)
+               IHasLogoAndMugshot, IHasIcon)
 
     _table = "Project"
-    default_gotchi_resource = '/@@/project-mugshot'
-    default_gotchi_heading_resource = '/@@/project-heading'
-    default_emblem_resource = '/@@/project'
+    default_mugshot_resource = '/@@/project-mugshot'
+    default_logo_resource = '/@@/project-logo'
+    default_icon_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -66,11 +67,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
@@ -307,7 +308,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, gotchi_heading, emblem):
+            description, owner, mugshot, logo, icon):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -318,9 +319,9 @@ class ProjectSet:
             homepageurl=homepageurl,
             owner=owner,
             datecreated=UTC_NOW,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 
     def count_all(self):
         return Project.select().count()

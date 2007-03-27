@@ -19,7 +19,7 @@ from zope.schema import Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, LargeImageUpload, BaseImageUpload, SmallImageUpload)
+    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasSpecifications, IHasDrivers)
@@ -64,34 +64,32 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     home_page = TextLine(
         title=_('Home Page'), required=False, description=_("A web page "
         "with further information about the event."))
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/sprint',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 25k in size, "
+            "that can be used to identify this meeting in listings."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/sprint-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this meeting. It should be "
+            "no bigger than 50k in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/sprint-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this meeting's home page in Launchpad. It should be no "
+            "bigger than 100k in size. "))
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of this meeting's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        default_image_resource='/@@/sprint',
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this meeting."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/sprint-heading',
-        description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this meeting. It should "
-            "be no bigger than 50k in size."))
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/sprint-mugshot',
-        description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this meeting's home page. It should be no bigger than 100k "
-            "in size. "))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
@@ -108,7 +106,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')
-    
+
     def specificationLinks(status=None):
         """Return the SprintSpecification records matching the filter,
         quantity and sort given. The rules for filtering and sorting etc are
