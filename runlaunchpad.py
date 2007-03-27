@@ -108,9 +108,9 @@ def start_mailman():
     # Build and install Mailman if it is enabled and not yet built.
     from canonical.config import config
 
-    mailman_path = os.path.abspath(config.mailman.prefix)
+    mailman_path = os.path.abspath(config.mailman.build.prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
-    var_dir      = os.path.abspath(config.mailman.var_dir)
+    var_dir      = os.path.abspath(config.mailman.build.var_dir)
 
     # If we can import the package, we assume Mailman is properly built and
     # installed.  This does not catch re-installs that might be necessary
@@ -121,10 +121,10 @@ def start_mailman():
     except ImportError:
         Mailman = None
 
-    if Mailman is None and config.mailman.build:
+    if Mailman is None and config.mailman.build.build:
         # Make sure the target directories exist and have the correct
         # permissions, otherwise configure will complain.
-        user_group = config.mailman.user_group
+        user_group = config.mailman.build.user_group
         if not user_group:
             user  = pwd.getpwuid(os.getuid()).pw_name
             group = grp.getgrgid(os.getgid()).gr_name
@@ -140,15 +140,15 @@ def start_mailman():
         # makedirs() call because some platforms ignore mkdir()'s mode (though
         # I think Linux does not ignore it -- better safe than sorry).
         try:
-            os.makedirs(config.mailman.var_dir)
+            os.makedirs(config.mailman.build.var_dir)
         except OSError, e:
             if e.errno <> errno.EEXIST:
                 raise
-        os.chown(config.mailman.var_dir, uid, gid)
-        os.chmod(config.mailman.var_dir, 02775)
+        os.chown(config.mailman.build.var_dir, uid, gid)
+        os.chmod(config.mailman.build.var_dir, 02775)
 
-        if config.mailman.host_name:
-            hostname = config.mailman.host_name
+        if config.mailman.build.host_name:
+            hostname = config.mailman.build.host_name
         else:
             hostname = socket.getfqdn()
 
@@ -160,7 +160,7 @@ def start_mailman():
         configure_args = (
             './configure',
             '--prefix', mailman_path,
-            '--with-var-prefix=' + config.mailman.var_dir,
+            '--with-var-prefix=' + config.mailman.build.var_dir,
             '--with-python=' + sys.executable,
             '--with-username=' + user,
             '--with-groupname=' + group,
@@ -191,9 +191,9 @@ def start_mailman():
         config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
         config_file = open(config_path, 'a')
         try:
-            if config.mailman.site_list:
+            if config.mailman.build.site_list:
                 print >> config_file, 'MAILMAN_SITE_LIST = "%s"' % \
-                      config.mailman.site_list
+                      config.mailman.build.site_list
             print >> config_file, 'MTA = "noop"'
         finally:
             config_file.close()
@@ -229,7 +229,7 @@ def remove(mlist, cgi=False):
                               cwd=mailman_bin,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if retcode:
-        addr, password = config.mailman.site_list_owner.split(':', 1)
+        addr, password = config.mailman.build.site_list_owner.split(':', 1)
 
         # The site list does not yet exist, so create it now.
         retcode = subprocess.call(('./newlist',

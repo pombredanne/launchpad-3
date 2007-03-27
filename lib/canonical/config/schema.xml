@@ -869,15 +869,21 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="mailman">
+    <sectiontype name="mailman-build">
         <key name="build"           datatype="boolean"  default="false" />
-        <key name="launch"          datatype="boolean"  default="false" />
         <key name="prefix"          datatype="string"   required="yes"  />
         <key name="var_dir"         datatype="string"   required="yes"  />
         <key name="user_group"      datatype="string"   default="" />
         <key name="site_list"       datatype="string"   default="" />
         <key name="site_list_owner" datatype="string"   required="yes" />
         <key name="host_name"       datatype="string"   default="" />
+    </sectiontype>
+
+    <sectiontype name="mailman">
+        <section name="*" type="mailman-build"
+                 attribute="build" required="yes" />
+
+        <key name="launch" datatype="boolean"  default="false" />
     </sectiontype>
 
     <sectiontype name="canonical">
