@@ -163,6 +163,11 @@
             template="../templates/distribution-index.pt"
             />
         <browser:page
+            name="+releases"
+            facet="overview"
+            template="../templates/distribution-releases.pt"
+            />
+        <browser:page
             name="+search"
             facet="overview"
             template="../templates/distribution-search.pt"

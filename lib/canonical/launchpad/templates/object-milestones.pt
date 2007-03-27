@@ -12,7 +12,7 @@
 <div metal:fill-slot="main">
 
   <h1>Milestones</h1>
-    <tal:has-milestones condition="context/milestones">
+    <tal:has-milestones condition="context/all_milestones">
     <ul>
       <li class="milestone" tal:repeat="milestone context/all_milestones">
         <a tal:content="milestone/name"
@@ -30,7 +30,7 @@
     </ul>
     </tal:has-milestones>
 
-    <tal:no-milestones condition="not: context/milestones">
+    <tal:no-milestones condition="not: context/all_milestones">
     <p>There are no milestones associated with
       <span tal:replace="context/title" />
     </p>

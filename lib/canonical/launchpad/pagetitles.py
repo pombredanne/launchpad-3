@@ -337,6 +337,8 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
+distribution_releases = ContextTitle("%s releases")
+
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = ContextTitle(
