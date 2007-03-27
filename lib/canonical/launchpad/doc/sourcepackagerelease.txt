@@ -230,8 +230,6 @@ Before the upload, the queue should be empty.
 
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
 correspondent to the alias (long) we already have.
-(BTW it really is not good practice to rely on objects existing from
-previous tests)
 
    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
    >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]

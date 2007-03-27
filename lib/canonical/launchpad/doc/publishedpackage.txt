@@ -1,6 +1,5 @@
 
-Published Package
------------------
+= Published Package =
 
 This database view gives us information on which packages are published in
 which distributions.
@@ -24,19 +23,20 @@ model in more intuitive ones:
  >>> src.name
  u'pmount'
 
-In fixing bug 43115 we have moved the meta_binaries from 
-ISourcePackageRelease to IDistroReleaseSourcePackageRelease as this 
-makes much more sense and also ensures that the returned set of binaries 
-are unique to the DistroRelease in question.  When this method lived on 
-ISourcePackageRelease it would return binaries for all distro releases, 
-some duplicated, which is not very useful.  This test makes sure that the 
-new meta_binaries method exists and the returned object meets the
-IDistroReleaseBinaryPackage interface.
+IDistroReleaseSourcePackageRelease.meta_binaries returns a list of binaries
+resulting from the sourcepackagerelease for a distrorelease.
+This test makes sure that the meta_binaries method exists and the 
+returned objects meet the IDistroReleaseBinaryPackage interface.
+There should only be one package in the binaries collection for 
+mozilla-firefox.  This is a feature of the sample data that we are relying
+upon.
 
  >>> from canonical.launchpad.interfaces import IDistributionSet
  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
  >>> warty = ubuntu['warty']                                             
  >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
  >>> ff_drspr = ff_sp['0.9']
+ >>> len(ff_drspr.meta_binaries)
+ 1
  >>> verifyObject(IDistroReleaseBinaryPackage, ff_drspr.meta_binaries[0])
  True
