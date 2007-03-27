@@ -1,4 +1,3 @@
-<tal:process define="status view/process_form" />
 <form
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
@@ -37,18 +36,18 @@
         </tr>
       </tal:distrotask>
       <tal:upstreamtask condition="python:context.product"
-                        define="omit_required default">
-        <tr tal:condition="view/product_widget">
+                        define="omit_required default;
+                                widget nocall:view/product_widget|nothing">
+        <tr>
           <td colspan="2">
             <label style="font-weight: bold"
-              tal:attributes="for view/product_widget/name"
-              tal:content="view/product_widget/label"
+              tal:attributes="for widget/name"
+              tal:content="widget/label"
             >Upstream project</label>
           </td>
         </tr>
-        <tr tal:condition="view/product_widget">
-          <td colspan="2" style="white-space: nowrap"
-              tal:define="widget nocall:view/product_widget">
+        <tr>
+          <td colspan="2" style="white-space: nowrap">
             <metal:content
               use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
           </td>
