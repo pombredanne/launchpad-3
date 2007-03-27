@@ -52,7 +52,7 @@
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate 
+            We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
             <a href="/+tour">Learn more&#8230;</a>
@@ -89,6 +89,12 @@
             <li class="product"><a href="/jokosher">Jokosher</a></li>
             <li class="product"><a href="/upstart">Upstart</a></li>
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+          </ul>
+        </div>
+        <div class="three column right">
+          <h2>More about Launchpad</h2>
+          <ul>
+            <li><a href="/+about">What is Launchpad?</a></li>
           </ul>
         </div>
       </div>

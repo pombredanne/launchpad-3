@@ -1,0 +1,49 @@
+<html metal:use-macro="context/@@marketing/master">
+  <metal:contents fill-slot="contents">
+    <h2>5 tools for accelerating, improving and simplifying collaboration on open source projects</h2>
+    <ul id="tools">
+      <li id="liSpec"><a href="#" title="Specifications">Specifications</a></li>
+      <li id="liBug"><a href="#" title="Bug tracking">Bug tracking</a></li>
+      <li id="liSupport"><a href="#" title="Support">Support</a></li>
+      <li id="liTranslations"><a href="#" title="Translations">Translations</a></li>
+      <li class="last" id="liCode"><a href="#" title="Code">Code</a></li>
+    </ul>
+    <h3 class="splash">The Launchpad team offer a completely free migration service to open source projects</h3>
+    <div
+      id="content"
+      tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+    >
+      <div class="intro">
+        <h3>About Launchpad</h3>
+        <p>Launchpad turns open source project management and collaboration on its head. Instead of separate bug trackers, lots  fancy graphs, Launchpad offers message boards, to-do lists, simple scheduling, collaborative writing, live chat, and file sharing. Hundreds of thousands agree it's a better way.</p>
+      </div>
+      <div class="feature">
+        <h3>Specifications</h3>
+        <h4 class="byline">Turns collaboration on its head</h4>
+        <p>Launchpad turns open source project management and collaboration on its head. Instead of separate bug trackers, lots  fancy graphs, Launchpad offers message boards, to-do lists, simple scheduling, collaborative writing, live chat, and file sharing. Hundreds of thousands agree it's a better way.</p>
+        <p class="more"><a href="#" title="More about specifications">More about specifications</a></p>
+      </div>
+      <div class="feature">
+        <h3>Bug tracking</h3>
+        <h4 class="byline">Turns collaboration on its head</h4>
+        <p>Launchpad turns open source project management and collaboration on its head. Instead of separate bug trackers, lots  fancy graphs, Launchpad offers message boards, to-do lists, simple scheduling, collaborative writing, live chat, and file sharing. Hundreds of thousands agree it's a better way.</p>
+        <p class="more">
+          <a tal:attributes="href string:${vhosts/bugs/rooturl}+about"
+          >More about bug tracking</a>
+        </p>
+      </div>
+      <div class="feature">
+        <h3>Translations</h3>
+        <h4 class="byline">Turns collaboration on its head</h4>
+        <p>Launchpad turns open source project management and collaboration on its head. Instead of separate bug trackers, lots  fancy graphs, Launchpad offers message boards, to-do lists, simple scheduling, collaborative writing, live chat, and file sharing. Hundreds of thousands agree it's a better way.</p>
+        <p class="more"><a href="#" title="More about translations">More about translations</a></p>
+      </div>
+      <div class="feature">
+        <h3>Support</h3>
+        <h4 class="byline">Turns collaboration on its head</h4>
+        <p>Launchpad turns open source project management and collaboration on its head. Instead of separate bug trackers, lots  fancy graphs, Launchpad offers message boards, to-do lists, simple scheduling, collaborative writing, live chat, and file sharing. Hundreds of thousands agree it's a better way.</p>
+        <p class="more"><a href="#" title="More about support">More about support</a></p>
+      </div>
+    </div> <!-- content -->
+  </metal:contents>
+</html>

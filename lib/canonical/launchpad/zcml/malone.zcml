@@ -109,4 +109,22 @@
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
         />
+
+
+    <!-- Marketing material for Bugs. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public"
+        name="+about"
+        template="../templates/marketing-app-about.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public"
+        name="+tour"
+        template="../templates/marketing-app-tour.pt"
+        />
 </configure>

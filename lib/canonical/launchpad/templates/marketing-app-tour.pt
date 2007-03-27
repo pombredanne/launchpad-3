@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+  <title>tour</title>
+  <link rel="stylesheet" href="/+icing/marketing-style.css" type="text/css" media="screen" title="title" charset="utf-8">
+  <!--[if IE]>
+  <link rel="stylesheet" href="css/allie.css" type="text/css" media="screen" title="title" charset="utf-8">
+  <![endif]-->
+</head>
+
+<body id="tour">
+  <div id="breadcrumb">
+    <dl>
+      <dt>Your location:</dt>
+      <dd>
+        <ul>
+          <li><a href="#" title="Launchpad Home">Launchpad Home</a></li>
+          <li class="current">Take a tour</li>
+        </ul>
+      </dd>
+    </dl>
+  </div> <!-- breadcrumb -->
+
+  <div id="wrapper">
+
+    <div id="header">
+      <h1><a href="#" title="Launchpad">Launchpad</a></h1>
+      <dl id="navigation">
+        <dt>Navigation<dt>
+          <dd>
+            <ul>
+              <li id="liHome"><a href="#" title="Home">Home</a></li>
+              <li id="liAccount"><a href="#" title="Get an account">Get an account</a></li>
+              <li id="liTour"><a href="#" title="Take a tour">Take a tour</a></li>
+            </ul>
+          </dd>
+        </dl>
+        <dl id="sub-navigation">
+          <dt>Sub-navigation<dt>
+          <dd>
+            <ul>
+              <li class="current" id="liAppTour"><a href="#" title="Application tour">Application tour</a></li>
+              <li id="liFaq"><a href="#" title="FAQs">FAQs</a></li>
+              <li id="liReviews"><a href="#" title="Reviews">Reviews</a></li>
+            </ul>
+          </dd>
+          <dd>
+            <ul id="global">
+              <li id="liAbout"><a href="#" title="About">About</a></li>
+              <li id="liContact"><a href="#" title="Contac us">Contact us</a></li>
+            </ul>
+          </dd>
+        </dl>
+        </div> <!-- header -->
+
+        <div id="main">
+          <div id="primary">
+            <h2>Translations</h2>
+            <h3 class="byline">Application tour</h3>
+            <ul id="pane-selector">
+              <li class="current" id="liGettingStarted"><a href="#" title="Getting started">Getting started</a></li>
+              <li id="liTranslating"><a href="#" title="Translating content">Translating content</a></li>
+              <li id="liApproving"><a href="#" title="Approving translations">Approving translations</a></li>
+              <li id="liUnderstanding"><a href="#" title="Understanding">Understanding</a></li>
+              <li id="liCommunity"><a href="#" title="Community">Community</a></li>
+            </ul>
+            <div class="info">
+              <h5>Rosetta</h5>
+              <p><strong>Rosetta is a web-based system for translating open source software into any language.</strong>
+                All you need to start translating is a web browser, a good knowledge of theapplication you’re translating,
+                and a thorough understanding of the English language</p>
+              </div> <!-- info -->
+          </div> <!-- primary -->
+          <div id="secondary">
+            <h4>Rosetta is a Web-based system for translating open source software into any language</h4>
+
+            <div id="pane">
+              <div class="screen" id="getting-started">
+                <ul>
+                  <li><a id="p1" href="#" title="One">One</a></li>
+                  <li><a id="p2" href="#" title="Two">Two</a></li>
+                  <li><a class="current" id="p3" href="#" title="Three">Three</a></li>
+                  <li><a id="p4" href="#" title="Four">Four</a></li>
+                </ul>
+              </div>
+              <ul class="info">
+                <li id="point-one">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+                  Cras consequat neque vel libero.</li>
+                <li id="point-two">Mauris nec ante ac est tincidunt fermentum. Allis vestilum,
+                  bibendum ut, augue. Nulla facilisi.</li>
+                <li class="current" id="point-three">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+                  Cras consequat neque vel libero.</li>
+                <li id="point-four">Mauris nec ante ac est tincidunt fermentum. Allis vestilum,
+                  bibendum ut, augue. Nulla facilisi.</li>
+              </ul>
+              <a class="button next" href="#" title="Next">Next &gt;</a>
+            </div> <!-- pane -->
+          </div> <!-- secondary -->
+        </div> <!-- main -->
+        <div id="footer">
+          <p class="left">Copyright 2004-2006 Canonical Ltd.</p>
+          <p class="right"><a href="#" title="Terms &amp; Conditions">Terms &amp; Conditions</a> | <a href="#" title="Feedback">Feedback</a> | <a href="#" title="FAQ">FAQ</a></p>
+        </div> <!-- footer -->
+
+      </div> <!-- wrapper -->
+
+    </body>
+    </html>
