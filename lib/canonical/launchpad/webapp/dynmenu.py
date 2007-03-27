@@ -10,30 +10,36 @@ from zope.component import queryMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.webapp.interfaces import IBreadcrumbProvider
+from canonical.launchpad.webapp.interfaces import (
+    IBreadcrumbProvider, NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 
 class DynMenuLink:
 
     def __init__(self, context, name, text, submenu=None,
-        contextsubmenu=False):
+        contextsubmenu=False, target=None):
         self.baseurl = canonical_url(context)
+        if target is not None:
+            self.targeturl = canonical_url(target)
+        else:
+            self.targeturl = self.baseurl
         self.name = name
         self.text = text
         self.submenu = submenu
         self.contextsubmenu = contextsubmenu
 
     def render(self):
-        basepath = self.baseurl
+        baseurl = self.baseurl
         L = []
         if self.submenu:
-            L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (basepath, self.submenu))
+            L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (baseurl, self.submenu))
         elif self.contextsubmenu:
             L.append('<li class="item container" lpm:mid="%s/+menudata">' % self.baseurl)
         else:
             L.append('<li class="item">')
-        L.append('<a href="%s/%s">' %  (basepath, self.name))
+
+        L.append('<a href="%s/%s">' %  (self.targeturl, self.name))
         L.append(self.renderText())
         L.append('</a>')
         L.append('</li>')
@@ -67,11 +73,11 @@ class DynMenu(LaunchpadView):
         return DynMenuLink(context, '', text, contextsubmenu=True)
 
     def makeLink(self, text, context=None, page='', submenu=None,
-        contextsubmenu=False):
+        contextsubmenu=False, target=None):
         if context is None:
             context = self.context
         return DynMenuLink(context, page, text, submenu=submenu,
-            contextsubmenu=contextsubmenu)
+            contextsubmenu=contextsubmenu, target=target)
 
     def renderMenu(self, menu):
         L = []
@@ -84,7 +90,7 @@ class DynMenu(LaunchpadView):
     def render(self):
         """Assume only one type of menu, and render it."""
         if self.names:
-            raise NotFoundError(names[-1])
+            raise NotFoundError(self.names[-1])
         return self.renderMenu(self.mainMenu())
 
     def mainMenu(self):

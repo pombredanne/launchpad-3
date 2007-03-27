@@ -176,18 +176,13 @@ class Breadcrumbs(LaunchpadView):
         For each breadcrumb, breadcrumb.text is cgi escaped.
         """
         crumbs = list(self.request.breadcrumbs)
-        if crumbs:
-            # Discard the first breadcrumb, as we know it will be the
-            # Launchpad one anyway.
-            firstcrumb = crumbs.pop(0)
-            assert firstcrumb.text == 'Launchpad'
 
         L = []
         firsturl = '/'
         firsttext = 'Home'
 
         L.append(
-            '<li lpm:mid="root" class="item"><a href="%s"><em>%s</em></a></li>'
+            '<li lpm:mid="root" class="item container"><a href="%s"><em>%s</em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
@@ -205,10 +200,17 @@ class Breadcrumbs(LaunchpadView):
 
                 # Disable these menus for now.  To be re-enabled on the ui 1.0
                 # branch.
-                L.append('<li class="item" lpm:mid="%s/+menudata">'
+                if crumb.has_menu:
+                    menudata = ' lpm:mid="%s/+menudata"' % crumb.url
+                    cssclass = 'item container'
+                else:
+                    menudata = ''
+                    cssclass = 'item'
+                L.append('<li class="%s"%s>'
                          '<a href="%s"><em>%s</em></a>'
                          '</li>'
-                         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
+                         % (cssclass, menudata, crumb.url,
+                            cgi.escape(crumb.text)))
 
             #L.append(
             #    '<li class="item">'
@@ -433,9 +435,6 @@ class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
 
-    def breadcrumb(self):
-        return 'Launchpad'
-
     stepto_utilities = {
         'products': IProductSet,
         'people': IPersonSet,
@@ -499,7 +498,7 @@ class LaunchpadRootNavigation(Navigation):
         # If we are looking at the front page, don't redirect:
         if self.request['PATH_INFO'] == '/':
             return None
-        
+
         # If no redirection host is set, don't redirect.
         mainsite_host = config.launchpad.vhosts.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
@@ -529,7 +528,7 @@ class LaunchpadRootNavigation(Navigation):
 
         # Empty the traversal stack, since we're redirecting.
         self.request.setTraversalStack([])
-        
+
         # And perform a temporary redirect.
         return RedirectionView(str(uri), self.request, status=303)
 
@@ -616,7 +615,7 @@ class LaunchpadRootIndexView(LaunchpadView):
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
         return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-    
+
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
         if config.launchpad.beta_testers_redirection_host is None:
@@ -624,7 +623,6 @@ class LaunchpadRootIndexView(LaunchpadView):
 
         return self.user is not None and self.user.inTeam(
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
-        
 
 
 class ObjectForTemplate:
