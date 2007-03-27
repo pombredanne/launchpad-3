@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 from unittest import TestCase, TestLoader
+from sha import sha
 
 from zope.component import getUtility
 
@@ -23,6 +24,7 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
     DistroReleaseQueueStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.librarian.utils import filechunks
 
 
 class TestQueueBase(TestCase):
@@ -435,6 +437,15 @@ class TestQueueToolInJail(TestQueueBase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
+    def _getsha1(self,filename):
+        """Return a sha1 hex digest of a file"""
+        file_sha = sha()
+        opened_file = open(filename,"r")
+        for chunk in filechunks(opened_file):
+            file_sha.update(chunk)
+        opened_file.close()
+        return file_sha.hexdigest()
+
     def testFetchActionByIDDoNotOverwriteFilesystem(self):
         """Check if queue fetch action doesn't overwrite files.
 
@@ -444,20 +455,50 @@ class TestQueueToolInJail(TestQueueBase):
 
         Instead of overwrite a file in the working directory queue will
         fail, raising a CommandRunnerError.
+
+        bug 67014: Don't complain if files are the same
         """
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
-        # acquire last modification time
-        mtime = os.stat(self._listfiles()[0]).st_mtime
+        # checksum the existing file
+        existing_sha1 = self._getsha1(self._listfiles()[0])
 
-        # fetch will raise and not overwrite the file in disk
-        self.assertRaises(
+        # fetch will NOT raise and not overwrite the file in disk
+        self.execute_command('fetch 1')
+
+        # checksum file again
+        new_sha1 = self._getsha1(self._listfiles()[0])
+
+        # Check that the file has not changed (we don't care if it was
+        # re-written, just that it's not changed)
+        self.assertEqual(existing_sha1,new_sha1)
+
+    def testFetchActionRaisesErrorIfDifferentFileAlreadyFetched(self):
+        """Check that fetching a file that has already been fetched
+        raises an error if they are not the same file.  (bug 67014)
+        """
+        CLOBBERED="you're clobbered"
+
+        queue_action = self.execute_command('fetch 1')
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
+
+        # clobber the existing file, fetch it again and expect an exception
+        f = open(self._listfiles()[0],"w")
+        f.write(CLOBBERED)
+        f.close()
+
+        self.assertRaises( 
             CommandRunnerError, self.execute_command, 'fetch 1')
 
-        # check if the file wasn't modified (mtime continues the same)
-        self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
+        # make sure the file has not changed
+        f = open(self._listfiles()[0],"r")
+        line = f.read()
+        f.close()
+
+        self.assertEqual(CLOBBERED,line)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem

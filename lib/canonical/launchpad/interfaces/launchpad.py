@@ -28,45 +28,45 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 __all__ = [
-	'AfterTraverseEvent',
-	'BeforeTraverseEvent',
+    'AfterTraverseEvent',
+    'BeforeTraverseEvent',
     'IAfterTraverseEvent',
-	'IAging',
-	'IAppFrontPageSearchForm',
-	'IAuthApplication',
+    'IAging',
+    'IAppFrontPageSearchForm',
+    'IAuthApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
-	'IBreadcrumb',
+    'IBreadcrumb',
     'ICrowd',
-	'IHasAppointedDriver',
-	'IHasAssignee',
-	'IHasBug',
-	'IHasDateCreated',
-	'IHasDrivers',
-	'IHasGotchiAndEmblem',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasGotchiAndEmblem',
     'IHasOwner',
-	'IHasProduct',
+    'IHasProduct',
     'IHasProductAndAssignee',
-	'IHasSecurityContact',
+    'IHasSecurityContact',
     'ILaunchBag',
-	'ILaunchpadCelebrities',
+    'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'IMaloneApplication',
-	'IOpenLaunchBag',
+    'IOpenLaunchBag',
     'IPasswordChangeApp',
-	'IPasswordEncryptor',
-	'IPasswordResets',
-	'IReadZODBAnnotation',
-	'IRegistryApplication',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IReadZODBAnnotation',
+    'IRegistryApplication',
     'IRosettaApplication',
-	'IShipItApplication',
+    'IShipItApplication',
     'IStructuralObjectPresentation',
     'IWriteZODBAnnotation',
-	'IZODBAnnotation',
+    'IZODBAnnotation',
     'NameNotAvailable',
     'NotFoundError',
-	'UnexpectedFormData',
+    'UnexpectedFormData',
     ]
 
 
@@ -134,6 +134,10 @@ class IMaloneApplication(ILaunchpadApplication):
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Malone")
+    projects_with_bugs_count = Attribute("The number of products and "
+        "distributions which have bugs in Launchpad.")
+    shared_bug_count = Attribute("The number of bugs that span multiple "
+        "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")

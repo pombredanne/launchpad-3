@@ -91,14 +91,10 @@ class SpecificationContextMenu(ContextMenu):
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
-             'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
+             'linkbug', 'unlinkbug', 'linkbranch',
+             'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget', 'administer', 'linkbranch']
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
+             'retarget']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -149,7 +145,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+status', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe someone'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):

@@ -15,7 +15,7 @@ from bzrlib.bzrdir import BzrDir
 
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
@@ -23,12 +23,10 @@ from importd.tests.test_bzrmanager import ProductSeriesHelper
 class ImportdTestCase(unittest.TestCase):
     """Common base for test cases of importd script backends."""
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.importd.dbuser)
-        self.zopeless_helper.setUp()
+        LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
         self.bzrworking = self.sandbox.join('bzrworking')
@@ -42,7 +40,6 @@ class ImportdTestCase(unittest.TestCase):
     def tearDown(self):
         self.series_helper.tearDown()
         self.sandbox.tearDown()
-        self.zopeless_helper.tearDown()
 
     def setUpOneCommit(self):
         workingtree = BzrDir.create_standalone_workingtree(self.bzrworking)

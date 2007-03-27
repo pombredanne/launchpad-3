@@ -196,6 +196,9 @@ interesting results.
 >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
 >>> branch.last_scanned = today - timedelta(1)
 >>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+>>> branch.last_scanned = today
+>>> syncUpdate(branch)
 
 >>> for branch in branchset.getRecentlyChangedBranches(5):
 ...   print branch.unique_name
@@ -418,13 +421,18 @@ IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
 >>> from canonical.launchpad.interfaces import IBranchRevision
->>> count = junk.revision_count
->>> count
+>>> junk.revision_count
 6
 >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
->>> [revno.sequence for revno in junk.revision_history]
-[6, 5, 4, 3, 2, 1]
+>>> for branch_revision in junk.revision_history:
+...     print branch_revision.sequence, branch_revision.revision.id
+6 9
+5 8
+4 7
+3 6
+2 5
+1 4
 
 There are two methods for getting only the the latest items of the revision
 history.
@@ -581,17 +589,17 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
-  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
   >>> for product in products:
   ...     print "%s %s %s" % (
   ...         product.name,
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
-  evolution      2  None
-  firefox        5  2005-03-09 15:50:00
-  gnome-terminal 10 None
-  iso-codes      1  None
-  thunderbird    1  None
+  evolution      1 None
+  firefox        5 2005-03-09 15:50:00
+  gnome-terminal 8 None
+  iso-codes      1 None
+  thunderbird    1 None
 
 
 == Getting branches by owner ==
@@ -623,9 +631,8 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForPerson method on IBranchSet will 
 return all branches associated with that person:
-  - subscribed branches by person or team the person is a member of
-  - person is author of the branch
-  - owner is person or team the person is a member of
+  - subscribed branches by person
+  - person is author or owner of the branch
 
   >>> from canonical.launchpad.interfaces import (
   ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
@@ -633,7 +640,6 @@ return all branches associated with that person:
   ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
-  New ~vcs-imports/evolution/main
   New ~ddaa/gnome-terminal/dev
   New ~ddaa/+junk/junkcode
 

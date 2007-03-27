@@ -16,6 +16,6 @@ And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.
 
   >>> anon_browser.open('http://launchpad.dev/sprints/ltsponsteroids/+assignments')
-  >>> 'No specifications to display' in anon_browser.contents
+  >>> 'No blueprints to display' in anon_browser.contents
   True
 
