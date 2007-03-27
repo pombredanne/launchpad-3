@@ -130,6 +130,10 @@
           template="../templates/person-index.pt"
           />
       <browser:page
+          name="+ask-a-question-button"
+          template="../templates/null.pt"
+          />
+      <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
           />
@@ -494,6 +498,14 @@
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonTeamBranchesView"
+    name="+portlet-teambranches"
+    template="../templates/person-portlet-teambranches.pt"
+    permission="zope.Public"
+    />
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">

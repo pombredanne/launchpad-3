@@ -655,3 +655,10 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
+
+
+class IBreadcrumbProvider(Interface):
+    """Object that provides breadcrumb text."""
+
+    def breadcrumb():
+        """Breadcrumb text."""

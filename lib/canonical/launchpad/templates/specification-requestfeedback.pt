@@ -13,10 +13,15 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      You can request feedback on a specification from a specific person,
+      You can request feedback from a specific person,
       including a brief message to explain what you need them to look at or
       consider.
     </p>

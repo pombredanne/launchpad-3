@@ -459,7 +459,7 @@ class Navigation:
         the step we're currently working out how to traverse.
         """
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1), text))
+            Breadcrumb(self.request.getURL(1, path_only=True), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
