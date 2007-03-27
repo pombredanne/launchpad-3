@@ -16,7 +16,7 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
-    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
+    'JoinNotAllowed',
     ]
 
 
@@ -431,7 +431,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         only the one with the oldest teams is returned.
 
         This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789.
+        https://launchpad.net/bugs/30789. It also can't be called if this
+        person is not an indirect member of the given team.
         """
 
     def isTeam():
@@ -535,9 +536,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         that case, though, all we have to do is use person.setPreferredEmail().
         """
 
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
-
     def hasParticipationEntryFor(team):
         """Tell if this person is a direct/indirect member of the given team."""
 
@@ -575,12 +573,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
-        """Add person as a member of this team.
+        """Add the given person as a member of this team.
 
-        Add a TeamMembership entry for this person with the given status,
-        reviewer, and reviewer comment. This method is also responsible for
-        filling the TeamParticipation table in case the status is APPROVED or
-        ADMIN.
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        The given status must be either Approved, Proposed or Admin.
 
         The reviewer is the user who made the given person a member of this
         team.
@@ -940,4 +939,8 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
 

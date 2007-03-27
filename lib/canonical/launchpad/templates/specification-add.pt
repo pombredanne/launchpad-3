@@ -20,7 +20,7 @@
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Once you&#8217;ve entered the details of a specification,
+      Once you&#8217;ve entered the details of a blueprint,
       you can link it to bug reports and track its review process.
     </div>
 

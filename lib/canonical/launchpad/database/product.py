@@ -44,7 +44,7 @@ from canonical.launchpad.database.question import (
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
     QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
+class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin):
     """A Product."""
 
@@ -152,20 +152,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IBugTarget."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
-
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Specification.product = %s AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
 
     def getOrCreateCalendar(self):
         if not self.calendar:

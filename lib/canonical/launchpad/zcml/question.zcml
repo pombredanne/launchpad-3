@@ -201,6 +201,13 @@
     />
 
   <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IQuestionSet"
+    permission="zope.Public"
+    template="../templates/null.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IQuestionSet"
     class="canonical.launchpad.browser.SearchAllQuestionsView"
     name="+tickets"

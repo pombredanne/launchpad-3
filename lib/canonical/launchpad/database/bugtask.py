@@ -1088,6 +1088,12 @@ class BugTaskSet:
                 )""" % sqlvalues(bug_contact=params.bug_contact)
             extra_clauses.append(bug_contact_clause)
 
+        if params.bug_reporter:
+            bug_reporter_clause = (
+                "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
+                    params.bug_reporter))
+            extra_clauses.append(bug_reporter_clause)
+
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)

@@ -237,8 +237,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    owner = Choice(
-        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
+    bug_reporter = Choice(
+        title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
@@ -448,7 +448,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False, bug_contact=None):
+                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -470,6 +470,7 @@ class BugTaskSearchParams:
         self.tag = tag
         self.has_cve = has_cve
         self.bug_contact = bug_contact
+        self.bug_reporter = bug_reporter
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
