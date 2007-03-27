@@ -32,34 +32,29 @@
       initPortlets();
     "
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader">
-      <div class="launchpad">
-        <img
-          alt=""
-          src="/+icing/globalheader_launchpad.gif"
-          width="34"
-          height="16"
-        /><a tal:attributes="href rooturl">Launchpad</a>
-      </div>
-      <ul class="home">
-        <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
-      </ul>
-      <div style="color:white;font-size:110%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_home.gif" alt="Home" /></a>
+      <div class="sitemessage">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
 
     <div id="locationbar">
-      <strong>Your location:</strong>
-      <ul id="menuroot" class="menuroot">
+      <strong id="yourlocation">Your location:</strong>
+      <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
+      <table id="logincontrol">
+        <tr>
+          <td tal:content="structure context/@@login_status" />
+        </tr>
+      </table>
     </div>
 
-    <div id="logincontrol" tal:content="structure context/@@login_status" />
     <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    
-    <div id="singlecolumn" tal:condition="columns1|nothing">
+
+    <div id="singlecolumn" tal:condition="columns1|nothing"> <!-- deprecated -->
       <metal:heading define-slot="pageheading" />
       <tal:XXX condition="nothing"
       >20061025 mpt: pageheading deprecated</tal:XXX>
@@ -73,18 +68,30 @@
       </tal:notifications>
       <metal:block define-slot="main" />
     </div>
+
     <tal:layout condition="not:columns1|nothing">
 
+    <table
+      tal:condition="view/macro:pagehas/applicationbuttons"
+      id="applications"
+    >
+      <tbody>
+        <tr>
+          <th><h1 metal:define-slot="application-heading" /></th>
+          <td tal:content="structure context/@@+applicationbuttons/register" />
+        </tr>
+      </tbody>
+    </table>
     <div
       id="structuralobject"
-      tal:define="structuralobject CONTEXTS/lp:structuralobject"
+      tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
       tal:condition="not:contextless|nothing"
     >
       <tal:header
-        condition="structuralobject"
-        replace="structure structuralobject/@@+structural-header"
+        condition="structuralheaderobject"
+        replace="structure structuralheaderobject/@@+structural-header"
       />
-      <tal:none condition="not:structuralobject">No structural object</tal:none>
+      <tal:none condition="not:structuralheaderobject">No structural header object</tal:none>
     </div>
     <form id="globalsearch" action="/+search" method="get">
       <div>
@@ -111,7 +118,14 @@
               <div class="x">
                 <div class="y">
                   <div class="z">
-                    <tal:onlyincontexts condition="not:contextless|nothing">
+
+                    <tal:applicationtabs
+                      condition="view/macro:pagehas/applicationtabs"
+                    >
+                    <div
+                      tal:condition="not:view/macro:pagehas/applicationtabs"
+                      id="noapplicationchooser"
+                    >&nbsp;</div>
 
                     <ul
                       id="applicationchooser"
@@ -154,11 +168,7 @@
                       </tal:facet>
                     </ul>
 
-                    </tal:onlyincontexts>
-                    <div
-                      tal:condition="contextless|nothing"
-                      id="noapplicationchooser"
-                    >&nbsp;</div>
+                    </tal:applicationtabs>
 
                     <br class="clear" />
 
@@ -178,9 +188,9 @@
                       <metal:block define-slot="main" />
                       <tal:no_children replace="nothing">
                       <div
-                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
-                        tal:condition="structuralobject"
-                        tal:replace="structure structuralobject/@@+structural-footer"
+                        tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
+                        tal:condition="structuralfooterobject"
+                        tal:replace="structure structuralfooterobject/@@+structural-footer"
                         />
                       </tal:no_children>
                     </div>
@@ -192,7 +202,6 @@
                       <div class="clear"></div><!-- needed for Safari -->
                     </div>
                     <div class="clear"></div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -242,10 +251,33 @@
         </tal:block> |
         <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
       </div>
+      <br class="clear" />
+      <!--
+      <div>
+        Page type: <tal:pagetype replace="view/macro:pagetype" />
+        <ul>
+            <li>Has portlet column:
+                <span tal:replace="view/macro:pagehas/portletcolumn" />
+            </li>
+            <li>Has application tabs:
+                <span tal:replace="view/macro:pagehas/applicationtabs" />
+            </li>
+            <li>Has application border:
+                <span tal:replace="view/macro:pagehas/applicationborder" />
+            </li>
+            <li>Has application buttons:
+                <span tal:replace="view/macro:pagehas/applicationbuttons" />
+            </li>
+            <li>Has heading:
+                <span tal:replace="view/macro:pagehas/heading" />
+            </li>
+        </ul>
+      </div>
+      -->
     </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/products">Projects</a></li>
+        <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>

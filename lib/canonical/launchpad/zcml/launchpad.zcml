@@ -296,20 +296,21 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
-<browser:pages
+<browser:page
   for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralObjectPresentationView"
+  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
   permission="zope.Public"
->
-  <browser:page
-    name="+structural-header"
-    template="../templates/launchpad-structuralheader.pt"
+  name="+structural-header"
+  template="../templates/launchpad-structuralheader.pt"
   />
-  <browser:page
-    name="+structural-footer"
-    template="../templates/launchpad-structuralfooter.pt"
+
+<browser:page
+  for="zope.interface.Interface"
+  class="canonical.launchpad.browser.StructuralFooterPresentationView"
+  permission="zope.Public"
+  name="+structural-footer"
+  template="../templates/launchpad-structuralfooter.pt"
   />
-</browser:pages>
 
 <browser:page
   for="*"

@@ -210,24 +210,10 @@ strong span {
   overflow: hidden;
   display: none;
 }
-hr, #globalheader label {
+hr {
   display: none;
 }
-#globalheader .logo {
-  float: left;
-}
-#globalheader {
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 auto;
-  background-color: #EEEEEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-  text-align: left;
-}
+
 #central_column {
   position: relative;
   width: 100%;
@@ -327,81 +313,6 @@ hr, #globalheader label {
   margin-left: 12px;
   margin-bottom: 8px;
 }
-#locationbar {
-  float: left;
-  width: 100%;
-  height: 26px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFFFFF;
-}
-#locationbar strong {
-  margin-right: 16px;
-}
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-}
-ul#menuroot li {
-  display: inline;
-}
-ul#menuroot em {
-  margin-top: 0px;
-}
-#locationbar li a {
-  position: relative;
-  left: -16px;
-  margin: 0px -16px 0px 0px;
-  float: left;
-  height: 26px;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  color: #000000;
-}
-#locationbar li a:hover {
-  background-position: 0px 0px;
-  text-decoration: none;
-  color: #000000;
-}
-#locationbar li em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 10px 20px;
-  cursor: hand;
-  cursor: pointer;
-}
-#locationbar strong {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 10px 10px !important;
-  padding: 5px 0 10px 10px;
-}
-#logincontrol {
-  position: absolute;
-  top: 21px;
-  right: 0px;
-  padding: 6px 16px 10px 10px !important;
-  padding: 5px 16px 10px 10px;
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: bold;
-}
-#logincontrol a {color: #000000;}
 ul#applicationchooser {
   float: right;
   width: 510px;
@@ -615,47 +526,6 @@ ul#applicationchooser li#applicationchooser_selected {
   background: transparent;
   width: auto !important;
   border: 0 !important;
-}
-#globalheader,
-#locationbar {
-  min-width: 760px;
-}
-#globalheader img {
-  display: none;
-}
-#globalheader div.launchpad a {
-  float: right;
-  display: block;
-  width: 90px;
-  height: 20px;
-  background-image: url(globalheader_launchpad_bg.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#globalheader ul.home {
-  float: left;
-  width: 30px;
-  height: 20px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-#globalheader ul.home li a {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  float: left;
-  display: block;
-  width: 30px;
-  height: 20px;
-  background-image: url(globalheader_home.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
 }
 #structuralobject, #applications {
   position: relative;
@@ -1283,7 +1153,9 @@ body {
 div#applications {padding: 1em 0; text-align: center;}
 table#applications {margin-bottom: -0.5em;}
 table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 100px; text-align: left;}
+table#applications th {padding-left: 60px; text-align: left;}
+body.pillarindex table#applications {margin-left: 40px; width: auto;}
+body.tab-overview table#applications th {padding-left: 0;}
 table#applications td {padding-right: 20px; text-align: right;}
 #applications span {
   display: inline-block;
@@ -1465,12 +1337,140 @@ th.descending {
 /* Used to indicate a value to be used to sort cells in a row */
 .sortkey, .revsortkey {display: none;}
 
+/*
+ * Global header line.
+ *
+ * The grey line at the top of the page.
+ *
+ */
 
-/* SteveA's fix-ups for the dynamic menu */
-#locationbar ul {margin: 0; padding: 0;}
-#locationbar ul.menuroot li a {
+/* Appropriate appearance for global header.
+ */
+#globalheader {
+  position: relative;
+  width: 100%;
+  height: 21px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #EEE;
+  background-image:  url(globalheader_bg.gif);
+  background-repeat: repeat-x;
+  background-position: top center;
+}
+/*
+ * This is where the actual Launchpad graphic is included.
+ */
+/* Home icon and link. */
+#globalheader a.home {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+/* Site-specific message. */
+#globalheader .sitemessage {
+  position: absolute;
+  top: 2px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
+}
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/*
+ * locationbar
+ *
+ * Includes breadcrumbs and dynamic menus.
+ */
+
+/* XXX: needs explanation */
+#locationbar {
+  float: left;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: #AFDB1F;
+  font-size: 11px;
+  font-weight: bold;
+  color: #FFF;
+}
+/* XXX: needs explanation */
+ul#menuroot {
+  display: inline;
+  float: left;
+  margin: 0;
+}
+/* XXX: needs explanation */
+ul#menuroot li {
+  display: inline;
+}
+/* Style for breadcrumb items.
+ *
+ * XXX: background stuff needs explanation.
+ *
+ * Negative right margin for breadcrumbs.
+ * This is part of how we make them look like arrows.
+ */
+ul#menuroot>li>a {
+  position: relative;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1000px 0px;
+  display: block;
+  float: left;
   margin-right: -16px;
 }
+/* "Your location:" text.
+ *
+ * The 1px negative right margin is to bring the first breadcrumb a little
+ * closer to the "Your location:" text.  It makes it look visually tighter
+ * because of the chevron shape of the highlights.
+ */
+#yourlocation {
+  float: left;
+  display: block;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1100px 0px;
+  padding: 6px 0 10px 10px;
+  margin-right: -1px;
+}
+/* Display dyn menu items and breadcrumbs with black text and as blocks. */
+#locationbar li a {
+  display: block;
+  color: #000000;
+}
+/* XXX: needs explanation */
+ul#menuroot>li>a>em { /* should be changed to not need em */
+  font-style: normal;
+  float: left;
+  display: block;
+  background-image: url(locationbar_nodrop_em_bg.gif);
+  background-repeat: no-repeat;
+  background-position: right top;
+  padding: 6px 26px 10px 20px;
+  cursor: hand;
+  cursor: pointer;
+}
+/* When a breadcrumb has a submenu, show a down-arrow. */
+ul#menuroot>li.container>a>em { /* should be changed to not need em */
+  background-image: url(locationbar_em_bg.gif);
+}
+/* Undo more generic formatting around ul elements. */
+#locationbar ul {
+    margin: 0;
+    padding: 0;
+}
+/* General appearance of a dynamic menu item.
+ * The area we actually see on the page is an <a> element.
+ * The <li> element takes up no space.
+ */
 #locationbar ul.menu li a {
   background-image: none;
   background-color: #AFDB1F;
@@ -1481,10 +1481,15 @@ th.descending {
   padding-bottom: 3px;
   height: auto;
 }
+/* General appearance of a dynamic menu item. */
 #locationbar ul.menu li {
   margin-bottom: 0px;
   padding-bottom: 0px;
 }
+/* Appearance of a dynamic menu or submenu.
+ * Note the 3d-effect border.
+ * Note the z-index so that they appear above all other content.
+ */
 #locationbar ul.menu {
   background-color: #AFDB1F;
   position: absolute;
@@ -1495,24 +1500,85 @@ th.descending {
   border-top: 1px solid #DCF58B;
   border-left: 1px solid #DCF58B;
   padding-left: 0px;
-  padding-right: 16px;
+  padding-right: 0px;
 }
-#locationbar ul.menu li.selected a {
+/* Inhibit underlines on all dyn menu items. */
+#locationbar li a:hover {
+  text-decoration: none;
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * on mouse-over.
+ * The colour #EEE is sometimes used for debugging.
+ */
+#locationbar ul.menu li>a:hover {
+  /* color: #EEE; */
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * when selected and potentially opened.
+ */
+#locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
+  color: #000;
 }
+/* Set the appearance of breadcrumb items on mouse-over.
+ * This is the same as how they look when selected, so that
+ * they look right during the deliberate delay between being
+ * moused-over and actually activated.
+ */
+ul#menuroot>li>a:hover {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Set the appearance of breadcrumb items when selected for opening. */
+ul#menuroot>li.selected>a {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Make dyn menu items that are the source of submenus have a right-arrow
+ * on the far right, to show they can be opened.
+ *
+ * Does not include the breadcrumbs.
+ */
+#locationbar ul.menu li.container>a {
+  background-image: url(/@@/arrowRight);
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+/* Allow dyn menus to appear ouside of the locationbar, even though they
+ * overflow its bounds.
+ */
 #locationbar {
   overflow: visible;
 }
+/* Prevent the text in links in menu items from wrapping.
+ * Apply appropriate formatting to links in menu items.
+ */
 #locationbar li a {
   left: auto;
   margin: 0px 0px 0px 0px;
+  white-space: pre;
 }
-#locationbar strong {
-  margin-right: -5px;
+/* Login control goes on the right, taking up the full height of the
+ * locationbar.
+ */
+#logincontrol {
+  float: right;
+  height: 100%;
 }
-#locationbar {
-  overflow: visible;
+/* The control itself is actually in a table cell, vertically aligned to
+ * the middle of the locationbar.
+ */
+#logincontrol td {
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: bold;
+  vertical-align: middle;
 }
+/* Link text is black. */
+#logincontrol a {
+    color: #000000;
+}
+/* Clouds of links. */
 .cloud-size-small { 
   font-size: 1em;
 }

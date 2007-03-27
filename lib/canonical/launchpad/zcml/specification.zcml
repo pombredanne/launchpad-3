@@ -443,6 +443,13 @@
 
 </facet>
 
+<adapter
+  provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+  for="canonical.launchpad.interfaces.ISpecification"
+  factory="canonical.launchpad.browser.SpecificationSHP"
+  permission="zope.Public"
+  />
+
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"

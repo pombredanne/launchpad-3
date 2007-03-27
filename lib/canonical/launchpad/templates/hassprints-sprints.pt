@@ -1,0 +1,24 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:portlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Events related to <span tal:replace="context/displayname" /></h1>
+
+    <div tal:define="sprints context/sprints" tal:condition="sprints">
+      <table>
+        <tal:per_sprint repeat="sprint sprints"
+                        replace="structure sprint/@@+listing-detailed" />
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>

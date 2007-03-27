@@ -141,6 +141,9 @@
     <browser:page
       name="+portlet-coming-sprints"
       template="../templates/hassprints-portlet-coming-sprints.pt" />
+    <browser:page
+      name="+sprints"
+      template="../templates/hassprints-sprints.pt" />
   </browser:pages>
 
 
