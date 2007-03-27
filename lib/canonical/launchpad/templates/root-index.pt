@@ -34,7 +34,7 @@
         <input id="text" type="text" name="q" size="20" />
         <input type="submit" value="Search" />
       </form>
-      <div class="bordered">
+
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
@@ -77,8 +77,8 @@
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
           </ul>
         </div>
-      </div>
-    </div>
+
+    </div><!--main-->
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.

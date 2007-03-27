@@ -1314,7 +1314,7 @@ class PageMacroDispatcher:
             globalsearch=False,
             heading=False,
             portletcolumn=False,
-            structuralobject=False,
+            structuralheaderobject=False,
             pagetypewasset=True
             ):
             self.elements = vars()
@@ -1329,7 +1329,7 @@ class PageMacroDispatcher:
                 applicationborder=True,
                 globalsearch=True,
                 portletcolumn=True,
-                structuralobject=True,
+                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
@@ -1337,7 +1337,7 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portletcolumn=True,
-                structuralobject=True),
+                structuralheaderobject=True),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,

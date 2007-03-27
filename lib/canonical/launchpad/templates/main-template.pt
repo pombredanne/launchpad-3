@@ -202,7 +202,7 @@
         </tal:notifications>
         <metal:block define-slot="main" />
       </div>
-      <div id="globalfooter">
+      <div id="globalfooter" style="border: 2px dotted red;">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">
@@ -229,27 +229,27 @@
           <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
         </div>
         <br class="clear" />
-        <div>
-          Page type: <tal:pagetype replace="view/macro:pagetype" />
-          <ul>
-              <li>Has portlet column:
-                  <span tal:replace="view/macro:pagehas/portletcolumn" />
-              </li>
-              <li>Has application tabs:
-                  <span tal:replace="view/macro:pagehas/applicationtabs" />
-              </li>
-              <li>Has application border:
-                  <span tal:replace="view/macro:pagehas/applicationborder" />
-              </li>
-              <li>Has application buttons:
-                  <span tal:replace="view/macro:pagehas/applicationbuttons" />
-              </li>
-              <li>Has heading:
-                  <span tal:replace="view/macro:pagehas/heading" />
-              </li>
-          </ul>
-        </div>
-      </div>
+        <ul style="clear: both;">
+          <li>Page type: <tal:pagetype replace="view/macro:pagetype" /></li>
+
+            <li>Has portlet column:
+                <span tal:replace="view/macro:pagehas/portletcolumn" />
+            </li>
+            <li>Has application tabs:
+                <span tal:replace="view/macro:pagehas/applicationtabs" />
+            </li>
+            <li>Has application border:
+                <span tal:replace="view/macro:pagehas/applicationborder" />
+            </li>
+            <li>Has application buttons:
+                <span tal:replace="view/macro:pagehas/applicationbuttons" />
+            </li>
+            <li>Has heading:
+                <span tal:replace="view/macro:pagehas/heading" />
+            </li>
+
+        </ul>
+      </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
     <div id="help_panel" class="closed">
       <div class="help1">
