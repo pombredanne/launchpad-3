@@ -411,6 +411,8 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+hassprints_sprints = ContextTitle("Events related to %s")
+
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
 people_mergerequest_sent = 'Merge request sent'
@@ -682,11 +684,13 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
-product_translators = ContextTitle('Set translation group for %s')
-
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_series = ContextDisplayName('%s timeline')
+
 product_translations = ContextTitle('Translations of %s in Rosetta')
+
+product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 

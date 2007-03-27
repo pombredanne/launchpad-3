@@ -85,7 +85,7 @@ spider -- StuartBishop 20050822
 >>> check("/products")
 >>> check("/products/+all")
 >>> check("/firefox")
->>> check_not_found("/firefox/+series")
+>>> check("/firefox/+series")
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)

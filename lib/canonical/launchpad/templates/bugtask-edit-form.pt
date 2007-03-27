@@ -30,6 +30,67 @@
     <tal:context replace="context/targetname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
+  <table class="summary">
+    <tr>
+      <th>Affecting:</th>
+      <td><a tal:attributes="href context/target/fmt:url"
+             tal:content="context/target/displayname">Ubuntu Linux</a></td>
+    </tr>
+    <tr>
+      <th>Filed here by:</th>
+      <td><a tal:replace="structure context/owner/fmt:link">Foo Bar</a></td>
+    </tr>
+    <tr>
+      <th>When:</th>
+      <td>
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_confirmed">
+      <th>Confirmed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_confirmed/fmt:datetime"
+          tal:content="context/date_confirmed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_assigned">
+      <th>Assigned:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_assigned/fmt:datetime"
+          tal:content="context/date_assigned/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_inprogress">
+      <th>Started work:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_inprogress/fmt:datetime"
+          tal:content="context/date_inprogress/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_closed">
+      <th>Completed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_closed/fmt:datetime"
+          tal:content="context/date_closed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+  </table>
   <div class="field">
     <table>
       <tal:distrotask
