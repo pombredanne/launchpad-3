@@ -31,12 +31,13 @@ import pytz
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
-    IBugNomination)
+    IStructuralHeaderPresentation, IBugNomination)
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp import (
+    canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.authorization import check_permission
@@ -74,7 +75,7 @@ class MenuAPI:
 
     def _nearest_menu(self, menutype):
         try:
-            return nearest_menu(self._context, menutype)
+            return nearest_adapter(self._context, menutype)
         except NoCanonicalUrl:
             return None
 
@@ -1356,7 +1357,7 @@ class PageMacroDispatcher:
 
 
 class GotoStructuralObject:
-    """lp:structuralobject
+    """lp:structuralheaderobject, lp:structuralfooterobject
 
     Returns None when there is no structural object.
     """
@@ -1364,20 +1365,38 @@ class GotoStructuralObject:
     def __init__(self, context_dict):
         self.context = context_dict['context']
         self.view = context_dict['view']
+        self.use_context = self._getUseContext()
 
-    @property
-    def structuralobject(self):
+    def _getUseContext(self):
+        """Return the appropriate context to use.
+
+        This works around the hack in bug-related views where the context
+        is not the bugtask, but instead the bug.
+        """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
             IBugNomination.providedBy(self.context) or
             IBugExternalRef.providedBy(self.context)):
-            use_context = self.view.current_bugtask
+            return self.view.current_bugtask
         else:
-            use_context = self.context
+            return self.context
+
+    @property
+    def structuralfooterobject(self):
         # The structural object is the nearest object with a facet menu.
         try:
-            facetmenu = nearest_menu(use_context, IFacetMenu)
+            menucontext, facetmenu = nearest_context_with_adapter(
+                self.use_context, IFacetMenu)
         except NoCanonicalUrl:
             return None
-        return facetmenu.context
+        return menucontext
+
+    @property
+    def structuralheaderobject(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return None
+        return headercontext
 

@@ -20,7 +20,6 @@
   </div>
 </metal:rightportlets>
 
-
 <div metal:fill-slot="main">
 
   <h1>Is your project in Launchpad?</h1>
