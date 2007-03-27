@@ -73,24 +73,31 @@ class ProjectDynMenu(DynMenu):
 
     MAX_SUB_PROJECTS = 8
 
-    def mainMenu(self):
+    def mainMenu(self, excludeproduct=None):
         """List products within this project.
 
         List up to MAX_SUB_PROJECTS products.  If there are more than that
         number of products, list up to MAX_SUB_PROJECTS products with
         releases, and give a link to a page showing all products.
+
+        XXX: describe excludeproduct.
         """
         products = shortlist(self.context.products, 25)
         num_products = len(products)
-        if num_products < self.MAX_SUB_PROJECTS:
+        if excludeproduct is None:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
+        else:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
+        if num_products < MAX_SUB_PROJECTS:
             for product in products:
-                yield self.makeBreadcrumbLink(product)
+                if product != excludeproduct:
+                    yield self.makeBreadcrumbLink(product)
         else:
             # XXX: SteveAlexander, 2007-03-27.
             # Use a database API for products-with-releases that prejoins.
             count = 0
             for product in products:
-                if product.releases:
+                if product != excludeproduct and product.releases:
                     yield self.makeBreadcrumbLink(product)
                     count += 1
                     if count >= self.MAX_SUB_PROJECTS:
