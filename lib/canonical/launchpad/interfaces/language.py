@@ -80,3 +80,6 @@ class ILanguageSet(Interface):
 
         If language_string doesn't represent a know language, return None.
         """
+
+    def search(text):
+        """XXX."""

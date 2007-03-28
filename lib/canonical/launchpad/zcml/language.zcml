@@ -4,14 +4,91 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
+    <!-- Language -->
     <content class="canonical.launchpad.database.Language">
         <allow interface="canonical.launchpad.interfaces.ILanguage"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ILanguage" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="LanguageNavigation LanguageSetNavigation"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILanguage"
+        name="+index" />
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="LanguageSetContextMenu LanguageContextMenu"
+        />
+    <browser:url
+        for="canonical.launchpad.interfaces.ILanguage"
+        path_expression="code"
+        parent_utility="canonical.launchpad.interfaces.ILanguageSet"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ILanguage" >
+        permission="zope.Public"
+        <browser:page
+            class="canonical.launchpad.browser.LanguageView"
+            template="../templates/language-index.pt"
+            name="+index"
+            />
+        <browser:page
+            class="canonical.launchpad.browser.LanguageRemoveView"
+            permission="launchpad.Edit"
+            attribute="removals"
+            name="+remove"
+            />
+        <browser:page
+            class="canonical.launchpad.browser.LanguageEditView"
+            permission="launchpad.Edit"
+            template="../templates/launchpad-edit.pt"
+            name="+edit"
+            />
+        <!-- Language portlets -->
+        <browser:page
+            class="canonical.launchpad.browser.LanguageView"
+            name="+portlet-details"
+            template="../templates/language-portlet-details.pt"
+            />
+    </browser:pages>
+    <!-- LanguageSet -->
     <securedutility
         class="canonical.launchpad.database.LanguageSet"
         provides="canonical.launchpad.interfaces.ILanguageSet">
         <allow interface="canonical.launchpad.interfaces.ILanguageSet" />
     </securedutility>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        path_expression="string:+languages"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        class="canonical.launchpad.browser.LanguageSetView"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/languageset-index.pt"
+            name="+index"
+            />
+        <browser:page
+            permission="launchpad.Edit"
+            template="../templates/language-add.pt"
+            name="+add"
+            />
+    </browser:pages>
+
+</facet>
 </configure>

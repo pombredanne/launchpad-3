@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ICveSet,
     IDistributionSet,
     IKarmaActionSet,
+    ILanguageSet,
     ILaunchBag,
     ILaunchpadCelebrities,
     ILaunchpadRoot,
@@ -457,6 +458,7 @@ class LaunchpadRootNavigation(Navigation):
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         '+code': IBazaarApplication,
+        '+languages': ILanguageSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

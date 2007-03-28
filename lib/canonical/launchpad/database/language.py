@@ -5,8 +5,9 @@ __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
 
-from sqlobject import (StringCol, IntCol, BoolCol,
-    SQLRelatedJoin, SQLObjectNotFound)
+from sqlobject import (
+    StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
+    CONTAINSSTRING)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
@@ -140,3 +141,19 @@ class LanguageSet:
             return (None, None)
 
         return (language, language_variant)
+
+    def search(self, text):
+        """See ILanguageSet."""
+        if text:
+            text.lower()
+            results = Language.select(
+                OR (
+                    CONTAINSSTRING(Language.q.code, text),
+                    CONTAINSSTRING(Language.q.englishname, text)
+                    ),
+                orderBy='englishname'
+                )
+        else:
+            results = None
+
+        return results
