@@ -232,7 +232,7 @@ def remove(mlist, cgi=False):
         addr, password = config.mailman.build.site_list_owner.split(':', 1)
 
         # The site list does not yet exist, so create it now.
-        retcode = subprocess.call(('./newlist',
+        retcode = subprocess.call(('./newlist', '--quiet',
                                    '--emailhost=' + hostname,
                                    Mailman.mm_cfg.MAILMAN_SITE_LIST,
                                    addr, password),
