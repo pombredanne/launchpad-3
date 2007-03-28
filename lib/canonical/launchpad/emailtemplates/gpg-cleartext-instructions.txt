@@ -1,5 +1,3 @@
-Hello,
-
 This message contains the instructions for confirming registration of an
 OpenPGP key for use in Launchpad.  The confirmation instructions have been
 encrypted with the OpenPGP key you have attempted to register.  If you cannot

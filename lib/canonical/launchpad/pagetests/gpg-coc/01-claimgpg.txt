@@ -48,10 +48,34 @@ followed by ASCII armored encrypted confirmation instructions.  Ensure that
 the clear text instructions contain the expected URLs pointing to more help.
 
   >>> cipher_body = msg.get_payload(decode=True)
-  >>> 'https://help.launchpad.net/ReadingOpenPgpMail' in cipher_body
-  True
-  >>> 'https://help.ubuntu.com/community/GnuPrivacyGuardHowto' in cipher_body
-  True
+  >>> print cipher_body
+  Hello,
+  <BLANKLINE>
+  This message contains the instructions for confirming registration of an
+  OpenPGP key for use in Launchpad.  The confirmation instructions have been
+  encrypted with the OpenPGP key you have attempted to register.  If you cannot
+  read the unencrypted instructions below, it may be because your mail reader
+  does not support automatic decryption of "ASCII armored" encrypted text.
+  <BLANKLINE>
+  Exact instructions for enabling this depends on the specific mail reader you
+  are using.  Please see this support page for more information:
+  <BLANKLINE>
+      https://help.launchpad.net/ReadingOpenPgpMail
+  <BLANKLINE>
+  For more general information on OpenPGP and related tools such as Gnu Privacy
+  Guard (GPG), please see:
+  <BLANKLINE>
+      https://help.ubuntu.com/community/GnuPrivacyGuardHowto
+  <BLANKLINE>
+  -----BEGIN PGP MESSAGE-----
+  ...
+  -----END PGP MESSAGE-----
+  <BLANKLINE>
+  <BLANKLINE>
+  Thanks,
+  <BLANKLINE>
+  The Launchpad Team
+  launchpad@ubuntu.com
 
   >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)

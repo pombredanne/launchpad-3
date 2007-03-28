@@ -94,9 +94,6 @@ class LoginToken(SQLBase):
         # read this is highly dependent on the mail reader being used, and how
         # that MUA is configured.
 
-        # Here are the clear text instructions.
-        instructions = get_email_template('gpg-cleartext-instructions.txt')
-
         # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
         replacements = {'requester': self.requester.browsername,
@@ -107,33 +104,31 @@ class LoginToken(SQLBase):
                         'token_url': canonical_url(self)}
 
         token_text = template % replacements
-        # Encrypt this part's content if requested
+        salutation = 'Hello,\n\n'
+        instructions = ''
+        closing = """
+Thanks,
+
+The Launchpad Team
+launchpad@ubuntu.com"""
+
+        # Encrypt this part's content if requested.
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
             token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
                                                    key.fingerprint)
+            # In this case, we need to include some clear text instructions
+            # for people who do not have an MUA that can decrypt the ASCII
+            # armored text.
+            instructions = get_email_template('gpg-cleartext-instructions.txt')
 
-        # Concatenate the parts together, then send it.
+        # Concatenate the message parts and send it.
+        text = salutation + instructions + token_text + closing
         simple_sendmail(format_address('Launchpad OpenPGP Key Confirmation',
                                        config.noreply_from_address),
                         str(self.email),
                         'Launchpad: Confirm your OpenPGP Key',
-                        instructions + token_text +
-                        # The reason why the closing text is hardcoded here is
-                        # that it's a clear text chunk that follows some
-                        # encrypted text.  Thus it cannot be part of the
-                        # encrypted content, but the encrypted content should
-                        # follow the clear text instructions.  It seems ugly
-                        # to include this in the clear text part when the
-                        # encrypted part is successfully decrypted, and it
-                        # seems overkill to put this text in a separate file,
-                        # or otherwise make composition of all this text more
-                        # complicated.
-                        """
-Thanks,
-
-The Launchpad Team
-launchpad@ubuntu.com""")
+                        text)
 
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
