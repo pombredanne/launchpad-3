@@ -1,5 +1,9 @@
-<html metal:use-macro="context/@@marketing/master">
-  <metal:contents fill-slot="contents">
+<html metal:use-macro="context/@@marketing_template/master">
+  <ul id="home-breadcrumbs" metal:fill-slot="breadcrumbs">
+      <li><a  href="/" title="Launchpad Home">Home</a></li>
+  </ul>
+
+  <div id="home" metal:fill-slot="contents">
     <h2>Make better software through collaboration</h2>
     <ul id="tools"
         tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
@@ -65,5 +69,5 @@
         <p>Free migration support for open source projects.</p>
       </div>
     </div> <!-- content -->
-  </metal:contents>
+  </div>
 </html>

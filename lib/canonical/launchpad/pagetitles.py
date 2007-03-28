@@ -512,9 +512,13 @@ malone_filebug = "Report a bug"
 
 # malone_template is a means to include the mainmaster template
 
+marketing_bugs_faq = "FAQs about Bugs"
+
+# marketing_faq_template is used by the marketing pages
+
 marketing_home = "About Launchpad"
 
-# marketing_template is used by the marketing pages
+# marketing_main_template is used by the marketing pages
 
 # messagechunk_snippet is a fragment
 

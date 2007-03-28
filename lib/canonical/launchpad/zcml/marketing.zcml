@@ -1,0 +1,38 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- Marketing templates -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="marketing_template"
+        permission="zope.Public"
+        template="../templates/marketing-main-template.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="marketing_faq_template"
+        permission="zope.Public"
+        template="../templates/marketing-faq-template.pt"
+        />
+
+    <!-- Marketing Microsite Home Page -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="+about"
+        permission="zope.Public"
+        template="../templates/marketing-home.pt"
+        />
+
+    <!-- Marketing material for Bugs. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public"
+        name="+faq"
+        template="../templates/marketing-bugs-faq.pt"
+        />
+
+</configure>

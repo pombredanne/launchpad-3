@@ -1,5 +1,6 @@
 <metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+  <metal:top_slot define-slot="top" />
   <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
       <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -18,13 +19,13 @@
       />
       <![endif]-->
     </head>
-    <body id="home">
+    <body>
       <a id="top"></a>
       <div id="breadcrumb">
         <dl>
           <dt>Your location:</dt>
           <dd>
-            <ul>
+            <ul metal:define-slot="breadcrumbs">
               <li><a href="/" title="Launchpad Home">Home</a></li>
             </ul>
           </dd>
@@ -43,6 +44,7 @@
               </ul>
             </dd>
           </dl>
+          <metal:navigation define-slot="navigation" />
         </div> <!-- header -->
         <div id="main">
           <metal:contents define-slot="contents" />

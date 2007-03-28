@@ -165,14 +165,6 @@
       name="+editmylanguages"
       />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+about"
-      permission="zope.Public"
-      template="../templates/marketing-home.pt"
-      />
-
-
   <!-- A page to list all the icons in LP -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"

@@ -125,11 +125,11 @@ body {
 }
 
 #breadcrumb dl dd ul li a:hover,
-body#home #breadcrumb dl dd ul li a:hover {
+#breadcrumb dl dd ul#home-breadcrumbs li a:hover {
   text-decoration: underline;
 }
 
-body#home #breadcrumb dl dd ul li a {
+#breadcrumb dl dd ul#home-breadcrumbs li a {
   display: block;
   height: 27px;
   line-height: 25px;
@@ -298,8 +298,8 @@ body#tour #header dl#navigation ul li#liTour a {
   text-decoration: underline;
 }
 
-body#faq #main #primary {
-  background: url(/+icing/bg-primary-faq.gif) 120px 40px no-repeat;
+#faq #primary img {
+    float: right;
 }
 
 #main #primary h2 {
@@ -354,22 +354,11 @@ body#faq #main #primary {
 }
 
 #main #primary blockquote {
-  margin-top: 315px;
-  width: 237px; height: 130px;
-  background: url(/+icing/bg-quote.gif) top left no-repeat;
+  margin-top: 240px;
+  font-size: 1.7em;
 }
 
-#main #primary blockquote p { text-indent: -1000em; }
-
-#main #primary cite {
-  display: block;
-  margin-top: 10px;
-  width: 194px; height: 26px;
-  background: url(/+icing/bg-cite.gif) top left no-repeat;
-  text-indent: -1000em;
-}
-
-body#home #main h2,
+#home h2,
 #main #secondary h4 {
   width: 410px;
   color: #159cc8;
@@ -379,7 +368,7 @@ body#home #main h2,
   margin-bottom: 25px;
 }
 
-body#home #main h2 {
+#home h2 {
   margin-left: 284px;
   color: #698022;
 }

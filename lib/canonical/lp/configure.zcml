@@ -16,10 +16,6 @@
           name="main_template_2col"
           template="../launchpad/templates/main-template.pt"
           />
-      <browser:page
-          name="marketing"
-          template="../launchpad/templates/marketing-template.pt"
-          />
   </browser:pages>
 
 </configure>
