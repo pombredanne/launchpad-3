@@ -18,10 +18,9 @@
     <dt>Sub-navigation<dt>
     <dd>
       <ul>
-        <li id="liAppTour"><a href="+tour"
-                              title="Application tour">Application tour</a></li>
-        <li class="current" id="liFaq"><a href="+faq+">FAQs</a></li>
-        <li id="liReviews"><a href="+about" title="Reviews">Reviews</a></li>
+        <li id="liAppTour"><a href="+tour">Application tour</a></li>
+        <li class="current" id="liFaq"><a href="+faq">FAQs</a></li>
+        <li id="liReviews"><a href="+about">Reviews</a></li>
       </ul>
     </dd>
   </dl>

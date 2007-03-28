@@ -35,4 +35,40 @@
         template="../templates/marketing-bugs-faq.pt"
         />
 
+    <!-- Marketing material for Answers. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        permission="zope.Public"
+        name="+faq"
+        template="../templates/marketing-answers-faq.pt"
+        />
+
+    <!-- Marketing material for Code. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.CodeLayer"
+        permission="zope.Public"
+        name="+faq"
+        template="../templates/marketing-code-faq.pt"
+        />
+
+    <!-- Marketing material for Blueprints. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BlueprintsLayer"
+        permission="zope.Public"
+        name="+faq"
+        template="../templates/marketing-blueprints-faq.pt"
+        />
+
+    <!-- Marketing material for Translations. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        permission="zope.Public"
+        name="+faq"
+        template="../templates/marketing-translations-faq.pt"
+        />
+
 </configure>
