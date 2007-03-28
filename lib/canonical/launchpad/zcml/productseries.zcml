@@ -109,6 +109,9 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
         <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
+        <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />
     </browser:pages>
