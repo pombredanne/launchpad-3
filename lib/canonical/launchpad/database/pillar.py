@@ -105,8 +105,7 @@ class PillarNameSet:
 
         if product is not None:
             return getUtility(IProductSet).get(product)
-        elif project is not None:
-            return getUtility(IProjectSet).get(project)
+        elif project is not None: return getUtility(IProjectSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
 
@@ -116,6 +115,7 @@ class PillarNameSet:
             limit = config.launchpad.default_batch_size
         base_query = """
             SELECT 'distribution' AS otype, id, name, title, description,
+                   emblem,
                    rank(fti, ftq(%(text)s)) AS rank
             FROM distribution
             WHERE fti @@ ftq(%(text)s)
@@ -124,7 +124,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'project' AS otype, id, name, title, description,
+            SELECT 'project' AS otype, id, name, title, description, emblem,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM product
             WHERE fti @@ ftq(%(text)s)
@@ -135,6 +135,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project group' AS otype, id, name, title, description,
+                emblem,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM project
             WHERE fti @@ ftq(%(text)s)
@@ -145,6 +146,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'distribution' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM distribution 
             WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
@@ -152,6 +154,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project group' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM project
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -160,6 +163,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM product
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -173,7 +177,7 @@ class PillarNameSet:
         query = "%s LIMIT %d" % (base_query, limit)
         cur = cursor()
         cur.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'rank']
+        keys = ['type', 'id', 'name', 'title', 'description', 'emblem', 'rank']
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
         return shortlist(

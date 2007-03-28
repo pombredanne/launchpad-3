@@ -97,6 +97,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -1016,16 +1017,33 @@ class ApplicationButtons(LaunchpadView):
         return self
 
 
+class Emblem:
+    """An emblem for use with fmt:emblem."""
+
+    def __init__(self, library_id):
+        self.library_id = library_id
+
+    def getURL(self):
+        http_url = getUtility(ILibrarianClient).getURLForAlias(self.library_id)
+        if config.launchpad.vhosts.use_https:
+            return http_url.replace('http', 'https', 1)
+        else:
+            return http_url
+
+
 class PillarSearchItem:
     """A search result item representing a Pillar."""
 
     emblem = None
 
-    def __init__(self, pillar_type, name, displayname, summary):
+    def __init__(self, pillar_type, name, displayname, summary, emblem_id):
         self.pillar_type = pillar_type
         self.name = name
         self.displayname = displayname
         self.summary = summary
+        if emblem_id is not None:
+            self.emblem = Emblem(emblem_id)
+
         # XXX: This should use the same defaults as the database classes use,
         #      but it's not possible to access them from view code at the
         #      moment. -- Bjorn Tillenius, 2007-03-28
@@ -1070,7 +1088,8 @@ class SearchProjectsView(LaunchpadView):
         return [
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
-                displayname=item['title'], summary=item['description'])
+                displayname=item['title'], summary=item['description'],
+                emblem_id=item['emblem'])
             for item in getUtility(IPillarNameSet).search(search_string, limit)
         ]
 
