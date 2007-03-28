@@ -53,6 +53,7 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
@@ -693,30 +694,45 @@ class ProductDynMenu(DynMenu):
         'related': 'relatedMenu',
         }
 
+    MAX_SERIES = 8
+
     def seriesMenu(self):
-        for series in self.context.serieslist:
+        series_iter = iter(self.context.serieslist)
+        for idx, series in enumerate(series_iter):
+            if idx >= self.MAX_SERIES:
+                break
             yield self.makeBreadcrumbLink(series)
-        yield self.makeLink('Show all series...', page='+series')
+        # If there are any more, then offer a link to all series.
+        try:
+            series_iter.next()
+        except StopIteration:
+            pass
+        else:
+            yield self.makeLink('Show all series...', page='+series')
 
     def meetingsMenu(self):
-        for sprint in self.context.coming_sprints:
-            yield self.makeLink(sprint.title, context=sprint)
-        yield self.makeLink('Show all meetings...', page='+sprints')
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
 
     def relatedMenu(self):
         project = self.context.project
         if project is not None:
             projectdynmenu = ProjectDynMenu(project, self.request)
-            return projectdynmenu.mainMenu(excludeproduct=self.context)
+            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
+                yield link
 
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
         yield self.makeLink('Product series', page='+series', submenu='series')
-        project = self.context.project
-        if project is not None:
-            yield self.makeLink(
-                'Related projects', submenu='related', target=project)
+        yield self.makeLink(
+            'Related projects', submenu='related', target=self.context.project)
 
 
 class ProductSetView(LaunchpadView):

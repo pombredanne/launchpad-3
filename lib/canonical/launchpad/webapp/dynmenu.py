@@ -17,13 +17,20 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 class DynMenuLink:
 
+    no_target_given = object()
+
     def __init__(self, context, name, text, submenu=None,
-        contextsubmenu=False, target=None):
+            contextsubmenu=False, target=no_target_given):
         self.baseurl = canonical_url(context)
-        if target is not None:
-            self.targeturl = canonical_url(target)
-        else:
+        is_linked = True
+        if target is DynMenuLink.no_target_given:
             self.targeturl = self.baseurl
+        elif target is None:
+            self.targeturl = None
+            is_linked = False
+        else:
+            self.targeturl = canonical_url(target)
+        self.is_linked =  is_linked
         self.name = name
         self.text = text
         self.submenu = submenu
@@ -39,9 +46,15 @@ class DynMenuLink:
         else:
             L.append('<li class="item">')
 
-        L.append('<a href="%s/%s">' %  (self.targeturl, self.name))
+        if self.is_linked:
+            L.append('<a href="%s/%s">' %  (self.targeturl, self.name))
+        else:
+            L.append('<span class="unlinked">')
         L.append(self.renderText())
-        L.append('</a>')
+        if self.is_linked:
+            L.append('</a>')
+        else:
+            L.append('</span>')
         L.append('</li>')
         return ''.join(L)
 
@@ -85,17 +98,45 @@ class DynMenu(LaunchpadView):
         else:
             return breadcrumbprovider.breadcrumb()
 
+    def getSubmenuMethod(self, context, submenu_name):
+        """Return submenu method, or None if there isn't one."""
+        if context is self.context:
+            submenu = self
+        else:
+            submenu = queryMultiAdapter(
+                (context, self.request), name='+menudata')
+            if submenu is None:
+                return None
+        return getattr(submenu, submenu.menus[submenu_name], None)
+
+    def submenuHasItems(self, context, submenu_name):
+        submenu_method = self.getSubmenuMethod(context, submenu_name)
+        if submenu_method is None:
+            return False
+        submenu = submenu_method()
+        assert submenu is not None, "submenu must be a generator"
+        try:
+            submenu.next()
+        except StopIteration:
+            return False
+        else:
+            return True
+
     def makeBreadcrumbLink(self, context):
         text = self.getBreadcrumbText(context)
         assert text is not None
-        return DynMenuLink(context, '', text, contextsubmenu=True)
+        contextsubmenu = self.submenuHasItems(context, '')
+        return DynMenuLink(
+            context, '', text, contextsubmenu=contextsubmenu)
 
     def makeLink(self, text, context=None, page='', submenu=None,
-        contextsubmenu=False, target=None):
+            target=DynMenuLink.no_target_given):
         if context is None:
             context = self.context
-        return DynMenuLink(context, page, text, submenu=submenu,
-            contextsubmenu=contextsubmenu, target=target)
+        if submenu is not None:
+            if not self.submenuHasItems(context, submenu):
+                submenu = None
+        return DynMenuLink(context, page, text, submenu=submenu, target=target)
 
     def renderMenu(self, menu):
         L = []
