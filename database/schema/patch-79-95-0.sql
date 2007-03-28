@@ -4,10 +4,8 @@ CREATE TABLE ScriptActivity (
   id serial NOT NULL,
   name text NOT NULL,
   hostname text NOT NULL,
-  date_started timestamp without time zone NOT NULL
-    DEFAULT (current_timestamp AT TIME ZONE 'UTC'),
+  date_started timestamp without time zone NOT NULL,
   date_completed timestamp without time zone NOT NULL
-    DEFAULT (current_timestamp AT TIME ZONE 'UTC')
 );
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 95, 0);
