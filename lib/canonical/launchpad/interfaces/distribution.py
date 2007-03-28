@@ -326,6 +326,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, gotchi_heading, emblem):
+            members, owner, mugshot, logo, icon):
         """Creaste a new distribution."""
 

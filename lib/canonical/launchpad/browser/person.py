@@ -90,7 +90,7 @@ from canonical.lp.dbschema import (
     PersonCreationRationale, BugTaskStatus)
 
 from canonical.widgets import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
+    ImageChangeWidget, PasswordChangeWidget)
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -1930,10 +1930,10 @@ class PersonEditHomePageView(BasePersonEditView):
 class PersonEditView(BasePersonEditView):
 
     field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'gotchi']
+                   'logo', 'mugshot']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
 
 class TeamJoinView(PersonView):

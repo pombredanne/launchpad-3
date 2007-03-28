@@ -25,19 +25,10 @@
 
 <div metal:fill-slot="main">
 
+  <tal:icon replace="structure context/image:mugshot" />
   <h1 tal:condition="not:context/isTeam"
   >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
   <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
-  <div tal:condition="context/gotchi"
-    style="float: right; margin: 0 0 0.5em 0.5em"
-    tal:content="structure context/fmt:icon" />
-  <tal:placeholder-shown-only-if-there-is-a-description
-    condition="python: (not context.gotchi) and (context.homepage_content or context.teamdescription)"
-  >
-    <img alt="" style="float: right; margin: 0 0 0.5em 0.5em"
-         tal:attributes="src context/default_gotchi_resource"
-    />
-  </tal:placeholder-shown-only-if-there-is-a-description>
 
   <tal:homepage tal:condition="context/homepage_content"
     content="structure context/homepage_content/fmt:text-to-html" />
@@ -61,7 +52,7 @@
             </th>
             <td tal:repeat="category view/contributed_categories">
               <tal:icon condition="python: category in project_categories"
-                        replace="structure category/fmt:icon" />
+                        replace="structure category/image:icon" />
             </td>
           </tr>
           </tal:contributions>
@@ -202,7 +193,15 @@
               </a>
             </td>
           </tr>
-
+          <tr tal:condition="context/teams_with_icons/count">
+            <th colspan="2">
+              <a tal:repeat="team context/teams_with_icons"
+                 tal:attributes="href team/fmt:url"
+                ><img tal:attributes="src team/icon/getURL;
+                                      title string:Icon of ${team/name}"
+              /></a>
+            </th>
+          </tr>
         </tbody>
       </table>
     </div>

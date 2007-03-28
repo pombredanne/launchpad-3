@@ -435,7 +435,7 @@ class BaseImageUpload(Bytes):
     dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet', **kw):
+    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
  

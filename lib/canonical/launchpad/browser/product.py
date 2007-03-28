@@ -59,6 +59,8 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.imagedisplay import (
+    ImageAddView, ImageChangeView)
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -73,8 +75,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -548,19 +549,16 @@ class ProductView:
         return get_buglisting_search_filter_url(url, status=status)
 
 
-class ProductEditView(LaunchpadEditFormView):
+class ProductEditView(LaunchpadEditFormView, ImageChangeView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
     label = "Edit details"
     field_names = [
         "project", "displayname", "title", "summary", "description",
-        "homepageurl", "gotchi", "emblem", "sourceforgeproject",
+        "homepageurl", "icon", "logo", "mugshot", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -780,21 +778,18 @@ class ProductSetView(LaunchpadView):
         return self.results
 
 
-class ProductAddView(LaunchpadFormView):
+class ProductAddView(ImageAddView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 'gotchi',
-                   'emblem', 'sourceforgeproject', 'freshmeatproject',
+                   'description', 'project', 'homepageurl', 'icon',
+                   'logo', 'mughsot', 'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None

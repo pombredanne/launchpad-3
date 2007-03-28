@@ -363,13 +363,13 @@ class IProductSet(Interface):
 
     def getProductsWithBranches():
         """Return an iterator over all products that have branches."""
-        
+
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, gotchi_heading=None,
+                      reviewed=False, mugshot=None, logo=None,
                       icon=None):
         """Create and Return a brand new Product."""
 

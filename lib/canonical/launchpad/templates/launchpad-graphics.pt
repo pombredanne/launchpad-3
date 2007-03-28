@@ -51,7 +51,7 @@
       bug-listing-detailed.pt which is used for latest bug portlets, these
       images should be allowed to flow across both top and bottom lines of
       the listing.  These icons should not have a suffix. You should get
-      this for a pillar object using <code>/fmt:icon</code>. Pillar objects
+      this for a pillar object using <code>/image:icon</code>. Pillar objects
       should optionally have custom icons, and they should be used in
       detailed listings (not simple listings - for those please use badges).
       Team "emblems" should be of the icon size, not badge size.

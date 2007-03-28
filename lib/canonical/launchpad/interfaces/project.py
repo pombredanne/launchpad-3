@@ -229,7 +229,7 @@ class IProjectSet(Interface):
         """
 
     def new(name, displayname, title, homepageurl, summary, description,
-            owner, gotchi, gotchi_heading, emblem):
+            owner, mugshot, logo, icon):
         """Create and return a project with the given arguments."""
 
     def count_all():

@@ -43,6 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.imagedisplay import (
+    ImageAddView, ImageChangeView)
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -56,8 +58,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class DistributionNavigation(
@@ -437,15 +437,12 @@ class DistributionRedirectingEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class DistributionEditView(LaunchpadEditFormView):
+class DistributionEditView(LaunchpadEditFormView, ImageChangeView):
 
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'gotchi', 'emblem']
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+                   'icon', 'logo', 'mugshot']
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -479,19 +476,15 @@ class DistributionSetView:
         return self.context.count()
 
 
-class DistributionAddView(LaunchpadFormView):
+class DistributionAddView(ImageAddView):
 
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "gotchi", "emblem", "domainname", "members"]
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
+                   "mugshot", "logo", "icon", "domainname", "members"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        gotchi, gotchi_heading = data['gotchi']
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -501,9 +494,9 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            mugshot=data['mugshot'],
+            logo=data['logo'],
+            icon=data['icon'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 

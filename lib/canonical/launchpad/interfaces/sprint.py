@@ -171,6 +171,6 @@ class ISprintSet(Interface):
         """Get a specific Sprint."""
 
     def new(owner, name, title, time_starts, time_ends, summary=None,
-            description=None, gotchi=None, gotchi_heading=None, emblem=None):
+            description=None, mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
 

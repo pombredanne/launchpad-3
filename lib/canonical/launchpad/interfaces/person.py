@@ -257,6 +257,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_with_icons = Attribute(
+        "Iterable of all Teams that this person is active in that have "
+        "icons")
     guessedemails = Attribute(
         "List of emails with status NEW. These email addresses probably "
         "came from a gina or POFileImporter run.")

@@ -7,9 +7,6 @@
   <!-- Sprint -->
   <content class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
-    <allow attributes="
-        default_gotchi_resource default_gotchi_heading_resource
-        default_emblem_resource" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />

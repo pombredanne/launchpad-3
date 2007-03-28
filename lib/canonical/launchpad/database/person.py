@@ -177,38 +177,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
-    # IHasGotchiAndEmblem attributes
-    @property
-    def default_icon_resource(self):
-        return self._getDefaultIconResource()
-
-    @property
-    def default_mugshot_resource(self):
-        return self._getDefaultIconResource('mugshot')
-
-    @property
-    def default_logo_resource(self):
-        return self._getDefaultIconResource('heading')
-
-    def _getDefaultIconResource(self, suffix=''):
-        """Return the zope3 resource for the icon of this person with the
-        given suffix.
-
-        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
-        """
-        assert suffix in ('', 'mini', 'heading', 'mugshot')
-        if self.isTeam():
-            img = '/@@/team'
-        else:
-            if self.is_valid_person:
-                img = '/@@/person'
-            else:
-                img = '/@@/person-inactive'
-        if suffix:
-            return "%s-%s" % (img, suffix)
-        else:
-            return img
-
     # specification-related joins
     @property
     def approver_specs(self):
@@ -1122,6 +1090,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
+    def teams_with_icons(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.emblem IS NOT NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)

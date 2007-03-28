@@ -43,6 +43,7 @@ from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.distroreleasebinarypackage import *
 from canonical.launchpad.browser.distroreleaselanguage import *
 from canonical.launchpad.browser.distroreleasesourcepackagerelease import *
+from canonical.launchpad.browser.imagedisplay import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *

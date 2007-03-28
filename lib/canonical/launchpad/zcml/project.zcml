@@ -9,9 +9,6 @@
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
-        <allow attributes="
-            default_gotchi_resource default_gotchi_heading_resource
-            default_emblem_resource" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"

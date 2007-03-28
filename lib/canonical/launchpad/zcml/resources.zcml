@@ -18,7 +18,7 @@
     <resource name="nyet-badge" file="../images/nyet-badge.png" />
     <resource name="nyet-icon" file="../images/nyet-icon.png" />
     <resource name="nyet-large" file="../images/nyet-large.png" />
-    <resource name="nyet-gotchi" file="../images/nyet-gotchi.png" />
+    <resource name="nyet-logo" file="../images/nyet-logo.png" />
     <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />
 
     <!-- General Images -->
