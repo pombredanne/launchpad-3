@@ -321,6 +321,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
 
 class MaloneContextMenu(ContextMenu):
+    # XXX 20060327 mpt: No longer visible on Bugs front page.
     usedfor = IMaloneApplication
     links = ['cvetracker']
 
@@ -330,6 +331,7 @@ class MaloneContextMenu(ContextMenu):
 
 
 class RosettaContextMenu(ContextMenu):
+    # XXX 20060327 mpt: No longer visible on Translations front page.
     usedfor = IRosettaApplication
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
@@ -922,6 +924,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
@@ -932,6 +936,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
@@ -942,6 +948,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="146"'
+            '    height="146"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s.gif"'
             '    title="%(text)s"'

@@ -1,28 +1,8 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
   <body>
+    <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Questions and answers</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/answers" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-translations">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                         <ul class="rollover buttons">
                           <li>
                             <a href="/+tour">
@@ -134,15 +114,7 @@
                             projects
                           </div>
                         </div>
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
+
     </div><!--main-->
 
   <metal:help fill-slot="help">
@@ -160,5 +132,4 @@
 
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress needs search of all answers -->
