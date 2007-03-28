@@ -2,6 +2,7 @@
 <body>
  <metal:left-column fill-slot="left-column">
     <h2>Translations</h2>
+    <h3 class="byline">FAQs</h3>
 
     <img src="/+icing/app-translations-wm.gif" alt="Translations"/>
 
@@ -12,7 +13,7 @@
     </blockquote>
  </metal:left-column>
  <metal:right-column fill-slot="right-column">
-    <h4></h4>
+    <h4>Cut the time it takes to translate your software</h4>
     <ul id="faqs">
       <li><a href="#q1">How do I get translations in and out of Launchpad?</a></li>
       <li><a href="#q2">How can people help translate my software?</a></li>

@@ -2,6 +2,7 @@
 <body>
  <metal:left-column fill-slot="left-column">
     <h2>Blueprints</h2>
+    <h3 class="byline">FAQs</h3>
 
     <img src="/+icing/app-blueprints-wm.gif" alt="Blueprints"/>
 
