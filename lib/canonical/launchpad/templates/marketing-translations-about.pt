@@ -1,0 +1,54 @@
+<html metal:use-macro="context/@@marketing_about_template/master">
+<body>
+  <h2 metal:fill-slot="application">Translations</h2>
+
+  <metal:contents fill-slot="contents">
+    <h2 class="headline">Cut the time it takes to translate your software</h2>
+
+    <div id="features">
+      <div class="feature">
+        <h3>Anyone can translate</h3>
+        <img src="/+icing/translations-feature1.png" alt="Feature 1 Screenshot" />
+        <p>Simple web interface that's ideal for non-developers.</p>
+      </div>
+      <div class="feature">
+        <h3>Intelligent suggestions</h3>
+        <img src="/+icing/translations-feature2.png" alt="Feature 2 Screenshot" />
+        <p>Automatic suggestions from 750,000 translated strings.</p>
+      </div>
+      <div class="feature">
+        <h3>Supports GetText</h3>
+        <img src="/+icing/translations-feature3.png" alt="Feature 3 Screenshot" />
+        <p>Works with standard .pot, .po and .mo files.</p>
+      </div>
+      <div class="feature">
+        <h3>Translation collaboration</h3>
+        <img src="/+icing/translations-feature4.png" alt="Feature 4 Screenshot" />
+        <p>Collaborate with 19,000 translators in 235 languages.</p>
+    </div>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About Launchpad Translations</h3>
+
+        <p>Translators shouldn't have to be coders. Launchpad shields
+           translators from low-level complexities, whilst working with
+           standard .pot, .po and .mo files.
+        </p>
+
+        <p>Automatic suggestions, from a library of 750,000 translated
+           strings, and a community of 19,000 registered translators can
+           radically cut the time required to localise your project into many
+           languages.
+        </p>
+
+        <p>Launchpad keeps track of the translations for each major version of
+           a project separately, allowing translators to continue to improve
+           the translations of your stable releases while others start work on
+           newer versions that are still in development.
+        </p>
+      </div>
+    </div> <!-- content -->
+  </metal:contents>
+</body>
+</html>

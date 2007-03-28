@@ -1,0 +1,51 @@
+<html metal:use-macro="context/@@marketing_about_template/master">
+<body>
+  <h2 metal:fill-slot="application">Blueprints</h2>
+
+  <metal:contents fill-slot="contents">
+    <h2 class="headline">Collaborative feature development</h2>
+
+    <div id="features">
+      <div class="feature">
+        <h3>Roles and responsibilities</h3>
+        <img src="/+icing/blueprints-feature1.png" alt="Feature 1 Screenshot" />
+        <p>Set roles and responsibilities.</p>
+      </div>
+      <div class="feature">
+        <h3>Project roadmap</h3>
+        <img src="/+icing/blueprints-feature2.png" alt="Feature 2 Screenshot" />
+        <p>Dependencies and milestones help track where blueprints fit into
+           your project.
+        </p>
+      </div>
+      <div class="feature">
+        <h3>Open to everyone</h3>
+        <img src="/+icing/blueprints-feature3.png" alt="Feature 3 Screenshot" />
+        <p>Draw on the creativity of your project's community.</p>
+      </div>
+      <div class="feature">
+        <h3>Automatic email updates</h3>
+        <img src="/+icing/blueprints-feature4.png" alt="Feature 4 Screenshot" />
+        <p>Keep your team informed each time a blueprint is updated.</p>
+    </div>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About the Blueprint Tracker</h3>
+
+        <p>Code isn't the only part of your project that can benefit from open
+           development. Launchpad's unique Blueprint Tracker lets anyone
+           suggest and discuss ideas for your project.
+        </p>
+
+        <p>You can accept or reject blueprints, prioritise and assign their
+           development to particular team members, schedule development at
+           sprints and tie them to specific releases. The Blueprint Tracker
+           reduces the barriers to participating in your project and gives you
+           a simple way to track new features from idea to release.
+         </p>
+      </div>
+    </div> <!-- content -->
+  </metal:contents>
+</body>
+</html>

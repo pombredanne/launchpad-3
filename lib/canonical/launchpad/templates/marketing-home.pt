@@ -7,33 +7,33 @@
     <h2>Make better software through collaboration</h2>
     <ul id="tools">
       <li id="liCode"><a href="#"
-                         tal:attributes="href string:${vhosts/code/rooturl}+faq"
+                         tal:attributes="href string:${vhosts/code/rooturl}+about"
                          >Code</a>
         <p>Attract new contributors by hosting your code publicly, on
            Launchpad.net.
         </p>
       </li>
       <li id="liBugs"><a href="#"
-                         tal:attributes="href string:${vhosts/bugs/rooturl}+faq"
+                         tal:attributes="href string:${vhosts/bugs/rooturl}+about"
                          >Bugs</a>
         <p>Track and solve bugs, whether they occur upstream, downstream or
            directly in your code.
         </p>
       </li>
       <li id="liBlueprints"><a href="#"
-                         tal:attributes="href string:${vhosts/blueprints/rooturl}+faq"
+                         tal:attributes="href string:${vhosts/blueprints/rooturl}+about"
                          >Blueprints</a>
         <p>Develop, implement and track the progress of your software's
            features.
         </p>
       </li>
       <li id="liTranslations"><a href="#"
-                         tal:attributes="href string:${vhosts/translations/rooturl}+faq"
+                         tal:attributes="href string:${vhosts/translations/rooturl}+about"
                          >Translations</a>
         <p>Cut the time it takes to translate your software.</p>
       </li>
       <li id="liAnswers"><a href="#"
-                         tal:attributes="href string:${vhosts/answers/rooturl}+faq"
+                         tal:attributes="href string:${vhosts/answers/rooturl}+about"
                          >Answers</a>
         <p>Build a community support team to answer users questions.</p>
       </li>

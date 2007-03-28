@@ -1,0 +1,34 @@
+<html metal:define-macro="master"
+      metal:extend-macro="context/@@marketing_template/master">
+<body>
+  <div id="breadcrumb">
+    <dl>
+      <dt>Your location:</dt>
+      <dd>
+        <ul metal:fill-slot="breadcrumbs">
+          <li><a href="/">Home</a></li>
+          <li class="current">About</li>
+        </ul>
+      </dd>
+    </dl>
+  </div>
+
+  <dl metal:fill-slot="navigation"
+      id="sub-navigation">
+    <dt>Sub-navigation<dt>
+    <dd>
+      <ul>
+        <li><a href="+tour">Application tour</a></li>
+        <li><a href="+faq">FAQs</a></li>
+        <li class="current"><a href="+about">About</a></li>
+      </ul>
+    </dd>
+  </dl>
+
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2 metal:define-slot="application">Translations</h2>
+    </div>
+    <metal:contents define-slot="contents" />
+  </div>
+</html>

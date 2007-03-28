@@ -1,0 +1,58 @@
+<html metal:use-macro="context/@@marketing_about_template/master">
+<body>
+  <h2 metal:fill-slot="application">Code</h2>
+
+  <metal:contents fill-slot="contents">
+    <h2 class="headline">Make your project's code discoverable</h2>
+
+    <div id="features">
+      <div class="feature">
+        <h3>Code hosting</h3>
+        <img src="/+icing/code-feature1.png" alt="Feature 1 Screenshot" />
+        <p>Host and mirror Bazaar branches on Launchpad.net.</p>
+      </div>
+      <div class="feature">
+        <h3>Mirror CVS and Subversion</h3>
+        <img src="/+icing/code-feature2.png" alt="Feature 2 Screenshot" />
+        <p>Continuous import of project development trunks.</p>
+      </div>
+      <div class="feature">
+        <h3>Browsable branch registries</h3>
+        <img src="/+icing/code-feature3.png" alt="Feature 3 Screenshot" />
+        <p>Improve the visibility of your project's code. </p>
+      </div>
+      <div class="feature">
+        <h3>To be decided</h3>
+        <img src="/+icing/code-feature4.png" alt="Feature 4 Screenshot" />
+        <p>Another Code Hosting benefit here.</p>
+    </div>
+
+    <h3 class="splash">Free import from your existing version control for
+                      open source projects.</h3>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About Launchpad Code Hosting</h3>
+
+        <p>Launchpad works with the Bazaar distributed version control system
+           to improve access to your project's code. We believe a distributed
+           approach to version control is more efficient.
+        </p>
+
+        <p>To help your team find all branches associated with your project,
+           Launchpad can mirror any Bazaar branch that's hosted on the
+           internet, or host branches directly. A simple web interface lets
+           anyone browse your branches' revision histories and you can manage
+           upload access with Launchpad's teams infrastructure.
+        </p>
+
+        <p>For projects that use Subversion or CVS for revision control,
+           Launchpad can maintain a continuous import of the development
+           trunk into Bazaar. This allows new contributors to work on the
+           code, before they get commit access.
+        </p>
+      </div>
+    </div> <!-- content -->
+  </metal:contents>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<html metal:use-macro="context/@@marketing_about_template/master">
+<body>
+  <h2 metal:fill-slot="application">Answers</h2>
+
+  <metal:contents fill-slot="contents">
+    <h2 class="headline">Build a community support team</h2>
+
+    <div id="features">
+      <div class="feature">
+        <h3>Structured support</h3>
+        <img src="/+icing/answers-feature1.png" alt="Feature 1 Screenshot" />
+        <p>Track the status of support requests from question to answer.</p>
+      </div>
+      <div class="feature">
+        <h3>Support teams</h3>
+        <img src="/+icing/answers-feature2.png" alt="Feature 2 Screenshot" />
+        <p>Community members can volunteer to create support teams.</p>
+      </div>
+      <div class="feature">
+        <h3>Multi-lingual</h3>
+        <img src="/+icing/answers-feature3.png" alt="Feature 3 Screenshot" />
+        <p>Provide support in many languages.</p>
+      </div>
+      <div class="feature">
+        <h3>Knowledge base</h3>
+        <img src="/+icing/answers-feature4.png" alt="Feature 4 Screenshot" />
+        <p>Answers form a searchable knowledge-base.</p>
+    </div>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About the Answer Tracker</h3>
+
+        <p>A helpful community surrounds every successful open source project.
+           Launchpad's Answer Tracker gives you a structured way to help your
+           users, whilst encouraging community participation and building your
+           knowledge-base.
+        </p>
+
+        <p>Unlike forums and mailing lists, the Answer Tracker has features to
+           track the progress of a support request and rewards participants
+           with karma. All previous answers are searchable and Launchpad will
+           even suggest relevant answers, when a user asks a new question.
+           Members of your community can volunteer to receive automatic
+           notifications when new questions are asked in their preferred
+           languages.
+         </p>
+
+         <p>You get a quick overview of top issues, can track the progress of
+           support requests and can easily create bug reports from support
+           requests.
+         </p>
+      </div>
+    </div> <!-- content -->
+  </metal:contents>
+</body>
+</html>
