@@ -547,9 +547,6 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
-    def getListingIcon(self):
-        return "/@@/product"
-
     def getListingURL(self):
         return canonical_url(self.context)
 

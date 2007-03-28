@@ -361,6 +361,16 @@ class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
         return '<img alt="" src="%s" />' % url
 
 
+class PillarSearchItemAPI(HasGotchiAndEmblemFormatterAPI):
+    """Provides fmt:emblem for a PillarSearchItem."""
+
+    def icon(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have an icon")
+
+    def heading_icon(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have an icon")
+
+
 # Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
 # subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
 # when we're adapting a person object.

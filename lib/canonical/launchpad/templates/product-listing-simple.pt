@@ -1,6 +1,6 @@
 <tr>
   <td class="icon left">
-    <img alt="" tal:attributes="src view/getListingIcon" />
+    <img alt="" tal:replace="structure context/fmt:emblem" />
   </td>
   <td>
     <div>

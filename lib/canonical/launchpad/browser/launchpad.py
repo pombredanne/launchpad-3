@@ -1019,18 +1019,27 @@ class ApplicationButtons(LaunchpadView):
 class PillarSearchItem:
     """A search result item representing a Pillar."""
 
+    emblem = None
+
     def __init__(self, pillar_type, name, displayname, summary):
         self.pillar_type = pillar_type
         self.name = name
         self.displayname = displayname
         self.summary = summary
+        # XXX: This should use the same defaults as the database classes use,
+        #      but it's not possible to access them from view code at the
+        #      moment. -- Bjorn Tillenius, 2007-03-28
+        if pillar_type == 'project':
+            self.default_emblem_resource = '/@@/product'
+        elif pillar_type == 'distribution':
+            self.default_emblem_resource = '/@@/distribution'
+        else:
+            assert pillar_type == 'project group', (
+                "Unknown pillar type: %s" % pillar_type)
+            self.default_emblem_resource = '/@@/project'
 
 
 class PillarSearchItemView(LaunchpadView):
-
-    def getListingIcon(self):
-        """Return the icon to be used for the listing item."""
-        return '/@@/product'
 
     def getListingURL(self):
         """Return the URL to the search item."""
