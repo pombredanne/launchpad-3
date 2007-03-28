@@ -22,6 +22,8 @@ __all__ = [
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
+    'PillarSearchItem',
+    'PillarSearchItemView',
     'DefaultShortLink',
     'BrowserWindowDimensions',
     ]
@@ -51,6 +53,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -1013,10 +1016,30 @@ class ApplicationButtons(LaunchpadView):
         return self
 
 
+class PillarSearchItem:
+    """A search result item representing a Pillar."""
+
+    def __init__(self, pillar_type, name, displayname, summary):
+        self.pillar_type = pillar_type
+        self.name = name
+        self.displayname = displayname
+        self.summary = summary
+
+
+class PillarSearchItemView(LaunchpadView):
+
+    def getListingIcon(self):
+        """Return the icon to be used for the listing item."""
+        return '/@@/product'
+
+    def getListingURL(self):
+        """Return the URL to the search item."""
+        return '/%s' % self.context.name
+
+
 class SearchProjectsView(LaunchpadView):
     """The page where people can search for Projects/Products/Distros."""
 
-    results = None
     search_string = ""
     max_results_to_display = config.launchpad.default_batch_size
 
@@ -1026,15 +1049,24 @@ class SearchProjectsView(LaunchpadView):
         if not self.search_string:
             return
 
+        self.matches = len(self.searchresults)
+
+    @cachedproperty
+    def searchresults(self):
         search_string = self.search_string.lower()
         # We use a limit bigger than self.max_results_to_display so that we
         # know when we had too many results and we can tell the user that some
         # of them are not being displayed.
         limit = self.max_results_to_display + 1
-        self.results = getUtility(IPillarNameSet).search(search_string, limit)
+        return [
+            PillarSearchItem(
+                pillar_type=item['type'], name=item['name'],
+                displayname=item['title'], summary=item['description'])
+            for item in getUtility(IPillarNameSet).search(search_string, limit)
+        ]
 
     def tooManyResultsFound(self):
-        return len(self.results) > self.max_results_to_display
+        return self.matches > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):

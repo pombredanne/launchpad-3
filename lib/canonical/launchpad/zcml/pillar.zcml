@@ -1,5 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -8,5 +9,19 @@
         provides="canonical.launchpad.interfaces.IPillarNameSet">
         <allow interface="canonical.launchpad.interfaces.IPillarNameSet" />
     </securedutility>
+
+    <browser:page
+        for="*"
+        name="+pillar-macros-search"
+        permission="zope.Public"
+        template="../templates/launchpad-search.pt" />
+
+    <browser:page
+        for="canonical.launchpad.browser.PillarSearchItem"
+        class="canonical.launchpad.browser.PillarSearchItemView"
+        name="+listing-simple"
+        permission="zope.Public"
+        template="../templates/product-listing-simple.pt"
+        />
 
 </configure>

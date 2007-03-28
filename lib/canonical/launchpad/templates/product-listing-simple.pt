@@ -1,10 +1,10 @@
 <tr>
   <td class="icon left">
-    <img alt="" src="/@@/product" />
+    <img alt="" tal:attributes="src view/getListingIcon" />
   </td>
   <td>
     <div>
-      <a tal:attributes="href context/fmt:url"
+      <a tal:attributes="href view/getListingURL"
       tal:content="context/displayname">Product displayname</a>
     </div>
     <div>

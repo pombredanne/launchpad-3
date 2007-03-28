@@ -42,50 +42,8 @@
 
   <tal:searching condition="view/searchrequested">
 
-      <table
-        tal:condition="view/matches"
-        tal:define="results view/searchresults"
-        class="listing"
-        >
-        <thead>
-          <tr class="results">
-            <td colspan="2">
-              <span tal:replace="view/matches">3</span>
-              <span tal:condition="python: view.matches == 1">project found</span>
-              <span tal:condition="python: view.matches != 1">projects found</span>
-            </td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="product results"
-              tal:replace="structure product/@@+listing-simple">
-            <td>Product simple listing</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <p tal:condition="not: view/matches">
-        No projects matching
-        &#8220;<span tal:replace="view/text">moz</span>&#8221;
-        were found.
-      </p>
-
-      <h2>Haven&#8217;t found your project?</h2>
-
-      <p>
-        If the project you are looking for isn't here, go ahead and register
-        it yourself!
-      </p>
-      <ul class="rollover buttons">
-        <li>
-          <a href="+new">
-            <img
-              alt="Register a project"
-              src="/+icing/but-lrg-registerproj.gif"
-            />
-          </a>
-        </li>
-      </ul>
+      <metal:search_results
+          metal:use-macro="context/@@+pillar-macros-search/search_results" />
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
