@@ -53,6 +53,8 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -655,19 +657,15 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
 
 
-class DistributionDynMenu(DynMenu, SprintsMixinDynMenu):
+class DistributionDynMenu(
+    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
 
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'releases': 'releaseMenu',
+        'releases': 'releasesMenu',
         'milestones': 'milestoneMenu',
         }
-
-    def releaseMenu(self):
-        for release in self.context.releases:
-            yield self.makeBreadcrumbLink(release)
-        yield self.makeLink('Show all releases...', page='+releases')
 
     def milestoneMenu(self):
         """Show milestones more recently than one month ago,

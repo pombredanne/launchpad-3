@@ -66,6 +66,8 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
@@ -685,7 +687,8 @@ class ProductRdfView:
         return encodeddata
 
 
-class ProductDynMenu(DynMenu, SprintsMixinDynMenu):
+class ProductDynMenu(
+        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
 
     menus = {
         '': 'mainMenu',
@@ -693,22 +696,6 @@ class ProductDynMenu(DynMenu, SprintsMixinDynMenu):
         'series': 'seriesMenu',
         'related': 'relatedMenu',
         }
-
-    MAX_SERIES = 8
-
-    def seriesMenu(self):
-        series_iter = iter(self.context.serieslist)
-        for idx, series in enumerate(series_iter):
-            if idx >= self.MAX_SERIES:
-                break
-            yield self.makeBreadcrumbLink(series)
-        # If there are any more, then offer a link to all series.
-        try:
-            series_iter.next()
-        except StopIteration:
-            pass
-        else:
-            yield self.makeLink('Show all series...', page='+series')
 
     def relatedMenu(self):
         project = self.context.project
