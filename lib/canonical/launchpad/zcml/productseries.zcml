@@ -72,6 +72,11 @@
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
