@@ -54,6 +54,11 @@
       layer="canonical.launchpad.layers.BugsLayer"
       name="+assignedbugs"
       />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+translations"
+      layer="canonical.launchpad.layers.TranslationsLayer"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"

@@ -84,6 +84,12 @@
     layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs-index" />
 
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
     class="canonical.launchpad.browser.BugTargetBugListingView"
@@ -176,6 +182,10 @@
     <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
+      />
+    <browser:page
+      name="+milestones"
+      template="../templates/object-milestones.pt"
       />
     <browser:page
       name="+latest-uploads"

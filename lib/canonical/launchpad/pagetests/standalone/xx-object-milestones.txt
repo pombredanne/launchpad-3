@@ -1,7 +1,9 @@
 = Milestones =
 
-Products and Distributions have a page in which all of their milestones are
-listed.
+Products, Distributions, ProductSeries and DistroReleases have a page in
+which all of their milestones are listed.
+
+== Distributions and DistroReleases ==
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestones')
     >>> anon_browser.url
@@ -12,6 +14,19 @@ listed.
     3.1-rc1 Expected for 2056-02-16 For WOODY
     3.1 Expected for 2056-05-16 For WOODY
 
+    >>> anon_browser.open('http://launchpad.dev/debian/woody/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    3.1-rc1 Expected for 2056-02-16 For WOODY
+    3.1 Expected for 2056-05-16 For WOODY
+
+    >>> anon_browser.open('http://launchpad.dev/debian/sarge/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+
+
+== Products and ProductSeries ==
+
     >>> anon_browser.open('http://launchpad.dev/firefox/+milestones')
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+milestones'
@@ -19,3 +34,13 @@ listed.
     >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
     ...     print extract_text(li)
     1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/trunk/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/1.0/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+
