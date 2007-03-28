@@ -99,6 +99,13 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         An answer contact is considered to speak a given language if that
         language is listed as one of his preferred languages.
         """
+        
+    def getUnsupportedQuestions():
+        """Return the set of questions that are in unsupoorted languages.
+        
+        A questions may be asked in any language. The supported languages
+        are English and the languages spoke by the Answer Contacts.
+        """
 
     answer_contacts = List(
         title=_("Answer Contacts"),

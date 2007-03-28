@@ -236,10 +236,19 @@ When the link is removed, the owner is unsubscribed:
 == Unsupported Questions ==
 
 While a Person may ask questions in his language of choice, that does
-not mean that indirect subscribers (Answer Contact for) an 
+not mean that indirect subscribers (Answer Contacts) to an 
 IQuestionTarget speak that language. IQuestionTarget can return a list
 Questions in languages that are not supported
 
-   >>> unsupported_questions = firefox.getUnsupportedQuestions()
-   >>> sorted([question.title for question in unsupported_questions])
-   [u'Problemas de Impressão no Firefox']
+    >>> unsupported_questions = firefox.getUnsupportedQuestions()
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problemas de Impress\xe3o no Firefox']
+   
+    >>> unsupported_questions = firefox_package.getUnsupportedQuestions()
+    >>> sorted([question.title for question in unsupported_questions])
+    []
+
+    >>> warty_question_target = IQuestionTarget(ubuntu_warty)
+    >>> unsupported_questions = warty_question_target.getUnsupportedQuestions()
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)']

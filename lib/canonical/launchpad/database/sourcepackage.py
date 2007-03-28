@@ -135,6 +135,13 @@ class SourcePackageQuestionTargetMixin:
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)
+    
+    def getUnsupportedQuestions(self):
+        """See IQuestionTarget."""
+        language_ids = [str(lang.id) for lang in self.getSupportedLanguages()]
+        return set(Question.select(
+            'sourcepackagename = %s AND language NOT IN (%s)' % sqlvalues(
+            self.sourcepackagename, ', '.join(language_ids)), distinct=True))
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
