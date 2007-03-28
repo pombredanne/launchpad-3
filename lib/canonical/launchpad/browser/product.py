@@ -723,6 +723,7 @@ class ProductDynMenu(DynMenu):
     def relatedMenu(self):
         project = self.context.project
         if project is not None:
+            yield self.makeLink(project.title, target=project)
             projectdynmenu = ProjectDynMenu(project, self.request)
             for link in projectdynmenu.mainMenu(excludeproduct=self.context):
                 yield link
