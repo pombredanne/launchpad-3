@@ -518,6 +518,16 @@ marketing_answers_about = "About Answers"
 
 marketing_answers_faq = "FAQs about Answers"
 
+marketing_bugs_tour1 = "Bugs Tour: Searching for bugs"
+
+marketing_bugs_tour2 = "Bugs Tour: Viewing a bug"
+
+marketing_bugs_tour3 = "Bugs Tour: Listing project bugs"
+
+marketing_bugs_tour4 = "Bugs Tour: Assigning a bug"
+
+marketing_bugs_tour5 = "Bugs Tour: Commenting on a bug"
+
 marketing_blueprints_about = "About Blueprints"
 
 marketing_blueprints_faq = "FAQs about Blueprints"

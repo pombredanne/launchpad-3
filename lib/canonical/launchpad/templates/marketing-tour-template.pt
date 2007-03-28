@@ -1,0 +1,78 @@
+<html metal:define-macro="master"
+      metal:extend-macro="context/@@marketing_template/master">
+<body>
+  <div id="breadcrumb">
+    <dl>
+      <dt>Your location:</dt>
+      <dd>
+        <ul metal:fill-slot="breadcrumbs">
+          <li><a href="/">Home</a></li>
+          <li class="current">Take a tour</li>
+        </ul>
+      </dd>
+    </dl>
+  </div>
+
+  <dl metal:fill-slot="navigation"
+      id="sub-navigation">
+    <dt>Sub-navigation<dt>
+    <dd>
+      <ul>
+        <li class="current"><a href="+tour">Application tour</a></li>
+        <li><a href="+faq">FAQs</a></li>
+        <li><a href="+about">About</a></li>
+      </ul>
+    </dd>
+  </dl>
+
+  <div id="tour" metal:fill-slot="contents">
+    <div id="primary">
+      <metal:left-column define-slot="left-column">
+        <h2>Translations</h2>
+        <h3 class="byline">Application tour</h3>
+        <ul id="pane-selector">
+          <li class="current" id="liGettingStarted"><a href="#" title="Getting started">Getting started</a></li>
+          <li id="liTranslating"><a href="#" title="Translating content">Translating content</a></li>
+          <li id="liApproving"><a href="#" title="Approving translations">Approving translations</a></li>
+          <li id="liUnderstanding"><a href="#" title="Understanding">Understanding</a></li>
+          <li id="liCommunity"><a href="#" title="Community">Community</a></li>
+        </ul>
+        <div class="info">
+          <h5>Rosetta</h5>
+          <p><strong>Rosetta is a web-based system for translating open source software into any language.</strong>
+            All you need to start translating is a web browser, a good knowledge of the application you're translating,
+            and a thorough understanding of the English language</p>
+        </div> <!-- info -->
+      </metal:left-column>
+    </div> <!-- primary -->
+
+    <div id="secondary">
+      <metal:right-column define-slot="right-column">
+        <h4>Rosetta is a Web-based system for translating open source software into any language</h4>
+
+        <div id="pane">
+          <div class="screen" id="getting-started">
+            <ul>
+              <li><a id="p1" href="#" title="One">One</a></li>
+              <li><a id="p2" href="#" title="Two">Two</a></li>
+              <li><a class="current" id="p3" href="#" title="Three">Three</a></li>
+              <li><a id="p4" href="#" title="Four">Four</a></li>
+            </ul>
+          </div>
+          <ul class="info">
+            <li id="point-one">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+              Cras consequat neque vel libero.</li>
+            <li id="point-two">Mauris nec ante ac est tincidunt fermentum. Allis vestilum,
+              bibendum ut, augue. Nulla facilisi.</li>
+            <li class="current" id="point-three">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+              Cras consequat neque vel libero.</li>
+            <li id="point-four">Mauris nec ante ac est tincidunt fermentum. Allis vestilum,
+              bibendum ut, augue. Nulla facilisi.</li>
+          </ul>
+          <a class="button next" href="#" title="Next">Next &gt;</a>
+        </div> <!-- pane -->
+      </metal:right-column>
+    </div> <!-- secondary -->
+  </div>
+</body>
+</html>

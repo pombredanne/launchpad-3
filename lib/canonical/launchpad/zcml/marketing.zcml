@@ -13,15 +13,21 @@
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="marketing_about_template"
+        permission="zope.Public"
+        template="../templates/marketing-about-template.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="marketing_faq_template"
         permission="zope.Public"
         template="../templates/marketing-faq-template.pt"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_about_template"
+        name="marketing_tour_template"
         permission="zope.Public"
-        template="../templates/marketing-about-template.pt"
+        template="../templates/marketing-tour-template.pt"
         />
 
     <!-- Marketing Microsite Home Page -->
@@ -30,12 +36,6 @@
         name="+about"
         permission="zope.Public"
         template="../templates/marketing-home.pt"
-        />
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="+tour"
-        permission="zope.Public"
-        template="../templates/marketing-app-tour.pt"
         />
 
     <!-- Marketing material for Answers. -->
@@ -84,6 +84,13 @@
         permission="zope.Public"
         name="+faq"
         template="../templates/marketing-bugs-faq.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BugsLayer"
+        name="+tour"
+        permission="zope.Public"
+        template="../templates/marketing-bugs-tour1.pt"
         />
 
     <!-- Marketing material for Code. -->

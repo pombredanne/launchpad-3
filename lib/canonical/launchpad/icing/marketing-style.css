@@ -547,43 +547,39 @@ body#tour #header dl#navigation ul li#liTour a {
   margin-bottom: 30px;
 }
 
+/* Screen and callouts for application tour */
+
 #main #secondary #pane {
   width: 480px; height: 567px;
-  _position: relative;
   margin-left: -10px;
-  _left: -3px;
   padding: 13px;
   background: #dadada url(/+icing/bg-pane.gif) top left no-repeat;
   color: #000;
+  text-align: center;
 }
 
-#main #secondary #pane .screen {
-  /*width: 487px;*/ height: 342px;
-}
-
-#main #secondary #pane #getting-started {
-  background: url(/+icing/screen-gettingstarted.png) top left no-repeat;
-}
-
-#main #secondary #pane .screen a {
-  position: relative;
-  display: block;
+#main #secondary #pane ol.callouts,
+#main #secondary #pane ol.callouts li {
+  position: absolute;
   width: 35px; height: 35px;
   background-position: top left;
   background-repeat: no-repeat;
   text-indent: -1000em;
 }
 
-#main #secondary #pane .screen a#p1 { background-image: url(/+icing/paneimg/1.gif); top: 26px; left: 115px; }
-#main #secondary #pane .screen a#p2 { background-image: url(/+icing/paneimg/2.gif); top: 30px; left: 80px; }
-#main #secondary #pane .screen a#p3 { background-image: url(/+icing/paneimg/3.gif); top: 0px; left: 200px; }
-#main #secondary #pane .screen a#p4 { background-image: url(/+icing/paneimg/4.gif); top: 30px; left: 340px; }
+#main #secondary #pane .callouts #p1 { background-image: url(1.gif); }
+#main #secondary #pane .callouts #p2 { background-image: url(2.gif); }
+#main #secondary #pane .callouts #p3 { background-image: url(3.gif); }
+#main #secondary #pane .callouts #p4 { background-image: url(4.gif); }
 
-#main #secondary #pane .screen a.current { background-position: bottom left; }
+#main #secondary #pane .callouts li:hover {
+  background-position: bottom left;
+}
 
 #main #secondary #pane ul.info {
   float: left;
   margin: 20px 0 0 0;
+  text-align: left;
 }
 
 #main #secondary #pane ul.info li {
@@ -594,33 +590,35 @@ body#tour #header dl#navigation ul li#liTour a {
   background-repeat: no-repeat;
 }
 
-#main #secondary #pane ul.info li.current {
+#main #secondary #pane ul.info li:hover {
   background-position: 0 -300px;
 }
 
 #main #secondary #pane ul.info li#point-one {
-  background-image: url(/+icing/pane-1.gif);
+  background-image: url(pane-1.gif);
 }
 
 #main #secondary #pane ul.info li#point-two {
-  background-image: url(/+icing/pane-2.gif);
+  background-image: url(pane-2.gif);
 }
 
 #main #secondary #pane ul.info li#point-three {
-  background-image: url(/+icing/pane-3.gif);
+  background-image: url(pane-3.gif);
 }
 
 #main #secondary #pane ul.info li#point-four {
-  background-image: url(/+icing/pane-4.gif);
+  background-image: url(pane-4.gif);
 }
 
 #main #secondary #pane a.button.next {
   display: block;
   float: right;
   width: 84px; height: 27px;
-  background: url(/+icing/button-next.gif) top left no-repeat;
+  background: url(button-next.gif) top left no-repeat;
   text-indent: -1000em;
 }
+
+/* Footer */
 
 #footer { letter-spacing: 1px;}
 
