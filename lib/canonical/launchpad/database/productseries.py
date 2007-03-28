@@ -113,14 +113,24 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'productseries',
-                            orderBy=['dateexpected', 'name'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def all_milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def bugtargetname(self):
