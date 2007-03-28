@@ -15,9 +15,9 @@
             <input type="radio" name="format"
                    tal:attributes="
                      value format/value;
-                     checked format/default" />
+                     checked format/is_default" />
             <span tal:content="format/title">translation format</span>
-            <span tal:condition="format/default">(default)</span>
+            <span tal:condition="format/is_default">(default)</span>
           </label>
         </div>
         <div>
