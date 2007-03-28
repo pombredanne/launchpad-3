@@ -1399,7 +1399,8 @@ def notify_specification_modified(spec, event):
         simple_sendmail_from_person(event.user, address, subject, body)
 
 
-def email_branch_notifications(branch, to_addresses, from_address, contents):
+def email_branch_modified_notifications(branch, to_addresses,
+                                        from_address, contents):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
@@ -1415,10 +1416,10 @@ def email_branch_notifications(branch, to_addresses, from_address, contents):
         simple_sendmail(from_address, address, subject, body, headers)
         
 
-def notify_branch_revisions(branch, from_address, message, diff):
+def send_branch_revision_notifications(branch, from_address, message, diff):
     """Notify subscribers that a revision has been added (or removed)."""
     diff_size = diff.count('\n') + 1
-    details = branch.revisionNotificationDetails()
+    details = branch.getRevisionNotificationDetails()
     for max_diff in sorted(details.keys()):
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
@@ -1434,17 +1435,18 @@ def notify_branch_revisions(branch, from_address, message, diff):
         else:
             contents = "%s\n%s" % (message, diff)
         addresses = details[max_diff]
-        email_branch_notifications(branch, addresses, from_address, contents)
+        email_branch_modified_notifications(
+            branch, addresses, from_address, contents)
 
 
-def notify_branch_modified(branch, event):
+def send_branch_modified_notifications(branch, event):
     """Notify the related people that a branch has been modifed."""
     branch_delta = BranchDelta.construct(
         event.object_before_modification, branch, event.user)
     if branch_delta is None:
         return
     # If there is no one interested, then bail out early.
-    to_addresses = branch.attributeNotificationAddresses()
+    to_addresses = branch.getAttributeNotificationAddresses()
     if not to_addresses:
         return
 
@@ -1487,4 +1489,5 @@ def notify_branch_modified(branch, event):
     from_address = format_address(
         event.user.displayname, event.user.preferredemail.email)
     contents = '\n'.join(info_lines)
-    email_branch_notifications(branch, to_addresses, from_address, contents)
+    email_branch_modified_notifications(
+        branch, to_addresses, from_address, contents)

@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    SQLObjectNotFound)
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -19,8 +19,7 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
@@ -232,7 +231,7 @@ class Branch(SQLBase):
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
-    def attributeNotificationAddresses(self):
+    def getAttributeNotificationAddresses(self):
         """See IBranch."""
         addresses = set()
         interested_levels = (
@@ -243,24 +242,31 @@ class Branch(SQLBase):
                 addresses.update(contactEmailAddresses(subscription.person))
         return sorted(addresses)
 
-    def revisionNotificationDetails(self):
+    def getRevisionNotificationDetails(self):
         """See IBranch."""
-        email_details = {}
+        team_email_details = {}
+        individual_email_details = {}
         interested_levels = (
             BranchSubscriptionNotificationLevel.DIFFSONLY,
             BranchSubscriptionNotificationLevel.FULL)
         for subscription in self.subscriptions:
             if subscription.notification_level in interested_levels:
                 addresses = contactEmailAddresses(subscription.person)
+                if subscription.person.isTeam():
+                    email_details = team_email_details
+                else:
+                    email_details = individual_email_details
                 for address in addresses:
                     curr = email_details.get(
                         address, BranchSubscriptionDiffSize.NODIFF)
                     email_details[address] = max(
                         curr, subscription.max_diff_lines)
+        # Individual preferences override team preferences
+        team_email_details.update(individual_email_details)
         # Now that we have determined the maximum size to send
         # to any individual, switch the map around.
         result = {}
-        for address, max_diff in email_details.iteritems():
+        for address, max_diff in team_email_details.iteritems():
             result.setdefault(max_diff, []).append(address)
         return result
 

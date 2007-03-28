@@ -4,6 +4,7 @@
 #         David Allouche <david@allouche.net>
 
 import datetime
+import email
 import os
 import shutil
 import sys
@@ -70,7 +71,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
         self.setUpBzrBranch()
-        # LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
         self.setUpDBBranch()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.txn = LaunchpadZopelessLayer.txn
@@ -269,8 +269,11 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount()
         self.assertEqual(self.db_branch.revision_count, 0)
         self.assertEqual(len(stub.test_emails), 1)
-        self.failUnless('First scan of the branch detected 0 revisions'
-                        in stub.test_emails[0][2])
+        expected = 'First scan of the branch detected 0 revisions'
+        email_body = email.message_from_string(
+            stub.test_emails[0][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
             
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
@@ -278,9 +281,13 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         self.assertEqual(len(stub.test_emails), 1)
-        self.failUnless('First scan of the branch detected 1 revision'
-                        ' in the revision history of the=\n branch.' in
-                        stub.test_emails[0][2], stub.test_emails[0][2])
+        expected = ('First scan of the branch detected 1 revision'
+                    ' in the revision history of the=\n branch.')
+        email_body = email.message_from_string(
+            stub.test_emails[0][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
+
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
@@ -291,8 +298,11 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
         self.assertEqual(len(stub.test_emails), 2)
-        self.failUnless('1 revision was removed from the branch.'
-                        in stub.test_emails[1][2])
+        expected = '1 revision was removed from the branch.'
+        email_body = email.message_from_string(
+            stub.test_emails[1][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.

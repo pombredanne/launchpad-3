@@ -301,18 +301,18 @@ class IBranch(IHasOwner):
         script.
         """
 
-    def attributeNotificationAddresses():
+    def getAttributeNotificationAddresses():
         """Return a list of email addresses of interested subscribers.
 
         Only branch subscriptions that specified an interest in
         attribute notifications will have specified email addresses added.
         """
 
-    def revisionNotificationDetails():
-        """Return a map of max diff size to a list of emal addresses.
+    def getRevisionNotificationDetails():
+        """Return a map of max diff size to a list of email addresses.
         
         Only branch subscriptions that specified an interest in
-        revision notifications will have specified email addresses added.
+        revision notifications will have their specified email addresses added.
         """
         
     def getScannerData():

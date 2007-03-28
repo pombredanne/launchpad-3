@@ -24,7 +24,8 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
-from canonical.launchpad.mailnotification import notify_branch_revisions
+from canonical.launchpad.mailnotification import (
+    send_branch_revision_notifications)
 
 UTC = pytz.timezone('UTC')
 
@@ -411,8 +412,19 @@ class BzrSync:
         If this is the first scan of a branch, then we send out a simple
         notification email saying that the branch has been scanned.
         """
+        # XXX: thumper 2007-03-28
+        # The whole reason that this method exists is due to
+        # emails being sent immediately in a zopeless environment.
+        # When bug #29744 is fixed, this method will no longer be
+        # necessary, and the emails should be sent at the source
+        # instead of appending them to the pending_emails.
+        # This method is enclosed in a transaction so emails will
+        # continue to be sent out when the bug is closed without
+        # immediately having to fix this method.
+        self.trans_manager.begin()
 
         if self.initial_scan:
+            assert(len(self.pending_emails) == 0)
             revision_count = len(self.bzr_history)
             if revision_count == 1:
                 revisions = '1 revision'
@@ -421,9 +433,11 @@ class BzrSync:
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)
-            notify_branch_revisions(
+            send_branch_revision_notifications(
                 self.db_branch, self.email_from, message, '')
         else:
             for message, diff in self.pending_emails:
-                notify_branch_revisions(
+                send_branch_revision_notifications(
                     self.db_branch, self.email_from, message, diff)
+
+        self.trans_manager.commit()
