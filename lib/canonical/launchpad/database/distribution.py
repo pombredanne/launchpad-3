@@ -81,9 +81,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     _table = 'Distribution'
     _defaultOrder = 'name'
-    default_mugshot_resource = '/@@/distribution-mugshot'
-    default_logo_resource = '/@@/distribution-logo'
-    default_icon_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)

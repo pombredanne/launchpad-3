@@ -368,7 +368,7 @@ class ObjectImageDisplayAPI:
         elif IDistribution.providedBy(context):
             return '/@@/distribution'
         elif ISprint.providedBy(context):
-            return '/@@/sprint'
+            return '/@@/meeting'
         return '/@@/nyet-icon'
 
     def default_logo_resource(self, context):
@@ -387,7 +387,7 @@ class ObjectImageDisplayAPI:
         elif IDistribution.providedBy(context):
             return '/@@/distribution-logo'
         elif ISprint.providedBy(context):
-            return '/@@/sprint-logo'
+            return '/@@/meeting-logo'
         return '/@@/nyet-logo'
 
     def default_mugshot_resource(self, context):
@@ -406,7 +406,7 @@ class ObjectImageDisplayAPI:
         elif IDistribution.providedBy(context):
             return '/@@/distribution-mugshot'
         elif ISprint.providedBy(context):
-            return '/@@/sprint-mugshot'
+            return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
     def icon(self):
@@ -492,7 +492,6 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     """
 
     def icon(self):
-        import pdb; pdb.set_trace()
         # The icon displayed is dependent on the IBugTask.importance.
         image_template = """
             <img height="14" width="14" alt="%s" title="%s" src="%s" />
@@ -508,7 +507,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
                 title += " priority"
             else:
                 title += " a priority"
-            src = "/@@/bug-%s" % priority
+            src = "/@@/blueprint-%s" % priority
         else:
             alt = ""
             title = ""

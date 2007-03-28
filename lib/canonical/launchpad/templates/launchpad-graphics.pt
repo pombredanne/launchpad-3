@@ -1,15 +1,12 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="view/macro:page/applicationhome"
       i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Launchpad graphics and icons</h1>
-</metal:heading>
+<h1 metal:fill-slot="heading">Launchpad graphics and icons</h1>
 
 <div metal:fill-slot="main">
 
@@ -80,6 +77,9 @@
       versions of these images which correspond to the type of Pillar - so a
       default for Product, a default for Project, Distribution, etc.
       These will be required to be 64px &times; 64px in size.
+      The Logo is also used for ANY object which is a child of the pillar.
+      So, for example, the Ubuntu Logo will be used for a Ubuntu
+      Specification.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
@@ -368,24 +368,24 @@
         <td>A subscriber who is not essential to a specification.</td>
       </tr>
       <tr>
+        <td>meeting</td>
+        <td><img alt="" src="/@@/meeting" /></td>
+        <td rowspan="3">A meeting or sprint.</td>
+      </tr>
+      <tr>
+        <td>meeting-logo</td>
+        <td><img alt="" src="/@@/meeting-logo" /></td>
+      </tr>
+      <tr>
+        <td>meeting-mugshot</td>
+        <td><img alt="" src="/@@/meeting-mugshot" /></td>
+      </tr>
+      <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
         bug or feature has been targeted. <i>XXX should rename this to
         "milestone"?</i></td>
-      </tr>
-      <tr>
-        <td>sprint</td>
-        <td><img alt="" src="/@@/sprint" /></td>
-        <td rowspan="3">A meeting or sprint.</td>
-      </tr>
-      <tr>
-        <td>sprint-logo</td>
-        <td><img alt="" src="/@@/sprint-logo" /></td>
-      </tr>
-      <tr>
-        <td>sprint-mugshot</td>
-        <td><img alt="" src="/@@/sprint-mugshot" /></td>
       </tr>
       <tr>
         <td>team-badge</td>
@@ -761,4 +761,3 @@
 
 </body>
 </html>
-</tal:layout>

@@ -65,7 +65,7 @@
     <resource name="distribution" file="../images/distribution.png" />
     <resource name="distribution-badge" file="../images/distribution-badge.png" />
     <resource name="distribution-logo" file="../images/distribution-logo.png" />
-    <resource name="distribution-mugshot" file="../images/distribution-logo.png" />
+    <resource name="distribution-mugshot" file="../images/distribution-mugshot.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
@@ -109,12 +109,12 @@
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />
     <resource name="product-logo" file="../images/product-logo.png" />
-    <resource name="product-mugshot" file="../images/product-logo.png" />
+    <resource name="product-mugshot" file="../images/product-mugshot.png" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/project.png" />
     <resource name="project-badge" file="../images/project-badge.png" />
     <resource name="project-logo" file="../images/project-logo.png" />
-    <resource name="project-mugshot" file="../images/project-logo.png" />
+    <resource name="project-mugshot" file="../images/project-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="question" file="../images/question.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
@@ -125,13 +125,15 @@
     <resource name="search" file="../images/search.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
-    <resource name="sprint" file="../images/meeting.png" />
+    <resource name="meeting" file="../images/meeting.png" />
+    <resource name="meeting-logo" file="../images/meeting-logo.png" />
+    <resource name="meeting-mugshot" file="../images/meeting-mugshot.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/team.png" />
     <resource name="team-badge" file="../images/team-badge.png" />
     <resource name="team-logo" file="../images/team-logo.png" />
-    <resource name="team-mugshot" file="../images/team-logo.png" />
+    <resource name="team-mugshot" file="../images/team-mugshot.png" />
     <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />

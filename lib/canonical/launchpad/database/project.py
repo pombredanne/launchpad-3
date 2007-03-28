@@ -50,9 +50,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                IHasLogo, IHasMugshot, IHasIcon)
 
     _table = "Project"
-    default_mugshot_resource = '/@@/project-mugshot'
-    default_logo_resource = '/@@/project-logo'
-    default_icon_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)

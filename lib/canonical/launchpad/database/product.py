@@ -60,9 +60,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
-    default_mugshot_resource = '/@@/product-mugshot'
-    default_logo_resource = '/@@/product-heading'
-    default_icon_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)

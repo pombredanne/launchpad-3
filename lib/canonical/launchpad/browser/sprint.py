@@ -41,7 +41,7 @@ from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
-SpecificationStatus)
+    SpecificationStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 

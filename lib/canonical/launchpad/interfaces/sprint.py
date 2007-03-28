@@ -66,20 +66,20 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         "with further information about the event."))
     icon = IconImageUpload(
         title=_("Icon"), required=False,
-        default_image_resource='/@@/sprint',
+        default_image_resource='/@@/meeting',
         description=_(
             "A small image of exactly 14x14 pixels and at most 25k in size, "
             "that can be used to identify this meeting in listings."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
-        default_image_resource='/@@/sprint-logo',
+        default_image_resource='/@@/meeting-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to this meeting. It should be "
             "no bigger than 50k in size."))
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
-        default_image_resource='/@@/sprint-mugshot',
+        default_image_resource='/@@/meeting-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this meeting's home page in Launchpad. It should be no "

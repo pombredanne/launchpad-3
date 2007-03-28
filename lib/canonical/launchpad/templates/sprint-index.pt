@@ -14,6 +14,7 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
+  <tal:mugshot replace="structure context/image:mugshot" />
   <h1>Meeting overview</h1>
 </metal:heading>
 
@@ -26,7 +27,7 @@
       Sprint Summary Goes Here
     </span>
     <tal:has_homepage condition="context/home_page">
-      <img src="/@@/sprint" />
+      <img src="/@@/meeting" />
       <a tal:attributes="href context/home_page">
         View the Meeting Home Page
       </a>
