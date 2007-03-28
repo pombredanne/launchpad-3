@@ -27,7 +27,7 @@ from canonical.launchpad.database.question import Question
 from canonical.lp.dbschema import QuestionStatus
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet
+    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet
     )
 
 
@@ -77,6 +77,7 @@ class LaunchpadStatisticSet:
         self._updateRosettaStatistics(ztm)
         self._updateMaloneStatistics(ztm)
         self._updateQuestionStatistics(ztm)
+        getUtility(IPersonSet).updateStatistics(ztm)
 
     def _updateMaloneStatistics(self, ztm):
         self.update('bug_count', Bug.select().count())

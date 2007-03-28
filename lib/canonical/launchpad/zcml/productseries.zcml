@@ -38,6 +38,14 @@
         classes="ProductSeriesNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductSeriesDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <adapter
         provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -64,6 +72,11 @@
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -76,6 +89,9 @@
         <browser:page
             name="+importstatus"
             template="../templates/productseries-importstatus.pt" />
+        <browser:page
+            name="+macros"
+            template="../templates/productseries-macros.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />

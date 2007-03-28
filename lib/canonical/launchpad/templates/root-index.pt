@@ -1,20 +1,6 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en" metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-rosetta" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-foaf" />
-  <div tal:replace="structure context/@@+portlet-malone" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
@@ -48,7 +34,7 @@
         <input id="text" type="text" name="q" size="20" />
         <input type="submit" value="Search" />
       </form>
-      <div class="bordered">
+
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
@@ -97,13 +83,11 @@
             <li><a href="/+about">What is Launchpad?</a></li>
           </ul>
         </div>
-      </div>
-    </div>
+    </div><!--main-->
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
     </p>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress Needs images and marketing material -->

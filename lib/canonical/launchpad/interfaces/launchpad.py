@@ -61,6 +61,7 @@ __all__ = [
     'IRegistryApplication',
     'IRosettaApplication',
     'IShipItApplication',
+    'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
@@ -382,14 +383,19 @@ class IHasDateCreated(Interface):
     datecreated = Attribute("The date on which I was created.")
 
 
-class IStructuralObjectPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI."""
+class IStructuralHeaderPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI
+    as a heading."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
     def getMainHeading():
         """can be None"""
+
+
+class IStructuralObjectPresentation(IStructuralHeaderPresentation):
+    """Adapter that defines how a structural object is presented in the UI."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""

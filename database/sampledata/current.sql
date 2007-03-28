@@ -3008,8 +3008,9 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, NULL, true, NULL, NULL, '2006-10-16 18:31:44.293448');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, NULL, true, NULL, NULL, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
 
 
 ALTER TABLE milestone ENABLE TRIGGER ALL;
