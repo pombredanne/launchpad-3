@@ -701,24 +701,17 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#actions ul {
-  width: 192px;
-  overflow: hidden;
-  margin: 0;
-  padding: 4px;
-}
+#actions ul {list-style-type: none; margin: 0; padding: 4px; width: 192px;}
 #actions li {
-  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
-  list-style-image: url(/+icing/action.png);
-  list-style-type: circle; /* A fallback in case the image can't be found. */
-  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
+  margin: 0; /* neutralizes UA list item indenting */
+  padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions li:hover {background-color: #fff; text-decoration: underline;}
 #actions a {
-  display: block; /* Makes the clickable area equal to the highlighted area. */
-  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
-  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
+  background: url(action.png) 4px center no-repeat;
+  display: block; /* makes the clickable area equal to the highlighted area */
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
 }
+#actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,
 .radio {
   background: transparent;
