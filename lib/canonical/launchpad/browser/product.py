@@ -53,7 +53,6 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
@@ -67,6 +66,7 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -685,7 +685,7 @@ class ProductRdfView:
         return encodeddata
 
 
-class ProductDynMenu(DynMenu):
+class ProductDynMenu(DynMenu, SprintsMixinDynMenu):
 
     menus = {
         '': 'mainMenu',
@@ -709,16 +709,6 @@ class ProductDynMenu(DynMenu):
             pass
         else:
             yield self.makeLink('Show all series...', page='+series')
-
-    def meetingsMenu(self):
-        coming_sprints = shortlist(self.context.coming_sprints, 20)
-        if coming_sprints:
-            for sprint in coming_sprints:
-                yield self.makeLink(sprint.title, context=sprint)
-        else:
-            yield self.makeLink('No meetings planned', target=None)
-        if self.context.past_sprints:
-            yield self.makeLink('Show all meetings...', page='+sprints')
 
     def relatedMenu(self):
         project = self.context.project

@@ -53,6 +53,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
@@ -654,7 +655,7 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
 
 
-class DistributionDynMenu(DynMenu):
+class DistributionDynMenu(DynMenu, SprintsMixinDynMenu):
 
     menus = {
         '': 'mainMenu',
@@ -678,13 +679,6 @@ class DistributionDynMenu(DynMenu):
                 milestone.dateexpected > fairly_recent):
                 yield self.makeLink(milestone.title, context=milestone)
         yield self.makeLink('Show all milestones...', page='+milestones')
-
-    def meetingsMenu(self):
-        # TODO: abstract this into a HasMeetingsMenu mix-in for use with
-        # an IHasMeetings.
-        for sprint in self.context.coming_sprints:
-            yield self.makeLink(sprint.title, context=sprint)
-        yield self.makeLink('Show all meetings...', page='+sprints')
 
     def mainMenu(self):
         yield self.makeLink('Releases', page='+releases', submenu='releases')
