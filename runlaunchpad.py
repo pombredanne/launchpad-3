@@ -30,11 +30,14 @@ import pwd
 import time
 import errno
 import atexit
+import random
 import signal
 import socket
 import subprocess
-from zope.app.server.main import main
+
 from configs import generate_overrides
+from string import ascii_letters, digits
+from zope.app.server.main import main
 
 basepath = filter(None, sys.path)
 
@@ -229,7 +232,13 @@ def remove(mlist, cgi=False):
                               cwd=mailman_bin,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if retcode:
-        addr, password = config.mailman.build.site_list_owner.split(':', 1)
+        if config.mailman.build.site_list_owner:
+            addr, password = config.mailman.build.site_list_owner.split(':', 1)
+        else:
+            chars = digits + ascii_letters
+            localpart = ''.join([random.choice(chars) for count in range(10)])
+            addr = localpart + '@example.com'
+            password = ''.join([random.choice(chars) for count in range(10)])
 
         # The site list does not yet exist, so create it now.
         retcode = subprocess.call(('./newlist', '--quiet',

@@ -875,7 +875,7 @@ k            </description>
         <key name="var_dir"         datatype="string"   required="yes"  />
         <key name="user_group"      datatype="string"   default="" />
         <key name="site_list"       datatype="string"   default="" />
-        <key name="site_list_owner" datatype="string"   required="yes" />
+        <key name="site_list_owner" datatype="string"   default="" />
         <key name="host_name"       datatype="string"   default="" />
     </sectiontype>
 
