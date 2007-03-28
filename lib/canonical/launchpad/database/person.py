@@ -649,7 +649,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=10):
+    def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See IPerson."""
         contributions = []
         results = self._getProjectsWithTheMostKarma(limit=limit)

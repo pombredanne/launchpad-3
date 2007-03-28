@@ -10,8 +10,6 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:condition="context/project"
-       tal:replace="structure context/project/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -19,8 +17,12 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
-      Your changes to the <span tal:replace="context/displayname">
-      project</span> details below will take effect immediately.  
+      These images are used to throughout Launchpad to represent
+      <span tal:replace="context/displayname">Ubuntu Linux</span>.
+      Changing them here will affect every page related to
+      <span tal:replace="context/displayname">Ubuntu Linux</span> as well as
+      listings which include it. You must use <strong>exactly</strong> the
+      correct size of image.
     </p>
 
   </div>

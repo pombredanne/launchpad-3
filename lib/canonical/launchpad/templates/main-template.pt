@@ -230,7 +230,7 @@
           <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
         </div>
         <div id="colophon">
-          <a href="/legal">Conditions&nbsp;of&nbsp;Use</a> |
+          <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
           <a href="/faq">FAQ</a>
         </div>

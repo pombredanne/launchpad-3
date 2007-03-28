@@ -153,6 +153,13 @@
         name="image"
         />
 
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
+        name="image"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only

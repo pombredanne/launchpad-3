@@ -40,7 +40,13 @@
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
     <resource name="blue-bar" file="../images/blue-bar.png" />
-    <resource name="blueprint" file="../images/specification.png" />
+    <resource name="blueprint" file="../images/blueprint-not.png" />
+    <resource name="blueprint-essential" file="../images/blueprint-essential.png" />
+    <resource name="blueprint-high" file="../images/blueprint-high.png" />
+    <resource name="blueprint-medium" file="../images/blueprint-medium.png" />
+    <resource name="blueprint-low" file="../images/blueprint-low.png" />
+    <resource name="blueprint-undefined" file="../images/blueprint-undefined.png" />
+    <resource name="blueprint-not" file="../images/blueprint-not.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/branch.png" />
     <resource name="bug" file="../images/bug.png" />

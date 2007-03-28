@@ -18,6 +18,7 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductView',
     'ProductAddView',
+    'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
     'ProductReviewView',
@@ -53,14 +54,13 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.imagedisplay import (
-    ImageAddView, ImageChangeView)
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -75,7 +75,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -202,7 +201,7 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'top_contributors',
+        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'distributions', 'packages', 'branch_add', 'series_add',
         'launchpad_usage', 'administer', 'rdf']
 
@@ -210,6 +209,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -549,14 +553,20 @@ class ProductView:
         return get_buglisting_search_filter_url(url, status=status)
 
 
-class ProductEditView(LaunchpadEditFormView, ImageChangeView):
+class ProductBrandingView(BrandingChangeView):
+
+    schema = IProduct
+    field_names = ['icon', 'logo', 'mugshot']
+
+
+class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
     label = "Edit details"
     field_names = [
         "project", "displayname", "title", "summary", "description",
-        "homepageurl", "icon", "logo", "mugshot", "sourceforgeproject",
+        "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
 
@@ -778,12 +788,12 @@ class ProductSetView(LaunchpadView):
         return self.results
 
 
-class ProductAddView(ImageAddView):
+class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 'icon',
-                   'logo', 'mughsot', 'sourceforgeproject', 'freshmeatproject',
+                   'description', 'project', 'homepageurl', 
+                   'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
@@ -821,7 +831,6 @@ class ProductAddView(ImageAddView):
             assert "reviewed" not in data
             data['owner'] = self.user
             data['reviewed'] = False
-        gotchi, gotchi_heading = data['gotchi']
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -838,9 +847,7 @@ class ProductAddView(ImageAddView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         notify(ObjectCreatedEvent(self.product))
 
     @property

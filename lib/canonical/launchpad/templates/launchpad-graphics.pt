@@ -71,20 +71,15 @@
       equivalent</strong>, for use in listings.
     </dd>
     <dt>
-      <img alt="" src="/@@/nyet-gotchi" style="float: right;" />
-      <dfn>gotchi</dfn>
+      <img alt="" src="/@@/nyet-logo" style="float: right;" />
+      <dfn>logo</dfn>
     </dt>
     <dd>
       This image is used in the heading of any Pillar object - people,
       projects, products and distributions.  There should be default
       versions of these images which correspond to the type of Pillar - so a
       default for Product, a default for Project, Distribution, etc.
-      These will be required to be 64px &times; 64px in size, if smaller
-      images are uploaded then they will be fitted into a 64px square.
-      It should be possible to upload separate mugshot and gotchi images,
-      but it should also be possible just to have the gotchi auto-generated
-      from the mugshot (this is why the proportion of the border area is the
-      same between the mugshot and the gotchi formats).
+      These will be required to be 64px &times; 64px in size.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
@@ -382,7 +377,15 @@
       <tr>
         <td>sprint</td>
         <td><img alt="" src="/@@/sprint" /></td>
-        <td>A meeting or sprint.</td>
+        <td rowspan="3">A meeting or sprint.</td>
+      </tr>
+      <tr>
+        <td>sprint-logo</td>
+        <td><img alt="" src="/@@/sprint-logo" /></td>
+      </tr>
+      <tr>
+        <td>sprint-mugshot</td>
+        <td><img alt="" src="/@@/sprint-mugshot" /></td>
       </tr>
       <tr>
         <td>team-badge</td>
@@ -594,10 +597,34 @@
   <table class="listing">
     <tbody>
       <tr>
-        <td>spec</td>
+        <td>blueprint</td>
         <td><img src="/@@/blueprint" /></td>
-        <td>A feature specification, used as a bullet in lists of specs, or
-        to indicate a link to a specification.</td>
+        <td rowspan="7">A blueprint, used as a bullet in lists of them, or
+        to indicate a link to one.</td>
+      </tr>
+      <tr>
+        <td>blueprint-essential</td>
+        <td><img src="/@@/blueprint-essential" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-high</td>
+        <td><img src="/@@/blueprint-high" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-medium</td>
+        <td><img src="/@@/blueprint-medium" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-low</td>
+        <td><img src="/@@/blueprint-low" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-not</td>
+        <td><img src="/@@/blueprint-not" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-undefined</td>
+        <td><img src="/@@/blueprint-undefined" /></td>
       </tr>
       <tr>
         <td>bounty</td>

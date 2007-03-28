@@ -164,6 +164,15 @@
         />
 
     <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBrandingView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt"
+        />
+
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectReviewView"

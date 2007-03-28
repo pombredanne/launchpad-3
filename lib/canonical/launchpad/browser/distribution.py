@@ -10,6 +10,7 @@ __all__ = [
     'DistributionSpecificationsMenu',
     'DistributionView',
     'DistributionAllPackagesView',
+    'DistributionBrandingView',
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
@@ -40,11 +41,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
     ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.imagedisplay import (
-    ImageAddView, ImageChangeView)
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -181,16 +181,21 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'top_contributors', 'builds',
-             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
-             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
-             'upload_admin']
+    links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
+             'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
+             'builds', 'release_mirrors', 'archive_mirrors',
+             'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
+             'launchpad_usage', 'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -437,12 +442,17 @@ class DistributionRedirectingEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class DistributionEditView(LaunchpadEditFormView, ImageChangeView):
+class DistributionBrandingView(BrandingChangeView):
+
+    schema = IDistribution
+    field_names = ['icon', 'logo', 'mugshot']
+
+
+class DistributionEditView(LaunchpadEditFormView):
 
     schema = IDistribution
     label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description',
-                   'icon', 'logo', 'mugshot']
+    field_names = ['displayname', 'title', 'summary', 'description',]
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -476,12 +486,12 @@ class DistributionSetView:
         return self.context.count()
 
 
-class DistributionAddView(ImageAddView):
+class DistributionAddView(LaunchpadFormView):
 
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "mugshot", "logo", "icon", "domainname", "members"]
+                   "domainname", "members"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -494,9 +504,7 @@ class DistributionAddView(ImageAddView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            mugshot=data['mugshot'],
-            logo=data['logo'],
-            icon=data['icon'])
+            )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 

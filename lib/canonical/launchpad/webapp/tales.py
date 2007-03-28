@@ -483,6 +483,42 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         return icon
 
 
+class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for ISpecification objects to a formatted string. This inherits
+    from the generic ObjectImageDisplayAPI and overrides the icon
+    presentation method.
+
+    Used for image:icon.
+    """
+
+    def icon(self):
+        import pdb; pdb.set_trace()
+        # The icon displayed is dependent on the IBugTask.importance.
+        image_template = """
+            <img height="14" width="14" alt="%s" title="%s" src="%s" />
+            """
+
+        if self._context.priority:
+            priority = self._context.priority.title.lower()
+            alt = "(%s)" % priority
+            title = priority.capitalize()
+            if priority != 'not':
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " priority"
+            else:
+                title += " a priority"
+            src = "/@@/bug-%s" % priority
+        else:
+            alt = ""
+            title = ""
+            src = "/@@/blueprint"
+
+        icon = image_template % (alt, title, src)
+
+        return icon
+
+
 class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IKarmaCategory objects to an image.
 

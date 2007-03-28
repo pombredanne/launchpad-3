@@ -21,7 +21,7 @@
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
 
-  <p class="highlighted">
+  <p>
     <span tal:replace="context/summary">
       Sprint Summary Goes Here
     </span>
@@ -77,9 +77,11 @@
       <h2>Latest <span tal:replace="view/latest_specs_limit">5</span>
           additions to the meeting agenda</h2>
 
-      <div tal:repeat="spec view/latest_approved"
-           tal:replace="structure spec/@@+listing-simple"
-           />
+      <table>
+        <div tal:repeat="spec view/latest_approved"
+             tal:replace="structure spec/@@+listing-simple"
+             />
+      </table>
 
       <p>
         There are a total of <span tal:replace="view/count">5</span>

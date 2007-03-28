@@ -59,8 +59,7 @@
 
     <tal:is_team condition="context/teamowner">
 
-      <b>Membership policy:</b>
-      <span tal:replace="context/subscriptionpolicy/title">Open team</span>.
+      <b tal:content="context/subscriptionpolicy/title">Policy</b>:
       <span tal:replace="context/subscriptionpolicy/description">More
       detail goes here.</span>
       <br />

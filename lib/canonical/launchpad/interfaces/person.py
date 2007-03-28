@@ -129,6 +129,14 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
             "displayed for all the world to see."))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
+    # The icon is only used for teams; that's why we use /@@/team as the
+    # default image resource.
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/team',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 5k in size, "
+            "that can be used to identify this team in listings."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/person-logo',
@@ -139,7 +147,7 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
             "no bigger than 50k in size."))
     mugshot = MugshotImageUpload(
         title=_("Mugshot"), required=False,
-        default_image_resource='/@@/product-mugshot',
+        default_image_resource='/@@/person-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on your home page in Launchpad. Traditionally this is a great "
@@ -384,9 +392,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         'Return a textual name suitable for display in a browser.')
 
     @invariant
-    def personCannotHaveEmblem(person):
-        if person.emblem is not None and not person.isTeam():
-            raise Invalid('Only teams can have an emblem.')
+    def personCannotHaveIcon(person):
+        if person.icon is not None and not person.isTeam():
+            raise Invalid('Only teams can have an icon.')
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
@@ -698,14 +706,8 @@ class ITeam(IPerson, IHasIcon):
     The teamowner should never be None.
     """
 
-    # The icon is only used for teams; that's why we use /@@/team as the
-    # default image resource.
-    icon = IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/team',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5k in size, "
-            "that can be used to identify this team in listings."))
+    # Logo and Mugshot are here so that they can have a description on a
+    # Team which is different to the description they have on a Person.
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/team-logo',

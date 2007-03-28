@@ -130,7 +130,7 @@ class IURIField(ITextLine):
 class IBaseImageUpload(IBytes):
     """Marker interface for ImageUpload fields."""
 
-    max_dimensions = Tuple(
+    dimensions = Tuple(
         title=_('Maximum dimensions'),
         description=_('A two-tuple with the maximum width and height (in '
                       'pixels) of this image.'))
@@ -379,7 +379,7 @@ class URIField(TextLine):
             uri = URI(value)
         except InvalidURIError, e:
             raise LaunchpadValidationError(str(e))
-        
+
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
                 'The URI scheme "%s" is not allowed.  Only URIs with '
