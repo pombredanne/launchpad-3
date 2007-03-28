@@ -1,0 +1,34 @@
+= Unsupported Questions =
+
+Each product and distro can have questions asked in languages that none
+of the Answer Contacts speak.
+
+The link to Unsupported Questions is displayed in the 'Actions'
+portlet which is available on the 'Answers' facet of the product or
+distro.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> portlet = soup.first('div', id='actions')
+    >>> portlet.first('a', 
+    ...     href='http://answers.launchpad.dev/firefox/+unsupported-questions')
+    <a href="http://answers.launchpad.dev/firefox/+unsupported-questions">...
+    Unsupported Questions</a>
+
+
+Anybody can view the Unsupported Questions:
+
+    >>> browser.getLink('Unsupported Questions').click()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.first('h1')
+    <h1>Unsupported Questions for Mozilla Firefox</h1>
+
+That page displays table listing the Unsupported Questions for Mozilla
+Firefox
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for question in soup.fetch('td', 'question'):
+    ...     print question.first('a').renderContents()
+    Continue playing after shutdown
