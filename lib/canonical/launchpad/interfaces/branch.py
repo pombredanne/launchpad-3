@@ -50,11 +50,13 @@ class BranchURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
-        if supermirror_root.contains(uri):
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if (supermirror_root.contains(uri)
+            or uri.underDomain(launchpad_domain)):
             message = _(
                 "Don't manually register a bzr branch on "
-                "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
-                "is registered automatically.")
+                "<code>%s</code>. Create it by SFTP, and it "
+                "is registered automatically." % uri.host)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -423,17 +425,24 @@ class IBranchSet(Interface):
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
         """Branches associated with person with appropriate lifecycle.
 
-        All associated branches are returned, whether they be registered
-        by the person, authored by the person, subscribed by the person
-        or any team that the person is a member of.
+        XXX: thumper 2007-03-23
+        The intent here is to just show interesting branches for the
+        person.
+        Following a chat with lifeless we'd like this to be listed and
+        ordered by interest and last activity where activity is defined
+        as linking a bug or spec, changing the status of said link,
+        updating ui attributes of the branch, committing code to the
+        branch.
+        Branches of most interest to a person are their subscribed
+        branches, and the branches that they have registered and authored.
+
+        All branches that are either registered or authored by person
+        are shown, as well as their subscribed branches.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
-
-        XXX: thumper 2007-03-07
-        This has been shown to be a bad idea, see bug 87878.
         """
         
     def getBranchesAuthoredByPerson(

@@ -4,7 +4,7 @@
 
 import re
 from canonical.launchpad.ftests.test_pages import (
-    find_portlet, find_tag_by_id)
+    extract_text, find_main_content, find_portlet, find_tag_by_id)
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
@@ -48,3 +48,15 @@ def print_bugs_table(content, table_id):
             continue
         bug_id, bug_title = tr("td", limit=2)
         print bug_id.string, bug_title.a.string
+
+
+def print_bugtasks(text):
+    """Print all the bugtasks in the text."""
+    main_content = find_main_content(text)
+    table = main_content.find('table', {'id': 'buglisting'})
+    if table is None:
+        return
+    for tr in table('tr'):
+        if not tr.td:
+            continue
+        print extract_text(tr)

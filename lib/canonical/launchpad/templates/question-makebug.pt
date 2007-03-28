@@ -17,6 +17,12 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
     <div metal:use-macro="context/@@launchpad_generalform/generalform">
         <div metal:fill-slot="extra_info">
             Please set the title to something relevant for a bug report.

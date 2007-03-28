@@ -3,21 +3,17 @@ upstream status.
 
 There are currently four bugs open in Ubuntu.
 
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_bugtasks(text):
-    ...     soup = BeautifulSoup(anon_browser.contents)
-    ...     table = soup('table', {'id': 'buglisting'})[0]
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         icon, id, description = tr('td', limit=3)
-    ...         print id.string, description.a.string
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
+      mozilla-firefox Medium Unconfirmed
     9 Thunderbird crashes
+      thunderbird Medium Confirmed
     10 another test bug
+       linux-source-2.6.15 Medium Unconfirmed
     2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the bugs with tasks in other contexts that
@@ -38,6 +34,7 @@ have a bug watch.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed
 
 There's an exception to what's shown on this filter though: if all the
 bugtasks on contexts that don't use Malone are Rejected, those bugs
@@ -89,6 +86,7 @@ on upstream, to focus instead on things they need to work on.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
+       linux-source-2.6.15 Medium Unconfirmed
 
 We can also show only the bugs that have a resolved upstream task. For
 our purposes, this means:
@@ -122,8 +120,11 @@ modified and the sampledata we created above will show up.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
+      mozilla-firefox Medium Unconfirmed
     9 Thunderbird crashes
+      thunderbird Medium Confirmed
     2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed
 
 Let's reset the statuses we set.
 
