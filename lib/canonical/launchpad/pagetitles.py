@@ -97,7 +97,7 @@ class ContextBugId(SubstitutionHelper):
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'The Launchpad Bazaar'
+bazaar_index = 'Launchpad Code'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
@@ -504,7 +504,7 @@ malone_about = 'About Malone'
 
 malone_distros_index = 'Report a bug about a distribution'
 
-malone_index = 'Malone: the Launchpad bug tracker'
+malone_index = 'Launchpad Bugs'
 
 malone_filebug = "Report a bug"
 
@@ -773,7 +773,7 @@ root_index = 'Launchpad'
 
 rosetta_about = 'About Rosetta'
 
-rosetta_index = 'Rosetta'
+rosetta_index = 'Launchpad Translations'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
@@ -816,7 +816,7 @@ question_subscription = ContextId('Subscription to question #%s')
 
 question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
-questions_index = 'Launchpad Answer Tracker'
+questions_index = 'Launchpad Answers'
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
