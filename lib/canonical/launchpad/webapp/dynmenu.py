@@ -59,6 +59,24 @@ class DynMenu(LaunchpadView):
         self.names = []
         LaunchpadView.__init__(self, context, request)
 
+    menus = {'': 'mainMenu'}
+
+    def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(self.names[-1])
+
+        if self.names:
+            [name] = self.names
+        else:
+            name = ''
+
+        renderer_name = self.menus.get(name)
+        if renderer_name is None:
+            raise NotFoundError(name)
+        else:
+            renderer = getattr(self, renderer_name)
+            return self.renderMenu(renderer())
+
     def getBreadcrumbText(self, obj):
         breadcrumbprovider = queryMultiAdapter(
             (obj, self.request), IBreadcrumbProvider, default=None)
@@ -86,12 +104,6 @@ class DynMenu(LaunchpadView):
             L.append(item.render())
         L.append('</ul>')
         return u'\n'.join(L)
-
-    def render(self):
-        """Assume only one type of menu, and render it."""
-        if self.names:
-            raise NotFoundError(self.names[-1])
-        return self.renderMenu(self.mainMenu())
 
     def mainMenu(self):
         raise NotImplementedError('Subclasses must provide mainMenu.')

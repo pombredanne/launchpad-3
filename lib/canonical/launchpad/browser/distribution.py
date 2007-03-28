@@ -656,22 +656,12 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
 class DistributionDynMenu(DynMenu):
 
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMenu(self.mainMenu())
-
-        [name] = self.names
-        if name == 'meetings':
-            return self.renderMenu(self.meetingsMenu())
-        elif name == 'releases':
-            return self.renderMenu(self.releaseMenu())
-        elif name == 'milestones':
-            return self.renderMenu(self.milestoneMenu())
-
-        raise NotFoundError(name)
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'releases': 'releaseMenu',
+        'milestones': 'milestoneMenu',
+        }
 
     def releaseMenu(self):
         for release in self.context.releases:

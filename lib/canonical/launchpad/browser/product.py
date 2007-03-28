@@ -60,6 +60,7 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
@@ -685,22 +686,12 @@ class ProductRdfView:
 
 class ProductDynMenu(DynMenu):
 
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMenu(self.mainMenu())
-
-        [name] = self.names
-        if name == 'meetings':
-            return self.renderMenu(self.meetingsMenu())
-        elif name == 'series':
-            return self.renderMenu(self.seriesMenu())
-        elif name == 'related':
-            return self.renderMenu(self.relatedMenu())
-
-        raise NotFoundError(name)
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'series': 'seriesMenu',
+        'related': 'relatedMenu',
+        }
 
     def seriesMenu(self):
         for series in self.context.serieslist:
@@ -715,7 +706,6 @@ class ProductDynMenu(DynMenu):
     def relatedMenu(self):
         project = self.context.project
         if project is not None:
-            from canonical.launchpad.browser.project import ProjectDynMenu
             projectdynmenu = ProjectDynMenu(project, self.request)
             return projectdynmenu.mainMenu(excludeproduct=self.context)
 
