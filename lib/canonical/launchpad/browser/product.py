@@ -697,6 +697,8 @@ class ProductDynMenu(DynMenu):
             return self.renderMenu(self.meetingsMenu())
         elif name == 'series':
             return self.renderMenu(self.seriesMenu())
+        elif name == 'related':
+            return self.renderMenu(self.relatedMenu())
 
         raise NotFoundError(name)
 
@@ -710,10 +712,21 @@ class ProductDynMenu(DynMenu):
             yield self.makeLink(sprint.title, context=sprint)
         yield self.makeLink('Show all meetings...', page='+sprints')
 
+    def relatedMenu(self):
+        project = self.context.project
+        if project is not None:
+            from canonical.launchpad.browser.project import ProjectDynMenu
+            projectdynmenu = ProjectDynMenu(project, self.request)
+            return projectdynmenu.mainMenu(excludeproduct=self.context)
+
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
         yield self.makeLink('Product series', page='+series', submenu='series')
+        project = self.context.project
+        if project is not None:
+            yield self.makeLink(
+                'Related projects', submenu='related', target=project)
 
 
 class ProductSetView(LaunchpadView):
