@@ -721,6 +721,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur.execute(query)
         return cur.fetchall()
 
+    def iterTopProjectsContributedTo(self, limit=10):
+        getByName = getUtility(IPillarNameSet).getByName
+        for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
+            yield getByName(name)
+
     def _getContributedCategories(self, pillar):
         """Return the KarmaCategories to which this person has karma on the
         given pillar.

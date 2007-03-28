@@ -11,6 +11,7 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
+    'LaunchpadRootDynMenu',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'LaunchpadRootIndexView',
@@ -539,6 +540,19 @@ class LaunchpadRootNavigation(Navigation):
         if beta_redirection_view is not None:
             return beta_redirection_view
         return Navigation.publishTraverse(self, request, name)
+
+
+from canonical.launchpad.webapp.dynmenu import DynMenu
+class LaunchpadRootDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    def contributionsMenu(self):
+        if self.user is not None:
+            for obj in self.user.iterTopProjectsContributedTo():
+                yield self.makeBreadcrumbLink(obj)
 
 
 class SoftTimeoutView(LaunchpadView):

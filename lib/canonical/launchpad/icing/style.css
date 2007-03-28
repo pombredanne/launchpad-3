@@ -303,13 +303,13 @@ ul#menuroot>li>a {
   margin-right: -1px;
 }
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a {
+#locationbar li a,
+#locationbar li span {
   display: block;
   color: #000000;
 }
 /* Unlinked items.  Same colour as the overview actions menu. */
 #locationbar li .unlinked {
-  display: block;
   color: #83AD23;
 }
 /* XXX: needs explanation */

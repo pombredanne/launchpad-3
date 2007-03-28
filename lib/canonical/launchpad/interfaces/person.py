@@ -461,6 +461,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
 
+    def iterTopProjectsContributedTo(self, limit=10):
+        """Iterate over the top projects contributed to, up to the given limit.
+        """
+
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 

@@ -698,6 +698,12 @@ class ProductDynMenu(
         }
 
     def relatedMenu(self):
+        """Show items related to this product.
+
+        If there is a project, show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
         project = self.context.project
         if project is not None:
             yield self.makeLink(project.title, target=project)
