@@ -36,3 +36,6 @@ class IScriptActivitySet(Interface):
 
     def recordSuccess(name, date_started, date_completed):
         """Record a successful script run."""
+
+    def getLastActivity(name):
+        """Get the last activity record for the given script name."""

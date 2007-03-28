@@ -33,3 +33,8 @@ class ScriptActivitySet:
         return ScriptActivity(name=name, hostname=socket.gethostname(),
                               date_started=date_started,
                               date_completed=date_completed)
+
+    def getLastActivity(self, name):
+        """See IScriptActivitySet"""
+        return ScriptActivity.selectFirstBy(name=name,
+                                               orderBy='-date_started')
