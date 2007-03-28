@@ -1,27 +1,8 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="launchpad">
   <body>
+    <h1 metal:fill-slot="heading">Blueprint tracking</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Blueprint tracking</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/blueprints" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-features">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                       <ul class="buttons">
                         <li>
                           <a href="+tour">
@@ -56,9 +37,9 @@
                               </td>
                               <td>
                                 <input
-                                  tal:replace="structure view/search_action/render"
                                   type="submit"
-                                  value="Find blueprints"
+                                  name="field.actions.search"
+                                  value="Find Blueprints"
                                 />
                               </td>
                             </tr>
@@ -146,17 +127,7 @@
                         </div>
                       </tal:nosearchresults>
 
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
     </div><!--main-->
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress Needs "Recently implemented" list, blueprints count -->
