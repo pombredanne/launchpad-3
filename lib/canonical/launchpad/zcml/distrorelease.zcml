@@ -184,6 +184,10 @@
       template="../templates/object-portlet-milestones.pt"
       />
     <browser:page
+      name="+milestones"
+      template="../templates/object-milestones.pt"
+      />
+    <browser:page
       name="+latest-uploads"
       template="../templates/distrorelease-latest-uploads.pt"
       />
