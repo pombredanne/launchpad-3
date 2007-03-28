@@ -540,7 +540,8 @@ class QuestionSearch:
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, needs_attention_from=None, sort=None,
-                 product=None, distribution=None, sourcepackagename=None):
+                 product=None, distribution=None, sourcepackagename=None,
+                 unsupported=False):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -562,6 +563,8 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
+        
+        self.unsupported = unsupported
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -704,25 +707,39 @@ class QuestionTargetSearch(QuestionSearch):
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None):
+                 sourcepackagename=None, unsupported=False):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
             product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename, unsupported=unsupported)
 
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
         self.owner = owner
+        
+        self.unsupported = unsupported
 
     def getConstraints(self):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Ticket.owner = %s' % self.owner.id)
+        import pdb; pdb.set_trace()
+        if self.unsupported:
+            if self.product:
+                question_target = self.product
+            elif self.distribution:
+                question_target = self.distribution
+            elif self.sourcepackagename:
+                question_target = self.sourcepackagename
+                
+            langs = [str(lang.id) for lang in (
+                    question_target.getSupportedLanguages())]
+            constraints.append('Ticket.language NOT IN (%s)' % ', '.join(langs))
 
         return constraints
 

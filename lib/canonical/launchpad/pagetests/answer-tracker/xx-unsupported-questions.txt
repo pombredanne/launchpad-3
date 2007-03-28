@@ -12,15 +12,14 @@ distro.
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='actions')
-    >>> portlet.first('a', 
-    ...     href='http://answers.launchpad.dev/firefox/+unsupported-questions')
-    <a href="http://answers.launchpad.dev/firefox/+unsupported-questions">...
-    Unsupported Questions</a>
+    >>> portlet.first('ul')
+    <ul>
+    ...<a href="http://launchpad.dev/firefox/+unsupported">Unsupported</a>...
 
 
 Anybody can view the Unsupported Questions:
 
-    >>> browser.getLink('Unsupported Questions').click()
+    >>> browser.getLink('Unsupported').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('h1')
     <h1>Unsupported Questions for Mozilla Firefox</h1>

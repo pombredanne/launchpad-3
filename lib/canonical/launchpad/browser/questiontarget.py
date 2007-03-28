@@ -11,6 +11,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
+    'QuestionCollectionUnsupportedQuestionsView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
@@ -386,6 +387,30 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
         return {'needs_attention_from': self.user}
 
 
+class QuestionCollectionUnsupportedQuestionsView(SearchQuestionsView):
+    """SearchQuestionsView specialization for the unsupported questions report.
+     
+     It displays questions that are asked in an unsupported language for the
+     questiontarget context.
+     """
+     
+    @property
+    def pageheading(self):
+        """See SearchQuestionsView."""
+        return _('Unsupported Questions for ${context}',
+                     mapping={'context': self.context.displayname})
+                     
+    @property
+    def empty_listing_message(self):
+        """See SearchQuestionsView."""
+        return _("No questions are unsupported for ${context}.",
+                     mapping={'context': self.context.displayname})
+    
+    def getDefaultFilter(self):
+        """See SearchQuestionsView."""
+        return {'unsupported': True}
+
+
 class ManageAnswerContactView(GeneralFormView):
     """View class for managing answer contacts."""
 
@@ -475,7 +500,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
 
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
-    links = ['open', 'answered', 'myrequests', 'need_attention']
+    links = ['open', 'answered', 'myrequests', 'need_attention', 'unsupported']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         return "+tickets?" + urlencode(
@@ -501,6 +526,10 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
     def need_attention(self):
         text = 'Need attention'
         return Link('+need-attention', text, icon='question')
+        
+    def unsupported(self):
+        text = 'Unsupported'
+        return Link('+unsupported', text, icon='question')
 
 
 class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
