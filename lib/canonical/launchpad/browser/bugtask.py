@@ -34,11 +34,11 @@ from operator import attrgetter
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.interface import providedBy
 from zope.schema import Choice
@@ -82,7 +82,8 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget, LaunchpadRadioWidget)
+    NewLineToSpacesWidget)
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -242,13 +243,14 @@ class BugTaskNavigation(Navigation):
         # will return the +viewstatus page if bug 1 has actually been
         # reported in "foo". If bug 1 has not yet been reported in "foo",
         # a 404 will be returned.
-        if name in ("+viewstatus", "+editstatus"):
-            if INullBugTask.providedBy(self.context):
-                # The bug has not been reported in this context.
-                return None
-            else:
-                # The bug has been reported in this context.
-                return getView(self.context, name + "-page", self.request)
+        if name not in ("+viewstatus", "+editstatus"):
+            # You're going in the wrong direction.
+            return None
+        if INullBugTask.providedBy(self.context):
+            # The bug has not been reported in this context.
+            return None
+        # Yes! The bug has been reported in this context.
+        return getMultiAdapter((self.context, self.request), name=name+"-page")
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
@@ -733,6 +735,16 @@ class BugTaskEditView(GeneralFormView):
 
         return read_only_field_names
 
+    def getErrorMessage(self):
+        if not self.errors:
+            return ""
+        text = ("There %s with the information you entered. "
+                "Please fix %s and try again.")
+        count = len(self.errors)
+        if count == 1:
+            return text % ("is a problem", "it")
+        return text % ("are %d problems" % count, "them")
+
     def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
@@ -791,11 +803,27 @@ class BugTaskEditView(GeneralFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
+        # XXX: this set of try/except blocks is to ensure that the
+        # widget gets the correct error message assigned to it. It's
+        # rather unfortunate that this is done this way but we need to
+        # convert over to a LaunchpadFormView to fix this the right way.
+        # It would also fix, incidentally, the fact that this hook is
+        # only called after all widget errors are solved (which causes
+        # the errors here to be hidden until widget errors are solved).
+        #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
-            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            try:
+                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            except WidgetsError, errors:
+                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
         if (product is not None and
             'product' in data and product != data['product']):
-            valid_upstreamtask(bugtask.bug, data['product'])
+            try:
+                valid_upstreamtask(bugtask.bug, data['product'])
+            except WidgetsError, errors:
+                self.product_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
 
         return data
 
