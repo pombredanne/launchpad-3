@@ -204,16 +204,20 @@ class LaunchpadScript:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
         else:
-            # Record successful script completion
             date_completed = datetime.datetime.now(UTC)
-            self.txn.begin()
-            from canonical.launchpad.ftests import ANONYMOUS, login
-            login(ANONYMOUS)
-            getUtility(IScriptActivitySet).recordSuccess(
-                name=self.name,
-                date_started=date_started,
-                date_completed=date_completed)
-            self.txn.commit()
+            self.record_activity(date_started, date_completed)
+
+
+    def record_activity(self, date_started, date_completed):
+        """Record the successful completion of the script."""
+        self.txn.begin()
+        from canonical.launchpad.ftests import ANONYMOUS, login
+        login(ANONYMOUS)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=self.name,
+            date_started=date_started,
+            date_completed=date_completed)
+        self.txn.commit()
 
     #
     # Make things happen
