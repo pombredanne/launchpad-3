@@ -585,12 +585,34 @@ ul#applicationchooser li {
   text-align: center;
   font-weight: bold;
   color: #000000;
-  padding: 8px 0px 0px 0px;
 }
+
+/* We make the anchor display block, and use the same height as the li,
+ * to ensure the whole tab area is clickable. */
+ul#applicationchooser li a {
+  display: block;
+  padding: 8px 0px 0px 0px;
+  height: 40px;
+}
+
+/* For the selected tab, we need to provide the padding (since there's
+ * no anchor), and change the cursor to avoid it being an i-beam when
+ * hovering over the text of the tab. */
+ul#applicationchooser li span.selected {
+  display: block;
+  padding: 8px 0px 0px 0px;
+  cursor: default;
+}
+
 ul#applicationchooser li:hover {
   background-position: 0px 0px;
+}
+
+/* Avoid underlining anchors inside the tabs */
+ul#applicationchooser a:hover {
   text-decoration: none;
 }
+
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
@@ -1014,6 +1036,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   background: none;
   color: #9f2b33;
 }
+
 
 .statusUNCONFIRMED  { color: #993300; }
 .statusNEEDSINFO    { color: Red; }
