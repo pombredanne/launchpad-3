@@ -2,6 +2,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'ScriptActivity',
+    'ScriptActivitySet',
+    ]
+
 from datetime import datetime
 import pytz
 import socket
