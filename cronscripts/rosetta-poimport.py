@@ -22,4 +22,8 @@ if __name__ == '__main__':
     script = RosettaPOImporter('rosetta-poimport',
         dbuser=config.rosetta.poimport.dbuser)
     script.lock_or_quit()
+    try:
+        script.run()
+    finally:
+        script.unlock()
 
