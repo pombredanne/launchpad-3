@@ -92,6 +92,7 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -542,7 +543,6 @@ class LaunchpadRootNavigation(Navigation):
         return Navigation.publishTraverse(self, request, name)
 
 
-from canonical.launchpad.webapp.dynmenu import DynMenu
 class LaunchpadRootDynMenu(DynMenu):
 
     menus = {
@@ -551,8 +551,16 @@ class LaunchpadRootDynMenu(DynMenu):
 
     def contributionsMenu(self):
         if self.user is not None:
-            for obj in self.user.iterTopProjectsContributedTo():
-                yield self.makeBreadcrumbLink(obj)
+            L = [self.makeBreadcrumbLink(item)
+                 for item in self.user.iterTopProjectsContributedTo()]
+            L.sort(key=lambda item: item.text.lower())
+            if L:
+                for obj in L:
+                    yield obj
+            else:
+                yield self.makeLink(
+                    'Projects you contribute to go here.', target=None)
+            yield self.makeLink('See all projects...', target='/products')
 
 
 class SoftTimeoutView(LaunchpadView):

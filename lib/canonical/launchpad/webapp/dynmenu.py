@@ -28,6 +28,8 @@ class DynMenuLink:
         elif target is None:
             self.targeturl = None
             is_linked = False
+        elif isinstance(target, basestring):
+            self.targeturl = target
         else:
             self.targeturl = canonical_url(target)
         self.is_linked =  is_linked
