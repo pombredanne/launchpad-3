@@ -6,7 +6,7 @@
       <dt>Your location:</dt>
       <dd>
         <ul metal:fill-slot="breadcrumbs">
-          <li><a href="/" title="Launchpad Home">Home</a></li>
+          <li><a href="/">Home</a></li>
           <li class="current">FAQ</li>
         </ul>
       </dd>
@@ -18,9 +18,9 @@
     <dt>Sub-navigation<dt>
     <dd>
       <ul>
-        <li id="liAppTour"><a href="+tour">Application tour</a></li>
-        <li class="current" id="liFaq"><a href="+faq">FAQs</a></li>
-        <li id="liReviews"><a href="+about">Reviews</a></li>
+        <li><a href="+tour">Application tour</a></li>
+        <li class="current"><a href="+faq">FAQs</a></li>
+        <li><a href="+about">About</a></li>
       </ul>
     </dd>
   </dl>

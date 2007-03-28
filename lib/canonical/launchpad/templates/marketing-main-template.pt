@@ -19,14 +19,14 @@
       />
       <![endif]-->
     </head>
-    <body>
+    <body tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
       <a id="top"></a>
       <div id="breadcrumb">
         <dl>
           <dt>Your location:</dt>
           <dd>
             <ul metal:define-slot="breadcrumbs">
-              <li><a href="/" title="Launchpad Home">Home</a></li>
+              <li><a href="/">Home</a></li>
             </ul>
           </dd>
         </dl>
@@ -38,7 +38,8 @@
             <dt>Navigation<dt>
             <dd>
               <ul>
-                <li id="liHome"><a href="/+about">Home</a></li>
+                <li id="liHome"><a href="/+about"
+                                   tal:attributes="href string:${vhosts/mainsite/rooturl}+about">Home</a></li>
                 <li id="liAccount"><a href="/+login">Get an account</a></li>
                 <li id="liTour"><a href="/+tour">Take a tour</a></li>
               </ul>
