@@ -207,7 +207,7 @@ class LaunchpadScript:
             # Record successful script completion
             date_completed = datetime.datetime.now(UTC)
             self.txn.begin()
-            from canonical.launchpad.ftests import ANONYMOUS
+            from canonical.launchpad.ftests import ANONYMOUS, login
             login(ANONYMOUS)
             getUtility(IScriptActivitySet).recordSuccess(
                 name=self.name,

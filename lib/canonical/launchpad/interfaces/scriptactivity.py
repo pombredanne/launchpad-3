@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Datetime, TextLine
 
 from canonical.launchpad import _
 
