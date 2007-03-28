@@ -9,9 +9,8 @@
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
-      media="screen"
-      tal:content="string:@import url(${rooturl}+icing/style.css);"/>
-    <link type="text/css" media="print" href="/+icing/print.css" />
+      media="screen, print"
+      tal:content="string:@import url(${rooturl}+icing/style.css?rev=2);"/>
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"
@@ -33,176 +32,239 @@
       initPortlets();
     "
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname}"
+    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader">
-      <div class="launchpad">
-        <img
-          alt=""
-          src="/+icing/globalheader_launchpad.gif"
-          width="34"
-          height="16"
-        /><a tal:attributes="href rooturl">Launchpad</a>
-      </div>
-      <ul class="home">
-        <li><a tal:attributes="href rooturl" title="Home">Home</a></li>
-      </ul>
-      <div style="color:white;font-size:120%">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_home.gif" alt="Home" /></a>
+      <div class="sitemessage">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+      <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
 
     <div id="locationbar">
-      <strong>Your location:</strong>
-      <ul id="menuroot" class="menuroot">
+      <strong id="yourlocation">Your location:</strong>
+      <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
+      <table id="logincontrol">
+        <tr>
+          <td tal:content="structure context/@@login_status" />
+        </tr>
+      </table>
     </div>
-
-    <div id="logincontrol" tal:content="structure context/@@login_status" />
-    <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    
-    <div id="singlecolumn" tal:condition="columns1|nothing">
-      <metal:heading define-slot="pageheading" />
-      <tal:XXX condition="nothing"
-      >20061025 mpt: pageheading deprecated</tal:XXX>
-      <tal:notifications
-        define="notifications request/notifications"
-        condition="notifications"
+    <div id="nonhelp">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+      <table
+        tal:condition="view/macro:pagehas/applicationbuttons"
+        id="applications"
       >
-        <metal:notifications
-         use-macro="context/@@+main-template-macros/notifications"
+        <tbody>
+          <tr>
+            <th><h1 metal:define-slot="heading" /></th>
+            <td
+              tal:define="
+                facetname CONTEXTS/menu:selectedfacetname;
+                facetname python:facetname == 'overview' and 'register' or facetname;
+                facetname python:facetname == 'branches' and 'code' or facetname;
+                facetname python:facetname == 'specifications' and 'blueprints' or facetname"
+              tal:content="structure context/@@+applicationbuttons/?facetname"
+            />
+          </tr>
+        </tbody>
+      </table>
+      <div
+        id="structuralobject"
+        tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
+        tal:condition="view/macro:pagehas/structuralheaderobject"
+      >
+        <tal:header
+          condition="structuralheaderobject"
+          replace="structure structuralheaderobject/@@+structural-header"
         />
-      </tal:notifications>
-      <metal:block define-slot="main" />
-    </div>
-    <tal:layout condition="not:columns1|nothing">
-
-    <div
-      id="structuralobject"
-      tal:define="structuralobject CONTEXTS/lp:structuralobject"
-      tal:condition="not:contextless|nothing"
-    >
-      <tal:header
-        condition="structuralobject"
-        replace="structure structuralobject/@@+structural-header"
-      />
-      <tal:none condition="not:structuralobject">No structural object</tal:none>
-    </div>
-    <form id="globalsearch" action="/+search" method="get">
-      <div>
-        <input
-          type="text"
-          id="q"
-          name="q"
-          value="Search"
-          onfocus="if(this.value=='Search'){this.value='';};"
-        />
-        <input
-          type="image"
-          id="searchbutton"
-          src="/+icing/but_search.gif"
-          title="Search"
-        />
+        <tal:no condition="not:structuralheaderobject"
+        >No structural object</tal:no>
       </div>
-    </form>
-    <div id="mainarea">
-      <div class="t">
-        <div class="u">
-          <div class="v">
-            <div class="w">
-              <div class="x">
-                <div class="y">
-                  <div class="z">
-                    <tal:onlyincontexts condition="not:contextless|nothing">
-
-                    <ul
-                      id="applicationchooser"
-                      tal:define="facetmenu CONTEXTS/menu:facet"
-                      tal:condition="facetmenu"
-                    >
-                      <tal:facet repeat="link facetmenu">
-                        <tal:available condition="link/enabled">
-                          <li
-                            tal:condition="link/selected"
-                            tal:attributes="title link/summary; class string:current tab-${link/name}"
-                          >
-                            <a
-                              tal:condition="link/linked"
-                              tal:attributes="href link/url"
-                              tal:content="structure link/escapedtext"
-                            >abc</a>
-                            <span
-                              tal:condition="not: link/linked"
-                              tal:replace="structure link/escapedtext"
-                            >def</span>
-                          </li>
-                          <li
-                            tal:condition="not: link/selected"
-                            tal:attributes="title link/summary; class string:current tab-${link/name}"
-                          ><a
-                              tal:attributes="href link/url"
-                              tal:content="structure link/escapedtext"
-                            >ghi</a><span
-                              class="disabled"
-                              tal:condition="not: link/linked"
-                              tal:content="structure link/escapedtext"
-                          >jkl</span></li>
-                        </tal:available>
-                        <li
-                          tal:condition="not: link/enabled"
-                          tal:attributes="title link/summary; class string:unavailable tab-${link/name}"
-                          tal:content="structure link/escapedtext"
-                        />
-                      </tal:facet>
-                    </ul>
-
-                    </tal:onlyincontexts>
-                    <div
-                      tal:condition="contextless|nothing"
-                      id="noapplicationchooser"
-                    >&nbsp;</div>
-
-                    <br class="clear" />
-
-                    <div id="container">
-
-                    <div id="maincontent">
-                      <div class="pageheading"><!-- XXX obsolete -->
-                        <metal:block define-slot="pageheading">
-                        </metal:block>
-                      </div>
-                      <tal:notifications
-                        define="notifications request/notifications"
-                        condition="notifications"
-                      ><metal:notifications
-                          use-macro="context/@@+main-template-macros/notifications" />
-                      </tal:notifications>
-                      <metal:block define-slot="main" />
-                      <div
-                        tal:define="structuralobject CONTEXTS/lp:structuralobject" 
-                        tal:condition="structuralobject"
-                        tal:replace="structure structuralobject/@@+structural-footer"
-                      />
-                    </div>
-                    <div id="portlets">
-                      <tal:menu replace="structure CONTEXTS/@@+menubox" />
-                      <metal:portlets define-slot="portlets" />
-                      <metal:portlets define-slot="portlets_two" />
-                      <metal:portlets define-slot="portlets_one" />
-                      <div class="clear"></div><!-- needed for Safari -->
-                    </div>
-                    <div class="clear"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <form
+        tal:condition="view/macro:pagehas/globalsearch"
+        id="globalsearch"
+        action="/+search"
+        method="get"
+      >
+        <div>
+          <input
+            type="text"
+            id="q"
+            name="q"
+            value="Search"
+            onfocus="if(this.value=='Search'){this.value='';};"
+          />
+          <input
+            type="image"
+            id="searchbutton"
+            src="/+icing/but_search.gif"
+            title="Search"
+          />
         </div>
-      </div>
-    </div>
+      </form>
+      <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
+        <div class="t">
+          <div class="u">
+            <div class="v">
+              <div class="w">
+                <div class="x">
+                  <div class="y">
+                    <div class="z">
+                      <div
+                        tal:condition="not:view/macro:pagehas/applicationtabs"
+                        id="noapplicationchooser"
+                      >&nbsp;</div>
+                      <tal:applicationtabs
+                        condition="view/macro:pagehas/applicationtabs"
+                      >
+                        <ul
+                          id="applicationchooser"
+                          tal:define="facetmenu CONTEXTS/menu:facet"
+                          tal:condition="facetmenu"
+                        >
+                          <tal:facet repeat="link facetmenu">
+                            <tal:available condition="link/enabled">
+                              <li
+                                tal:condition="link/selected"
+                                tal:attributes="title link/summary; class string:current tab-${link/name}"
+                              >
+                                <a
+                                  tal:condition="link/linked"
+                                  tal:attributes="href link/url"
+                                  tal:content="structure link/escapedtext"
+                                >abc</a>
+                                <span
+                                  tal:condition="not: link/linked"
+                                  tal:replace="structure link/escapedtext"
+                                >def</span>
+                              </li>
+                              <li
+                                tal:condition="not: link/selected"
+                                tal:attributes="title link/summary; class string:current tab-${link/name}"
+                              ><a
+                                  tal:attributes="href link/url"
+                                  tal:content="structure link/escapedtext"
+                                >ghi</a><span
+                                  class="disabled"
+                                  tal:condition="not: link/linked"
+                                  tal:content="structure link/escapedtext"
+                              >jkl</span></li>
+                            </tal:available>
+                            <li
+                              tal:condition="not: link/enabled"
+                              tal:attributes="title link/summary; class string:unavailable tab-${link/name}"
+                              tal:content="structure link/escapedtext"
+                            />
+                          </tal:facet>
+                        </ul>
+                      </tal:applicationtabs>
+                      <br class="clear" />
+                      <div id="container">
+                        <div id="maincontent">
+                          <div class="pageheading"><!-- XXX obsolete -->
+                            <metal:block define-slot="pageheading">
+                            </metal:block>
+                          </div>
+                          <tal:notifications
+                            define="notifications request/notifications"
+                            condition="notifications"
+                          ><metal:notifications
+                              use-macro="context/@@+main-template-macros/notifications" />
+                          </tal:notifications>
+                          <metal:block define-slot="main" />
+                          <tal:no_children replace="nothing">
+                          <div
+                            tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
+                            tal:condition="structuralfooterobject"
+                            tal:replace="structure structuralfooterobject/@@+structural-footer"
+                            />
+                          </tal:no_children>
+                        </div>
+                        <div
+                          id="portlets"
+                          tal:condition="view/macro:pagehas/portlets"
+                        >
+                          <tal:menu replace="structure CONTEXTS/@@+menubox" />
+                          <metal:portlets define-slot="portlets" />
+                          <metal:portlets define-slot="portlets_two" />
+                          <metal:portlets define-slot="portlets_one" />
+                          <div class="clear"></div><!-- needed for Safari -->
+                        </div>
+                        <div class="clear"></div>
+                      </div><!--id="container"-->
+                    </div><!--id="z"-->
+                  </div><!--id="y"-->
+                </div><!--id="x"-->
+              </div><!--id="w"-->
+            </div><!--id="v"-->
+          </div><!--id="u"-->
+        </div><!--id="t"-->
+      </div><!--id="mainarea"-->
+      <tal:noborder condition="not:view/macro:pagehas/applicationborder">
+        <tal:notifications
+          define="notifications request/notifications"
+          condition="notifications"
+        ><metal:notifications
+            use-macro="context/@@+main-template-macros/notifications" />
+        </tal:notifications>
+        <metal:block define-slot="main" />
+        <div style="clear: both; height: 2em;">&nbsp;</div>
+        <tal:comment condition="nothing">
+          No easier way to put a gap before the footer, because in CSS a
+          top margin for a cleared item is ignored.
+        </tal:comment>
+      </tal:noborder>
+      <div id="globalfooter">
+        <div id="applications-footer"
+          tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+          tal:replace="nothing">
+          <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
+          <a tal:attributes="href vhosts/code/rooturl">Code</a> |
+        <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
+        <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
+        <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
+  
+          <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
+        </div>
+        <div id="colophon">
+          <a href="/legal">Conditions&nbsp;of&nbsp;Use</a> |
+          <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
+          <a href="/faq">FAQ</a>
+        </div>
+        <div id="copyright">
+          Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+          <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
+              | build
+              <tal:block condition="revno" replace="revno" />
+              <tal:block condition="not: revno">unknown</tal:block>
+          </tal:block> |
+          <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+        </div>
+        <ul style="clear: both;" tal:condition="nothing">
+          <li>Page type: <tal:pagetype replace="view/macro:pagetype" /></li>
 
-    </tal:layout>
+            <li>Has portlet column:
+                <span tal:replace="view/macro:pagehas/portlets" />
+            </li>
+            <li>Has application tabs:
+                <span tal:replace="view/macro:pagehas/applicationtabs" />
+            </li>
+            <li>Has application border:
+                <span tal:replace="view/macro:pagehas/applicationborder" />
+            </li>
+            <li>Has application buttons:
+                <span tal:replace="view/macro:pagehas/applicationbuttons" />
+            </li>
+            <li>Has heading:
+                <span tal:replace="view/macro:pagehas/heading" />
+            </li>
 
+        </ul>
+      </div><!--id="globalfooter"-->
+    </div><!--id="nonhelp"-->
     <div id="help_panel" class="closed">
       <div class="help1">
         <div class="help2">
@@ -215,36 +277,9 @@
       </div>
       <div class="bottom">&nbsp;</div>
     </div>
-    <div id="globalfooter">
-      <div id="applications-footer"
-        tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
-        tal:replace="nothing">
-        <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
-        <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-      <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-      <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-      <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-
-        <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
-      </div>
-      <div id="colophon">
-        <a href="/legal">Copyright&nbsp;&amp;&nbsp;Terms&nbsp;of&nbsp;use</a> |
-        <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-        <a href="/faq">FAQ</a>
-      </div>
-      <div id="copyright">
-        Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-        <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
-            | build
-            <tal:block condition="revno" replace="revno" />
-            <tal:block condition="not: revno">unknown</tal:block>
-        </tal:block> |
-        <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
-      </div>
-    </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/products">Projects</a></li>
+        <li class="item"><a href="/projects">Projects</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>

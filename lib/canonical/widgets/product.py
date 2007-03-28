@@ -12,7 +12,6 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.bugtask import LaunchpadRadioWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
 

@@ -269,12 +269,6 @@ class TeamMemberAddView(AddView):
             self.alreadyMember = newmember
             return
 
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipData(
-                newmember, approved, reviewer=self.user, expires=expires)
-        else:
-            team.addMember(newmember, reviewer=self.user, status=approved)
-
+        team.addMember(newmember, reviewer=self.user, status=approved)
         self.addedMember = newmember
 

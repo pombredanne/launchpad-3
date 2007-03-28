@@ -127,6 +127,11 @@
             template="../templates/product-packages.pt"
             />
         <browser:page
+            name="+series"
+            facet="overview"
+            template="../templates/product-series.pt"
+            />
+        <browser:page
             name="+distributions"
             facet="overview"
             template="../templates/product-distros.pt"
@@ -164,6 +169,11 @@
             name="+portlet-milestones"
             facet="overview"
             template="../templates/object-portlet-milestones.pt"
+            />
+        <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-bounties"
@@ -373,11 +383,6 @@
         for="canonical.launchpad.interfaces.IProductSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSet"
-        name="+code-index"
-        layer="canonical.launchpad.layers.CodeLayer" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProductSetNavigation"
@@ -389,26 +394,9 @@
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductSetDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.BazaarProductView"
-        name="+code-index"
-        facet="branches"
-        template="../templates/product-code-index.pt"
-        />
-
-    <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductDynMenu"
+        class="canonical.launchpad.browser.ProductDynMenu"
         attribute="__call__"
         name="+menudata"
         />

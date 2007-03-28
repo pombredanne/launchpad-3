@@ -7,21 +7,20 @@
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h4><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h4>
-  <h2 tal:content="context/title">Spec Title</h2>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-      You can attach the specification to a different project. Be careful,
-      when you retarget the specification you will
-      lose any goal or milestone information for it. <b>Choose EITHER a
-      project, OR a distribution,</b> using the form below.
+      You can target the blueprint to a different project. Be careful,
+      when you retarget the blueprint you will
+      lose any goal or milestone information for it.
+      Choose <strong>either</strong> a project, <strong>or</strong> a distribution.
     </p>
 
   </div>

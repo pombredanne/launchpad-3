@@ -19,7 +19,6 @@ function submit_filter()
 
 var field = document.getElementById('field.lifecycle');
 field.onchange = submit_filter;
-field.focus();
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
@@ -84,11 +83,16 @@ field.focus();
           <tal:has_commit condition="branch/last_commit">
             <span class="sortkey" 
                   tal:content="branch/last_commit/fmt:datetime">
-               2005-02-12</span> 
+               2005-02-12 13:45 EST
+            </span>
+            <tal:comment replace="nothing">
+              sabdfl - let's keep the approximateduration here rather than
+              using the standard approximatedate
+            </tal:comment>
             <span tal:attributes="title branch/last_commit/fmt:datetime"
                   tal:content="branch/elapsed_time/fmt:approximateduration">
               sometime
-              </span> ago
+            </span> ago
           </tal:has_commit>
         </td>
         <td tal:condition="context/show_column/product|nothing">

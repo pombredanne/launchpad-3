@@ -60,39 +60,7 @@
 
     <div tal:define="is_focus python:context.development_focus == series"
          tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
-
-              <h3>
-                <a
-                  tal:attributes="href series/fmt:url"
-                  tal:content="series/name"
-                >1.0</a>
-              </h3>
-              <div>
-                <strong>Releases:</strong>
-                <tal:none condition="not:series/releases">None</tal:none>
-                <tal:release repeat="release series/releases">
-                  <a
-                    tal:attributes="href release/fmt:url"
-                    tal:content="release/version"
-                  >version</a><tal:comma
-                  condition="not:repeat/release/end">,</tal:comma>
-                </tal:release>
-              </div>
-              <div>
-                <strong>Milestones:</strong>
-                <tal:none condition="not:series/milestones">None</tal:none>
-                <tal:milestone repeat="milestone series/milestones">
-                  <a
-                    tal:attributes="href milestone/fmt:url"
-                    tal:content="milestone/name"
-                  >name</a><tal:comma
-                  condition="not:repeat/milestone/end">,</tal:comma>
-                </tal:milestone>
-              </div>
-              <div tal:condition="is_focus" style="font-style: italic;">
-                Current development focus
-              </div>
-
+       <metal:series use-macro="series/@@+macros/detailed_display" />
     </div>
 
   </div>
@@ -100,7 +68,7 @@
         </div>
         <div
           class="section"
-          tal:content="structure context/@@+portlet-packages"
+          tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
           class="section"
@@ -119,7 +87,11 @@
         />
         <div
           class="section"
-          tal:content="structure context/@@+portlet-latestspecs"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
         />
       </div>
     </div>

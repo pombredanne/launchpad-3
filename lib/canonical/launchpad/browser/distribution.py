@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
+    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -27,7 +28,7 @@ __all__ = [
     'DistributionSetSOP',
     ]
 
-from datetime import datetime
+import datetime
 import operator
 
 from zope.component import getUtility
@@ -52,6 +53,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
 from canonical.widgets.image import (
@@ -592,7 +594,7 @@ class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
-        self.now = datetime.utcnow()
+        self.now = datetime.datetime.utcnow()
 
     def render(self):
         self.request.response.setHeader(
@@ -650,3 +652,52 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+
+
+class DistributionDynMenu(DynMenu):
+
+    def render(self):
+        if len(self.names) > 1:
+            raise NotFoundError(names[-1])
+
+        if not self.names:
+            return self.renderMenu(self.mainMenu())
+
+        [name] = self.names
+        if name == 'meetings':
+            return self.renderMenu(self.meetingsMenu())
+        elif name == 'releases':
+            return self.renderMenu(self.releaseMenu())
+        elif name == 'milestones':
+            return self.renderMenu(self.milestoneMenu())
+
+        raise NotFoundError(name)
+
+    def releaseMenu(self):
+        for release in self.context.releases:
+            yield self.makeBreadcrumbLink(release)
+        yield self.makeLink('Show all releases...', page='+releases')
+
+    def milestoneMenu(self):
+        """Show milestones more recently than one month ago,
+        or with no due date.
+        """
+        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        for milestone in self.context.milestones:
+            if (milestone.dateexpected is None or
+                milestone.dateexpected > fairly_recent):
+                yield self.makeLink(milestone.title, context=milestone)
+        yield self.makeLink('Show all milestones...', page='+milestones')
+
+    def meetingsMenu(self):
+        # TODO: abstract this into a HasMeetingsMenu mix-in for use with
+        # an IHasMeetings.
+        for sprint in self.context.coming_sprints:
+            yield self.makeLink(sprint.title, context=sprint)
+        yield self.makeLink('Show all meetings...', page='+sprints')
+
+    def mainMenu(self):
+        yield self.makeLink('Releases', page='+releases', submenu='releases')
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink(
+            'Milestones', page='+milestones', submenu='milestones')

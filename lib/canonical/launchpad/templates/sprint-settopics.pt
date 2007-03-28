@@ -15,7 +15,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Set topics for discussion</h1>
 </metal:heading>
 
@@ -85,10 +84,11 @@
                 <span tal:condition="python: speclink.registrant.id not in view.attendee_ids">
                   (non-attendee)
                 </span>
-
-                on
                 <span
-                  tal:replace="speclink/date_created/fmt:date">2006-01-12</span>
+                  tal:attributes="title speclink/date_created/fmt:datetime"
+                  tal:content="speclink/date_created/fmt:displaydate">
+                  2006-01-12
+                </span>
               </tal:registrant>
             </div>
           </td>
