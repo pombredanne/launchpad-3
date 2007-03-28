@@ -34,13 +34,15 @@
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
     <resource name="arrowRight" file="../images/arrowRight.gif" />
+    <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
+    <resource name="build-superseded" file="../images/build-superseded.png" />
     <resource name="blue-bar" file="../images/blue-bar.png" />
-    <resource name="blueprint" file="../images/blueprint-not.png" />
+    <resource name="blueprint" file="../images/blueprint.png" />
     <resource name="blueprint-essential" file="../images/blueprint-essential.png" />
     <resource name="blueprint-high" file="../images/blueprint-high.png" />
     <resource name="blueprint-medium" file="../images/blueprint-medium.png" />
@@ -110,7 +112,6 @@
     <resource name="product-badge" file="../images/product-badge.png" />
     <resource name="product-logo" file="../images/product-logo.png" />
     <resource name="product-mugshot" file="../images/product-mugshot.png" />
-    <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/project.png" />
     <resource name="project-badge" file="../images/project-badge.png" />
     <resource name="project-logo" file="../images/project-logo.png" />
@@ -134,7 +135,6 @@
     <resource name="team-badge" file="../images/team-badge.png" />
     <resource name="team-logo" file="../images/team-logo.png" />
     <resource name="team-mugshot" file="../images/team-mugshot.png" />
-    <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
     <resource name="translation-space" file="../images/translation-space.png" />

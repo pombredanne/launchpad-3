@@ -564,9 +564,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icons
-            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
-            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            dbschema.BuildStatus.BUILDING: "/@@/build-building",
             }
 
         alt = '[%s]' % self._context.buildstate.name

@@ -282,6 +282,8 @@ class SprintAddView(LaunchpadFormView):
 class SprintBrandingView(BrandingChangeView):
 
     schema = ISprint
+    # sabdfl 2007-03-28 deliberately leaving icon off the list, i think it
+    # would be overkill, we can add it later if people ask for it
     field_names = ['logo', 'mugshot']
 
 

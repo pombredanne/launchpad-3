@@ -409,11 +409,6 @@
         <td><img alt="" src="/@@/team-mugshot" /></td>
       </tr>
       <tr>
-        <td>topic</td>
-        <td><img src="/@@/topic" /></td>
-        <td>A "topic". <i>Should be replaced by a build icon.</i></td>
-      </tr>
-      <tr>
         <td>treeCollapsed</td>
         <td><img src="/@@/treeCollapsed" /></td>
         <td>A collapsed tree, click on it to expand and see more
@@ -672,6 +667,11 @@
         <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
       </tr>
       <tr>
+        <td>build-building</td>
+        <td><img src="/@@/build-building" /></td>
+        <td>A build that is currently in progress.</td>
+      </tr>
+      <tr>
         <td>build-chrootwait</td>
         <td><img src="/@@/build-chrootwait" /></td>
         <td>This is a "build", by which we mean a scheduled compilation of a
@@ -700,6 +700,11 @@
         <td>build-success</td>
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
+      </tr>
+      <tr>
+        <td>build-superseded</td>
+        <td><img src="/@@/build-superseded" /></td>
+        <td>A build that was superseded before it actually happened.</td>
       </tr>
       <tr>
         <td>package-binary</td>
