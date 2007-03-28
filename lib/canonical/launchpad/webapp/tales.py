@@ -330,43 +330,100 @@ class ObjectFormatterAPI:
         return canonical_url(self._context, request)
 
 
-class HasIconFormatterAPI(ObjectFormatterAPI):
-    """Adapter for MOST IHasIcon objects to a formatted string. Some
-    IHasIcon objects use custom formatters so they can get variations of the
-    default depending on object status. For example, IPerson, which wants to
+class BaseIconFormatterAPI(ObjectFormatterAPI):
+    """Base class for formatting IHasIcon objects to show their custom icon
+    or a default one that varies based on the type of object. Some IHasIcon
+    objects use custom formatters so they can get variations of the default
+    depending on object status. For example, IPerson, which wants to
     indicate the difference between an active person and an inactive person.
     """
 
+    @property
+    def default_icon_resource(self):
+        context = self._context
+        if IProject.providedBy(context):
+            return '/@@/project'
+        elif IProduct.providedBy(context):
+            return '/@@/product'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution'
+        elif ISprint.providedBy(context):
+            return '/@@/sprint'
+        return '/@@/nyet'
+
     def icon(self):
-        """Return the appropriate <img> tag for this object's gotchi."""
+        """Return the appropriate <img> tag for this object's icon."""
         context = self._context
-        if context.gotchi is not None:
-            url = context.gotchi.getURL()
+        if context.icon is not None:
+            url = context.icon.getURL()
         else:
-            url = context.default_gotchi_resource
-        return '<img alt="" class="mugshot" src="%s" />' % url
+            url = self.default_icon_resource
+        icon = '<img alt="" width="14" height="14" src="%s" />'
+        return icon % url
 
 
-class HasLogoAndMugshotFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+class HasLogoFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasLogo objects to a formatted string that presents a
+    logo of 64x64 suitable for use in the page heading for that object. Some
+    objects have custom logo's, others use the logo of the nearest object
+    that does in fact have a logo."""
 
-    def heading_icon(self):
-        """Return the appropriate <img> tag for this object's heading img."""
+    @property
+    def default_logo_resource(self, context):
+        if IProject.providedBy(context):
+            return '/@@/project-logo'
+        elif IProduct.providedBy(context):
+            return '/@@/product-logo'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-logo'
+        elif ISprint.providedBy(context):
+            return '/@@/sprint-logo'
+        return '/@@/nyet-logo'
+
+    def logo(self):
+        """Return the appropriate <img> tag for this object's logo."""
         context = self._context
-        if context.gotchi_heading is not None:
-            url = context.gotchi_heading.getURL()
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+        if context is None:
+            url = '/@@/launchpad-logo'
+        if context.logo is not None:
+            url = context.logo.getURL()
         else:
-            url = context.default_gotchi_heading_resource
-        return '<img alt="" class="mugshot" src="%s" />' % url
+            url = self.default_logo_resource(context)
+        logo = """<div class="logo">
+            <img alt="" width="192" height="192" src="%s" />
+            </div>"""
+        return logo % url
 
-    def emblem(self):
-        """Return the appropriate <img> tag for this object's emblem."""
+
+class HasMugshotFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IHasMugshot objects to a formatted string."""
+
+    @property
+    def default_mugshot_resource(self):
         context = self._context
-        if context.emblem is not None:
-            url = context.emblem.getURL()
+        if IProject.providedBy(context):
+            return '/@@/project-mugshot'
+        elif IProduct.providedBy(context):
+            return '/@@/product-mugshot'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-mugshot'
+        elif ISprint.providedBy(context):
+            return '/@@/sprint-mugshot'
+        return '/@@/nyet-mugshot'
+
+    def mugshot(self):
+        """Return the appropriate <img> tag for this object's mugshot."""
+        context = self._context
+        if context.mugshot is not None:
+            url = context.mugshot.getURL()
         else:
-            url = context.default_emblem_resource
-        return '<img alt="" src="%s" />' % url
+            url = self.default_mugshot_resource
+        mugshot = """<div class="mugshot">
+            <img alt="" width="192" height="192" src="%s" />
+            </div>"""
+        return mugshot % url
 
 
 # Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to

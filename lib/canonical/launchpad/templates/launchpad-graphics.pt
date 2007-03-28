@@ -160,8 +160,8 @@
         <td><img alt="" src="/@@/distribution" /></td>
       </tr>
       <tr>
-        <td>distribution-heading</td>
-        <td><img alt="" src="/@@/distribution-heading" /></td>
+        <td>distribution-logo</td>
+        <td><img alt="" src="/@@/distribution-logo" /></td>
       </tr>
       <tr>
         <td>distribution-mugshot</td>
@@ -225,8 +225,8 @@
         </td>
       </tr>
       <tr>
-        <td>launchpad-heading</td>
-        <td><img alt="" src="/@@/launchpad-heading" /></td>
+        <td>launchpad-logo</td>
+        <td><img alt="" src="/@@/launchpad-logo" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -269,7 +269,7 @@
         <td><img alt="" src="/@@/person-badge" /></td>
         <td rowspan="4">
           A person who uses Launchpad.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the person has not uploaded their own custom picture.
         </td>
       </tr>
@@ -278,8 +278,8 @@
         <td><img alt="" src="/@@/person" /></td>
       </tr>
       <tr>
-        <td>person-heading</td>
-        <td><img alt="" src="/@@/person-heading" /></td>
+        <td>person-logo</td>
+        <td><img alt="" src="/@@/person-logo" /></td>
       </tr>
       <tr>
         <td>person-mugshot</td>
@@ -297,8 +297,8 @@
         <td><img alt="" src="/@@/person-inactive" /></td>
       </tr>
       <tr>
-        <td>person-inactive-heading</td>
-        <td><img alt="" src="/@@/person-inactive-heading" /></td>
+        <td>person-inactive-logo</td>
+        <td><img alt="" src="/@@/person-inactive-logo" /></td>
       </tr>
       <tr>
         <td>person-inactive-mugshot</td>
@@ -309,7 +309,7 @@
         <td><img alt="" src="/@@/product-badge" /></td>
         <td>
           A software project.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the project owner has not uploaded a custom icon.
         </td>
       </tr>
@@ -318,8 +318,8 @@
         <td><img alt="" src="/@@/product" /></td>
       </tr>
       <tr>
-        <td>product-heading</td>
-        <td><img alt="" src="/@@/product-heading" /></td>
+        <td>product-logo</td>
+        <td><img alt="" src="/@@/product-logo" /></td>
       </tr>
       <tr>
         <td>product-mugshot</td>
@@ -335,8 +335,8 @@
         <td><img alt="" src="/@@/project" /></td>
       </tr>
       <tr>
-        <td>project-heading</td>
-        <td><img alt="" src="/@@/project-heading" /></td>
+        <td>project-logo</td>
+        <td><img alt="" src="/@@/project-logo" /></td>
       </tr>
       <tr>
         <td>project-mugshot</td>
@@ -389,7 +389,7 @@
         <td><img alt="" src="/@@/team-badge" /></td>
         <td rowspan="4">
           An anonymous icon for a team.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the team has not uploaded their own custom picture.
         </td>
       </tr>
@@ -398,8 +398,8 @@
         <td><img alt="" src="/@@/team" /></td>
       </tr>
       <tr>
-        <td>team-heading</td>
-        <td><img alt="" src="/@@/team-heading" /></td>
+        <td>team-logo</td>
+        <td><img alt="" src="/@@/team-logo" /></td>
       </tr>
       <tr>
         <td>team-mugshot</td>

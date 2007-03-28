@@ -58,8 +58,8 @@
     <resource name="demo" file="../images/demo.png" />
     <resource name="distribution" file="../images/distribution.png" />
     <resource name="distribution-badge" file="../images/distribution-badge.png" />
-    <resource name="distribution-heading" file="../images/distribution-heading.png" />
-    <resource name="distribution-mugshot" file="../images/distribution-heading.png" />
+    <resource name="distribution-logo" file="../images/distribution-logo.png" />
+    <resource name="distribution-mugshot" file="../images/distribution-logo.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
@@ -78,7 +78,7 @@
     <resource name="involved-yes" file="../images/involved-yes-badge.png" />
     <resource name="launchpad" file="../images/launchpad.png" />
     <resource name="launchpad-large" file="../images/launchpad-large.png" />
-    <resource name="launchpad-heading" file="../images/launchpad-heading.png" />
+    <resource name="launchpad-logo" file="../images/launchpad-logo.png" />
     <resource name="list" file="../images/list.png" />
     <resource name="language" file="../images/language.png" />
     <resource name="link" file="../images/link.png" />
@@ -94,21 +94,21 @@
     <resource name="package-source" file="../images/package-source.png" />
     <resource name="person" file="../images/person.png" />
     <resource name="person-badge" file="../images/person-badge.png" />
-    <resource name="person-heading" file="../images/person-heading.png" />
+    <resource name="person-logo" file="../images/person-logo.png" />
     <resource name="person-mugshot" file="../images/person-mugshot.png" />
     <resource name="person-inactive" file="../images/person-inactive.png" />
     <resource name="person-inactive-badge" file="../images/person-inactive-badge.png" />
-    <resource name="person-inactive-heading" file="../images/person-inactive-heading.png" />
+    <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
     <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />
-    <resource name="product-heading" file="../images/product-heading.png" />
-    <resource name="product-mugshot" file="../images/product-heading.png" />
+    <resource name="product-logo" file="../images/product-logo.png" />
+    <resource name="product-mugshot" file="../images/product-logo.png" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/project.png" />
     <resource name="project-badge" file="../images/project-badge.png" />
-    <resource name="project-heading" file="../images/project-heading.png" />
-    <resource name="project-mugshot" file="../images/project-heading.png" />
+    <resource name="project-logo" file="../images/project-logo.png" />
+    <resource name="project-mugshot" file="../images/project-logo.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="question" file="../images/question.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
@@ -124,8 +124,8 @@
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/team.png" />
     <resource name="team-badge" file="../images/team-badge.png" />
-    <resource name="team-heading" file="../images/team-heading.png" />
-    <resource name="team-mugshot" file="../images/team-heading.png" />
+    <resource name="team-logo" file="../images/team-logo.png" />
+    <resource name="team-mugshot" file="../images/team-logo.png" />
     <resource name="topic" file="../images/specification.png" />
     <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
