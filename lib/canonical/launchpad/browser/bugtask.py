@@ -24,7 +24,9 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'BugTargetTextView',
     'upstream_status_vocabulary_factory',
-    'BugsBugTaskSearchListingView']
+    'BugsBugTaskSearchListingView',
+    'BugTaskSOP',
+    ]
 
 import cgi
 import re
@@ -70,6 +72,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -1894,3 +1897,20 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getSearchPageHeading(self):
         return "Search all bug reports"
+
+
+class BugTaskSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        bugtask = self.context
+        return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+

@@ -902,3 +902,4 @@ class BugURL:
     @property
     def path(self):
         return u"bugs/%d" % self.context.id
+
