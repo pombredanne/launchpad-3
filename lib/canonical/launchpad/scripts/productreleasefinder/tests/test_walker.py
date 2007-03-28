@@ -344,6 +344,29 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(dirnames, ['subdir1/', 'subdir2/', 'subdir3/'])
         self.assertEqual(filenames, ['file1', 'file2', 'file3', 'file99'])
 
+    def testDotPaths(self):
+        # Test that paths containing dots are handled correctly
+        content = '''
+        <html>
+          <head>
+            <title>Listing</title>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+          </head>
+          <body>
+          <pre>
+          <a href="../">Up a level</a>
+          <a href="/foo/../">The same again</a>
+          <a href="file1/../file2">file2</a>
+          <a href=".">This directory</a>
+          <a href="dir/.">A subdirectory</a>
+          </pre>
+        </html>
+        '''
+        walker = self.setUpWalker('http://example.com/foo/', content)
+        dirnames, filenames = walker.list('/foo/')
+        self.assertEqual(dirnames, ['dir/'])
+        self.assertEqual(filenames, ['file2'])
+
     def testGarbageListing(self):
         # Make sure that garbage doesn't trip up the dir lister.
         content = '\x01\x02\x03\x00\xff\xf2\xablkjsdflkjsfkljfds'
