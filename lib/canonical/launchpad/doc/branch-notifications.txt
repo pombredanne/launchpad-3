@@ -290,11 +290,21 @@ then that email address is used for the notifications.
     ...     BranchSubscriptionDiffSize.FIVEKLINES)
     <BranchSubscription ...> 
 
+The ubuntu-team has an email address supplied (support@ubuntu.com), so
+that is used rather than the email addresses of the seven members.
+
+    >>> branch.subscribe(
+    ...     personset.getByName('ubuntu-team'),
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionDiffSize.ONEKLINES)
+    <BranchSubscription ...> 
+
     >>> details = branch.getRevisionNotificationDetails()
     >>> for max_diff in sorted(details.keys()):
     ...     for address in details[max_diff]:
     ...         print address, max_diff.title
     david.allouche@canonical.com  500 lines
+    support@ubuntu.com           1000 lines
     foo.bar@canonical.com        5000 lines
     robertc@robertcollins.net    5000 lines
 

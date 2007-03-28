@@ -261,12 +261,13 @@ class Branch(SQLBase):
                         address, BranchSubscriptionDiffSize.NODIFF)
                     email_details[address] = max(
                         curr, subscription.max_diff_lines)
-        # Individual preferences override team preferences
-        team_email_details.update(individual_email_details)
+        # Individual preferences override team preferences.
+        email_details = team_email_details
+        email_details.update(individual_email_details)
         # Now that we have determined the maximum size to send
         # to any individual, switch the map around.
         result = {}
-        for address, max_diff in team_email_details.iteritems():
+        for address, max_diff in email_details.iteritems():
             result.setdefault(max_diff, []).append(address)
         return result
 

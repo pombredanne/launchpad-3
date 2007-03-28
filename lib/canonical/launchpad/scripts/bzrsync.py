@@ -424,7 +424,8 @@ class BzrSync:
         self.trans_manager.begin()
 
         if self.initial_scan:
-            assert(len(self.pending_emails) == 0)
+            assert len(self.pending_emails) == 0, (
+                'Unexpected pending emails on new branch.')
             revision_count = len(self.bzr_history)
             if revision_count == 1:
                 revisions = '1 revision'

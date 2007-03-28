@@ -315,6 +315,10 @@ class IBranch(IHasOwner):
         
         Only branch subscriptions that specified an interest in
         revision notifications will have their specified email addresses added.
+
+        If a user has subscribed to a branch directly, the settings
+        that the user specifies overrides the settings of a team that the
+        user is a member of.
         """
         
     def getScannerData():
