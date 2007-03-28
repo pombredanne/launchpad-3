@@ -14,7 +14,7 @@ from sqlobject import (
     ForeignKey, StringCol, SQLRelatedJoin)
 
 from canonical.launchpad.interfaces import (
-    IHasLogoAndMugshot, IHasIcon, ISprint, ISprintSet)
+    IHasLogo, IHasMugshot, IHasIcon, ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -32,7 +32,7 @@ from canonical.lp.dbschema import (
 class Sprint(SQLBase):
     """See ISprint."""
 
-    implements(ISprint, IHasLogoAndMugshot, IHasIcon)
+    implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
 
     _defaultOrder = ['name']
 

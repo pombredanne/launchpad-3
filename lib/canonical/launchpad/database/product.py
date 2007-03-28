@@ -49,7 +49,7 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
     IQuestionTarget, NotFoundError, get_supported_languages,
-    QUESTION_STATUS_DEFAULT_SEARCH, IHasLogoAndMugshot, IHasIcon)
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot, IHasIcon)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -57,7 +57,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
-               IHasLogoAndMugshot,.IHasIcon)
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
     default_mugshot_resource = '/@@/product-mugshot'

@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogoAndMugshot,
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
     IHasIcon, JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
@@ -92,7 +92,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasLogoAndMugshot)
+    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns

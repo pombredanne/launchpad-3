@@ -16,7 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
-    IKarmaContext, PillarNameField)
+    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
@@ -31,7 +31,7 @@ class ProjectNameField(PillarNameField):
 
 
 class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
-               IKarmaContext, IHasSprints):
+               IKarmaContext, IHasSprints, IHasIcon, IHasLogo, IHasMugshot):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -224,7 +224,7 @@ class IProjectSet(Interface):
     def getByName(name, default=None, ignore_inactive=False):
         """Return the project with the given name, ignoring inactive projects
         if ignore_inactive is True.
-        
+
         Return the default value if there is no such project.
         """
 

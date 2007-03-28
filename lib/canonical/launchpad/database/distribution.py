@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasLogoAndMugshot, IHasIcon)
+    IHasLogo, IHasMugshot, IHasIcon)
 
 from sourcerer.deb.version import Version
 
@@ -77,7 +77,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IHasBuildRecords, IQuestionTarget,
-        IHasLogoAndMugshot, IHasIcon)
+        IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

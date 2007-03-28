@@ -43,7 +43,8 @@ __all__ = [
     'IHasDateCreated',
     'IHasDrivers',
     'IHasIcon',
-    'IHasLogoAndMugshot',
+    'IHasLogo',
+    'IHasMugshot',
     'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
@@ -333,15 +334,24 @@ class IHasSecurityContact(Interface):
 class IHasIcon(Interface):
     """An object that can have a custom icon."""
 
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
     icon = Attribute("The 14x14 icon.")
 
 
-class IHasLogoAndMugshot(Interface):
-    """An object that has a logo and mugshot."""
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
 
     # Each of the objects that implements this needs a custom schema, so
     # here we can just use Attributes
     logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
     mugshot = Attribute("The 192x192 mugshot.")
 
 

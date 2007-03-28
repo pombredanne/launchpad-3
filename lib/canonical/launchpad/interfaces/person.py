@@ -39,7 +39,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasLogoAndMugshot, IHasIcon)
+    IHasLogo, IHasMugshot, IHasIcon)
 from canonical.launchpad.interfaces.question import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
@@ -93,7 +93,7 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection, IHasLogoAndMugshot,
+class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
               IHasIcon):
     """A Person."""
 

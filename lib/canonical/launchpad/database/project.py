@@ -20,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogoAndMugshot,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
     IHasIcon)
 
 from canonical.lp.dbschema import (
@@ -47,7 +47,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasLogoAndMugshot, IHasIcon)
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = "Project"
     default_mugshot_resource = '/@@/project-mugshot'
