@@ -68,9 +68,7 @@ class IBugLinkForm(Interface):
     """Schema for the unlink bugs form."""
 
     bug = BugField(
-        title=_('Bug ID'), required=True,
-        description=_("Enter the Malone bug ID or nickname that "
-                      "you want to link to."))
+        title=_('Bug ID'), required=True)
 
 
 # XXX flacoste 2006/08/29 To remain consistent with the existing source
