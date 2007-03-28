@@ -595,13 +595,29 @@ ul#applicationchooser li a {
   height: 40px;
 }
 
-/* For the selected tab, we need to provide the padding (since there's
- * no anchor), and change the cursor to avoid it being an i-beam when
- * hovering over the text of the tab. */
-ul#applicationchooser li span.selected {
+/* For the selected and unavailable tabs, we need to provide the padding
+ * (since there's no anchor), and change the cursor to avoid it being an
+ * i-beam when hovering over the text of the tab. */
+ul#applicationchooser li span.selected,
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
   display: block;
   padding: 8px 0px 0px 0px;
   cursor: default;
+}
+
+/* Disabled icons shouldn't hover up */
+ul#applicationchooser li span.disabled:hover,
+ul#applicationchooser li.unavailable:hover
+{
+  background-position: -100px 0px;
+}
+
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  color: lightgrey;
 }
 
 ul#applicationchooser li:hover {
