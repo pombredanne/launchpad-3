@@ -3,7 +3,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;"
-    tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl">
+    tal:define="
+        rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+        site_message modules/canonical.config/config/launchpad/site_message">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -16,6 +18,8 @@
       tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
+    <style tal:condition="not: site_message" type="text/css"
+    >#help_panel {top: 28px !important;}</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
@@ -33,7 +37,6 @@
     "
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
-    tal:define="site_message modules/canonical.config/config/launchpad/site_message"
   >
     <div id="globalheader" tal:condition="site_message">
       <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_home.gif" alt="Home" /></a>
