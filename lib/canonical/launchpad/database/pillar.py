@@ -105,7 +105,8 @@ class PillarNameSet:
 
         if product is not None:
             return getUtility(IProductSet).get(product)
-        elif project is not None: return getUtility(IProjectSet).get(project)
+        elif project is not None:
+            return getUtility(IProjectSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
 
