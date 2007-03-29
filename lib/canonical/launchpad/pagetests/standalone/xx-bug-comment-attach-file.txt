@@ -18,7 +18,10 @@ So let's login and add a comment.
     >>> def get_feedback_messages(browser):
     ...     soup = BeautifulSoup(browser.contents)
     ...     feedback_messages = []
-    ...     for div_tag in soup('div', {'class': re.compile('message')}):
+    ...     for div_tag in soup('div',
+    ...         {'class': ['message',
+    ...                    'informational message',
+    ...                    'error message']}):
     ...         feedback_messages.append(div_tag.string)
     ...
     ...     return feedback_messages

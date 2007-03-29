@@ -232,10 +232,11 @@ vocabulary.
 
     >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> len(all_milestones)
-    2
+    3
     >>> for term in all_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     debian: 3.1
+    debian: 3.1-rc1
     firefox: 1.0
 
 If the context is a product, only the product's milestones are in the
@@ -270,9 +271,24 @@ in the vocabulary.
     ...     debian_woody_task, 'Milestone')
     >>> debian_woody = debian_woody_task.distrorelease
     >>> len(debian_woody_milestones)
-    0
-    >>> debian_woody.milestones.count()
-    0
+    2
+
+If one of the milestones is disabled, it won't be included in the vocabulary
+anymore.
+
+    >>> milestone = debian_woody.milestones[0]
+    >>> milestone.visible = False
+    >>> flush_database_updates()
+    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    1
+
+If the milestone was used in a bugtask before it was marked invisible, though,
+it'll still show up on the vocabulary so that users can change it.
+
+    >>> debian_woody_task.milestone = milestone
+    >>> flush_database_updates()
+    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    2
 
 If the context is a specification, only milestones from that specification
 target are in the vocabulary.

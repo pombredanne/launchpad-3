@@ -30,7 +30,11 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
         />
-
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"

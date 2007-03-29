@@ -72,6 +72,13 @@
         />
 
     <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskSOP"
+      permission="zope.Public"
+      />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />
