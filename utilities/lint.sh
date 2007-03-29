@@ -9,6 +9,7 @@
 # 2005-09-23 tweak more warnings on a dir-specific basis
 
 PYLINT=pylint.python2.4
+BZR=sourcecode/bzr/bzr
 
 # Note that you can disable certain tests by placing in a comment, at
 # the top of the file, a disable-msg command:
@@ -64,7 +65,7 @@ PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 export PYTHONPATH=lib:$PYTHONPATH
 
 if [ -z "$1" ]; then
-    files=`bzr added ; bzr modified`
+    files=`$BZR added ; $BZR modified`
 else
     # Add newlines so grep filters out pyfiles correctly later
     files=`echo $* | tr " " "\n"`
