@@ -305,7 +305,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, mugshot, logo, icon):
+            description, owner, mugshot=None, logo=None, icon=None):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,

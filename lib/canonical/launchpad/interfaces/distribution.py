@@ -227,7 +227,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                   rsync_base_url=None, enabled=False,
                   official_candidate=False):
         """Create a new DistributionMirror for this distribution.
-        
+
         At least one of http_base_url or ftp_base_url must be provided in
         order to create a mirror.
         """
@@ -328,6 +328,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot, logo, icon):
+            members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""
 

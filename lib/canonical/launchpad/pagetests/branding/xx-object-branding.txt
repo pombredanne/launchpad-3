@@ -14,7 +14,15 @@ icon, as we think this will create too much noise in the UI.
 Team branding
 =============
 
-    >>> browser = admin_browser
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+branding')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team'
@@ -38,12 +46,12 @@ Team branding
     >>> from canonical.launchpad.ftests import set_branding
     >>> set_branding(browser)
 
-    >>> browser.getControl('Save').click()
+    >>> browser.getControl('Change Branding').click()
 
 Here we see the updated values.
 
     >>> browser.url
-    'http://launchpad.dev/~ubuntuteam'
+    'http://launchpad.dev/~ubuntu-team'
     >>> browser.getLink('Change branding').click()
 
     >>> browser.getControl(name='field.icon.action').value
@@ -58,4 +66,12 @@ Here we see the updated values.
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
+
+
+Person branding
+Sprint branding
+Product branding
+Project branding
+Distribution branding
+
 

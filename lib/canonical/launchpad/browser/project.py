@@ -318,7 +318,7 @@ class ProjectAddProductView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register a new project that is part of this same initiative"
+    label = "Register a new project that is part of this initiative"
     product = None
 
     @action(_('Add'), name='add')
@@ -404,7 +404,7 @@ class ProjectAddView(LaunchpadFormView):
     def add_action(self, action, data):
         """Create the new Project from the form details."""
         self.project = getUtility(IProjectSet).new(
-            name=data['name'].lower(),
+            name=data['name'].lower().strip(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],

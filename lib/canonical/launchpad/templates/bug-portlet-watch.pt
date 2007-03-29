@@ -6,16 +6,16 @@
 
           <ul class="remote bug">
             <li tal:repeat="watch context/watches">
-              <a tal:attributes="href watch/url">
+              <a tal:attributes="href watch/fmt:url"
+                ><img src="/@@/edit" alt="[Edit]"
+                      title="Change watch details" /></a>
+              <a id="bugwatch" tal:attributes="href watch/url">
                   <span tal:replace="watch/bugtracker/name" />
                   #<span tal:replace="watch/remotebug" />
               </a>
               <tal:block tal:condition="watch/remotestatus">
-                [<span tal:content="watch/remotestatus" />]
+                <br />[<span tal:content="watch/remotestatus" />]
               </tal:block>
-              <small>
-                (<a tal:attributes="href string:$url/watches/${watch/id}">edit</a>)
-              </small>
             </li>
           </ul>
 

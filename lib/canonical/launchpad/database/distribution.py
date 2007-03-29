@@ -866,7 +866,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot, logo, icon):
+            members, owner, mugshot=None, logo=None, icon=None):
         return Distribution(
             name=name,
             displayname=displayname,

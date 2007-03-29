@@ -257,7 +257,6 @@ class SprintAddView(LaunchpadFormView):
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
-        gotchi, gotchi_heading = data['gotchi']
         self.sprint = getUtility(ISprintSet).new(
             owner=self.user,
             name=data['name'],
@@ -268,9 +267,7 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         self.request.response.addInfoNotification('Sprint created.')
 
     @property

@@ -267,11 +267,6 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             return getUtility(IBugExternalRefSet)[name]
 
-    @stepthrough('watches')
-    def traverse_watches(self, name):
-        if name.isdigit():
-            return getUtility(IBugWatchSet)[name]
-
     @stepthrough('comments')
     def traverse_comments(self, name):
         if not name.isdigit():

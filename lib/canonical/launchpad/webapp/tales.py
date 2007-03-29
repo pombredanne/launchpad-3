@@ -425,6 +425,8 @@ class ObjectImageDisplayAPI:
         if not IHasLogo.providedBy(context):
             context = nearest(context, IHasLogo)
         if context is None:
+            # we use the Launchpad logo for anything which is in no way
+            # related to a Pillar (for example, a buildfarm)
             url = '/@@/launchpad-logo'
         elif context.logo is not None:
             url = context.logo.getURL()

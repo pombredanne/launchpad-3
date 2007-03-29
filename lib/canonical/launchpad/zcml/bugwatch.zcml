@@ -13,6 +13,7 @@
       set_schema="canonical.launchpad.interfaces.IBugWatch" />
   </content>
 
+  <!-- https://launchpad.net/bugs/98639 -->
   <browser:url
     for="canonical.launchpad.interfaces.IBugWatch"
     path_expression="string:+watch/${id}"
