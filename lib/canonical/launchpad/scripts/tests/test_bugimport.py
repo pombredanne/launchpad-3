@@ -530,9 +530,9 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug100.duplicateof, bug42)
 
     def test_public_security_bug(self):
-        # Test that we can import a public security bug
-        # createBug() does not let us create such a bug directly, so
-        # this checks that it works.
+        # Test that we can import a public security bug.
+        # The createBug() method does not let us create such a bug
+        # directly, so this checks that it works.
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle',
                                          verify_users=True)
