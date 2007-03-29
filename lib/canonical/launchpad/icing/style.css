@@ -316,9 +316,10 @@ ul#menuroot a.breadcrumb {
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1100px 0px;
-  padding: 6px 0 10px 10px;
+  padding: 6px 0 6px 10px;
   margin-right: -1px;
 }
+* html #yourlocation {padding-bottom: 4px;} /* better than 6px in IE6 */
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
 #locationbar li a,
 #locationbar li span {
@@ -337,10 +338,11 @@ ul#menuroot a.breadcrumb em { /* should be changed to not need em */
   background-image: url(locationbar_nodrop_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
-  padding: 6px 26px 10px 20px;
+  padding: 6px 26px 6px 20px;
   cursor: hand;
   cursor: pointer;
 }
+* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
 /* When a breadcrumb has a submenu, show a down-arrow. */
 ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   background-image: url(locationbar_em_bg.gif);
