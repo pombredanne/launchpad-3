@@ -92,7 +92,7 @@ class RosettaApplicationNavigation(Navigation):
     @stepto('projects')
     def projects(self):
         # DEPRECATED
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):

@@ -86,7 +86,7 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
-        action="/products"
+        action="/projects/"
         method="get"
       >
         <div>

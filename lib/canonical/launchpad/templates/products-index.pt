@@ -95,7 +95,7 @@
       </p>
       <ul class="rollover buttons">
         <li>
-          <a href="/products/+new">
+          <a href="/projects/+new">
             <img
               alt="Register a project"
               src="/+icing/but-lrg-registerproj.gif"

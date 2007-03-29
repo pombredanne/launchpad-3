@@ -27,7 +27,7 @@
       <form
         class="central"
         style="text-align: center;"
-        action="/products/"
+        action="/projects/"
         method="get"
       >
         <label for="text">Is your project registered yet?</label>

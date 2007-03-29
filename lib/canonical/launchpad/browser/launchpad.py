@@ -130,11 +130,12 @@ class MaloneApplicationNavigation(Navigation):
 
     @stepto('projects')
     def projects(self):
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):
-        return getUtility(IProductSet)
+        return RedirectionView(
+            canonical_url(getUtility(IProductSet)), self.request, status=301)
 
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
@@ -439,12 +440,11 @@ class LaunchpadRootNavigation(Navigation):
     usedfor = ILaunchpadRoot
 
     stepto_utilities = {
-        'products': IProductSet,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
-        'projects': IProjectSet,
+        'projects': IProductSet,
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -464,6 +464,11 @@ class LaunchpadRootNavigation(Navigation):
         #'malone': IMaloneApplication,
         #'rosetta': IRosettaApplication,
         }
+
+    @stepto('products')
+    def products(self):
+        return RedirectionView(
+            canonical_url(getUtility(IProductSet)), self.request, status=301)
 
     def traverse(self, name):
         if name in self.stepto_utilities:

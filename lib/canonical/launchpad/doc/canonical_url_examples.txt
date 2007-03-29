@@ -156,7 +156,7 @@ The IProductSet.
 
     >>> productset = getUtility(IProductSet)
     >>> canonical_url(productset)
-    u'http://launchpad.dev/products'
+    u'http://launchpad.dev/projects'
 
 An IProduct.
 

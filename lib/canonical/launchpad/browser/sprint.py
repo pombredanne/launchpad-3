@@ -156,7 +156,7 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')

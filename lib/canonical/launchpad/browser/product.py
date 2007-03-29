@@ -408,7 +408,7 @@ class ProductSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')

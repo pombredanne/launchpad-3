@@ -390,7 +390,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSet"
-        path_expression="string:products"
+        path_expression="string:projects"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
     <browser:page
