@@ -761,11 +761,19 @@ class File:
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
-    """View that gives access to the files in a folder."""
+    """View that gives access to the files in a folder.
+
+    The URL to the folder can start with an optional path step like
+    /revNNN/ where NNN is one or more digits.  This path step will
+    be ignored.  It is useful for having a different path for
+    all resources being served, to ensure that we don't use cached
+    files in browsers.
+    """
 
     implements(IBrowserPublisher)
 
     folder = '../icing/'
+    rev_part_re = re.compile('rev\d+$')
 
     def __init__(self, context, request):
         """Initialize with context and request."""
@@ -774,15 +782,20 @@ class IcingFolder:
         self.names = []
 
     def __call__(self):
-        if not self.names:
+        names = list(self.names)
+        if names and self.rev_part_re.match(names[0]):
+            # We have a /revNNN/ path step, so remove it.
+            names = names[1:]
+
+        if not names:
             # Just the icing directory, so make this a 404.
             raise NotFound(self, '')
-        elif len(self.names) > 1:
+        elif len(names) > 1:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
-            name = self.names[0]
+            [name] = names
             return self.prepareDataForServing(name)
 
     def prepareDataForServing(self, name):

@@ -10,7 +10,7 @@
     <style
       type="text/css"
       media="screen, print"
-      tal:content="string:@import url(${rooturl}+icing/style.css?rev=2);"/>
+      tal:content="string:@import url(${rooturl}+icing/rev2/style.css);"/>
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"
