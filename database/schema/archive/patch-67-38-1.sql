@@ -13,3 +13,4 @@ ALTER TABLE branchsubscription ADD COLUMN max_diff_lines int4;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 38, 1);
+
