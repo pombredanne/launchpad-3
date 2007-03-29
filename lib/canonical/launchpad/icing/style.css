@@ -303,9 +303,14 @@ ul#menuroot>li>a {
   margin-right: -1px;
 }
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a {
+#locationbar li a,
+#locationbar li span {
   display: block;
   color: #000000;
+}
+/* Unlinked items.  Same colour as the overview actions menu. */
+#locationbar li .unlinked {
+  color: #83AD23;
 }
 /* XXX: needs explanation */
 ul#menuroot>li>a>em { /* should be changed to not need em */
@@ -332,7 +337,8 @@ ul#menuroot>li.container>a>em { /* should be changed to not need em */
  * The area we actually see on the page is an <a> element.
  * The <li> element takes up no space.
  */
-#locationbar ul.menu li a {
+#locationbar ul.menu li a,
+#locationbar ul.menu li .unlinked {
   background-image: none;
   background-color: #AFDB1F;
   float: none;
@@ -414,7 +420,8 @@ ul#menuroot>li.selected>a {
 /* Prevent the text in links in menu items from wrapping.
  * Apply appropriate formatting to links in menu items.
  */
-#locationbar li a {
+#locationbar li a,
+#locationbar li .unlinked {
   left: auto;
   margin: 0px 0px 0px 0px;
   white-space: pre;

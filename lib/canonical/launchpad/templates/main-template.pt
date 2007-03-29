@@ -278,8 +278,13 @@
       <div class="bottom">&nbsp;</div>
     </div>
     <div id="menupreload" style="visibility:hidden">
-      <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="item"><a href="/projects">Projects</a></li>
+      <ul class="menu" lpm:mid="root">
+        <tal:condition condition="request/lp:person">
+          <li class="item container" lpm:mid="/+menudata/contributions"><a href="/products">Projects</a></li>
+        </tal:condition>
+        <tal:condition condition="not: request/lp:person">
+          <li class="item"><a href="/products">Projects</a></li>
+        </tal:condition>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
