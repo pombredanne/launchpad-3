@@ -14,7 +14,7 @@
         for="canonical.launchpad.browser.PillarSearchItem"
         name="+listing-simple"
         permission="zope.Public"
-        template="../templates/product-listing-simple.pt"
+        template="../templates/pillar-listing-simple.pt"
         />
 
 </configure>
