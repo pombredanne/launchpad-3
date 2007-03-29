@@ -41,6 +41,21 @@ def get_node_text(node, default=None):
         return default
 
 
+def get_node_html_text(node):
+    """Return the content of a node as an HTML string.
+
+    The node subelements are considered XHTML elements.
+    """
+    content = []
+    if node.text:
+        content.append(node.text)
+    for subnode in node:
+        content.append(ET.tostring(subnode))
+    if node.tail:
+        content.append(node.tail)
+    return "".join(content)
+
+
 class LaunchpadTourView(LaunchpadView):
     """A view that serves an appplication tour.
 
@@ -85,7 +100,7 @@ class LaunchpadTourView(LaunchpadView):
     def _createCallout(self, node):
         """Return a dict containing the callout attributes."""
         callout = {}
-        callout['text'] = node.text
+        callout['text'] = get_node_html_text(node)
         try:
             callout['top'] = int(node.get('top', 0))
         except ValueError:

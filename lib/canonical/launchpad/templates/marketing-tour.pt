@@ -52,7 +52,8 @@
 
       <div id="pane">
         <div class="screen">
-          <ol class="callouts">
+          <ol class="callouts"
+              tal:condition="screen/callouts">
             <li id="p1" style="top: 0px; left: 0px"
                 tal:repeat="callout screen/callouts"
                 tal:attributes="id string:p${repeat/callout/number};
@@ -64,11 +65,12 @@
                tal:attributes="src screen/screenshot;
                                alt string:${screen/title} Screenshot"/>
         </div>
-        <ul class="info">
+        <ul class="info"
+            tal:condition="screen/callouts">
           <li id="point-1"
               tal:repeat="callout screen/callouts"
               tal:attributes="id string:point-${repeat/callout/number}"
-              tal:content="callout/text">Description of point 1.</li>
+              tal:content="structure callout/text">Description of point 1.</li>
         </ul>
         <a class="button next" href="+tour" title="Next"
            tal:condition="view/next_screen_index"
