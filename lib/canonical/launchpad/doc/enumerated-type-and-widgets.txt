@@ -1,0 +1,74 @@
+= Using Enumerated Types with Widgets =
+
+As well as providing semantic meaning for database values, enumerated
+types are also used to populate UI widgets.
+
+    >>> from canonical.launchpad.webapp.enum import (
+    ...     DBEnumeratedType, DBItem)
+
+
+    >>> class AnimalClassification(DBEnumeratedType):
+    ...     INSECT = DBItem(1, "Insect")
+    ...     MAMMAL = DBItem(2, "Mammal")
+    ...     FISH = DBItem(3, "Fish")
+    ...     REPTILE = DBItem(4, "Reptile")
+
+
+    >>> from zope.interface import Interface, implements
+    >>> from zope.schema import Choice
+    >>> from canonical.launchpad import _
+
+    >>> class ISomeInterface(Interface):
+    ...     field = Choice(title=_('field'),
+    ...         required=True, vocabulary=AnimalClassification)
+
+== LaunchpadDropdownWidget ==
+
+The LaunchpadDropdownWidget is frequently used with enumerated types.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.app.form.interfaces import IInputWidget
+    >>> from canonical.widgets import LaunchpadDropdownWidget
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> class DropdownEnumFieldTest(object):
+    ...     implements(ISomeInterface)
+    ...     field = AnimalClassification.MAMMAL
+ 
+    >>> context = DropdownEnumFieldTest()
+    >>> field = ISomeInterface['field'].bind(context)
+    >>> request = LaunchpadTestRequest()
+    >>> widget = LaunchpadDropdownWidget(field, AnimalClassification, request)
+    >>> widget.setRenderedValue(context.field)
+
+    >>> print widget()
+    <select id="field.field" name="field.field" size="1" >
+    <option value="INSECT">Insect</option>
+    <option selected="selected" value="MAMMAL">Mammal</option>
+    <option value="FISH">Fish</option>
+    <option value="REPTILE">Reptile</option>
+    </select>
+    <input name="field.field-empty-marker" type="hidden" value="1" />
+
+The widget plays nicely with the database types by returning the item
+of the enumerated type.
+
+    >>> request = LaunchpadTestRequest(form={'field.field': 'REPTILE'})
+    >>> widget = LaunchpadDropdownWidget(field, AnimalClassification, request)
+
+    >>> widget.getInputValue()
+    <DBItem AnimalClassification.REPTILE, (4) Reptile>
+
+And when rendering a widget that has a form value specified, it uses the
+appropriate value.
+
+    >>> print widget()
+    <select id="field.field" name="field.field" size="1" >
+    <option value="INSECT">Insect</option>
+    <option value="MAMMAL">Mammal</option>
+    <option value="FISH">Fish</option>
+    <option selected="selected" value="REPTILE">Reptile</option>
+    </select>
+    <input name="field.field-empty-marker" type="hidden" value="1" />
+
+    
