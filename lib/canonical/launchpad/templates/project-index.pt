@@ -60,7 +60,7 @@
           <div
             tal:condition="context/products"
             tal:repeat="product context/products"
-            class="item"
+            class="project"
           >
             <h3>
               <a
