@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tour>
+<tour next="translations">
   <title>Blueprints</title>
   <screen>
     <title>Viewing a blueprint</title>

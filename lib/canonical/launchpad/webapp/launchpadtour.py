@@ -28,6 +28,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 def get_node_text(node, default=None):
@@ -83,6 +84,7 @@ class LaunchpadTourView(LaunchpadView):
         root = ET.parse(tour_xml).getroot()
 
         self.title = get_node_text(root.find('title'))
+        self._next_tour_vhost = root.get('next', None)
         self._screens = [
             self._createScreen(node) for node in root.findall('screen')]
 
@@ -133,6 +135,14 @@ class LaunchpadTourView(LaunchpadView):
         if self.current_screen_index + 1 >= len(self._screens):
             return None
         return self.current_screen_index + 1
+
+    @property
+    def next_tour_url(self):
+        """Return the URL to the next tour."""
+        if self._next_tour_vhost in allvhosts.configs:
+            return allvhosts.configs[self._next_tour_vhost].rooturl + '+tour'
+        else:
+            return None
 
     def initialize(self):
         """Find the current screen from the request."""

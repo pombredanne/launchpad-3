@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tour>
+<tour next="bugs">
   <title>Code</title>
   <screen>
     <title>Overview of all projects</title>

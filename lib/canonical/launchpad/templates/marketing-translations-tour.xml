@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tour>
+<tour next="answers">
   <title>Translations</title>
   <screen>
     <title>Translation status</title>

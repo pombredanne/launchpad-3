@@ -18,7 +18,7 @@ the screenshot.
     >>> tmpdir = tempfile.mkdtemp(prefix='test-launchpadtour')
     >>> tour_xml_file = os.path.join(tmpdir, 'tour.xml')
     >>> file(tour_xml_file, "w").write('''<?xml version="1.0"?>
-    ...     <tour>
+    ...     <tour next="bugs">
     ...       <title>Application Name</title>
     ...       <screen>
     ...         <title>Feature 1</title>
@@ -142,7 +142,7 @@ Note that the callout content is interpreted as a proper XHTML string.
     >>> print screen['callouts'][1]['text']
     A callout with <b>HTML</b> text in. Including a <a href="/">link</a>.
 
-=== Screen navigation ==
+== Screen navigation ==
 
 The next_screen_index attribute gives the index of the next screen in
 the tour.
@@ -158,6 +158,15 @@ It is None when the current screen is the last one.
 
     >>> tour_view.next_screen_index is None
     True
+
+== Tour navigation ==
+
+At the end of the tour, a link to the next tour may be available if
+the 'next' attribute was used. The next attribute should be the name
+of one of the configured vhost.
+
+    >>> print tour_view.next_tour_url
+    http://bugs.launchpad.dev/+tour
 
 == Registering from ZCML ==
 

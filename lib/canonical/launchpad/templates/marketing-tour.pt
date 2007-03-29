@@ -76,6 +76,14 @@
            tal:condition="view/next_screen_index"
            tal:attributes="href string:${request/URL}?screen=${view/next_screen_index}"
            >Next &gt;</a>
+
+        <tal:next_tour condition="not: view/next_screen_index">
+          <a class="button next" href="+tour" title="Next tour"
+             tal:condition="view/next_tour_url"
+             tal:attributes="href view/next_tour_url"
+            >Next Tour &gt;</a>
+        </tal:next_tour>
+
       </div> <!-- pane -->
   </div> <!-- secondary -->
   </div>

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tour>
+<tour next="blueprints">
   <title>Bugs</title>
   <screen>
     <title>Searching for bugs</title>
