@@ -371,6 +371,23 @@ duplicate_bug = '''\
   </comment>
 </bug>'''
 
+public_security_bug = '''\
+<bug xmlns="https://launchpad.net/xmlns/2006/bugs" id="101">
+  <private>False</private>
+  <security_related>True</security_related>
+  <datecreated>2004-10-12T12:00:00Z</datecreated>
+  <title>A non private security bug</title>
+  <description>Description</description>
+  <reporter name="foo" email="foo@example.com">Foo User</reporter>
+  <status>CONFIRMED</status>
+  <importance>LOW</importance>
+  <comment>
+    <sender name="foo" email="foo@example.com">Foo User</sender>
+    <date>2004-10-12T12:00:00Z</date>
+    <text>Description</text>
+  </comment>
+</bug>'''
+
 class ImportBugTestCase(unittest.TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
@@ -510,7 +527,20 @@ class ImportBugTestCase(unittest.TestCase):
         # bug 42 removed from pending duplicates
         self.assertTrue(42 not in importer.pending_duplicates)
 
-        self.assertEqual(bug100.duplicateof, bug42)        
+        self.assertEqual(bug100.duplicateof, bug42)
+
+    def test_public_security_bug(self):
+        # Test that we can import a public security bug
+        # createBug() does not let us create such a bug directly, so
+        # this checks that it works.
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle',
+                                         verify_users=True)
+        bugnode = ET.fromstring(public_security_bug)
+        bug101 = importer.importBug(bugnode)
+        self.assertNotEqual(bug101, None)
+        self.assertEqual(bug101.private, False)
+        self.assertEqual(bug101.security_related, True)
 
 
 class BugImportCacheTestCase(unittest.TestCase):

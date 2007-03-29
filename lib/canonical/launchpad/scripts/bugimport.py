@@ -264,9 +264,10 @@ class BugImporter:
             msg=msg,
             datecreated=datecreated,
             title=title,
-            private=private,
+            private=private or security_related,
             security_related=security_related,
             owner=owner))
+        bug.private = private
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
 
