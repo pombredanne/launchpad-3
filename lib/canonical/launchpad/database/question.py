@@ -160,7 +160,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(QuestionSubscription.selectOneBy(question=self, person=person))
+        return bool(
+            QuestionSubscription.selectOneBy(question=self, person=person))
 
     # Workflow methods
 
@@ -196,8 +197,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_request_info(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
@@ -232,8 +233,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_give_answer(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
@@ -265,8 +266,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_confirm_answer(self):
         """See IQuestion."""
-        if self.status not in [
-            QuestionStatus.OPEN, QuestionStatus.ANSWERED, QuestionStatus.NEEDSINFO]:
+        if self.status not in [QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
+            QuestionStatus.NEEDSINFO]:
             return False
 
         for message in self.messages:
@@ -343,8 +344,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
+        return self.status in [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, 
+            QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -728,7 +729,7 @@ class QuestionTargetSearch(QuestionSearch):
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Ticket.owner = %s' % self.owner.id)
-        import pdb; pdb.set_trace()
+
         if self.unsupported:
             if self.product:
                 question_target = self.product

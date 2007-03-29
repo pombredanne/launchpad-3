@@ -156,8 +156,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         for status in QuestionStatus.items:
             mapping[frozenset([status])] = status.title
 
-        mapping[frozenset([QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _(
-            'Answered')
+        mapping[frozenset(
+            [QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _('Answered')
 
         return mapping
 
@@ -280,11 +280,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
-
-        if self.request.form.get('all_languages'):
-            self.search_params['language'] = None
         else:
-            self.search_params['language'] = self.user_support_languages
+            if self.request.form.get('all_languages'):
+                self.search_params['language'] = None
+            else:
+                self.search_params['language'] = self.user_support_languages
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
@@ -393,21 +393,38 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
      It displays questions that are asked in an unsupported language for the
      questiontarget context.
      """
-     
+                
     @property
     def pageheading(self):
         """See SearchQuestionsView."""
-        return _('Unsupported Questions for ${context}',
-                     mapping={'context': self.context.displayname})
+        if self.search_text:
+            return _('Unsupported questions matching "${search_text}" '
+                     'for ${context}', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _('Unsupported questions for ${context}',
+                      mapping={'context': self.context.displayname})
                      
     @property
     def empty_listing_message(self):
         """See SearchQuestionsView."""
-        return _("No questions are unsupported for ${context}.",
-                     mapping={'context': self.context.displayname})
+        if self.search_text:
+            return _('No unsupported questions matching "${search_text}" '
+                     'for ${context}.', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _("No questions are unsupported for ${context}.",
+                      mapping={'context': self.context.displayname})
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
+        # forge the request form to set the all_languages checkbox to the
+        # same state as state as the search
+        if self.request.form.get('field.actions.search') is None:
+            self.request.form['all_languages'] = True
+        
         return {'language':None, 'unsupported': True}
 
 
@@ -533,7 +550,8 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     usedfor = IQuestionTarget
     facet = 'answers'
-    links = QuestionCollectionAnswersMenu.links + ['unsupported', 'new', 'answer_contact']
+    links = QuestionCollectionAnswersMenu.links + (
+        ['unsupported', 'new', 'answer_contact'])
         
     def unsupported(self):
         text = 'Unsupported'
