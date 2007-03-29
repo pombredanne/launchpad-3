@@ -63,6 +63,11 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -171,6 +176,11 @@
             template="../templates/distribution-index.pt"
             />
         <browser:page
+            name="+releases"
+            facet="overview"
+            template="../templates/distribution-releases.pt"
+            />
+        <browser:page
             name="+search"
             facet="overview"
             template="../templates/distribution-search.pt"
@@ -245,6 +255,11 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"
+            />
+        <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-translations"

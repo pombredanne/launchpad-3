@@ -171,6 +171,11 @@
             template="../templates/object-portlet-milestones.pt"
             />
         <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
+            />
+        <browser:page
             name="+portlet-bounties"
             facet="bounties"
             template="../templates/object-portlet-bounties.pt"

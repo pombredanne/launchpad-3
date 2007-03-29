@@ -196,12 +196,21 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.browsername)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
-        orderBy=['dateexpected', 'name'])
-
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
+
+    @property
+    def all_milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def sourcepackages(self):

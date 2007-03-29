@@ -8,10 +8,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/specification/@@+portlet-details" />
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/person/@@+portlet-details" />
 </metal:rightportlets>
@@ -20,7 +16,8 @@
 
       <div>
         <img alt="" src="/@@/blueprint" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+        <a tal:attributes="href context/specification/fmt:url"
+           tal:content="context/specification/title" />
       </div>
 
   <div metal:use-macro="context/@@launchpad_editform/editform" />

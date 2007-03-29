@@ -122,8 +122,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
-        orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
     official_malone = BoolCol(dbName='official_malone', notNull=True,
@@ -137,6 +135,18 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
+    @property
+    def all_milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
