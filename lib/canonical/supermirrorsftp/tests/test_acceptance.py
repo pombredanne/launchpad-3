@@ -258,8 +258,15 @@ class AcceptanceTests(SFTPTestCase):
         return self._test_1_bzr_sftp()
 
     def _push(self, remote_url):
-        # Do not run this in the main thread! It does a blocking read from the
-        # SFTP server, which is running in the Twisted reactor in this process.
+        """Push the local branch to the given URL and return the last revision.
+
+        This method is used to test then end-to-end behaviour of pushing Bazaar
+        branches to the SFTP server.
+
+        Do NOT run this method in the main thread! It does a blocking read from
+        the SFTP server, which is running in the Twisted reactor in the main
+        thread.
+        """
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
