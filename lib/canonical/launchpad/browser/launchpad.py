@@ -21,9 +21,6 @@ __all__ = [
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
-    'SearchProjectsView',
-    'PillarSearchItem',
-    'PillarSearchItemView',
     'DefaultShortLink',
     'BrowserWindowDimensions',
     ]
@@ -1015,86 +1012,6 @@ class ApplicationButtons(LaunchpadView):
             raise AssertionError(
                 'Max of one path item after +applicationbuttons')
         return self
-
-
-class Emblem:
-    """An emblem for use with fmt:emblem."""
-
-    def __init__(self, library_id):
-        self.library_id = library_id
-
-    def getURL(self):
-        http_url = getUtility(ILibrarianClient).getURLForAlias(self.library_id)
-        if config.launchpad.vhosts.use_https:
-            return http_url.replace('http', 'https', 1)
-        else:
-            return http_url
-
-
-class PillarSearchItem:
-    """A search result item representing a Pillar."""
-
-    emblem = None
-
-    def __init__(self, pillar_type, name, displayname, summary, emblem_id):
-        self.pillar_type = pillar_type
-        self.name = name
-        self.displayname = displayname
-        self.summary = summary
-        if emblem_id is not None:
-            self.emblem = Emblem(emblem_id)
-
-        # XXX: This should use the same defaults as the database classes use,
-        #      but it's not possible to access them from view code at the
-        #      moment. -- Bjorn Tillenius, 2007-03-28
-        if pillar_type == 'project':
-            self.default_emblem_resource = '/@@/product'
-        elif pillar_type == 'distribution':
-            self.default_emblem_resource = '/@@/distribution'
-        else:
-            assert pillar_type == 'project group', (
-                "Unknown pillar type: %s" % pillar_type)
-            self.default_emblem_resource = '/@@/project'
-
-
-class PillarSearchItemView(LaunchpadView):
-
-    def getListingURL(self):
-        """Return the URL to the search item."""
-        return '/%s' % self.context.name
-
-
-class SearchProjectsView(LaunchpadView):
-    """The page where people can search for Projects/Products/Distros."""
-
-    search_string = ""
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def initialize(self):
-        form = self.request.form
-        self.search_string = form.get('q')
-        if not self.search_string:
-            return
-
-        self.matches = len(self.searchresults)
-
-    @cachedproperty
-    def searchresults(self):
-        search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
-        return [
-            PillarSearchItem(
-                pillar_type=item['type'], name=item['name'],
-                displayname=item['title'], summary=item['description'],
-                emblem_id=item['emblem'])
-            for item in getUtility(IPillarNameSet).search(search_string, limit)
-        ]
-
-    def tooManyResultsFound(self):
-        return self.matches > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):

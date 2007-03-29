@@ -117,13 +117,6 @@
       />
 
   <browser:page
-      name="+search"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.browser.SearchProjectsView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.RedirectToEditLanguagesView"

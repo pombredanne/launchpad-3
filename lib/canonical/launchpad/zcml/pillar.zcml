@@ -11,14 +11,7 @@
     </securedutility>
 
     <browser:page
-        for="*"
-        name="+pillar-macros-search"
-        permission="zope.Public"
-        template="../templates/launchpad-search.pt" />
-
-    <browser:page
         for="canonical.launchpad.browser.PillarSearchItem"
-        class="canonical.launchpad.browser.PillarSearchItemView"
         name="+listing-simple"
         permission="zope.Public"
         template="../templates/product-listing-simple.pt"
