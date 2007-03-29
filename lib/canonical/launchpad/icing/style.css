@@ -275,8 +275,8 @@ hr {
   color: #FFF;
 }
 ul#menuroot a#homebreadcrumb span {
-  background: url(home.gif) left center no-repeat;
-  padding-left: 20px;
+  background: url(home.gif) left top no-repeat;
+  padding-left: 15px;
 }
 /* The location bar contains menus. */
 ul#menuroot {
