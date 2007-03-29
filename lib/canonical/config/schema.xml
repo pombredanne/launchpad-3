@@ -884,6 +884,7 @@ k            </description>
                  attribute="build" required="yes" />
 
         <key name="launch" datatype="boolean"  default="false" />
+        <key name="smtp"   datatype="string"   default="" />
     </sectiontype>
 
     <sectiontype name="canonical">
