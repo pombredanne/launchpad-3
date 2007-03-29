@@ -6,10 +6,13 @@ __metaclass__ = type
 __all__ = [
     'SprintFacets',
     'SprintNavigation',
+    'SprintsMixinDynMenu',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
+    'SprintSetFacets',
     'SprintSetContextMenu',
     'SprintSetNavigation',
+    'SprintSetSOP',
     'SprintView',
     'SprintAddView',
     'SprintEditView',
@@ -33,10 +36,13 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -47,7 +53,7 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
 
@@ -60,6 +66,19 @@ class SprintNavigation(Navigation):
         return self.context.title
 
 
+class SprintsMixinDynMenu:
+
+    def meetingsMenu(self):
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
+
+
 class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
@@ -67,18 +86,18 @@ class SprintOverviewMenu(ApplicationMenu):
     links = ['attendance', 'registration', 'edit']
 
     def attendance(self):
-        text = 'Register Yourself'
+        text = 'Register yourself'
         summary = 'Register as an attendee of the meeting'
         return Link('+attend', text, summary, icon='add')
 
     def registration(self):
-        text = 'Register Someone'
+        text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         summary = 'Modify the meeting description, dates or title'
         return Link('+edit', text, summary, icon='edit')
 
@@ -95,13 +114,13 @@ class SprintSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def declined(self):
-        text = 'Declined Topics'
+        text = 'List declined blueprints'
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
-        text = 'Set Topics'
+        text = 'Set agenda'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
 
@@ -119,14 +138,48 @@ class SprintSetNavigation(GetitemNavigation):
         return 'Meetings'
 
 
+class SprintSetFacets(StandardLaunchpadFacets):
+    """The facet menu for an ISprintSet."""
+
+    usedfor = ISprintSet
+    enable_only = ['overview', ]
+
+
+class SprintSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'Meetings and Sprints'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['new']
+    links = ['products', 'distributions', 'people', 'sprints', 'new']
 
     def new(self):
-        text = 'Register New Meeting'
+        text = 'Register a meeting'
         return Link('+new', text, icon='add')
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def sprints(self):
+        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
@@ -192,8 +245,9 @@ class SprintAddView(LaunchpadFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     sprint = None
 
@@ -214,6 +268,7 @@ class SprintAddView(LaunchpadFormView):
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         self.sprint = getUtility(ISprintSet).new(
             owner=self.user,
             name=data['name'],
@@ -224,7 +279,8 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         self.request.response.addInfoNotification('Sprint created.')
 
@@ -246,8 +302,9 @@ class SprintEditView(LaunchpadEditFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

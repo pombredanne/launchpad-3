@@ -15,9 +15,19 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.uri import URI
 
 
-__all__ = ['BranchToMirror']
+__all__ = ['BranchToMirror', 'BadUrlSsh', 'BadUrlLaunchpad']
+
+
+class BadUrlSsh(Exception):
+    """Raised when trying to mirror a branch from sftp or bzr+ssh."""
+
+
+class BadUrlLaunchpad(Exception):
+    """Raised when trying to mirror a branch from lanchpad.net."""
+
 
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats."""
@@ -34,17 +44,37 @@ def identical_formats(branch_one, branch_two):
 class BranchToMirror:
     """This class represents a single branch that needs mirroring.
 
-    It has a source URL, a destination URL, a database id and a 
+    It has a source URL, a destination URL, a database id, a unique name and a
     status client which is used to report on the mirror progress.
     """
 
-    def __init__(self, src, dest, branch_status_client, branch_id):
+    def __init__(self, src, dest, branch_status_client, branch_id,
+                 branch_unique_name):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
+        self.branch_unique_name = branch_unique_name
         self._source_branch = None
         self._dest_branch = None
+
+    def _checkSourceUrl(self):
+        """Check the validity of the source URL.
+
+        If the source is an absolute path, that means it represents a hosted
+        branch, and it does not make sense to check its scheme or hostname. So
+        let it pass.
+
+        If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it is
+        in the launchpad.net domain, raise BadUrlLaunchpad.
+        """
+        if self.source.startswith('/'):
+            return
+        uri = URI(self.source)
+        if uri.scheme in ['sftp', 'bzr+ssh']:
+            raise BadUrlSsh(self.source)
+        if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
+            raise BadUrlLaunchpad(self.source)
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
@@ -52,7 +82,7 @@ class BranchToMirror:
 
     def _mirrorToDestBranch(self):
         """Open the branch to pull to, creating a new one if necessary.
-        
+
         Useful to override in tests.
         """
         try:
@@ -95,7 +125,6 @@ class BranchToMirror:
         branch = branch_format.initialize(bzrdir)
         branch.pull(self._source_branch)
         return branch
-        
 
     def _mirrorFailed(self, logger, error_msg):
         """Log that the mirroring of this branch failed."""
@@ -116,9 +145,22 @@ class BranchToMirror:
             ('source', self.source),
             ('dest', self.dest),
             ('error-explanation', message)])
-        request.URL = 'database:/branch/%d' % self.branch_id
+        request.URL = self._canonical_url()
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         logger.info('Recorded %s', request.oopsid)
+
+    def _canonical_url(self):
+        """Custom implementation of canonical_url(branch) for error reporting.
+
+        The actual canonical_url method cannot be used because we do not have
+        access to real content objects.
+        """
+        if config.launchpad.vhosts.use_https:
+            scheme = 'https'
+        else:
+            scheme = 'http'
+        hostname = config.launchpad.vhosts.code.hostname
+        return scheme + '://' + hostname + '/~' + self.branch_unique_name
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into
@@ -129,6 +171,7 @@ class BranchToMirror:
                     self.branch_id, self.source, self.dest)
 
         try:
+            self._checkSourceUrl()
             self._openSourceBranch()
             self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
@@ -150,7 +193,7 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.UnsupportedFormatError, e:
-            msg = ("The supermirror does not support branches from before "
+            msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
@@ -159,16 +202,22 @@ class BranchToMirror:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
-        except bzrlib.errors.ParamikoNotPresent, e:
-            msg = ("The supermirror does not support mirroring branches "
-                   "from SFTP URLs. Please register a HTTP location for "
-                   "this branch.")
+        except (bzrlib.errors.ParamikoNotPresent, BadUrlSsh), e:
+            msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
+                   " Please register a HTTP location for this branch.")
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BadUrlLaunchpad:
+            msg = "Launchpad does not mirror branches from Launchpad."
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.NotBranchError, e:
             self._record_oops(logger)
-            self._mirrorFailed(logger, e)
+            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
+                   % self.branch_unique_name)
+            self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.BzrError, e:
             self._record_oops(logger)

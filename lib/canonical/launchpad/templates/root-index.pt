@@ -1,20 +1,27 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en" metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
 
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-rosetta" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-foaf" />
-  <div tal:replace="structure context/@@+portlet-malone" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
+  <div class="informational message" tal:condition="view/isBetaUser">
+    <tal:redirect_inhibited condition="view/isRedirectInhibited">
+      <script type="text/javascript"
+              tal:content="view/getEnableRedirectScript"></script>
+      <p>As a member of the Launchpad Beta Testers team, you would
+      normally be redirected to the beta site when viewing Launchpad
+      pages.  However, you currently have this disabled.</p>
+      <p><button onclick="enable_beta_redirect()">Enable beta site
+      redirection</button></p>
+    </tal:redirect_inhibited>
+    <tal:redirect_enabled condition="not:view/isRedirectInhibited">
+      <script type="text/javascript"
+              tal:content="view/getInhibitRedirectScript"></script>
+      <p>As a member of the Launchpad Beta Testers team, you will be
+      redirected to the beta site when viewing Launchpad pages other
+      than the front page.</p>
+      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      for 2 hours</button></p>
+    </tal:redirect_enabled>
+  </div>
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
@@ -27,34 +34,55 @@
         <input id="text" type="text" name="q" size="20" />
         <input type="submit" value="Search" />
       </form>
-      <div class="bordered">
-        <div class="left">
-          <h2>Featured projects</h2>
-          <ul>
-            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/gnomebaker">GnomeBaker</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-          </ul>
-        </div>
-        <div class="right">
-          <h2>More about Launchpad</h2>
-          <p>
-            Launchpad is a software project hosting service,
-            designed to make it easy for you to collaborate with
-            developers and other users.
+
+        <div class="three column left">
+          <h2>What is Launchpad?</h2>
+          <p id="application-summary">
+            We make it easy to <strong>collaborate 
+            across multiple projects</strong>
+            in the free software world.
             <a href="/+tour">Learn more&#8230;</a>
           </p>
         </div>
-      </div>
-      <div style="clear: both;">&nbsp;</div>
-    </div>
+        <div class="three column middle">
+          <h2>What&#8217;s new</h2>
+          <ul class="news">
+            <li>
+              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001049.html">Surprised to be seeing the Launchpad beta?</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/BugTrackingHighlights"
+                >Intro to Launchpad bug tracking</a>
+            </li>
+            <li>
+              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/ReportingABug"
+              >Learn about reporting bugs</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/KarmaReductionJan07"
+              >Wondering why your karma dropped in January?</a>
+            </li>
+          </ul>
+        </div>
+        <div class="three column right">
+          <h2>Featured projects</h2>
+          <ul>
+            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
+            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/jokosher">Jokosher</a></li>
+            <li class="product"><a href="/upstart">Upstart</a></li>
+            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+          </ul>
+        </div>
+
+    </div><!--main-->
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
     </p>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress Needs images and marketing material -->

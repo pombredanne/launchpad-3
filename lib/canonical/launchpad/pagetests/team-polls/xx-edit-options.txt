@@ -7,7 +7,7 @@ team's administrators:
     >>> user_browser.getLink('A public poll that never closes').click()
     >>> user_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4'
-    >>> user_browser.getLink('Show Option Details').click()
+    >>> user_browser.getLink('Show option details').click()
     >>> user_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+options'
     >>> user_browser.getLink('Edit')
@@ -21,10 +21,10 @@ either:
     >>> browser.addHeader(
     ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+poll/never-closes4')
-    >>> browser.getLink('Show Option Details').click()
+    >>> browser.getLink('Show option details').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+options'
-    >>> browser.getLink('Edit').click()
+    >>> browser.getLink('[Edit]').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+option/...'
 
@@ -43,11 +43,11 @@ been opened yet, he should be able to edit its options.
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened'
 
-    >>> browser.getLink('Show Option Details').click()
+    >>> browser.getLink('Show option details').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened/+options'
 
-    >>> browser.getLink('Edit').click()
+    >>> browser.getLink('[Edit]').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened/+option/...'
 

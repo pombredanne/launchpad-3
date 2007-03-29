@@ -29,7 +29,7 @@ Starting from distribution page:
 
 We get a list of all published packages:
 
-  >>> browser.getLink("List All Packages").click()
+  >>> browser.getLink("List all packages").click()
 
 Click on the respective name to get in the DistributionSourcePackage:
 Let's have a look at the firefox DistributionSourcePackage.
@@ -54,9 +54,8 @@ SourcePackage page:
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox'
 
-This page provides its versions publications organised by pocket, as
-we can see 'mozilla-firefox' is published twice in pocket RELEASE
-(brain-dead sampledata):
+This page provides its versions publications organised by pocket.
+We can see 'mozilla-firefox' is published once in pocket RELEASE:
 
   >>> print find_tag_by_id(browser.contents, 'publishings')
   <dl id="publishings">
@@ -71,9 +70,6 @@ we can see 'mozilla-firefox' is published twice in pocket RELEASE
         <li>
          <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
         </li>
-        <li>
-           <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
-        </li>
       </ul>
     </dd>
   </dl>
@@ -84,10 +80,10 @@ Product and Branches:
   >>> print find_tag_by_id(browser.contents, 'upstreams')
   <ul id="upstreams">
     <li>
-      <b>Project:</b>
+      <b>Project Group:</b>
       <a href="/mozilla">the Mozilla Project</a>
     </li>
-    <li><b>Product:</b>
+    <li><b>Project:</b>
       <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>
@@ -176,7 +172,7 @@ The text is generated automatically by appending:
 
 for each published version.
 
-  >>> browser.getLink("Change Log").click()
+  >>> browser.getLink("View changelog").click()
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 

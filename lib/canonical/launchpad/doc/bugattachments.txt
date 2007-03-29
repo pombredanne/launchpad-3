@@ -76,6 +76,19 @@ IBug.addAttachment's comment parameter can also be a string.
     Attachment added: u'foo.baz'
     <BugAttachment ...>
 
+If no description is given, the title is set to the filename.
+
+    >>> file_ = StringIO(filecontent)
+    >>> screenshot = bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="screenshot.jpg",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    Attachment added: u'screenshot.jpg'
+    >>> screenshot.title
+    u'screenshot.jpg'
+
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
@@ -338,3 +351,39 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
+Deleting attachments
+--------------------
+
+It's also possible to delete attachments.
+
+    >>> file_ = StringIO(filecontent)
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> attachment = bug_two.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="foo.baz",
+    ...     description="Attachment to be deleted",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    >>> for attachment in bug_two.attachments:
+    ...     print attachment.title
+    Attachment to be deleted
+
+    >>> attachment.removeFromBug()
+    >>> bug_two.attachments.count()
+    0
+
+Deleting an attachment causes a notification to be sent. It's worth
+noting that the notification still includes the URL to the attachment,
+which will be valid until the Librarian garbage collector kicks in and
+deletes the file entirely. This gives people a chance of undoing an
+incorrect removal by downloading and re-attach the file.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Attachment removed: "Attachment to be deleted"
+       http://.../foo.baz

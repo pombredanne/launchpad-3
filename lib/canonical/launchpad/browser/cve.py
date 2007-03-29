@@ -38,12 +38,12 @@ class CveContextMenu(ContextMenu):
     links = ['linkbug', 'unlinkbug']
 
     def linkbug(self):
-        text = 'Link to Bug'
+        text = 'Link to bug'
         return Link('+linkbug', text, icon='edit')
 
     def unlinkbug(self):
         enabled = bool(self.context.bugs)
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         return Link('+unlinkbug', text, icon='edit', enabled=enabled)
 
 
@@ -53,7 +53,7 @@ class CveSetContextMenu(ContextMenu):
     links = ['findcve', 'allcve']
 
     def allcve(self):
-        text = 'All Registered CVEs'
+        text = 'All registered CVEs'
         return Link('+all', text)
 
     def findcve(self):
@@ -69,8 +69,6 @@ class CveLinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
-        self.current_bugtask = context
-        context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
     def process(self, sequence):
@@ -78,7 +76,7 @@ class CveLinkView(GeneralFormView):
         if cve is None:
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
-        self.context.linkCVE(cve, user)
+        self.context.bug.linkCVE(cve, user)
         return 'CVE-%s added to bug #%d' % (sequence, self.context.id)
 
 
@@ -87,8 +85,6 @@ class CveUnlinkView(GeneralFormView):
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
-        self.current_bugtask = context
-        context = IBug(context)
         GeneralFormView.__init__(self, context, request)
 
     def process(self, sequence):
@@ -96,7 +92,7 @@ class CveUnlinkView(GeneralFormView):
         if cve is None:
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
-        self.context.unlinkCVE(cve, user)
+        self.context.bug.unlinkCVE(cve, user)
         return 'CVE-%s removed from bug #%d' % (sequence, self.context.id)
 
 

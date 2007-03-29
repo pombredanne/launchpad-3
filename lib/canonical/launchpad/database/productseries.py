@@ -37,7 +37,8 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
 
 
 class NoImportBranchError(Exception):
@@ -69,7 +70,7 @@ class ProductSeriesSet:
             raise NotFoundError(productseriesid)
 
 
-class ProductSeries(SQLBase, BugTargetBase):
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -112,14 +113,24 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'productseries',
-                            orderBy=['dateexpected', 'name'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def all_milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def bugtargetname(self):
@@ -333,6 +344,10 @@ class ProductSeries(SQLBase, BugTargetBase):
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.productseries = %s' % sqlvalues(self)
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

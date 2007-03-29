@@ -35,7 +35,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None):
+                 binarypackagename=None, tags=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -52,6 +52,7 @@ class CreateBugParams:
         self.distribution = None
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
+        self.tags = tags
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -150,6 +151,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -206,7 +209,7 @@ class IBug(IMessageTarget):
         """
 
     def getIndirectSubscribers():
-        """A list of IPersons that are indirectly subscribed to this bug.
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
@@ -214,21 +217,25 @@ class IBug(IMessageTarget):
         """
 
     def getAlsoNotifiedSubscribers():
-        """A list of IPersons in the "Also notified" subscriber list.
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
         """
 
     def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+        """Return IPersons subscribed from dupes of this bug.
+        """
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete INotificationRecipientSet instance.
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+        The INotificationRecipientSet instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):
@@ -278,6 +285,11 @@ class IBug(IMessageTarget):
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
+
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
 
     def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.

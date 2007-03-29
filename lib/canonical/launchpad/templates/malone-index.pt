@@ -1,28 +1,8 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="malone">
   <body>
+    <h1 metal:fill-slot="heading">Bug tracking</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Bug tracking</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/bugs" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-bugs">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                         <ul class="rollover buttons">
                           <li>
                             <a href="+tour">
@@ -46,29 +26,35 @@
                           tal:content="view/error_message"
                           class="error message"
                         >Error message.</p>
-                        <form class="central" action="/bugs" method="get">
+                        <form class="central" action="/bugs/+bugs" method="get">
                           <table>
                             <tbody>
                               <tr>
                                 <td style="text-align: right;">
                                   <input
+                                    tal:replace="structure view/widgets/searchtext"
                                     id="text"
                                     type="text"
-                                    name="text"
+                                    name="field.searchtext"
                                     size="50"
                                   />
                                 </td>
                                 <td>
                                   <input
                                     type="submit"
+                                    name="search"
                                     value="Search Bug Reports"
                                   />
                                 </td>
                               </tr>
-                              <tr>
-                                <td style="text-align: right;">
+                              <tr tal:define="options nocall:view/widgets/scope/options;
+                                              target_widget nocall:view/widgets/scope/target_widget">
+                                <td tal:attributes="class view/target_css_class"
+                                    style="text-align: right;">
+                                 <div>
                                   <label>
                                     <input
+                                      tal:replace="structure options/all"
                                       name="scope"
                                       type="radio"
                                       value="all"
@@ -78,28 +64,36 @@
                                   </label>
                                   <label>
                                     <input
+                                      tal:replace="structure options/project"
                                       name="scope"
+                                      id="scope.project"
                                       type="radio"
                                       value="project"
-                                      onclick="document.getElementById('project').focus();"
+                                      onclick="document.getElementById('field.target').focus();"
                                     />
                                     One project:
-                                    <input
-                                      id="project"
-                                      name="project"
-                                      type="text"
-                                    />
+                                    <tal:input replace="structure target_widget/inputField" />
                                   </label>
+                                 </div>
+                                 <div class="message"
+                                      tal:condition="view/target_error"
+                                      tal:content="structure view/target_error">
+                                    Error message
+                                 </div>
                                 </td>
-                                <td>(<a href="choose">Choose&hellip;</a>)</td>
+                                <td tal:content="structure target_widget/chooseLink" />
                               </tr>
                             </tbody>
                           </table>
-                          <div>
+                          <script type="text/javascript"
+                                  tal:define="script view/focusedElementScript"
+                                  tal:condition="script"
+                                  tal:content="structure script" />
                         </form>
                         <p id="application-summary">
                           Launchpad&rsquo;s bug tracker allows collaboration
                           between software teams on bug reports and fixes.
+                          <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
                           <div class="two column left">
@@ -130,15 +124,8 @@
                           id="application-footer"
                           tal:content="structure context/@@+portlet-stats"
                         />
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
+
+
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
@@ -155,5 +142,4 @@
     </div>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 done -->

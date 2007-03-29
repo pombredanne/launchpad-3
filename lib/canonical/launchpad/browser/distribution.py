@@ -4,7 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
-    'DistributionSetNavigation',
+    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -22,9 +22,13 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
+    'DistributionSetFacets',
+    'DistributionSetNavigation',
+    'DistributionSetContextMenu',
+    'DistributionSetSOP',
     ]
 
-from datetime import datetime
+import datetime
 import operator
 
 from zope.component import getUtility
@@ -44,13 +48,19 @@ from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    action, ApplicationMenu, canonical_url, ContextMenu,
+    enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, RedirectionNavigation, StandardLaunchpadFacets,
+    redirection, Navigation, StandardLaunchpadFacets,
     stepthrough, stepto, LaunchpadFormView, custom_widget)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class DistributionNavigation(
@@ -86,22 +96,19 @@ class DistributionNavigation(
         return self.context.getSpecification(name)
 
 
-class DistributionSetNavigation(RedirectionNavigation):
+class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
 
     def breadcrumb(self):
         return 'Distributions'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
-        if self.context.getByName(name) is None:
+        distribution = self.context.getByName(name)
+        if distribution is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(distribution))
 
 
 class DistributionSOP(StructuralObjectPresentation):
@@ -128,9 +135,49 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def specifications(self):
         target = '+specs'
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
+
+
+class DistributionSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'Distributions in Launchpad'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
+class DistributionSetFacets(StandardLaunchpadFacets):
+
+    usedfor = IDistributionSet
+
+    enable_only = ['overview', ]
+
+
+class DistributionSetContextMenu(ContextMenu):
+
+    usedfor = IDistributionSet
+    links = ['products', 'distributions', 'people', 'meetings']
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def products(self):
+        return Link('/products/', 'View projects')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def meetings(self):
+        return Link('/sprints/', 'View meetings')
 
 
 class DistributionOverviewMenu(ApplicationMenu):
@@ -145,41 +192,41 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint Driver'
+        text = 'Appoint driver'
         summary = 'Someone with permission to set goals for all releases'
         return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
-        text = 'Register a New Mirror'
+        text = 'Register a new mirror'
         enabled = self.context.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = 'Top Contributors'
+        text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
 
     def release_mirrors(self):
-        text = 'Show CD Mirrors'
+        text = 'Show CD mirrors'
         enabled = self.context.full_functionality
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
 
     def archive_mirrors(self):
-        text = 'Show Archive Mirrors'
+        text = 'Show archive mirrors'
         enabled = self.context.full_functionality
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
     def disabled_mirrors(self):
-        text = 'Show Disabled Mirrors'
+        text = 'Show disabled mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
         if (self.context.full_functionality and user is not None and
@@ -188,7 +235,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Show Unofficial Mirrors'
+        text = 'Show unofficial mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
         if (self.context.full_functionality and user is not None and
@@ -197,33 +244,33 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
     def allpkgs(self):
-        text = 'List All Packages'
+        text = 'List all packages'
         return Link('+allpackages', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def members(self):
-        text = 'Change Members'
+        text = 'Change members team'
         return Link('+selectmemberteam', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def upload_admin(self):
-        text = 'Change Upload Manager'
+        text = 'Change upload manager'
         summary = 'Someone with permission to manage uploads'
         return Link('+uploadadmin', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
-        text = 'Change Mirror Admins'
+        text = 'Change mirror admins'
         enabled = self.context.full_functionality
         return Link('+selectmirroradmins', text, enabled=enabled, icon='edit')
 
     def search(self):
-        text = 'Search Packages'
+        text = 'Search packages'
         return Link('+search', text, icon='search')
 
     @enabled_with_permission('launchpad.Admin')
     def addrelease(self):
-        text = 'Add Release'
+        text = 'Add release'
         return Link('+addrelease', text, icon='add')
 
     def builds(self):
@@ -232,7 +279,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
-        text = 'Define Launchpad Usage'
+        text = 'Define Launchpad usage'
         return Link('+launchpad', text, icon='edit')
 
 
@@ -243,21 +290,21 @@ class DistributionBugsMenu(ApplicationMenu):
     links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
-        text = 'CVE Reports'
+        text = 'CVE reports'
         return Link('+cve', text, icon='cve')
 
     def new(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change Bug Contact'
+        text = 'Change bug contact'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
-        text = 'Change Security Contact'
+        text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
 
@@ -268,11 +315,11 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'New Bounty'
+        text = 'Register new bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -283,7 +330,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
@@ -301,7 +348,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
             icon='info')
 
     def new(self):
-        text = 'New Specification'
+        text = 'Register new blueprint'
         return Link('+addspec', text, icon='add')
 
 
@@ -312,7 +359,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
     links = ['edit']
 
     def edit(self):
-        text = 'Change Translators'
+        text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
 
@@ -399,8 +446,9 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'gotchi', 'emblem']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -440,11 +488,13 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "gotchi", "emblem", "domainname", "members"]
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -454,8 +504,8 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -547,7 +597,7 @@ class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
-        self.now = datetime.utcnow()
+        self.now = datetime.datetime.utcnow()
 
     def render(self):
         self.request.response.setHeader(
@@ -605,3 +655,31 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+
+
+class DistributionDynMenu(
+    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
+
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'releases': 'releasesMenu',
+        'milestones': 'milestoneMenu',
+        }
+
+    def milestoneMenu(self):
+        """Show milestones more recently than one month ago,
+        or with no due date.
+        """
+        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        for milestone in self.context.milestones:
+            if (milestone.dateexpected is None or
+                milestone.dateexpected > fairly_recent):
+                yield self.makeLink(milestone.title, context=milestone)
+        yield self.makeLink('Show all milestones...', page='+milestones')
+
+    def mainMenu(self):
+        yield self.makeLink('Releases', page='+releases', submenu='releases')
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink(
+            'Milestones', page='+milestones', submenu='milestones')

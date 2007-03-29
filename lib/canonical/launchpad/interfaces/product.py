@@ -18,7 +18,9 @@ from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, IKarmaContext, PillarNameField)
+    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
+    PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     LargeImageUpload, BaseImageUpload, SmallImageUpload)
@@ -32,7 +34,8 @@ class ProductNameField(PillarNameField):
 
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-               ISpecificationTarget, IHasSecurityContact, IKarmaContext):
+               ISpecificationTarget, IHasSecurityContact, IKarmaContext,
+               IHasSprints):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -168,6 +171,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/product',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this product."))
@@ -176,6 +180,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/product-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to this product. It should be "
@@ -183,6 +188,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/product-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this product's home page. It should be no bigger than 100k in "
@@ -246,8 +252,11 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'translation. This will remove the caution from the '
         'pages for this product in Launchpad.'))
 
-    sourcepackages = Attribute(_("List of distribution packages for this \
-        product"))
+    sourcepackages = Attribute(_("List of distribution release packages for "
+        "this product"))
+
+    distrosourcepackages = Attribute(_("List of distribution packages for "
+        "this product"))
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
@@ -268,9 +277,11 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     related to this product."""))
 
     milestones = Attribute(_(
-        """The release milestones associated with this product, useful in
-        particular to the maintainer, for organizing which bugs will be fixed
-        when."""))
+        "The visible release milestones associated with this product, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this product, ordered by "
+        "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
+           'ProductSeriesDynMenu',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
@@ -45,6 +46,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -113,50 +115,50 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change Series Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint Driver'
+        text = 'Appoint driver'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.EditSource')
     def editsource(self):
-        text = 'Edit Source'
+        text = 'Edit source'
         return Link('+source', text, icon='edit')
 
     def ubuntupkg(self):
-        text = 'Link to Ubuntu Package'
+        text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='edit')
 
     def add_package(self):
-        text = 'Link to Any Package'
+        text = 'Link to other package'
         return Link('+addpackage', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_milestone(self):
-        text = 'Add Milestone'
+        text = 'Add milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
     def add_release(self):
-        text = 'Register a Release'
+        text = 'Register a release'
         return Link('+addrelease', text, icon='add')
 
     def rdf(self):
-        text = 'Download RDF Metadata'
+        text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
     def add_potemplate(self):
-        text = 'Add Translation Template'
+        text = 'Add translation template'
         return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):
-        text = 'Review Series Details'
+        text = 'Review details'
         return Link('+review', text, icon='edit')
 
 
@@ -174,24 +176,24 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'setgoals', 'listdeclined']
 
     def listall(self):
-        text = 'Show All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def listaccepted(self):
-        text = 'Show Approved'
+        text = 'List approved blueprints'
         return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
-        text = 'Show Proposed'
+        text = 'List proposed blueprints'
         return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
-        text = 'Show Declined'
+        text = 'List declined blueprints'
         summary = 'Show the goals which have been declined'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def setgoals(self):
-        text = 'Set Goals'
+        text = 'Set series goals'
         summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, summary, icon='edit')
 
@@ -215,7 +217,7 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
     links = ['translationupload', ]
 
     def translationupload(self):
-        text = 'Upload Translations'
+        text = 'Upload translations'
         return Link('+translations-upload', text, icon='add')
 
 
@@ -684,3 +686,11 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductSeriesDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for release in self.context.releases:
+            yield self.makeLink(release.title, context=release)
+

@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISprint',
+    'IHasSprints',
     'ISprintSet',
     ]
 
@@ -20,7 +21,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, LargeImageUpload, BaseImageUpload, SmallImageUpload)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasSpecifications, IHasDrivers)
 
 
 class SprintNameField(ContentNameField):
@@ -35,7 +37,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasSpecifications):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
 
     name = SprintNameField(
@@ -70,6 +72,7 @@ class ISprint(IHasOwner, IHasSpecifications):
             "so you cannot undo changes."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/sprint',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this meeting."))
@@ -77,12 +80,14 @@ class ISprint(IHasOwner, IHasSpecifications):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/sprint-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to this meeting. It should "
             "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/sprint-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this meeting's home page. It should be no bigger than 100k "
@@ -142,7 +147,22 @@ class ISprint(IHasOwner, IHasSpecifications):
         """Remove this specification from the sprint spec list."""
 
 
-# Interfaces for containers
+class IHasSprints(Interface):
+    """An interface for things that have lists of sprints associated with
+    them. This is used for projects, products and distributions, for
+    example, where we can generate a list of upcoming events relevant to
+    them.
+    """
+
+    coming_sprints = Attribute(
+        "A list of up to 5 events currently on, or soon to be on, that are "
+        "relevant to this context.")
+
+    sprints = Attribute("All sprints relevant to this context.")
+
+    past_sprints = Attribute("Sprints that occured in the past.")
+
+
 class ISprintSet(Interface):
     """A container for sprints."""
 

@@ -16,7 +16,9 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IDistributionSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
     ...     MirrorPulseType)
@@ -31,6 +33,14 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Or, to grab one by name, use:
 
     >>> gentoo = distroset.getByName("gentoo")
+
+Let's make sure a distribution object properly implements its interfaces.
+
+    >>> IDistribution.providedBy(gentoo)
+    True
+    >>> verifyObject(IDistribution, gentoo)
+    True
+
 
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
@@ -393,4 +403,37 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...     print spec.name
  kde-desktopfile-langpacks
 
+
+== Milestones ==
+
+We can use IDistribution.milestones to get all milestones associated with any
+releases of a distribution.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in debian.milestones]
+    [u'3.1-rc1', u'3.1']
+
+    >>> woody = debian['woody']
+    >>> debian_milestone = woody.newMilestone(
+    ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in debian.milestones]
+    [(u'woody-rc1', '2028-10-01'), (u'3.1-rc1', '2056-02-16'),
+     (u'3.1', '2056-05-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> debian_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in debian.milestones]
+    [u'3.1-rc1', u'3.1']
+
+To get all milestones of a given distro we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in debian.all_milestones]
+    [u'woody-rc1', u'3.1-rc1', u'3.1']
 

@@ -16,6 +16,7 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
+    'JoinNotAllowed',
     ]
 
 
@@ -118,8 +119,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
+    # The emblem is only used for teams; that's why we use /@@/team as the
+    # default image resource.
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/team',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this team."))
@@ -127,15 +131,17 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/person-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a great big grinning "
-            "image of your mug. Make the most of it."))
+            "than 50k in size. Traditionally this is a logo, small picture, "
+            "or personal mascot."))
     gotchi = LargeImageUpload(
         title=_("Hackergotchi"), required=False,
+        default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
+            "An image, maximum 150x150 pixels, that will be displayed on "
             "your home page. It should be no bigger than 100k in size. "
             "Traditionally this is a great big grinning image of your mug. "
             "Make the most of it."))
@@ -269,7 +275,7 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -286,6 +292,9 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
+    assigned_specs_in_progress = Attribute(
+        "Specifications assigned to this person whose implementation is "
+        "started but not yet completed, sorted newest first.")
     drafted_specs = Attribute(
         "Specifications being drafted by this person, sorted newest first.")
     created_specs = Attribute(
@@ -417,11 +426,26 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         only the one with the oldest teams is returned.
 
         This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789.
+        https://launchpad.net/bugs/30789. It also can't be called if this
+        person is not an indirect member of the given team.
         """
 
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
+
+    def getProjectsAndCategoriesContributedTo(limit=10):
+        """Return a list of dicts with projects and the contributions made
+        by this person on that project.
+
+        The list is limited to the :limit: projects this person is most
+        active.
+
+        The dictionaries containing the following keys:
+            - project:    The project, which is either an IProduct or an
+                          IDistribution.
+            - categories: A dictionary mapping KarmaCategory titles to
+                          the icons which represent that category.
+        """
 
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -436,6 +460,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
+
+    def iterTopProjectsContributedTo(self, limit=10):
+        """Iterate over the top projects contributed to, up to the given limit.
+        """
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
@@ -470,10 +498,14 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         Return None otherwise.
         """
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search IBugTasks with the given search parameters.
 
         :search_params: a BugTaskSearchParams object
+        :args: any number of BugTaskSearchParams objects
+
+        If more than one BugTaskSearchParams is given, return the union of
+        IBugTasks which match any of them.
 
         Return an iterable of matching results.
         """
@@ -506,9 +538,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         people explicitly want to change their preferred email address. On
         that case, though, all we have to do is use person.setPreferredEmail().
         """
-
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
 
     def hasParticipationEntryFor(team):
         """Tell if this person is a direct/indirect member of the given team."""
@@ -547,12 +576,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
-        """Add person as a member of this team.
+        """Add the given person as a member of this team.
 
-        Add a TeamMembership entry for this person with the given status,
-        reviewer, and reviewer comment. This method is also responsible for
-        filling the TeamParticipation table in case the status is APPROVED or
-        ADMIN.
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        The given status must be either Approved, Proposed or Admin.
 
         The reviewer is the user who made the given person a member of this
         team.
@@ -576,6 +606,11 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         """Return the people whose membership on this team match :status:.
 
         If no orderby is provided, Person.sortingColumns is used.
+        """
+
+    def getEffectiveAdministrators():
+        """Return this team's administrators including the team owner
+        (regardless of whether he's a member or not).
         """
 
     def getTeamAdminsEmailAddresses():
@@ -641,9 +676,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchQuestions(search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
-                        needs_attention=False):
+                        needs_attention=None):
         """Search the person's questions.
 
         See IQuestionCollection for the description of the standard search
@@ -670,6 +706,7 @@ class ITeam(IPerson):
 
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/team-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this team's home page. It should be no bigger than 100k in "
@@ -905,4 +942,8 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
 

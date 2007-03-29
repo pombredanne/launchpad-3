@@ -17,6 +17,12 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 i18n:translate=""
@@ -31,7 +37,7 @@
       <p i18n:translate="">If you don't know the bug number, you can search for it
         on the <a href=""
                   tal:attributes="href string:${context/target/fmt:url}/+bugs"
-                  >Bugs Listing</a> page.
+                  >Bug listing</a> page.
       </p>
     </div>
   </div>

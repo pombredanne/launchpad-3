@@ -9,6 +9,9 @@
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
+        <allow attributes="
+            default_gotchi_resource default_gotchi_heading_resource
+            default_emblem_resource" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -18,6 +21,14 @@
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectDynMenu"
+        attribute="__call__"
+        name="+menudata"
         />
 
     <adapter
@@ -221,9 +232,9 @@
             permission="launchpad.AnyPerson"
             />
         <browser:page
-            name="+portlet-latestquestions"
+            name="+ask-a-question-button"
             for="canonical.launchpad.interfaces.IProject"
-            class="canonical.launchpad.browser.ProjectLatestQuestionsView"
+            class="canonical.launchpad.browser.AskAQuestionButtonView"
             permission="zope.Public"
             />
     </facet>

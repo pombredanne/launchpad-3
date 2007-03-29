@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = [
     'Sprint',
     'SprintSet',
+    'HasSprintsMixin',
     ]
 
 
@@ -12,7 +13,8 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, SQLRelatedJoin)
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    IHasGotchiAndEmblem, ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -30,9 +32,12 @@ from canonical.lp.dbschema import (
 class Sprint(SQLBase):
     """See ISprint."""
 
-    implements(ISprint)
+    implements(ISprint, IHasGotchiAndEmblem)
 
     _defaultOrder = ['name']
+    default_gotchi_resource = '/@@/sprint-mugshot'
+    default_gotchi_heading_resource = '/@@/sprint-heading'
+    default_emblem_resource = '/@@/sprint'
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -62,6 +67,13 @@ class Sprint(SQLBase):
     @property
     def displayname(self):
         return self.title
+
+    @property
+    def drivers(self):
+        """See IHasDrivers."""
+        if self.driver is not None:
+            return [self.driver, self.owner]
+        return [self.owner,]
 
     # useful joins
     attendees = SQLRelatedJoin('Person',
@@ -298,7 +310,7 @@ class SprintSet:
 
     def __iter__(self):
         """See ISprintSet."""
-        return iter(Sprint.select(orderBy='-time_starts'))
+        return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
             summary=None, driver=None, home_page=None, gotchi=None,
@@ -309,4 +321,48 @@ class SprintSet:
             time_ends=time_ends, summary=summary, driver=driver,
             home_page=home_page, gotchi=gotchi, emblem=emblem,
             gotchi_heading=gotchi_heading)
+
+
+class HasSprintsMixin:
+    """A mixin class implementing the common methods for any class
+    implementing IHasSprints.
+    """
+
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        """Return the base SQL query and the clauseTables to be used when
+        querying sprints related to this object.
+
+        Subclasses must overwrite this method if it doesn't suit them.
+        """
+        query = """
+            Specification.%s = %s
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            """ % (self._table, self.id)
+        return query, ['Specification', 'SprintSpecification']
+
+    @property
+    def sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts', distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends > 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='time_starts',
+            distinct=True, limit=5)
+
+    @property
+    def past_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends <= 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts',
+            distinct=True)
 
