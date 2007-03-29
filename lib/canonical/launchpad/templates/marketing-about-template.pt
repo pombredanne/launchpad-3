@@ -20,7 +20,7 @@
       <ul>
         <li><a href="+tour">Application tour</a></li>
         <li><a href="+faq">FAQs</a></li>
-        <li class="current"><a href="+about">About</a></li>
+        <li class="current"><a href="+about">Fact sheet</a></li>
       </ul>
     </dd>
   </dl>
@@ -28,6 +28,7 @@
   <div id="about" metal:fill-slot="contents">
     <div id="primary">
       <h2 metal:define-slot="application">Translations</h2>
+      <h3 class="byline">Fact sheet</h3>
     </div>
     <metal:contents define-slot="contents" />
   </div>
