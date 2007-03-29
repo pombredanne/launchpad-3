@@ -1,81 +1,81 @@
 From Launchpad's front page, you can access a "marketing microsite"
 
-  >>> browser.open('http://launchpad.dev/')
-  >>> browser.getLink('What is Launchpad?').click()
-  >>> browser.url
-  'http://launchpad.dev/+about'
+    > > > browser.open('http://launchpad.dev/')
+    > > > browser.getLink('What is Launchpad?').click()
+    > > > browser.url
+    'http://launchpad.dev/+about'
 
 that features three large tabs: "Home", "Get an account", and "Take a tour".
 
-  >>> 'Home' in browser.contents
-  True
-  >>> account_link = browser.getLink('Get an account')
-  >>> account_link.url
-  'http://launchpad.dev/+login'
-  >>> tour_link = browser.getLink('Take a tour')
-  >>> tour_link.url
-  'http://launchpad.dev/+tour'
+    > > > 'Home' in browser.contents
+    True
+    > > > account_link = browser.getLink('Get an account')
+    > > > account_link.url
+    'http://launchpad.dev/+login'
+    > > > tour_link = browser.getLink('Take a tour')
+    > > > tour_link.url
+    'http://launchpad.dev/+tour'
 
 Each Launchpad application has its own fact sheet
 
-  >>> browser.open('http://code.launchpad.dev/+about')
-  >>> '>Code</h1>' in browser.contents
-  True
-  >>> 'Fact sheet' in browser.contents
-  True
+    > > > browser.open('http://code.launchpad.dev/+about')
+    > > > '>Code</h1>' in browser.contents
+    True
+    > > > 'Fact sheet' in browser.contents
+    True
 
-  >>> browser.open('http://bugs.launchpad.dev/+about')
-  >>> '>Bugs</h1>' in browser.contents
-  True
-  >>> 'Fact sheet' in browser.contents
-  True
+    > > > browser.open('http://bugs.launchpad.dev/+about')
+    > > > '>Bugs</h1>' in browser.contents
+    True
+    > > > 'Fact sheet' in browser.contents
+    True
 
-  >>> browser.open('http://blueprints.launchpad.dev/+about')
-  >>> '>Blueprints</h1>' in browser.contents
-  True
-  >>> 'Fact sheet' in browser.contents
-  True
+    > > > browser.open('http://blueprints.launchpad.dev/+about')
+    > > > '>Blueprints</h1>' in browser.contents
+    True
+    > > > 'Fact sheet' in browser.contents
+    True
 
-  >>> browser.open('http://translations.launchpad.dev/+about')
-  >>> '>Translations</h1>' in browser.contents
-  True
-  >>> 'Fact sheet' in browser.contents
-  True
+    > > > browser.open('http://translations.launchpad.dev/+about')
+    > > > '>Translations</h1>' in browser.contents
+    True
+    > > > 'Fact sheet' in browser.contents
+    True
 
-  >>> browser.open('http://answers.launchpad.dev/+about')
-  >>> '>Answers</h1>' in browser.contents
-  True
-  >>> 'Fact sheet' in browser.contents
-  True
+    > > > browser.open('http://answers.launchpad.dev/+about')
+    > > > '>Answers</h1>' in browser.contents
+    True
+    > > > 'Fact sheet' in browser.contents
+    True
 
 and its own tour page.
 
-  >>> browser.open('http://code.launchpad.dev/+tour')
-  >>> '>Code</h1>' in browser.contents
-  True
-  >>> 'Application tour' in browser.contents
-  True
+    > > > browser.open('http://code.launchpad.dev/+tour')
+    > > > '>Code</h1>' in browser.contents
+    True
+    > > > 'Application tour' in browser.contents
+    True
 
-  >>> browser.open('http://bugs.launchpad.dev/+tour')
-  >>> '>Bugs</h1>' in browser.contents
-  True
-  >>> 'Application tour' in browser.contents
-  True
+    > > > browser.open('http://bugs.launchpad.dev/+tour')
+    > > > '>Bugs</h1>' in browser.contents
+    True
+    > > > 'Application tour' in browser.contents
+    True
 
-  >>> browser.open('http://blueprints.launchpad.dev/+tour')
-  >>> '>Blueprints</h1>' in browser.contents
-  True
-  >>> 'Application tour' in browser.contents
-  True
+    > > > browser.open('http://blueprints.launchpad.dev/+tour')
+    > > > '>Blueprints</h1>' in browser.contents
+    True
+    > > > 'Application tour' in browser.contents
+    True
 
-  >>> browser.open('http://translations.launchpad.dev/+tour')
-  >>> '>Translations</h1>' in browser.contents
-  True
-  >>> 'Application tour' in browser.contents
-  True
+    > > > browser.open('http://translations.launchpad.dev/+tour')
+    > > > '>Translations</h1>' in browser.contents
+    True
+    > > > 'Application tour' in browser.contents
+    True
 
-  >>> browser.open('http://answers.launchpad.dev/+tour')
-  >>> '>Answers</h1>' in browser.contents
-  True
-  >>> 'Application tour' in browser.contents
-  True
+    > > > browser.open('http://answers.launchpad.dev/+tour')
+    > > > '>Answers</h1>' in browser.contents
+    True
+    > > > 'Application tour' in browser.contents
+    True
