@@ -1,10 +1,9 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
-  xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-  i18n_domain="canonical.launchpad">
-
-
+D xmlns:browser="http://namespaces.zope.org/browser"
+D xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+D i18n_domain="canonical.launchpad">
+D
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
