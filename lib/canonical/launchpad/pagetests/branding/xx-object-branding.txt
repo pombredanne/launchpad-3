@@ -1,0 +1,61 @@
+
+Branding
+========
+
+Several objects in Launchpad can have aspects of their branding customised.
+Specifically, you can set various combinations of an icon, for listings, a
+logo, for page headings, and a mugshot, which is a large brand for the
+object's homepage.
+
+Most objects allow you to edit all three of these branding items. However,
+for IPerson and ISprint, we do not currently allow the customisation of hte
+icon, as we think this will create too much noise in the UI.
+
+Team branding
+=============
+
+    >>> browser = admin_browser
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team'
+    >>> browser.getLink('Change branding').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team/+branding'
+
+    >>> browser.getControl(name='field.icon.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.icon_current_img').get('src')
+    u'/@@/team'
+    >>> browser.getControl(name='field.logo.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.logo_current_img').get('src')
+    u'/@@/team-logo'
+    >>> browser.getControl(name='field.logo.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    u'/@@/team-mugshot'
+
+    >>> from canonical.launchpad.ftests import set_branding
+    >>> set_branding(browser)
+
+    >>> browser.getControl('Save').click()
+
+Here we see the updated values.
+
+    >>> browser.url
+    'http://launchpad.dev/~ubuntuteam'
+    >>> browser.getLink('Change branding').click()
+
+    >>> browser.getControl(name='field.icon.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.icon_current_img').get('src')
+    u'.../icon.png'
+    >>> browser.getControl(name='field.logo.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.logo_current_img').get('src')
+    u'.../logo.png'
+    >>> browser.getControl(name='field.mugshot.action').value
+    ['keep']
+    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    u'.../mugshot.png'
+

@@ -65,16 +65,21 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries)
+
 from canonical.launchpad.searchbuilder import any, NULL
+
 from canonical.launchpad import helpers
+
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 
-from canonical.launchpad.webapp.generalform import GeneralFormView
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
@@ -1027,12 +1032,7 @@ class BugTaskListingView(LaunchpadView):
         if not assignee:
             return status_title + ' (unassigned)'
 
-        assignee_html = (
-            '<img alt="" src="%s" /> '
-            '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                assignee.default_emblem_resource,
-                urllib.quote(assignee.name),
-                cgi.escape(assignee.browsername)))
+        assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
         if status in (dbschema.BugTaskStatus.REJECTED,
                       dbschema.BugTaskStatus.FIXCOMMITTED):
