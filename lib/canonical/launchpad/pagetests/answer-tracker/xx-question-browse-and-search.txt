@@ -709,3 +709,33 @@ And also with products:
     >>> print anon_browser.title
     Questions matching "plugins" for Mozilla Firefox
 
+== Popular searches ==
+
+The action menu provides links to predefined searches that
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> portlet = soup.first('div', id='actions')
+    >>> portlet.first('ul')
+    <ul>
+    ...<a href=".../+mytickets">My questions</a>...
+    ...<a href=".../+need-attention">Need attention</a>...
+    ...<a href=".../+unsupported">Unsupported</a>...
+
+Each product and distro can have questions asked in languages that 
+none of the Answer Contacts speak.
+
+    >>> browser.getLink('Unsupported').click()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.first('h1')
+    <h1>Unsupported questions for Mozilla Firefox</h1>
+
+That page displays table listing the Unsupported Questions for Mozilla
+Firefox
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
+    'Problemas de Impress\xc3\xa3o no Firefox'

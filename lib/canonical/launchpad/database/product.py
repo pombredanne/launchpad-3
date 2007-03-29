@@ -291,13 +291,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)
-    
-    def getUnsupportedQuestions(self):
-        """See IQuestionTarget."""
-        language_ids = [str(lang.id) for lang in self.getSupportedLanguages()]
-        return set(Question.select(
-            'product = %s AND language NOT IN (%s)' % sqlvalues(
-            self.id, ', '.join(language_ids)), distinct=True))
 
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):
