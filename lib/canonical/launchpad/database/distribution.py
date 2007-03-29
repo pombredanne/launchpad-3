@@ -465,13 +465,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)
-        
-    def getUnsupportedQuestions(self):
-        """See IQuestionTarget."""
-        language_ids = [str(lang.id) for lang in self.getSupportedLanguages()]
-        return set(Question.select(
-            'distribution = %s AND language NOT IN (%s)' % sqlvalues(
-            self.id, ', '.join(language_ids)), distinct=True))
 
     def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):
@@ -494,13 +487,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
+                        needs_attention_from=None, unsupported=False):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported=unsupported).getResults()
 
 
     def findSimilarQuestions(self, title):

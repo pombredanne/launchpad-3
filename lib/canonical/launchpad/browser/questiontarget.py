@@ -11,7 +11,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
-    'QuestionCollectionUnsupportedQuestionsView',
+    'QuestionCollectionUnsupportedView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
@@ -387,7 +387,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
         return {'needs_attention_from': self.user}
 
 
-class QuestionCollectionUnsupportedQuestionsView(SearchQuestionsView):
+class QuestionCollectionUnsupportedView(SearchQuestionsView):
     """SearchQuestionsView specialization for the unsupported questions report.
      
      It displays questions that are asked in an unsupported language for the
@@ -408,7 +408,7 @@ class QuestionCollectionUnsupportedQuestionsView(SearchQuestionsView):
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'unsupported': True}
+        return {'language':None, 'unsupported': True}
 
 
 class ManageAnswerContactView(GeneralFormView):
@@ -500,7 +500,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
 
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
-    links = ['open', 'answered', 'myrequests', 'need_attention', 'unsupported']
+    links = ['open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         return "+tickets?" + urlencode(
@@ -526,10 +526,6 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
     def need_attention(self):
         text = 'Need attention'
         return Link('+need-attention', text, icon='question')
-        
-    def unsupported(self):
-        text = 'Unsupported'
-        return Link('+unsupported', text, icon='question')
 
 
 class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
@@ -537,8 +533,12 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     usedfor = IQuestionTarget
     facet = 'answers'
-    links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
-
+    links = QuestionCollectionAnswersMenu.links + ['unsupported', 'new', 'answer_contact']
+        
+    def unsupported(self):
+        text = 'Unsupported'
+        return Link('+unsupported', text, icon='question')
+        
     def new(self):
         text = 'Ask a question'
         return Link('+addticket', text, icon='add')

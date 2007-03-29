@@ -249,12 +249,13 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     # IQuestionCollection
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                        sort=None, owner=None, needs_attention_from=None):
+                        sort=None, owner=None, needs_attention_from=None,
+                        unsupported=False):
         """See IQuestionCollection."""
         return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,
             sort=sort, owner=owner, needs_attention_from=needs_attention_from,
-            product=self.products).getResults()
+            product=self.products, unsupported=unsupported).getResults()
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""

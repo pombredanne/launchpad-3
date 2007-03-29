@@ -781,7 +781,8 @@ class QuestionPersonSearch(QuestionSearch):
 
     def __init__(self, person, search_text=None,
                  status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                 sort=None, participation=None, needs_attention=False):
+                 sort=None, participation=None, needs_attention=False,
+                 unsupported=False):
         if needs_attention:
             needs_attention_from = person
         else:
@@ -789,7 +790,8 @@ class QuestionPersonSearch(QuestionSearch):
 
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, sort=sort)
+            needs_attention_from=needs_attention_from, 
+            unsupported=unsupported, sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person

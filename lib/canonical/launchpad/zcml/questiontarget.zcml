@@ -51,7 +51,7 @@
     
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionTarget"
-    class="canonical.launchpad.browser.QuestionCollectionUnsupportedQuestionsView"
+    class="canonical.launchpad.browser.QuestionCollectionUnsupportedView"
     name="+unsupported"
     permission="launchpad.AnyPerson"
     />

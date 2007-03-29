@@ -72,14 +72,15 @@ class SourcePackageQuestionTargetMixin:
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
+                        needs_attention_from=None, unsupported=False):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported=unsupported).getResults()
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
@@ -135,13 +136,6 @@ class SourcePackageQuestionTargetMixin:
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)
-    
-    def getUnsupportedQuestions(self):
-        """See IQuestionTarget."""
-        language_ids = [str(lang.id) for lang in self.getSupportedLanguages()]
-        return set(Question.select(
-            'sourcepackagename = %s AND language NOT IN (%s)' % sqlvalues(
-            self.sourcepackagename, ', '.join(language_ids)), distinct=True))
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
