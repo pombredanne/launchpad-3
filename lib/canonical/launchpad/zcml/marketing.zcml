@@ -23,12 +23,6 @@
         permission="zope.Public"
         template="../templates/marketing-faq-template.pt"
         />
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_tour_template"
-        permission="zope.Public"
-        template="../templates/marketing-tour-template.pt"
-        />
 
     <!-- Marketing Microsite Home Page -->
     <browser:page
@@ -85,12 +79,12 @@
         name="+faq"
         template="../templates/marketing-bugs-faq.pt"
         />
-    <browser:page
+    <browser:tour
+        name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+tour"
         permission="zope.Public"
-        template="../templates/marketing-bugs-tour1.pt"
+        tour="../templates/marketing-bugs-tour.xml"
         />
 
     <!-- Marketing material for Code. -->

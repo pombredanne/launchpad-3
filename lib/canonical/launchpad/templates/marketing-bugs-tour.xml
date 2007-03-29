@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<tour>
+  <title>Bugs</title>
+  <screen>
+    <title>Searching for bugs</title>
+    <summary>Anyone can search, view and comment on tens of thousands of
+      bugs filed in Launchpad.
+    </summary>
+    <screenshot>/+icing/bugs-tour-screenshot1.png</screenshot>
+    <callout top="45" left="320">Search bugs filed against hundreds of
+      projects and packages.
+    </callout>
+    <callout top="110" left="90">Get a snapshot of issues currently affecting
+      Launchpad communities.
+    </callout>
+    <callout top="110" left="290">And see which issues have recently been
+      solved.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Viewing a bug</title>
+    <summary>Individual bug pages show how a bug affects other communities,
+      who is working on the bug and what discussion has taken place.
+    </summary>
+    <screenshot>/+icing/bugs-tour-screenshot2.png</screenshot>
+    <callout top="" left="">You can track a bug's status across different
+      communities, even if they use external bug trackers.
+    </callout>
+    <callout top="" left="">See which individual or team each community has
+      assigned to work on a bug. Or link to the bug in an external tracker.
+    </callout>
+    <callout top="" left="">If other projects or distributions are affected by
+      this bug, sharing it with them takes just a few clicks.
+    </callout>
+    <callout top="" left="">Any Launchpad user or team can subscribe to a bug,
+      giving them email notification of status changes and new comments.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Listing project bugs</title>
+    <screenshot>/+icing/bugs-tour-screenshot3.png</screenshot>
+    <summary>A project's bug listing gives a quick overview of how many issues
+      are outstanding.
+    </summary>
+    <callout top="" left="">Coloured bug icons make it easy to see how
+      important the project considers each bug to be.
+    </callout>
+    <callout top="" left="">A yellow Bazaar icon shows that a bug is linked to
+      a branch of code that is intended to fix it.
+    </callout>
+    <callout top="" left="">Tags help communities spontaneously categorise
+      their bugs.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Assigning a bug</title>
+    <screenshot>/+icing/bugs-tour-screenshot4.png</screenshot>
+    <summary>Launchpad makes it easy to keep bug reports up to date.</summary>
+
+    <callout top="" left="">Each community affected by a bug can choose
+      their own assignee and status, but all communities share the same
+      comment history.
+    </callout>
+    <callout top="" left="">Quick-links to that community's bug contact and
+      the current user, speed up bug assignment.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Commenting on a bug</title>Commenting on a bug
+    <screenshot>/+icing/bugs-tour-screenshot5.png</screenshot>
+    <summary>Shared comment histories helps communities solve common bugs.</summary>
+
+    <callout top="" left="">Bug comments can have subjects, to make long
+      comment histories easier to scan.
+    </callout>
+    <callout top="" left="">Attachments - such as screen shots, code patches
+      or logs - make comments much more useful.
+    </callout>
+
+    <callout top="" left="">This comment was filed by email, using
+      Launchpad's extensive email interface.
+    </callout>
+  </screen>
+
+</tour>

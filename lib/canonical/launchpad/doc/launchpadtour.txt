@@ -1,0 +1,142 @@
+= LaunchpadTourView =
+
+LaunchpadTourView is a base view to handle appliation tours. The tour
+is described in an external XML file.
+
+    >>> import os
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+    >>> from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> request = LaunchpadTestRequest()
+    >>> context = getUtility(ILaunchpadApplication)
+    >>> tour_xml_file = os.path.join(
+    ...     os.path.dirname(__file__), "../templates/marketing-bugs-tour.xml")
+    >>> tour_view = LaunchpadTourView( context, request, tour_xml_file)
+
+The title of the tour is availble in the title attribute.
+
+    >>> print tour_view.title
+    Bugs
+
+A tour is made of several screens elements. The list of screens is
+available using the screen_titles attributes.
+
+    >>> for title in tour_view.screen_titles:
+    ...     print title
+    Searching for bugs
+    Viewing a bug
+    Listing project bugs
+    Assigning a bug
+    Commenting on a bug
+
+== Current screen ==
+
+The current screen is tracked using the current_screen_index attribute.
+Unless there is a 'screen' parameter in the request, it will default to
+the first screen. (This attribute is only available once the initialize()
+method was called.)
+
+    >>> tour_view.initialize()
+    >>> tour_view.current_screen_index
+    0
+
+    >>> request = LaunchpadTestRequest(form={'screen':'2'})
+    >>> tour_view = LaunchpadTourView(context, request, tour_xml_file)
+    >>> tour_view.initialize()
+    >>> tour_view.current_screen_index
+    2
+
+Passing an invalid screen reference will raise UnexpectedFormData.
+
+    >>> tour_view = LaunchpadTourView(
+    ...     context, LaunchpadTestRequest(form={'screen':'10'}), tour_xml_file)
+    >>> tour_view.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No such screen: 10
+
+    >>> tour_view = LaunchpadTourView(
+    ...     context, LaunchpadTestRequest(form={'screen':'aName'}),
+    ...     tour_xml_file)
+    >>> tour_view.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Invalid screen reference: aName
+
+== Screen description ==
+
+The current viewed screen is available in the current_screen attribute.
+The screen is described as a dict containing a title, summary,
+screenshot and callouts keys.
+
+    >>> request = LaunchpadTestRequest(form={'screen': '2'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
+    >>> screen = tour_view.current_screen
+    >>> print screen['title']
+    Listing project bugs
+    >>> print screen['summary']
+    A project's bug listing gives a quick overview of how many issues
+    are outstanding.
+
+The screenshot contains the URI to the screenshot.
+
+    >>> print screen['screenshot']
+    /+icing/bugs-tour-screenshot1.png
+
+The callouts is a list of dicts containg keys for the callout text, and
+position on the screenshot.
+
+    >>> len(screen['callouts'])
+    3
+    >>> callout = screen['callouts'][0]
+    >>> print callout['text']
+    Coloured bug icons make it easy to see how important the project
+    considers each bug to be.
+    >>> print callout['top']
+    0
+    >>> print callout['left']
+    0
+
+=== Screen navigation ==
+
+The next_screen_index attribute gives the index of the next screen in
+the tour.
+
+    >>> tour_view.next_screen_index
+    3
+
+It is None when the current screen is the last one.
+
+    >>> request = LaunchpadTestRequest(form={'screen': '4'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
+
+    >>> tour_view.next_screen_index is None
+    True
+
+== Registering from ZCML ==
+
+Finally, it is possible to register a LaunchpadTourView from ZCML. The
+browser:tour is available for this purpose.
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <browser:tour
+    ...       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+    ...       permission="zope.Public"
+    ...       name="+test-bugs-tour"
+    ...       tour="%s"
+    ...       />
+    ... </configure>
+    ... """ % tour_xml_file )
+
+    >>> from zope.component import getMultiAdapter
+    >>> request = LaunchpadTestRequest()
+    >>> tour_view = getMultiAdapter((context, request), name='+test-bugs-tour')
+    >>> print tour_view.title
+    Bugs

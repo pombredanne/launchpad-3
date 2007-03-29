@@ -546,6 +546,9 @@ marketing_home = "About Launchpad"
 
 # marketing_main_template is used by the marketing pages
 
+def marketing_tour(context, view):
+    return view.pagetitle
+
 marketing_translations_about = "About Translations"
 
 marketing_translations_faq = "FAQs about Translations"
