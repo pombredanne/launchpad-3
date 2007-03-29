@@ -303,9 +303,14 @@ ul#menuroot>li>a {
   margin-right: -1px;
 }
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a {
+#locationbar li a,
+#locationbar li span {
   display: block;
   color: #000000;
+}
+/* Unlinked items.  Same colour as the overview actions menu. */
+#locationbar li .unlinked {
+  color: #83AD23;
 }
 /* XXX: needs explanation */
 ul#menuroot>li>a>em { /* should be changed to not need em */
@@ -332,7 +337,8 @@ ul#menuroot>li.container>a>em { /* should be changed to not need em */
  * The area we actually see on the page is an <a> element.
  * The <li> element takes up no space.
  */
-#locationbar ul.menu li a {
+#locationbar ul.menu li a,
+#locationbar ul.menu li .unlinked {
   background-image: none;
   background-color: #AFDB1F;
   float: none;
@@ -414,7 +420,8 @@ ul#menuroot>li.selected>a {
 /* Prevent the text in links in menu items from wrapping.
  * Apply appropriate formatting to links in menu items.
  */
-#locationbar li a {
+#locationbar li a,
+#locationbar li .unlinked {
   left: auto;
   margin: 0px 0px 0px 0px;
   white-space: pre;
@@ -585,12 +592,50 @@ ul#applicationchooser li {
   text-align: center;
   font-weight: bold;
   color: #000000;
-  padding: 8px 0px 0px 0px;
 }
+
+/* We make the anchor display block, and use the same height as the li,
+ * to ensure the whole tab area is clickable. */
+ul#applicationchooser li a {
+  display: block;
+  padding: 8px 0px 0px 0px;
+  height: 40px;
+}
+
+/* For the selected and unavailable tabs, we need to provide the padding
+ * (since there's no anchor), and change the cursor to avoid it being an
+ * i-beam when hovering over the text of the tab. */
+ul#applicationchooser li span.selected,
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  display: block;
+  padding: 8px 0px 0px 0px;
+  cursor: default;
+}
+
+/* Disabled icons shouldn't hover up */
+ul#applicationchooser li span.disabled:hover,
+ul#applicationchooser li.unavailable:hover
+{
+  background-position: -100px 0px;
+}
+
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  color: lightgrey;
+}
+
 ul#applicationchooser li:hover {
   background-position: 0px 0px;
+}
+
+/* Avoid underlining anchors inside the tabs */
+ul#applicationchooser a:hover {
   text-decoration: none;
 }
+
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
@@ -701,24 +746,17 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#actions ul {
-  width: 192px;
-  overflow: hidden;
-  margin: 0;
-  padding: 4px;
-}
+#actions ul {list-style-type: none; margin: 0; padding: 4px; width: 192px;}
 #actions li {
-  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
-  list-style-image: url(/+icing/action.png);
-  list-style-type: circle; /* A fallback in case the image can't be found. */
-  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
+  margin: 0; /* neutralizes UA list item indenting */
+  padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions li:hover {background-color: #fff; text-decoration: underline;}
 #actions a {
-  display: block; /* Makes the clickable area equal to the highlighted area. */
-  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
-  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
+  background: url(action.png) 4px center no-repeat;
+  display: block; /* makes the clickable area equal to the highlighted area */
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
 }
+#actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,
 .radio {
   background: transparent;
@@ -915,6 +953,8 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
 
+.product.series, .project {margin-bottom: 1em;}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1021,6 +1061,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   background: none;
   color: #9f2b33;
 }
+
 
 .statusUNCONFIRMED  { color: #993300; }
 .statusNEEDSINFO    { color: Red; }

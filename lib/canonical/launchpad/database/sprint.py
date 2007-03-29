@@ -357,3 +357,12 @@ class HasSprintsMixin:
             query, clauseTables=tables, orderBy='time_starts',
             distinct=True, limit=5)
 
+    @property
+    def past_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends <= 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts',
+            distinct=True)
+

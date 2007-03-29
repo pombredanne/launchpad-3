@@ -11,6 +11,7 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
+    'LaunchpadRootDynMenu',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'LaunchpadRootIndexView',
@@ -91,6 +92,7 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -539,6 +541,26 @@ class LaunchpadRootNavigation(Navigation):
         if beta_redirection_view is not None:
             return beta_redirection_view
         return Navigation.publishTraverse(self, request, name)
+
+
+class LaunchpadRootDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    def contributionsMenu(self):
+        if self.user is not None:
+            L = [self.makeBreadcrumbLink(item)
+                 for item in self.user.iterTopProjectsContributedTo()]
+            L.sort(key=lambda item: item.text.lower())
+            if L:
+                for obj in L:
+                    yield obj
+            else:
+                yield self.makeLink(
+                    'Projects you contribute to go here.', target=None)
+            yield self.makeLink('See all projects...', target='/products')
 
 
 class SoftTimeoutView(LaunchpadView):
