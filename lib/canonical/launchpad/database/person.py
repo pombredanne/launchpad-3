@@ -677,9 +677,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         else:
             return None
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, *args):
         """See IPerson."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=10):
         """See IPerson."""

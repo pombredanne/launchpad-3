@@ -78,8 +78,9 @@
                           tal:content="structure link/escapedtext"
                         >abc</a>
                         <span
+                          class="selected"
                           tal:condition="not: link/linked"
-                          tal:replace="structure link/escapedtext"
+                          tal:content="structure link/escapedtext"
                         >def</span>
                       </li>
                       <li

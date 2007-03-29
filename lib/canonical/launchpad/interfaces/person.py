@@ -498,10 +498,14 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         Return None otherwise.
         """
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search IBugTasks with the given search parameters.
 
         :search_params: a BugTaskSearchParams object
+        :args: any number of BugTaskSearchParams objects
+
+        If more than one BugTaskSearchParams is given, return the union of
+        IBugTasks which match any of them.
 
         Return an iterable of matching results.
         """
