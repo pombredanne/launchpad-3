@@ -182,9 +182,13 @@ class Breadcrumbs(LaunchpadView):
         L = []
         firsturl = '/'
         firsttext = 'Home'
+        from canonical.launchpad.webapp.vhosts import allvhosts
+        rooturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
-            '<li lpm:mid="root" class="item container"><a href="%s"><em>%s</em></a></li>'
+            '<li lpm:mid="root" class="item">'
+            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
+            '<em><span>%s</span></em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
@@ -204,14 +208,14 @@ class Breadcrumbs(LaunchpadView):
                 # branch.
                 if crumb.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'item container'
+                    cssclass = 'breadcrumb container'
                 else:
                     menudata = ''
-                    cssclass = 'item'
-                L.append('<li class="%s"%s>'
-                         '<a href="%s"><em>%s</em></a>'
+                    cssclass = 'breadcrumb'
+                L.append('<li class="item"%s>'
+                         '<a href="%s" class="%s"><em>%s</em></a>'
                          '</li>'
-                         % (cssclass, menudata, crumb.url,
+                         % (menudata, crumb.url, cssclass,
                             cgi.escape(crumb.text)))
 
             #L.append(

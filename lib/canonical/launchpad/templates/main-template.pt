@@ -242,28 +242,30 @@
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
-          </tal:block> |
-          <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+          </tal:block>
         </div>
         <ul style="clear: both;" tal:condition="nothing">
-          <li>Page type: <tal:pagetype replace="view/macro:pagetype" /></li>
-
+            <li>Facet name:
+              <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+            </li>
+            <li>Page type:
+               <tal:pagetype replace="view/macro:pagetype" />
+            </li>
             <li>Has portlet column:
-                <span tal:replace="view/macro:pagehas/portlets" />
+               <span tal:replace="view/macro:pagehas/portlets" />
             </li>
             <li>Has application tabs:
-                <span tal:replace="view/macro:pagehas/applicationtabs" />
+               <span tal:replace="view/macro:pagehas/applicationtabs" />
             </li>
             <li>Has application border:
-                <span tal:replace="view/macro:pagehas/applicationborder" />
+               <span tal:replace="view/macro:pagehas/applicationborder" />
             </li>
             <li>Has application buttons:
-                <span tal:replace="view/macro:pagehas/applicationbuttons" />
+               <span tal:replace="view/macro:pagehas/applicationbuttons" />
             </li>
             <li>Has heading:
-                <span tal:replace="view/macro:pagehas/heading" />
+               <span tal:replace="view/macro:pagehas/heading" />
             </li>
-
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
@@ -282,7 +284,8 @@
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">
-          <li class="item container" lpm:mid="/+menudata/contributions"><a href="/products">Projects</a></li>
+          <li class="item" lpm:mid="/+menudata/contributions"><a
+          class="container" href="/products">Projects</a></li>
         </tal:condition>
         <tal:condition condition="not: request/lp:person">
           <li class="item"><a href="/products">Projects</a></li>
