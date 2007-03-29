@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Runs pyflakes and pylint on files changed in tree
 #
@@ -9,7 +9,6 @@
 # 2005-09-23 tweak more warnings on a dir-specific basis
 
 PYLINT=pylint.python2.4
-BZR=sourcecode/bzr/bzr
 
 # Note that you can disable certain tests by placing in a comment, at
 # the top of the file, a disable-msg command:
@@ -62,10 +61,8 @@ PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
 # R0911 (Too many return statements)
 PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 
-export PYTHONPATH=lib:$PYTHONPATH
-
 if [ -z "$1" ]; then
-    files=`$BZR added ; $BZR modified`
+    files=`bzr added ; bzr modified`
 else
     # Add newlines so grep filters out pyfiles correctly later
     files=`echo $* | tr " " "\n"`
