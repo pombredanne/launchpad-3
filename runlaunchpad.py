@@ -188,39 +188,12 @@ def start_mailman():
             print >> sys.stderr, 'Could not import the Mailman package'
             sys.exit(1)
 
-        # Write a custom mm_cfg.py file with our local site customizations.
-        # This will not work very well for multiple installs, so be sure to
-        # (manually) clean everything out if you change build configurations.
-        config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
-        config_file = open(config_path, 'a')
-        try:
-            if config.mailman.build.site_list:
-                print >> config_file, 'MAILMAN_SITE_LIST = "%s"' % \
-                      config.mailman.build.site_list
-            print >> config_file, 'MTA = "noop"'
-        finally:
-            config_file.close()
-
-        # We need to write a new MTA module that no-ops, but adheres to the
-        # expected interface.  Mailman itself really needs such a beast.
-        module_path = os.path.join(mailman_path, 'Mailman', 'MTA', 'noop.py')
-        module_file = open(module_path, 'w')
-        try:
-            print >> module_file, """\
-from Mailman.MTA.Manual import makelock
-
-def create(mlist, cgi=False, nolock=False, quite=False):
-    pass
-
-def remove(mlist, cgi=False):
-    pass
-"""
-        finally:
-            module_file.close()
-
-
     if not config.mailman.launch:
         return
+
+    # Monkey-patch the installed Mailman 2.1 tree.
+    from canonical.mailman.monkeypatches import monkey_patch
+    monkey_patch(mailman_path, config)
 
     # Ensure that the site list has been created.  We won't use this
     # operationally, but it's required by Mailman 2.1.  This is the cheapest
