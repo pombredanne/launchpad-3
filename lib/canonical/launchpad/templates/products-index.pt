@@ -1,10 +1,6 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-
-<body>
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -46,9 +42,6 @@
 
   <tal:searching condition="view/searchrequested">
 
-    <p></p>
-
-    <div class="left">
       <table
         tal:condition="view/matches"
         tal:define="results view/searchresults"
@@ -77,40 +70,31 @@
         were found.
       </p>
 
-    </div>
+      <h2>Haven&#8217;t found your project?</h2>
 
-    <div class="right">
-
-      <h2>No luck?</h2>
-
-      <p id="application-summary">
+      <p>
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
-
-      <p>
-        <a href="+new">&raquo;
-          Register a project</a>
-      </p>
-
-      <p>
-        <a href="+all">&raquo;
-          Browse the listing of all (!) projects</a>
-      </p>
-
-
-    </div>
+      <ul class="rollover buttons">
+        <li>
+          <a href="+new">
+            <img
+              alt="Register a project"
+              src="/+icing/but-lrg-registerproj.gif"
+            />
+          </a>
+        </li>
+      </ul>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-
-    <p></p>
 
     <div class="left">
 
       <h2>Why register?</h2>
 
-      <div id="application-summary">
+      <div>
         If a project is registered in Launchpad, people can keep track of the
         status of that project much more easily. You can link a Launchpad
         project to your own bug tracker and improve collaboration with other

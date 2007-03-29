@@ -1,64 +1,34 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="bazaar"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
   <body>
+    <h1 metal:fill-slot="heading">Code in branches</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Code in branches</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/code" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-code">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
-                        <ul class="rollover buttons">
-                          <li>
-                            <a href="/+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="/people/+me/+addbranch">
-                              <img
-                                alt="Register a branch"
-                                src="/+icing/but-lrg-registerabranch.gif"
-                              />
-                            </a>
-                          </li>
-                          <li>
-                            <a href="/+import">
-                              <img
-                                alt="Import your project"
-                                src="/+icing/but-lrg-importyourproject.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
-                        <p id="application-summary">
-                          Launchpad lets you track branches of any
-                          <a href="/products">project</a> that
-                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                          version control system &mdash; and can convert many
-                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
-                          so you can use Bazaar with those too.
-                          <a href="/+tour">Learn more&#8230;</a>
-                        </p>
-                        <form class="central" action="/products/+index" method="get">
+      <ul class="rollover buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="/people/+me/+addbranch">
+            <img
+              alt="Register a branch"
+              src="/+icing/but-lrg-registerabranch.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="/+import">
+            <img
+              alt="Import your project"
+              src="/+icing/but-lrg-importyourproject.gif"
+            />
+          </a>
+        </li>
+      </ul>
+                        <form class="central" action="/products" method="get">
                           <input
                             id="text"
                             type="text"
@@ -70,6 +40,16 @@
                             value="Find a Project"
                           />
                         </form>
+                        <p id="application-summary">
+                          Launchpad lets you track branches of any
+                          <a href="/+project-cloud">project</a> that
+                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system &mdash; and can convert many
+                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
+                          so you can use Bazaar with those too.
+                          <a href="/+tour">Learn more&#8230;</a>
+                        </p>
+
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>
@@ -108,7 +88,7 @@
                           <div>
                             <strong tal:content="view/branch_count">123</strong>
                             branches registered in
-                            <a href="/products">
+                            <a href="/+project-cloud">
                             <strong tal:content="view/product_count">1234</strong>
                             projects
                             </a>
@@ -122,15 +102,7 @@
                             branches associated with bug reports
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div><!--mainarea-->
+
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
@@ -198,5 +170,4 @@
     </div>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 done -->

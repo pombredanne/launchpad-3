@@ -185,7 +185,7 @@
         <br />
         <div tal:define="widget nocall:view/reason_widget">
           <label>Why are you requesting these CDs?</label>
-          <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+          <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
         </div>
 
         <input type="hidden" name="custom" value="1" />

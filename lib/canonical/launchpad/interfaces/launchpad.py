@@ -28,45 +28,46 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 __all__ = [
-	'AfterTraverseEvent',
-	'BeforeTraverseEvent',
+    'AfterTraverseEvent',
+    'BeforeTraverseEvent',
     'IAfterTraverseEvent',
-	'IAging',
-	'IAppFrontPageSearchForm',
-	'IAuthApplication',
+    'IAging',
+    'IAppFrontPageSearchForm',
+    'IAuthApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
-	'IBreadcrumb',
+    'IBreadcrumb',
     'ICrowd',
-	'IHasAppointedDriver',
-	'IHasAssignee',
-	'IHasBug',
-	'IHasDateCreated',
-	'IHasDrivers',
-	'IHasGotchiAndEmblem',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasGotchiAndEmblem',
     'IHasOwner',
-	'IHasProduct',
+    'IHasProduct',
     'IHasProductAndAssignee',
-	'IHasSecurityContact',
+    'IHasSecurityContact',
     'ILaunchBag',
-	'ILaunchpadCelebrities',
+    'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'IMaloneApplication',
-	'IOpenLaunchBag',
+    'IOpenLaunchBag',
     'IPasswordChangeApp',
-	'IPasswordEncryptor',
-	'IPasswordResets',
-	'IReadZODBAnnotation',
-	'IRegistryApplication',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IReadZODBAnnotation',
+    'IRegistryApplication',
     'IRosettaApplication',
-	'IShipItApplication',
+    'IShipItApplication',
+    'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWriteZODBAnnotation',
-	'IZODBAnnotation',
+    'IZODBAnnotation',
     'NameNotAvailable',
     'NotFoundError',
-	'UnexpectedFormData',
+    'UnexpectedFormData',
     ]
 
 
@@ -134,6 +135,10 @@ class IMaloneApplication(ILaunchpadApplication):
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Malone")
+    projects_with_bugs_count = Attribute("The number of products and "
+        "distributions which have bugs in Launchpad.")
+    shared_bug_count = Attribute("The number of bugs that span multiple "
+        "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
@@ -378,14 +383,19 @@ class IHasDateCreated(Interface):
     datecreated = Attribute("The date on which I was created.")
 
 
-class IStructuralObjectPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI."""
+class IStructuralHeaderPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI
+    as a heading."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
     def getMainHeading():
         """can be None"""
+
+
+class IStructuralObjectPresentation(IStructuralHeaderPresentation):
+    """Adapter that defines how a structural object is presented in the UI."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""

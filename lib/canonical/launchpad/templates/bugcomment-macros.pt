@@ -2,12 +2,10 @@
      class="boardComment">
 
   <div class="boardCommentDetails">
-    <img src="/@@/person" />
-    <a href="#"
-       tal:attributes="href comment/owner/fmt:url"
-       tal:content="comment/owner/browsername|string:(nobody)">
-      $Person.browsername
-    </a> said
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure comment/owner/fmt:link" />
+    </tal:comment_has_owner>
+    said
     <span
       tal:attributes="title comment/datecreated/fmt:datetime"
       tal:content="comment/datecreated/fmt:displaydate">
