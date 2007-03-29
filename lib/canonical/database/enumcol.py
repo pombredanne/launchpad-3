@@ -62,6 +62,7 @@ class DBSchemaValidator(validators.Validator):
     def fromPython(self, value, state):
         """Convert from DBSchema Item to int.
 
+        >>> from canonical.lp.dbschema import BugTaskStatus, ImportTestStatus
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
@@ -99,6 +100,7 @@ class DBSchemaValidator(validators.Validator):
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
 
+        >>> from canonical.lp.dbschema import BugTaskStatus
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
         >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
         True
@@ -118,20 +120,29 @@ class DBEnumeratedTypeValidator(validators.Validator):
         self.enum = enum
 
     def fromPython(self, value, state):
-        """Convert from DBSchema Item to int.
+        """Convert from DBItem to int.
 
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
-        25
+        >>> from canonical.database.tests.enumeration import *
+        >>> validator = DBEnumeratedTypeValidator(enum=DBTestEnumeration)
+        >>> validator.fromPython(DBTestEnumeration.VALUE1, None)
+        1
+        >>> validator.fromPython(InheritedTestEnumeration.VALUE1, None)
+        1
+        >>> validator.fromPython(ExtendedTestEnumeration.VALUE1, None)
+        1
+        >>> validator.fromPython(UnrelatedTestEnumeration.VALUE1, None)
+        Traceback (most recent call last):
+        ...
+        TypeError: DBItem from wrong type, 'DBTestEnumeration' not in ['UnrelatedTestEnumeration']
+
+        >>> validator.fromPython(1, None)
+        Traceback (most recent call last):
+        ...
+        TypeError: Need to set an EnumeratedType Enum column to an Item, not an int
         >>> validator.fromPython(tuple(), None)
         Traceback (most recent call last):
         ...
-        TypeError: Not a DBSchema Item: ()
-        >>> validator.fromPython(ImportTestStatus.NEW, None)
-        Traceback (most recent call last):
-        ...
-        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
-        >>>
+        TypeError: Not a DBItem: ()
 
         """
         if value is None:
@@ -157,9 +168,22 @@ class DBEnumeratedTypeValidator(validators.Validator):
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
 
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
-        True
+        >>> from canonical.database.tests.enumeration import *
+        >>> validator = DBEnumeratedTypeValidator(enum=DBTestEnumeration)
+        >>> validator.toPython(1, None)
+        <DBItem DBTestEnumeration.VALUE1, (1) Some value>
+
+        >>> validator.toPython(2, None)
+        <DBItem DBTestEnumeration.VALUE2, (2) Some other value>
+
+        Even though it should never happen if the database and
+        the associated types are in sync, a LookupError is raised
+        if the value is not found.
+
+        >>> validator.toPython(3, None)
+        Traceback (most recent call last):
+        ...
+        LookupError: 3
 
         """
         if value is None:

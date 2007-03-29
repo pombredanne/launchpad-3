@@ -9,7 +9,7 @@ import warnings
 
 from zope.interface import implements
 from zope.interface.advice import addClassAdvisor
-from zope.schema.interfaces import ITokenizedTerm, IVocabularyTokenized
+from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
 
 __all__ = [
@@ -267,27 +267,11 @@ class MetaEnum(type):
                 classdict[item_name].sort_order = sort_id
                 sort_id += 1
 
-        # Set the id and schema for the type.
-        item_lookup = {}
         for name, item in items:
+            # The token for an item is the name of the variable.
             item.token = name
             item.used_in_enums.append(classname)
-            if item_lookup.get(item.value) is not None:
-                raise TypeError(
-                    'Item value "%s" is already defined in type %s.%s' %
-                    (item.value, classdict['__module__'], classname))
-            else:
-                item_lookup[item.value] = item
-            # If the item has a db_value, add that to the lookup
-            if hasattr(item, 'db_value'):
-                if item_lookup.get(item.db_value) is not None:
-                    raise TypeError(
-                        'DBItem value (%d) is already defined in type %s.%s' %
-                        (item.db_value, classdict['__module__'], classname))
-                else:
-                    item_lookup[item.db_value] = item
-                
-        classdict['_item_lookup'] = item_lookup
+
         classdict['items'] = sorted([item for name, item in items],
                                     key=operator.attrgetter('sort_order'))
         classdict['name'] = classname
@@ -309,7 +293,7 @@ class MetaEnum(type):
     def __contains__(self, value):
         """Return whether the value is available in this source
         """
-        return value in self._item_lookup
+        return value in self.items
 
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""
@@ -324,10 +308,9 @@ class MetaEnum(type):
 
         If 'value' is not a valid term, this method raises LookupError.
         """
-        result = self._item_lookup.get(value)
-        if result is None:
-            raise LookupError(value)
-        return result
+        if value in self.items:
+            return value
+        raise LookupError(value)
 
     def getTermByToken(self, token):
         """Return an ITokenizedTerm for the passed-in token.
@@ -356,14 +339,14 @@ class Item:
     The value is the short text string used to identify the Item.
     """
 
-    implements(ITokenizedTerm)
+    implements(ITitledTokenizedTerm)
 
     sort_order = 0
     token = None
-    value = None
     description = None
+    title = None
     
-    def __init__(self, value, description=None):
+    def __init__(self, title, description=None):
         """Items are the main elements of the EnumeratedType.
 
         Where the value is passed in without a description,
@@ -375,16 +358,20 @@ class Item:
         Item.sort_order += 1
         # The Item knows which enums it is a member of.
         self.used_in_enums = []
-        self.value = value
+        self.title = title
         
         self.description = description
 
         if self.description is None:
             # check value
-            if self.value.find('\n') != -1:
-                self.value, self.description = docstring_to_title_descr(
-                    self.value)
+            if self.title.find('\n') != -1:
+                self.title, self.description = docstring_to_title_descr(
+                    self.title)
 
+    @property
+    def value(self):
+        return self
+    
     def __int__(self):
         raise TypeError("Cannot cast Item to int.")
 
@@ -415,14 +402,14 @@ class Item:
         return self.sort_order >= other.sort_order
 
     def __hash__(self):
-        return hash(self.value)
+        return hash(self.title)
 
     def __str__(self):
-        return str(self.value)
+        return str(self.title)
     
     def __repr__(self):
         return "<Item %s.%s, %s>" % (
-            self.enum.name, self.token, self.value)
+            self.enum.name, self.token, self.title)
 
 
 class DBItem(Item):
@@ -431,8 +418,8 @@ class DBItem(Item):
     Database enumerations are stored in the database using integer columns.
     """
 
-    def __init__(self, db_value, value, description=None):
-        Item.__init__(self, value, description)
+    def __init__(self, db_value, title, description=None):
+        Item.__init__(self, title, description)
         self.db_value = db_value
 
     def __hash__(self):
@@ -440,7 +427,7 @@ class DBItem(Item):
 
     def __repr__(self):
         return "<DBItem %s.%s, (%d) %s>" % (
-            self.enum.name, self.token, self.db_value, self.value)
+            self.enum.name, self.token, self.db_value, self.title)
 
     def __sqlrepr__(self, dbname):
         return repr(self.db_value)

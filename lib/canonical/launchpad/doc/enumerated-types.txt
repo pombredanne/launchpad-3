@@ -25,7 +25,7 @@ subsidery functions.
 Enumerated types support IVocabulary.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from zope.schema.interfaces import ITokenizedTerm, IVocabulary
+    >>> from zope.schema.interfaces import ITitledTokenizedTerm, IVocabulary
     >>> verifyObject(IVocabulary, Fruit)
     True
 
@@ -33,7 +33,8 @@ Lets actually make sure that we get the appropriate values from the methods.
 
 __contains__(self, value):
 
-    >>> 'Apple' in Fruit
+    >>> apple = Fruit.APPLE
+    >>> apple in Fruit
     True
 
 __iter__(self):
@@ -51,7 +52,7 @@ __len__(self):
 
 getTerm(self, value)
 
-    >>> print repr(Fruit.getTerm('Apple'))
+    >>> print repr(Fruit.getTerm(apple))
     <Item Fruit.APPLE, Apple>
     >>> print repr(Fruit.getTerm('Foo'))
     Traceback (most recent call last):
@@ -67,13 +68,13 @@ getTermByToken(self, token):
     ...
     LookupError: Foo
 
-Items implement ITokenizedTerm.
+Items implement ITitledTokenizedTerm.
 
-    >>> verifyObject(ITokenizedTerm, Fruit.APPLE)
+    >>> verifyObject(ITitledTokenizedTerm, Fruit.APPLE)
     True
     >>> print repr(Fruit.APPLE.token)
     'APPLE'
-    >>> print repr(Fruit.APPLE.value)
+    >>> print repr(Fruit.APPLE.title)
     'Apple'
     
 
@@ -89,7 +90,7 @@ Items implement ITokenizedTerm.
     ('APPLE', 'PEAR', 'ORANGE')
 
     >>> for item in Fruit:
-    ...     print item.token, item.value
+    ...     print item.token, item.title
     APPLE Apple
     PEAR Pear
     ORANGE Orange
@@ -144,7 +145,7 @@ map integer values to python enumerated values.
     ...         Imported branches are natively maintained in CVS or SVN""")
 
     >>> for item in BranchType:
-    ...     print item.db_value, item.value
+    ...     print item.db_value, item.title
     1 Hosted
     2 Mirrored
     3 Imported
@@ -155,7 +156,7 @@ defined above.
 
     >>> verifyObject(IVocabulary, BranchType)
     True
-    >>> verifyObject(ITokenizedTerm, BranchType.HOSTED)
+    >>> verifyObject(ITitledTokenizedTerm, BranchType.HOSTED)
     True
 
 
@@ -190,7 +191,7 @@ convention has it that it appears first, before the Item instances.
 The items attribute of the enumerated type is ordered based on the sort_order.
 
     >>> for item in AnimalClassification:
-    ...     print item.value
+    ...     print item.title
     Reptile
     Fish
     Insect
@@ -208,7 +209,7 @@ The simplest way to extend a class is to derive from it.
     ...     INVERTEBRATE= Item("Invertebrate")
 
     >>> for item in AnimalClassificationExtended:
-    ...     print item.value
+    ...     print item.title
     Reptile
     Fish
     Insect

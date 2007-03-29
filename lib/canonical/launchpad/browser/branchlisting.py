@@ -120,6 +120,7 @@ class BranchListingView(LaunchpadFormView):
         widget = self.widgets['lifecycle']
 
         if widget.hasValidInput():
+            import pdb; pdb.set_trace()
             lifecycle_filter = widget.getInputValue()
         else:
             lifecycle_filter = BranchLifecycleStatusFilter.CURRENT

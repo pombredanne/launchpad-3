@@ -13,13 +13,13 @@ and we'll give the column a default value.
     >>> connection = LaunchpadTestSetup().connect()
     >>> cursor = connection.cursor()
     >>> cursor.execute('''
-    ...     CREATE TABLE Test (
+    ...     CREATE TABLE FooTest (
     ...         id serial NOT NULL,
     ...         foo integer DEFAULT 1 NOT NULL 
     ...     );
     ... ''')
-    >>> cursor.execute('GRANT ALL ON TABLE Test TO launchpad;')
-    >>> cursor.execute('GRANT ALL ON test_id_seq TO launchpad;')
+    >>> cursor.execute('GRANT ALL ON TABLE FooTest TO launchpad;')
+    >>> cursor.execute('GRANT ALL ON footest_id_seq TO launchpad;')
     >>> connection.commit()
 
 Let's define a schema for that column.
@@ -45,12 +45,12 @@ the foo column.  We declare the default value for the foo column to be whatever
 the database's default is.
 
     >>> from canonical.database.enumcol import EnumCol
-    >>> class Test(SQLBase):
+    >>> class FooTest(SQLBase):
     ...     foo = EnumCol(enum=FooType, default=DEFAULT)
 
 Create a row in the table.
  
-    >>> t = Test()
+    >>> t = FooTest()
 
 The value of the foo column has been set to the default defined in the database,
 because we didn't specify one.
