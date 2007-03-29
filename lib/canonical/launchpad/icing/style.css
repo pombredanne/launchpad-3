@@ -216,7 +216,7 @@ hr {
 
 /* === Page layout === */
 
-/* All pages begin with a global header. */
+/* All pages begin with a global header or a topline. */
 #globalheader {
   position: relative;
   width: 100%;
@@ -234,6 +234,10 @@ hr {
   margin: 0;
   padding: 0;
 }
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
 /* Site-specific message. */
 #globalheader .sitemessage {
   position: absolute;
@@ -247,6 +251,15 @@ hr {
   position: absolute;
   top: 0;
   right: 0;
+}
+/* Thin line at the top, when we don't have a global header site message */
+#topline {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #6D6D6D;
 }
 /* Next is a location bar. */
 #locationbar {
