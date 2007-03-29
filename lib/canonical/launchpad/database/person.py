@@ -16,7 +16,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, SQLConstant
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
@@ -591,13 +591,20 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def findPathToTeam(self, team):
         """See IPerson."""
+        # This is our guarantee that _getDirectMemberIParticipateIn() will
+        # never return None
+        assert self.hasParticipationEntryFor(team), (
+            "Only call this method when you're sure the person is an indirect"
+            " member of the team.")
         assert not self.isTeam()
         assert team.isTeam()
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
+        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
+            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -611,6 +618,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = AND(
             TeamMembership.q.teamID == team.id,
             TeamMembership.q.personID == Person.q.id,
+            OR(TeamMembership.q.status == TeamMembershipStatus.ADMIN,
+               TeamMembership.q.status == TeamMembershipStatus.APPROVED),
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
@@ -668,9 +677,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         else:
             return None
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, *args):
         """See IPerson."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=10):
         """See IPerson."""
@@ -711,6 +720,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()
+
+    def iterTopProjectsContributedTo(self, limit=10):
+        getByName = getUtility(IPillarNameSet).getByName
+        for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
+            yield getByName(name)
 
     def _getContributedCategories(self, pillar):
         """Return the KarmaCategories to which this person has karma on the

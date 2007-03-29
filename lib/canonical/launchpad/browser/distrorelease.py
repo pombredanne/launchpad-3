@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseNavigation',
+    'DistroReleaseDynMenu',
     'DistroReleaseSOP',
     'DistroReleaseFacets',
     'DistroReleaseView',
@@ -23,6 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
@@ -344,4 +346,11 @@ class DistroReleaseAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
+
+
+class DistroReleaseDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for architecture in self.context.architectures:
+            yield self.makeBreadcrumbLink(architecture)
 

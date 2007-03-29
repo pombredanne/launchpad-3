@@ -52,7 +52,12 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.BugsLayer"
-      name="+assignedbugs"
+      name="+bugs"
+      />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+translations"
+      layer="canonical.launchpad.layers.TranslationsLayer"
       />
 
   <browser:menus
@@ -128,6 +133,10 @@
       <browser:page
           name="+index"
           template="../templates/person-index.pt"
+          />
+      <browser:page
+          name="+ask-a-question-button"
+          template="../templates/null.pt"
           />
       <browser:page
           name="+packages"
@@ -220,13 +229,16 @@
       attribute="__call__"
       />
 
-  <browser:page
+  <browser:generalform
       name="+bugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
-      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      class="canonical.launchpad.browser.PersonRelatedBugsView"
+      fields="status importance assignee milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      attribute="__call__"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform

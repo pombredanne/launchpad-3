@@ -155,9 +155,11 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
-        "The release milestones associated with this distribution. "
-        "Release milestones are primarily used by the QA team to assign "
-        "specific bugs for fixing by specific milestones."))
+        "The visible release milestones associated with this distribution, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this distribution, ordered "
+        "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
     is_read_only = Attribute(

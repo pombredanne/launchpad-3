@@ -36,6 +36,13 @@
             template="../templates/bugwatch-portlet-details.pt" />
     </browser:pages>
 
+    <!-- This canonical URL doesn't actually work, but we need it so
+         that a bugwatch knows where to get its facet menu from. -->
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugWatch"
+        path_expression="string:watches/${id}"
+        attribute_to_parent="bug" />
+
     <!--BugWatchSet -->
     <content class="canonical.launchpad.database.BugWatchSet">
         <allow interface="canonical.launchpad.interfaces.IBugWatchSet" />
