@@ -47,6 +47,13 @@
         name="+faq"
         template="../templates/marketing-answers-faq.pt"
         />
+    <browser:tour
+        name="+tour"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        permission="zope.Public"
+        tour="../templates/marketing-answers-tour.xml"
+        />
 
     <!-- Marketing material for Blueprints. -->
     <browser:page
@@ -62,6 +69,13 @@
         permission="zope.Public"
         name="+faq"
         template="../templates/marketing-blueprints-faq.pt"
+        />
+    <browser:tour
+        name="+tour"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.BlueprintsLayer"
+        permission="zope.Public"
+        tour="../templates/marketing-blueprints-tour.xml"
         />
 
     <!-- Marketing material for Bugs. -->
@@ -102,6 +116,13 @@
         name="+faq"
         template="../templates/marketing-code-faq.pt"
         />
+    <browser:tour
+        name="+tour"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.CodeLayer"
+        permission="zope.Public"
+        tour="../templates/marketing-code-tour.xml"
+        />
 
 
     <!-- Marketing material for Translations. -->
@@ -118,6 +139,13 @@
         permission="zope.Public"
         name="+faq"
         template="../templates/marketing-translations-faq.pt"
+        />
+    <browser:tour
+        name="+tour"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        permission="zope.Public"
+        tour="../templates/marketing-translations-tour.xml"
         />
 
 </configure>

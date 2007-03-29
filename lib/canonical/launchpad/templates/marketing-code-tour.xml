@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<tour>
+  <title>Code</title>
+  <screen>
+    <title>Overview of all projects</title>
+    <summary>Overview of projects with code in Launchpad</summary>
+    <screenshot>/+icing/code-tour-screenshot1.png</screenshot>
+    <callout top="" left="">The darker the project's name, the more active it
+      is. The larger its name, the more branches it has hosted in Launchpad.
+    </callout>
+    <callout top="" left="">Smaller, lighter text indicates a smaller, less
+      active project.
+    </callout>
+  </screen>
+  <screen>
+    <title>Viewing a project's branches</title>
+    <summary>All of a project's branches are visible on one page</summary>
+    <screenshot>/+icing/code-tour-screenshot2.png</screenshot>
+    <callout top="" left="">Any Launchpad user can register a branch against a
+      project.
+    </callout>
+    <callout top="" left="">Some branches are created specifically to fix a
+      bug. The bug icon is a link to the bug that this branch fixes.
+    </callout>
+    <callout top="" left="">Each of these branches represents a major version
+      - or series - of the project.
+    </callout>
+    <callout top="" left="">Official project branches are listed side by side
+      with individual developer branches.
+    </callout>
+  </screen>
+  <screen>
+    <title>History of a branch</title>
+    <summary>Each branch's history is available, complete with the developer's
+      commit message.
+    </summary>
+    <screenshot>/+icing/code-tour-screenshot3.png</screenshot>
+    <callout top="" left="">Any Launchpad user can browse the full branch
+      history, with diffs, and subscribe to receive email notifications of
+      updates.
+    </callout>
+    <callout top="" left="">Commits to this branch are restricted to members
+      of the team that owns it. Anyone can create their own branch, though,
+      and make changes there.
+    </callout>
+    <callout top="" left="">Recent branch revisions, with the developer's
+      commit message, give an overview of recent activity.
+    </callout>
+    <callout top="" left="">Launchpad automatically links to related branches.
+    </callout>
+  </screen>
+
+</tour>
