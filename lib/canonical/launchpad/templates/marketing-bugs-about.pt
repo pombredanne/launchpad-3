@@ -14,14 +14,14 @@
           <th>Tagging</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/bugs-feature1.png"
-                   alt="Feature 1 Screenshot" /></td>
-          <td><img src="/+icing/bugs-feature2.png"
-                   alt="Feature 2 Screenshot" /></td>
-          <td><img src="/+icing/bugs-feature3.png"
-                   alt="Feature 3 Screenshot" /></td>
-          <td><img src="/+icing/bugs-feature4.png"
-                   alt="Feature 4 Screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-teams.png"
+                   alt="Cross-project teams mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-tracker.png"
+                   alt="External trackers mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-web-email-ui.png"
+                   alt="Web and email interfaces mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-tagging.png"
+                   alt="Tagging mini screenshot" /></td>
         </tr>
         <tr>
           <td>Create ad-hoc teams to tackle bugs that affect multiple
