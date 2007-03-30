@@ -9,25 +9,31 @@
       <tbody>
         <tr>
           <th>Structured support</th>
-          <th>Support teams</th>
+          <th>Community support</th>
           <th>Multi-lingual</th>
           <th>Knowledge base</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/answers-feature1.png"
-                   alt="Feature 1 Screenshot" /></td>
-          <td><img src="/+icing/answers-feature2.png"
-                   alt="Feature 2 Screenshot" /></td>
-          <td><img src="/+icing/answers-feature3.png"
-                   alt="Feature 3 Screenshot" /></td>
-          <td><img src="/+icing/answers-feature4.png"
-                    alt="Feature 4 Screenshot" /></td>
+          <td><img src="/+icing/answers-feature-structured.png"
+                   alt="Answers structured support mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-contact.png"
+                   alt="Answers contact mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-language.png"
+                   alt="Answers language mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-knowledge-base.png"
+                    alt="Answers knowledge base mini screenshot" /></td>
         </tr>
         <tr>
           <td>Track the status of support requests from question to answer.</td>
-          <td>Community members can volunteer to create support teams.</td>
-          <td>Provide support in many languages.</td>
-          <td>Answers form a searchable knowledge-base.</td>
+          <td>Community members can volunteer as support contacts, while
+            any Launchpad user can suggest an answer to support requests.
+          </td>
+          <td>Support volunteers and users requesting help can choose
+            their preferred languages.
+          </td>
+          <td>Answers to previous questions form a searchable
+            knowledge-base for other users.
+          </td>
         </tr>
       </tbody>
     </table>

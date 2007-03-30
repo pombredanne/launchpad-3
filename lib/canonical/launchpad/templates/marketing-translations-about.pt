@@ -8,26 +8,32 @@
     <table id="features">
       <tbody>
         <tr>
-          <th>Anyone can translate</th>
+          <th>Translations for everyone</th>
           <th>Intelligent suggestions</th>
-          <th>Supports GetText</th>
-          <th>Translation collaboration</th>
+          <th>Works with GetText</th>
+          <th>Uniquely flexible</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/translations-feature1.png"
-                   alt="Feature 1 Screenshot" /></td>
-          <td><img src="/+icing/translations-feature2.png"
-                   alt="Feature 2 Screenshot" /></td>
-          <td><img src="/+icing/translations-feature3.png"
-                   alt="Feature 3 Screenshot" /></td>
-          <td><img src="/+icing/translations-feature4.png"
-                   alt="Feature 4 Screenshot" /></td>
+          <td><img src="/+icing/translations-feature-everyone.png"
+                   alt="Translations for everyone mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-suggestions.png"
+                   alt="Translations suggestions mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-gettext.png"
+                   alt="Translations gettext mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-flexible.png"
+                   alt="Translations workflow mini screenshot" /></td>
         </tr>
         <tr>
-          <td>Simple web interface that's ideal for non-developers.</td>
+          <td>Launchpad simplifies software translation, making it easy
+            enough for anyone to translate into hundreds of languages.
+          </td>
           <td>Automatic suggestions from 750,000 translated strings.</td>
-          <td>Works with standard .pot, .po and .mo files.</td>
-          <td>Collaborate with 19,000 translators in 235 languages.</td>
+          <td>Import .pot template files and export .po and .mo files of
+            your translations.
+          </td>
+          <td>Maintain independent translation efforts for different
+            releases and choose open, moderated or closed translation.
+          </td>
         </tr>
       </tbody>
     </table>

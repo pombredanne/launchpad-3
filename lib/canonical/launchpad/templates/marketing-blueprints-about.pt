@@ -8,28 +8,32 @@
     <table id="features">
       <tbody>
         <tr>
-          <th>Roles and responsibilities</th>
-          <th>Project roadmap</th>
-          <th>Open to everyone</th>
-          <th>Automatic email updates</th>
+          <th>Discuss and implement ideas</th>
+          <th>Manage releases</th>
+          <th>Schedule meetings and sprints</th>
+          <th>Create a roadmap</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/blueprints-feature1.png"
-                   alt="Feature 1 Screenshot" /></td>
-          <td><img src="/+icing/blueprints-feature2.png"
-                   alt="Feature 2 Screenshot" /></td>
-          <td><img src="/+icing/blueprints-feature3.png"
-                   alt="Feature 3 Screenshot" /></td>
-          <td><img src="/+icing/blueprints-feature4.png"
-                   alt="Feature 4 Screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-discuss.png"
+                   alt="Blueprints discuss ideas mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-release.png"
+                   alt="Blueprints release mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-sprints.png"
+                   alt="Blueprints sprints mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-roadmap.png"
+                   alt="Blueprints roadmap mini screenshot" /></td>
         </tr>
         <tr>
-          <td>Set roles and responsibilities.</td>
-          <td>Dependencies and milestones help track where blueprints fit into
-            your project.
+          <td>Blueprints help your community track ideas and manage their
+              implementation.
           </td>
-          <td>Draw on the creativity of your project's community.</td>
-          <td>Keep your team informed each time a blueprint is updated.</td>
+          <td>Target blueprints to future releases of your software.</td>
+          <td>Organise real world meetings, and register attendees, with an
+            agenda made up of blueprints.
+          </td>
+          <td>Launchpad generates your project roadmap based on blueprint
+            dependencies and priorities.
+          </td>
         </tr>
       </tbody>
     </table>
