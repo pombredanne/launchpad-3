@@ -15,13 +15,10 @@ the URL of the remote bug.
     >>> user_browser.url
     'http://launchpad.dev/gnome-terminal/+bug/4'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42">
-          gnome-bugzilla #42
-    </a>
-    ...
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    gnome-bugzilla #42
 
 It's possible to supply an HTTPS URL, even though the bug tracker's
 base URL is HTTP.
@@ -39,15 +36,13 @@ base URL is HTTP.
     >>> user_browser.url
     'http://launchpad.dev/netapplet/+bug/4'
 
-The URL was automatically converted to HTTP.
+The URL was automatically converted to HTTP:
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84">
-          gnome-bugzilla #84
-    </a>
-    ...
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1]['href']
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
 
 
 If the URL can't be recognised (i.e., we don't even know what bug
@@ -109,10 +104,10 @@ time.
     >>> user_browser.url
     'http://launchpad.dev/alsa-utils/+bug/4'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://new.trac/ticket/42">
-          new-trac #42
-    </a>
-    ...
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    gnome-bugzilla #42
+    gnome-bugzilla #84
+    new-trac #42
+

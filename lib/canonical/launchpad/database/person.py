@@ -16,7 +16,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, SQLConstant
+from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
@@ -50,8 +50,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem,
-    JoinNotAllowed)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
+    IHasIcon, JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -92,7 +92,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
+    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -102,11 +102,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
@@ -176,38 +176,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
-
-    # IHasGotchiAndEmblem attributes
-    @property
-    def default_emblem_resource(self):
-        return self._getDefaultIconResource()
-
-    @property
-    def default_gotchi_resource(self):
-        return self._getDefaultIconResource('mugshot')
-
-    @property
-    def default_gotchi_heading_resource(self):
-        return self._getDefaultIconResource('heading')
-
-    def _getDefaultIconResource(self, suffix=''):
-        """Return the zope3 resource for the icon of this person with the
-        given suffix.
-
-        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
-        """
-        assert suffix in ('', 'mini', 'heading', 'mugshot')
-        if self.isTeam():
-            img = '/@@/team'
-        else:
-            if self.is_valid_person:
-                img = '/@@/person'
-            else:
-                img = '/@@/person-inactive'
-        if suffix:
-            return "%s-%s" % (img, suffix)
-        else:
-            return img
 
     # specification-related joins
     @property
@@ -591,13 +559,20 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def findPathToTeam(self, team):
         """See IPerson."""
+        # This is our guarantee that _getDirectMemberIParticipateIn() will
+        # never return None
+        assert self.hasParticipationEntryFor(team), (
+            "Only call this method when you're sure the person is an indirect"
+            " member of the team.")
         assert not self.isTeam()
         assert team.isTeam()
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
+        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
+            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -611,6 +586,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = AND(
             TeamMembership.q.teamID == team.id,
             TeamMembership.q.personID == Person.q.id,
+            OR(TeamMembership.q.status == TeamMembershipStatus.ADMIN,
+               TeamMembership.q.status == TeamMembershipStatus.APPROVED),
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
@@ -668,11 +645,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         else:
             return None
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, *args):
         """See IPerson."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(search_params, *args)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=10):
+    def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See IPerson."""
         contributions = []
         results = self._getProjectsWithTheMostKarma(limit=limit)
@@ -711,6 +688,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()
+
+    def iterTopProjectsContributedTo(self, limit=10):
+        getByName = getUtility(IPillarNameSet).getByName
+        for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
+            yield getByName(name)
 
     def _getContributedCategories(self, pillar):
         """Return the KarmaCategories to which this person has karma on the
@@ -1113,6 +1095,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
+    def teams_with_icons(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.emblem IS NOT NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)

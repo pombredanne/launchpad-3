@@ -61,34 +61,3 @@ Now we add a new project.
   True
 
 
-== Project's icon/emblem ==
-
-It's also possible to specify an icon and/or an emblem when creating a
-project.
-
-  >>> admin_browser.open('http://launchpad.dev/projects/+new')
-
-  >>> admin_browser.getControl('Name', index=0).value = 'test-project'
-  >>> admin_browser.getControl('Display Name').value = 'the test Project'
-  >>> admin_browser.getControl('Title').value = 'The test Project'
-  >>> admin_browser.getControl('Project Summary').value = 'The test Project'
-  >>> admin_browser.getControl('Description').value = 'The test Project'
-
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(admin_browser)
-
-  >>> admin_browser.getControl('Add').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/test-project'
-
-The uploaded icon and emblem can be seen on the project's edit page:
-
-  >>> admin_browser.getLink('Change details').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/test-project/+edit'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'

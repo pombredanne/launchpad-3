@@ -126,8 +126,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(
-        'The milestones associated with this series.')
+    milestones = Attribute(_(
+        "The visible milestones associated with this productseries, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this productseries, ordered by "
+        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
