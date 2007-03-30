@@ -5,14 +5,14 @@
     <title>Viewing recent questions</title>
     <summary>Overview of questions asked about a project</summary>
     <screenshot>/+icing/answers-tour-screenshot1.png</screenshot>
-    <callout top="" left="">Asking a question on a project's questions page
-      automatically sends it to the project's support contacts.
+    <callout top="90" left="70">Asking a question on a project's questions
+      page automatically sends it to the project's support contacts.
     </callout>
-    <callout top="" left="">Knowledgeable community members can quickly find
-      questions that need an answer.
+    <callout top="158" left="471">Knowledgeable community members can quickly
+      find questions that need an answer.
     </callout>
-    <callout top="" left="">Launchpad automatically filters the questions it
-      displays, based on the user's preferred languages.
+    <callout top="70" left="464">Launchpad automatically filters the questions
+      it displays, based on the user's preferred languages.
     </callout>
   </screen>
 
@@ -20,11 +20,12 @@
     <title>Choosing from suggested answers</title>
     <summary>Launchpad helps projects to build a knowledge-base</summary>
     <screenshot>/+icing/answers-tour-screenshot2.png</screenshot>
-    <callout top="" left="">If similar questions have been asked before,
+    <callout top="56" left="215">If similar questions have been asked before,
       Launchpad offers them to the user before opening a new support request.
     </callout>
-    <callout top="" left="">Launchpad will even suggest questions that haven't
-      yet been answered, allowing the user to describe their experience.
+    <callout top="200" left="264">Launchpad will even suggest questions that
+      haven't yet been answered, allowing the user to describe their
+      experience.
     </callout>
   </screen>
 
@@ -34,14 +35,15 @@
       information from the original poster
     </summary>
     <screenshot>/+icing/answers-tour-screenshot3.png</screenshot>
-    <callout top="" left="">Following the original question, community members
-      can build a thread of discussion to find a solution.
+    <callout top="240" left="320">Following the original question, community
+      members can build a thread of discussion to find a solution.
     </callout>
-    <callout top="" left="">The problem described in this question is caused
-      by a bug. The link is visible on both this question page and the bug
-      page, to all information is available to everyone working on the issue.
+    <callout top="100" left="87">The problem described in this question is
+      caused by a bug. The link is visible on both this question page and the
+      bug page, to all information is available to everyone working on the
+      issue.
     </callout>
-    <callout top="" left="">People who are interested in the question can
+    <callout top="168" left="78">People who are interested in the question can
       subscribe, to receive an email each time there's an update. The relevant
       community's support contacts will automatically receive updates.
     </callout>
