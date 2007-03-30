@@ -1,6 +1,6 @@
 <tr>
   <td class="icon left">
-    <img alt="" src="/@@/blueprint" />
+    <img src="/@@/blueprint" tal:replace="structure context/image:icon" />
   </td>
   <td>
     <div>

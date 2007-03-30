@@ -63,7 +63,7 @@ html {
   position: relative;
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8.5pt;
-  color: #606060;
+  color: #505050;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
@@ -909,6 +909,7 @@ ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
+ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news                     {list-style-image: url(/@@/news);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -918,7 +919,6 @@ ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
-ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
@@ -1369,6 +1369,10 @@ div#applications {padding: 1em 0; text-align: center;}
 .tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
+}
+.front_page label {
+  color: #303030;
+  font-size: 1.2em;
 }
 #application-summary, #application-footer {
   font-size: 1.5em;
