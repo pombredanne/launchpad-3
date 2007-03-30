@@ -118,6 +118,9 @@ class IRosettaApplication(ILaunchpadApplication):
     def translatable_products():
         """Return a list of the translatable products."""
 
+    def featured_products():
+        """Return a sample of all the translatable products."""
+
     def translatable_distroreleases():
         """Return a list of the distroreleases in launchpad for which
         translations can be done.

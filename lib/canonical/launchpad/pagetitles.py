@@ -753,9 +753,11 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Rosetta'
+rosetta_about = 'About Translations'
 
-rosetta_index = 'Rosetta'
+rosetta_index = 'Launchpad Translations'
+
+rosetta_products = 'Products with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 

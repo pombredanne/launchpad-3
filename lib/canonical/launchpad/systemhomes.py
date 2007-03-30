@@ -93,6 +93,11 @@ class RosettaApplication:
     def translatable_products(self):
         """See IRosettaApplication."""
         products = getUtility(IProductSet)
+        return products.translatables()
+
+    def featured_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
         return products.featured_translatables()
 
     def translatable_distroreleases(self):

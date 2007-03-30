@@ -62,13 +62,14 @@
 
                             <h2>Translatable products</h2>
                             <ul class="product">
-                              <li tal:repeat="product context/translatable_products">
+                              <li tal:repeat="product context/featured_products">
                                 <a
                                   tal:attributes="href string:/${product/name}/+translations"
                                   tal:content="product/title"
                                 />
                               </li>
                             </ul>
+                            <a href="+products-with-translations">List all products using Translations...</a>
 
                         </div>
                         <div class="three column right demo">
