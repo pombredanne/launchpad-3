@@ -46,16 +46,9 @@
             </p>
             <p>
               And the default plural form expression for
-              <tal:has_nativename condition="context/nativename">
-                <tal:nativename replace="context/nativename">
-                  Espa&ntilde;ol
-                </tal:nativename>
-              </tal:has_nativename>
-              <tal:has_not_nativename condition="not:context/nativename">
-                <tal:englishname replace="context/englishname">
-                  Spanish
-                </tal:englishname>
-              </tal:has_not_nativename>
+              <tal:language replace="view/language_name">
+                Espa&ntilde;ol
+              </tal:language>
               is:
             </p>
             <p>
@@ -75,31 +68,29 @@
       <div class="section">
         <div class="portlet">
           <h2>Countries</h2>
-          <p>
-            <tal:has_nativename condition="context/nativename">
-              <tal:nativename replace="context/nativename">
+          <tal:has_countries condition="context/countries">
+            <p>
+              <tal:language replace="view/language_name">
                 Espa&ntilde;ol
-              </tal:nativename>
-            </tal:has_nativename>
-            <tal:has_not_nativename condition="not:context/nativename">
-              <tal:englishname replace="context/englishname">
-                Spanish
-              </tal:englishname>
-            </tal:has_not_nativename>
-            <tal:has_countries condition="context/countries">
-              is believed to be spoken in the following countries:
-              <ul>
-                <li tal:repeat="country context/countries"
-                    tal:content="country/name">Spain</li>
-              </ul>
-            </tal:has_countries>
-            <tal:has_not_countries condition="not:context/countries">
-              is not registered as being spoken in any country. If you know
-              about a country that officially speaks this language, please
-              open a <a href="/rosetta/+addticket">ticket</a> with that
-              information, so we can add it to Launchpad.
-            </tal:has_not_countries>
+              </tal:language>
+                is believed to be spoken in the following countries:
+            </p>
+            <ul>
+              <li tal:repeat="country context/countries"
+                  tal:content="country/name">Spain</li>
+            </ul>
+          </tal:has_countries>
+          <tal:has_not_countries condition="not:context/countries">
+          <p>
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
+            is not registered as being spoken in any country. If you know
+            about a country that officially speaks this language, please
+            open a <a href="/rosetta/+addticket">ticket</a> with that
+            information, so we can add it to Launchpad.
           </p>
+          </tal:has_not_countries>
         </div>
       </div>
       <div class="section">
@@ -108,45 +99,31 @@
           <p tal:condition="view/translation_teams">
             The following people and teams are specifically identified as
             being experts in
-            <tal:has_nativename condition="context/nativename">
-              <tal:nativename replace="context/nativename">
-                Espa&ntilde;ol
-              </tal:nativename>
-            </tal:has_nativename>
-            <tal:has_not_nativename condition="not:context/nativename">
-              <tal:englishname replace="context/englishname">
-                Spanish
-              </tal:englishname>
-            </tal:has_not_nativename>
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
             :
-            <table>
-              <tr tal:repeat="team_or_person view/translation_teams">
-                <td><img src="/@@/team" /></td>
-                <td>
-                  <div>
-                    <a
-                      tal:attributes="
-                        href team_or_person/fmt:url;
-                        title team_or_person/browsername/fmt:shorten/80"
-                      tal:content="team_or_person/browsername"
-                      >Team name</a>
-                  </div>
-                </td>
-              </tr>
-            </table>
           </p>
+          <table>
+            <tr tal:repeat="team_or_person view/translation_teams">
+              <td><img src="/@@/team" /></td>
+              <td>
+                <div>
+                  <a
+                    tal:attributes="
+                      href team_or_person/fmt:url;
+                      title team_or_person/browsername/fmt:shorten/80"
+                    tal:content="team_or_person/browsername"
+                    >Team name</a>
+                </div>
+              </td>
+            </tr>
+          </table>
           <p tal:condition="not:view/translation_teams">
-            <tal:has_nativename condition="context/nativename">
-              <tal:nativename replace="context/nativename">
-                Espa&ntilde;ol
-              </tal:nativename>
-            </tal:has_nativename>
-            <tal:has_not_nativename condition="not:context/nativename">
-              <tal:englishname replace="context/englishname">
-                Spanish
-              </tal:englishname>
-            </tal:has_not_nativename>
-            has no team or person registered as experts.
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
+            has no team or person registered as expert.
           </p>
         </div>
       </div>

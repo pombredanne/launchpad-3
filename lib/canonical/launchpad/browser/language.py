@@ -21,12 +21,13 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadFormView, LaunchpadEditFormView, action,
-    canonical_url)
+    GetitemNavigation, LaunchpadView, LaunchpadFormView,
+    LaunchpadEditFormView, action, canonical_url)
 
 
 class LanguageNavigation(GetitemNavigation):
@@ -95,8 +96,22 @@ class LanguageAddView(LaunchpadFormView):
         return canonical_url(self.language)
 
 
-class LanguageView:
-    pass
+class LanguageView(LaunchpadView):
+
+    @cachedproperty
+    def language_name(self):
+        if self.context.nativename is None:
+            return self.context.englishname
+        else:
+            return self.context.nativename
+
+    @cachedproperty
+    def translation_teams(self):
+        return []
+
+    def getTopFiveContributors(self):
+        return []
+
 
 class LanguageRemoveView:
 

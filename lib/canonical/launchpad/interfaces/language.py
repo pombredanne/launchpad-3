@@ -9,7 +9,7 @@ __all__ = [
     'ILanguageSet',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool
+from zope.schema import TextLine, Int, Choice, Bool, Field
 from zope.interface import Interface, Attribute
 
 class ILanguage(Interface):
@@ -44,8 +44,9 @@ class ILanguage(Interface):
     translators = Attribute("""A list of Persons that are interested on 
         translate into this language.""")
 
-    countries = Attribute("""A list of Countries where this language is spoken
-        in.""")
+    countries = Field(
+	title=u'A list of Countries where this language is spoken in.',
+	required=True)
 
     visible = Bool(
         title=u'Visible',
