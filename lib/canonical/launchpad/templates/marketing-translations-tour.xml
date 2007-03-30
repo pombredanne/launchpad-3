@@ -7,11 +7,11 @@
       translated
     </summary>
     <screenshot>/+icing/translations-tour-screenshot1.png</screenshot>
-    <callout top="" left="">Launchpad can translate any language with an ISO
-      code.
+    <callout top="83" left="68">Launchpad can translate any language with an
+      ISO code.
     </callout>
-    <callout top="" left="">Progress bars show are rich in information: green,
-      purple and blue represent translated strings.
+    <callout top="75" left="236">Progress bars show are rich in information:
+      green, purple and blue represent translated strings.
     </callout>
   </screen>
   <screen>
@@ -20,18 +20,18 @@
       anyone who reads English and can write in any other language
     </summary>
     <screenshot>/+icing/translations-tour-screenshot2.png</screenshot>
-    <callout top="" left="">Launchpad displays the original English string,
-      from the translation template.
+    <callout top="-6" left="187">Launchpad displays the original English
+      string, from the translation template.
     </callout>
-    <callout top="" left="">This string has been translated and reviewed by
-      the same person. Projects can choose what level of review to impose.
+    <callout top="42" left="229">This string has been translated and reviewed
+      by the same person. Projects can choose what level of review to impose.
     </callout>
-    <callout top="" left="">Launchpad knows that this string has already been
-      translated elsewhere and suggest them as alternatives to the current
-      translation.
+    <callout top="85" left="75">Launchpad knows that this string has already
+      been translated elsewhere and suggest them as alternatives to the
+      current translation.
     </callout>
-    <callout top="" left="">If a translator is unsure of their work, they can
-      flag it for review.
+    <callout top="205" left="86">If a translator is unsure of their work, they
+      can flag it for review.
     </callout>
   </screen>
   <screen>
@@ -39,14 +39,14 @@
     <summary>Projects can download translation files whenever they need them
     </summary>
     <screenshot>/+icing/translations-tour-screenshot3.png</screenshot>
-    <callout top="" left="">A translation download provides a snapshot of the
-      translated strings for a specific language.
+    <callout top="59" left="63">A translation download provides a snapshot of
+      the translated strings for a specific language.
     </callout>
-    <callout top="" left="">Launchpad offers both .po and .mo file downloads,
-      for use with GNU GetText.
+    <callout top="35" left="239">Launchpad offers both .po and .mo file
+      downloads, for use with GNU GetText.
     </callout>
-    <callout top="" left="">Files are available to download in just a few
-      minutes.
+    <callout top="103" left="214">Files are available to download in just a
+      few minutes.
     </callout>
   </screen>
 
