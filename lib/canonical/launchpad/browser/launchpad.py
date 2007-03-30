@@ -182,7 +182,6 @@ class Breadcrumbs(LaunchpadView):
         L = []
         firsturl = '/'
         firsttext = 'Home'
-        from canonical.launchpad.webapp.vhosts import allvhosts
         rooturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
@@ -193,19 +192,7 @@ class Breadcrumbs(LaunchpadView):
 
         if crumbs:
 
-            #lastcrumb = crumbs.pop()
-
             for crumb in crumbs:
-                # XXX: SteveAlexander, 2006-06-09, this is putting the
-                #      full URL in as the lpm:mid.  We want just the path
-                #      here instead.
-                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
-                ##         '<a href="%s">%s</a>'
-                ##         '</li>'
-                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
-
-                # Disable these menus for now.  To be re-enabled on the ui 1.0
-                # branch.
                 if crumb.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % crumb.url
                     cssclass = 'breadcrumb container'
@@ -218,11 +205,6 @@ class Breadcrumbs(LaunchpadView):
                          % (menudata, crumb.url, cssclass,
                             cgi.escape(crumb.text)))
 
-            #L.append(
-            #    '<li class="item">'
-            #    '<a href="%s">%s</a>'
-            #    '</li>'
-            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
