@@ -3,70 +3,71 @@
 __metaclass__ = type
 
 __all__ = [
-    'PersonNavigation',
-    'TeamNavigation',
-    'PersonSOP',
-    'PersonFacets',
-    'PersonBranchesMenu',
-    'PersonBugsMenu',
-    'PersonSpecsMenu',
-    'PersonOverviewMenu',
-    'TeamOverviewMenu',
+    'AdminRequestPeopleMergeView',
     'BaseListView',
-    'PeopleListView',
-    'TeamListView',
-    'UbunteroListView',
+    'BugContactPackageBugsSearchListingView',
+    'FinishedPeopleMergeRequestView',
     'FOAFSearchView',
-    'PersonClaimView',
-    'PersonSpecWorkLoadView',
-    'PersonSpecFeedbackView',
+    'ObjectReassignmentView',
+    'PeopleListView',
+    'PersonAddView',
+    'PersonAnswersMenu',
+    'PersonAssignedBugTaskSearchListingView',
+    'PersonAuthoredBranchesView',
+    'PersonBranchesMenu',
+    'PersonBranchesView',
+    'PersonBrandingView',
+    'PersonBugsMenu',
     'PersonChangePasswordView',
+    'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonEditEmailsView',
+    'PersonEditHomePageView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditJabberIDsView',
-    'PersonEditIRCNicknamesView',
-    'PersonEditSSHKeysView',
-    'PersonEditHomePageView',
-    'PersonRelatedBugsView',
-    'PersonAssignedBugTaskSearchListingView',
-    'ReportedBugTaskSearchListingView',
-    'BugContactPackageBugsSearchListingView',
-    'SubscribedBugTaskSearchListingView',
-    'PersonRdfView',
-    'PersonView',
-    'PersonTranslationView',
+    'PersonFacets',
     'PersonGPGView',
-    'TeamJoinView',
-    'TeamLeaveView',
-    'PersonEditEmailsView',
-    'RequestPeopleMergeView',
-    'AdminRequestPeopleMergeView',
-    'FinishedPeopleMergeRequestView',
-    'RequestPeopleMergeMultipleEmailsView',
-    'ObjectReassignmentView',
-    'TeamReassignmentView',
-    'PersonAddView',
     'PersonLanguagesView',
-    'RedirectToEditLanguagesView',
     'PersonLatestQuestionsView',
+    'PersonNavigation',
+    'PersonOverviewMenu',
+    'PersonRdfView',
+    'PersonRegisteredBranchesView',
+    'PersonRelatedBugsView',
     'PersonSearchQuestionsView',
-    'PersonAnswersMenu',
+    'PersonSetContextMenu',
+    'PersonSetFacets',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSOP',
+    'PersonSpecFeedbackView',
+    'PersonSpecsMenu',
+    'PersonSpecWorkLoadView',
+    'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
+    'PersonTranslationView',
+    'PersonView',
+    'RedirectToEditLanguagesView',
+    'ReportedBugTaskSearchListingView',
+    'RequestPeopleMergeMultipleEmailsView',
+    'RequestPeopleMergeView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'PersonSetNavigation',
-    'PersonSetSOP',
-    'PersonSetFacets',
-    'PersonSetContextMenu',
-    'PersonBranchesView',
-    'PersonAuthoredBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
-    'PersonTeamBranchesView',
+    'SubscribedBugTaskSearchListingView',
+    'TeamJoinView',
+    'TeamLeaveView',
+    'TeamListView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
+    'TeamReassignmentView',
+    'UbunteroListView',
     ]
 
 import cgi
@@ -91,8 +92,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -113,6 +113,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
@@ -498,15 +499,22 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
-             'editlanguages', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage',
+             'editemailaddresses', 'editlanguages', 'editwikinames',
+             'editircnicknames', 'editjabberids', 'editpassword',
+             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'karma',
+             'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -547,7 +555,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def karma(self):
         target = '+karma'
-        text = 'Karma'
+        text = 'Show karma summary'
         summary = (
             u'%s\N{right single quotation mark}s activities '
             u'in Launchpad' % self.context.browsername)
@@ -588,14 +596,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'members', 'add_member',
-             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
-             'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage', 'members',
+             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
+             'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -1329,7 +1343,8 @@ class PersonView(LaunchpadView):
     @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
-        return self.context.getProjectsAndCategoriesContributedTo()
+        return self.context.getProjectsAndCategoriesContributedTo(
+            limit=5)
 
     @cachedproperty
     def contributed_categories(self):
@@ -1384,8 +1399,9 @@ class PersonView(LaunchpadView):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's an indirect member
-        of that team.
+        A person is said to be a team participant when he's a member
+        of that team, either directly or indirectly via another team
+        membership.
         """
         if self.user is None:
             return False
@@ -1966,11 +1982,14 @@ class PersonEditHomePageView(BasePersonEditView):
 
 class PersonEditView(BasePersonEditView):
 
-    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'gotchi']
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+
+
+class PersonBrandingView(BrandingChangeView):
+
+    field_names = ['logo', 'mugshot']
+    schema = IPerson
 
 
 class TeamJoinView(PersonView):

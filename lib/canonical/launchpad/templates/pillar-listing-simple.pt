@@ -1,6 +1,6 @@
 <tr>
   <td class="icon left">
-    <img alt="" tal:replace="structure context/fmt:emblem" />
+    <img alt="" tal:replace="structure context/image:icon" />
   </td>
   <td>
     <div>

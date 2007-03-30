@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Blueprint title</h1>
+  <h1>Blueprint overview</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">

@@ -3,21 +3,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugFacets',
-    'BugSetNavigation',
-    'BugView',
-    'MaloneView',
-    'BugEditView',
-    'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
-    'BugWithoutContextView',
-    'DeprecatedAssignedBugsView',
+    'BugEditView',
+    'BugFacets',
+    'BugMarkAsDuplicateView',
+    'BugNavigation',
+    'BugRelatedObjectEditView',
+    'BugSecrecyEditView',
+    'BugSetNavigation',
     'BugTextView',
     'BugURL',
-    'BugMarkAsDuplicateView',
-    'BugSecrecyEditView',
+    'BugView',
+    'BugWithoutContextView',
     'ChooseAffectedProductView',
+    'DeprecatedAssignedBugsView',
+    'MaloneView',
     ]
 
 import cgi
@@ -33,11 +34,25 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistributionSourcePackage, IFrontPageBugTaskSearch,
-    ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
-    valid_distrotask, valid_upstreamtask)
+    BugTaskSearchParams,
+    IAddBugTaskForm,
+    IBug,
+    IBugSet,
+    IBugTaskSet,
+    IBugWatchSet,
+    ICveSet,
+    IDistributionSourcePackage,
+    IFrontPageBugTaskSearch,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    IProductSet,
+    IUpstreamBugTask,
+    NoBugTrackerFound,
+    NotFoundError,
+    UnrecognizedBugTrackerURL,
+    valid_distrotask,
+    valid_upstreamtask,
+    )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 
@@ -52,6 +67,28 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class BugNavigation(Navigation):
+
+    # It would be easier, since there is no per-bug sequence for a BugWatch
+    # and we have to leak the BugWatch.id anyway, to hang bugwatches off a
+    # global /bugwatchs/nnnn
+
+    # However, we want in future to have them at /bugs/nnn/+watch/p where p
+    # is not the BugWatch.id but instead a per-bug sequence number (1, 2,
+    # 3...) for the 1st, 2nd and 3rd watches added for this bug,
+    # respectively. So we are going ahead and hanging this off the bug to
+    # which it belongs as a first step towards getting the basic URL schema
+    # correct.
+
+    usedfor = IBug
+
+    @stepthrough('+watch')
+    def traverse_watches(self, name):
+        if name.isdigit():
+            # in future this should look up by (bug.id, watch.seqnum)
+            return getUtility(IBugWatchSet)[name]
 
 
 class BugFacets(StandardLaunchpadFacets):

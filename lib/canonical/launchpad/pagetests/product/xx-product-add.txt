@@ -7,7 +7,7 @@ True
 
 Tests if the validator is working for the URL fields
 
->>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Part of', index=0).value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
 >>> user_browser.getControl('Title').value = 'This is a Test Product'
@@ -187,21 +187,7 @@ It's also possible to set the product's icon/emblem at creation time.
 ...     )
 >>> user_browser.getControl('Summary').value = 'This is the summary'
 
->>> from canonical.launchpad.ftests import set_gotchi_and_emblem
->>> set_gotchi_and_emblem(user_browser)
-
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/testing3'
 
-The uploaded icon and emblem can be seen on the product's edit page:
-
->>> user_browser.getLink('Change details').click()
->>> user_browser.url
-'http://launchpad.dev/testing3/+edit'
->>> find_tag_by_id(
-...     user_browser.contents, 'field.gotchi_current_img').get('src')
-u'.../icon.png'
->>> find_tag_by_id(
-...     user_browser.contents, 'field.emblem_current_img').get('src')
-u'.../emblem.png'
