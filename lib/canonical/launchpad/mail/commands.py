@@ -333,6 +333,27 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
+class DuplicateEmailCommand(EditEmailCommand):
+    """Marks a bug as a duplicate of another bug."""
+
+    implements(IBugEditEmailCommand)
+    _numberOfArguments = 1
+
+    def convertArguments(self):
+        """See EmailCommand."""
+        [bug_id] = self.string_args
+        if bug_id == 'no':
+            # 'no' is a special value for unmarking a bug as a duplicate.
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
+        else:
+            return {'duplicateof': bug}
+
+
 class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
@@ -626,6 +647,7 @@ class EmailCommands:
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'duplicate': DuplicateEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
