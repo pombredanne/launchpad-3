@@ -467,8 +467,8 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('products')
     def products(self):
-        return RedirectionView(
-            canonical_url(getUtility(IProductSet)), self.request, status=301)
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         if name in self.stepto_utilities:

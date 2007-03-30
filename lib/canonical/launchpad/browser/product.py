@@ -805,14 +805,18 @@ class ProductSetView(LaunchpadView):
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
             try:
-                product = self.context[self.text]
+                product = self.context[self.search_string]
             except NotFoundError:
+                # No product found, perform a normal search instead.
+                pass
+            else:
+                url = canonical_url(product)
+                if form.get('malone'):
+                    url = url + "/+bugs"
+                self.request.response.redirect(url)
                 return
-            url = canonical_url(product)
-            if form.get('malone'):
-                url = url + "/+bugs"
-            self.request.response.redirect(url)
-        elif self.searchrequested:
+
+        if self.searchrequested:
             self.matches = len(self.searchresults)
 
 

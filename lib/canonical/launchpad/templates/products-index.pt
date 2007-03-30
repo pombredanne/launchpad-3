@@ -65,6 +65,7 @@
         tal:condition="view/matches"
         tal:define="results view/searchresults"
         class="listing"
+        id="search-results"
         >
         <thead>
           <tr class="results">

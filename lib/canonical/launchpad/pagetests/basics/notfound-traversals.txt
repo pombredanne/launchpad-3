@@ -75,15 +75,16 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
->>> check("/projects")
->>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projectgroups")
+>>> check("/projectgroups/+all")
+>>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
 
->>> check("/products")
->>> check("/products/+all")
+>>> check_redirect("/products", status=301)
+>>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
@@ -406,6 +407,5 @@ Check legacy URL redirects
 
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
->>> check_redirect("/projects/ubuntu-project", status=301)
 >>> check_redirect("/people/stub", status=301)
 
