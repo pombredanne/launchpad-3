@@ -46,9 +46,8 @@ We check if the info we just entered on the form is displayed correctly
   </tr>
   ...
 
-And we test if the validator is working adding the same CVS details to another
-product. The error message must point to the product series with the
-conflicting CVS details.
+If we try adding the same CVS details to another series, the error message must
+point to the series with the conflicting CVS details.
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('CVS').click()
@@ -99,8 +98,8 @@ form:
 
 
 Test if the RCS details validator is working properly by adding the same
-svnrepository to another ProductSeries. The error message should link to the
-product series with the conflit Subversion branch.
+svnrepository to another ProductSeries. The error message must link to the
+product series with the conflicting Subversion branch.
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('Subversion').click()
