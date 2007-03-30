@@ -8,25 +8,28 @@
     <table id="features">
       <tbody>
         <tr>
-          <th>Code hosting</th>
-          <th>Mirror CVS and Subversion</th>
-          <th>Browsable branch registries</th>
-          <th></th>
+          <th>Host code</th>
+          <th>Fix bugs</th>
+          <th>Give everyone version control</th>
+          <th>Import CVS and Subversion</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/code-feature1.png"
-                   alt="Feature 1 Screenshot" /></td>
-          <td><img src="/+icing/code-feature2.png"
-                   alt="Feature 2 Screenshot" /></td>
-          <td><img src="/+icing/code-feature3.png"
-                   alt="Feature 3 Screenshot" /></td>
-          <td></td>
+          <td><img src="/+icing/code-feature-hosting.png"
+                   alt="Code hosting mini screenshot" /></td>
+          <td><img src="/+icing/code-feature-bug-branches.png"
+                   alt="Bug branches mini screenshot" /></td>
+          <td><img src="/+icing/code-feature-everyone.png"
+                   alt="Version control for everyone mini screenshot" /></td>
+          <td><img src="/+icing/code-feature-import.png"
+                   alt="SVN/CVS import mini screenshot" /></td>
         </tr>
         <tr>
-          <td>Host and mirror Bazaar branches on Launchpad.net.</td>
-          <td>Continuous import of project development trunks.</td>
-          <td>Improve the visibility of your project's code.</td>
-          <td></td>
+          <td>Host and mirror Bazaar branches from anywhere on the internet.</td>
+          <td>Link branches that fix a bug with the bug report.</td>
+          <td>Anyone can create and publish their own branch of your code.</td>
+          <td>Mirror CVS and Subversion repositories and create your own
+            Bazaar branches.
+          </td>
         </tr>
       </tbody>
     </table>
