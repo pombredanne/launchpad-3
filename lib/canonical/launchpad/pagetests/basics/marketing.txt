@@ -9,7 +9,8 @@ From Launchpad's front page, you can access a "marketing microsite"
     >>> browser.url
     'http://launchpad.dev/+about'
 
-That features three large tabs: "Home", "Get an account", and "Take a tour".
+That features three large tabs: "Home", "Get an account", and
+"Take a tour".
 
     >>> navigation = find_tag_by_id(browser.contents, 'navigation')
     >>> home_link = navigation.find('a')
@@ -26,12 +27,15 @@ That features three large tabs: "Home", "Get an account", and "Take a tour".
     >>> tour_link.url
     'http://launchpad.dev/+tour'
 
-That page has one link to each Launchpad application which brings
-the Overview page for that application. The overview page has a link
-to the FAQs and Tour page for the application.
+== About each application ==
 
-== Code ==
+The 'About Launchpad' page has one link to each Launchpad application
+which brings the Overview page for that application. The overview page
+has a link to the FAQs and Tour page for the application.
 
+=== Code ===
+
+    >>> browser.open('http://launchpad.dev/+about')
     >>> browser.getLink('Code').click()
     >>> print browser.title
     About Code
@@ -50,7 +54,7 @@ to the FAQs and Tour page for the application.
     >>> print browser.url
     http://code.launchpad.dev/+faq
 
-== Bugs ==
+=== Bugs ===
 
     >>> browser.open('http://launchpad.dev/+about')
     >>> browser.getLink('Bugs').click()
@@ -71,7 +75,7 @@ to the FAQs and Tour page for the application.
     >>> print browser.url
     http://bugs.launchpad.dev/+faq
 
-== Blueprints ==
+=== Blueprints ===
 
     >>> browser.open('http://launchpad.dev/+about')
     >>> browser.getLink('Blueprints').click()
@@ -92,7 +96,7 @@ to the FAQs and Tour page for the application.
     >>> print browser.url
     http://blueprints.launchpad.dev/+faq
 
-== Translations ==
+=== Translations ===
 
     >>> browser.open('http://launchpad.dev/+about')
     >>> browser.getLink('Translations').click()
@@ -113,7 +117,7 @@ to the FAQs and Tour page for the application.
     >>> print browser.url
     http://translations.launchpad.dev/+faq
 
-== Answers ==
+=== Answers ===
 
     >>> browser.open('http://launchpad.dev/+about')
     >>> browser.getLink('Answers').click()

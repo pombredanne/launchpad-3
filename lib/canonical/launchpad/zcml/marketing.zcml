@@ -24,6 +24,15 @@
         template="../templates/marketing-faq-template.pt"
         />
 
+    <!-- XXX flacoste 20007/03/30 Redirect the generic +tour to the code
+         +tour page which is the first page in the tour. -->
+    <browser:renamed-page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="+tour"
+        new_name="+tour"
+        rootsite="code"
+        />
+
     <!-- Marketing Microsite Home Page -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
