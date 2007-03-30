@@ -103,11 +103,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -1106,7 +1106,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            AND Person.emblem IS NOT NULL
+            AND Person.icon IS NOT NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
