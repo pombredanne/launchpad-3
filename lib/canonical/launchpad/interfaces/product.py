@@ -389,7 +389,7 @@ class IProductSet(Interface):
         """
 
     def featured_translatables():
-        """Return an iterator over products that are using Rosetta officially.
+        """Return an iterator over a sample of translatable products.
         """
 
     def count_all():

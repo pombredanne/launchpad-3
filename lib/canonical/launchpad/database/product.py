@@ -688,8 +688,16 @@ class ProductSet:
             Product.official_rosetta
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
-            orderBy=SQLConstant('random()'))[:10]
-        return upstream
+            orderBy=SQLConstant('random()'))[:8]
+
+        # We can't use distinct above, because then random() would have
+        # to be inside the select, which would give us two separate rows
+        # for the same ID, so we simply don't return the same product twice
+        distinct = []
+        for product in upstream:
+            if product.id not in distinct:
+                yield product
+                distinct.append(product.id)
 
     def count_all(self):
         return Product.select().count()
