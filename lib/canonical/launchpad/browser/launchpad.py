@@ -94,7 +94,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.project import ProjectScopeWidget
 
 

@@ -77,6 +77,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget

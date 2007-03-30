@@ -1,4 +1,4 @@
-== Searching for Projects, Products and Distributions ==
+= Searching for Projects, Products and Distributions =
 
 Launchpad provides a way for people to search across products, projects and
 distributions. This is done at the /projects page.
@@ -64,11 +64,53 @@ URL, saving them a page load.
 
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
     >>> for tr in search_results.tbody('tr'):
     ...     image_td, description_td = tr('td')
     ...     print description_td.a.renderContents()
     Ubuntu Linux
     Ubuntu
     The Ubuntu Project
+    ...
+
+== Showing emblems ==
+
+Each item in the search result has an image. By default it's the
+standard images used for products/projects/distributions.
+
+    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print image_td.img['src'], description_td.a.renderContents()
+    /@@/distribution Ubuntu Linux
+    /@@/product Ubuntu
+    /@@/project The Ubuntu Project
+    ...
+
+If the project has specified an emblem, that is shown in the listing
+instead.
+
+    >>> import os.path
+    >>> import canonical.launchpad
+    >>> image_dir = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__), 'images')
+    >>> ubuntu_icon = open(os.path.join(image_dir, 'ubuntu-icon.png'))
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+edit')
+    >>> emblem_ctrl = admin_browser.getControl(name='field.emblem.action')
+    >>> emblem_ctrl.getControl('Change to').selected = True
+    >>> admin_browser.getControl(name='field.emblem.image').add_file(
+    ...     ubuntu_icon, 'image/png', 'ubuntu-icon.png')
+    >>> admin_browser.getControl('Change', index=-1).click()
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu'
+
+    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print image_td.img['src'], description_td.a.renderContents()
+    http://.../ubuntu-icon.png Ubuntu Linux
+    /@@/product Ubuntu
+    /@@/project The Ubuntu Project
     ...
