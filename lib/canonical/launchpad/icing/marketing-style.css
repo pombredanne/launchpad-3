@@ -572,7 +572,7 @@ body#tour #header dl#navigation ul li#liTour a {
 #main #secondary #pane .callouts #p3 { background-image: url(3.gif); }
 #main #secondary #pane .callouts #p4 { background-image: url(4.gif); }
 
-#main #secondary #pane .callouts li:hover {
+#main #secondary #pane .callouts li.highlighted {
   background-position: bottom left;
 }
 
@@ -589,7 +589,7 @@ body#tour #header dl#navigation ul li#liTour a {
   background-repeat: no-repeat;
 }
 
-#main #secondary #pane ul.info li:hover {
+#main #secondary #pane ul.info li.highlighted {
   background-position: 0 -300px;
 }
 
