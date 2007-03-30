@@ -345,7 +345,11 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(filenames, ['file1', 'file2', 'file3', 'file99'])
 
     def testDotPaths(self):
-        # Test that paths containing dots are handled correctly
+        # Test that paths containing dots are handled correctly.
+        #
+        # We expect the returned directory and file names to only
+        # include those links http://example.com/foo/ even in the
+        # presence of "." and ".." path segments.
         content = '''
         <html>
           <head>
