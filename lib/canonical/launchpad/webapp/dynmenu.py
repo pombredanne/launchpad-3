@@ -104,7 +104,8 @@ class DynMenu(LaunchpadView):
 
     def getBreadcrumbText(self, obj):
         breadcrumbprovider = queryMultiAdapter(
-            (obj, self.request), IBreadcrumbProvider, default=None)
+            (obj, self.request), IBreadcrumbProvider,
+            name='breadcrumb', default=None)
         if breadcrumbprovider is None:
             return None
         else:
