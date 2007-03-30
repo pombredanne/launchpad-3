@@ -21,7 +21,7 @@ pre, code {font:115% monospace;*font-size:100%;}
 body * {line-height:1.6em;}
 
 body {
-	background: #fff url(/+icing/bg-body.gif) top left repeat;
+	background: #fff url(bg-body.gif) top left repeat;
 	text-align: center;
 	padding-bottom: 30px;
 }
@@ -29,7 +29,7 @@ body {
 #breadcrumb {
   height: 27px;
   padding: 22px 10px 0 10px;
-  background: #A0D719 url(/+icing/bg-breadcrumb.gif) top left repeat-x;
+  background: #A0D719 url(bg-breadcrumb.gif) top left repeat-x;
   text-align: left;
   margin-bottom: 20px;
   font-size: 1.1em;
@@ -44,7 +44,7 @@ body {
 #header {
   overflow: hidden;
   width: 824px;
-  background: url(/+icing/bg-header.gif) top left no-repeat;
+  background: url(bg-header.gif) top left no-repeat;
 }
 
 #main {
@@ -72,7 +72,7 @@ body {
   clear: both;
 	width: 824px;
 	padding-top: 26px;
-  background: url(/+icing/bg-footer.gif) top left no-repeat;
+  background: url(bg-footer.gif) top left no-repeat;
   color: #fff;
 }
 
@@ -100,7 +100,6 @@ body {
 
 #breadcrumb dl dd ul li {
 	display: block;
-	_width: 10px;
 	white-space: nowrap;
 	float: left;
 }
@@ -110,7 +109,7 @@ body {
   height: 27px;
   line-height: 25px;
   padding: 0 25px 0 5px;
-  background: url(/+icing/bread-a2i.gif) top right no-repeat;
+  background: url(bread-a2i.gif) top right no-repeat;
   color: #000;
 }
 
@@ -119,7 +118,7 @@ body {
   height: 27px;
   line-height: 25px;
   padding: 0 25px 0 5px;
-  background: url(/+icing/bread-i2a.gif) top right no-repeat;
+  background: url(bread-i2a.gif) top right no-repeat;
   color: #000;
   text-decoration: none;
 }
@@ -134,7 +133,7 @@ body {
   height: 27px;
   line-height: 25px;
   padding: 0 25px 0 5px;
-  background: url(/+icing/bread-i2i.gif) top right no-repeat;
+  background: url(bread-i2i.gif) top right no-repeat;
   color: #000;
   text-decoration: none;
 }
@@ -152,8 +151,7 @@ body {
 #header h1 a {
   display: block;
   width: 257px; height: 98px;
-  _width: 254px;
-  background: url(/+icing/logo.gif) 32px 25px no-repeat;
+  background: url(logo.gif) 32px 25px no-repeat;
   text-indent: -1000em;
 }
 
@@ -205,7 +203,7 @@ padding-top: 27px;
 #header dl#navigation ul li#liHome a {
   padding-left: 40px;
   width: 149px;
-  background-image: url(/+icing/liHome.gif);
+  background-image: url(liHome.gif);
 }
 
 #header dl#navigation ul li#liAccount a,
@@ -214,13 +212,13 @@ padding-top: 27px;
 #header dl#navigation ul li#liAccount a {
   padding-left: 20px;
   width: 153px;
-  background-image: url(/+icing/liAccount.gif);
+  background-image: url(liAccount.gif);
 }
 
 #header dl#navigation ul li#liTour a {
   padding-left: 20px;
   width: 153px;
-  background-image: url(/+icing/liTour.gif);
+  background-image: url(liTour.gif);
 }
 
 body#tour #header dl#navigation ul li#liTour a {
@@ -242,7 +240,7 @@ body#tour #header dl#navigation ul li#liTour a {
   margin: 0 25px 0 3px;
 /*  text-indent: -1000em;*/
   border-bottom: solid 1px #fff;
-  background: url(/+icing/bullet-arrow.gif) center left no-repeat;
+  background: url(bullet-arrow.gif) center left no-repeat;
   text-decoration: none;
   color: #333;
   font-size: 1.2em;
@@ -283,7 +281,7 @@ body#tour #header dl#navigation ul li#liTour a {
 #header dl#sub-navigation ul#global li#liContact a {
   padding-left: 7px;
   margin-left: 7px;
-  background: url(/+icing/globaldivide.gif) bottom left no-repeat;
+  background: url(globaldivide.gif) bottom left no-repeat;
 }
 
 #main strong {
@@ -330,7 +328,7 @@ body#tour #header dl#navigation ul li#liTour a {
   padding-left: 12px;
   color: #222;
   font-size: 1.2em;
-  background: url(/+icing/liSelector.gif) top left no-repeat;
+  background: url(liSelector.gif) top left no-repeat;
 }
 
 #main #primary ul#pane-selector li.current a {
@@ -468,7 +466,7 @@ body#tour #header dl#navigation ul li#liTour a {
   line-height: 49px;
   margin: 0 -29px;
   margin-bottom: 40px;
-  background: url(/+icing/bg-home-h5-splash.gif) top left repeat-x;
+  background: url(bg-home-h5-splash.gif) top left repeat-x;
   color: #fff;
   text-align: center;
   font-size: 1.6em;
@@ -481,7 +479,7 @@ body#tour #header dl#navigation ul li#liTour a {
   padding-left: 15px;
   text-decoration: none;
   color: #6e9101;
-  background: url(/+icing/bullet-arrow.gif) center left no-repeat;
+  background: url(bullet-arrow.gif) center left no-repeat;
 }
 
 #main p.more a:hover {
@@ -510,7 +508,7 @@ body#tour #header dl#navigation ul li#liTour a {
 }
 
 #main #secondary ul#faqs li {
-  background: url(/+icing/bullet-q.gif) center left no-repeat;
+  background: url(bullet-q.gif) center left no-repeat;
 }
 
 #main #secondary ul#faqs li a {
@@ -535,7 +533,7 @@ body#tour #header dl#navigation ul li#liTour a {
   padding-right: 13px;
   text-decoration: none;
   color: #6e9101;
-  background: url(/+icing/bg-backtotop.gif) center right no-repeat;
+  background: url(bg-backtotop.gif) center right no-repeat;
 }
 
 #main #secondary p.backtotop a:hover {
