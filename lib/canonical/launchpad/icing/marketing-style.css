@@ -565,10 +565,10 @@ body#tour #header dl#navigation ul li#liTour a {
   text-indent: -1000em;
 }
 
-#main #secondary #pane .callouts #p1 { background-image: url(1.gif); }
-#main #secondary #pane .callouts #p2 { background-image: url(2.gif); }
-#main #secondary #pane .callouts #p3 { background-image: url(3.gif); }
-#main #secondary #pane .callouts #p4 { background-image: url(4.gif); }
+#main #secondary #pane .callouts #p1 { background-image: url(marker-1.gif); }
+#main #secondary #pane .callouts #p2 { background-image: url(marker-2.gif); }
+#main #secondary #pane .callouts #p3 { background-image: url(marker-3.gif); }
+#main #secondary #pane .callouts #p4 { background-image: url(marker-4.gif); }
 
 #main #secondary #pane .callouts li.highlighted {
   background-position: bottom left;
