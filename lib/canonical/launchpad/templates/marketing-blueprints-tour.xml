@@ -7,17 +7,17 @@
       their implementation
     </summary>
     <screenshot>/+icing/blueprints-tour-screenshot1.png</screenshot>
-    <callout top="" left="">Blueprints track who is involved in a feature
+    <callout top="22" left="392">Blueprints track who is involved in a feature
       idea, how well defined the idea is and any implementation progress.
     </callout>
-    <callout top="" left="">Each blueprint has a summary, with a link to the
-      full detail of the specification.
+    <callout top="85" left="164">Each blueprint has a summary, with a link to
+      the full detail of the specification.
     </callout>
-    <callout top="" left="">Launchpad can link blueprints to meetings and
-      development sprints and generate an agenda from them.
+    <callout top="163" left="336">Launchpad can link blueprints to meetings
+      and development sprints and generate an agenda from them.
     </callout>
-    <callout top="" left="">The dependency tree offers a visual overview of
-      where the blueprint fits into the project's development plan.
+    <callout top="222" left="22">The dependency tree offers a visual overview
+      of where the blueprint fits into the project's development plan.
     </callout>
   </screen>
   <screen>
@@ -26,11 +26,11 @@
       have, using blueprints to form an agenda
     </summary>
     <screenshot>/+icing/blueprints-tour-screenshot2.png</screenshot>
-    <callout top="" left="">Everyone involved in the meeting can propose
+    <callout top="105" left="287">Everyone involved in the meeting can propose
       blueprints for discussion.
     </callout>
-    <callout top="" left="">All the practical information about a meeting or
-      sprint is just a click away. People planning to attend can register
+    <callout top="75" left="138">All the practical information about a meeting
+      or sprint is just a click away. People planning to attend can register
       using their Launchpad account.
     </callout>
   </screen>
@@ -38,16 +38,16 @@
     <title>Browsing blueprints</title>
     <summary>An overview of a community's blueprints</summary>
     <screenshot>/+icing/blueprints-tour-screenshot3.png</screenshot>
-    <callout top="" left="">Communities set the priority of the blueprints
-      they're working on.
+    <callout top="135" left="24">Communities set the priority of the
+      blueprints they're working on.
     </callout>
-    <callout top="" left="">The <b>i</b> shows that this is blueprint is
+    <callout top="70" left="115">The <b>i</b> shows that this is blueprint is
       documentation, rather than a plan for a new feature.
     </callout>
-    <callout top="" left="">Launchpad tracks both how well-defined an idea is
-      and the progress of its implementation.
+    <callout top="93" left="230">Launchpad tracks both how well-defined an
+      idea is and the progress of its implementation.
     </callout>
-    <callout top="" left="">Communities can tie blueprints to specific
+    <callout top="239" left="442">Communities can tie blueprints to specific
       releases of their software.
     </callout>
   </screen>
