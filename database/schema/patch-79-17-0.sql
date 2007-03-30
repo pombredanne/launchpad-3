@@ -8,5 +8,5 @@ CREATE TABLE ScriptActivity (
   date_completed timestamp without time zone NOT NULL
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 17, 0);
 
