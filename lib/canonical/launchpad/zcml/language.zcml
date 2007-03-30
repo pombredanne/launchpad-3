@@ -57,13 +57,19 @@
         />
 
     <!-- Language portlets -->
-    <browser:page
+    <browser:pages
         for="canonical.launchpad.interfaces.ILanguage"
         class="canonical.launchpad.browser.LanguageView"
-        permission="zope.Public"
-        name="+portlet-details"
-        template="../templates/language-portlet-details.pt"
-        />
+        permission="zope.Public" >
+        <browser:page
+            name="+portlet-details"
+            template="../templates/language-portlet-details.pt"
+            />
+        <browser:page
+            name="+portlet-top-contributors"
+            template="../templates/language-portlet-top-contributors.pt"
+            />
+    </browser:pages>
 
     <!-- LanguageSet -->
     <securedutility
