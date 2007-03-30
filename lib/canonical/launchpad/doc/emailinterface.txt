@@ -786,6 +786,25 @@ An error message is sent if a nonexistent bug id is given.
     There is no such bug in Launchpad: nonexistent
     ...
 
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.duplicateof is None
+    True
+    >>> submit_commands(bug_two, 'duplicate 4')
+    >>> bug_two.duplicateof is None
+    True
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 4
+    ...
+    Bug 4 is already a duplicate of bug 2. You can only duplicate to
+    bugs that are not duplicates themselves.
+    ...
+
 
 affects $path [assignee $name|$email|nobody]
               [status $status]

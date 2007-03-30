@@ -3,6 +3,7 @@
 from StringIO import StringIO
 from textwrap import dedent
 
+from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
@@ -12,6 +13,7 @@ from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 
@@ -193,6 +195,41 @@ class TimeInterval(TextLine):
 
 class BugField(Field):
     implements(IBugField)
+
+
+class DuplicateBug(BugField):
+    """A bug that the context is a duplicate of."""
+
+    def _validate(self, value):
+        """Prevent dups of dups.
+
+        Returns True if the dup target is not a duplicate /and/ if the
+        current bug doesn't have any duplicates referencing it /and/ if the
+        bug isn't a duplicate of itself, otherwise
+        return False.
+        """
+        from canonical.launchpad.interfaces.bug import IBugSet
+        bugset = getUtility(IBugSet)
+        current_bug = self.context
+        dup_target = value
+        current_bug_has_dup_refs = bool(bugset.searchAsUser(
+            user=getUtility(ILaunchBag).user, duplicateof=current_bug))
+        if current_bug == dup_target:
+            raise LaunchpadValidationError(_(dedent("""
+                You can't mark a bug as a duplicate of itself.""")))
+        elif dup_target.duplicateof is not None:
+            raise LaunchpadValidationError(_(dedent("""
+                Bug %i is already a duplicate of bug %i. You can only
+                duplicate to bugs that are not duplicates themselves.
+                """% (dup_target.id, dup_target.duplicateof.id))))
+        elif current_bug_has_dup_refs:
+            raise LaunchpadValidationError(_(dedent("""
+                There are other bugs already marked as duplicates of Bug %i.
+                These bugs should be changed to be duplicates of another bug
+                if you are certain you would like to perform this change."""
+                % current_bug.id)))
+        else:
+            return True
 
 
 class Tag(TextLine):

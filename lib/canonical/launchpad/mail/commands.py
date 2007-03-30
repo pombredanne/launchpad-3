@@ -8,11 +8,12 @@ import os.path
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
@@ -102,7 +103,7 @@ class EmailCommand:
                         num_arguments_expected=self._numberOfArguments,
                         num_arguments_got=num_arguments_got))
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """Converts the string argument to Python objects.
 
         Returns a dict with names as keys, and the Python objects as
@@ -166,7 +167,7 @@ class EditEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
-        args = self.convertArguments()
+        args = self.convertArguments(context)
 
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
@@ -201,7 +202,7 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]
         if private_arg == 'yes':
@@ -220,7 +221,7 @@ class SecurityEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         [security_flag] = self.string_args
         if security_flag == 'yes':
@@ -328,7 +329,7 @@ class SummaryEmailCommand(EditEmailCommand):
 
         return EditEmailCommand.execute(self, bug, current_event)
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
 
@@ -339,7 +340,7 @@ class DuplicateEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         [bug_id] = self.string_args
         if bug_id == 'no':
@@ -350,8 +351,13 @@ class DuplicateEmailCommand(EditEmailCommand):
         except NotFoundError:
             raise EmailProcessingError(
                 get_error_message('no-such-bug.txt', bug_id=bug_id))
-        else:
-            return {'duplicateof': bug}
+        duplicate_field = IBug['duplicateof'].bind(context)
+        try:
+            duplicate_field.validate(bug)
+        except ValidationError, error:
+            raise EmailProcessingError(error.doc())
+
+        return {'duplicateof': bug}
 
 
 class AffectsEmailCommand(EmailCommand):
@@ -546,7 +552,7 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
 
@@ -586,7 +592,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         item_name = self.string_args[0]
         dbschema = self.dbschema
