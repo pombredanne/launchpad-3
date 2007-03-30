@@ -116,7 +116,7 @@ class LaunchpadTourView(LaunchpadView):
     @property
     def pagetitle(self):
         """Return the page title."""
-        return "%s Tour: %s" % (
+        return "%s tour: %s" % (
             self.title, self.screen_titles[self.current_screen_index])
 
     @property
