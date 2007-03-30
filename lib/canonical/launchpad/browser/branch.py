@@ -157,7 +157,12 @@ class BranchView(LaunchpadView):
 
     def show_mirror_failure(self):
         """True if mirror_of_ssh is false and branch mirroring failed."""
-        return not self.mirror_of_ssh() and self.context.mirror_failures
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
+        else:
+            return self.context.mirror_failures
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
