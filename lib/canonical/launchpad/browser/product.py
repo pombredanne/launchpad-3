@@ -770,10 +770,10 @@ class PillarSearchItem:
             self.default_emblem_resource = '/@@/product'
         elif pillar_type == 'distribution':
             self.default_emblem_resource = '/@@/distribution'
-        else:
-            assert pillar_type == 'project group', (
-                "Unknown pillar type: %s" % pillar_type)
+        elif pillar_type == 'project group':
             self.default_emblem_resource = '/@@/project'
+        else:
+            raise AssertionError("Unknown pillar type: %s" % pillar_type)
 
 
 class ProductSetView(LaunchpadView):
