@@ -328,6 +328,11 @@ class IShippingRequest(Interface):
         quantityamd64approved, approved and whoapproved to None.
         """
 
+    def addressIsDuplicated():
+        """Return True if there is more than one request made from another
+        user using the same address as this one.
+        """
+
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
         as this one but with a different recipient.

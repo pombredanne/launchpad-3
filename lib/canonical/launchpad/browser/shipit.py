@@ -503,9 +503,7 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
-        if current_order.getRequestsWithSameAddressFromOtherUsers().count() > 1:
-            # There are at least two other people who made requests using the
-            # same address.
+        if current_order.addressIsDuplicated():
             current_order.markAsDuplicatedAddress()
         elif shipped_orders.count() >= 2:
             # User has more than 2 shipped orders. Now we need to check if any

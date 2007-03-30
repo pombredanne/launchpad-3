@@ -355,19 +355,22 @@ class ShippingRequest(SQLBase):
         self.status = ShippingRequestStatus.CANCELLED
         self.whocancelled = whocancelled
 
-    def getRequestsWithSameAddressFromOtherUsers(self):
+    def addressIsDuplicated(self):
         """See IShippingRequest"""
-        subquery = """
-            SELECT id FROM ShippingRequest
-            WHERE normalized_address = %(address)s
-                AND country = %(country)s
-                AND recipient != %(recipient)s
-                AND status NOT IN (%(cancelled)s, %(denied)s)
+        return self.getRequestsWithSameAddressFromOtherUsers().count() > 1
+
+    def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
+        """See IShippingRequest"""
+        query = """
+            normalized_address = %(address)s
+            AND country = %(country)s
+            AND recipient != %(recipient)s
+            AND status NOT IN (%(cancelled)s, %(denied)s)
             """ % sqlvalues(
-                    address=self.normalized_address, recipient=self.recipient,
-                    denied=ShippingRequestStatus.DENIED, country=self.country,
-                    cancelled=ShippingRequestStatus.CANCELLED)
-        return ShippingRequest.select("id IN (%s)" % subquery)
+                address=self.normalized_address, recipient=self.recipient,
+                denied=ShippingRequestStatus.DENIED, country=self.country,
+                cancelled=ShippingRequestStatus.CANCELLED)
+        return ShippingRequest.select(query, limit=limit)
 
 
 class ShippingRequestSet:
