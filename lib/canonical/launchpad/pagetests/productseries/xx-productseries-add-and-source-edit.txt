@@ -46,8 +46,9 @@ We check if the info we just entered on the form is displayed correctly
   </tr>
   ...
 
-If we try adding the same CVS details to another series, the error message must
-point to the series with the conflicting CVS details.
+Test if the RCS details validator is working properly by adding the same
+CVS details to another ProductSeries. The error message must link to the
+product series with the conflicting CVS details.
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('CVS').click()
