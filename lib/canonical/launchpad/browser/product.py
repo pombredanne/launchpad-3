@@ -50,8 +50,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
+    ICalendarOwner, ITranslationImportQueue, NotFoundError, IBranchSet,
+    RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -153,16 +153,14 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     links = StandardLaunchpadFacets.links
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
-        target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         target = '+bounties'
@@ -171,22 +169,19 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
-        target = ''
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         target = '+calendar'
@@ -687,7 +682,8 @@ class ProductDynMenu(DynMenu):
 
     def render(self):
         if len(self.names) > 1:
-            raise NotFoundError(names[-1])
+            # XXX: untested.
+            raise NotFoundError(self.names[-1])
 
         if not self.names:
             return self.renderMenu(self.mainMenu())

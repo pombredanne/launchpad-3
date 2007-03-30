@@ -321,14 +321,14 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
-        return Link('+assignedbugs', text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
         text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         text = 'Bounties'
@@ -341,20 +341,19 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('+branches', text, summary)
+        return Link('', text, summary)
 
     def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
-        return Link('+tickets', text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         text = 'Calendar'
