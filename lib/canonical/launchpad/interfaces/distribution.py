@@ -65,7 +65,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Icon"), required=False,
         default_image_resource='/@@/distribution',
         description=_(
-            "A small image of exactly 14x14 pixels and at most 25k in size, "
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
             "that can be used to identify this distribution in listings."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -73,14 +73,14 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to this distribution. It "
-            "should be no bigger than 50k in size."))
+            "should be no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
         default_image_resource='/@@/distribution-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this distribution's home page in Launchpad. It should be no "
-            "bigger than 100k in size. "))
+            "bigger than 100kb in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),

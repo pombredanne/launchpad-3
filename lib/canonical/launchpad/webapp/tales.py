@@ -412,6 +412,9 @@ class ObjectImageDisplayAPI:
     def icon(self):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
+        if context is None:
+            # we handle None specially and return an empty string
+            return ''
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
@@ -459,9 +462,8 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = """
-            <img height="14" width="14" alt="%s" title="%s" src="%s" />
-            """
+        image_template = (
+            '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
         if self._context.importance:
             importance = self._context.importance.title.lower()

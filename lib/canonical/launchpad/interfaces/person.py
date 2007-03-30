@@ -135,7 +135,7 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         title=_("Icon"), required=False,
         default_image_resource='/@@/team',
         description=_(
-            "A small image of exactly 14x14 pixels and at most 5k in size, "
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
             "that can be used to identify this team in listings."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -144,7 +144,7 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50k in size."))
+            "no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
@@ -152,7 +152,7 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
-            "should be no bigger than 100k in size. "))
+            "should be no bigger than 100kb in size. "))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -715,14 +715,14 @@ class ITeam(IPerson, IHasIcon):
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to the team. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50k in size."))
+            "no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/team-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on the team page in Launchpad. It "
-            "should be no bigger than 100k in size. "))
+            "should be no bigger than 100kb in size. "))
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(

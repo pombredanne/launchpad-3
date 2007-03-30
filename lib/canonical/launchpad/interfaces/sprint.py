@@ -68,7 +68,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         title=_("Icon"), required=False,
         default_image_resource='/@@/meeting',
         description=_(
-            "A small image of exactly 14x14 pixels and at most 25k in size, "
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
             "that can be used to identify this meeting in listings."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -76,14 +76,14 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to this meeting. It should be "
-            "no bigger than 50k in size."))
+            "no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
         default_image_resource='/@@/meeting-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this meeting's home page in Launchpad. It should be no "
-            "bigger than 100k in size. "))
+            "bigger than 100kb in size. "))
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
         description=_(

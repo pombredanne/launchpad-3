@@ -174,7 +174,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Icon"), required=False,
         default_image_resource='/@@/product',
         description=_(
-            "A small image of exactly 14x14 pixels and at most 25k in size, "
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
             "that can be used to identify this project in listings."))
 
     logo = LogoImageUpload(
@@ -183,7 +183,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to this project. It should be "
-            "no bigger than 50k in size."))
+            "no bigger than 50kb in size."))
 
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
@@ -191,7 +191,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this project's home page in Launchpad. It should be no "
-            "bigger than 100k in size. "))
+            "bigger than 100kb in size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
