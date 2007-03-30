@@ -346,6 +346,11 @@
     />
 
   <vocabulary
+    name="TextDirection"
+    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
+    />
+
+  <vocabulary
     name="QuestionAction"
     factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
     />

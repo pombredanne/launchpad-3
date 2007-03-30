@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
+    'TextDirectionVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
     ]
@@ -107,6 +108,7 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)
 

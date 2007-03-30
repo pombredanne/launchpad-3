@@ -142,6 +142,14 @@ class LanguageSet:
 
         return (language, language_variant)
 
+    def createLanguage(self, code, englishname, nativename, pluralforms,
+            pluralexpression, visible, direction):
+        """See ILanguageSet."""
+        return Language(
+            code=code, englishname=englishname, nativename=nativename,
+            pluralforms=pluralforms, pluralexpression=pluralexpression,
+            visible=visible, direction=direction)
+
     def search(self, text):
         """See ILanguageSet."""
         if text:

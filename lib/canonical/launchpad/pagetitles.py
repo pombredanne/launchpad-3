@@ -75,6 +75,9 @@ class ContextTitle(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.title
 
+class ContextDisplayname(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % context.displayname
 
 class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
@@ -432,6 +435,12 @@ karmaaction_index = 'Karma actions'
 karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
+language_index = ContextDisplayname("%s in Launchpad")
+
+language_add = 'Add a new Language to Launchpad'
+
+language_admin = ContextDisplayname("Edit %s")
 
 languageset_index = 'Languages in Launchpad'
 

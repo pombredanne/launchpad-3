@@ -4,24 +4,36 @@
 
 __metaclass__ = type
 __all__ = [
+    'LanguageAddView',
     'LanguageContextMenu',
+    'LanguageAdminView',
     'LanguageNavigation',
-    'LanguageSetView',
+    'LanguageRemoveView',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
+    'LanguageSetView',
+    'LanguageView',
     ]
 
 import operator
 
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.component import getUtility
+from zope.event import notify
+
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage)
+    ILanguageSet, ILanguage, NotFoundError)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadFormView, action)
+    GetitemNavigation, LaunchpadFormView, LaunchpadEditFormView, action,
+    canonical_url)
 
 
 class LanguageNavigation(GetitemNavigation):
     usedfor = ILanguage
+
+    def traverse(self, name):
+        raise NotFoundError
 
 
 class LanguageSetNavigation(GetitemNavigation):
@@ -54,3 +66,51 @@ class LanguageSetView:
         else:
             self.matches = 0
         return self.results
+
+
+class LanguageAddView(LaunchpadFormView):
+
+    schema = ILanguage
+    field_names = ['code', 'englishname', 'nativename', 'pluralforms',
+                   'pluralexpression', 'visible', 'direction']
+    label = _('Register a language in Launchpad')
+    language = None
+
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        """Create the new Language from the form details."""
+        self.language = getUtility(ILanguageSet).createLanguage(
+            code=data['code'],
+            englishname=data['englishname'],
+            nativename=data['nativename'],
+            pluralforms=data['pluralforms'],
+            pluralexpression=data['pluralexpression'],
+            visible=data['visible'],
+            direction=data['direction'])
+        notify(ObjectCreatedEvent(self.language))
+
+    @property
+    def next_url(self):
+        assert self.language is not None, 'No language has been created'
+        return canonical_url(self.language)
+
+
+class LanguageView:
+    pass
+
+class LanguageRemoveView:
+
+    def removals(self):
+        pass
+
+class LanguageAdminView(LaunchpadEditFormView):
+    """Handle and admin form submission."""
+    schema = ILanguage
+
+    field_names = ['code', 'englishname', 'nativename', 'pluralforms',
+                   'pluralexpression', 'visible', 'direction']
+
+    @action("Admin Language", name="admin")
+    def admin_action(self, action, data):
+        self.updateContextFromData(data)
+
