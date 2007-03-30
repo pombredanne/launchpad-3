@@ -38,7 +38,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IProjectSet"
-    path_expression="string:projects"
+    path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

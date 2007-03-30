@@ -445,6 +445,7 @@ class LaunchpadRootNavigation(Navigation):
         'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'projects': IProductSet,
+        'projectgroups': IProjectSet,
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,

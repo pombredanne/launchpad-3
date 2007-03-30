@@ -145,7 +145,7 @@ An IDistributionSourcePackage.
 The IProjectSet.
 
     >>> canonical_url(getUtility(IProjectSet))
-    u'http://launchpad.dev/projects'
+    u'http://launchpad.dev/projectgroups'
 
 An IProject.
 
