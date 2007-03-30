@@ -415,7 +415,7 @@ body#tour #header dl#navigation ul li#liTour a {
 
 #features img {
     display: block;
-    border: 1px black;
+    border: 1px solid black;
 }
 
 #about #content {
