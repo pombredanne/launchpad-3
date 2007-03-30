@@ -21,9 +21,6 @@ Create a Test distribution:
   >>> admin_browser.getControl("Domain name").value = 'foo.com'
   >>> admin_browser.getControl("Members").value = 'sabdfl'
 
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(admin_browser)
-
   >>> admin_browser.getControl("Save").click()
   >>> admin_browser.url
   'http://launchpad.dev/test'
@@ -31,15 +28,3 @@ Create a Test distribution:
   >>> admin_browser.contents
   '...The Test Distribution...'
 
-The uploaded icon and emblem can now be seen on the distribution's edit page:
-
-  >>> admin_browser.getLink('Change details').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/test/+edit'
-
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'

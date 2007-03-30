@@ -9,18 +9,13 @@
 
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/blueprint" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-      </div>
-
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
-      You can target the blueprint to a different project. Be careful,
-      when you retarget the blueprint you will
-      lose any goal or milestone information for it.
-      Choose <strong>either</strong> a project, <strong>or</strong> a distribution.
+      You can target the blueprint to a different project. Be careful, when
+      you retarget the blueprint you will lose any goal or milestone
+      information for it.  Choose <strong>either</strong> a project,
+      <strong>or</strong> a distribution.
     </p>
 
   </div>
