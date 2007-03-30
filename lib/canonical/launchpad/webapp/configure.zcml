@@ -117,6 +117,49 @@
         name="htmlform"
         />
 
+    <!-- TALES image: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IKarmaCategory"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBuild"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
+        name="image"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only
@@ -196,41 +239,6 @@
         for="canonical.launchpad.interfaces.IPerson"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IHasGotchiAndEmblem"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.HasGotchiAndEmblemFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IKarmaCategory"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.KarmaCategoryFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBuild"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildFormatterAPI"
         name="fmt"
         />
 

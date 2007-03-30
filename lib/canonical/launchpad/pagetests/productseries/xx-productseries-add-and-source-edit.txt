@@ -46,8 +46,8 @@ We check if the info we just entered on the form is displayed correctly
   </tr>
   ...
 
-And we test if the validator is working adding the same CVS details to
-another product
+If we try adding the same CVS details to another series, the error message must
+point to the series with the conflicting CVS details.
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('CVS').click()
@@ -57,10 +57,15 @@ another product
   >>> browser.getControl(name='field.cvsbranch').value = 'main'
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
-  ...     print tag
-  <...
-  ...CVS repository details already in use by another product...
-  
+  ...     print tag.renderContents()
+  There is 1 error.
+  Those CVS details are already specified for
+  <a href="http://launchpad.dev/firefox/trunk">Mozilla Firefox trunk</a>.
+
+Just to be sure let's check the link can be traversed.
+
+  >>> browser.getLink('Mozilla Firefox trunk').click()
+
 Now we test if we can edit again changing the RCS to Subversion:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
@@ -93,7 +98,8 @@ form:
 
 
 Test if the RCS details validator is working properly by adding the same
-svnrepository to another ProductSeries
+svnrepository to another ProductSeries. The error message must link to the
+product series with the conflicting Subversion branch.
 
   >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
   >>> browser.getControl('Subversion').click()
@@ -101,9 +107,14 @@ svnrepository to another ProductSeries
   ...     'svn://svn.mozilla.org/firefox/trunk')
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
-  ...     print tag
-  <...
-  ...Subversion repository details already in use by another product...
+  ...     print tag.renderContents()
+  There is 1 error.
+  ...>This Subversion branch URL is already specified for
+  <a href="http://launchpad.dev/firefox/trunk">Mozilla Firefox trunk</a>.<...
+
+Just to be sure let's check the link can be traversed.
+
+  >>> browser.getLink('Mozilla Firefox trunk').click()
 
 
 If we set the series back to no upstream details, the subversion

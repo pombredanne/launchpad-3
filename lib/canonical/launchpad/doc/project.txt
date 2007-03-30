@@ -13,7 +13,7 @@ common external bug tracker.
 == Creating new projects ==
 
 When creating a new project there are a bunch of things we need to provide.
-While some of them (homepageurl, gotchi and emblem) are optional, others
+While some of them (homepageurl, icon, logo and mugshot) are optional, others
 (name, displayname, title, summary, description and owner) are required).
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
+    ...     owner=no_priv)
     >>> test_project.name
     u'project-test'
 

@@ -97,7 +97,7 @@ class ContextBugId(SubstitutionHelper):
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'The Launchpad Bazaar'
+bazaar_index = 'Launchpad Code'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
@@ -337,6 +337,8 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
+distribution_releases = ContextTitle("%s releases")
+
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = ContextTitle(
@@ -410,6 +412,8 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
+
+hassprints_sprints = ContextTitle("Events related to %s")
 
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
@@ -500,7 +504,7 @@ malone_about = 'About Malone'
 
 malone_distros_index = 'Report a bug about a distribution'
 
-malone_index = 'Malone: the Launchpad bug tracker'
+malone_index = 'Launchpad Bugs'
 
 malone_filebug = "Report a bug"
 
@@ -522,17 +526,20 @@ milestone_edit = ContextTitle('Edit %s')
 
 notification_test = 'Notification test'
 
-# object_pots is a fragment.
-
-object_potemplatenames = ContextDisplayName('Template names for %s')
-
-object_reassignment = ContextTitle('Reassign %s')
+object_branding = ContextDisplayName('Change the images used to represent '
+    '%s in Launchpad')
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
 object_milestones = ContextTitle(smartquote("%s's milestones"))
+
+# object_pots is a fragment.
+
+object_potemplatenames = ContextDisplayName('Template names for %s')
+
+object_reassignment = ContextTitle('Reassign %s')
 
 oops = 'Oops!'
 
@@ -684,11 +691,13 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
-product_translators = ContextTitle('Set translation group for %s')
-
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_series = ContextDisplayName('%s timeline')
+
 product_translations = ContextTitle('Translations of %s in Rosetta')
+
+product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
@@ -767,7 +776,7 @@ root_index = 'Launchpad'
 
 rosetta_about = 'About Rosetta'
 
-rosetta_index = 'Rosetta'
+rosetta_index = 'Launchpad Translations'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
@@ -810,7 +819,7 @@ question_subscription = ContextId('Subscription to question #%s')
 
 question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
-questions_index = 'Launchpad Answer Tracker'
+questions_index = 'Launchpad Answers'
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 

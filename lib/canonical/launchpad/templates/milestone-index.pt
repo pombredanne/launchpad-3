@@ -92,7 +92,7 @@
         <tr tal:repeat="bugtask bugtasks">
           <td class="icon left">
             <span class="sortkey" tal:content="bugtask/bug/id" />
-            <span tal:content="structure bugtask/fmt:icon" />
+            <span tal:content="structure bugtask/image:icon" />
           </td>
           <td tal:content="bugtask/bug/id" class="amount">12345</td>
           <td>
