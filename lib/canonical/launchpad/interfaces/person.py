@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'INewPerson',
     'JoinNotAllowed',
+    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     ]
 
 
