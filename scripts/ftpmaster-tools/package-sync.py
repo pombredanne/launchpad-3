@@ -17,12 +17,13 @@ from canonical.launchpad.scripts.base import (LaunchpadScript,
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import PackagePublishingPocket
 
+
 class PackageSyncLocationError(Exception):
-    """ """
-    pass
+    """XXX."""
+
 
 class PackageSyncLocation:
-
+    """XXX."""
     distribution = None
     distrorelease = None
     pocket = None
@@ -63,17 +64,25 @@ class PackageSyncLocation:
         """ """
         return self.__str__()
 
+
 class PackageSyncHelperError(Exception):
-    """ """
-    pass
+    """XXX"""
+
 
 class PackageSyncHelper:
     synced = False
 
-    def __init__(self, logger, options):
+    def __init__(self, logger, sourcename, sourceversion,
+                 from_distribution_name, to_distribution_name,
+                 to_suite, from_suite):
         """ """
         self.logger = logger
-        self.options = options
+        self.sourcename = sourcename
+        self.sourceversion = sourceversion
+        self.from_distribution_name = from_distribution_name
+        self.to_distribution_name = to_distribution_name
+        self.from_suite = from_suite
+        self.to_suite = to_suite
         self._buildLocations()
         self._buildSource()
 
@@ -81,9 +90,9 @@ class PackageSyncHelper:
         """ """
         try:
             self.from_location = PackageSyncLocation(
-                self.options.from_distribution, self.options.from_suite)
+                self.from_distribution_name, self.from_suite)
             self.to_location = PackageSyncLocation(
-                self.options.to_distribution, self.options.to_suite)
+                self.to_distribution_name, self.to_suite)
         except PackageSyncLocationError, err:
             raise PackageSyncHelperError(err)
 
@@ -95,16 +104,16 @@ class PackageSyncHelper:
     def _buildSource(self):
         """ """
         sourcepackage = self.from_location.distrorelease.getSourcePackage(
-            self.options.sourcename)
-        if self.options.sourceversion is None:
+            self.sourcename)
+        if self.sourceversion is None:
             self.target_source = sourcepackage.currentrelease
         else:
-            self.target_source = sourcepackage[self.options.sourceversion]
+            self.target_source = sourcepackage[self.sourceversion]
 
         if self.target_source is None:
             raise PackageSyncHelperError(
                 "Could not find '%s/%s' in %s" % (
-                self.options.sourcename, self.options.sourceversion,
+                self.sourcename, self.sourceversion,
                 self.from_location))
 
     def _requestFeedback(self, question='Are you sure', valid_answers=None):
@@ -129,25 +138,20 @@ class PackageSyncHelper:
 
     def performSync(self):
         """ """
-        if self.options.comment is None:
-            self.comment = self._requestFeedback(question='Sync comment')
-        else:
-            self.comment = self.options.comment
-
+        self.comment = self._requestFeedback(question='Sync comment')
         self._displayInfo()
 
-        if not self.options.yes:
-            confirmation = self._requestFeedback(valid_answers=['yes', 'no'])
-        else:
-            confirmation = 'yes'
-
+        confirmation = self._requestFeedback(valid_answers=['yes', 'no'])
         if confirmation != 'yes':
             self.logger.info("Ok, see you later")
             return
 
-        # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
         self.logger.info("Performing sync.")
+
+        #self.to_location.distrorelease.createQueueEntry(
+        #    pocket=self.to_location.pocket,
+        #    changesfilename='foo_bar.changes'
+        # self.synced = True
 
 
 class PackageSync(LaunchpadScript):
@@ -155,57 +159,52 @@ class PackageSync(LaunchpadScript):
     description = 'MOVE or COPY a published package to another suite.'
 
     def add_my_options(self):
+        """XXX. """
         self.parser.add_option(
             '-n', '--dry-run', dest='dryrun', default=False,
-            action='store_true',
-            help='Do not commit changes.'
-            )
+            action='store_true', help='Do not commit changes.')
+
         self.parser.add_option(
-            '-d', '--from-distribution', dest='from_distribution',
+            '-d', '--from-distribution', dest='from_distribution_name',
             default='ubuntu', action='store',
-            help='Optional source distribution.'
-            )
+            help='Optional source distribution.')
+
+        self.parser.add_option(
+            '--to-distribution', dest='to_distribution_name',
+            default='ubuntu', action='store',
+            help='Optional destination distribution.')
+
         self.parser.add_option(
             '-s', '--from-suite', dest='from_suite', default=None,
-            action='store',
-            help='Optional source suite.'
-            )
-        self.parser.add_option(
-            '--to-distribution', dest='to_distribution',
-            default='ubuntu', action='store',
-            help='Optional destination distribution.'
-            )
+            action='store', help='Optional source suite.')
+
         self.parser.add_option(
             '--to-suite', dest='to_suite', default=None,
-            action='store',
-            help='Optional destination suite.'
-            )
-        self.parser.add_option(
-            '-p', '--sourcename', dest='sourcename', default=None,
-            action='store',
-            help='Mandatory target Source name.'
-            )
+            action='store', help='Optional destination suite.')
+
         self.parser.add_option(
             '-e', '--sourceversion', dest='sourceversion', default=None,
             action='store',
-            help='Optional Source Version, if not passed use the current version.'
-            )
-        self.parser.add_option(
-            '-c', '--comment', dest='comment', default=None,
-            action='store',
-            help='Optional sync comment, if not passed user will be prompted.'
-            )
-        self.parser.add_option(
-            '-y', '--yes', dest='yes', default=False,
-            action='store_true',
-            help='Do not ask, confirm all question.'
-            )
+            help='Optional Source Version, defaults to the current version.')
 
     def main(self):
+        """XXX. """
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure(
+                "At least one non-option argument must be given, "
+                "the sourcename.")
+
         try:
-            sync_helper = PackageSyncHelper(self.logger, self.options)
+            sync_helper = PackageSyncHelper(
+                logger=self.logger,
+                sourcename=self.args[0],
+                sourceversion=self.options.sourceversion,
+                from_distribution_name=self.options.from_distribution_name,
+                to_distribution_name=self.options.to_distribution_name,
+                from_suite=self.options.from_suite,
+                to_suite=self.options.to_suite)
             sync_helper.performSync()
         except PackageSyncHelperError, err:
             raise LaunchpadScriptFailure(err)
