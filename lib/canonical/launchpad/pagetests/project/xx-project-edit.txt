@@ -61,6 +61,10 @@ The project summary shows the status as reviewed.
   ...     tag.find(text='Project status:').findParent('tr')
   <...
   <th>Project status:</th>
-  <td>Reviewed</td>
-  <td>Active</td>
+  <td>
+              Active
+  <BLANKLINE>
+              <br />Reviewed
+  <BLANKLINE>
+            </td>
   ...

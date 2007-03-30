@@ -50,8 +50,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem,
-    JoinNotAllowed)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
+    IHasIcon, JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -92,7 +92,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
+    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -102,11 +102,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
@@ -176,38 +176,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
-
-    # IHasGotchiAndEmblem attributes
-    @property
-    def default_emblem_resource(self):
-        return self._getDefaultIconResource()
-
-    @property
-    def default_gotchi_resource(self):
-        return self._getDefaultIconResource('mugshot')
-
-    @property
-    def default_gotchi_heading_resource(self):
-        return self._getDefaultIconResource('heading')
-
-    def _getDefaultIconResource(self, suffix=''):
-        """Return the zope3 resource for the icon of this person with the
-        given suffix.
-
-        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
-        """
-        assert suffix in ('', 'mini', 'heading', 'mugshot')
-        if self.isTeam():
-            img = '/@@/team'
-        else:
-            if self.is_valid_person:
-                img = '/@@/person'
-            else:
-                img = '/@@/person-inactive'
-        if suffix:
-            return "%s-%s" % (img, suffix)
-        else:
-            return img
 
     # specification-related joins
     @property
@@ -681,7 +649,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params, *args)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=10):
+    def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See IPerson."""
         contributions = []
         results = self._getProjectsWithTheMostKarma(limit=limit)
@@ -1127,6 +1095,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
+    def teams_with_icons(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.emblem IS NOT NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
