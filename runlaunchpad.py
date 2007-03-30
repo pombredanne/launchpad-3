@@ -46,10 +46,75 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
 twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__), 'sourcecode', 'twisted', 'bin', 'twistd'))
 
+
+class TacFile(object):
+
+    def __init__(self, name, tac_filename, configuration):
+        """Create a TacFile object.
+
+        :param name: A short name for the service. Used to name the pid file.
+        :param tac_filename: The location of the TAC file, relative to this
+            script.
+        :param configuration: A config object with launch, logfile and spew
+            attributes.
+        """
+        self.name = name
+        self.tac_filename = tac_filename
+        self.config = configuration
+
+    def launch(self):
+        # Imported here as path is not set fully on module load
+        from canonical.pidfile import make_pidfile, pidfile_path
+
+        # Don't run the server if it wasn't asked for. We only want it started
+        # up developer boxes really, as the production server doesn't use this
+        # startup script.
+        if not self.config.launch:
+            return
+
+        pidfile = pidfile_path(self.name)
+        logfile = self.config.logfile
+        tacfile = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), self.tac_filename))
+
+        args = [
+            sys.executable,
+            twistd_script,
+            "--no_save",
+            "--nodaemon",
+            "--python", tacfile,
+            "--pidfile", pidfile,
+            "--prefix", self.name.capitalize(),
+            "--logfile", logfile,
+            ]
+
+        if self.config.spew:
+            args.append("--spew")
+
+        # Note that startup tracebacks and evil programmers using 'print' will
+        # cause output to our stdout. However, we don't want to have twisted
+        # log to stdout and redirect it ourselves because we then lose the
+        # ability to cycle the log files by sending a signal to the twisted
+        # process.
+        process = subprocess.Popen(args, stdin=subprocess.PIPE)
+        process.stdin.close()
+        # I've left this off - we still check at termination and we can
+        # avoid the startup delay. -- StuartBishop 20050525
+        #time.sleep(1)
+        #if process.poll() != None:
+        #    raise RuntimeError(
+        #        "%s did not start: %d"
+        #        % (self.name, process.returncode))
+        def stop_process():
+            if process.poll() is None:
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+        atexit.register(stop_process)
+
+
 def start_librarian():
     # Imported here as path is not set fully on module load
     from canonical.config import config
-    from canonical.pidfile import make_pidfile, pidfile_path
 
     # Don't run the Librarian if it wasn't asked for. We only want it
     # started up developer boxes really, as the production Librarian
@@ -60,98 +125,24 @@ def start_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
 
-    pidfile = pidfile_path('librarian')
-    logfile = config.librarian.server.logfile
-    tacfile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'daemons', 'librarian.tac'
-        ))
-
-    args = [
-        sys.executable,
-        twistd_script,
-        "--no_save",
-        "--nodaemon",
-        "--python", tacfile,
-        "--pidfile", pidfile,
-        "--prefix", "Librarian",
-        "--logfile", logfile,
-        ]
-
-    if config.librarian.server.spew:
-        args.append("--spew")
-
-    # Note that startup tracebacks and evil programmers using 'print'
-    # will cause output to our stdout. However, we don't want to have
-    # twisted log to stdout and redirect it ourselves because we then
-    # lose the ability to cycle the log files by sending a signal to the
-    # twisted process.
-    librarian_process = subprocess.Popen(args, stdin=subprocess.PIPE)
-    librarian_process.stdin.close()
-    # I've left this off - we still check at termination and we can
-    # avoid the startup delay. -- StuartBishop 20050525
-    #time.sleep(1)
-    #if librarian_process.poll() != None:
-    #    raise RuntimeError(
-    #            "Librarian did not start: %d" % librarian_process.returncode
-    #            )
-    def stop_librarian():
-        if librarian_process.poll() is None:
-            os.kill(librarian_process.pid, signal.SIGTERM)
-            librarian_process.wait()
-    atexit.register(stop_librarian)
+    librarian = TacFile(
+        'librarian', 'daemons/librarian.tac', config.librarian.server)
+    librarian.launch()
 
 
 def start_buildsequencer():
     # Imported here as path is not set fully on module load
     from canonical.config import config
-    from canonical.pidfile import make_pidfile, pidfile_path
 
     # Don't run the sequencer if it wasn't asked for. We only want it
     # started up developer boxes and dogfood really, as the production
     # sequencer doesn't use this startup script.
-    
     if not config.buildsequencer.launch:
         return
 
-    pidfile = pidfile_path('buildsequencer')
-    logfile = config.buildsequencer.logfile
-    tacfile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'daemons', 'buildd-sequencer.tac'
-        ))
-
-    args = [
-        sys.executable,
-        twistd_script,
-        "--no_save",
-        "--nodaemon",
-        "--python", tacfile,
-        "--pidfile", pidfile,
-        "--prefix", "Librarian",
-        "--logfile", logfile,
-        ]
-
-    if config.buildsequencer.spew:
-        args.append("--spew")
-
-    # Note that startup tracebacks and evil programmers using 'print'
-    # will cause output to our stdout. However, we don't want to have
-    # twisted log to stdout and redirect it ourselves because we then
-    # lose the ability to cycle the log files by sending a signal to the
-    # twisted process.
-    sequencer_process = subprocess.Popen(args, stdin=subprocess.PIPE)
-    sequencer_process.stdin.close()
-    # I've left this off - we still check at termination and we can
-    # avoid the startup delay. -- StuartBishop 20050525
-    #time.sleep(1)
-    #if sequencer_process.poll() != None:
-    #    raise RuntimeError(
-    #            "Sequencer did not start: %d" % sequencer_process.returncode
-    #            )
-    def stop_sequencer():
-        if sequencer_process.poll() is None:
-            os.kill(sequencer_process.pid, signal.SIGTERM)
-            sequencer_process.wait()
-    atexit.register(stop_sequencer)
+    buildsequencer = TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
+                             config.librarian.server)
+    buildsequencer.launch()
 
 
 def run(argv=list(sys.argv)):
@@ -179,7 +170,7 @@ def run(argv=list(sys.argv)):
     make_pidfile('launchpad')
 
     main(argv[1:])
-        
+
 
 if __name__ == '__main__':
     run()
