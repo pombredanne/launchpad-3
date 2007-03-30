@@ -174,7 +174,7 @@ must have at least one.
     >>> len(add_comment_view.errors)
     1
     >>> [error for error in add_comment_view.errors]
-    ['Either a comment or attachment must be present']
+    ['Either a comment or attachment must be provided.']
     
 If the request contains no attachment description the filename should be used.
     
