@@ -320,7 +320,8 @@ ul#menuroot a.breadcrumb {
   padding: 6px 0 6px 10px;
   margin-right: -1px;
 }
-* html #yourlocation {padding-bottom: 4px;} /* better than 6px in IE6 */
+/* IE6 specific rule to make the location bar look better. */
+* html #yourlocation {padding-bottom: 4px;}
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
 #locationbar li a,
 #locationbar li span {
@@ -402,8 +403,18 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
 }
 /* Set the appearance of dyn menu items other than the breadcrumbs
  * when selected and potentially opened.
- */
-#locationbar ul#rootmenu ul.menu li.selected a {
+ * This works, but has the > that makes IE unhappy.
+ * #locationbar ul.menu li.selected>a {
+ *   background-color: #C8EF48;
+ *   color: #000;
+ * }
+ * So instead, we have the following two rules.
+*/
+#locationbar ul.menu li a {
+  background-color: #AFDB1F;
+  color: #000;
+}
+#locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
   color: #000;
 }
