@@ -274,6 +274,8 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': canonical_url(
+                              self.distributionsourcepackagerelease),
             }
         message = template % replacements
 

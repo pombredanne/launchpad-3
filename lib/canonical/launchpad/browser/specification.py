@@ -20,11 +20,14 @@ __all__ = [
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
     'SpecificationSetView',
+    'SpecificationSHP',
     ]
 
+import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
+from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
@@ -44,7 +47,8 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.browser.launchpad import (
+    AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -145,7 +149,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+status', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe someone'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
@@ -837,4 +841,13 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+class SpecificationSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+
+    def getMainHeading(self):
+        return self.context.title
 

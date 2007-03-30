@@ -536,5 +536,5 @@ class SmallImageUpload(BaseImageUpload):
 
     max_dimensions = (16, 16)
     max_size = 10*1024
-    default_image_resource = '/@@/nyet-mini'
+    default_image_resource = '/@@/nyet-icon'
 

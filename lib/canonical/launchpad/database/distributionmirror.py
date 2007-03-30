@@ -81,6 +81,7 @@ class DistributionMirror(SQLBase):
         notNull=True, default=False)
     official_approved = BoolCol(
         notNull=True, default=False)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     @property
     def base_url(self):

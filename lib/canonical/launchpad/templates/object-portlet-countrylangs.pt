@@ -8,10 +8,11 @@
 
     <ul tal:condition="country/languages">
 
-      <li class="languages"
-          tal:repeat="lang country/languages">
-        <span tal:replace="lang/englishname" />
-      </li>
+      <li
+        class="language"
+        tal:repeat="lang country/languages"
+        tal:content="lang/englishname"
+      />
 
     </ul>
 

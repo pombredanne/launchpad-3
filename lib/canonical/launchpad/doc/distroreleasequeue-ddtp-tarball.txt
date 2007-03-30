@@ -50,7 +50,7 @@ First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('sync'), datadir(''),
+  ...     findPolicyByName('sync'), datadir('ddtp-tarball'),
   ...     "translations-main_20060728.changes",
   ...     logging.getLogger())
   Traceback (most recent call last):
@@ -64,7 +64,7 @@ Now do a proper upload into the system.
   ...         print "DEBUG:", s
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
+  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
   ...     "translations-main_20060728_all.changes",
   ...     MockLogger())
   DEBUG: Verifying signature on translations-main_20060728_all.changes
@@ -201,7 +201,7 @@ language indexes or adding new ones:
   ...         pass
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir(''),
+  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
   ...     "translations-main_20060817_all.changes",
   ...     QuietLogger())
   >>> upload.policy.setOptions(mock_options)
@@ -266,7 +266,6 @@ Check if the contents of "ca" were not affected by the "bn" contents
 
   >>> open(os.path.join(target_dir, 'Translation-ca')).read()
   ''
-
 
 Remove the directory to keep the test working.
 

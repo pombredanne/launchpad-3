@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'SprintFacets',
     'SprintNavigation',
+    'SprintsMixinDynMenu',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
     'SprintSetFacets',
@@ -63,6 +64,19 @@ class SprintNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
+
+
+class SprintsMixinDynMenu:
+
+    def meetingsMenu(self):
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
 
 
 class SprintOverviewMenu(ApplicationMenu):

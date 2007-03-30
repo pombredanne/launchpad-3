@@ -73,21 +73,27 @@
     <div tal:condition="not:context/isTeam" class="section">
     <div class="portlet">
       <h2>Team memberships</h2>
-      <ul tal:condition="context/myactivememberships" class="team">
-        <li tal:repeat="membership context/myactivememberships">
-          <div>
-            <a
-              tal:attributes="href membership/team/fmt:url"
-              tal:content="membership/team/browsername"
-            >Team name</a>
-          </div>
-          <br tal:condition="not: membership/team/teamdescription" />
-          <div
-            tal:condition="membership/team/teamdescription"
-            tal:replace="structure membership/team/teamdescription/fmt:text-to-html"
-          >Team description</div>
-        </li>
-      </ul>
+      <table tal:condition="context/myactivememberships">
+        <tr tal:repeat="membership context/myactivememberships">
+          <td><img src="/@@/team" /></td>
+          <td>
+            <div>
+              <a
+                tal:attributes="
+                  href membership/team/fmt:url;
+                  title membership/team/teamdescription/fmt:shorten/80"
+                tal:content="membership/team/browsername"
+              >Team name</a>
+            </div>
+            <div>
+              Joined
+              <span
+                tal:attributes="title membership/datejoined/fmt:datetime"
+                tal:content="membership/datejoined/fmt:displaydate" />
+            </div>
+          </td>
+        </tr>
+      </table>
 
       <p tal:condition="not: context/myactivememberships">
         <span tal:replace="context/browsername">Foo Bar</span> is not an
@@ -129,7 +135,8 @@
   <div class="right">
     <div class="section">
     <div class="portlet">
-      <h2>Contact details</h2>
+      <h2 tal:condition="not: context/isTeam">Contact details</h2>
+      <h2 tal:condition="context/isTeam">Team and membership summary</h2>
       <table class="summary">
         <tbody>
           <tr tal:condition="context/teamowner">
@@ -139,6 +146,14 @@
                 tal:attributes="href context/teamowner/fmt:url"
                 tal:content="context/teamowner/browsername"
               >sabdfl</a>
+            </td>
+          </tr>
+          <tr tal:condition="context/teamowner">
+            <th>Membership:</th>
+            <td>
+              <span tal:replace="context/all_member_count">12</span>
+              (<span
+                tal:replace="context/subscriptionpolicy/title">Moderated</span>)
             </td>
           </tr>
           <tr tal:condition="context/allwikis">
@@ -212,7 +227,7 @@
       </ul>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-          Show all bugs in progress 
+          &raquo; Show all bugs in progress 
         </a>
       </div>
     </div>

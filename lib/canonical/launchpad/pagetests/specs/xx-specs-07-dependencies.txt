@@ -1,14 +1,12 @@
+Blueprint dependencies
+======================
 
-Specification Dependencies
-==========================
+Blueprints support the idea of dependencies. So, one blueprint can
+require that another blueprint has been implemented before its own
+implementation can begin. We record those dependencies in Launchpad.
 
-Specifications support the idea of spec dependencies. So, one spec can
-require that another spec has been implemented before it's own
-implementation can begin. We store those dependencies in Launchpad.
-
-Lets look at the dependencies of the "canvas" spec for Firefox. It depends
-on another spec, the "e4x" spec. Also, we should note that no specs depend
-on the "canvas" spec itself.
+Lets look at the dependencies of the "canvas" blueprint for Firefox. It depends
+on another blueprint, "e4x". No blueprints depend on "canvas" itself.
 
   >>> admin_browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
   >>> print find_main_content(admin_browser.contents)
@@ -17,8 +15,8 @@ on the "canvas" spec itself.
   >>> 'Blocks' not in (admin_browser.contents)
   True
 
-let's add a new dependency for the "canvas" spec. We'll add the
-"extension-manager-upgrades" spec as a dependency. First, we confirm we can
+let's add a new dependency for the "canvas" blueprint. We'll add the
+"extension-manager-upgrades" blueprint as a dependency. First, we confirm we can
 see the page to add a dependency.
 
   >>> admin_browser.getLink('Add dependency').click()
@@ -49,7 +47,7 @@ dependencies we could remove. The extension manager one, and "e4x".
   ['Extension Manager Upgrades', 'Support E4X in EcmaScript']
 
 We'll POST the form selecting "extension-manager-upgrades" for removal. We
-expect to be redirected to the spec home page.
+expect to be redirected to the blueprint page.
 
   >>> admin_browser.getControl(
   ...     'Dependency').value = ['extension-manager-upgrades']
@@ -57,7 +55,7 @@ expect to be redirected to the spec home page.
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
-We know that no specs depend on "canvas", but "canvas" depends on "e4x"
+We know that no blueprints depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"
 needs to have both "e4x" and "svg-support" implemented before it can be
 implemented, and nothing depends on having "canvas" implemented. The
@@ -66,15 +64,15 @@ implemented, and nothing depends on having "canvas" implemented. The
   >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptree')
   >>> print '----'; print anon_browser.contents
   ----
-  ...Specifications that must be implemented first...
+  ...Blueprints that must be implemented first...
   ...Support Native SVG Objects...
   ...Support E4X in EcmaScript...
-  ...This specification...
+  ...This blueprint...
   ...Support &lt;canvas&gt; Objects...
-  ...Specifications that can then be implemented...
-  ...No specifications depend on this one...
+  ...Blueprints that can then be implemented...
+  ...No blueprints depend on this one...
 
-Also, since we have these specs with their priorities and dependencies
+Also, since we have these blueprints with their priorities and dependencies
 mapped out, we should be able to see a project plan for Mozilla Firefox.
 
   >>> anon_browser.open('http://launchpad.dev/firefox/+roadmap')
@@ -107,7 +105,7 @@ Get the dependency chart, and check that it is a PNG.
   'image/png'
 
 
-We can also get the DOT output for a spec dependency graph.  This is useful
+We can also get the DOT output for a blueprint dependency graph.  This is useful
 for experimenting with the dot layout using production data.
 
   >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptreedotfile')
@@ -116,4 +114,3 @@ for experimenting with the dot layout using production data.
   >>> print anon_browser.contents
   digraph "deptree" {
   ...
-

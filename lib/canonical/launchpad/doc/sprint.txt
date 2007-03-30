@@ -5,15 +5,15 @@ Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     ISprintSet, IPersonSet)
+    ...     ISprint, ISprintSet, IPersonSet)
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
 
     >>> ubz = sprintset["gentoo"]
 
-The major pillars, product, distribution and project, can all provide a
-listing of up to 5 relevant events that are up-and-coming:
+The major pillars, product, distribution and project, have some properties
+which give us the sprints relevant to them.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IProjectSet, IDistributionSet)
@@ -21,15 +21,36 @@ listing of up to 5 relevant events that are up-and-coming:
     >>> projectset = getUtility(IProjectSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> firefox = productset.getByName('firefox')
-    >>> for e in firefox.coming_sprints: print e.name
-    futurista
     >>> ubuntu = distroset.getByName('ubuntu')
-    >>> for e in ubuntu.coming_sprints: print e.name
-    futurista
     >>> mozilla = projectset.getByName('mozilla')
-    >>> for e in mozilla.coming_sprints: print e.name
-    futurista
 
+We have comming_sprints, giving us up to 5 relevant events that are
+up-and-coming (sorted by the starting date):
+
+    >>> for sprint in firefox.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in ubuntu.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in mozilla.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+
+And we have sprints, giving us all sprints relevant to that pillar (sorted
+descending by the starting date):
+
+    >>> for sprint in firefox.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    ubz 2005-10-07
+    >>> for sprint in ubuntu.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in mozilla.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    ubz 2005-10-07
 
 Specification Listings
 ======================
