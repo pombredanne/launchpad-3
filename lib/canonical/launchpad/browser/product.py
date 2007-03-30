@@ -552,9 +552,6 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
-    def getListingURL(self):
-        return canonical_url(self.context)
-
 
 class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
