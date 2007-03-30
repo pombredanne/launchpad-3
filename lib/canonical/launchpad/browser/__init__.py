@@ -64,6 +64,7 @@ from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
+from canonical.launchpad.browser.sourcepackagerelease import *
 from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationbranch import *
 from canonical.launchpad.browser.specificationdependency import *

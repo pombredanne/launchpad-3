@@ -22,7 +22,7 @@
   <h2>Changelog</h2>
 
    <div id="changelog">
-      <pre tal:content="context/changelog" />
+      <tal:changelog replace="structure context/sourcepackagerelease/@@+changelog" />
    </div>
 
    <div id="changesfile" tal:define="changesfile context/changesfile">

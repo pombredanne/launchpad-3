@@ -34,9 +34,8 @@ class ISourcePackage(IBugTarget):
                 "distribution or distrorelease. Calling this when there is "
                 "no current sourcepackagerelease will raise an exception.")
 
-    changelog = Attribute("Returns the concatenated full changelog for each "
-                          "published sourcepackagerelease versions ordered "
-                          "by crescent version.")
+    distinctreleases = Attribute("Return a distinct list "
+        "of sourcepackagepublishinghistory for this source package.")
 
     manifest = Attribute("The Manifest of the current SourcePackageRelease "
                     "published in this distribution / distrorelease.")

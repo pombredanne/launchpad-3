@@ -209,8 +209,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             order_by = '-datepublished'
 
         return SourcePackagePublishingHistory.select(
-            query, orderBy=order_by, 
-            clauseTables=['SourcePackageRelease'])
+            query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
 
     @property
     def currentrelease(self):
@@ -262,34 +261,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             return None
         return self.currentrelease.format
 
-    # XXX: should not be a property -- kiko, 2006-08-16
-    @property
-    def changelog(self):
-        """See ISourcePackage"""
-
-        clauseTables = ('SourcePackageName', 'SourcePackageRelease',
-                        'SourcePackagePublishingHistory','DistroRelease')
-
-        query = """
-        SourcePackageRelease.sourcepackagename =
-           SourcePackageName.id AND
-        SourcePackageName = %s AND
-        SourcePackagePublishingHistory.distrorelease =
-           DistroRelease.Id AND
-        SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.sourcepackagerelease =
-           SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename, self.distrorelease)
-
-        spreleases = SourcePackageRelease.select(
-            query, clauseTables=clauseTables, orderBy='version').reversed()
-        changelog = ''
-
-        for spr in spreleases:
-            changelog += '%s \n\n' % spr.changelog
-
-        return changelog
-
     @property
     def manifest(self):
         """For the moment, the manifest of a SourcePackage is defined as the
@@ -313,6 +284,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                 distribution=self.distribution,
                 sourcepackagerelease=package.sourcepackagerelease) 
                    for package in packages]
+
+    @property
+    def distinctreleases(self):
+        """Return a distinct list of sourcepackagereleases for this source
+           package.
+        """
+        return set([spph.sourcepackagerelease
+                    for spph in self._getPublishingHistory()])
 
     @property
     def name(self):
@@ -412,15 +391,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     @property
     def published_by_pocket(self):
         """See ISourcePackage."""
-        result = SourcePackagePublishingHistory.select("""
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distrorelease, self.sourcepackagename,
-                            PackagePublishingStatus.PUBLISHED),
-            clauseTables=['SourcePackageRelease'])
+        result = self._getPublishingHistory(
+            include_status=PackagePublishingStatus.PUBLISHED)
         # create the dictionary with the set of pockets as keys
         thedict = {}
         for pocket in PackagePublishingPocket.items:
