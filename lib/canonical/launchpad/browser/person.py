@@ -1362,8 +1362,9 @@ class PersonView(LaunchpadView):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's an indirect member
-        of that team.
+        A person is said to be a team participant when he's a member
+        of that team, either directly or indirectly via another team
+        membership.
         """
         if self.user is None:
             return False

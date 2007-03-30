@@ -32,8 +32,13 @@
 
   <tal:homepage tal:condition="context/homepage_content"
     content="structure context/homepage_content/fmt:text-to-html" />
-    <tal:team-description
-      replace="structure context/teamdescription/fmt:text-to-html" />
+  <tal:team-description
+    replace="structure context/teamdescription/fmt:text-to-html" />
+  <tal:offer_join condition="context/isTeam">
+    <a tal:condition="not: view/userIsParticipant"
+       href="+join" title="Request to become a member of this team"
+       >&raquo; Join this team!</a>
+  </tal:offer_join>
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">
   <div class="left" tal:define="contributions view/contributions">
