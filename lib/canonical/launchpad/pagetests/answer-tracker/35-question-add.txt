@@ -32,7 +32,7 @@ associated with the source package of the used application.
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
     'Help and support options for mozilla-firefox...'
-    >>> user_browser.getLink('ask a question').click()
+    >>> user_browser.getLink('Submit your question').click()
     >>> user_browser.title
     'Ask a question about Hoary mozilla-firefox'
 

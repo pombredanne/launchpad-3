@@ -69,6 +69,7 @@ It also allows filtering on milestones.
     >>> for value in milestones:
     ...     print value['title']
     Debian: 3.1
+    Debian: 3.1-rc1
 
 The same milestone will be available for a debian package.
 
@@ -82,6 +83,7 @@ The same milestone will be available for a debian package.
     >>> for value in milestones:
     ...     print value['title']
     Debian: 3.1
+    Debian: 3.1-rc1
 
 A triager may find it useful to query for bugs with no package:
 
@@ -204,7 +206,7 @@ in each release. In this case, the component search widget is hidden.
 Distribution Release search page
 ================================
 
-    >>> woody = debian.getRelease('woody')
+    >>> sarge = debian.getRelease('sarge')
 
 The simple search form returns only open bugtasks.
 
@@ -214,13 +216,12 @@ The simple search form returns only open bugtasks.
     ...     'field.orderby': '-importance'}
 
     >>> distrorelease_search_listingview = create_view(
-    ...     woody, "+bugs", form_values)
+    ...     sarge, "+bugs", form_values)
 
     >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
     >>> [(bugtask.id, bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
-    [(18, 3, 'UNCONFIRMED', 'MEDIUM'),
-     (20, 2, 'UNCONFIRMED', 'MEDIUM')]
+    [(19, 3, 'UNCONFIRMED', 'MEDIUM')]
 
 Note that because we are not in a package context, the ordering was done
 by BugTask.id and not Bug.id -- Bug IDs are not unique in the
@@ -236,7 +237,7 @@ need to be logged in.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> open_bugtask = getUtility(IBugTaskSet).get(18)
+    >>> open_bugtask = getUtility(IBugTaskSet).get(19)
     >>> open_bugtask.status.name
     'UNCONFIRMED'
     >>> open_bugtask.bug.id
@@ -247,14 +248,14 @@ need to be logged in.
 And the advanced form allows us to query for specific bug statuses.
 
     >>> form_values = {
-    ...     'search': 'Search bugs in Woody',
+    ...     'search': 'Search bugs in sarge',
     ...     'advanced': 1,
     ...     'field.status': 'Rejected',
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
     >>> distrorelease_advanced_search_view = create_view(
-    ...     woody, '+bugs', form_values)
+    ...     sarge, '+bugs', form_values)
     >>> rejected_bugtasks = list(
     ...     distrorelease_advanced_search_view.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name)
@@ -266,18 +267,18 @@ The upstream status widget is also present here.
     >>> distrorelease_advanced_search_view.shouldShowUpstreamStatusBox()
     True
 
-There are no milestones to filter on, since Woody doesn't have any
+There are no milestones to filter on, since sarge doesn't have any
 milestones.
 
     >>> distrorelease_advanced_search_view.getMilestoneWidgetValues()
     []
 
-The same is true for a woody package.
+The same is true for a sarge package.
 
     >>> form_values = {'advanced': 1}
-    >>> firefox_woody = woody.getSourcePackage('mozilla-firefox')
+    >>> firefox_sarge = sarge.getSourcePackage('mozilla-firefox')
     >>> package_advanced_search_view = create_view(
-    ...     firefox_woody, '+bugs', form_values)
+    ...     firefox_sarge, '+bugs', form_values)
     >>> package_advanced_search_view.getMilestoneWidgetValues()
     []
 

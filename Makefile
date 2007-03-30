@@ -80,7 +80,7 @@ check: build
 	${PYTHON} -t ./test_on_merge.py -vv
 
 lint:
-	@sh ./utilities/lint.sh
+	@bash ./utilities/lint.sh
 
 #lintmerge:
 #	@# Thank Stuart, not me!

@@ -1248,11 +1248,13 @@ class PageMacroDispatcher:
         view/macro:page/pillarindex
         view/macro:page/freeform
 
-        view/macro:pagehas/portletcolumn
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
         view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/portlets
+        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -1308,11 +1310,13 @@ class PageMacroDispatcher:
     class LayoutElements:
 
         def __init__(self,
-            portletcolumn=False,
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
+            globalsearch=False,
             heading=False,
+            portlets=False,
+            structuralheaderobject=False,
             pagetypewasset=True
             ):
             self.elements = vars()
@@ -1323,26 +1327,32 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
-                portletcolumn=True),
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=False,
                 heading=True,
-                portletcolumn=True),
+                portlets=True),
         'freeform':
             LayoutElements(),
         }
