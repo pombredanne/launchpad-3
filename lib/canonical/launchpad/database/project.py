@@ -95,11 +95,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = SQLMultipleJoin('Product', joinColumn='project',
-                            orderBy='name')
-
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    @property
+    def products(self):
+        return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getOrCreateCalendar(self):
         if not self.calendar:

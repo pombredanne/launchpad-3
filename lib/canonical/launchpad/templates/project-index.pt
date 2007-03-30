@@ -55,7 +55,7 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
-        <div class="portlet">
+        <div class="portlet" id="products">
           <h2>Projects</h2>
           <p tal:condition="not: context/products">
             There are no projects registered for

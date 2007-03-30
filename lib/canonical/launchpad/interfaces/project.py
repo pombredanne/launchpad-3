@@ -188,7 +188,8 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    products = Attribute(_("An iterator over the Products for this project."))
+    products = Attribute(
+        _("An iterator over the active Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""
