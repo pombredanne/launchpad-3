@@ -63,6 +63,7 @@ class ChangesFile(SignableTagFile):
         via NascentUpload class.
         """
         self.policy = policy
+
         self.filepath = filepath
 
         try:
@@ -134,16 +135,16 @@ class ChangesFile(SignableTagFile):
                     package = source_match.group(1)
                     if filename.endswith("dsc"):
                         file_instance = DSCFile(
-                            filepath, digest, size,
-                            component_and_section, priority_name, package,
-                            self.version, self, self.policy)
+                            filepath, digest, size, component_and_section,
+                            priority_name, package, self.version, self,
+                            self.policy)
                         # Store the DSC because it is very convenient
                         self.dsc = file_instance
                     else:
                         file_instance = SourceUploadFile(
-                            filepath, digest, size,
-                            component_and_section, priority_name, package,
-                            self.version, self, self.policy)
+                            filepath, digest, size, component_and_section,
+                            priority_name, package, self.version, self,
+                            self.policy)
                 elif binary_match:
                     package = binary_match.group(1)
                     if filename.endswith("udeb"):
@@ -198,7 +199,7 @@ class ChangesFile(SignableTagFile):
     @property
     def logger(self):
         """Return the common logger object."""
-        return logging.getLogger('upload')
+        return logging.getLogger('process-upload')
 
     @property
     def filename(self):

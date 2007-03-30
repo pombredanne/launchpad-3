@@ -140,7 +140,7 @@ class NascentUploadFile:
     @property
     def logger(self):
         """Return the common logger object."""
-        return logging.getLogger('upload')
+        return logging.getLogger('process-upload')
 
     @property
     def filename(self):

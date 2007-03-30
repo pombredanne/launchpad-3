@@ -207,7 +207,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield UploadError("%s: File %s does not look sourceful." % (
                                   self.filename, filename))
                 continue
-            filepath = os.path.join(self.dirname, self.filename)
+            filepath = os.path.join(self.dirname, filename)
             try:
                 file_instance = DSCUploadedFile(
                     filepath, digest, size, self.policy)
@@ -309,7 +309,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 self.logger.debug("Pumping %s out of the librarian" % (
                     sub_dsc_file.filename))
                 library_file.open()
-                target_file = open(sub_dsc_file.full_filename, "wb")
+                target_file = open(sub_dsc_file.filepath, "wb")
                 copy_and_close(library_file, target_file)
 
             try:

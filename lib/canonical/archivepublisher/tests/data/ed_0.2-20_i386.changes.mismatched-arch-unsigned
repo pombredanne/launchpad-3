@@ -44,7 +44,7 @@ Changes:
      out on errors.  Thanks to Joel Baker <fenton@debian.org>.
      Closes: #130327
 Files: 
- 5963369d8874785077ca0b8773167ad0 530 editors important ed_0.2-20.dsc
+ e31eeb0b6b3b87e1ea79378df864be18 522 editors important ed_0.2-20.dsc
  f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
  0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
 

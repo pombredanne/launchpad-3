@@ -95,6 +95,7 @@ class NascentUpload:
         """
         self.changesfile_path = changesfile_path
         self.policy = policy
+
         self.librarian = getUtility(ILibraryFileAliasSet)
         try:
             self.changes = ChangesFile(changesfile_path, self.policy)
@@ -137,6 +138,7 @@ class NascentUpload:
 
         self.run_and_collect_errors(self.changes.verify)
 
+
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
@@ -146,17 +148,17 @@ class NascentUpload:
             self.logger.debug("Single Custom Upload detected.")
         else:
             if self.sourceful and not self.policy.can_upload_source:
-                self.reject(
-                    "Upload is sourceful, but policy refuses sourceful uploads.")
+                self.reject("Upload is sourceful, but policy refuses "
+                            "sourceful uploads. Policy (%r)" % self.policy)
 
             if self.binaryful and not self.policy.can_upload_binaries:
-                self.reject(
-                    "Upload is binaryful, but policy refuses binaryful uploads.")
+                self.reject("Upload is binaryful, but policy refuses "
+                            "binaryful uploads. Policy (%r)" % self.policy)
 
             if (self.sourceful and self.binaryful and
                 not self.policy.can_upload_mixed):
-                self.reject(
-                    "Upload is source/binary but policy refuses mixed uploads.")
+                self.reject("Upload is source/binary but policy refuses "
+                            "mixed uploads. Policy (%r)" % self.policy)
 
             if self.sourceful and not self.changes.dsc:
                 self.reject(
@@ -194,7 +196,7 @@ class NascentUpload:
     @property
     def logger(self):
         """Return the common logger object."""
-        return logging.getLogger('upload')
+        return logging.getLogger('process-upload')
 
     @property
     def filename(self):
@@ -262,9 +264,9 @@ class NascentUpload:
 
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, CustomUploadFile):
-                files_binaryful = True
+                files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
-                files_binaryful = True
+                files_binaryful = files_binaryfull or True
                 files_archindep = files_archindep or uploaded_file.is_archindep
                 files_archdep = files_archdep or not uploaded_file.is_archindep
             elif isinstance(uploaded_file, SourceUploadFile):

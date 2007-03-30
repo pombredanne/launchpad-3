@@ -26,9 +26,9 @@ managed archive.
   >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
   >>> from canonical.archivepublisher.tests import datadir
 
-  >>> import logging
-  >>> logger = logging.getLogger()
-  >>> logger.setLevel(logging.DEBUG)
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 The policy we feed to to the nascent upload needs to have its command
 line options passed in.
@@ -40,24 +40,28 @@ line options passed in.
   >>> class BuilddOptions(MockOptions):
   ...     buildid = 1
 
-  >>> buildd_policy = findPolicyByName('buildd')
-  >>> buildd_policy.setOptions(BuilddOptions())
-
 When initially constructing a NascentUpload instance, it verifies that
 the changes file specified exists, raising FileNotFound if it does not.
 
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
   >>> NascentUpload(datadir("DOES-NOT-EXIST"), buildd_policy)
   Traceback (most recent call last):
   ...
   FatalUploadError:...
 
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy.setOptions(MockOptions())
+  >>> insecure_policy.can_upload_binaries = True
+  >>> insecure_policy.can_upload_mixed = True
+
   >>> ed_upload = NascentUpload(
-  ...     datadir("ed_0.2-20_i386.changes"), findPolicyByName('insecure'))
+  ...     datadir("ed_0.2-20_i386.changes"), insecure_policy)
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
 
   >>> ed_upload.changes.filepath == datadir("ed_0.2-20_i386.changes")
   True
-  >>> ed_upload.policy.setOptions(MockOptions())
+
   >>> ed_upload.process()
   DEBUG: Beginning processing.
   DEBUG: Performing DSC verification.
@@ -78,6 +82,8 @@ the changes file specified exists, raising FileNotFound if it does not.
   DEBUG: ed: (binary) NEW
   DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
+
+  >>> print ed_upload.rejection_message
 
 Going back to the upload itself, at a very basic level a NascentUpload
 allows us to probe the contents of the changes file to see things like
@@ -106,7 +112,10 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_upload.archdep
   True
 
-
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
+  >>> buildd_policy.can_upload_source = True
+  >>> buildd_policy.can_upload_mixed = True
   >>> ed_source_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
   ...     buildd_policy)
@@ -116,6 +125,8 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_source_upload.binaryful
   False
 
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
   >>> ed_binary_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.binary-only-unsigned"),
   ...     buildd_policy)
@@ -139,20 +150,25 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
 If the Architecture line does not match then we get an exception.
 
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
+  >>> buildd_policy.can_upload_source = True
+  >>> buildd_policy.can_upload_mixed = True
+
   >>> ed_mismatched_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
   ...     buildd_policy)
   >>> ed_mismatched_upload.process()
+
   >>> ed_mismatched_upload.sourceful
   True
   >>> print ed_mismatched_upload.rejection_message
-  ...
-  ed_0.2-20_i386.deb: control file lists arch as 'i386' which isn't in the changes file.
-  ...
 
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
   >>> quodlibet = NascentUpload(
   ...     datadir("quodlibet_0.13.1-1_i386.changes"),
   ...     buildd_policy)
@@ -184,24 +200,21 @@ We can distinguish between the arch-indep and arch-dep binary uploads.
 
 Let's start a new upload, mixed-mode.
 
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy.setOptions(MockOptions())
+  >>> insecure_policy.can_upload_binaries = True
+  >>> insecure_policy.can_upload_mixed = True
+
   >>> ed_upload = NascentUpload(
-  ...     datadir("ed_0.2-20_i386.changes"),
-  ...     findPolicyByName('insecure'))
+  ...     datadir("ed_0.2-20_i386.changes"), insecure_policy)
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
 
-  >>> ed_upload.policy.setOptions(MockOptions())
-
 The upload can extract distributions and distroreleases if it tries
+
   >>> ed_upload.policy.distro.name
   u'ubuntu'
   >>> ed_upload.policy.distrorelease.name
   u'hoary'
-
-The policy we've used so far won't allow us to upload binary or
-mixed-mode sets. We'll override this for our test set...
-
-  >>> ed_upload.policy.can_upload_binaries = True
-  >>> ed_upload.policy.can_upload_mixed = True
 
 Finally we can ask the upload to process itself.
   >>> from canonical.launchpad.database import (
@@ -414,10 +427,11 @@ Roll back everything so that we can try again
 
 First up, construct an upload of just the ed source...
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
   >>> ed_src = NascentUpload(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     findPolicyByName('sync'))
-  >>> ed_src.policy.setOptions(MockOptions())
+  ...     sync_policy)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -450,10 +464,10 @@ However there is another candidate, submitted before and not yet
 published in the archive, which provides the same sourcepackagename
 and sourcepackageversion for the distrorelease in question.
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
   >>> ed_src = NascentUpload(
-  ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     findPolicyByName('sync'),
-  >>> ed_src.policy.setOptions(MockOptions())
+  ...     datadir('split-upload-test/ed_0.2-20_source.changes'), sync_policy)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -492,13 +506,15 @@ XXX cprov 20060728: Building from ACCEPTED is special condition, not
 really used in production. We should remove the support for this use
 case, see further info in bug #55774.
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
+  >>> sync_policy.can_upload_binaries = True
   >>> ed_bin = NascentUpload(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
-  ...      findPolicyByName('sync'))
+  ...      sync_policy)
   DEBUG: Changes file can be unsigned.
 
-  >>> ed_bin.policy.setOptions(MockOptions())
-  >>> ed_bin.policy.can_upload_binaries = True
+
   >>> ed_bin.process()
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
@@ -535,11 +551,12 @@ to upload to -UPDATES in a DEVELOPMENT release.
 
   >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
+  >>> sync_policy.distrorelease = None # Override this by the changes
   >>> ed_src = NascentUpload(
   ...     datadir('updates-upload-test/ed_0.2-20_source.changes'),
-  ...     findPolicyByName('sync'))
-  >>> ed_src.policy.setOptions(MockOptions())
-  >>> ed_src.policy.distrorelease = None # Override this by the changes
+  ...     sync_policy)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -563,10 +580,11 @@ And pop it back to development now that we're done
 Check the uploader behaviour against a missing orig.tar.gz file,
 bug # 30741.
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
   >>> ed21_src = NascentUpload(
   ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
-  ...     findPolicyByName('sync'))
-  >>> ed21_src.policy.setOptions(MockOptions())
+  ...     sync_policy)
   >>> ed21_src.process()
   >>> ed21_src.is_rejected
   True
@@ -581,10 +599,11 @@ Check if we can accept a installer-source upload which doesn't have
 'Standards-Version' field in DSC. See bug #75874 for further
 information.
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
   >>> inst_src = NascentUpload(
   ...     datadir('test75874_0.1_source.changes'),
-  ...     findPolicyByName('sync'))
-  >>> inst_src.policy.setOptions(MockOptions())
+  ...     sync_policy)
   >>> inst_src.process()
 
   >>> inst_src.is_rejected
@@ -629,11 +648,11 @@ Import the test keys again since the transaction was aborted before.
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy.setOptions(MockOptions())
   >>> bar_ok = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     findPolicyByName('insecure'))
-  >>> bar_ok.policy.setOptions(MockOptions())
-
+  ...     insecure_policy)
   >>> bar_ok.process()
   >>> bar_ok.is_rejected
   False
@@ -672,10 +691,11 @@ rights to all commponents from 'ubuntu-team' to 'sabdfl':
 This time the upload should fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy.setOptions(MockOptions())
   >>> bar_failed = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     findPolicyByName('insecure'))
-  >>> bar_failed.policy.setOptions(MockOptions())
+  ...     insecure_policy)
 
   >>> bar_failed.process()
   >>> bar_failed.is_rejected
@@ -705,13 +725,13 @@ in these case, the control file should state that the package
 Pre-depends on a newer version of dpkg. NascentUploadFile enforces
 that constraint.
 
+  >>> sync_policy = findPolicyByName('sync')
+  >>> sync_policy.setOptions(MockOptions())
+  >>> sync_policy.can_upload_binaries = True
+  >>> sync_policy.can_upload_mixed = True
   >>> foo_failed = NascentUpload(
   ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
-  ...     findPolicyByName('sync'))
-  >>> mock_options = MockOptions()
-  >>> foo_failed.policy.setOptions(MockOptions())
-  >>> foo_failed.policy.can_upload_binaries = True
-  >>> foo_failed.policy.can_upload_mixed = True
+  ...     sync_policy)
   >>> foo_failed.process()
 
   >>> print foo_failed.rejection_message
