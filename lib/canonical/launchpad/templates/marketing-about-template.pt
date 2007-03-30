@@ -30,6 +30,29 @@
       <h2 metal:define-slot="application">Translations</h2>
       <h3 class="byline">Fact sheet</h3>
     </div>
-    <metal:contents define-slot="contents" />
+    <metal:contents define-slot="contents">
+    <table id="features">
+      <tbody>
+        <tr>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+        </tr>
+        <tr class="screenshots">
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    </metal:content>
   </div>
 </html>

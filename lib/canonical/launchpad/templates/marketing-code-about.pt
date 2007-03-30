@@ -5,27 +5,31 @@
   <metal:contents fill-slot="contents">
     <h2 class="headline">Make your project's code discoverable</h2>
 
-    <div id="features">
-      <div class="feature">
-        <h3>Code hosting</h3>
-        <img src="/+icing/code-feature1.png" alt="Feature 1 Screenshot" />
-        <p>Host and mirror Bazaar branches on Launchpad.net.</p>
-      </div>
-      <div class="feature">
-        <h3>Mirror CVS and Subversion</h3>
-        <img src="/+icing/code-feature2.png" alt="Feature 2 Screenshot" />
-        <p>Continuous import of project development trunks.</p>
-      </div>
-      <div class="feature">
-        <h3>Browsable branch registries</h3>
-        <img src="/+icing/code-feature3.png" alt="Feature 3 Screenshot" />
-        <p>Improve the visibility of your project's code. </p>
-      </div>
-      <div class="feature">
-        <h3>To be decided</h3>
-        <img src="/+icing/code-feature4.png" alt="Feature 4 Screenshot" />
-        <p>Another Code Hosting benefit here.</p>
-    </div>
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Code hosting</th>
+          <th>Mirror CVS and Subversion</th>
+          <th>Browsable branch registries</th>
+          <th></th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/code-feature1.png"
+                   alt="Feature 1 Screenshot" /></td>
+          <td><img src="/+icing/code-feature2.png"
+                   alt="Feature 2 Screenshot" /></td>
+          <td><img src="/+icing/code-feature3.png"
+                   alt="Feature 3 Screenshot" /></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Host and mirror Bazaar branches on Launchpad.net.</td>
+          <td>Continuous import of project development trunks.</td>
+          <td>Improve the visibility of your project's code.</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
 
     <h3 class="splash">Free import from your existing version control for
                       open source projects.</h3>

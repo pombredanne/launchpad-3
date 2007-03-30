@@ -5,32 +5,36 @@
   <metal:contents fill-slot="contents">
     <h2 class="headline">Cross-project collaboration for shared bugs</h2>
 
-    <div id="features">
-      <div class="feature">
-        <h3>Cross-project bug teams</h3>
-        <img src="/+icing/bugs-feature1.png" alt="Feature 1 Screenshot" />
-        <p>Create ad-hoc teams to tackle bugs that affect multiple projects.
-        </p>
-      </div>
-      <div class="feature">
-        <h3>Monitor external trackers</h3>
-        <img src="/+icing/bugs-feature2.png" alt="Feature 2 Screenshot" />
-        <p>Link to instances of the same bug in external trackers, including
-           Bugzilla, Sourceforge and Debian BTS.
-        </p>
-      </div>
-      <div class="feature">
-        <h3>Web and email interfaces</h3>
-        <img src="/+icing/bugs-feature3.png" alt="Feature 3 Screenshot" />
-        <p>Suits both new users and experienced developers.
-        </p>
-      </div>
-      <div class="feature">
-        <h3>Tagging</h3>
-        <img src="/+icing/bugs-feature4.png" alt="Feature 4 Screenshot" />
-        <p>Group related bugs quickly and easily.</p>
-      </div>
-    </div>
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Cross-project bug teams</th>
+          <th>Monitor external trackers</th>
+          <th>Web and email interfaces</th>
+          <th>Tagging</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/bugs-feature1.png"
+                   alt="Feature 1 Screenshot" /></td>
+          <td><img src="/+icing/bugs-feature2.png"
+                   alt="Feature 2 Screenshot" /></td>
+          <td><img src="/+icing/bugs-feature3.png"
+                   alt="Feature 3 Screenshot" /></td>
+          <td><img src="/+icing/bugs-feature4.png"
+                   alt="Feature 4 Screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Create ad-hoc teams to tackle bugs that affect multiple
+            projects.
+          </td>
+          <td>Link to instances of the same bug in external trackers,
+            including Bugzilla, Sourceforge and Debian BTS.
+          </td>
+          <td>Suits both new users and experienced developers.</td>
+          <td>Group related bugs quickly and easily.</td>
+        </tr>
+      </tbody>
+    </table>
 
     <div id="content">
       <div class="intro">

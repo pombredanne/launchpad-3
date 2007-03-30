@@ -389,12 +389,28 @@ body#tour #header dl#navigation ul li#liTour a {
 
 #features {
     clear: both;
+    margin-bottom: 20px;
 }
 
-#features .feature {
-  float: left;
-  padding-right: 20px;
-  width: 170px;
+#features th {
+    width: 25%;
+    text-align: center;
+}
+
+#features th, #features td {
+    vertical-align: top;
+}
+
+#features tr.screenshots td {
+    width: 170px;
+    height: 170px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#features td {
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 #features img {
@@ -487,7 +503,8 @@ body#tour #header dl#navigation ul li#liTour a {
   text-decoration: underline;
 }
 
-#main h3 {
+#main h3,
+#features th {
   color: #526d00;
   font-size: 1.5em;
   font-weight: normal;

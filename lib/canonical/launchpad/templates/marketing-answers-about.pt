@@ -5,27 +5,32 @@
   <metal:contents fill-slot="contents">
     <h2 class="headline">Build a community support team</h2>
 
-    <div id="features">
-      <div class="feature">
-        <h3>Structured support</h3>
-        <img src="/+icing/answers-feature1.png" alt="Feature 1 Screenshot" />
-        <p>Track the status of support requests from question to answer.</p>
-      </div>
-      <div class="feature">
-        <h3>Support teams</h3>
-        <img src="/+icing/answers-feature2.png" alt="Feature 2 Screenshot" />
-        <p>Community members can volunteer to create support teams.</p>
-      </div>
-      <div class="feature">
-        <h3>Multi-lingual</h3>
-        <img src="/+icing/answers-feature3.png" alt="Feature 3 Screenshot" />
-        <p>Provide support in many languages.</p>
-      </div>
-      <div class="feature">
-        <h3>Knowledge base</h3>
-        <img src="/+icing/answers-feature4.png" alt="Feature 4 Screenshot" />
-        <p>Answers form a searchable knowledge-base.</p>
-    </div>
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Structured support</th>
+          <th>Support teams</th>
+          <th>Multi-lingual</th>
+          <th>Knowledge base</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/answers-feature1.png"
+                   alt="Feature 1 Screenshot" /></td>
+          <td><img src="/+icing/answers-feature2.png"
+                   alt="Feature 2 Screenshot" /></td>
+          <td><img src="/+icing/answers-feature3.png"
+                   alt="Feature 3 Screenshot" /></td>
+          <td><img src="/+icing/answers-feature4.png"
+                    alt="Feature 4 Screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Track the status of support requests from question to answer.</td>
+          <td>Community members can volunteer to create support teams.</td>
+          <td>Provide support in many languages.</td>
+          <td>Answers form a searchable knowledge-base.</td>
+        </tr>
+      </tbody>
+    </table>
 
     <div id="content">
       <div class="intro">
