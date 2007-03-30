@@ -1,11 +1,15 @@
 <html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
+
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
     </metal:portlets>
+
     <div metal:fill-slot="main">
+
+      <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Mozilla</h1>
-      <span tal:replace="structure context/fmt:icon" />
+
       <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
