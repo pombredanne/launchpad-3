@@ -40,7 +40,8 @@
               <ul>
                 <li id="liHome"><a href="/+about"
                                    tal:attributes="href string:${vhosts/mainsite/rooturl}+about">Home</a></li>
-                <li id="liAccount"><a href="/+login">Get an account</a></li>
+                <li id="liAccount"><a href="+login"
+                                      tal:attributes="href string:${request/URL}/+login">Get an account</a></li>
                 <li id="liTour"><a href="/+tour">Take a tour</a></li>
               </ul>
             </dd>
