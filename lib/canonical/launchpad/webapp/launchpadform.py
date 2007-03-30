@@ -75,6 +75,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors = []
         self.form_wide_errors = []
         self.widget_errors = {}
+        self.action_url = self.request.getURL()
 
     def initialize(self):
         self.setUpFields()

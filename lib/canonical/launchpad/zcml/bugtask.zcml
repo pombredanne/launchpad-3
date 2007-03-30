@@ -192,13 +192,6 @@
         template="../templates/bug-comment-add-form.pt" />
 
     <browser:page
-        name="+addcomment-subform"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugMessageAddSubFormView"
-        permission="launchpad.Edit"
-        template="../templates/bug-comment-add-form.pt" />
-
-    <browser:page
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"

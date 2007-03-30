@@ -1,11 +1,3 @@
-  <tal:expanded define="expanded view/collapsedState">
-    <fieldset class="collapsible collapsed"
-              tal:attributes="class string:collapsible ${expanded}"> 
-      <legend tal:condition="view/shouldShowLegend">
-            Add a comment/attachment
-      </legend>
-
-
     <div metal:use-macro="context/@@launchpad_form/form">
       <table class="form" metal:fill-slot="widgets">
 
@@ -22,11 +14,9 @@
             <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
           </tal:comment>
         </table>
-        <fieldset style="border: 1px solid; margin: 5em 1;padding: 1em">
-          <legend>
-            <label>
-              Optional: Include an attachment
-            </label>
+        <fieldset style="border: 1px solid;">
+          <legend style="margin-left: 1em; font-weight: normal;">
+	    <span class="fieldRequired">Include an attachment (Optional)</span>
           </legend>
 
           <table>
@@ -50,7 +40,7 @@
 
             <tal:email_me
                 tal:define="widget nocall:view/widgets/email_me|nothing"
-                tal:condition="python: widget and view.shouldShowEmailMeWidget">
+                tal:condition="python: widget and view.shouldShowEmailMeWidget()">
               <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
             </tal:email_me>
           </table>
@@ -63,6 +53,3 @@
       </div>
 
     </div>
-
-    </fieldset>
-  </tal:expanded>

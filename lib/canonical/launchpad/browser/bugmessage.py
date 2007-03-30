@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = [
     'BugMessageAddFormView',
-    'BugMessageAddSubFormView',
     ]
 
 from StringIO import StringIO
@@ -32,12 +31,25 @@ class BugMessageAddFormView(LaunchpadFormView):
         """Redirect to the bug's main page."""
         return canonical_url(self.context)
 
+    def __init__(self, context, request):
+        LaunchpadFormView.__init__(self, context, request)
+
+        # override the default form action url to to go the addcomment
+        # page for processing instead of the default which would be the
+        # bug index page.
+        self.action_url = "%s/+addcomment" % canonical_url(self.context)
+        #self.action_url = "/".join(self.request.getURL().split('/')[:-1] + ["+addcomment"])
+        
     def validate(self, data):
         """Validate the form."""
-        comment = data.get('comment', None)
-        filecontent = data.get('filecontent', None)
-        if not comment and not filecontent:
-            self.addError("Either a comment or attachment must be provided.")
+
+        # ensure either a comment or filecontent was provide, but only
+        # if no errors have already been noted.
+        if len(self.errors) == 0:
+            comment = data.get('comment', None)
+            filecontent = data.get('filecontent', None)
+            if not comment and not filecontent:
+                self.addError("Either a comment or attachment must be provided.")
     
     @action(u"Save Changes", name='save')
     def save_action(self, action, data):
@@ -91,35 +103,7 @@ class BugMessageAddFormView(LaunchpadFormView):
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""
+        print ">>> show me email widget: ", not self.context.bug.isSubscribed(self.user)
         return not self.context.bug.isSubscribed(self.user)
-
-    def collapsedState(self):
-        """Should the comment/attachment form be collapsed or expanded?"""
-        collapsed_state = "expanded"
-        return collapsed_state
-
-    def shouldShowLegend(self):
-        """Should the legend for the enclosing fieldset be shown?"""
-        return False
     
-
-
-class BugMessageAddSubFormView(BugMessageAddFormView):
-    """Browser view class for adding a bug comment/attachment.
-
-    This view is used when the form is contained at the bottom of
-    the index page. 
-    """
-
-    def collapsedState(self):
-        """Should the comment/attachment form be collapsed or expanded?"""
-        if self.errors:
-            collapsed_state = "expanded"
-        else:
-            collapsed_state = "collapsed"
-        return collapsed_state
-
-    def shouldShowLegend(self):
-        """Should the legend for the enclosing fieldset be shown?"""
-        return True
     
