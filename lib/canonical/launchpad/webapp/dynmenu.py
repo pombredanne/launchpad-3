@@ -41,17 +41,27 @@ class DynMenuLink:
     def render(self):
         baseurl = self.baseurl
         L = []
+        is_container = False
         if self.submenu:
             L.append('<li class="item container" lpm:mid="%s/+menudata/%s">' % (baseurl, self.submenu))
+            is_container = True
         elif self.contextsubmenu:
             L.append('<li class="item container" lpm:mid="%s/+menudata">' % self.baseurl)
+            is_container = True
         else:
             L.append('<li class="item">')
 
         if self.is_linked:
-            L.append('<a href="%s/%s">' %  (self.targeturl, self.name))
+            if is_container:
+                L.append('<a href="%s/%s" class="container">'
+                         % (self.targeturl, self.name))
+            else:
+                L.append('<a href="%s/%s">' %  (self.targeturl, self.name))
         else:
-            L.append('<span class="unlinked">')
+            if is_container:
+                L.append('<span class="unlinked container">')
+            else:
+                L.append('<span class="unlinked">')
         L.append(self.renderText())
         if self.is_linked:
             L.append('</a>')
@@ -94,7 +104,8 @@ class DynMenu(LaunchpadView):
 
     def getBreadcrumbText(self, obj):
         breadcrumbprovider = queryMultiAdapter(
-            (obj, self.request), IBreadcrumbProvider, default=None)
+            (obj, self.request), IBreadcrumbProvider,
+            name='breadcrumb', default=None)
         if breadcrumbprovider is None:
             return None
         else:

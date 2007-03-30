@@ -182,9 +182,13 @@ class Breadcrumbs(LaunchpadView):
         L = []
         firsturl = '/'
         firsttext = 'Home'
+        from canonical.launchpad.webapp.vhosts import allvhosts
+        rooturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
-            '<li lpm:mid="root" class="item container"><a href="%s"><em>%s</em></a></li>'
+            '<li lpm:mid="root" class="item">'
+            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
+            '<em><span>%s</span></em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
@@ -204,14 +208,14 @@ class Breadcrumbs(LaunchpadView):
                 # branch.
                 if crumb.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'item container'
+                    cssclass = 'breadcrumb container'
                 else:
                     menudata = ''
-                    cssclass = 'item'
-                L.append('<li class="%s"%s>'
-                         '<a href="%s"><em>%s</em></a>'
+                    cssclass = 'breadcrumb'
+                L.append('<li class="item"%s>'
+                         '<a href="%s" class="%s"><em>%s</em></a>'
                          '</li>'
-                         % (cssclass, menudata, crumb.url,
+                         % (menudata, crumb.url, cssclass,
                             cgi.escape(crumb.text)))
 
             #L.append(
@@ -761,11 +765,19 @@ class File:
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
-    """View that gives access to the files in a folder."""
+    """View that gives access to the files in a folder.
+
+    The URL to the folder can start with an optional path step like
+    /revNNN/ where NNN is one or more digits.  This path step will
+    be ignored.  It is useful for having a different path for
+    all resources being served, to ensure that we don't use cached
+    files in browsers.
+    """
 
     implements(IBrowserPublisher)
 
     folder = '../icing/'
+    rev_part_re = re.compile('rev\d+$')
 
     def __init__(self, context, request):
         """Initialize with context and request."""
@@ -774,15 +786,20 @@ class IcingFolder:
         self.names = []
 
     def __call__(self):
-        if not self.names:
+        names = list(self.names)
+        if names and self.rev_part_re.match(names[0]):
+            # We have a /revNNN/ path step, so remove it.
+            names = names[1:]
+
+        if not names:
             # Just the icing directory, so make this a 404.
             raise NotFound(self, '')
-        elif len(self.names) > 1:
+        elif len(names) > 1:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
-            name = self.names[0]
+            [name] = names
             return self.prepareDataForServing(name)
 
     def prepareDataForServing(self, name):

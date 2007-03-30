@@ -338,7 +338,9 @@ class HasSprintsMixin:
             Specification.%s = %s
             AND Specification.id = SprintSpecification.specification
             AND SprintSpecification.sprint = Sprint.id
-            """ % (self._table, self.id)
+            AND SprintSpecification.status = %s
+            """ % (self._table, self.id,
+                   quote(SprintSpecificationStatus.ACCEPTED))
         return query, ['Specification', 'SprintSpecification']
 
     @property
