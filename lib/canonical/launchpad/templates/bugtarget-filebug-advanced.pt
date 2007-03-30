@@ -14,7 +14,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Report a new bug</h1>
 </metal:heading>
 
@@ -27,7 +26,7 @@
       <table class="form" metal:fill-slot="widgets">
 
         <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+            use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
 
         <tr tal:define="main_context view/getMainContext">
           <td colspan="2" width="100%"
@@ -69,17 +68,8 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone"
-                       tal:define="main_context view/getMainContext">
-    <p class="error message">
-      <span tal:replace="main_context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
-
-    <p>
-      To report a bug about <span tal:replace="main_context/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
+  <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
 </div>
 

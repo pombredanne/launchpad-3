@@ -28,9 +28,10 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
+    BranchToMirror, BadUrlSsh, BadUrlLaunchpad)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
@@ -66,7 +67,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
@@ -90,7 +92,8 @@ class TestBranchToMirror(unittest.TestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(
+            srcbranchdir, destbranchdir, client, 1, None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -183,7 +186,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
-        to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
+        source_url = os.path.abspath('src-branch')
+        to_mirror = BranchToMirror(
+            source_url, 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
@@ -232,21 +237,22 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
-        non_existant_branch = "nonsensedir"
-        dest_dir = "dest-dir"
+        non_existant_branch = os.path.abspath('nonsensedir')
+        dest_dir = 'dest-dir'
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1)
+            non_existant_branch, dest_dir, client, 1, 'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
-        non_existant_branch = "nonsensedir"
+        non_existant_branch = os.path.abspath('nonsensedir')
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1)
+            non_existant_branch, "anothernonsensedir", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -269,20 +275,22 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client = BranchStatusClient()
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
+        source_url = os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
-            'missingrevision', "missingrevisiontarget", client, 1)
+            source_url, "missingrevisiontarget", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
 
 
-class TestErrorHandling(unittest.TestCase):
+class ErrorHandlingTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.errors = []
         client = BranchStatusClient()
-        self.branch = BranchToMirror('foo', 'bar', client, 1)
+        self.branch = BranchToMirror(
+            'foo', 'bar', client, 1, 'owner/product/foo')
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
         self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
@@ -291,19 +299,91 @@ class TestErrorHandling(unittest.TestCase):
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
+        self.errors = []
 
     def tearDown(self):
         reset_logging()
 
     def _runMirrorAndCheckError(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
         self.branch.mirror(logging.getLogger())
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
+        self.errors = []
         if not error.startswith(expected_error):
             self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+        return error
+
+
+class TestBadUrl(ErrorHandlingTestCase):
+    """Test that BranchToMirror does not try mirroring from bad URLs.
+
+    Bad URLs use schemes like sftp or bzr+ssh that usually require
+    authentication, and hostnames in the launchpad.net domains.
+
+    That prevents errorspam produced by ssh when it cannot connect and saves
+    timing out when trying to connect to chinstrap, sodium (always using a
+    ssh-based scheme) or launchpad.net.
+
+    That also allows us to display a more informative error message to the
+    user.
+    """
+
+    def testBadUrlSftp(self):
+        # If the scheme of the source url is sftp, _openSourceBranch raises
+        # BadUrlSsh.
+        self.branch.source = 'sftp://example.com/foo'
+        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+
+    def testBadUrlBzrSsh(self):
+        # If the scheme of the source url is bzr+ssh, _openSourceBracnh raises
+        # BadUrlSsh.
+        self.branch.source = 'bzr+ssh://example.com/foo'
+        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+
+    def testBadUrlBzrSshCaught(self):
+        # The exception raised if the scheme of the source url is sftp or
+        # bzr+ssh is caught and an informative error message is displayed to
+        # the user.
+        expected_msg = "Launchpad cannot mirror branches from SFTP "
+        self.branch.source = 'sftp://example.com/foo'
+        self._runMirrorAndCheckError(expected_msg)
+        self.branch.source = 'bzr+ssh://example.com/foo'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testBadUrlLaunchpadDomain(self):
+        # If the host of the source branch is in the launchpad.net domain,
+        # _openSourceBranch raises BadUrlLaunchpad.
+        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+
+    def testBadUrlLaunchpadHost(self):
+        # If the host of the source branch is launchpad.net, _openSourceBranch
+        # raises BadUrlLaunchpad.
+        self.branch.source = 'http://launchpad.net/foo'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+
+    def testBadUrlLaunchpadCaught(self):
+        # The exception raised if the host of the source url is launchpad.net
+        # or a host in this domain is caught, and an informative error message
+        # is displayed to the user.
+        expected_msg = "Launchpad does not mirror branches from Launchpad."
+        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self._runMirrorAndCheckError(expected_msg)
+        self.branch.source = 'http://launchpad.net/foo'
+        self._runMirrorAndCheckError(expected_msg)
+
+
+class TestErrorHandling(ErrorHandlingTestCase):
+
+    def setUp(self):
+        ErrorHandlingTestCase.setUp(self)
+        # We do not care about the value the source URL in those tests
+        self.branch._checkSourceUrl = lambda: None
 
     def testHTTPError(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED, 
@@ -314,7 +394,6 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testSocketErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -322,15 +401,13 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnsupportedFormatErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support branches'
+        expected_msg = 'Launchpad does not support branches '
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnknownFormatError(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -338,23 +415,38 @@ class TestErrorHandling(unittest.TestCase):
         self._runMirrorAndCheckError(expected_msg)
 
     def testParamikoNotPresent(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support mirroring branches'
+        expected_msg = 'Launchpad cannot mirror branches from SFTP '
         self._runMirrorAndCheckError(expected_msg)
 
     def testNotBranchError(self):
-        self.errors = []
+        # Should receive a user-friendly message we are asked to mirror a
+        # non-branch.
         def stubOpenSourceBranch():
             raise NotBranchError('/foo/baz/')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Not a branch:'
         self._runMirrorAndCheckError(expected_msg)
 
+    def testNotBranchErrorGivesURL(self):
+        # The not-a-branch error message should *not* include the Branch id
+        # from the database. Instead, the path should be translated to a
+        # user-visible location.
+        split_id = split_branch_id(self.branch.branch_id)
+        def stubOpenSourceBranch():
+            raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
+                                 % split_id)
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        observed_msg = self._runMirrorAndCheckError('Not a branch:')
+        self.failIf(split_id in observed_msg,
+                    "%r in %r" % (split_id, observed_msg))
+        url = ('sftp://bazaar.launchpad.net/~%s'
+               % self.branch.branch_unique_name)
+        self.assertEqual('Not a branch: %s' % url, observed_msg)
+
     def testBzrErrorHandling(self):
-        self.errors = []
         def stubOpenSourceBranch():
             raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch

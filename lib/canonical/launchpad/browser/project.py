@@ -8,8 +8,8 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestQuestionsView',
     'ProjectNavigation',
+    'ProjectDynMenu',
     'ProjectEditView',
     'ProjectReviewView',
     'ProjectSetNavigation',
@@ -39,7 +39,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
-    ILaunchpadRoot, NotFoundError)
+    NotFoundError)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
@@ -48,8 +48,11 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+    Navigation, StandardLaunchpadFacets, structured)
+from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -66,22 +69,55 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(RedirectionNavigation):
+class ProjectDynMenu(DynMenu):
+
+    MAX_SUB_PROJECTS = 8
+
+    def mainMenu(self, excludeproduct=None):
+        """List products within this project.
+
+        List up to MAX_SUB_PROJECTS products.  If there are more than that
+        number of products, list up to MAX_SUB_PROJECTS products with
+        releases, and give a link to a page showing all products.
+
+        XXX: describe excludeproduct.
+        """
+        products = shortlist(self.context.products, 25)
+        num_products = len(products)
+        if excludeproduct is None:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
+        else:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
+        if num_products < MAX_SUB_PROJECTS:
+            for product in products:
+                if product != excludeproduct:
+                    yield self.makeBreadcrumbLink(product)
+        else:
+            # XXX: SteveAlexander, 2007-03-27.
+            # Use a database API for products-with-releases that prejoins.
+            count = 0
+            for product in products:
+                if product != excludeproduct and product.releases:
+                    yield self.makeBreadcrumbLink(product)
+                    count += 1
+                    if count >= self.MAX_SUB_PROJECTS:
+                        break
+            yield self.makeLink('See all %s related projects...' % num_products)
+
+
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
-        if self.context.getByName(name) is None:
+        project = self.context.getByName(name)
+        if project is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(project))
 
 
 class ProjectSOP(StructuralObjectPresentation):
@@ -214,7 +250,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new']
 
     def new(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         return Link('+addticket', text, icon='add')
 
 
@@ -238,8 +274,9 @@ class ProjectEditView(LaunchpadEditFormView):
         'name', 'displayname', 'title', 'summary', 'description',
         'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
 
     @action('Change Details', name='change')
@@ -356,12 +393,14 @@ class ProjectAddView(LaunchpadFormView):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
         """Create the new Project from the form details."""
+        gotchi, gotchi_heading = data['gotchi']
         self.project = getUtility(IProjectSet).new(
             name=data['name'].lower(),
             displayname=data['displayname'],
@@ -370,8 +409,8 @@ class ProjectAddView(LaunchpadFormView):
             summary=data['summary'],
             description=data['description'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         notify(ObjectCreatedEvent(self.project))
 
@@ -423,16 +462,18 @@ class ProjectAddQuestionView(QuestionAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'),
+                title=_('Project'),
                 description=_(
-                    'Choose the product for which you have a question.'),
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Ask a question about a product from ${project}',
+        return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
@@ -442,16 +483,3 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
-
-
-# XXX flacoste 2006-12-13 This should be removed and the
-# QuestionTargetLatestQuestionsView used instead once we add a
-# searchQuestions() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestQuestionsView:
-    """Empty view to allow rendering of the default template used by
-    QuestionAddView.
-    """
-
-    def __call__(self):
-        return u''

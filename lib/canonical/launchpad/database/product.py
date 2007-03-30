@@ -14,7 +14,6 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -45,20 +44,24 @@ from canonical.launchpad.database.question import (
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    IQuestionTarget, NotFoundError, get_supported_languages)
+    IQuestionTarget, NotFoundError, get_supported_languages,
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
+class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget)
+    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
 
     _table = 'Product'
+    default_gotchi_resource = '/@@/product-mugshot'
+    default_gotchi_heading_resource = '/@@/product-heading'
+    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
@@ -150,20 +153,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
 
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Specification.product = %s AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
-
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
@@ -207,25 +196,59 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.browsername)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
-        orderBy=['dateexpected', 'name'])
-
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
     @property
+    def all_milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, visible=True, orderBy=['dateexpected', 'name'])
+
+    @property
     def sourcepackages(self):
-        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
                     ProductSeries.product = %s
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables)
-        return [SourcePackage(sourcepackagename=r.sourcepackagename,
-                              distrorelease=r.distrorelease)
-                for r in ret]
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
+                             distrorelease=r.distrorelease) for r in ret]
+        return sorted(sps, key=lambda x:
+            (x.sourcepackagename.name, x.distrorelease.name,
+             x.distrorelease.distribution.name))
+
+    @property
+    def distrosourcepackages(self):
+        from canonical.launchpad.database.distributionsourcepackage \
+            import DistributionSourcePackage
+        clause = """ProductSeries.id=Packaging.productseries AND
+                    ProductSeries.product = %s
+                    """ % sqlvalues(self.id)
+        clauseTables = ['ProductSeries']
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        distros = set()
+        dsps = []
+        for packaging in ret:
+            distro = packaging.distrorelease.distribution
+            if distro in distros:
+                continue
+            distros.add(distro)
+            dsps.append(DistributionSourcePackage(
+                sourcepackagename=packaging.sourcepackagename,
+                distribution=distro))
+        return sorted(dsps, key=lambda x:
+            (x.sourcepackagename.name, x.distribution.name))
 
     @property
     def bugtargetname(self):
@@ -287,10 +310,17 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
         return question
 
-    def searchQuestions(self, **search_criteria):
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
         """See IQuestionTarget."""
         return QuestionTargetSearch(
-            product=self, **search_criteria).getResults()
+            product=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
+
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""

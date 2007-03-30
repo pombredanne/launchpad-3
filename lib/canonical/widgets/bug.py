@@ -40,6 +40,11 @@ class BugWidget(IntWidget):
         if input == self._missing:
             return self.context.missing_value
         else:
+            input = input.strip()
+            # Bug ids are often prefixed with '#', but getByNameOrID
+            # doesn't accept such ids.
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
@@ -149,11 +154,11 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
-                raise LaunchpadValidationError('Please enter a product name')
+                raise LaunchpadValidationError('Please enter a project name')
             except ConversionError:
                 entered_name = self.request.form.get("%s.product" % self.name)
                 raise LaunchpadValidationError(
-                    "There is no product named '%s' registered in"
+                    "There is no project named '%s' registered in"
                     " Launchpad", entered_name)
         elif form_value == 'package':
             try:

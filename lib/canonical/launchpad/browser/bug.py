@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugFacets',
     'BugSetNavigation',
     'BugView',
     'MaloneView',
@@ -43,7 +44,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured)
+    Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -51,6 +52,18 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class BugFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IBug.
+
+    However, we never show this, but it does apply to things like
+    bug nominations, by 'acquisition'.
+    """
+
+    usedfor = IBug
+
+    enable_only = []
 
 
 class BugSetNavigation(Navigation):
@@ -225,7 +238,7 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=10):
+    def getMostRecentlyFixedBugs(self, limit=5):
         """Return the ten most recently fixed bugs."""
         fixed_bugs = []
         search_params = BugTaskSearchParams(
@@ -252,7 +265,7 @@ class MaloneView(LaunchpadFormView):
         return getUtility(ICveSet).getBugCveCount()
 
 
-class BugView:
+class BugView(LaunchpadView):
     """View class for presenting information about an IBug.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -264,12 +277,6 @@ class BugView:
     all the pages off IBugTask instead of IBug.
     """
 
-    def __init__(self, context, request):
-        self.current_bugtask = context
-        self.context = IBug(context)
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
     def currentBugTask(self):
         """Return the current IBugTask.
 
@@ -280,7 +287,7 @@ class BugView:
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""
-        user = getUtility(ILaunchBag).user
+        user = self.user
         if user is None:
             return False
         return self.context.isSubscribed(user)
@@ -378,9 +385,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                     sourcepackage = distrorelease.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
-                        'Please select the appropriate upstream product.'
+                        'Please select the appropriate upstream project.'
                         ' This step can be avoided by'
-                        ' <a href="%(package_url)s/+packaging">updating'
+                        ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
                         full_package_name=bugtask.targetname,
@@ -696,14 +703,18 @@ class BugEditViewBase(LaunchpadEditFormView):
 
     schema = IBug
 
-    def __init__(self, context, request):
-        self.current_bugtask = context
-        context = IBug(context)
-        LaunchpadEditFormView.__init__(self, context, request)
+    def setUpWidgets(self):
+        """Set up the widgets using the bug as the context."""
+        LaunchpadEditFormView.setUpWidgets(self, context=self.context.bug)
+
+    def updateBugFromData(self, data):
+        """Update the bug using the values in the data dictionary."""
+        LaunchpadEditFormView.updateContextFromData(
+            self, data, context=self.context.bug)
 
     @property
     def next_url(self):
-        return canonical_url(self.current_bugtask)
+        return canonical_url(self.context)
 
 
 class BugEditView(BugEditViewBase):
@@ -728,7 +739,7 @@ class BugEditView(BugEditViewBase):
         if confirm_action.submitted():
             # Validation is needed only for the change action.
             return
-        bugtarget = self.current_bugtask.target
+        bugtarget = self.context.target
         newly_defined_tags = set(data['tags']).difference(
             bugtarget.getUsedBugTags())
         # Display the confirm button in a notification message. We want
@@ -748,8 +759,8 @@ class BugEditView(BugEditViewBase):
     @action('Change', name='change')
     def edit_bug_action(self, action, data):
         if not self._confirm_new_tags:
-            self.updateContextFromData(data)
-            self.next_url = canonical_url(self.current_bugtask)
+            self.updateBugFromData(data)
+            self.next_url = canonical_url(self.context)
 
     @action('Yes, define new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
@@ -770,7 +781,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        self.updateBugFromData(data)
 
 
 class BugSecrecyEditView(BugEditViewBase):
@@ -781,7 +792,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        self.updateBugFromData(data)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
@@ -838,6 +849,12 @@ class BugTextView(LaunchpadView):
         else:
             text.append('duplicate-of: ')
 
+        if bug.duplicates:
+            dupes = ' '.join(str(dupe.id) for dupe in bug.duplicates)
+            text.append('duplicates: %s' % dupes)
+        else:
+            text.append('duplicates: ')
+
         text.append('subscribers: ')
 
         for subscription in bug.subscriptions:
@@ -885,3 +902,4 @@ class BugURL:
     @property
     def path(self):
         return u"bugs/%d" % self.context.id
+

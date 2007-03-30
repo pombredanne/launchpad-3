@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'SprintFacets',
     'SprintNavigation',
+    'SprintsMixinDynMenu',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
     'SprintSetFacets',
@@ -40,7 +41,8 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -62,6 +64,19 @@ class SprintNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
+
+
+class SprintsMixinDynMenu:
+
+    def meetingsMenu(self):
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -230,8 +245,9 @@ class SprintAddView(LaunchpadFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     sprint = None
 
@@ -252,6 +268,7 @@ class SprintAddView(LaunchpadFormView):
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
+        gotchi, gotchi_heading = data['gotchi']
         self.sprint = getUtility(ISprintSet).new(
             owner=self.user,
             name=data['name'],
@@ -262,7 +279,8 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
-            gotchi=data['gotchi'],
+            gotchi=gotchi,
+            gotchi_heading=gotchi_heading,
             emblem=data['emblem'])
         self.request.response.addInfoNotification('Sprint created.')
 
@@ -284,8 +302,9 @@ class SprintEditView(LaunchpadEditFormView):
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    custom_widget(
+        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

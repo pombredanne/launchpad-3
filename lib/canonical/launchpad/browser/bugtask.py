@@ -21,9 +21,13 @@ __all__ = [
     'BugTasksAndNominationsView',
     'BugTaskView',
     'get_sortorder_from_request',
+    'get_buglisting_search_filter_url',
     'BugTargetTextView',
+    'BugListingBatchNavigator',
     'upstream_status_vocabulary_factory',
-    'BugsBugTaskSearchListingView']
+    'BugsBugTaskSearchListingView',
+    'BugTaskSOP',
+    ]
 
 import cgi
 import re
@@ -33,11 +37,11 @@ from operator import attrgetter
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.interface import providedBy
 from zope.schema import Choice
@@ -69,7 +73,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
-from canonical.launchpad.components.bugtask import NullBugTask
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -82,15 +86,29 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget, LaunchpadRadioWidget)
+    NewLineToSpacesWidget)
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
+
+
+def unique_title(title):
+    """Canonicalise a message title to help identify messages with new
+    information in their titles.
+    """
+    if title is None:
+        return None
+    title = title.lower()
+    if title.startswith('re:'):
+        title = title[3:]
+    return title.strip()
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
-    requiring only two database queries.
+    requiring only two database queries. It removes the titles
+    for those comments which do not have a "new" subject line
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
@@ -101,6 +119,15 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         assert comments.has_key(message_id)
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
+    current_title = bugtask.bug.title
+    for comment in comments:
+        if not ((unique_title(comment.title) == \
+                 unique_title(current_title)) or \
+                (unique_title(comment.title) == \
+                 unique_title(bugtask.bug.title))):
+            # this comment has a new title, so make that the rolling focus
+            current_title = comment.title
+            comment.display_title = True
     return comments
 
 
@@ -183,20 +210,20 @@ class BugTargetTraversalMixin:
         # for example, return a bug page for a context in which the bug hasn't
         # yet been reported.
         if IProduct.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, product=context)
+            null_bugtask = bug.getNullBugTask(product=context)
         elif IProductSeries.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, productseries=context)
+            null_bugtask = bug.getNullBugTask(productseries=context)
         elif IDistribution.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distribution=context)
+            null_bugtask = bug.getNullBugTask(distribution=context)
         elif IDistributionSourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distribution=context.distribution,
+            null_bugtask = bug.getNullBugTask(
+                distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         elif IDistroRelease.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+            null_bugtask = bug.getNullBugTask(distrorelease=context)
         elif ISourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distrorelease=context.distrorelease,
+            null_bugtask = bug.getNullBugTask(
+                distrorelease=context.distrorelease,
                 sourcepackagename=context.sourcepackagename)
         else:
             raise TypeError(
@@ -220,13 +247,14 @@ class BugTaskNavigation(Navigation):
         # will return the +viewstatus page if bug 1 has actually been
         # reported in "foo". If bug 1 has not yet been reported in "foo",
         # a 404 will be returned.
-        if name in ("+viewstatus", "+editstatus"):
-            if INullBugTask.providedBy(self.context):
-                # The bug has not been reported in this context.
-                return None
-            else:
-                # The bug has been reported in this context.
-                return getView(self.context, name + "-page", self.request)
+        if name not in ("+viewstatus", "+editstatus"):
+            # You're going in the wrong direction.
+            return None
+        if INullBugTask.providedBy(self.context):
+            # The bug has not been reported in this context.
+            return None
+        # Yes! The bug has been reported in this context.
+        return getMultiAdapter((self.context, self.request), name=name+"-page")
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
@@ -711,6 +739,16 @@ class BugTaskEditView(GeneralFormView):
 
         return read_only_field_names
 
+    def getErrorMessage(self):
+        if not self.errors:
+            return ""
+        text = ("There %s with the information you entered. "
+                "Please fix %s and try again.")
+        count = len(self.errors)
+        if count == 1:
+            return text % ("is a problem", "it")
+        return text % ("are %d problems" % count, "them")
+
     def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
@@ -769,11 +807,27 @@ class BugTaskEditView(GeneralFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
+        # XXX: this set of try/except blocks is to ensure that the
+        # widget gets the correct error message assigned to it. It's
+        # rather unfortunate that this is done this way but we need to
+        # convert over to a LaunchpadFormView to fix this the right way.
+        # It would also fix, incidentally, the fact that this hook is
+        # only called after all widget errors are solved (which causes
+        # the errors here to be hidden until widget errors are solved).
+        #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
-            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            try:
+                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+            except WidgetsError, errors:
+                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
         if (product is not None and
             'product' in data and product != data['product']):
-            valid_upstreamtask(bugtask.bug, data['product'])
+            try:
+                valid_upstreamtask(bugtask.bug, data['product'])
+            except WidgetsError, errors:
+                self.product_widget._error = ConversionError(str(errors.args[0]))
+                raise errors
 
         return data
 
@@ -978,8 +1032,9 @@ class BugTaskListingView(LaunchpadView):
             return status_title + ' (unassigned)'
 
         assignee_html = (
-            '<img alt="" src="/@@/user" /> '
+            '<img alt="" src="%s" /> '
             '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                assignee.default_emblem_resource,
                 urllib.quote(assignee.name),
                 cgi.escape(assignee.browsername)))
 
@@ -1020,13 +1075,15 @@ class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
     def getOpenBugsURL(self):
         """Return the URL for open bugs on this bug target."""
-        return self.getSearchFilterURL(
+        return get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
         """Return the URL for bugs assigned to the current user on target."""
         if self.user:
-            return self.getSearchFilterURL(assignee=self.user.name)
+            return get_buglisting_search_filter_url(
+                self.request.URL, assignee=self.user.name)
         else:
             return str(self.request.URL) + "/+login"
 
@@ -1043,48 +1100,52 @@ class BugListingPortletView(LaunchpadView):
 
     def getCriticalBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        return self.getSearchFilterURL(
+        return get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=dbschema.BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        unresolved_tasks_query_string = self.getSearchFilterURL(
+        unresolved_tasks_query_string = get_buglisting_search_filter_url(
+            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
         return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getUnconfirmedBugsURL(self):
         """Return the URL for unconfirmed bugs on this bug target."""
-        return self.getSearchFilterURL(
-            status=dbschema.BugTaskStatus.UNCONFIRMED.title)
+        return get_buglisting_search_filter_url(
+            self.request.URL, status=dbschema.BugTaskStatus.UNCONFIRMED.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
-        all_status_query_string = self.getSearchFilterURL(
-            status=[status.title for status in all_statuses])
+        all_status_query_string = get_buglisting_search_filter_url(
+            self.request.URL, status=[status.title for status in all_statuses])
 
         # Add the bit that simulates the "omit dupes" checkbox being unchecked.
         return all_status_query_string + "&field.omit_dupes.used="
 
-    def getSearchFilterURL(self, assignee=None, importance=None, status=None):
-        """Return a URL with search parameters."""
-        search_params = []
 
-        if assignee:
-            search_params.append(('field.assignee', assignee))
-        if importance:
-            search_params.append(('field.importance', importance))
-        if status:
-            search_params.append(('field.status', status))
+def get_buglisting_search_filter_url(
+        url, assignee=None, importance=None, status=None):
+    """Return the given URL with the search parameters specified."""
+    search_params = []
 
-        query_string = urllib.urlencode(search_params, doseq=True)
+    if assignee:
+        search_params.append(('field.assignee', assignee))
+    if importance:
+        search_params.append(('field.importance', importance))
+    if status:
+        search_params.append(('field.status', status))
 
-        search_filter_url = str(self.request.URL) + "?search=Search"
-        if query_string:
-            search_filter_url += "&" + query_string
+    query_string = urllib.urlencode(search_params, doseq=True)
 
-        return search_filter_url
+    search_filter_url = str(url) + "?search=Search"
+    if query_string:
+        search_filter_url += "&" + query_string
+
+    return search_filter_url
 
 
 def getInitialValuesFromSearchParams(search_params, form_schema):
@@ -1195,9 +1256,9 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    form_has_errors = False
     owner_error = ""
     assignee_error = ""
+    bug_contact_error = ""
 
     @property
     def schema(self):
@@ -1272,7 +1333,9 @@ class BugTaskSearchListingView(LaunchpadView):
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
         except WidgetsError:
-            self.form_has_errors = True
+            # No need to do anything, the widget will be checked for
+            # errors elsewhere.
+            pass
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1298,21 +1361,15 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params.orderby = get_sortorder_from_request(self.request)
         return search_params
 
-    def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
-
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
-
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
-        precedence over request params.
+    def buildSearchParams(self, searchtext=None, extra_params=None):
+        """Build the BugTaskSearchParams object for the given arguments and
+        values specified by the user on this form's widgets.
         """
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
-                "owner", "omit_dupes", "has_patch",
+                "omit_dupes", "has_patch", "bug_reporter",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve"
+                "status_upstream", "tag", "has_cve", "bug_contact"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
@@ -1367,15 +1424,28 @@ class BugTaskSearchListingView(LaunchpadView):
             else:
                 form_values[key] = value
 
+        search_params = self._getDefaultSearchParams()
+        for name, value in form_values.items():
+            setattr(search_params, name, value)
+        return search_params
+
+    def search(self, searchtext=None, context=None, extra_params=None):
+        """Return an ITableBatchNavigator for the GET search criteria.
+
+        If :searchtext: is None, the searchtext will be gotten from the
+        request.
+
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
+        precedence over request params.
+        """
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
-        search_params = self._getDefaultSearchParams()
-        for name, value in form_values.items():
-            setattr(search_params, name, value)
+        search_params = self.buildSearchParams(
+            searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1534,11 +1604,19 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return False
 
+    @property
+    def form_has_errors(self):
+        has_errors = (
+            self.assignee_error or
+            self.owner_error or
+            self.bug_contact_error or
+            self.tag_widget.error())
+        return has_errors
+
     def validateVocabulariesAdvancedForm(self):
         """Validate person vocabularies in advanced form.
 
-        If a vocabulary lookup fail set a custom error message and set
-        self.form_has_errors to True.
+        If a vocabulary lookup fail set a custom error message.
         """
         error_message = _(
             "There's no person with the name or email address '%s'")
@@ -1548,13 +1626,15 @@ class BugTaskSearchListingView(LaunchpadView):
             self.assignee_error = error_message % (
                 cgi.escape(self.request.get('field.assignee')))
         try:
-            getWidgetsData(self, self.schema, names=["owner"])
+            getWidgetsData(self, self.schema, names=["bug_reporter"])
         except WidgetsError:
             self.owner_error = error_message % (
-                cgi.escape(self.request.get('field.owner')))
-
-        if self.assignee_error or self.owner_error:
-            self.form_has_errors = True
+                cgi.escape(self.request.get('field.bug_reporter')))
+        try:
+            getWidgetsData(self, self.schema, names=["bug_contact"])
+        except WidgetsError:
+            self.bug_contact_error = error_message % (
+                cgi.escape(self.request.get('field.bug_contact')))
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -1825,3 +1905,20 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getSearchPageHeading(self):
         return "Search all bug reports"
+
+
+class BugTaskSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        bugtask = self.context
+        return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+

@@ -15,13 +15,14 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin homepage_content emblem gotchi"
+                            mirror_admin homepage_content emblem gotchi
+                            gotchi_heading"
             />
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
-	    />
+            getQuestionLanguages default_gotchi_heading_resource
+            default_gotchi_resource default_emblem_resource" />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
@@ -35,6 +36,14 @@
             DistributionSetContextMenu
             "
             />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -53,6 +62,11 @@
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:navigation
@@ -162,6 +176,11 @@
             template="../templates/distribution-index.pt"
             />
         <browser:page
+            name="+releases"
+            facet="overview"
+            template="../templates/distribution-releases.pt"
+            />
+        <browser:page
             name="+search"
             facet="overview"
             template="../templates/distribution-search.pt"
@@ -236,6 +255,11 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"
+            />
+        <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-translations"

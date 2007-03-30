@@ -144,6 +144,8 @@ class IDistributionMirror(Interface):
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 

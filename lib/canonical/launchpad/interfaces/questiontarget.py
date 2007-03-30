@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IAnswersFrontPageSearchForm',
     'IQuestionTarget',
     'IManageAnswerContactsForm',
     'ISearchQuestionsForm',
@@ -21,7 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.question import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import QuestionSort, QuestionStatus
+from canonical.lp.dbschema import QuestionSort
 
 
 def get_supported_languages(question_target):
@@ -142,3 +143,10 @@ class ISearchQuestionsForm(Interface):
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary='QuestionStatus'),
                  default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
+
+
+class IAnswersFrontPageSearchForm(ISearchQuestionsForm):
+    """Schema for the Answers front page search form."""
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProject')

@@ -183,8 +183,9 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestionSet"
-    path_expression="string:tickets"
+    path_expression="string:support"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    rootsite="answers"
     />
 
   <browser:defaultView
@@ -197,6 +198,13 @@
     class="canonical.launchpad.browser.QuestionSetView"
     permission="zope.Public"
     template="../templates/questions-index.pt"
+    />
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IQuestionSet"
+    permission="zope.Public"
+    template="../templates/null.pt"
     />
 
   <browser:page

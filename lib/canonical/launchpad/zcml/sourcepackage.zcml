@@ -30,7 +30,11 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
         />
-
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -62,8 +66,8 @@
       facet="overview"
       permission="zope.Public">
       <browser:page
-        name="+portlet-hctstatus"
-        template="../templates/sourcepackage-portlet-hctstatus.pt"
+        name="+portlet-upstream"
+        template="../templates/sourcepackage-portlet-upstream.pt"
         />
       <browser:page
         name="+portlet-releases"
@@ -82,7 +86,7 @@
             />
         <browser:page
             name="+gethelp"
-            facet="overview"
+            facet="answers"
             template="../templates/sourcepackage-gethelp.pt"
             />
         <browser:page
@@ -96,9 +100,9 @@
             template="../templates/sourcepackage-changelog.pt"
             />
         <browser:page
-            name="+hctstatus"
+            name="+packaging"
             facet="overview"
-            template="../templates/sourcepackage-hctstatus.pt"
+            template="../templates/sourcepackage-packaging.pt"
             />
         <browser:page
             name="+translations"
@@ -150,9 +154,9 @@
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
         <browser:page
-            name="+packaging"
+            name="+edit-packaging"
             facet="overview"
-            template="../templates/sourcepackage-packaging.pt"
+            template="../templates/sourcepackage-edit-packaging.pt"
             />
     </browser:pages>
 

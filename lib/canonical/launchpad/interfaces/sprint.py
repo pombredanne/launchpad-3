@@ -72,6 +72,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
             "so you cannot undo changes."))
     emblem = SmallImageUpload(
         title=_("Emblem"), required=False,
+        default_image_resource='/@@/sprint',
         description=_(
             "A small image, max 16x16 pixels and 25k in file size, that can "
             "be used to refer to this meeting."))
@@ -79,12 +80,14 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # only for documentation purposes.
     gotchi_heading = BaseImageUpload(
         title=_("Heading icon"), required=False,
+        default_image_resource='/@@/sprint-heading',
         description=_(
             "An image, maximum 64x64 pixels, that will be displayed on "
             "the header of all pages related to this meeting. It should "
             "be no bigger than 50k in size."))
     gotchi = LargeImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/sprint-mugshot',
         description=_(
             "An image, maximum 170x170 pixels, that will be displayed on "
             "this meeting's home page. It should be no bigger than 100k "
@@ -154,6 +157,10 @@ class IHasSprints(Interface):
     coming_sprints = Attribute(
         "A list of up to 5 events currently on, or soon to be on, that are "
         "relevant to this context.")
+
+    sprints = Attribute("All sprints relevant to this context.")
+
+    past_sprints = Attribute("Sprints that occured in the past.")
 
 
 class ISprintSet(Interface):

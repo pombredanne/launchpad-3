@@ -1,15 +1,11 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@launchpad_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Mozilla</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <span tal:replace="structure context/fmt:icon" />
       <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
@@ -22,10 +18,11 @@
     work of the Project, and the people behind it. It should describe the
     project history, and organisation.
 
-    The Project Description should also mention the major product or
-    products from that project. For example, the Apache Project description
+    The Project Description should also mention the major project or
+    projects that make up the aggregate project. For example, the Apache
+    Project description
     would highlight its work on the Apache Server, and mention other
-    products such as APR.
+    projects such as APR.
     </div>
 
       <ul tal:condition="context/homepageurl">
@@ -55,20 +52,21 @@
           tal:content="structure context/@@+portlet-coming-sprints"
         />
         <div class="portlet">
-          <h2>Products</h2>
+          <h2>Projects</h2>
           <p tal:condition="not: context/products">
-            There are no products registered for
+            There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
           <div
             tal:condition="context/products"
             tal:repeat="product context/products"
+            class="project"
           >
             <h3>
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/title"
-              >Product title</a>
+              >Project title</a>
             </h3>
             <div>
               <strong>Releases:</strong>
@@ -93,16 +91,21 @@
               </tal:milestone>
             </div>
           </div>
-          <ul tal:condition="context/required:launchpad.Edit">
-            <li><a href="+newproduct">Register another product</a></li>
-          </ul>
+          <tal:block condition="context/required:launchpad.Edit">
+            <a href="+newproduct">&raquo; Register another project that is
+            part of <tal:project replace="context/displayname" /></a>
+          </tal:block>
         </div>
-        <div tal:replace="structure context/@@+portlet-top-contributors" />
+        <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
       <div class="right">
         <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+portlet-top-contributors" />
         <div tal:replace="structure context/@@+portlet-latestbugs" />
-        <div tal:replace="structure context/@@+portlet-latestspecs" />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
       </div>
     </div>
   </body>

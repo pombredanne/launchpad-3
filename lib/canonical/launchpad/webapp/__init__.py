@@ -7,19 +7,40 @@ This module also has an API for use by the application.
 """
 __metaclass__ = type
 
-__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'nearest_menu', 'canonical_url', 'nearest', 'structured',
-           'StandardLaunchpadFacets', 'enabled_with_permission',
-           'LaunchpadView', 'LaunchpadXMLRPCView',
-           'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'smartquote',
-           'urlappend', 'urlparse', 'urlsplit',
-           'GeneralFormView', 'GeneralFormViewFactory',
-           'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget',
-           'RedirectionNavigation', 'RedirectionView',
-           'expand_numbers','sorted_version_numbers',
-           'sorted_dotted_numbers']
+__all__ = [
+    'Link',
+    'FacetMenu',
+    'ApplicationMenu',
+    'ContextMenu',
+    'nearest_context_with_adapter',
+    'nearest_adapter',
+    'canonical_url',
+    'nearest',
+    'structured',
+    'StandardLaunchpadFacets',
+    'enabled_with_permission',
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'Navigation',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'GetitemNavigation',
+    'smartquote',
+    'urlappend',
+    'urlparse',
+    'urlsplit',
+    'GeneralFormView',
+    'GeneralFormViewFactory',
+    'Utf8PreferredCharsets',
+    'LaunchpadFormView',
+    'LaunchpadEditFormView',
+    'action',
+    'custom_widget',
+    'expand_numbers',
+    'sorted_version_numbers',
+    'sorted_dotted_numbers',
+    ]
 
 import re
 
@@ -32,13 +53,13 @@ from canonical.launchpad.webapp.generalform import (
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
-    enabled_with_permission
+    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
+    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
     )
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
+    redirection, stepto, LaunchpadXMLRPCView)
 from canonical.launchpad.webapp.sorting import (
     expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 
@@ -70,35 +91,6 @@ class GetitemNavigation(Navigation):
 
     def traverse(self, name):
         return self.context[name]
-
-
-class RedirectionNavigation(Navigation):
-    """Class for navigation that redirects suburls elsewhere.
-
-    Used when reparenting parts of Launchpad when we don't want to break
-    old URLs.
-    """
-    # Subclasses should override this to the new root
-    redirection_root_url = None
-
-    redirection_status = 301 # Default is a permanent redirect
-
-    def traverse(self, name):
-        """Consume the rest of the URL, and use it to return a
-           RedirectionView.
-        """
-        target = urlappend(self.redirection_root_url, name)
-        while True:
-            nextstep = self.request.stepstogo.consume()
-            if nextstep is None:
-                break
-            target = urlappend(target, nextstep)
-
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            target = target + '?' + query_string
-
-        return RedirectionView(target, self.request, self.redirection_status)
 
 
 class StandardLaunchpadFacets(FacetMenu):
@@ -156,8 +148,8 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def specifications(self):
         target = '+specs'
-        text = 'Features'
-        summary = 'Feature specifications and plans'
+        text = 'Blueprints'
+        summary = 'Blueprints and specifications'
         return Link(target, text, summary)
 
     def bounties(self):

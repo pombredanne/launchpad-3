@@ -1,8 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
     <metal:portlets fill-slot="portlets">
       <tal:portlet replace="structure context/@@+portlet-translations" />
@@ -13,7 +9,7 @@
     </metal:portlets>
     <div metal:fill-slot="main">
       <h1 tal:content="context/title">Ubuntu Linux</h1>
-      <img alt="" class="mugshot" src="/@@/nyet-mugshot" />
+      <span tal:replace="structure context/fmt:icon" />
       <div tal:replace="structure context/summary/fmt:text-to-html" />
       <div tal:replace="structure context/description/fmt:text-to-html" />
       <ul class="buttons">
@@ -100,6 +96,10 @@
         <div
           class="two column section"
           tal:content="structure context/@@+portlet-latestspecs"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
         />
       </div>
     </div>

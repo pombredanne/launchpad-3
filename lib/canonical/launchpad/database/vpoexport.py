@@ -125,7 +125,7 @@ class VPOExportSet:
                   JOIN POMsgSet ON POMsgSet.pofile = POFile.id
                   JOIN POSubmission ON
                     POSubmission.pomsgset = POMsgset.id AND
-                    POSubmission.active'''
+                    POSubmission.active IS TRUE'''
 
             where += ''' AND
                   POSubmission.datecreated > %s
@@ -240,7 +240,7 @@ class VPOExportSet:
                 'POMsgSet ON POMsgSet.pofile = POFile.id',
                 'POSubmission ON '
                     'POSubmission.pomsgset = POMsgSet.id AND'
-                    'POSubmission.active',
+                    'POSubmission.active IS TRUE',
             ]
             where = '''
                  POSubmission.datecreated > %s AND

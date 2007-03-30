@@ -1,27 +1,8 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="launchpad">
   <body>
+    <h1 metal:fill-slot="heading">Blueprint tracking</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Blueprint tracking</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/blueprints" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-features">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                       <ul class="buttons">
                         <li>
                           <a href="+tour">
@@ -34,84 +15,72 @@
                         <li>
                           <a href="+addspec">
                             <img
-                              alt="Register a specification"
+                              alt="Register a blueprint"
                               src="/+icing/but-lrg-registeraspec.gif"
                             />
                           </a>
                         </li>
                       </ul>
-                      <form class="central" name="spec_search" method="get">
+                      <form class="central" action="" method="get"
+                            tal:attributes="action request/URL">
                         <table>
                           <tbody>
                             <tr>
                               <td style="text-align: right;">
                                 <input
-                                  id="searchtext"
-                                  tal:attributes="value view/searchtext"
+                                  id="text"
                                   type="text"
-                                  name="searchtext"
+                                  name="field.search_text"
                                   size="50"
+                                  tal:attributes="value view/searchtext"
                                 />
                               </td>
                               <td>
                                 <input
-                                  tal:condition="not:view/searchrequested"
                                   type="submit"
-                                  value="Search Blueprints"
-                                />
-                                <input
-                                  tal:condition="view/searchrequested"
-                                  type="submit"
-                                  value="Search Again"
+                                  name="field.actions.search"
+                                  value="Find Blueprints"
                                 />
                               </td>
                             </tr>
-                            <tr>
-                              <td style="text-align: right;">
-                                <label>
-                                  <input
-                                    name="scope"
-                                    type="radio"
-                                    value="all"
-                                    checked="checked"
-                                  />
-                                  All projects
-                                </label>
-                                <label>
-                                  <input
-                                    name="scope"
-                                    type="radio"
-                                    value="project"
-                                    onclick="document.getElementById('project').focus();"
-                                  />
-                                  One project:
-                                  <input
-                                    id="project"
-                                    name="project"
-                                    type="text"
-                                  />
-                                </label>
+                            <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
+                              <td tal:attributes="class view/scope_css_class"
+                                  style="text-align: right;">
+
+                                <tal:scope
+                                  replace="structure view/widgets/scope/renderScopeOptions" />
+
+                                <tal:input replace="structure target_widget/inputField" />
+
+                                <div class="message"
+                                  tal:condition="view/scope_error"
+                                  tal:content="structure view/scope_error">
+                                  Error message
+                                </div>
                               </td>
-                              <td>(<a href="choose">Choose&hellip;</a>)</td>
+                              <td tal:content="structure target_widget/chooseLink" />
                             </tr>
                           </tbody>
                         </table>
+                        <div>
                       </form>
                       <tal:searchresults
                         condition="view/searchrequested"
                         define="specs view/specs"
                       >
                         <p tal:condition="specs">
-                          Blueprints matching
+                          <span tal:replace="view/spec_count" />
+                          blueprint(s) matching
                           &#8220;<tal:string replace="view/searchtext" />&#8221:
                         </p>
 
     <tal:nomatches condition="not: specs"
                    replace="structure context/@@+nomatches" />
 
-    <tal:per_spec repeat="spec specs">
-      <div tal:replace="structure spec/@@+listing-detailed" />
-    </tal:per_spec>
+    <table>
+      <tr tal:repeat="spec specs"
+          tal:replace="structure spec/@@+listing-simple" />
+    </table>
 
                       </tal:searchresults>
                       <tal:nosearchresults condition="not:view/searchrequested">
@@ -158,17 +127,7 @@
                         </div>
                       </tal:nosearchresults>
 
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
     </div><!--main-->
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress Needs "Recently implemented" list, blueprints count -->
