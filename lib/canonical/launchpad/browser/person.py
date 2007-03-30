@@ -36,6 +36,7 @@ __all__ = [
     'PersonOverviewMenu',
     'PersonRdfView',
     'PersonRegisteredBranchesView',
+    'PersonRelatedBugsView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -49,7 +50,6 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
-    'RedirectToAssignedBugsView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RequestPeopleMergeMultipleEmailsView',
@@ -71,6 +71,7 @@ __all__ = [
     ]
 
 import cgi
+import copy
 import urllib
 from operator import attrgetter, itemgetter
 
@@ -83,6 +84,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -104,7 +106,8 @@ from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
     BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
 
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import (
+    BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
@@ -322,7 +325,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
-        return Link('+assignedbugs', text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
         text = 'Blueprints'
@@ -370,9 +373,7 @@ class PersonFacets(StandardLaunchpadFacets):
 class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'branches'
-
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
@@ -396,10 +397,13 @@ class PersonBranchesMenu(ApplicationMenu):
 class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'bugs'
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
+             'softwarebugs']
 
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
+    def relatedbugs(self):
+        text = 'Related'
+        return Link('', text, icon='bugs')
 
     def assignedbugs(self):
         text = 'Assigned'
@@ -422,7 +426,7 @@ class TeamBugsMenu(PersonBugsMenu):
 
     usedfor = ITeam
     facet = 'bugs'
-    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -932,7 +936,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         # bug (but different tasks) being displayed.
         return BugTaskSearchListingView.search(
             self,
-            extra_params={'owner': self.context,'bug_reporter': self.context})
+            extra_params=dict(owner=self.context, bug_reporter=self.context))
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -1136,10 +1140,50 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL()
 
 
+class PersonRelatedBugsView(BugTaskSearchListingView):
+    """All bugs related to someone."""
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs related to a person."""
+        context = self.context
+        params = self.buildSearchParams()
+        subscriber_params = copy.copy(params)
+        subscriber_params.subscriber = context
+        assignee_params = copy.copy(params)
+        owner_params = copy.copy(params)
+        # Only override the assignee and owner if they were not specified
+        # by the user.
+        if assignee_params.assignee is None:
+            assignee_params.assignee = context
+        if owner_params.owner is None:
+            # Specify both owner and bug_reporter to try to prevent the same
+            # bug (but different tasks) being displayed.
+            owner_params.owner = context
+            owner_params.bug_reporter = context
+        tasks = self.context.searchTasks(
+            assignee_params, subscriber_params, owner_params)
+        return BugListingBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
+
+    def getSearchPageHeading(self):
+        return "Bugs related to %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        return "Bugs Related to %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        return "Search bugs related to %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        return canonical_url(self.context) + "/+bugs"
+
+
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
-
-    context_parameter = 'assignee'
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
@@ -1174,13 +1218,6 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+assignedbugs"
 
 
-class RedirectToAssignedBugsView:
-
-    def __call__(self):
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+assignedbugs")
-
-
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
@@ -1212,7 +1249,7 @@ class PersonLanguagesView(LaunchpadView):
 
     def initialize(self):
         request = self.request
-        if (request.method == "POST" and "SAVE-LANGS" in request.form):
+        if request.method == "POST" and "SAVE-LANGS" in request.form:
             self.submitLanguages()
 
     def requestCountry(self):

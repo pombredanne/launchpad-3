@@ -62,11 +62,15 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -116,7 +120,7 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def breadcrumb(self):
-        return 'Products'
+        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -691,50 +695,36 @@ class ProductRdfView:
         return encodeddata
 
 
-class ProductDynMenu(DynMenu):
+class ProductDynMenu(
+        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
 
-    def render(self):
-        if len(self.names) > 1:
-            raise NotFoundError(names[-1])
-
-        if not self.names:
-            return self.renderMenu(self.mainMenu())
-
-        [name] = self.names
-        if name == 'meetings':
-            return self.renderMenu(self.meetingsMenu())
-        elif name == 'series':
-            return self.renderMenu(self.seriesMenu())
-        elif name == 'related':
-            return self.renderMenu(self.relatedMenu())
-
-        raise NotFoundError(name)
-
-    def seriesMenu(self):
-        for series in self.context.serieslist:
-            yield self.makeBreadcrumbLink(series)
-        yield self.makeLink('Show all series...', page='+series')
-
-    def meetingsMenu(self):
-        for sprint in self.context.coming_sprints:
-            yield self.makeLink(sprint.title, context=sprint)
-        yield self.makeLink('Show all meetings...', page='+sprints')
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'series': 'seriesMenu',
+        'related': 'relatedMenu',
+        }
 
     def relatedMenu(self):
+        """Show items related to this product.
+
+        If there is a project, show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
         project = self.context.project
         if project is not None:
-            from canonical.launchpad.browser.project import ProjectDynMenu
+            yield self.makeLink(project.title, target=project)
             projectdynmenu = ProjectDynMenu(project, self.request)
-            return projectdynmenu.mainMenu(excludeproduct=self.context)
+            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
+                yield link
 
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
         yield self.makeLink('Product series', page='+series', submenu='series')
-        project = self.context.project
-        if project is not None:
-            yield self.makeLink(
-                'Related projects', submenu='related', target=project)
+        yield self.makeLink(
+            'Related projects', submenu='related', target=self.context.project)
 
 
 class ProductSetView(LaunchpadView):

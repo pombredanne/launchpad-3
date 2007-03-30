@@ -6,6 +6,7 @@ __all__ = [
     'BugAlsoReportInView',
     'BugContextMenu',
     'BugEditView',
+    'BugFacets',
     'BugMarkAsDuplicateView',
     'BugNavigation',
     'BugRelatedObjectEditView',
@@ -58,7 +59,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured)
+    Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -88,6 +89,18 @@ class BugNavigation(Navigation):
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
+
+
+class BugFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IBug.
+
+    However, we never show this, but it does apply to things like
+    bug nominations, by 'acquisition'.
+    """
+
+    usedfor = IBug
+
+    enable_only = []
 
 
 class BugSetNavigation(Navigation):
@@ -926,3 +939,4 @@ class BugURL:
     @property
     def path(self):
         return u"bugs/%d" % self.context.id
+

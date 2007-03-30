@@ -47,6 +47,11 @@
             />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugFacets"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBug"
         name="+index" />
