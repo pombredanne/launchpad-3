@@ -12,6 +12,7 @@ TESTOPTS=
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
+TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
 LPCONFIG=default
@@ -124,7 +125,7 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
 bzr_version_info:

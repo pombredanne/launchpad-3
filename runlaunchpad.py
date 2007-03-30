@@ -145,6 +145,35 @@ def start_buildsequencer():
     buildsequencer.launch()
 
 
+def start_authserver():
+    # Imported here as path is not set fully on module load
+    from canonical.config import config
+
+    # Don't run the authserver if it wasn't asked for. We only want it
+    # started up developer boxes and dogfood really, as the production
+    # authserver doesn't use this startup script.
+    if not config.authserver.launch:
+        return
+
+    authserver = TacFile(
+        'authserver', 'daemons/authserver.tac', config.authserver)
+    authserver.launch()
+
+
+def start_supermirrorsftp():
+    # Imported here as path is not set fully on module load
+    from canonical.config import config
+
+    # Don't run the authserver if it wasn't asked for. We only want it
+    # started up developer boxes and dogfood really, as the production
+    # authserver doesn't use this startup script.
+    if not config.supermirrorsftp.launch:
+        return
+
+    sftp = TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp)
+    sftp.launch()
+
+
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -165,6 +194,8 @@ def run(argv=list(sys.argv)):
     # However, this should last us until this is developed
     start_librarian()
     start_buildsequencer()
+    start_authserver()
+    start_supermirrorsftp()
 
     # Store our process id somewhere
     make_pidfile('launchpad')
