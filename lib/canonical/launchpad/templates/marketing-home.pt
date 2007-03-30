@@ -1,6 +1,7 @@
 <html metal:use-macro="context/@@marketing_template/master">
-  <ul id="home-breadcrumbs" metal:fill-slot="breadcrumbs">
-    <li><a  href="/">Home</a></li>
+  <ul metal:fill-slot="breadcrumbs">
+    <li><a href="/">Home</a></li>
+    <li class="current">About</li>
   </ul>
 
   <div id="home" metal:fill-slot="contents">
