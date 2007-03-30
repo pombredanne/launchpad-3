@@ -8,6 +8,7 @@ __all__ = [
 
 from operator import attrgetter
 from warnings import warn
+from itertools import groupby
 
 from zope.interface import implements
 
@@ -290,8 +291,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """Return a distinct list of sourcepackagereleases for this source
            package.
         """
-        return set([spph.sourcepackagerelease
-                    for spph in self._getPublishingHistory()])
+        sprlist = [spph.sourcepackagerelease
+                   for spph in self._getPublishingHistory()]
+        return [item for item,group in groupby(sprlist)]
 
     @property
     def name(self):
@@ -392,7 +394,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     def published_by_pocket(self):
         """See ISourcePackage."""
         result = self._getPublishingHistory(
-            include_status=PackagePublishingStatus.PUBLISHED)
+            include_status=[PackagePublishingStatus.PUBLISHED])
         # create the dictionary with the set of pockets as keys
         thedict = {}
         for pocket in PackagePublishingPocket.items:

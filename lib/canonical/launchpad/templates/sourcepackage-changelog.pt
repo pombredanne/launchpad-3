@@ -15,8 +15,6 @@
     <div id=changelogs>
       <ul tal:condition="context/distinctreleases">
         <li tal:repeat="spr context/distinctreleases">
-          <div tal:replace="spr/version"/>
-          <br>
           <div tal:replace="structure spr/@@+changelog"/>
         </li>
       </ul>
