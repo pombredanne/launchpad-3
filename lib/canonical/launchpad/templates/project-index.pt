@@ -1,15 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@launchpad_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
+
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
     </metal:portlets>
+
     <div metal:fill-slot="main">
+
+      <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Mozilla</h1>
-      <span tal:replace="structure context/fmt:icon" />
+
       <div tal:content="context/summary">
         This is the project Summary, which should be a single paragraph
         summarising the project's purpose.
@@ -64,6 +64,7 @@
           <div
             tal:condition="context/products"
             tal:repeat="product context/products"
+            class="project"
           >
             <h3>
               <a
@@ -94,16 +95,21 @@
               </tal:milestone>
             </div>
           </div>
-          <ul tal:condition="context/required:launchpad.Edit">
-            <li><a href="+newproduct">Register another project</a></li>
-          </ul>
+          <tal:block condition="context/required:launchpad.Edit">
+            <a href="+newproduct">&raquo; Register another project that is
+            part of <tal:project replace="context/displayname" /></a>
+          </tal:block>
         </div>
-        <div tal:replace="structure context/@@+portlet-top-contributors" />
+        <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
       <div class="right">
         <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+portlet-top-contributors" />
         <div tal:replace="structure context/@@+portlet-latestbugs" />
-        <div tal:replace="structure context/@@+portlet-latestspecs" />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
       </div>
     </div>
   </body>

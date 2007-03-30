@@ -541,7 +541,7 @@ Check the log from the uploader run has made it into the upload directory:
   DEBUG   Creating directory /var/tmp/builddmaster/failed
   ...
   DEBUG   Rolling back any remaining transactions.
-  DEBUG   Removing lock file: /var/lock/process-upload.lock
+  DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
   <BLANKLINE>
 
 Remove build upload results root

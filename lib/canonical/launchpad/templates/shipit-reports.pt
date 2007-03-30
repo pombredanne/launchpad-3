@@ -27,7 +27,15 @@
     </thead>
     <tbody>
       <tr tal:repeat="report view/reports">
-        <td tal:content="report/datecreated/fmt:date" />
+        <td>
+          <span class="sortkey"
+            tal:content="report/datecreated/fmt:datetime" />
+          <span
+            tal:attributes="title report/datecreated/fmt:datetime"
+            tal:content="report/datecreated/fmt:approximatedate">
+            2005-11-14
+          </span>
+        </td>
         <td><a tal:content="report/csvfile/filename"
                tal:attributes="href report/csvfile/http_url" />
         </td>

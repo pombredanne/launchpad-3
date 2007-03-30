@@ -8,7 +8,9 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectBrandingView',
     'ProjectNavigation',
+    'ProjectDynMenu',
     'ProjectEditView',
     'ProjectReviewView',
     'ProjectSetNavigation',
@@ -39,6 +41,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     NotFoundError)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
@@ -48,8 +51,8 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, structured)
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -64,6 +67,42 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
     def traverse(self, name):
         return self.context.getProduct(name)
+
+
+class ProjectDynMenu(DynMenu):
+
+    MAX_SUB_PROJECTS = 8
+
+    def mainMenu(self, excludeproduct=None):
+        """List products within this project.
+
+        List up to MAX_SUB_PROJECTS products.  If there are more than that
+        number of products, list up to MAX_SUB_PROJECTS products with
+        releases, and give a link to a page showing all products.
+
+        XXX: describe excludeproduct.
+        """
+        products = shortlist(self.context.products, 25)
+        num_products = len(products)
+        if excludeproduct is None:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
+        else:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
+        if num_products < MAX_SUB_PROJECTS:
+            for product in products:
+                if product != excludeproduct:
+                    yield self.makeBreadcrumbLink(product)
+        else:
+            # XXX: SteveAlexander, 2007-03-27.
+            # Use a database API for products-with-releases that prejoins.
+            count = 0
+            for product in products:
+                if product != excludeproduct and product.releases:
+                    yield self.makeBreadcrumbLink(product)
+                    count += 1
+                    if count >= self.MAX_SUB_PROJECTS:
+                        break
+            yield self.makeLink('See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
@@ -133,16 +172,25 @@ class ProjectOverviewMenu(ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'administer', 'top_contributors', 'rdf']
+        'edit', 'branding', 'driver', 'reassign',
+        'top_contributors', 'administer', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for all products'
@@ -233,11 +281,8 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'gotchi', 'emblem', 'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
 
     @action('Change Details', name='change')
@@ -273,7 +318,7 @@ class ProjectAddProductView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register a product in this project"
+    label = "Register a new project that is part of this initiative"
     product = None
 
     @action(_('Add'), name='add')
@@ -350,35 +395,35 @@ class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
     field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl', 'gotchi', 'emblem']
+                   'description', 'homepageurl',]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
         """Create the new Project from the form details."""
-        gotchi, gotchi_heading = data['gotchi']
         self.project = getUtility(IProjectSet).new(
-            name=data['name'].lower(),
+            name=data['name'].lower().strip(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
             owner=self.user,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         notify(ObjectCreatedEvent(self.project))
 
     @property
     def next_url(self):
         assert self.project is not None, 'No project has been created'
         return canonical_url(self.project)
+
+
+class ProjectBrandingView(BrandingChangeView):
+
+    schema = IProject
+    field_names = ['icon', 'logo', 'mugshot']
 
 
 class ProjectRdfView(object):

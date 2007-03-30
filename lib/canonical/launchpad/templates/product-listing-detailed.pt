@@ -7,7 +7,9 @@
   </div>
   <div>
     Registered by <a
-      tal:replace="structure context/owner/fmt:link">Foo Bar</a> on
-    <span tal:replace="context/datecreated/fmt:date">2005-10-12</span>
+      tal:replace="structure context/owner/fmt:link">Foo Bar</a>
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
   </div>
 </div>

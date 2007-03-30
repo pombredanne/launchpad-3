@@ -38,6 +38,14 @@
         classes="ProductSeriesNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductSeriesDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <adapter
         provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -64,6 +72,11 @@
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -76,6 +89,9 @@
         <browser:page
             name="+importstatus"
             template="../templates/productseries-importstatus.pt" />
+        <browser:page
+            name="+macros"
+            template="../templates/productseries-macros.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />
@@ -97,6 +113,9 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
+        <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
         <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />
@@ -237,30 +256,35 @@
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
   </securedutility>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    path_expression="string:series"
+    parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+    />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+bazaar-index" />
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+bazaar-index" />
 
   <!-- XXX need better permissions -->
   <browser:pages
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      permission="launchpad.AnyPerson"
-      facet="overview"
-      class="canonical.launchpad.browser.ProductSeriesSourceSetView">
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    permission="launchpad.AnyPerson"
+    facet="branches"
+    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
     <browser:page
-        name="+bazaar-index"
-        template="../templates/sources-index.pt"
-        />
+      name="+bazaar-index"
+      template="../templates/sources-index.pt"
+      />
   </browser:pages>
 
-<browser:page
-  for="canonical.launchpad.interfaces.IProductSeries"
-  name="+shortlink"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.ProductSeriesShortLink"
-  attribute="__call__"
-  />
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductSeriesShortLink"
+    attribute="__call__"
+    />
 
 </configure>

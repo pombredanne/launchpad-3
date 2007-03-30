@@ -32,7 +32,7 @@ should receive a nice error message.
   ...     'Starting Date and Time').value = '2006-01-10 23:30'
   >>> browser.getControl(
   ...     'Finishing Date and Time').value = '2005-02-12 00:11'
-  >>> browser.getControl('Change', index=2).click()
+  >>> browser.getControl('Change').click()
 
   >>> "This event can't start after it ends" in browser.contents
   True
@@ -46,7 +46,7 @@ sprint home page.
   >>> browser.getControl(
   ...     'Finishing Date and Time').value = '2006-02-12 17:00'
   >>> browser.getControl('Meeting Address').value = address
-  >>> browser.getControl('Change', index=2).click()
+  >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/ubz'
@@ -68,7 +68,7 @@ dates will be changed too, since they follow local time:
 
   >>> browser.open('http://launchpad.dev/sprints/ubz/+edit')
   >>> browser.getControl('Timezone').value = ['Australia/Darwin']
-  >>> browser.getControl('Change', index=2).click()
+  >>> browser.getControl('Change').click()
   >>> print browser.url
   http://launchpad.dev/sprints/ubz
 
@@ -79,3 +79,4 @@ dates will be changed too, since they follow local time:
   ...Ends:...
   2006-02-12 17:00:00 CST...
   ...
+

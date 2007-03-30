@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
+           'ProductSeriesDynMenu',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
@@ -45,6 +46,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -694,3 +696,11 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductSeriesDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for release in self.context.releases:
+            yield self.makeLink(release.title, context=release)
+
