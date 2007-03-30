@@ -7,18 +7,40 @@ This module also has an API for use by the application.
 """
 __metaclass__ = type
 
-__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'nearest_menu', 'canonical_url', 'nearest', 'structured',
-           'StandardLaunchpadFacets', 'enabled_with_permission',
-           'LaunchpadView', 'LaunchpadXMLRPCView',
-           'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'smartquote',
-           'urlappend', 'urlparse', 'urlsplit',
-           'GeneralFormView', 'GeneralFormViewFactory',
-           'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget',
-           'expand_numbers','sorted_version_numbers',
-           'sorted_dotted_numbers']
+__all__ = [
+    'Link',
+    'FacetMenu',
+    'ApplicationMenu',
+    'ContextMenu',
+    'nearest_context_with_adapter',
+    'nearest_adapter',
+    'canonical_url',
+    'nearest',
+    'structured',
+    'StandardLaunchpadFacets',
+    'enabled_with_permission',
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'Navigation',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'GetitemNavigation',
+    'smartquote',
+    'urlappend',
+    'urlparse',
+    'urlsplit',
+    'GeneralFormView',
+    'GeneralFormViewFactory',
+    'Utf8PreferredCharsets',
+    'LaunchpadFormView',
+    'LaunchpadEditFormView',
+    'action',
+    'custom_widget',
+    'expand_numbers',
+    'sorted_version_numbers',
+    'sorted_dotted_numbers',
+    ]
 
 import re
 
@@ -31,8 +53,8 @@ from canonical.launchpad.webapp.generalform import (
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
-    enabled_with_permission
+    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
+    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
     )
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
@@ -126,8 +148,8 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def specifications(self):
         target = '+specs'
-        text = 'Features'
-        summary = 'Feature specifications and plans'
+        text = 'Blueprints'
+        summary = 'Blueprints and specifications'
         return Link(target, text, summary)
 
     def bounties(self):

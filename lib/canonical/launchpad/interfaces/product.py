@@ -252,8 +252,11 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'translation. This will remove the caution from the '
         'pages for this product in Launchpad.'))
 
-    sourcepackages = Attribute(_("List of distribution packages for this \
-        product"))
+    sourcepackages = Attribute(_("List of distribution release packages for "
+        "this product"))
+
+    distrosourcepackages = Attribute(_("List of distribution packages for "
+        "this product"))
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
@@ -274,9 +277,11 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     related to this product."""))
 
     milestones = Attribute(_(
-        """The release milestones associated with this product, useful in
-        particular to the maintainer, for organizing which bugs will be fixed
-        when."""))
+        "The visible release milestones associated with this product, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this product, ordered by "
+        "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

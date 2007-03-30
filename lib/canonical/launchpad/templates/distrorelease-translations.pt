@@ -17,7 +17,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Hoary Hedgehog</h3>
   <h1 i18n:translate="">Translation status by language</h1>
 </metal:heading>
 

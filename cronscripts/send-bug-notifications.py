@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Send bug notifications.
@@ -26,14 +26,12 @@ class SendBugNotifications(LaunchpadScript):
         notifications_sent = False
         pending_notifications = get_email_notifications(getUtility(
             IBugNotificationSet).getNotificationsToSend())
-        for bug_notifications, to_addresses, email in pending_notifications:
-            for to_address in to_addresses:
-                del email['To']
-                email['To'] = to_address
+        for bug_notifications, messages in pending_notifications:
+            for message in messages:
                 self.logger.info("Notifying %s about bug %d." % (
-                    email['To'], bug_notifications[0].bug.id))
-                sendmail(email)
-            self.logger.debug(email.as_string())
+                    message['To'], bug_notifications[0].bug.id))
+                sendmail(message)
+                self.logger.debug(message.as_string())
             for notification in bug_notifications:
                 notification.date_emailed = UTC_NOW
             notifications_sent = True

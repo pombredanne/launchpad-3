@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 import _pythonpath
@@ -21,5 +21,9 @@ class RosettaPOImporter(LaunchpadScript):
 if __name__ == '__main__':
     script = RosettaPOImporter('rosetta-poimport',
         dbuser=config.rosetta.poimport.dbuser)
-    script.lock_and_run()
+    script.lock_or_quit()
+    try:
+        script.run()
+    finally:
+        script.unlock()
 

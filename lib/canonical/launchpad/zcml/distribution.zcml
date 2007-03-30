@@ -37,6 +37,14 @@
             "
             />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
@@ -54,6 +62,11 @@
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:navigation
@@ -134,24 +147,14 @@
         name="+unofficialmirrors"
         template="../templates/distribution-mirrors.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+newmirror"
         facet="overview"
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
-        keyword_arguments="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:generalform>
+    </browser:page>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -161,6 +164,11 @@
             name="+index"
             facet="overview"
             template="../templates/distribution-index.pt"
+            />
+        <browser:page
+            name="+releases"
+            facet="overview"
+            template="../templates/distribution-releases.pt"
             />
         <browser:page
             name="+search"
@@ -239,8 +247,9 @@
             template="../templates/object-portlet-milestones.pt"
             />
         <browser:page
-            name="+portlet-translations"
-            template="../templates/distribution-portlet-translations.pt"
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-uploaders"

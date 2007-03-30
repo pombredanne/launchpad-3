@@ -158,6 +158,10 @@ class IHasSprints(Interface):
         "A list of up to 5 events currently on, or soon to be on, that are "
         "relevant to this context.")
 
+    sprints = Attribute("All sprints relevant to this context.")
+
+    past_sprints = Attribute("Sprints that occured in the past.")
+
 
 class ISprintSet(Interface):
     """A container for sprints."""

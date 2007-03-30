@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductNavigation',
+    'ProductDynMenu',
     'ProductShortLink',
     'ProductSOP',
     'ProductFacets',
@@ -50,19 +51,24 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot, IBranchSet)
+    ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.bugtask import (
+    BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -70,6 +76,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.product import ProductBugTrackerWidget
@@ -113,7 +120,7 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def breadcrumb(self):
-        return 'Products'
+        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -390,7 +397,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall', 'withcode']
+             'register', 'listall']
 
     def register(self):
         text = 'Register a project'
@@ -399,7 +406,7 @@ class ProductSetContextMenu(ContextMenu):
     def listall(self):
         text = 'List all projects'
         return Link('+all', text, icon='list')
-    
+
     def products(self):
         return Link('/products/', 'View projects')
 
@@ -411,12 +418,6 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def withcode(self):
-        text = 'Show projects with code'
-        productset = getUtility(IProductSet)
-        return Link(canonical_url(
-            productset, rootsite='code'), text, icon='list')
 
 
 class ProductView:
@@ -544,6 +545,12 @@ class ProductView:
                                              key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
         return series_list
+
+    def getClosedBugsURL(self, series):
+        status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
+        url = canonical_url(series) + '/+bugs'
+        return get_buglisting_search_filter_url(url, status=status)
+
 
 class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
@@ -680,47 +687,36 @@ class ProductRdfView:
         return encodeddata
 
 
-class ProductDynMenu(LaunchpadView):
+class ProductDynMenu(
+        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
 
-    def render(self):
-        L = []
-        L.append('<ul class="menu"')
-        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
-        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
-            % self.context.name)
-        L.append('>')
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'series': 'seriesMenu',
+        'related': 'relatedMenu',
+        }
 
-        producturl = '/products/%s' % self.context.name
+    def relatedMenu(self):
+        """Show items related to this product.
 
-        for link, name in [
-            ('+branches', 'Branches'),
-            ('+sprints', 'Meetings'),
-            ('+milestones', 'Milestones'),
-            ('+series', 'Product series')
-            ]:
-            L.append('<li class="item container" lpm:midpart="%s">' % link)
-            L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
-            L.append('</li>')
-        L.append('</ul>')
-        return u'\n'.join(L)
+        If there is a project, show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
+        project = self.context.project
+        if project is not None:
+            yield self.makeLink(project.title, target=project)
+            projectdynmenu = ProjectDynMenu(project, self.request)
+            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
+                yield link
 
-class ProductSetDynMenu(LaunchpadView):
-
-    def render(self):
-        L = []
-        L.append('<ul class="menu"')
-        L.append('    lpm:mid="/products/+menudata"')
-        L.append('>')
-        for product in self.context:
-            # given in full because there was an error in the JS when
-            # i use midpart / midbase.
-            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
-            L.append('<a href="/products/%s">' % product.name)
-            L.append(product.name)
-            L.append('</a>')
-            L.append('</li>')
-        L.append('</ul>')
-        return u'\n'.join(L)
+    def mainMenu(self):
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink('Milestones', page='+milestones')
+        yield self.makeLink('Product series', page='+series', submenu='series')
+        yield self.makeLink(
+            'Related projects', submenu='related', target=self.context.project)
 
 
 class ProductSetView(LaunchpadView):

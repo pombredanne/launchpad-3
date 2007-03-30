@@ -81,7 +81,7 @@ def confirm_dbrevision_on_startup(*ignored):
     con = connect(config.launchpad.dbuser)
     try:
         cur = con.cursor()
-        confirm_dbrevision()
+        confirm_dbrevision(cur)
     finally:
         con.close()
 

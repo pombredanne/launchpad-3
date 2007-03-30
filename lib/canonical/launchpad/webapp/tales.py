@@ -14,6 +14,7 @@ import os.path
 import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
+from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -25,14 +26,18 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
+import pytz
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef)
+    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
+    IStructuralHeaderPresentation, IBugNomination)
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp import (
+    canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.authorization import check_permission
@@ -70,7 +75,7 @@ class MenuAPI:
 
     def _nearest_menu(self, menutype):
         try:
-            return nearest_menu(self._context, menutype)
+            return nearest_adapter(self._context, menutype)
         except NoCanonicalUrl:
             return None
 
@@ -282,6 +287,8 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'approximatedate',
+        'displaydate',
         'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
@@ -388,7 +395,7 @@ class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         resource = person.default_emblem_resource
-        return '<a href="%s"><img alt="" src="%s" />%s</a>' % (
+        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
             url, resource, person.browsername)
 
 
@@ -526,6 +533,55 @@ class DateTimeFormatterAPI:
         if value.tzinfo:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
+
+    def displaydate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = abs(now - self._datetime)
+        if delta > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return 'on ' + self.date()
+        return self.approximatedate()
+
+    def approximatedate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = now - self._datetime
+        if abs(delta) > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return self.date()
+        future = delta < timedelta(0, 0, 0)
+        delta = abs(delta)
+        days = delta.days
+        hours = delta.seconds / 3600
+        minutes = (delta.seconds - (3600*hours)) / 60
+        seconds = delta.seconds % 60
+        result = ''
+        comma = ''
+        if future:
+            result += 'in '
+        if days != 0:
+            result += '%d days' % days
+            comma = ', '
+        if days == 0 and hours != 0:
+            result += '%s%d hours' % (comma, hours)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes != 0:
+            result += '%s%d minutes' % (comma, minutes)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes == 0:
+            result += '%s%d seconds' % (comma, seconds)
+        if not future:
+            result += ' ago'
+        return result
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
@@ -1192,12 +1248,15 @@ class PageMacroDispatcher:
         view/macro:page/pillarindex
         view/macro:page/freeform
 
-        view/macro:pagehas/actionsmenu
-        view/macro:pagehas/portletcolumn
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
         view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/portlets
+        view/macro:pagehas/structuralheaderobject
+
+        view/macro:pagetype
 
     """
 
@@ -1228,6 +1287,9 @@ class PageMacroDispatcher:
             layoutelement = furtherPath.pop()
             return self.haspage(layoutelement)
 
+        if name == 'pagetype':
+            return self.pagetype()
+
         raise TraversalError()
 
     def page(self, pagetype):
@@ -1242,15 +1304,19 @@ class PageMacroDispatcher:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
 
+    def pagetype(self):
+        return getattr(self.context, '__pagetype__', 'unset')
+
     class LayoutElements:
 
         def __init__(self,
-            actionsmenu=False,
-            portletcolumn=False,
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
+            globalsearch=False,
             heading=False,
+            portlets=False,
+            structuralheaderobject=False,
             pagetypewasset=True
             ):
             self.elements = vars()
@@ -1261,34 +1327,39 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                actionsmenu=True,
-                portletcolumn=True,
                 applicationtabs=True,
                 applicationborder=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
-                actionsmenu=True,
-                portletcolumn=True,
+                applicationborder=True,
                 applicationtabs=True,
-                applicationborder=True),
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True),
         'applicationhome':
             LayoutElements(
+                applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
-                actionsmenu=True,
-                portletcolumn=True,
+                applicationborder=True,
                 applicationbuttons=True,
-                heading=True),
+                globalsearch=False,
+                heading=True,
+                portlets=True),
         'freeform':
             LayoutElements(),
         }
 
 
 class GotoStructuralObject:
-    """lp:structuralobject
+    """lp:structuralheaderobject, lp:structuralfooterobject
 
     Returns None when there is no structural object.
     """
@@ -1296,19 +1367,38 @@ class GotoStructuralObject:
     def __init__(self, context_dict):
         self.context = context_dict['context']
         self.view = context_dict['view']
+        self.use_context = self._getUseContext()
 
-    @property
-    def structuralobject(self):
+    def _getUseContext(self):
+        """Return the appropriate context to use.
+
+        This works around the hack in bug-related views where the context
+        is not the bugtask, but instead the bug.
+        """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
+            IBugNomination.providedBy(self.context) or
             IBugExternalRef.providedBy(self.context)):
-            use_context = self.view.current_bugtask
+            return self.view.current_bugtask
         else:
-            use_context = self.context
+            return self.context
+
+    @property
+    def structuralfooterobject(self):
         # The structural object is the nearest object with a facet menu.
         try:
-            facetmenu = nearest_menu(use_context, IFacetMenu)
+            menucontext, facetmenu = nearest_context_with_adapter(
+                self.use_context, IFacetMenu)
         except NoCanonicalUrl:
             return None
-        return facetmenu.context
+        return menucontext
+
+    @property
+    def structuralheaderobject(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return None
+        return headercontext
 

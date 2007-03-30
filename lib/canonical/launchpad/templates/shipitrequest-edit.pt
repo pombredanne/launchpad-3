@@ -54,7 +54,11 @@
         <tal:block repeat="shipped_request shipped_requests">
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
-              <span tal:replace="shipped_request/daterequested/fmt:date" />:
+              <span
+                tal:attributes="
+                  title shipped_request/daterequested/fmt:datetime"
+                tal:content="
+                  shipped_request/daterequested/fmt:approximatedate" />:
               <span tal:replace="shipped_request/getTotalCDs" />
               <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
                 <span tal:replace="flavour/title" /><span
@@ -183,7 +187,9 @@
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
-        <td><span tal:replace="context/daterequested/fmt:datetime" /></td>
+        <td><span
+              tal:attributes="title context/daterequested/fmt:datetime"
+              tal:content="context/daterequested/fmt:approximatedate" /></td>
       </tr>
       <tr tal:condition="context/reason">
         <td align="right"><strong>Reason:</strong></td>

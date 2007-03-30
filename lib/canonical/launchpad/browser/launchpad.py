@@ -11,17 +11,20 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
+    'LaunchpadRootDynMenu',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
-    'StructuralObjectPresentationView',
+    'StructuralHeaderPresentationView',
+    'StructuralFooterPresentationView',
+    'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
     'SearchProjectsView',
     'DefaultShortLink',
-    'BrowserWindowDimensions'
+    'BrowserWindowDimensions',
     ]
 
 import cgi
@@ -80,6 +83,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     ISprintSet,
     IStructuralObjectPresentation,
+    IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
     NotFoundError,
@@ -88,6 +92,7 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -170,22 +175,20 @@ class Breadcrumbs(LaunchpadView):
         """Render the breadcrumbs text.
 
         The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
-        breadcrumb is made <strong>.
+        For each breadcrumb, breadcrumb.text is cgi escaped.
         """
         crumbs = list(self.request.breadcrumbs)
-        if crumbs:
-            # Discard the first breadcrumb, as we know it will be the
-            # Launchpad one anyway.
-            firstcrumb = crumbs.pop(0)
-            assert firstcrumb.text == 'Launchpad'
 
         L = []
         firsturl = '/'
         firsttext = 'Home'
+        from canonical.launchpad.webapp.vhosts import allvhosts
+        rooturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
-            '<li lpm:mid="root" class="item"><a href="%s"><em>%s</em></a></li>'
+            '<li lpm:mid="root" class="item">'
+            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
+            '<em><span>%s</span></em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
@@ -203,10 +206,17 @@ class Breadcrumbs(LaunchpadView):
 
                 # Disable these menus for now.  To be re-enabled on the ui 1.0
                 # branch.
-                L.append('<li class="item">'
-                         '<a href="%s"><em>%s</em></a>'
+                if crumb.has_menu:
+                    menudata = ' lpm:mid="%s/+menudata"' % crumb.url
+                    cssclass = 'breadcrumb container'
+                else:
+                    menudata = ''
+                    cssclass = 'breadcrumb'
+                L.append('<li class="item"%s>'
+                         '<a href="%s" class="%s"><em>%s</em></a>'
                          '</li>'
-                         % (crumb.url, cgi.escape(crumb.text)))
+                         % (menudata, crumb.url, cssclass,
+                            cgi.escape(crumb.text)))
 
             #L.append(
             #    '<li class="item">'
@@ -317,6 +327,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
 
 class MaloneContextMenu(ContextMenu):
+    # XXX 20060327 mpt: No longer visible on Bugs front page.
     usedfor = IMaloneApplication
     links = ['cvetracker']
 
@@ -326,6 +337,7 @@ class MaloneContextMenu(ContextMenu):
 
 
 class RosettaContextMenu(ContextMenu):
+    # XXX 20060327 mpt: No longer visible on Translations front page.
     usedfor = IRosettaApplication
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
@@ -431,9 +443,6 @@ class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
 
-    def breadcrumb(self):
-        return 'Launchpad'
-
     stepto_utilities = {
         'products': IProductSet,
         'people': IPersonSet,
@@ -497,7 +506,7 @@ class LaunchpadRootNavigation(Navigation):
         # If we are looking at the front page, don't redirect:
         if self.request['PATH_INFO'] == '/':
             return None
-        
+
         # If no redirection host is set, don't redirect.
         mainsite_host = config.launchpad.vhosts.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
@@ -527,7 +536,7 @@ class LaunchpadRootNavigation(Navigation):
 
         # Empty the traversal stack, since we're redirecting.
         self.request.setTraversalStack([])
-        
+
         # And perform a temporary redirect.
         return RedirectionView(str(uri), self.request, status=303)
 
@@ -536,6 +545,26 @@ class LaunchpadRootNavigation(Navigation):
         if beta_redirection_view is not None:
             return beta_redirection_view
         return Navigation.publishTraverse(self, request, name)
+
+
+class LaunchpadRootDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    def contributionsMenu(self):
+        if self.user is not None:
+            L = [self.makeBreadcrumbLink(item)
+                 for item in self.user.iterTopProjectsContributedTo()]
+            L.sort(key=lambda item: item.text.lower())
+            if L:
+                for obj in L:
+                    yield obj
+            else:
+                yield self.makeLink(
+                    'Projects you contribute to go here.', target=None)
+            yield self.makeLink('See all projects...', target='/products')
 
 
 class SoftTimeoutView(LaunchpadView):
@@ -614,7 +643,7 @@ class LaunchpadRootIndexView(LaunchpadView):
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
         return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-    
+
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
         if config.launchpad.beta_testers_redirection_host is None:
@@ -622,7 +651,6 @@ class LaunchpadRootIndexView(LaunchpadView):
 
         return self.user is not None and self.user.inTeam(
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
-        
 
 
 class ObjectForTemplate:
@@ -737,11 +765,19 @@ class File:
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
-    """View that gives access to the files in a folder."""
+    """View that gives access to the files in a folder.
+
+    The URL to the folder can start with an optional path step like
+    /revNNN/ where NNN is one or more digits.  This path step will
+    be ignored.  It is useful for having a different path for
+    all resources being served, to ensure that we don't use cached
+    files in browsers.
+    """
 
     implements(IBrowserPublisher)
 
     folder = '../icing/'
+    rev_part_re = re.compile('rev\d+$')
 
     def __init__(self, context, request):
         """Initialize with context and request."""
@@ -750,15 +786,20 @@ class IcingFolder:
         self.names = []
 
     def __call__(self):
-        if not self.names:
+        names = list(self.names)
+        if names and self.rev_part_re.match(names[0]):
+            # We have a /revNNN/ path step, so remove it.
+            names = names[1:]
+
+        if not names:
             # Just the icing directory, so make this a 404.
             raise NotFound(self, '')
-        elif len(self.names) > 1:
+        elif len(names) > 1:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
-            name = self.names[0]
+            [name] = names
             return self.prepareDataForServing(name)
 
     def prepareDataForServing(self, name):
@@ -797,7 +838,19 @@ class IcingFolder:
         return self, ()
 
 
-class StructuralObjectPresentationView(LaunchpadView):
+class StructuralHeaderPresentationView(LaunchpadView):
+
+    def initialize(self):
+        self.headerpresentation = IStructuralHeaderPresentation(self.context)
+
+    def getIntroHeading(self):
+        return self.headerpresentation.getIntroHeading()
+
+    def getMainHeading(self):
+        return self.headerpresentation.getMainHeading()
+
+
+class StructuralFooterPresentationView(LaunchpadView):
 
     # Object attributes used by the page template:
     #   num_lists: 0, 1 or 2
@@ -844,20 +897,10 @@ class StructuralObjectPresentationView(LaunchpadView):
         else:
             self.num_lists = 2
 
-    def getIntroHeading(self):
-        return self.structuralpresentation.getIntroHeading()
+class StructuralHeaderPresentation:
+    """Base class for StructuralHeaderPresentation adapters."""
 
-    def getMainHeading(self):
-        return self.structuralpresentation.getMainHeading()
-
-    def getGotchiURL(self):
-        return '/+not-found-gotchi'
-
-
-class StructuralObjectPresentation:
-    """Base class for StructuralObjectPresentation adapters."""
-
-    implements(IStructuralObjectPresentation)
+    implements(IStructuralHeaderPresentation)
 
     def __init__(self, context):
         self.context = context
@@ -867,6 +910,12 @@ class StructuralObjectPresentation:
 
     def getMainHeading(self):
         raise NotImplementedError()
+
+
+class StructuralObjectPresentation(StructuralHeaderPresentation):
+    """Base class for StructuralObjectPresentation adapters."""
+
+    implements(IStructuralObjectPresentation)
 
     def listChildren(self, num):
         return []
@@ -914,6 +963,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
@@ -924,6 +975,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="64"'
+            '    height="64"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
@@ -934,6 +987,8 @@ class Button:
         return (
             '<a href="%(url)s">\n'
             '  <img'
+            '    width="146"'
+            '    height="146"'
             '    alt=""'
             '    src="/+icing/app-%(buttonname)s.gif"'
             '    title="%(text)s"'
@@ -968,13 +1023,12 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(
-            register="Register your project so it can benefit from "
-                     "Launchpad&rsquo;s features."),
+        ProductsButton(register="Register your project to encourage "
+            "community collaboration."),
         Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
-        Button(
-            blueprints="Track specifications to approval and implementation."),
+        Button(blueprints="Track blueprints through approval and "
+            "implementation."),
         Button(translations="Localize software into your favorite language."),
         Button(answers="Ask and answer questions about software.")
         ]
