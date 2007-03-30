@@ -338,7 +338,9 @@ class HasSprintsMixin:
             Specification.%s = %s
             AND Specification.id = SprintSpecification.specification
             AND SprintSpecification.sprint = Sprint.id
-            """ % (self._table, self.id)
+            AND SprintSpecification.status = %s
+            """ % (self._table, self.id,
+                   quote(SprintSpecificationStatus.ACCEPTED))
         return query, ['Specification', 'SprintSpecification']
 
     @property
@@ -356,4 +358,13 @@ class HasSprintsMixin:
         return Sprint.select(
             query, clauseTables=tables, orderBy='time_starts',
             distinct=True, limit=5)
+
+    @property
+    def past_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends <= 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts',
+            distinct=True)
 

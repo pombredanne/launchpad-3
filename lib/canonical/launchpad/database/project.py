@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter)
+    SpecificationFilter, SprintSpecificationStatus)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -136,7 +136,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             AND Specification.product = Product.id
             AND Specification.id = SprintSpecification.specification
             AND SprintSpecification.sprint = Sprint.id
-            """ % sqlvalues(self)
+            AND SprintSpecification.status = %s
+            """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
         return query, ['Product', 'Specification', 'SprintSpecification']
 
     @property

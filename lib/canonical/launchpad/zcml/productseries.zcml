@@ -72,6 +72,11 @@
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -108,6 +113,9 @@
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
+        <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
         <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />

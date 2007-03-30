@@ -281,6 +281,13 @@ An IBugComment.
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/firefox/+bug/1/comments/1'
 
+An IBugNomination.
+
+    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> bug_nomination = getUtility(IBugNominationSet).get(1)
+    >>> canonical_url(bug_nomination)
+    u'http://launchpad.dev/bugs/1/nominations/1'
+
 == Remote Bug Trackers and Remote Bugs ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet

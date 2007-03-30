@@ -22,6 +22,7 @@ from BeautifulSoup import BeautifulSoup
 
 from hct.util import log
 from hct.util.path import as_dir, subdir, under_only
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -336,31 +337,30 @@ class HTTPWalker(WalkerBase):
         except (IOError, socket.error), exc:
             raise HTTPWalkerError(str(exc))
 
+        base = URI(self.base).resolve(dirname)
+
+        # Collect set of URLs that are below the base URL
+        urls = set()
+        for anchor in soup("a"):
+            try:
+                url = base.resolve(anchor.get("href"))
+            except InvalidURIError:
+                continue
+            # Only add the URL if it is strictly inside the base URL.
+            if base.contains(url) and not url.contains(base):
+                urls.add(url)
+
         dirnames = set()
         filenames = set()
-        for url in set(urljoin(dirname, anchor.get("href"))
-                       for anchor in soup("a")):
-            (scheme, netloc, path, query, fragment) \
-                     = urlsplit(url, self.scheme, self.FRAGMENTS)
-
-            # XXX: Only follow URLs that are directly underneath the one
-            # we were looking at.  This avoids accidentally walking the
-            # entire world-wide-web, but does mean that "download.html"
-            # URLs won't work.  Better suggestions accepted. --keybuk 27jun05
-            if len(scheme) and scheme != self.scheme:
-                continue
-            elif len(netloc) and netloc != self.full_netloc:
-                continue
-            elif not under_only(dirname, path):
-                continue
-            elif path.endswith(';type=a') or path.endswith(';type=i'):
+        for url in urls:
+            if url.path.endswith(';type=a') or url.path.endswith(';type=i'):
                 # these links come from Squid's FTP dir listing to
                 # force either ASCII or binary download and can be
                 # ignored.
                 continue
 
-            filename = subdir(dirname, path)
-            if self.isDirectory(path):
+            filename = subdir(base.path, url.path)
+            if self.isDirectory(url.path):
                 dirnames.add(as_dir(filename))
             else:
                 filenames.add(filename)
