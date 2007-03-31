@@ -21,7 +21,9 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILanguage"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -80,7 +82,9 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILanguageSet"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ILanguageSet"
