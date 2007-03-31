@@ -38,8 +38,6 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.publisher.browser.metaconfigure import (
     defaultView as original_defaultView)
 
-from zope.app.security.fields import Permission
-
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 
@@ -540,27 +538,18 @@ class ITourPageDirective(Interface):
         description=u"The name shows up in URLs/paths. For example 'foo'.",
         required=True)
 
-    permission = Permission(
-        title=u"Permission",
-        description=u"The permission needed to use the view.",
-        required=True)
-
     tour = Path(
         title=u"Path to the tour XML description.",
         description=u"The tour description is held in an XML file.",
         required=True)
 
 
-def tour_page(_context, for_, name, tour, permission,
-              layer=IDefaultBrowserLayer):
+def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
     """Register a new LaunchpadTourView.
 
     This actually register a dynamically generated subclass that is protected
     with the configured permission.
     """
-    if permission == 'zope.Public':
-        permission = CheckerPublic
-
     tour = os.path.abspath(str(_context.path(tour)))
     if not os.path.isfile(tour):
         raise ConfigurationError("No such file", tour)
@@ -576,9 +565,10 @@ def tour_page(_context, for_, name, tour, permission,
     new_class = type(
         "SimpleLaunchpadTourView for %s" % tour, (LaunchpadTourView, ), cdict)
 
-    required = {'__call__': permission}
+    # Tours are always public.
+    required = {'__call__': CheckerPublic}
     for n in IBrowserPublisher.names(all=True):
-        required[n] = permission
+        required[n] = CheckerPublic
 
     defineChecker(new_class, Checker(required))
 

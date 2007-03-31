@@ -60,7 +60,6 @@
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
-        permission="zope.Public"
         tour="../templates/marketing-answers-tour.xml"
         />
 
@@ -83,7 +82,6 @@
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
-        permission="zope.Public"
         tour="../templates/marketing-blueprints-tour.xml"
         />
 
@@ -106,7 +104,6 @@
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
-        permission="zope.Public"
         tour="../templates/marketing-bugs-tour.xml"
         />
 
@@ -129,7 +126,6 @@
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
-        permission="zope.Public"
         tour="../templates/marketing-code-tour.xml"
         />
 
@@ -153,7 +149,6 @@
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
-        permission="zope.Public"
         tour="../templates/marketing-translations-tour.xml"
         />
 

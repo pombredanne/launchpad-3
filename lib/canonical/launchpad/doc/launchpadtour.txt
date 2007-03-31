@@ -183,7 +183,6 @@ browser:tour is available for this purpose.
     ...   <include file="lib/zope/app/meta.zcml" />
     ...   <browser:tour
     ...       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-    ...       permission="zope.Public"
     ...       name="+test-bugs-tour"
     ...       tour="%s"
     ...       />
