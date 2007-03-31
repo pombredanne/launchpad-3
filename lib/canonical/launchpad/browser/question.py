@@ -878,7 +878,7 @@ class QuestionSetContextMenu(ContextMenu):
 
     def findproduct(self):
         text = 'Find upstream project'
-        return Link('/products', text, icon='search')
+        return Link('/projects', text, icon='search')
 
     def finddistro(self):
         text = 'Find distribution'
