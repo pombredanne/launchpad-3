@@ -94,12 +94,10 @@ class DynMenu(LaunchpadView):
             [name] = self.names
         else:
             name = ''
-
-        renderer_name = self.menus.get(name)
-        if renderer_name is None:
+        renderer = self.getSubmenuMethod(name)
+        if renderer is None:
             raise NotFoundError(name)
         else:
-            renderer = getattr(self, renderer_name)
             return self.renderMenu(renderer())
 
     def getBreadcrumbText(self, obj):
@@ -111,19 +109,22 @@ class DynMenu(LaunchpadView):
         else:
             return breadcrumbprovider.breadcrumb()
 
-    def getSubmenuMethod(self, context, submenu_name):
+    def getSubmenuMethod(self, submenu_name, context=None):
         """Return submenu method, or None if there isn't one."""
-        if context is self.context:
+        if context is None or context is self.context:
             submenu = self
         else:
             submenu = queryMultiAdapter(
                 (context, self.request), name='+menudata')
             if submenu is None:
                 return None
-        return getattr(submenu, submenu.menus[submenu_name], None)
+        method_name = submenu.menus.get(submenu_name)
+        if method_name is None:
+            return None
+        return getattr(submenu, method_name)
 
-    def submenuHasItems(self, context, submenu_name):
-        submenu_method = self.getSubmenuMethod(context, submenu_name)
+    def submenuHasItems(self, submenu_name, context=None):
+        submenu_method = self.getSubmenuMethod(submenu_name, context=context)
         if submenu_method is None:
             return False
         submenu = submenu_method()

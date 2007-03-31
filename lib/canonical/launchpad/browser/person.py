@@ -21,6 +21,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
@@ -121,6 +122,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
@@ -176,6 +178,25 @@ class PersonNavigation(CalendarTraversalMixin,
 
     def breadcrumb(self):
         return self.context.displayname
+
+
+class PersonDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    def contributionsMenu(self):
+        L = [self.makeBreadcrumbLink(item)
+             for item in self.context.iterTopProjectsContributedTo()]
+        L.sort(key=lambda item: item.text.lower())
+        if L:
+            for obj in L:
+                yield obj
+        else:
+            yield self.makeLink(
+                'Projects you contribute to go here.', target=None)
+        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(CalendarTraversalMixin,
