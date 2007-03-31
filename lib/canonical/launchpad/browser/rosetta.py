@@ -22,7 +22,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
 from canonical.launchpad.webapp import Navigation, redirection, stepto
+from canonical.launchpad.webapp.batching import BatchNavigator
 
+from canonical.cachedproperty import cachedproperty
 
 class RosettaApplicationView:
 
@@ -56,9 +58,9 @@ class RosettaApplicationView:
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
-    def batchnav_for_products(self):
-        """Returns a BatchNavigator for the list of translatable products."""
-        from canonical.launchpad.webapp.batching import BatchNavigator
+    @cachedproperty
+    def batchnav(self):
+        """Return a BatchNavigator for the list of translatable products."""
         products = getUtility(IProductSet)
         return BatchNavigator(products.translatables(),
                               self.request)
