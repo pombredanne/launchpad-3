@@ -10,6 +10,7 @@ __all__ = [
     'DistributionSpecificationsMenu',
     'DistributionView',
     'DistributionAllPackagesView',
+    'DistributionBrandingView',
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
@@ -40,6 +41,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
     NotFoundError, IDistributionMirrorSet)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -52,12 +54,13 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView, custom_widget)
+    stepthrough, stepto, LaunchpadFormView)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 
 
 class DistributionNavigation(
@@ -180,16 +183,21 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'top_contributors', 'builds',
-             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
-             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
-             'upload_admin']
+    links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
+             'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
+             'builds', 'release_mirrors', 'archive_mirrors',
+             'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
+             'launchpad_usage', 'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -436,15 +444,17 @@ class DistributionRedirectingEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+class DistributionBrandingView(BrandingChangeView):
+
+    schema = IDistribution
+    field_names = ['icon', 'logo', 'mugshot']
+
+
 class DistributionEditView(LaunchpadEditFormView):
 
     schema = IDistribution
     label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description',
-                   'gotchi', 'emblem']
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    field_names = ['displayname', 'title', 'summary', 'description',]
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -483,14 +493,10 @@ class DistributionAddView(LaunchpadFormView):
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "gotchi", "emblem", "domainname", "members"]
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
+                   "domainname", "members"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        gotchi, gotchi_heading = data['gotchi']
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -500,9 +506,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 
@@ -653,30 +657,15 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
 
 
-class DistributionDynMenu(DynMenu):
+class DistributionDynMenu(
+    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
 
-    def render(self):
-        if len(self.names) > 1:
-            # XXX: untested
-            raise NotFoundError(self.names[-1])
-
-        if not self.names:
-            return self.renderMenu(self.mainMenu())
-
-        [name] = self.names
-        if name == 'meetings':
-            return self.renderMenu(self.meetingsMenu())
-        elif name == 'releases':
-            return self.renderMenu(self.releaseMenu())
-        elif name == 'milestones':
-            return self.renderMenu(self.milestoneMenu())
-
-        raise NotFoundError(name)
-
-    def releaseMenu(self):
-        for release in self.context.releases:
-            yield self.makeBreadcrumbLink(release)
-        yield self.makeLink('Show all releases...', page='+releases')
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'releases': 'releasesMenu',
+        'milestones': 'milestoneMenu',
+        }
 
     def milestoneMenu(self):
         """Show milestones more recently than one month ago,
@@ -688,13 +677,6 @@ class DistributionDynMenu(DynMenu):
                 milestone.dateexpected > fairly_recent):
                 yield self.makeLink(milestone.title, context=milestone)
         yield self.makeLink('Show all milestones...', page='+milestones')
-
-    def meetingsMenu(self):
-        # TODO: abstract this into a HasMeetingsMenu mix-in for use with
-        # an IHasMeetings.
-        for sprint in self.context.coming_sprints:
-            yield self.makeLink(sprint.title, context=sprint)
-        yield self.makeLink('Show all meetings...', page='+sprints')
 
     def mainMenu(self):
         yield self.makeLink('Releases', page='+releases', submenu='releases')

@@ -526,17 +526,20 @@ milestone_edit = ContextTitle('Edit %s')
 
 notification_test = 'Notification test'
 
-# object_pots is a fragment.
-
-object_potemplatenames = ContextDisplayName('Template names for %s')
-
-object_reassignment = ContextTitle('Reassign %s')
+object_branding = ContextDisplayName('Change the images used to represent '
+    '%s in Launchpad')
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
 object_milestones = ContextTitle(smartquote("%s's milestones"))
+
+# object_pots is a fragment.
+
+object_potemplatenames = ContextDisplayName('Template names for %s')
+
+object_reassignment = ContextTitle('Reassign %s')
 
 oops = 'Oops!'
 

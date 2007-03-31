@@ -30,7 +30,7 @@
       <tal:batch_repeat repeat="complete_build batch">
         <tr tal:define="build complete_build/build">
           <td class="left icon">
-             <tal:icon replace="structure build/fmt:icon" />
+             <tal:icon replace="structure build/image:icon" />
           </td>
           <td>
             <a tal:attributes="href build/fmt:url"
