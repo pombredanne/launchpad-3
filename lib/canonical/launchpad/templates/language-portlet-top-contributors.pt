@@ -1,0 +1,23 @@
+<div class="portlet" tal:condition="view/getTopFiveContributors">
+  <h2>Top contributors</h2>
+  <div class="portletBody portletContent">
+    <ul class="person">
+      <li tal:repeat="contributor view/getTopFiveContributors">
+        <a tal:content="contributor/person/browsername"
+           tal:attributes="href contributor/person/fmt:url">Guilherme Salgado</a>
+        (<span tal:replace="contributor/karmavalue" /> points)
+      </li>
+    </ul>
+  </div>
+<!--
+Top contributors:
+
+These are the top 20 translation contributors who have stated they have a 
+particular interest in $Language.nativename:
+
+ * List of 20 Person's linked by PersonLanguage to the Language
+ * ordered by translation karma, or contributions-through-rosetta cached
+ * ...
+-->
+
+</div>
