@@ -55,7 +55,7 @@ class SprintFacets(StandardLaunchpadFacets):
     def specifications(self):
         text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
 
 class SprintNavigation(Navigation):
