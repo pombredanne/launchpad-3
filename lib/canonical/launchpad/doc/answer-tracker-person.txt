@@ -202,8 +202,7 @@ answer questions.
 For a person, it is the same list than its list of known languages,
 with the addition that English is always assumed to be supported:
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'foo.bar@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())

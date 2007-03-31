@@ -52,17 +52,18 @@ he will see a link after each project to manage his registration.
     >>> print browser.title
     Projects for which Sample Person is an answer contact
     
-    >>> content = find_tag_by_id(browser.contents, "team-answer-contacts-for-list")
+    >>> content = find_tag_by_id(
+    ... browser.contents, "team-answer-contacts-for-list")
     >>> print extract_text(content)
-    Gnome Baker &mdash; Remove yourself
-    The Gnome Panel Applets &mdash; Remove yourself
+    Gnome Baker &mdash; Remove team
+    The Gnome Panel Applets &mdash; Remove team
     
     >>> browser.getLink(id="gnomebaker-setteamanswercontact").click()
     >>> print browser.title
     Answer contact for Gnome Baker
     
-The Remove yourself link only appears in his profile. He cannot see the
-link for other users
+The Remove yourself/team links only appears in his profile. He cannot 
+see the link for other users
 
     >>> browser.open(
     ...     'http://answers.launchpad.dev/~name16')
