@@ -87,8 +87,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
-    milestones = Attribute(
-        'The milestones associated with this distrorelease.')
+    milestones = Attribute(_(
+        "The visible release milestones associated with this distrorelease, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this distrorelease, ordered "
+        "by date expected."))
     drivers = Attribute(
         'A list of the people or teams who are drivers for this release. '
         'This list is made up of any drivers or owners from this '

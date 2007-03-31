@@ -15,14 +15,13 @@
                             driver members owner bugcontact
                             official_malone official_rosetta
                             security_contact upload_admin upload_sender
-                            mirror_admin homepage_content emblem gotchi
-                            gotchi_heading"
+                            mirror_admin homepage_content icon logo
+                            mugshot"
             />
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-            getQuestionLanguages default_gotchi_heading_resource
-            default_gotchi_resource default_emblem_resource" />
+            getQuestionLanguages" />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
@@ -62,6 +61,11 @@
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:navigation
@@ -142,24 +146,14 @@
         name="+unofficialmirrors"
         template="../templates/distribution-mirrors.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+newmirror"
         facet="overview"
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
-        keyword_arguments="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:generalform>
+    </browser:page>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -169,6 +163,11 @@
             name="+index"
             facet="overview"
             template="../templates/distribution-index.pt"
+            />
+        <browser:page
+            name="+releases"
+            facet="overview"
+            template="../templates/distribution-releases.pt"
             />
         <browser:page
             name="+search"
@@ -247,8 +246,9 @@
             template="../templates/object-portlet-milestones.pt"
             />
         <browser:page
-            name="+portlet-translations"
-            template="../templates/distribution-portlet-translations.pt"
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-uploaders"
@@ -299,6 +299,14 @@
         name="+edit"
         facet="overview"
         template="../templates/distribution-edit.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.DistributionBrandingView"
+        name="+branding"
+        facet="overview"
+        template="../templates/object-branding.pt" />
 
     <browser:page
         name="+launchpad"

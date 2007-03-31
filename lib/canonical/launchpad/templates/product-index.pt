@@ -1,8 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
@@ -11,8 +7,8 @@
 
 <div metal:fill-slot="main">
 
+  <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of product</h1>
-  <span tal:replace="structure context/fmt:icon" />
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -56,7 +52,7 @@
         <div class="portlet">
           <h2>Timeline</h2>
 
-  <div class="productSeries" tal:repeat="series view/sorted_serieslist">
+  <div class="project series" tal:repeat="series view/sorted_serieslist">
 
     <div tal:define="is_focus python:context.development_focus == series"
          tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
