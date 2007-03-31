@@ -145,7 +145,7 @@ An IDistributionSourcePackage.
 The IProjectSet.
 
     >>> canonical_url(getUtility(IProjectSet))
-    u'http://launchpad.dev/projects'
+    u'http://launchpad.dev/projectgroups'
 
 An IProject.
 
@@ -156,7 +156,7 @@ The IProductSet.
 
     >>> productset = getUtility(IProductSet)
     >>> canonical_url(productset)
-    u'http://launchpad.dev/products'
+    u'http://launchpad.dev/projects'
 
 An IProduct.
 
@@ -280,6 +280,13 @@ An IBugComment.
     >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/firefox/+bug/1/comments/1'
+
+An IBugNomination.
+
+    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> bug_nomination = getUtility(IBugNominationSet).get(1)
+    >>> canonical_url(bug_nomination)
+    u'http://launchpad.dev/bugs/1/nominations/1'
 
 == Remote Bug Trackers and Remote Bugs ==
 

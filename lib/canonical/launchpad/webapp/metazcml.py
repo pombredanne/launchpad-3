@@ -40,7 +40,8 @@ from canonical.launchpad.webapp.generalform import (
 
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb, IAuthorization)
+    IContextMenu, IBreadcrumb, IAuthorization,
+    IBreadcrumbProvider)
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -266,6 +267,17 @@ def navigation(_context, module, classes):
         xmlrpc_layer = IXMLRPCRequest
         view(_context, factory, xmlrpc_layer, name, for_,
              permission=PublicPermission, provides=provides)
+
+        # Register the navigation a breadcrumb provider.
+        # This needs to be named to avoid the issue with a kind of overlap
+        # with the main IBrowserPublisher registration, and how the publisher
+        # looks up views without asking for a specific interface.
+        layer = IDefaultBrowserLayer
+        provides = IBreadcrumbProvider
+        name = 'breadcrumb'
+        view(_context, factory, IBrowserRequest, name, for_, layer,
+                permission=PublicPermission, provides=provides,
+                allowed_interface=[IBreadcrumbProvider])
 
 
 class InterfaceInstanceDispatcher:

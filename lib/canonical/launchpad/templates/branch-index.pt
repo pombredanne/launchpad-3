@@ -135,7 +135,11 @@
     difficult to read. Checked with mptt about that. - David Allouche 2006-04-09
     -->
   </tal:comment>
-  <p tal:condition="context/mirror_failures"
+  <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
+       class="warning message" style="font-weight: normal">
+    Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
+  </p>
+  <p tal:condition="view/show_mirror_failure" id="mirror-failure"
        class="warning message" style="font-weight: normal">
     Launchpad could not mirror this branch
     <span
