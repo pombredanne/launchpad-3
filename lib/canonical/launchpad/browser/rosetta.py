@@ -56,6 +56,13 @@ class RosettaApplicationView:
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
+    def batchnav_for_products(self):
+        """Returns a BatchNavigator for the list of translatable products."""
+        from canonical.launchpad.webapp.batching import BatchNavigator
+        products = getUtility(IProductSet)
+        return BatchNavigator(products.translatables(),
+                              self.request)
+
     def rosettaAdminEmail(self):
         return config.rosetta.rosettaadmin.email
 
