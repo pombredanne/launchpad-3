@@ -361,7 +361,7 @@
         permission="zope.Public"
         template="../templates/rdf-macros.pt"
         />
-
+<!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
         <factory id="zope.da.LaunchpadDA" />
@@ -374,7 +374,7 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
-
+-->
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
