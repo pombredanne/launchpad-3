@@ -17,10 +17,34 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
         NotFoundError, IPillarNameSet, IPillarName,
+        IProduct, IDistribution,
         IDistributionSet, IProductSet, IProjectSet,
         )
 
-__all__ = ['PillarNameSet', 'PillarName']
+__all__ = [
+    'pillar_sort_key',
+    'PillarNameSet',
+    'PillarName',
+    ]
+
+
+def pillar_sort_key(pillar):
+    """A sort key for a set of pillars. We want:
+
+          - products first, alphabetically
+          - distributions, with ubuntu first and the rest alphabetically
+    """
+    product_name = None
+    distribution_name = None
+    if IProduct.providedBy(pillar):
+        product_name = pillar.name
+    elif IDistribution.providedBy(pillar):
+        distribution_name = pillar.name
+    # Move ubuntu to the top.
+    if distribution_name == 'ubuntu':
+        distribution_name = '-'
+
+    return (distribution_name, product_name)
 
 
 class PillarNameSet:
@@ -92,6 +116,7 @@ class PillarNameSet:
             limit = config.launchpad.default_batch_size
         base_query = """
             SELECT 'distribution' AS otype, id, name, title, description,
+                   emblem,
                    rank(fti, ftq(%(text)s)) AS rank
             FROM distribution
             WHERE fti @@ ftq(%(text)s)
@@ -100,7 +125,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'product' AS otype, id, name, title, description,
+            SELECT 'project' AS otype, id, name, title, description, emblem,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM product
             WHERE fti @@ ftq(%(text)s)
@@ -110,7 +135,8 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'project' AS otype, id, name, title, description,
+            SELECT 'project group' AS otype, id, name, title, description,
+                emblem,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM project
             WHERE fti @@ ftq(%(text)s)
@@ -121,13 +147,15 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'distribution' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM distribution 
             WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
 
             UNION ALL
 
-            SELECT 'project' AS otype, id, name, title, description,
+            SELECT 'project group' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM project
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -135,19 +163,22 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'product' AS otype, id, name, title, description,
+            SELECT 'project' AS otype, id, name, title, description,
+                emblem,
                 9999999 AS rank
             FROM product
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
                 AND active IS TRUE
 
-            ORDER BY rank DESC
+            /* we order by rank AND name to break ties between pillars with
+               the same rank in a consistent fashion */
+            ORDER BY rank DESC, name
             """ % sqlvalues(text=text)
         count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
         query = "%s LIMIT %d" % (base_query, limit)
         cur = cursor()
         cur.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'rank']
+        keys = ['type', 'id', 'name', 'title', 'description', 'emblem', 'rank']
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
         return shortlist(

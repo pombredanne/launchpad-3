@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 #
 # Remove all translations from upstream. This script is useful to recover from
 # breakages after importing bad .po files like the one reported at #32610

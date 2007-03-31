@@ -86,11 +86,18 @@ class LaunchbagBugID(SubstitutionHelper):
         return self.text % getUtility(ILaunchBag).bug.id
 
 
+class ContextBugId(SubstitutionHelper):
+    """Helper to include the context's bug id in the title."""
+
+    def __call__(self, context, view):
+        return self.text % context.bug.id
+
+
 # Functions and strings used as the titles of pages.
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'The Launchpad Bazaar'
+bazaar_index = 'Launchpad Code'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
@@ -124,7 +131,7 @@ branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
-bug_activity = ContextId('Bug #%s - Activity log')
+bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
@@ -138,9 +145,9 @@ bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = ContextId('Bug #%d - Edit')
+bug_edit = ContextBugId('Bug #%d - Edit')
 
-bug_edit_confirm = ContextId('Bug #%d - Edit confirmation')
+bug_edit_confirm = ContextBugId('Bug #%d - Edit confirmation')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
@@ -148,14 +155,14 @@ def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
-bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
+bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
 def bug_nominate_for_release(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
-bug_secrecy = ContextId('Bug #%d - Set visibility')
+bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
@@ -164,7 +171,7 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
-    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
+    return "Bug #%d - Comment #%d" % (context.bug.id, view.comment.index)
 
 buglinktarget_linkbug = 'Link to bug report'
 
@@ -330,6 +337,8 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
+distribution_releases = ContextTitle("%s releases")
+
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = ContextTitle(
@@ -403,6 +412,8 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
+
+hassprints_sprints = ContextTitle("Events related to %s")
 
 people_adminrequestmerge = 'Merge Launchpad accounts'
 
@@ -493,7 +504,7 @@ malone_about = 'About Malone'
 
 malone_distros_index = 'Report a bug about a distribution'
 
-malone_index = 'Malone: the Launchpad bug tracker'
+malone_index = 'Launchpad Bugs'
 
 malone_filebug = "Report a bug"
 
@@ -505,7 +516,7 @@ malone_filebug = "Report a bug"
 
 # messages_index is a redirect
 
-message_add = ContextId('Bug #%d - Add a comment')
+message_add = ContextBugId('Bug #%d - Add a comment')
 
 milestone_add = ContextTitle('Add new milestone for %s')
 
@@ -513,15 +524,22 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+notification_test = 'Notification test'
+
+object_branding = ContextDisplayName('Change the images used to represent '
+    '%s in Launchpad')
+
+object_driver = ContextTitle('Appoint the driver for %s')
+
+object_launchpadusage = ContextTitle('Launchpad usage by %s')
+
+object_milestones = ContextTitle(smartquote("%s's milestones"))
+
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
-
-object_driver = ContextTitle('Appoint the driver for %s')
-
-object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
 oops = 'Oops!'
 
@@ -535,7 +553,8 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName('Bazaar branches for %s')
+def person_branches(context, view):
+    return view.page_title
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
@@ -662,7 +681,7 @@ product_branches = ContextDisplayName(
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
-product_code_index = 'Projects with Code'
+product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
@@ -672,11 +691,13 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
-product_translators = ContextTitle('Set translation group for %s')
-
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_series = ContextDisplayName('%s timeline')
+
 product_translations = ContextTitle('Translations of %s in Rosetta')
+
+product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
@@ -800,7 +821,7 @@ question_subscription = ContextId('Subscription to question #%s')
 
 question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
-questions_index = 'Launchpad Answer Tracker'
+questions_index = 'Launchpad Answers'
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
@@ -854,12 +875,12 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('%s HCT status')
+sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define upstream series for %s')
+sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 

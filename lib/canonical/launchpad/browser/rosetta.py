@@ -1,5 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# arch-tag: db407517-732d-47e3-a4c1-c1f8f9dece3a
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -85,7 +84,7 @@ class RosettaApplicationNavigation(Navigation):
 
     usedfor = IRosettaApplication
 
-    newlayer = canonical.launchpad.layers.RosettaLayer
+    newlayer = canonical.launchpad.layers.TranslationsLayer
 
     # DEPRECATED: Support bookmarks to the old rosetta prefs page.
     redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
@@ -101,7 +100,7 @@ class RosettaApplicationNavigation(Navigation):
     @stepto('projects')
     def projects(self):
         # DEPRECATED
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):

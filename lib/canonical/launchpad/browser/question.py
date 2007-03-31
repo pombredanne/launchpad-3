@@ -40,10 +40,14 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant, request_languages
+
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet, IQuestion,
+    CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet,
+    ILaunchpadStatisticSet,
+    IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
     IQuestionTarget, UnexpectedFormData)
+
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
@@ -89,15 +93,33 @@ class QuestionSetView(LaunchpadFormView):
             canonical_url(scope), self.request['QUERY_STRING'])
 
     @property
-    def questions_count(self):
+    def question_count(self):
         """Return the number of questions in the system."""
-        return self.context.searchQuestions(status=None).count()
+        return getUtility(ILaunchpadStatisticSet).value('question_count')
+
+    @property
+    def answered_question_count(self):
+        """Return the number of answered questions in the system."""
+        return getUtility(ILaunchpadStatisticSet).value(
+            'answered_question_count')
+
+    @property
+    def solved_question_count(self):
+        """Return the number of solved questions in the system."""
+        return getUtility(ILaunchpadStatisticSet).value(
+            'solved_question_count')
+
+    @property
+    def projects_with_questions_count(self):
+        """Return the number of projects with questions in the system."""
+        return getUtility(ILaunchpadStatisticSet).value(
+            'projects_with_questions_count')
 
     @property
     def latest_questions_asked(self):
-        """Return the 10 latest questions asked."""
+        """Return the 5 latest questions asked."""
         return self.context.searchQuestions(
-            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.OPEN, sort=QuestionSort.NEWEST_FIRST)[:5]
 
     @property
     def latest_questions_solved(self):
@@ -384,7 +406,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
     def initial_values(self):
         return {'status': self.context.status}
 
-    @action(_('Change status'), name='change-status')
+    @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
@@ -591,7 +613,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                 self.user != self.context.owner and
                 self.context.can_request_info)
 
-    @action(_('Add information request'), name='requestinfo',
+    @action(_('Add Information Request'), name='requestinfo',
             condition=canRequestInfo)
     def requestinfo_action(self, action, data):
         """Add a request for more information to the question."""
@@ -640,7 +662,8 @@ class QuestionWorkflowView(LaunchpadFormView):
         # The confirmation message is not given by the user when the
         # 'This Solved my Problem' button on the main question view.
         if not data['message']:
-            data['message'] = 'User confirmed that the question is solved.'
+            data['message'] = 'Thanks %s, that solved my question.' % (
+                data['answer'].owner.displayname)
         self.context.confirmAnswer(data['message'], answer=data['answer'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your feedback.'), data)
@@ -831,7 +854,7 @@ class QuestionSetContextMenu(ContextMenu):
 
     def findproduct(self):
         text = 'Find upstream project'
-        return Link('/products', text, icon='search')
+        return Link('/projects', text, icon='search')
 
     def finddistro(self):
         text = 'Find distribution'

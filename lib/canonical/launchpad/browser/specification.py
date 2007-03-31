@@ -18,12 +18,16 @@ __all__ = [
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
-    'SpecificationTreeDotOutput'
+    'SpecificationTreeDotOutput',
+    'SpecificationSetView',
+    'SpecificationSHP',
     ]
 
+import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
+from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
@@ -36,12 +40,17 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
+from canonical.launchpad.browser.launchpad import (
+    AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.widgets.project import ProjectScopeWidget
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -86,14 +95,10 @@ class SpecificationContextMenu(ContextMenu):
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
-             'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
+             'linkbug', 'unlinkbug', 'linkbranch',
+             'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget', 'administer', 'linkbranch']
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
+             'retarget']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -144,7 +149,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+status', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe someone'
+        text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
@@ -819,3 +824,30 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
+    """View for the Blueprints index page."""
+
+    @action('Find blueprints', name="search")
+    def search_action(self, action, data):
+        """Redirect to the proper search page based on the scope widget."""
+        scope = data['scope']
+        search_text = data['search_text']
+        if scope is None:
+            url = '/'
+        else:
+            url = canonical_url(scope)
+        if search_text is not None:
+            url += '?searchtext=' + search_text
+        self.next_url = url
+
+
+class SpecificationSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+
+    def getMainHeading(self):
+        return self.context.title
+

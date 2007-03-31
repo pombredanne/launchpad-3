@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import ContextWidget
 
 
@@ -64,16 +65,23 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit branch details'
+        text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    def browse(self):
+        text = 'Browse code'
+        # Only enable the link if we've ever mirrored the branch.
+        enabled = self.context.last_mirrored_id is not None
+        url = config.launchpad.codebrowse_root + self.context.unique_name
+        return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
     def subscription(self):
@@ -139,6 +147,22 @@ class BranchView(LaunchpadView):
             return self.context.url
         else:
             return self.supermirror_url()
+
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
+
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
+        else:
+            return self.context.mirror_failures
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""

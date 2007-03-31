@@ -36,7 +36,7 @@ Next, we will POST to that form, setting the spec which supersedes this one:
 Now, on the spec page we should see an alert that the spec has been
 superseded. The spec status should also have changed to superseded.
 
->>> 'This specification has been superseded.' in browser.contents
+>>> 'This blueprint has been superseded.' in browser.contents
 True
 >>> 'Superseded' in browser.contents
 True

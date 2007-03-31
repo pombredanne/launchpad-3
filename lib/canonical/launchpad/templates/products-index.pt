@@ -1,10 +1,6 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-
-<body>
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -26,12 +22,16 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Is your project in Launchpad?</h1>
+  <h1 tal:condition="not: view/search_string">Is your project in Launchpad?</h1>
+  <h1 tal:condition="view/search_string">
+    Projects matching
+    &#8220;<tal:string replace="view/search_string" />&#8221;
+  </h1>
 
   <div align="center">
     <form class="central" method="get">
   
-      <input size="30" name="text" tal:attributes="value view/text" />
+      <input size="30" name="text" tal:attributes="value view/search_string" />
       <input tal:condition="view/searchrequested"
         type="submit"
         value="Search again"
@@ -46,13 +46,26 @@
 
   <tal:searching condition="view/searchrequested">
 
-    <p></p>
+    <p id="empty-search-string" tal:condition="not: view/search_string">
+      Enter one or more words related to the project you want to find.
+    </p>
 
-    <div class="left">
+    <tal:non-empty-search-string condition="view/search_string">
+      <p tal:condition="view/tooManyResultsFound"
+           class="informational message">
+        More than <span tal:replace="view/max_results_to_display" /> projects
+        were found, so we're displaying only the ones that are most relevant
+        to your search terms.
+        If the project you are looking for is not on the list below, please
+        do another search with more search terms.  
+      </p>
+
+
       <table
         tal:condition="view/matches"
         tal:define="results view/searchresults"
         class="listing"
+        id="search-results"
         >
         <thead>
           <tr class="results">
@@ -64,53 +77,44 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="product results"
-              tal:replace="structure product/@@+listing-simple">
-            <td>Product simple listing</td>
+          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
           </tr>
         </tbody>
       </table>
 
-      <p tal:condition="not: view/matches">
+      <p tal:condition="not: view/searchresults">
         No projects matching
         &#8220;<span tal:replace="view/text">moz</span>&#8221;
         were found.
       </p>
 
-    </div>
+      <h2>Haven&#8217;t found your project?</h2>
 
-    <div class="right">
-
-      <h2>No luck?</h2>
-
-      <p id="application-summary">
+      <p>
         If the project you are looking for isn't here, go ahead and register
         it yourself!
       </p>
+      <ul class="rollover buttons">
+        <li>
+          <a href="/projects/+new">
+            <img
+              alt="Register a project"
+              src="/+icing/but-lrg-registerproj.gif"
+            />
+          </a>
+        </li>
+      </ul>
 
-      <p>
-        <a href="+new">&raquo;
-          Register a project</a>
-      </p>
-
-      <p>
-        <a href="+all">&raquo;
-          Browse the listing of all (!) projects</a>
-      </p>
-
-
-    </div>
+    </tal:non-empty-search-string>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-
-    <p></p>
 
     <div class="left">
 
       <h2>Why register?</h2>
 
-      <div id="application-summary">
+      <div>
         If a project is registered in Launchpad, people can keep track of the
         status of that project much more easily. You can link a Launchpad
         project to your own bug tracker and improve collaboration with other
@@ -124,7 +128,7 @@
       <h2>Latest registrations</h2>
           <ul tal:condition="context/latest" class="product">
             <li tal:repeat="product context/latest">
-              <tal:date replace="product/datecreated/fmt:date" />:
+              <tal:date replace="product/datecreated/fmt:approximatedate" />:
               <a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/displayname"

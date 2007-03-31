@@ -8,16 +8,11 @@
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h3><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h3>
-</metal:heading>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform" />
 
   </div>
-    
+
 </body>
 </html>

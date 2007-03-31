@@ -20,6 +20,14 @@
         classes="ProjectNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <adapter
         provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
         for="canonical.launchpad.interfaces.IProject"
@@ -156,6 +164,15 @@
         />
 
     <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBrandingView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt"
+        />
+
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectReviewView"
@@ -221,12 +238,6 @@
             permission="launchpad.AnyPerson"
             />
         <browser:page
-            name="+portlet-latestquestions"
-            for="canonical.launchpad.interfaces.IProject"
-            class="canonical.launchpad.browser.ProjectLatestQuestionsView"
-            permission="zope.Public"
-            />
-        <browser:page
             name="+ask-a-question-button"
             for="canonical.launchpad.interfaces.IProject"
             class="canonical.launchpad.browser.AskAQuestionButtonView"
@@ -277,7 +288,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
-        permission="zope.Public"
+        permission="launchpad.Admin"
         class="canonical.launchpad.browser.ProjectSetView"
         >
         <browser:page
@@ -294,7 +305,7 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
         class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Admin">
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"

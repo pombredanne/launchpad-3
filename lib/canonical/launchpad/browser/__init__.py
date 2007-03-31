@@ -11,8 +11,8 @@ from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
+from canonical.launchpad.browser.branchlisting import *
 from canonical.launchpad.browser.branchref import *
-from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
@@ -43,6 +43,7 @@ from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.distroreleasebinarypackage import *
 from canonical.launchpad.browser.distroreleaselanguage import *
 from canonical.launchpad.browser.distroreleasesourcepackagerelease import *
+from canonical.launchpad.browser.branding import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *

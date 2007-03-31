@@ -2,15 +2,18 @@
       i18n:domain="launchpad">
 
   <div class="boardCommentDetails">
-    <a href="#"
-        tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/browsername">
-      $Person.browsername</a>
-    <span tal:replace="context/datecreated/fmt:datetime">Thursday
-    13:21</span>
-    <tal:bestanswer condition="view/isBestAnswer"><br />
-      <strong i18n:translate="">Marked as best answer.</strong>
+    <tal:bestanswer condition="view/isBestAnswer">
+      <img src="/@@/favourite-yes" alt="Best"
+           title="Marked as best answer" />
     </tal:bestanswer>
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure context/owner/fmt:link" />
+    </tal:comment_has_owner>
+    said
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:displaydate">Thursday
+    13:21</span>:
   </div>
 
   <div class="boardCommentBody"

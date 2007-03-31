@@ -49,7 +49,12 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.BugsLayer"
-      name="+assignedbugs"
+      name="+bugs"
+      />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+translations"
+      layer="canonical.launchpad.layers.TranslationsLayer"
       />
 
   <browser:menus
@@ -112,6 +117,13 @@
       template="../templates/person-edit.pt" />
 
   <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/object-branding.pt" />
+
+  <browser:page
       name="+edithomepage"
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditHomePageView"
@@ -125,6 +137,10 @@
       <browser:page
           name="+index"
           template="../templates/person-index.pt"
+          />
+      <browser:page
+          name="+ask-a-question-button"
+          template="../templates/null.pt"
           />
       <browser:page
           name="+packages"
@@ -217,13 +233,16 @@
       attribute="__call__"
       />
 
-  <browser:page
+  <browser:generalform
       name="+bugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
-      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      class="canonical.launchpad.browser.PersonRelatedBugsView"
+      fields="status importance assignee milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      attribute="__call__"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform
@@ -232,7 +251,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -244,7 +263,7 @@
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
@@ -269,7 +288,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -281,7 +300,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
+      fields="status importance assignee milestone bug_reporter
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/buglisting-embedded-advanced-search.pt"
@@ -347,39 +366,45 @@
           />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <browser:page
-        name="+branches"
-        template="../templates/person-branches.pt" />
-  </browser:pages>
+    name="+branches"
+    template="../templates/person-branches.pt" />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.BranchTargetView"
+    class="canonical.launchpad.browser.PersonAuthoredBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <!-- there is trickery here, in the view class, which detects the view
-    name and then gives the template a different set of branches to work
-    with.-->
-    <browser:page
-        name="+branchlisting"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+authoredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+registeredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+subscribedbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-  </browser:pages>
+    name="+authoredbranches"
+    template="../templates/person-branches.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonSubscribedBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+subscribedbranches"
+    template="../templates/person-branches.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonRegisteredBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+registeredbranches"
+    template="../templates/person-branches.pt" />
+ 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView"
+      name="+teamhierarchy"
+      template="../templates/person-teamhierarchy.pt"
+      />
 
   <!-- Team Views -->
 
@@ -403,6 +428,13 @@
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
+      permission="launchpad.Edit"
+      template="../templates/team-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamBrandingView"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt" />
 
@@ -485,6 +517,14 @@
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonTeamBranchesView"
+    name="+portlet-teambranches"
+    template="../templates/person-portlet-teambranches.pt"
+    permission="zope.Public"
+    />
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
