@@ -667,18 +667,13 @@ class ProductSet:
         """See IProductSet"""
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
+            POTemplate.productseries = ProductSeries.id AND
+            Product.official_rosetta
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
+            orderBy='Product.title',
             distinct=True)
-        distro = Product.select('''
-            Product.id = ProductSeries.product AND
-            Packaging.productseries = ProductSeries.id AND
-            Packaging.sourcepackagename = POTemplate.sourcepackagename
-            ''',
-            clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
-            distinct=True)
-        return upstream.union(distro)
+        return upstream
 
     def featured_translatables(self):
         """See IProductSet"""
