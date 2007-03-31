@@ -23,8 +23,11 @@ __all__ = [
     'get_sortorder_from_request',
     'get_buglisting_search_filter_url',
     'BugTargetTextView',
+    'BugListingBatchNavigator',
     'upstream_status_vocabulary_factory',
-    'BugsBugTaskSearchListingView']
+    'BugsBugTaskSearchListingView',
+    'BugTaskSOP',
+    ]
 
 import cgi
 import re
@@ -65,16 +68,22 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries)
+
 from canonical.launchpad.searchbuilder import any, NULL
+
 from canonical.launchpad import helpers
+
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
-from canonical.launchpad.webapp.generalform import GeneralFormView
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
@@ -261,11 +270,6 @@ class BugTaskNavigation(Navigation):
     def traverse_references(self, name):
         if name.isdigit():
             return getUtility(IBugExternalRefSet)[name]
-
-    @stepthrough('watches')
-    def traverse_watches(self, name):
-        if name.isdigit():
-            return getUtility(IBugWatchSet)[name]
 
     @stepthrough('comments')
     def traverse_comments(self, name):
@@ -1027,12 +1031,7 @@ class BugTaskListingView(LaunchpadView):
         if not assignee:
             return status_title + ' (unassigned)'
 
-        assignee_html = (
-            '<img alt="" src="%s" /> '
-            '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                assignee.default_emblem_resource,
-                urllib.quote(assignee.name),
-                cgi.escape(assignee.browsername)))
+        assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
         if status in (dbschema.BugTaskStatus.REJECTED,
                       dbschema.BugTaskStatus.FIXCOMMITTED):
@@ -1357,15 +1356,9 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params.orderby = get_sortorder_from_request(self.request)
         return search_params
 
-    def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
-
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
-
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
-        precedence over request params.
+    def buildSearchParams(self, searchtext=None, extra_params=None):
+        """Build the BugTaskSearchParams object for the given arguments and
+        values specified by the user on this form's widgets.
         """
         widget_names = [
                 "searchtext", "status", "assignee", "importance",
@@ -1426,15 +1419,28 @@ class BugTaskSearchListingView(LaunchpadView):
             else:
                 form_values[key] = value
 
+        search_params = self._getDefaultSearchParams()
+        for name, value in form_values.items():
+            setattr(search_params, name, value)
+        return search_params
+
+    def search(self, searchtext=None, context=None, extra_params=None):
+        """Return an ITableBatchNavigator for the GET search criteria.
+
+        If :searchtext: is None, the searchtext will be gotten from the
+        request.
+
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
+        precedence over request params.
+        """
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
-        search_params = self._getDefaultSearchParams()
-        for name, value in form_values.items():
-            setattr(search_params, name, value)
+        search_params = self.buildSearchParams(
+            searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1894,3 +1900,20 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getSearchPageHeading(self):
         return "Search all bug reports"
+
+
+class BugTaskSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        bugtask = self.context
+        return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+

@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'SprintFacets',
     'SprintNavigation',
+    'SprintsMixinDynMenu',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
     'SprintSetFacets',
@@ -14,6 +15,7 @@ __all__ = [
     'SprintSetSOP',
     'SprintView',
     'SprintAddView',
+    'SprintBrandingView',
     'SprintEditView',
     'SprintTopicSetView',
     'SprintMeetingExportView',
@@ -26,6 +28,7 @@ from zope.app.form.browser import TextAreaWidget
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.interfaces import ISprint, ISprintSet
@@ -40,8 +43,6 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
     SpecificationStatus)
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -54,7 +55,7 @@ class SprintFacets(StandardLaunchpadFacets):
     def specifications(self):
         text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
 
 class SprintNavigation(Navigation):
@@ -65,11 +66,24 @@ class SprintNavigation(Navigation):
         return self.context.title
 
 
+class SprintsMixinDynMenu:
+
+    def meetingsMenu(self):
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
+
+
 class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'overview'
-    links = ['attendance', 'registration', 'edit']
+    links = ['attendance', 'registration', 'edit', 'branding']
 
     def attendance(self):
         text = 'Register yourself'
@@ -86,6 +100,12 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Change details'
         summary = 'Modify the meeting description, dates or title'
         return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        summary = 'Modify the imagery used to represent this meeting'
+        return Link('+branding', text, summary, icon='edit')
 
 
 class SprintSpecificationsMenu(ApplicationMenu):
@@ -156,7 +176,7 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -226,14 +246,11 @@ class SprintAddView(LaunchpadFormView):
     label = "Register a meeting"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
-                   'gotchi', 'emblem']
+                   ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     sprint = None
 
@@ -254,7 +271,6 @@ class SprintAddView(LaunchpadFormView):
 
     @action(_('Add Sprint'), name='add')
     def add_action(self, action, data):
-        gotchi, gotchi_heading = data['gotchi']
         self.sprint = getUtility(ISprintSet).new(
             owner=self.user,
             name=data['name'],
@@ -265,15 +281,21 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         self.request.response.addInfoNotification('Sprint created.')
 
     @property
     def next_url(self):
         assert self.sprint is not None, 'No sprint has been created'
         return canonical_url(self.sprint)
+
+
+class SprintBrandingView(BrandingChangeView):
+
+    schema = ISprint
+    # sabdfl 2007-03-28 deliberately leaving icon off the list, i think it
+    # would be overkill, we can add it later if people ask for it
+    field_names = ['logo', 'mugshot']
 
 
 class SprintEditView(LaunchpadEditFormView):
@@ -283,14 +305,11 @@ class SprintEditView(LaunchpadEditFormView):
     label = "Edit sprint details"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
-                   'gotchi', 'emblem']
+                   ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
     custom_widget('address', TextAreaWidget, height=3)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

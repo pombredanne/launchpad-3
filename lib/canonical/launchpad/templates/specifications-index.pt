@@ -91,31 +91,15 @@
                           <a href="/+tour">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
-                          <div class="three column left">
-                            <h2>Recently registered</h2>
-                            <ul
-                              tal:define="speclist context/latest_specifications"
-                              tal:condition="speclist"
-                              class="blueprint"
-                            >
-                              <li
-                                tal:repeat="spec speclist"
-                                tal:replace="structure spec/@@+listing-compact"
-                              />
-                            </ul>
+                          <div
+                            class="three column left"
+                            tal:content="
+                              structure context/@@+portlet-latestregistered">
                           </div>
-                          <div class="three column middle">
-                            <h2>Recently completed</h2>
-                            <ul
-                              tal:define="speclist context/latest_completed_specifications"
-                              tal:condition="speclist"
-                              class="blueprint"
-                            >
-                              <li
-                                tal:repeat="spec speclist"
-                                tal:replace="structure spec/@@+listing-compact"
-                              />
-                            </ul>
+                          <div
+                            class="three column middle"
+                            tal:content="
+                              structure context/@@+portlet-latestcompleted">
                           </div>
                           <div
                             class="three column right"

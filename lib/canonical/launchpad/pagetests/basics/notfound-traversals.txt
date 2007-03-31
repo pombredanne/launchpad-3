@@ -75,16 +75,17 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
->>> check("/projects")
->>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projectgroups", auth=True)
+>>> check("/projectgroups/+all", auth=True)
+>>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
 >>> check("/mozilla/+translations")
 
->>> check("/products")
->>> check("/products/+all")
+>>> check_redirect("/products", status=301)
+>>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
@@ -100,6 +101,7 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
 >>> check("/firefox/+translations")
+>>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
@@ -353,7 +355,6 @@ And this is for a person:
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
 >>> check("/~name12/gnome-terminal/pushed/")
 >>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
->>> check_redirect("/~name16/+bugs")
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
@@ -412,6 +413,5 @@ Check legacy URL redirects
 
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
->>> check_redirect("/projects/ubuntu-project", status=301)
 >>> check_redirect("/people/stub", status=301)
 

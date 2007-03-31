@@ -30,8 +30,22 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, IBugSet, NotFoundError, IBug, IBugAttachment, IBugExternalRef,
-    IStructuralHeaderPresentation, IBugNomination)
+    IBug,
+    IBugAttachment,
+    IBugExternalRef,
+    IBugNomination,
+    IBugSet,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    IPerson,
+    IProduct,
+    IProject,
+    ISprint,
+    IDistribution,
+    IStructuralHeaderPresentation,
+    NotFoundError,
+    )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
@@ -39,7 +53,8 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 
 
@@ -295,7 +310,6 @@ class NoneFormatter:
         'pagetitle',
         'text-to-html',
         'url',
-        'icon'
         ])
 
     def __init__(self, context):
@@ -330,87 +344,136 @@ class ObjectFormatterAPI:
         return canonical_url(self._context, request)
 
 
-class HasGotchiAndEmblemFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IHasGotchiAndEmblem objects to a formatted string."""
+class ObjectImageDisplayAPI:
+    """Base class for producing the HTML that presents objects
+    as an icon, a logo or a mugshot.
+    """
+
+    def __init__(self, context):
+        self._context = context
+
+    def default_icon_resource(self, context):
+        if IProduct.providedBy(context):
+            return '/@@/product'
+        elif IProject.providedBy(context):
+            return '/@@/project'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person'
+                else:
+                    return '/@@/person-inactive'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting'
+        return '/@@/nyet-icon'
+
+    def default_logo_resource(self, context):
+        if IProject.providedBy(context):
+            return '/@@/project-logo'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team-logo'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person-logo'
+                else:
+                    return '/@@/person-inactive-logo'
+        elif IProduct.providedBy(context):
+            return '/@@/product-logo'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-logo'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting-logo'
+        return '/@@/nyet-logo'
+
+    def default_mugshot_resource(self, context):
+        if IProject.providedBy(context):
+            return '/@@/project-mugshot'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team-mugshot'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person-mugshot'
+                else:
+                    return '/@@/person-inactive-mugshot'
+        elif IProduct.providedBy(context):
+            return '/@@/product-mugshot'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-mugshot'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting-mugshot'
+        return '/@@/nyet-mugshot'
 
     def icon(self):
-        """Return the appropriate <img> tag for this object's gotchi."""
+        """Return the appropriate <img> tag for this object's icon."""
         context = self._context
-        if context.gotchi is not None:
-            url = context.gotchi.getURL()
+        if context is None:
+            # we handle None specially and return an empty string
+            return ''
+        if IHasIcon.providedBy(context) and context.icon is not None:
+            url = context.icon.getURL()
         else:
-            url = context.default_gotchi_resource
-        return '<img alt="" class="mugshot" src="%s" />' % url
+            url = self.default_icon_resource(context)
+        icon = '<img alt="" width="14" height="14" src="%s" />'
+        return icon % url
 
-    def heading_icon(self):
-        """Return the appropriate <img> tag for this object's heading img."""
+    def logo(self):
+        """Return the appropriate <img> tag for this object's logo."""
         context = self._context
-        if context.gotchi_heading is not None:
-            url = context.gotchi_heading.getURL()
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+        if context is None:
+            # we use the Launchpad logo for anything which is in no way
+            # related to a Pillar (for example, a buildfarm)
+            url = '/@@/launchpad-logo'
+        elif context.logo is not None:
+            url = context.logo.getURL()
         else:
-            url = context.default_gotchi_heading_resource
-        return '<img alt="" class="mugshot" src="%s" />' % url
+            url = self.default_logo_resource(context)
+        logo = '<img alt="" width="64" height="64" src="%s" />'
+        return logo % url
 
-    def emblem(self):
-        """Return the appropriate <img> tag for this object's emblem."""
+    def mugshot(self):
+        """Return the appropriate <img> tag for this object's mugshot."""
         context = self._context
-        if context.emblem is not None:
-            url = context.emblem.getURL()
+        assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
+        if context.mugshot is not None:
+            url = context.mugshot.getURL()
         else:
-            url = context.default_emblem_resource
-        return '<img alt="" src="%s" />' % url
+            url = self.default_mugshot_resource(context)
+        mugshot = """<div style="width: 200; height: 200; float: right">
+            <img alt="" width="192" height="192" src="%s" />
+            </div>"""
+        return mugshot % url
 
 
-# Since Person implements IPerson _AND_ IHasGotchiAndEmblem, we need to
-# subclass HasGotchiAndEmblemFormatterAPI, so that everything is available
-# when we're adapting a person object.
-class PersonFormatterAPI(HasGotchiAndEmblemFormatterAPI):
-    """Adapter for IPerson objects to a formatted string."""
+class PillarSearchItemAPI(ObjectImageDisplayAPI):
+    """Provides image:icon for a PillarSearchItem."""
 
-    implements(ITraversable)
+    def mugshot(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
 
-    allowed_names = set([
-        'emblem',
-        'heading_icon',
-        'icon',
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
-
-    def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
-        """
-        person = self._context
-        url = canonical_url(person)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        resource = person.default_emblem_resource
-        return '<a href="%s"><img alt="" src="%s" />&nbsp;%s</a>' % (
-            url, resource, person.browsername)
+    def logo(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
 
 
-class BugTaskFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBugTask objects to a formatted string.
+class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IBugTask objects to a formatted string. This inherits
+    from the generic ObjectImageDisplayAPI and overrides the icon
+    presentation method.
 
-    Used for fmt:icon.
+    Used for image:icon.
     """
 
     def icon(self):
-        """Return the appropriate <img> tag for the bugtask icon.
-
-        The icon displayed is calculated based on the IBugTask.importance.
-        """
-        image_template = '<img alt="%s" title="%s" src="%s" />'
+        # The icon displayed is dependent on the IBugTask.importance.
+        image_template = (
+            '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
         if self._context.importance:
             importance = self._context.importance.title.lower()
@@ -434,8 +497,46 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
         return icon
 
 
-class KarmaCategoryFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IKarmaCategory objects to a formatted string."""
+class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for ISpecification objects to a formatted string. This inherits
+    from the generic ObjectImageDisplayAPI and overrides the icon
+    presentation method.
+
+    Used for image:icon.
+    """
+
+    def icon(self):
+        # The icon displayed is dependent on the IBugTask.importance.
+        image_template = """
+            <img height="14" width="14" alt="%s" title="%s" src="%s" />
+            """
+
+        if self._context.priority:
+            priority = self._context.priority.title.lower()
+            alt = "(%s)" % priority
+            title = priority.capitalize()
+            if priority != 'not':
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " priority"
+            else:
+                title += " a priority"
+            src = "/@@/blueprint-%s" % priority
+        else:
+            alt = ""
+            title = ""
+            src = "/@@/blueprint"
+
+        icon = image_template % (alt, title, src)
+
+        return icon
+
+
+class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IKarmaCategory objects to an image.
+
+    Used for image:icon.
+    """
 
     icons_for_karma_categories = {
         'bugs': '/@@/bug',
@@ -445,29 +546,31 @@ class KarmaCategoryFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         icon = self.icons_for_karma_categories[self._context.name]
-        return ('<img alt="" title="%s" src="%s" />'
+        return ('<img height="14" width="14" alt="" title="%s" src="%s" />'
                 % (self._context.title, icon))
 
 
-class MilestoneFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IMilestone objects to a formatted string.
+class MilestoneImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IMilestone objects to an image.
 
-    Used for fmt:icon.
+    Used for image:icon.
     """
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/milestone" />'
+        return '<img height="14" width="14" alt="" src="/@@/milestone" />'
 
 
-class BuildFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBuild objects to a formatted string.
+class BuildImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IBuild objects to an image.
 
-    Used for fmt:icon.
+    Used for image:icon.
     """
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
-        image_template = '<img alt="%s" title="%s" src="%s" />'
+        image_template = """
+            <img width="14" height="14" alt="%s" title="%s" src="%s" />
+            """
 
         icon_map = {
             dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
@@ -475,16 +578,47 @@ class BuildFormatterAPI(ObjectFormatterAPI):
             dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icons
-            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
-            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            dbschema.BuildStatus.BUILDING: "/@@/build-building",
             }
 
         alt = '[%s]' % self._context.buildstate.name
-        title = self._context.buildstate.name
+        title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
         return image_template % (alt, title, source)
+
+
+class PersonFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        person = self._context
+        url = canonical_url(person)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = ObjectImageDisplayAPI(person).icon()
+        return '<a href="%s">%s&nbsp;%s</a>' % (
+            url, image_html, person.browsername)
 
 
 class NumberFormatterAPI:

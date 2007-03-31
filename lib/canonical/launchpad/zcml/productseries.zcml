@@ -114,6 +114,9 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
         <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
+        <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />
     </browser:pages>
@@ -253,30 +256,35 @@
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
   </securedutility>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    path_expression="string:series"
+    parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+    />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+bazaar-index" />
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+bazaar-index" />
 
   <!-- XXX need better permissions -->
   <browser:pages
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      permission="launchpad.AnyPerson"
-      facet="overview"
-      class="canonical.launchpad.browser.ProductSeriesSourceSetView">
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    permission="launchpad.AnyPerson"
+    facet="branches"
+    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
     <browser:page
-        name="+bazaar-index"
-        template="../templates/sources-index.pt"
-        />
+      name="+bazaar-index"
+      template="../templates/sources-index.pt"
+      />
   </browser:pages>
 
-<browser:page
-  for="canonical.launchpad.interfaces.IProductSeries"
-  name="+shortlink"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.ProductSeriesShortLink"
-  attribute="__call__"
-  />
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductSeriesShortLink"
+    attribute="__call__"
+    />
 
 </configure>

@@ -25,13 +25,13 @@
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
-        class="central"
+        class="central front_page"
         style="text-align: center;"
-        action="/+search"
+        action="/projects/"
         method="get"
       >
         <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="q" size="20" />
+        <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
       </form>
 
@@ -41,14 +41,16 @@
             We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+tour">Learn more&#8230;</a>
+            <a href="/+tour">Learn&nbsp;more&#8230;</a>
           </p>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001049.html">Surprised to be seeing the Launchpad beta?</a>
+              <a href="https://help.launchpad.net/FeatureHighlights/">Read
+                the new guide to the Feature Highlights in Launchpad 1.0 (web
+                and PDF)</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/BugTrackingHighlights"

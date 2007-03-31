@@ -63,7 +63,7 @@ html {
   position: relative;
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8.5pt;
-  color: #606060;
+  color: #505050;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
@@ -216,7 +216,7 @@ hr {
 
 /* === Page layout === */
 
-/* All pages begin with a global header. */
+/* All pages begin with a global header or a topline. */
 #globalheader {
   position: relative;
   width: 100%;
@@ -234,10 +234,15 @@ hr {
   margin: 0;
   padding: 0;
 }
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
 /* Site-specific message. */
 #globalheader .sitemessage {
   position: absolute;
   top: 2px;
+  left: 10px;
   display: inline;
   color: #FFF;
   font-size: 13px;
@@ -247,6 +252,15 @@ hr {
   position: absolute;
   top: 0;
   right: 0;
+}
+/* Thin line at the top, when we don't have a global header site message */
+#topline {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #6D6D6D;
 }
 /* Next is a location bar. */
 #locationbar {
@@ -260,6 +274,10 @@ hr {
   font-size: 11px;
   font-weight: bold;
   color: #FFF;
+}
+ul#menuroot a#homebreadcrumb span {
+  background: url(home.gif) left top no-repeat;
+  padding-left: 15px;
 }
 /* The location bar contains menus. */
 ul#menuroot {
@@ -278,7 +296,7 @@ ul#menuroot li {
  * Negative right margin for breadcrumbs.
  * This is part of how we make them look like arrows.
  */
-ul#menuroot>li>a {
+ul#menuroot a.breadcrumb {
   position: relative;
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
@@ -299,28 +317,36 @@ ul#menuroot>li>a {
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1100px 0px;
-  padding: 6px 0 10px 10px;
+  padding: 6px 0 6px 10px;
   margin-right: -1px;
 }
+/* IE6 specific rule to make the location bar look better. */
+* html #yourlocation {padding-bottom: 4px;}
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a {
+#locationbar li a,
+#locationbar li span {
   display: block;
   color: #000000;
 }
+/* Unlinked items.  Same colour as the overview actions menu. */
+#locationbar li .unlinked {
+  color: #83AD23;
+}
 /* XXX: needs explanation */
-ul#menuroot>li>a>em { /* should be changed to not need em */
+ul#menuroot a.breadcrumb em { /* should be changed to not need em */
   font-style: normal;
   float: left;
   display: block;
   background-image: url(locationbar_nodrop_em_bg.gif);
   background-repeat: no-repeat;
   background-position: right top;
-  padding: 6px 26px 10px 20px;
+  padding: 6px 26px 6px 20px;
   cursor: hand;
   cursor: pointer;
 }
+* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
 /* When a breadcrumb has a submenu, show a down-arrow. */
-ul#menuroot>li.container>a>em { /* should be changed to not need em */
+ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   background-image: url(locationbar_em_bg.gif);
 }
 /* Undo more generic formatting around ul elements. */
@@ -332,7 +358,8 @@ ul#menuroot>li.container>a>em { /* should be changed to not need em */
  * The area we actually see on the page is an <a> element.
  * The <li> element takes up no space.
  */
-#locationbar ul.menu li a {
+#locationbar ul.menu li a,
+#locationbar ul.menu li .unlinked {
   background-image: none;
   background-color: #AFDB1F;
   float: none;
@@ -371,12 +398,22 @@ ul#menuroot>li.container>a>em { /* should be changed to not need em */
  * on mouse-over.
  * The colour #EEE is sometimes used for debugging.
  */
-#locationbar ul.menu li>a:hover {
+#locationbar ul#rootmenu ul.menu li a:hover {
   /* color: #EEE; */
 }
 /* Set the appearance of dyn menu items other than the breadcrumbs
  * when selected and potentially opened.
- */
+ * This works, but has the > that makes IE unhappy.
+ * #locationbar ul.menu li.selected>a {
+ *   background-color: #C8EF48;
+ *   color: #000;
+ * }
+ * So instead, we have the following two rules.
+*/
+#locationbar ul.menu li a {
+  background-color: #AFDB1F;
+  color: #000;
+}
 #locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
   color: #000;
@@ -386,12 +423,12 @@ ul#menuroot>li.container>a>em { /* should be changed to not need em */
  * they look right during the deliberate delay between being
  * moused-over and actually activated.
  */
-ul#menuroot>li>a:hover {
+ul#menuroot li a.breadcrumb:hover {
   background-position: 0px 0px;
   color: #000;
 }
 /* Set the appearance of breadcrumb items when selected for opening. */
-ul#menuroot>li.selected>a {
+ul#menuroot li.selected a.breadcrumb {
   background-position: 0px 0px;
   color: #000;
 }
@@ -400,7 +437,7 @@ ul#menuroot>li.selected>a {
  *
  * Does not include the breadcrumbs.
  */
-#locationbar ul.menu li.container>a {
+#locationbar ul.menu a.container {
   background-image: url(/@@/arrowRight);
   background-repeat: no-repeat;
   background-position: center right;
@@ -414,7 +451,8 @@ ul#menuroot>li.selected>a {
 /* Prevent the text in links in menu items from wrapping.
  * Apply appropriate formatting to links in menu items.
  */
-#locationbar li a {
+#locationbar li a,
+#locationbar li .unlinked {
   left: auto;
   margin: 0px 0px 0px 0px;
   white-space: pre;
@@ -585,12 +623,50 @@ ul#applicationchooser li {
   text-align: center;
   font-weight: bold;
   color: #000000;
-  padding: 8px 0px 0px 0px;
 }
+
+/* We make the anchor display block, and use the same height as the li,
+ * to ensure the whole tab area is clickable. */
+ul#applicationchooser li a {
+  display: block;
+  padding: 8px 0px 0px 0px;
+  height: 40px;
+}
+
+/* For the selected and unavailable tabs, we need to provide the padding
+ * (since there's no anchor), and change the cursor to avoid it being an
+ * i-beam when hovering over the text of the tab. */
+ul#applicationchooser li span.selected,
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  display: block;
+  padding: 8px 0px 0px 0px;
+  cursor: default;
+}
+
+/* Disabled icons shouldn't hover up */
+ul#applicationchooser li span.disabled:hover,
+ul#applicationchooser li.unavailable:hover
+{
+  background-position: -100px 0px;
+}
+
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  color: lightgrey;
+}
+
 ul#applicationchooser li:hover {
   background-position: 0px 0px;
+}
+
+/* Avoid underlining anchors inside the tabs */
+ul#applicationchooser a:hover {
   text-decoration: none;
 }
+
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
@@ -833,6 +909,7 @@ ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
+ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news                     {list-style-image: url(/@@/news);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -842,7 +919,6 @@ ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
-ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
@@ -907,6 +983,8 @@ body.tab-overview #actions, body.tab-overview .results {
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
+
+.product.series, .project {margin-bottom: 1em;}
 
 /* --- Code --- */
 
@@ -1014,6 +1092,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   background: none;
   color: #9f2b33;
 }
+
 
 .statusUNCONFIRMED  { color: #993300; }
 .statusNEEDSINFO    { color: Red; }
@@ -1290,6 +1369,10 @@ div#applications {padding: 1em 0; text-align: center;}
 .tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
+}
+.front_page label {
+  color: #303030;
+  font-size: 1.2em;
 }
 #application-summary, #application-footer {
   font-size: 1.5em;

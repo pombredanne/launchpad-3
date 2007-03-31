@@ -23,9 +23,6 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <allow attributes="
-          default_gotchi_resource default_gotchi_heading_resource
-          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
@@ -52,7 +49,7 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.BugsLayer"
-      name="+assignedbugs"
+      name="+bugs"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
@@ -118,6 +115,13 @@
       class="canonical.launchpad.browser.PersonEditView"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+edithomepage"
@@ -229,13 +233,16 @@
       attribute="__call__"
       />
 
-  <browser:page
+  <browser:generalform
       name="+bugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
-      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      class="canonical.launchpad.browser.PersonRelatedBugsView"
+      fields="status importance assignee milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      attribute="__call__"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform
@@ -421,6 +428,13 @@
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
+      permission="launchpad.Edit"
+      template="../templates/team-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamBrandingView"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt" />
 
