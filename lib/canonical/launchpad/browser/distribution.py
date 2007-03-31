@@ -170,7 +170,7 @@ class DistributionSetContextMenu(ContextMenu):
         return Link('/distros/', 'View distributions')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def people(self):
         return Link('/people/', 'View people')

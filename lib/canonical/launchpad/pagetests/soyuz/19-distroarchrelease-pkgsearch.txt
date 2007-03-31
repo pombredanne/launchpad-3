@@ -2,7 +2,7 @@ Check if the DistroArchRelease package search page is not broken.
 This page is used to search binarypackages in a distroarchrelease context
 
   >>> browser.open("http://launchpad.dev/ubuntu/warty/i386")
-  >>> browser.getControl(name="text").value = "firefox"
+  >>> browser.getControl(name="text", index=1).value = "firefox"
   >>> browser.getControl("Search Packages").click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/warty/i386/+search?text=firefox'

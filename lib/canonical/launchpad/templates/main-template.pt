@@ -91,14 +91,14 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
-        action="/+search"
+        action="/projects/"
         method="get"
       >
         <div>
           <input
             type="text"
-            id="q"
-            name="q"
+            id="text"
+            name="text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />

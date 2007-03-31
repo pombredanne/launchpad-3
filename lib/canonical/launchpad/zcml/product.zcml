@@ -141,7 +141,7 @@
             />
         <browser:page
             name="+listing-simple"
-            template="../templates/product-listing-simple.pt"
+            template="../templates/pillar-listing-simple.pt"
             />
         <!-- Products Portlets -->
         <browser:page
@@ -397,7 +397,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSet"
-        path_expression="string:products"
+        path_expression="string:projects"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
     <browser:page
