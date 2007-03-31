@@ -13,8 +13,8 @@
                             </a>
                           </li>
                         </ul>
-                        <form class="central" action="/+search" method="get">
-                          <input id="text" name="q" size="50" type="text" />
+                        <form class="central" action="/projects/" method="get">
+                          <input id="text" name="text" size="50" type="text" />
                           <input type="submit" value="Search Projects" />
                         </form>
                         <p id="application-summary">

@@ -22,7 +22,6 @@ __all__ = [
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
-    'SearchProjectsView',
     'DefaultShortLink',
     'BrowserWindowDimensions',
     ]
@@ -52,6 +51,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -131,11 +131,12 @@ class MaloneApplicationNavigation(Navigation):
 
     @stepto('projects')
     def projects(self):
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):
-        return getUtility(IProductSet)
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
@@ -426,12 +427,12 @@ class LaunchpadRootNavigation(Navigation):
     usedfor = ILaunchpadRoot
 
     stepto_utilities = {
-        'products': IProductSet,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
-        'projects': IProjectSet,
+        'projects': IProductSet,
+        'projectgroups': IProjectSet,
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -451,6 +452,11 @@ class LaunchpadRootNavigation(Navigation):
         #'malone': IMaloneApplication,
         #'rosetta': IRosettaApplication,
         }
+
+    @stepto('products')
+    def products(self):
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         if name in self.stepto_utilities:
@@ -1032,30 +1038,6 @@ class ApplicationButtons(LaunchpadView):
             raise AssertionError(
                 'Max of one path item after +applicationbuttons')
         return self
-
-
-class SearchProjectsView(LaunchpadView):
-    """The page where people can search for Projects/Products/Distros."""
-
-    results = None
-    search_string = ""
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def initialize(self):
-        form = self.request.form
-        self.search_string = form.get('q')
-        if not self.search_string:
-            return
-
-        search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
-        self.results = getUtility(IPillarNameSet).search(search_string, limit)
-
-    def tooManyResultsFound(self):
-        return len(self.results) > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):

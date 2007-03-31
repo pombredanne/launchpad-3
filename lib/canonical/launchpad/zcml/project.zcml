@@ -288,7 +288,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
-        permission="zope.Public"
+        permission="launchpad.Admin"
         class="canonical.launchpad.browser.ProjectSetView"
         >
         <browser:page
@@ -305,7 +305,7 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
         class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Admin">
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"
