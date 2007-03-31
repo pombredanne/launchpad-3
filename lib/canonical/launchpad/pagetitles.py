@@ -753,7 +753,7 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Translations'
+rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Launchpad Translations'
 
