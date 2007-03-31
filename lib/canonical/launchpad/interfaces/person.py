@@ -686,6 +686,20 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         will be equal to union of all the languages known by its members.
         """
 
+    def getDirectAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that a person is subscribed to.
+        
+        This will return IQuestionTargets that the person is registered as an 
+        answer contact because he subscribed himself.
+        """
+
+    def getTeamAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that are indirectly subscribed to.
+        
+        This will return IQuestionTargets that the person or is registered as an 
+        answer contact because of his membership in a team.
+        """
+            
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,

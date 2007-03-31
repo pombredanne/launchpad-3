@@ -28,6 +28,18 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditSSHKeysView',
+    'PersonEditHomePageView',
+    'PersonAnswerContactForView',
+    'PersonAssignedBugTaskSearchListingView',
+    'ReportedBugTaskSearchListingView',
+    'BugContactPackageBugsSearchListingView',
+    'SubscribedBugTaskSearchListingView',
+    'PersonRdfView',
+    'PersonView',
+    'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonLanguagesView',
@@ -2747,14 +2759,49 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
+                 
+class PersonAnswerContactForView(LaunchpadView):
+    """View used to show all the IQuestionTargets that an IPerson is an answer
+    contact for.
+    """
+    
+    @cachedproperty
+    def direct_question_targets(self):
+        """List of IQuestionTargets that the context is a direct answer contact.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getDirectAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+
+    @cachedproperty
+    def team_question_targets(self):
+        """List of IQuestionTargets for the context's team membership.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getTeamAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+                        
+    def showRemoveYourselfLink(self):
+        """The link is only shown when the page is in the user's own profile."""
+        return self.user == self.context
+
 
 class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
-             'subscribed']
+             'subscribed', 'answer_contact_for']
 
+    def answer_contact_for(self):
+        summary="Projects for which %s is an answer contact for" % (
+            self.context.displayname)
+        return Link('+answer-contact-for', 'Answer contact for', summary)
+        
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
         return Link('+answeredtickets', 'Answered', summary, icon='question')
