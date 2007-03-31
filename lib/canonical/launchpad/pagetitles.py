@@ -512,6 +512,37 @@ malone_filebug = "Report a bug"
 
 # malone_template is a means to include the mainmaster template
 
+# marketing_about_template is used by the marketing pages
+
+marketing_answers_about = "About Answers"
+
+marketing_answers_faq = "FAQs about Answers"
+
+marketing_blueprints_about = "About Blueprints"
+
+marketing_blueprints_faq = "FAQs about Blueprints"
+
+marketing_bugs_about = "About Bugs"
+
+marketing_bugs_faq = "FAQs about Bugs"
+
+marketing_code_about = "About Code"
+
+marketing_code_faq = "FAQs about Code"
+
+# marketing_faq_template is used by the marketing pages
+
+marketing_home = "About Launchpad"
+
+# marketing_main_template is used by the marketing pages
+
+def marketing_tour(context, view):
+    return view.pagetitle
+
+marketing_translations_about = "About Translations"
+
+marketing_translations_faq = "FAQs about Translations"
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect

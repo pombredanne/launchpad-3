@@ -128,13 +128,6 @@
       />
 
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -165,6 +158,15 @@
       template="../templates/launchpad-restrictedinfo.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
+  <!-- Other non-application-specific pages. -->
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -247,7 +249,7 @@
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
-  
+
 </facet>
 
 <!--
