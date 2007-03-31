@@ -8,9 +8,6 @@ The Features link shows an overview of all the specifications
 involving that person.
 
   >>> browser.open('http://blueprints.launchpad.dev/~name16')
-  >>> browser.getLink('Blueprints').click()
-  >>> browser.url
-  '.../~name16/+specs'
   >>> browser.title
   'Specifications involving Foo Bar'
   >>> from BeautifulSoup import BeautifulSoup
