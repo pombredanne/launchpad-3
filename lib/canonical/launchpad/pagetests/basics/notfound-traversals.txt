@@ -101,6 +101,7 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
 >>> check("/firefox/+translations")
+>>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
