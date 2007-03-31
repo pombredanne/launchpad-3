@@ -40,7 +40,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
+    NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -54,7 +54,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView, custom_widget)
+    stepthrough, stepto, LaunchpadFormView)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
@@ -134,10 +134,9 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'translations']
 
     def specifications(self):
-        target = '+specs'
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
 
 class DistributionSetSOP(StructuralObjectPresentation):
