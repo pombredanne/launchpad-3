@@ -69,7 +69,8 @@
                                 />
                               </li>
                             </ul>
-                            <a href="+products-with-translations">List all products using Translations...</a>
+                            <a href="+products-with-translations">
+                              List all products using Translations...</a>
 
                         </div>
                         <div class="three column right demo">

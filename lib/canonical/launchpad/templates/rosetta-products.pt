@@ -55,9 +55,11 @@
 			      <tal:navigation replace="structure
                                 view/batchnav/@@+navigation-links-upper" />
                               <ul class="product">
-                                <li tal:repeat="product context/translatable_products">
+                                <li tal:repeat="product
+				      view/batchnav/currentBatch">
                                   <a
-                                    tal:attributes="href string:/${product/name}/+translations"
+                                    tal:attributes="href
+                                      string:/${product/name}/+translations"
                                     tal:content="product/title"
                                   />
                                 </li>
