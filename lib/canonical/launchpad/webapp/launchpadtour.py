@@ -137,10 +137,12 @@ class LaunchpadTourView(LaunchpadView):
     @property
     def next_tour_url(self):
         """Return the URL to the next tour."""
-        if self._next_tour_vhost in allvhosts.configs:
+        if not self._next_tour_vhost:
+            return None
+        elif self._next_tour_vhost in allvhosts.configs:
             return allvhosts.configs[self._next_tour_vhost].rooturl + '+tour'
         else:
-            return None
+            assert False, "Unknown virtual host: %s" % self._next_tour_vhost
 
     def initialize(self):
         """Find the current screen from the request."""
