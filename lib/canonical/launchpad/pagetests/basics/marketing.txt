@@ -33,110 +33,53 @@ The 'About Launchpad' page has one link to each Launchpad application
 which brings the Overview page for that application. The overview page
 has a link to the FAQs and Tour page for the application.
 
+    >>> def test_app_marketing_pages(name):
+    ...     """Navigate from About Launchpad through the app marketing pages.
+    ...     """
+    ...     browser.open('http://launchpad.dev/+about')
+    ...     for link in [name, 'Application tour', 'FAQs', 'Overview']:
+    ...         browser.getLink(link).click()
+    ...         print "%s: %s" % (browser.title, browser.url)
+
 === Code ===
 
-    >>> browser.open('http://launchpad.dev/+about')
-    >>> browser.getLink('Code').click()
-    >>> print browser.title
-    About Code
-    >>> print browser.url
-    http://code.launchpad.dev/+about
-
-    >>> browser.getLink('Application tour').click()
-    >>> print browser.title
-    Code tour:...
-    >>> print browser.url
-    http://code.launchpad.dev/+tour
-
-    >>> browser.getLink('FAQs').click()
-    >>> print browser.title
-    FAQs about Code
-    >>> print browser.url
-    http://code.launchpad.dev/+faq
+    >>> test_app_marketing_pages('Code')
+    About Code: http://code.launchpad.dev/+about
+    Code tour:... http://code.launchpad.dev/+tour
+    FAQs about Code: http://code.launchpad.dev/+faq
+    About Code: http://code.launchpad.dev/+about
 
 === Bugs ===
 
-    >>> browser.open('http://launchpad.dev/+about')
-    >>> browser.getLink('Bugs').click()
-    >>> print browser.title
-    About Bugs
-    >>> print browser.url
-    http://bugs.launchpad.dev/+about
-
-    >>> browser.getLink('Application tour').click()
-    >>> print browser.title
-    Bugs tour:...
-    >>> print browser.url
-    http://bugs.launchpad.dev/+tour
-
-    >>> browser.getLink('FAQs').click()
-    >>> print browser.title
-    FAQs about Bugs
-    >>> print browser.url
-    http://bugs.launchpad.dev/+faq
+    >>> test_app_marketing_pages('Bugs')
+    About Bugs: http://bugs.launchpad.dev/+about
+    Bugs tour:... http://bugs.launchpad.dev/+tour
+    FAQs about Bugs: http://bugs.launchpad.dev/+faq
+    About Bugs: http://bugs.launchpad.dev/+about
 
 === Blueprints ===
 
-    >>> browser.open('http://launchpad.dev/+about')
-    >>> browser.getLink('Blueprints').click()
-    >>> print browser.title
-    About Blueprints
-    >>> print browser.url
-    http://blueprints.launchpad.dev/+about
-
-    >>> browser.getLink('Application tour').click()
-    >>> print browser.title
-    Blueprints tour:...
-    >>> print browser.url
-    http://blueprints.launchpad.dev/+tour
-
-    >>> browser.getLink('FAQs').click()
-    >>> print browser.title
-    FAQs about Blueprints
-    >>> print browser.url
-    http://blueprints.launchpad.dev/+faq
+    >>> test_app_marketing_pages('Blueprints')
+    About Blueprints: http://blueprints.launchpad.dev/+about
+    Blueprints tour:... http://blueprints.launchpad.dev/+tour
+    FAQs about Blueprints: http://blueprints.launchpad.dev/+faq
+    About Blueprints: http://blueprints.launchpad.dev/+about
 
 === Translations ===
 
-    >>> browser.open('http://launchpad.dev/+about')
-    >>> browser.getLink('Translations').click()
-    >>> print browser.title
-    About Translations
-    >>> print browser.url
-    http://translations.launchpad.dev/+about
-
-    >>> browser.getLink('Application tour').click()
-    >>> print browser.title
-    Translations tour:...
-    >>> print browser.url
-    http://translations.launchpad.dev/+tour
-
-    >>> browser.getLink('FAQs').click()
-    >>> print browser.title
-    FAQs about Translations
-    >>> print browser.url
-    http://translations.launchpad.dev/+faq
+    >>> test_app_marketing_pages('Translations')
+    About Translations: http://translations.launchpad.dev/+about
+    Translations tour:... http://translations.launchpad.dev/+tour
+    FAQs about Translations: http://translations.launchpad.dev/+faq
+    About Translations: http://translations.launchpad.dev/+about
 
 === Answers ===
 
-    >>> browser.open('http://launchpad.dev/+about')
-    >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    About Answers
-    >>> print browser.url
-    http://answers.launchpad.dev/+about
-
-    >>> browser.getLink('Application tour').click()
-    >>> print browser.title
-    Answers tour:...
-    >>> print browser.url
-    http://answers.launchpad.dev/+tour
-
-    >>> browser.getLink('FAQs').click()
-    >>> print browser.title
-    FAQs about Answers
-    >>> print browser.url
-    http://answers.launchpad.dev/+faq
+    >>> test_app_marketing_pages('Answers')
+    About Answers: http://answers.launchpad.dev/+about
+    Answers tour:... http://answers.launchpad.dev/+tour
+    FAQs about Answers: http://answers.launchpad.dev/+faq
+    About Answers: http://answers.launchpad.dev/+about
 
 == Link to tour on each application main page ==
 
