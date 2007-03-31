@@ -906,6 +906,8 @@ specification_linkbug = ContextTitle(
   u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
 
+specification_new = 'Register a proposal as a blueprint in Launchpad'
+
 specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach blueprint to a different project or distribution'
