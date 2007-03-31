@@ -722,9 +722,9 @@ class ProductDynMenu(
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Product series', page='+series', submenu='series')
+        yield self.makeLink('Series', page='+series', submenu='series')
         yield self.makeLink(
-            'Related projects', submenu='related', target=self.context.project)
+            'Related', submenu='related', target=self.context.project)
 
 
 class Icon:
