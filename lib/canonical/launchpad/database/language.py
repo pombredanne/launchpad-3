@@ -9,11 +9,9 @@ from sqlobject import (
     StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
     CONTAINSSTRING)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.enumcol import EnumCol
-
 from canonical.lp.dbschema import TextDirection
-
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)
 
@@ -23,21 +21,24 @@ class Language(SQLBase):
 
     _table = 'Language'
 
-    code = StringCol(dbName='code', notNull=True, unique=True,
-            alternateID=True)
+    code = StringCol(
+        dbName='code', notNull=True, unique=True, alternateID=True)
     nativename = StringCol(dbName='nativename')
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
-    direction = EnumCol(dbName='direction', notNull=True,
-                        schema=TextDirection, default=TextDirection.LTR)
+    direction = EnumCol(
+        dbName='direction', notNull=True, schema=TextDirection,
+        default=TextDirection.LTR)
 
-    translators = SQLRelatedJoin('Person', joinColumn='language',
-        otherColumn='person', intermediateTable='PersonLanguage')
+    translation_teams = SQLRelatedJoin(
+        'Person', joinColumn="language",
+        intermediateTable='Translator', otherColumn='translator')
 
-    countries = SQLRelatedJoin('Country', joinColumn='language',
-        otherColumn='country', intermediateTable='SpokenIn')
+    countries = SQLRelatedJoin(
+        'Country', joinColumn='language', otherColumn='country',
+        intermediateTable='SpokenIn')
 
     @property
     def displayname(self):
@@ -60,18 +61,44 @@ class Language(SQLBase):
 
     @property
     def dashedcode(self):
-        """See ILanguage"""
+        """See ILanguage."""
         return self.code.replace('_', '-')
 
     @property
     def abbreviated_text_dir(self):
-        """See ILanguage"""
+        """See ILanguage."""
         if self.direction == TextDirection.LTR:
             return 'ltr'
         elif self.direction == TextDirection.RTL:
             return 'rtl'
         else:
             assert False, "unknown text direction"
+
+    @property
+    def translators(self):
+        """See ILanguage."""
+        # XXX CarlosPerelloMarin 20070331: This cached karma doesn't
+        # differentiate whether is for this language or another one.
+        from canonical.launchpad.database.person import Person
+        query = """
+            SELECT Person.id, SUM(KarmaCache.karmavalue) AS karma
+            FROM Person
+                JOIN PersonLanguage ON
+                    PersonLanguage.person = Person.id AND
+                    PersonLanguage.language = %s
+                JOIN KarmaCache ON
+                    KarmaCache.person = Person.id
+                JOIN KarmaCategory ON
+                    KarmaCache.category = KarmaCategory.id AND
+                    KarmaCategory.name = 'translations'
+            GROUP BY Person.id
+            ORDER BY karma;
+            """ % sqlvalues(self)
+        cur = cursor()
+        cur.execute(query)
+        person_ids = [id for [id, karma] in cur.fetchall()]
+        return Person.select('id IN %s' % sqlvalues(person_ids))
+
 
 class LanguageSet:
     implements(ILanguageSet)

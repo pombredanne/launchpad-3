@@ -41,12 +41,17 @@ class ILanguage(Interface):
                      u' appropriate plural form.'),
         required=False)
 
-    translators = Attribute("""A list of Persons that are interested on 
-        translate into this language.""")
+    translators = Field(
+        title=u'List of Person/Team that translate into this language.',
+        required=True)
+
+    translation_teams = Field(
+        title=u'List of Teams that translate into this language.',
+        required=True)
 
     countries = Field(
-	title=u'A list of Countries where this language is spoken in.',
-	required=True)
+        title=u'A list of Countries where this language is spoken in.',
+        required=True)
 
     visible = Bool(
         title=u'Visible',

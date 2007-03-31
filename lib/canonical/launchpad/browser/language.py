@@ -105,12 +105,17 @@ class LanguageView(LaunchpadView):
         else:
             return self.context.nativename
 
-    @cachedproperty
     def translation_teams(self):
-        return []
+        foo = []
+        for translation_team in self.context.translation_teams:
+            foo.append({
+                'expert': translation_team,
+                'groups': translation_team.translation_groups,
+                })
+        return foo
 
-    def getTopFiveContributors(self):
-        return []
+    def getTopContributors(self):
+        return self.context.translators[:20]
 
 
 class LanguageRemoveView:
