@@ -74,8 +74,8 @@ available using the screen_titles attributes.
 
 The current screen is tracked using the current_screen_index attribute.
 Unless there is a 'screen' parameter in the request, it will default to
-the first screen. (This attribute is only available once the initialize()
-method was called.)
+the first screen. (This attribute is only available after the
+initialize() method has been called.)
 
     >>> tour_view.initialize()
     >>> tour_view.current_screen_index
@@ -106,9 +106,9 @@ Passing an invalid screen reference will raise UnexpectedFormData.
 
 == Screen description ==
 
-The current viewed screen is available in the current_screen attribute.
-The screen is described as a dict containing a title, summary,
-screenshot and callouts keys.
+The currently displayed screen is available in the current_screen
+attribute. The screen is described as a dict containing a title,
+summary, screenshot and callouts keys.
 
     >>> request = LaunchpadTestRequest(form={'screen': '1'})
     >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
@@ -161,9 +161,12 @@ It is None when the current screen is the last one.
 
 == Tour navigation ==
 
-At the end of the tour, a link to the next tour may be available if
-the 'next' attribute was used. The next attribute should be the name
-of one of the configured vhost.
+It is possible to link one application tour to another one by using
+the 'next' attribute on the 'tour' root element in the XML description.
+This attribute should contain the name of one of the configured vhost.
+
+If that attribute was set, the link to the next tour will be available
+in the view 'next_tour_url' property.
 
     >>> print tour_view.next_tour_url
     http://bugs.launchpad.dev/+tour

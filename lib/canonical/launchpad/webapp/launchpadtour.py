@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Base view for writing application tour."""
+"""Base view for writing applications tours."""
 
 __metaclass__ = type
 
@@ -23,8 +23,6 @@ from zope.interface import implements
 
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-
-from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -58,7 +56,7 @@ def get_node_html_text(node):
 
 
 class LaunchpadTourView(LaunchpadView):
-    """A view that serves an appplication tour.
+    """A view that serves an application tour.
 
     The tour is defined in an XML file describing each screen in the tour
     with callouts.
@@ -115,7 +113,7 @@ class LaunchpadTourView(LaunchpadView):
 
     @property
     def pagetitle(self):
-        """Return the page title."""
+        """Return the title for the current screen."""
         return "%s tour: %s" % (
             self.title, self.screen_titles[self.current_screen_index])
 

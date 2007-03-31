@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Marketing templates -->
+    <!-- Marketing templates used as macros. -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="marketing_template"
@@ -24,7 +24,7 @@
         template="../templates/marketing-faq-template.pt"
         />
 
-    <!-- XXX flacoste 20007/03/30 Redirect the generic +tour to the code
+    <!-- XXX flacoste 2007/03/30 Redirect the generic +tour to the code
          +tour page which is the first page in the tour. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
