@@ -65,7 +65,7 @@ list of emails to send:
     <BLANKLINE>
     -- 
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -79,7 +79,7 @@ list of emails to send:
     <BLANKLINE>
     -- 
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug assignee.
     <BLANKLINE>
     ---------------------------------------------------------------------- 
@@ -92,7 +92,7 @@ list of emails to send:
     <BLANKLINE>
     -- 
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
@@ -148,7 +148,7 @@ subject, though, which is often the case when someone replies via email.
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -189,7 +189,7 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     -- 
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -240,7 +240,7 @@ in the order they were added:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     ----------------------------------------------------------------------
@@ -280,7 +280,7 @@ If we insert yet another comment, it will be sent as a separate email.
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -297,7 +297,7 @@ If we insert yet another comment, it will be sent as a separate email.
     another comment.
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     ----------------------------------------------------------------------
@@ -341,7 +341,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -359,7 +359,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -377,7 +377,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -424,7 +424,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -443,7 +443,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -461,7 +461,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -571,7 +571,7 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://launchpad.dev/bugs/2
+    http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
     <BLANKLINE>
@@ -589,7 +589,7 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://launchpad.dev/bugs/2
+    http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a bug assignee.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -602,7 +602,7 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://launchpad.dev/bugs/2
+    http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
     <BLANKLINE>
@@ -623,7 +623,7 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -650,7 +650,7 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://launchpad.dev/bugs/1
+    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
@@ -684,7 +684,7 @@ a trailing space.
      '',
      '-- ',
      'Firefox does not support SVG',
-     'http://launchpad.dev/bugs/1',
+     'http://bugs.launchpad.dev/bugs/1',
      'You received this bug notification because you are a direct subscriber',
      'of the bug.']
 
@@ -768,7 +768,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/13
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
@@ -802,13 +802,13 @@ top of the email:
     X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
-        http://launchpad.dev/bugs/1
+        http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/13
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu (via bug 1).
     <BLANKLINE>
@@ -819,13 +819,13 @@ top of the email:
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
-        http://launchpad.dev/bugs/1
+        http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/13
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber (via bug 1).
     <BLANKLINE>
@@ -836,13 +836,13 @@ top of the email:
     X-Launchpad-Message-Rationale: Assignee via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
-        http://launchpad.dev/bugs/1
+        http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/13
     You received this bug notification because you are a bug assignee (via
     bug 1).
     <BLANKLINE>
@@ -853,13 +853,13 @@ top of the email:
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
-        http://launchpad.dev/bugs/1
+        http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     new bug
-    http://launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/13
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
