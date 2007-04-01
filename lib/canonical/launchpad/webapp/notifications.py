@@ -21,6 +21,7 @@ from zope.app.session.interfaces import ISession
 import zope.i18n
 from zope.publisher.interfaces.browser import IBrowserRequest
 
+from canonical.config import config
 from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
@@ -196,16 +197,23 @@ class NotificationResponse:
         #      the session cookie at call-sites like this one.
         #      A get_session() helper would help here.
         #      Maybe a get_or_create_session() to go with it.
-        session = ISession(self)[SESSION_KEY]
-        try:
-            # Use notifications stored in the session.
-            self._notifications = session['notifications']
-            # Remove them from the session so they don't propogate to
-            # subsequent pages, unless redirect() is called which will
-            # push the notifications back into the session.
-            del session['notifications']
-        except KeyError:
-            # No stored notifications - create a new NotificationList
+        cookie_name = config.launchpad.session.cookie
+        request = self._request
+        response = self
+        if (request.cookies.get(cookie_name) is not None or
+            response.getCookie(cookie_name) is not None):
+            session = ISession(self)[SESSION_KEY]
+            try:
+                # Use notifications stored in the session.
+                self._notifications = session['notifications']
+                # Remove them from the session so they don't propogate to
+                # subsequent pages, unless redirect() is called which will
+                # push the notifications back into the session.
+                del session['notifications']
+            except KeyError:
+                # No stored notifications - create a new NotificationList
+                self._notifications = NotificationList()
+        else:
             self._notifications = NotificationList()
 
         return self._notifications
