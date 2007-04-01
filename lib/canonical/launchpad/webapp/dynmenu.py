@@ -149,7 +149,7 @@ class DynMenu(LaunchpadView):
     def makeBreadcrumbLink(self, context):
         text = self.getBreadcrumbText(context)
         assert text is not None
-        contextsubmenu = self.submenuHasItems(context, '')
+        contextsubmenu = self.submenuHasItems('', context)
         return DynMenuLink(
             context, '', text, contextsubmenu=contextsubmenu)
 
@@ -158,7 +158,7 @@ class DynMenu(LaunchpadView):
         if context is None:
             context = self.context
         if submenu is not None:
-            if not self.submenuHasItems(context, submenu):
+            if not self.submenuHasItems(submenu, context):
                 submenu = None
         return DynMenuLink(context, page, text, submenu=submenu, target=target)
 
