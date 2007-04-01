@@ -138,14 +138,10 @@
     template="../templates/specification-addsubscriber.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+retarget"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationRetargetingView"
-    label="Retarget specification"
-    fields="product distribution"
-    keyword_arguments="product distribution"
     permission="launchpad.Edit"
     template="../templates/specification-retargeting.pt"
     />
@@ -440,6 +436,14 @@
     permission="zope.Public"
     template="../templates/specifications-index.pt"
     class="canonical.launchpad.browser.SpecificationSetView"
+    />
+
+  <browser:page
+    name="+new"
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-new.pt"
+    class="canonical.launchpad.browser.SpecificationNewView"
     />
 
   <!-- SpecificationDelta -->

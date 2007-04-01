@@ -1,11 +1,9 @@
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en"
-  lang="en"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="specifications">
 
 <body>
+
+<h1 metal:fill-slot="heading">Register a new Blueprint</h1>
 
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
@@ -17,14 +15,11 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      You can target the blueprint to a different project. Be careful, when
-      you retarget the blueprint you will lose any goal or milestone
-      information for it.
+    <div metal:fill-slot="extra_info" class="documentDescription"
+         tal:replace="nothing">
+      Please the introductory paragraph here. It will be displayed in
+      bold text below the form title. It should be a single paragraph
+      giving an overview of what is being added.
     </div>
 
     <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
@@ -59,6 +54,6 @@
   </div>
 
 </div>
-    
+
 </body>
 </html>
