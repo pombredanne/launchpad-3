@@ -398,6 +398,13 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   padding-left: 0px;
   padding-right: 0px;
 }
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
 /* Inhibit underlines on all dyn menu items. */
 #locationbar li a:hover {
   text-decoration: none;
