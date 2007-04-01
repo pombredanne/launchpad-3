@@ -84,7 +84,7 @@ originated itself:
   <div id="source">
     <ul>
       <li class="source package">
-        <a href="http://localhost/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
+        <a href="/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
       </li>
     </ul>
   </div>

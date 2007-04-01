@@ -32,7 +32,7 @@ Check that the newly added web reference is there.
 
 Access the added web link +edit page.
 
-  >>> url = 'http://bugs.launchpad.dev/ubuntu-product/+bug/2/references/1'
+  >>> url = '/ubuntu-product/+bug/2/references/1'
   >>> browser.getLink(url=url).click()
 
   >>> browser.title

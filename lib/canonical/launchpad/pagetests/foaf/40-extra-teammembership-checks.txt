@@ -140,7 +140,7 @@ should succeed and the second one receive a nice error message.
 
   >>> second_browser.addHeader(
   ...     'Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> second_browser.open(url)
+  >>> second_browser.open('http://launchpad.dev' + url)
 
 Approve the membership in the first browser.
 
