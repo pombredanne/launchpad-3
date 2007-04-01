@@ -487,6 +487,8 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 /*- Underneath the global header and location bar is a help panel. -*/
+/* In Internet Explorer it doesn't work yet, so hide it for now. */
+* html #help_panel {display: none;}
 
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
