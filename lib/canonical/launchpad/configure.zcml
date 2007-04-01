@@ -99,14 +99,8 @@
       />
 
   <browser:resourceDirectory
-      name="MochiKit"
-      directory="../../contrib/MochiKit"
-      />
-
-  <browser:resourceDirectory
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 
 </configure>

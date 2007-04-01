@@ -13,6 +13,14 @@
       classes="TeamNavigation PersonNavigation"
       />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <adapter
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IPerson"
@@ -719,7 +727,14 @@
     name="+subscribedtickets"
     permission="zope.Public"
     />
-
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
+      
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"

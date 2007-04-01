@@ -1,10 +1,14 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:meta="http://namespaces.zope.org/meta">
-
     <!-- These packages are required by apidoc. If they are deemed
     generally useful, move them to zopeapp.zcml
     -->
+    <!--
+    How frustrating.  This is needed for just one page registration
+    in introspector.zcml.
+    -->
+    <include package="zope.app" file="menus.zcml" />
     <include package="zope.app.tree.browser" />
     <include package="zope.app.tree" />  
     <include package="zope.app.renderer" file="meta.zcml" />

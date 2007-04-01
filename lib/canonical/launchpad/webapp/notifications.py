@@ -187,7 +187,15 @@ class NotificationResponse:
         # just return it
         if self._notifications is not None:
             return self._notifications
-
+        # XXX: SteveAlexander 2007-04-01:
+        #      If there is no session currently then there can be no
+        #      notifications.  However, ISession(self)[SESSION_KEY] creates
+        #      a session whether one is needed or not.
+        #      Options are to refactor the session code so that it makes a
+        #      session only when necessary, or to check for the presence of
+        #      the session cookie at call-sites like this one.
+        #      A get_session() helper would help here.
+        #      Maybe a get_or_create_session() to go with it.
         session = ISession(self)[SESSION_KEY]
         try:
             # Use notifications stored in the session.

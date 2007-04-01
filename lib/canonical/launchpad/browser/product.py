@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES,
+    IBranchSet, RESOLVED_BUGTASK_STATUSES,
     IPillarNameSet, IDistribution, IHasIcon)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -82,7 +82,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -162,16 +162,14 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     links = StandardLaunchpadFacets.links
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
-        target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         target = '+bounties'
@@ -180,22 +178,19 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
-        target = ''
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         target = '+calendar'
@@ -707,29 +702,15 @@ class ProductDynMenu(
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
         'series': 'seriesMenu',
-        'related': 'relatedMenu',
         }
 
-    def relatedMenu(self):
-        """Show items related to this product.
-
-        If there is a project, show a link to the project, and then
-        the contents of the project menu, excluding the current
-        product from the project's list of products.
-        """
-        project = self.context.project
-        if project is not None:
-            yield self.makeLink(project.title, target=project)
-            projectdynmenu = ProjectDynMenu(project, self.request)
-            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
-                yield link
-
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Product series', page='+series', submenu='series')
+        yield self.makeLink('Series', page='+series', submenu='series')
         yield self.makeLink(
-            'Related projects', submenu='related', target=self.context.project)
+            'Related', submenu='related', context=self.context.project)
 
 
 class Icon:
