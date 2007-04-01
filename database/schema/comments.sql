@@ -1413,7 +1413,7 @@ COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
 COMMENT ON COLUMN ScriptActivity.name IS 'The name of the script';
 COMMENT ON COLUMN ScriptActivity.hostname IS 'The hostname of the machine where the script was run';
 COMMENT ON COLUMN ScriptActivity.date_started IS 'The date at which the script started';
-COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed'
+COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed';
 
 -- RevisionProperty
 COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that appear on a revision.';
