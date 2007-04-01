@@ -122,7 +122,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
@@ -186,6 +186,7 @@ class PersonDynMenu(DynMenu):
         'contributions': 'contributionsMenu',
         }
 
+    @neverempty
     def contributionsMenu(self):
         L = [self.makeBreadcrumbLink(item)
              for item in self.context.iterTopProjectsContributedTo()]

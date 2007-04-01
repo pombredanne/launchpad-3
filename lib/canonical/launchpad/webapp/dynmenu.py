@@ -15,6 +15,14 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 
+def neverempty(fn):
+    """Method decorator to declare that this menu will always have
+    at least one item.
+    """
+    fn.__dynmenu_neverempty__ = True
+    return fn
+
+
 class DynMenuLink:
 
     no_target_given = object()
@@ -127,6 +135,8 @@ class DynMenu(LaunchpadView):
         submenu_method = self.getSubmenuMethod(submenu_name, context=context)
         if submenu_method is None:
             return False
+        if getattr(submenu_method, '__dynmenu_neverempty__', False):
+            return True
         submenu = submenu_method()
         assert submenu is not None, "submenu must be a generator"
         try:

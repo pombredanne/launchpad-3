@@ -58,7 +58,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
 
@@ -667,6 +667,7 @@ class DistributionDynMenu(
         'milestones': 'milestoneMenu',
         }
 
+    @neverempty
     def milestoneMenu(self):
         """Show milestones more recently than one month ago,
         or with no due date.
@@ -678,6 +679,7 @@ class DistributionDynMenu(
                 yield self.makeLink(milestone.title, context=milestone)
         yield self.makeLink('Show all milestones...', page='+milestones')
 
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Releases', page='+releases', submenu='releases')
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')

@@ -82,7 +82,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -719,6 +719,7 @@ class ProductDynMenu(
             for link in projectdynmenu.mainMenu(excludeproduct=self.context):
                 yield link
 
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
