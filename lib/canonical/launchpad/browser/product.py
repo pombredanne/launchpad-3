@@ -82,7 +82,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -702,29 +702,15 @@ class ProductDynMenu(
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
         'series': 'seriesMenu',
-        'related': 'relatedMenu',
         }
 
-    def relatedMenu(self):
-        """Show items related to this product.
-
-        If there is a project, show a link to the project, and then
-        the contents of the project menu, excluding the current
-        product from the project's list of products.
-        """
-        project = self.context.project
-        if project is not None:
-            yield self.makeLink(project.title, target=project)
-            projectdynmenu = ProjectDynMenu(project, self.request)
-            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
-                yield link
-
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Product series', page='+series', submenu='series')
+        yield self.makeLink('Series', page='+series', submenu='series')
         yield self.makeLink(
-            'Related projects', submenu='related', target=self.context.project)
+            'Related', submenu='related', context=self.context.project)
 
 
 class Icon:

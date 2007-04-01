@@ -462,9 +462,12 @@ class Navigation:
         # If self.context has a view called +menudata, it has a menu.
         menuview = queryMultiAdapter(
             (self.context, self.request), name="+menudata")
-        has_menu = menuview is not None
+        if menuview is None:
+            has_menu = False
+        else:
+            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=True), text, has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.

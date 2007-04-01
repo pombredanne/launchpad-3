@@ -621,7 +621,11 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-person_index = ContextDisplayName('%s in Launchpad')
+def person_index(context, view):
+    if context.is_valid_person_or_team:
+        return '%s in Launchpad' % context.displayname
+    else:
+        return "%s's contributions to Free Software" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 

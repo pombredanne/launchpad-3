@@ -37,6 +37,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
+from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
@@ -68,6 +69,7 @@ class SprintNavigation(Navigation):
 
 class SprintsMixinDynMenu:
 
+    @neverempty
     def meetingsMenu(self):
         coming_sprints = shortlist(self.context.coming_sprints, 20)
         if coming_sprints:

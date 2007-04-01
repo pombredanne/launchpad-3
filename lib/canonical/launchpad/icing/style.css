@@ -275,9 +275,17 @@ hr {
   font-weight: bold;
   color: #FFF;
 }
+/* padding-left adjusts the space between the home icon and the word
+ * "Home".
+ */
 ul#menuroot a#homebreadcrumb span {
   background: url(home.gif) left top no-repeat;
-  padding-left: 15px;
+  padding-left: 16px;
+}
+ul#menuroot li a#homebreadcrumb:hover span,
+ul#menuroot li.selected a#homebreadcrumb span {
+  background: url(home-highlight.gif) left top no-repeat;
+  padding-left: 16px;
 }
 /* The location bar contains menus. */
 ul#menuroot {

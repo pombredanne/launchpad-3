@@ -7,13 +7,20 @@
         icingrev string:3;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
         icingroot string:${rooturl}+icing/rev${icingrev};
-        site_message modules/canonical.config/config/launchpad/site_message">
+        site_message modules/canonical.config/config/launchpad/site_message;
+        devmode modules/canonical.config/config/devmode">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
       media="screen, print"
+      tal:condition="not: devmode"
+      tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
+    <style
+      type="text/css"
+      media="screen, print"
+      tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
@@ -247,8 +254,9 @@
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
+          <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
         </div>
-        <ul style="clear: both;" tal:condition="nothing">
+        <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
               <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
             </li>
@@ -288,7 +296,8 @@
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">
-          <li class="item" lpm:mid="/+menudata/contributions"><a
+          <li class="item"
+              tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
           class="container" href="/products">Projects</a></li>
         </tal:condition>
         <tal:condition condition="not: request/lp:person">
