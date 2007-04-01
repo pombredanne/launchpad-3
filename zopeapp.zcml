@@ -72,7 +72,21 @@
        a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
+  <!--
   <include package="zope.app.i18n" />
+  -->
+
+  <!-- Setup charset negotiation -->
+  <adapter factory="zope.publisher.http.HTTPCharsets"
+      for="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.i18n.interfaces.IUserPreferredCharsets"
+      />
+  <adapter factory="zope.app.publisher.browser.ModifiableBrowserLanguages"
+      for="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.i18n.interfaces.IModifiableUserPreferredLanguages"
+      />
+
+
   <include package="zope.app.wsgi" />
 
   <!-- Default XMLRPC pre-marshalling. -->
