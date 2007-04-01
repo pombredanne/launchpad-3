@@ -200,8 +200,15 @@ class NotificationResponse:
         cookie_name = config.launchpad.session.cookie
         request = self._request
         response = self
-        if (request.cookies.get(cookie_name) is not None or
-            response.getCookie(cookie_name) is not None):
+        # Do some getattr sniffing so that the doctests in this module
+        # still pass.  Doing this rather than improving the Mock classes
+        # that the mixins are used with, as we'll be moving this hack to
+        # the sesions machinery in due course.
+        if (not (getattr(request, 'cookies', None) and
+                 getattr(response, 'getCookie', None))
+            or
+            (request.cookies.get(cookie_name) is not None or
+             response.getCookie(cookie_name) is not None)):
             session = ISession(self)[SESSION_KEY]
             try:
                 # Use notifications stored in the session.
