@@ -859,7 +859,7 @@ ul#applicationchooser li#applicationchooser_selected {
   background-repeat: repeat-x;
   background-position: bottom left;
   position: relative;
-  top: -20px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces pillargotchi~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
