@@ -59,11 +59,11 @@ It's also reachable in a more natural way, starting from distribution page:
 
 Then we get to the DistroRelease page:
 
-  >>> browser.getLink(url='http://localhost/ubuntu/warty').click()
+  >>> browser.getLink(url='/ubuntu/warty').click()
 
 Then the DistroArchRelease page:
 
-  >>> browser.getLink(url='http://localhost/ubuntu/warty/i386').click()
+  >>> browser.getLink(url='/ubuntu/warty/i386').click()
 
 Now we are able to use the search box in this page:
 
