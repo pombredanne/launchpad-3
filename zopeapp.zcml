@@ -72,9 +72,7 @@
        a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
-  <!--
   <include package="zope.app.i18n" />
-    -->
   <include package="zope.app.wsgi" />
 
   <!-- Default XMLRPC pre-marshalling. -->
