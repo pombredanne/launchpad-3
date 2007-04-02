@@ -575,7 +575,7 @@ table#applications td {text-align: right;}
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 12px; width: 220px;}
+#globalsearch {float: right; margin-top: 15px; width: 220px;}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;

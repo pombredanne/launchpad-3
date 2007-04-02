@@ -41,7 +41,8 @@
             We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+tour">Learn&nbsp;more&#8230;</a>
+            Learn more <a href="/+about">about&nbsp;Launchpad</a> or
+            <a href="/+tour">take&nbsp;a&nbsp;tour&#8230;</a>
           </p>
         </div>
         <div class="three column middle">
@@ -53,19 +54,9 @@
                 and PDF)</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BugTrackingHighlights"
-                >Intro to Launchpad bug tracking</a>
-            </li>
-            <li>
-              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/ReportingABug"
-              >Learn about reporting bugs</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/KarmaReductionJan07"
-              >Wondering why your karma dropped in January?</a>
+              <a
+              href="http://www.ubuntu.com/news/LaunchpadRelease">Announcement
+              of Launchpad 1.0 Public Beta</a>
             </li>
           </ul>
         </div>
@@ -77,12 +68,6 @@
             <li class="product"><a href="/jokosher">Jokosher</a></li>
             <li class="product"><a href="/upstart">Upstart</a></li>
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
-          </ul>
-        </div>
-        <div class="three column right">
-          <h2>More about Launchpad</h2>
-          <ul>
-            <li><a href="/+about">What is Launchpad?</a></li>
           </ul>
         </div>
     </div><!--main-->
