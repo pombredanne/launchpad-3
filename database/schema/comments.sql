@@ -1408,3 +1408,16 @@ COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blackli
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
 
+-- ScriptActivity
+COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
+COMMENT ON COLUMN ScriptActivity.name IS 'The name of the script';
+COMMENT ON COLUMN ScriptActivity.hostname IS 'The hostname of the machine where the script was run';
+COMMENT ON COLUMN ScriptActivity.date_started IS 'The date at which the script started';
+COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed';
+
+-- RevisionProperty
+COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that appear on a revision.';
+COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
+COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
+COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
+

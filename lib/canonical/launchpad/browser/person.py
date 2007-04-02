@@ -21,6 +21,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
@@ -28,6 +29,18 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditSSHKeysView',
+    'PersonEditHomePageView',
+    'PersonAnswerContactForView',
+    'PersonAssignedBugTaskSearchListingView',
+    'ReportedBugTaskSearchListingView',
+    'BugContactPackageBugsSearchListingView',
+    'SubscribedBugTaskSearchListingView',
+    'PersonRdfView',
+    'PersonView',
+    'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonLanguagesView',
@@ -121,6 +134,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
@@ -176,6 +190,26 @@ class PersonNavigation(CalendarTraversalMixin,
 
     def breadcrumb(self):
         return self.context.displayname
+
+
+class PersonDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    @neverempty
+    def contributionsMenu(self):
+        L = [self.makeBreadcrumbLink(item)
+             for item in self.context.iterTopProjectsContributedTo()]
+        L.sort(key=lambda item: item.text.lower())
+        if L:
+            for obj in L:
+                yield obj
+        else:
+            yield self.makeLink(
+                'Projects you contribute to go here.', target=None)
+        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(CalendarTraversalMixin,
@@ -254,7 +288,7 @@ class PersonSetContextMenu(ContextMenu):
              'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -332,7 +366,7 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         text = 'Bounties'
@@ -345,20 +379,19 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('+branches', text, summary)
+        return Link('', text, summary)
 
     def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
-        return Link('+tickets', text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         text = 'Calendar'
@@ -2748,14 +2781,49 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
+                 
+class PersonAnswerContactForView(LaunchpadView):
+    """View used to show all the IQuestionTargets that an IPerson is an answer
+    contact for.
+    """
+    
+    @cachedproperty
+    def direct_question_targets(self):
+        """List of IQuestionTargets that the context is a direct answer contact.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getDirectAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+
+    @cachedproperty
+    def team_question_targets(self):
+        """List of IQuestionTargets for the context's team membership.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getTeamAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+                        
+    def showRemoveYourselfLink(self):
+        """The link is only shown when the page is in the user's own profile."""
+        return self.user == self.context
+
 
 class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
-             'subscribed']
+             'subscribed', 'answer_contact_for']
 
+    def answer_contact_for(self):
+        summary="Projects for which %s is an answer contact for" % (
+            self.context.displayname)
+        return Link('+answer-contact-for', 'Answer contact for', summary)
+        
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
         return Link('+answeredtickets', 'Answered', summary, icon='question')

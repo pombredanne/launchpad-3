@@ -9,11 +9,6 @@
     <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />
     <resource name="edubuntu-common.css" file="../templates/edubuntu-common.css" />
 
-    <!-- Javascript -->
-    <resource name="launchpad.js" file="../templates/launchpad.js" />
-    <resource name="lpmenu.js" file="../templates/lpmenu.js" />
-    <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
-
     <!-- Missing images -->
     <resource name="nyet-badge" file="../images/nyet-badge.png" />
     <resource name="nyet-icon" file="../images/nyet-icon.png" />
@@ -26,7 +21,7 @@
     <resource name="add-badge" file="../images/add-badge.png" />
     <resource name="add-large" file="../images/add-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
-    <!-- arrowBlank is used in lib/contrib/templates/sorttable.js -->
+    <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.png" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
