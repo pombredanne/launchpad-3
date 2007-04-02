@@ -215,6 +215,7 @@ class POBasicTestCase(unittest.TestCase):
             u'"plural-forms: nplurals=2; plural=random()\\n"')
 
     def testMultipartString(self):
+        foos = 9
         self.parser.write('''
             %s
             msgid "foo1"
@@ -233,21 +234,26 @@ class POBasicTestCase(unittest.TestCase):
 
             msgid "foo5"
             msgstr "b""a""r"
+
+            msgid "foo6"
+            msgstr "bar"""
+
+            msgid "foo7"
+            msgstr """bar"
+
+            msgid "foo8"
+            msgstr "" "bar" ""
+
+            msgid "foo9"
+            msgstr "" "" "bar" """"
             ''' % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
-        self.assertEqual(len(messages), 5, "incorrect number of messages")
-        self.assertEqual(messages[0].msgid, "foo1", "incorrect msgid")
-        self.assertEqual(messages[0].msgstr, "bar", "incorrect msgstr")
-        self.assertEqual(messages[1].msgid, "foo2", "incorrect msgid")
-        self.assertEqual(messages[1].msgstr, "bar", "incorrect msgstr")
-        self.assertEqual(messages[2].msgid, "foo3", "incorrect msgid")
-        self.assertEqual(messages[2].msgstr, "bar", "incorrect msgstr")
-        self.assertEqual(messages[3].msgid, "foo4", "incorrect msgid")
-        self.assertEqual(messages[3].msgstr, "bar", "incorrect msgstr")
-        self.assertEqual(messages[4].msgid, "foo5", "incorrect msgid")
-        self.assertEqual(messages[4].msgstr, "bar", "incorrect msgstr")
-
+        self.assertEqual(len(messages), foos, "incorrect number of messages")
+        for n in range(1,foos):
+            msgidn = "foo"+str(n)
+            self.assertEqual(messages[n-1].msgid, msgidn, "incorrect msgid")
+            self.assertEqual(messages[n-1].msgstr, "bar", "incorrect msgstr")
 
 
 def test_suite():
