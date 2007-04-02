@@ -2132,29 +2132,20 @@ class PersonSet:
         """See IPersonSet."""
         # XXX CarlosPerelloMarin 20070331: This cached karma doesn't
         # differentiate whether is for this language or another one.
-        query = """
-            SELECT Person.id, SUM(KarmaCache.karmavalue) AS karma
-            FROM Person
-                JOIN PersonLanguage ON
-                    PersonLanguage.person = Person.id
-                JOIN Language ON
-                    PersonLanguage.language = Language.id AND
-                    Language.code = %s
-                JOIN KarmaCache ON
-                    KarmaCache.person = Person.id
-                JOIN KarmaCategory ON
-                    KarmaCache.category = KarmaCategory.id AND
-                    KarmaCategory.name = 'translations'
-            GROUP BY Person.id
-            ORDER BY karma;
-            """ % sqlvalues(code)
-        cur = cursor()
-        cur.execute(query)
-        person_ids = [id for [id, karma] in cur.fetchall()]
-        if len(person_ids) > 0:
-            return Person.select('id IN %s' % sqlvalues(person_ids))
-        else:
-            return Person.select('FALSE')
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = Language.id AND
+            Language.code = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(code), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'Language', 'KarmaCache', 'KarmaCategory'])
 
 
 class PersonLanguage(SQLBase):
