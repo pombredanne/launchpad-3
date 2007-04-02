@@ -71,7 +71,8 @@
       <h2>Team memberships</h2>
       <table tal:condition="context/myactivememberships">
         <tr tal:repeat="membership context/myactivememberships">
-          <td><img src="/@@/team" /></td>
+          <td><img src="/@@/team"
+                   tal:replace="structure membership/team/image:icon" /></td>
           <td>
             <div>
               <a
