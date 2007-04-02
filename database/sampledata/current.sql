@@ -8112,6 +8112,8 @@ ALTER TABLE revisionparent ENABLE TRIGGER ALL;
 
 ALTER TABLE revisionproperty DISABLE TRIGGER ALL;
 
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (1, 11, 'lp:foo', 'extended value');
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (2, 11, 'lp:bar', '455');
 
 
 ALTER TABLE revisionproperty ENABLE TRIGGER ALL;

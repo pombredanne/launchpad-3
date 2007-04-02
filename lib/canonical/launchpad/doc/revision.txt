@@ -235,7 +235,8 @@ as needed.
   ...     revision_date=date,
   ...     revision_author='ddaa@localhost',
   ...     owner=admins,
-  ...     parent_ids=['rev-1', 'rev-2'])
+  ...     parent_ids=['rev-1', 'rev-2'],
+  ...     properties={u'key': u'value'})
   >>> print revision.revision_id
   rev-3
   >>> print revision.log_body
@@ -248,3 +249,5 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
+  >>> print revision.getProperties()
+  {u'key': u'value'}
