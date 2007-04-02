@@ -15,7 +15,7 @@ Names and searches for evolution template in there.
   >>> browser.open('http://launchpad.dev/potemplatenames')
   >>> print browser.url
   http://launchpad.dev/potemplatenames
-  >>> browser.getControl(name='text').value = 'evo'
+  >>> browser.getControl("Search PO template names:").value = 'evo'
   >>> browser.getControl('Search Names').click()
   >>> print browser.url
   http://launchpad.dev/potemplatenames/+index

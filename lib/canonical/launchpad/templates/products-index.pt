@@ -22,12 +22,16 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Is your project in Launchpad?</h1>
+  <h1 tal:condition="not: view/search_string">Is your project in Launchpad?</h1>
+  <h1 tal:condition="view/search_string">
+    Projects matching
+    &#8220;<tal:string replace="view/search_string" />&#8221;
+  </h1>
 
   <div align="center">
     <form class="central" method="get">
   
-      <input size="30" name="text" tal:attributes="value view/text" />
+      <input size="30" name="text" tal:attributes="value view/search_string" />
       <input tal:condition="view/searchrequested"
         type="submit"
         value="Search again"
@@ -42,10 +46,26 @@
 
   <tal:searching condition="view/searchrequested">
 
+    <p id="empty-search-string" tal:condition="not: view/search_string">
+      Enter one or more words related to the project you want to find.
+    </p>
+
+    <tal:non-empty-search-string condition="view/search_string">
+      <p tal:condition="view/tooManyResultsFound"
+           class="informational message">
+        More than <span tal:replace="view/max_results_to_display" /> projects
+        were found, so we're displaying only the ones that are most relevant
+        to your search terms.
+        If the project you are looking for is not on the list below, please
+        do another search with more search terms.  
+      </p>
+
+
       <table
         tal:condition="view/matches"
         tal:define="results view/searchresults"
         class="listing"
+        id="search-results"
         >
         <thead>
           <tr class="results">
@@ -57,14 +77,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="product results"
-              tal:replace="structure product/@@+listing-simple">
-            <td>Product simple listing</td>
+          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
           </tr>
         </tbody>
       </table>
 
-      <p tal:condition="not: view/matches">
+      <p tal:condition="not: view/searchresults">
         No projects matching
         &#8220;<span tal:replace="view/text">moz</span>&#8221;
         were found.
@@ -78,7 +96,7 @@
       </p>
       <ul class="rollover buttons">
         <li>
-          <a href="+new">
+          <a href="/projects/+new">
             <img
               alt="Register a project"
               src="/+icing/but-lrg-registerproj.gif"
@@ -86,6 +104,8 @@
           </a>
         </li>
       </ul>
+
+    </tal:non-empty-search-string>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">

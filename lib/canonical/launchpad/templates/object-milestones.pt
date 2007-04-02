@@ -19,6 +19,7 @@
            tal:attributes="href milestone/fmt:url">
            milestone name
         </a>
+        <strong tal:condition="not: milestone/visible">(Inactive)</strong>
         <div tal:condition="milestone/dateexpected">
           Expected for <span tal:replace="milestone/dateexpected/fmt:date" />
         </div>

@@ -1,6 +1,6 @@
 We need to login in order to add attachments.
 
-  >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> anon_browser.getLink('Comment or attach file').click()
   Traceback (most recent call last):
   ...
@@ -8,11 +8,11 @@ We need to login in order to add attachments.
 
 When we're logged in we can access the page.
 
-  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> user_browser.getLink('Comment or attach file').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1/+addcomment'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
 
 Let's add an attachment. First create a file-like object.
 
@@ -33,7 +33,7 @@ attachment.
 After we added the attachment, we get redirected to the bug page.
 
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 We can check that the attachment is there
 
@@ -57,10 +57,10 @@ And that we stripped the leading and trailing whitespace correctly
 If no description is given it gets set to the attachment filename. It's
 also not necessary to enter a comment in order to add an attachment.
 
-  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> user_browser.getLink('Comment or attach file').click()
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1/+addcomment'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
 
   >>> bar_file = StringIO('Traceback...')
   >>> user_browser.getControl('Include attachment').selected = True
@@ -70,7 +70,7 @@ also not necessary to enter a comment in order to add an attachment.
   >>> user_browser.getControl('Comment').value = ''
   >>> user_browser.getControl('Save Changes').click()
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
   >>> for li_tag in attachments.findAll('li', 'download'):
