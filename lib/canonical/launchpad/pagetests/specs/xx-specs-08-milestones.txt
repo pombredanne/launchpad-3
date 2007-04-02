@@ -29,7 +29,7 @@ milestone.
 
   >>> find_main_content(admin_browser.contents)
   <...Milestone target:
-  <...http://blueprints.launchpad.dev/firefox/+milestone/1.0...
+  <.../firefox/+milestone/1.0...
 
   >>> admin_browser.getLink('1.0').url
   'http://blueprints.launchpad.dev/firefox/+milestone/1.0'

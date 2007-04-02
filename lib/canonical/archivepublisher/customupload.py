@@ -72,6 +72,7 @@ class CustomUpload:
         self.tmpdir = tempfile.mkdtemp(prefix='customupload_')
         try:
             tar = tarfile.open(self.tarfile_path)
+            tar.ignore_zeros = True
             try:
                 for tarinfo in tar:
                     tar.extract(tarinfo, self.tmpdir)
@@ -84,37 +85,76 @@ class CustomUpload:
         """Returns True if the given filename should be installed."""
         raise NotImplementedError
 
+    def _buildInstallPaths(self, basename, dirname):
+        """Build and return paths used to install files.
+
+        Return a triple containing: (sourcepath, basepath, destpath)
+        Where:
+         * sourcepath is the absolute path to the extracted location.
+         * basepath is the relative path inside the target location.
+         * destpath is the absolute path to the target location.
+        """
+        sourcepath = os.path.join(dirname, basename)
+        assert sourcepath.startswith(self.tmpdir), (
+            "Source path must refer to the extracted location.")
+        basepath = sourcepath[len(self.tmpdir):].lstrip(os.path.sep)
+        destpath = os.path.join(self.targetdir, basepath)
+
+        return sourcepath, basepath, destpath
+
+    def ensurePath(self, path):
+        """Ensure the parent directory exists."""
+        parentdir = os.path.dirname(path)
+        if not os.path.isdir(parentdir):
+            os.makedirs(parentdir)
+
     def installFiles(self):
         """Install the files from the custom upload to the archive."""
         assert self.tmpdir is not None, "Must extract tarfile first"
         extracted = False
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
-            for filename in filenames:
-                source = os.path.join(dirpath, filename)
-                assert source.startswith(self.tmpdir)
-                basepath = source[len(self.tmpdir):].lstrip(os.path.sep)
-                dest = os.path.join(self.targetdir, basepath)
+
+            # Create symbolic links to directories.
+            for dirname in dirnames:
+                sourcepath, basepath, destpath = self._buildInstallPaths(
+                    dirname, dirpath)
 
                 if not self.shouldInstall(basepath):
                     continue
-                # make sure the parent directory exists:
-                parentdir = os.path.dirname(dest)
-                if not os.path.isdir(parentdir):
-                    os.makedirs(parentdir, mode=0775)
+
+                self.ensurePath(destpath)
+                if os.path.islink(sourcepath):
+                    os.symlink(os.readlink(sourcepath), destpath)
+
+                # XXX cprov 20070327: We don't want to create empty
+                # directories, some custom formats rely on this, DDTP,
+                # for instance. We may end up with broken links
+                # but that's more an uploader fault than anything else.
+
+            # Create/Copy files.
+            for filename in filenames:
+                sourcepath, basepath, destpath = self._buildInstallPaths(
+                    filename, dirpath)
+
+                if not self.shouldInstall(basepath):
+                    continue
+
+                self.ensurePath(destpath)
                 # Remove any previous file, to avoid hard link problems
-                if os.path.exists(dest):
-                    os.remove(dest)
+                if os.path.exists(destpath):
+                    os.remove(destpath)
                 # Copy the file or symlink
-                if os.path.islink(source):
-                    os.symlink(os.readlink(source), dest)
+                if os.path.islink(sourcepath):
+                    os.symlink(os.readlink(sourcepath), destpath)
                 else:
-                    shutil.copy(source, dest)
-                    # Make the file group writable
-                    os.chmod(dest, 0664)
+                    shutil.copy(sourcepath, destpath)
+                    os.chmod(destpath, 0644)
+
                 extracted = True
+
         if not extracted:
-            raise CustomUploadTarballInvalidTarfile(self.tarfile_path,
-                                                    self.targetdir)
+            raise CustomUploadTarballInvalidTarfile(
+                self.tarfile_path, self.targetdir)
 
     def fixCurrentSymlink(self):
         """Update the 'current' symlink and prune old uploads from the tree."""

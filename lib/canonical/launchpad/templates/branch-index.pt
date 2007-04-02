@@ -135,7 +135,11 @@
     difficult to read. Checked with mptt about that. - David Allouche 2006-04-09
     -->
   </tal:comment>
-  <p tal:condition="context/mirror_failures"
+  <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
+       class="warning message" style="font-weight: normal">
+    Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
+  </p>
+  <p tal:condition="view/show_mirror_failure" id="mirror-failure"
        class="warning message" style="font-weight: normal">
     Launchpad could not mirror this branch
     <span
@@ -159,8 +163,22 @@
   <h2 style="clear: both;">Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">
-    This branch has not been scanned for revisions yet, or no revisions were
-    found on the last scan. Branches are scanned at least once a day.
+    <tal:not-mirrored condition="not:context/last_mirrored">
+      <tal:mirror condition="context/url">
+        This branch has not been mirrored yet.
+      </tal:mirror>
+      <tal:no-mirror condition="not:context/url">
+        This branch has not been published yet.
+      </tal:no-mirror>
+    </tal:not-mirrored>
+    <tal:mirrored condition="context/last_mirrored">
+      <tal:not-scanned condition="not:context/last_scanned">
+        This branch has not been scanned yet.
+      </tal:not-scanned>
+      <tal:scanned condition="context/last_scanned">
+        This branch is empty.
+      </tal:scanned>
+    </tal:mirrored>
   </p>
 
   <tal:history-available condition="context/revision_count">
