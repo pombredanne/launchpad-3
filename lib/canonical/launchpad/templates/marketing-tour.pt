@@ -52,24 +52,6 @@
     <div id="secondary"
          tal:define="screen view/current_screen">
       <p id="summary" tal:content="screen/summary">Screen summary</p>
-  <script>
-  <!--
-  function sync_highlight(point, state) {
-      // Bail out in case on non-compliant DOM implementation
-      if (!document.getElementById) {
-        return false;
-      }
-
-      marker = document.getElementById("p" + point);
-      callout = document.getElementById("point-" + point);
-      style = state ? 'highlighted' : '';
-      marker.className = style;
-      callout.className = style;
-
-      return true;
-  }
-  -->
-  </script>
 
       <div id="pane">
         <div class="screen">
@@ -78,9 +60,7 @@
             <li id="p1" style="top: 0px; left: 0px"
                 tal:repeat="callout screen/callouts"
                 tal:attributes="id string:p${repeat/callout/number};
-                                style string:top: ${callout/top}px;; left: ${callout/left}px;; ;
-                                onmouseover string:return sync_highlight(${repeat/callout/number}, true);;;
-                                onmouseout string:return sync_highlight(${repeat/callout/number}, false);;"
+                                style string:top: ${callout/top}px;; left: ${callout/left}px;; ;"
                 tal:content="repeat/callout/number"
                 >One</li>
           </ol>
@@ -92,9 +72,7 @@
             tal:condition="screen/callouts">
           <li id="point-1"
               tal:repeat="callout screen/callouts"
-              tal:attributes="id string:point-${repeat/callout/number};
-                              onmouseover string:return sync_highlight(${repeat/callout/number}, true);;;
-                              onmouseout string:return sync_highlight(${repeat/callout/number}, false);;"
+              tal:attributes="id string:point-${repeat/callout/number};"
               tal:content="structure callout/text">Description of point 1.</li>
         </ul>
         <a class="button next" href="+tour" title="Next"

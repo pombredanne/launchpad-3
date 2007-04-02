@@ -595,10 +595,6 @@ body#tour #header dl#navigation ul li#liTour a {
 #main #secondary #pane .callouts #p3 { background-image: url(marker-3.gif); }
 #main #secondary #pane .callouts #p4 { background-image: url(marker-4.gif); }
 
-#main #secondary #pane .callouts li.highlighted {
-  background-position: bottom left;
-}
-
 #main #secondary #pane ul.info {
   margin: 20px 0 0 0;
   text-align: left;
@@ -607,29 +603,25 @@ body#tour #header dl#navigation ul li#liTour a {
 #main #secondary #pane ul.info li {
   float: left;
   width: 178px; height: 85px;
-  padding-left: 55px;
+  padding-left: 45px;
   background-position: top left;
   background-repeat: no-repeat;
 }
 
-#main #secondary #pane ul.info li.highlighted {
-  background-position: 0 -300px;
-}
-
 #main #secondary #pane ul.info li#point-1 {
-  background-image: url(pane-1.gif);
+  background-image: url(marker-1.gif);
 }
 
 #main #secondary #pane ul.info li#point-2 {
-  background-image: url(pane-2.gif);
+  background-image: url(marker-2.gif);
 }
 
 #main #secondary #pane ul.info li#point-3{
-  background-image: url(pane-3.gif);
+  background-image: url(marker-3.gif);
 }
 
 #main #secondary #pane ul.info li#point-4{
-  background-image: url(pane-4.gif);
+  background-image: url(marker-4.gif);
 }
 
 #main #secondary #pane a.button.next {
