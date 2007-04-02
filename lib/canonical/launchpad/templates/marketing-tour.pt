@@ -51,7 +51,7 @@
 
     <div id="secondary"
          tal:define="screen view/current_screen">
-      <h4 tal:content="screen/summary">Screen summary</h4>
+      <p id="summary" tal:content="screen/summary">Screen summary</p>
   <script>
   <!--
   function sync_highlight(point, state) {

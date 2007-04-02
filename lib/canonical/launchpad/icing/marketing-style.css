@@ -366,6 +366,14 @@ body#tour #header dl#navigation ul li#liTour a {
   margin-bottom: 25px;
 }
 
+#tour #secondary #summary {
+  color: #159cc8;
+  font-size: 1.8em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 25px;
+}
+
 #home h2 {
   margin-left: 284px;
   color: #698022;
