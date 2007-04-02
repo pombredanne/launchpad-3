@@ -441,9 +441,7 @@ body#tour #header dl#navigation ul li#liTour a {
   height: 160px;
   background-position: bottom left;
   background-repeat: no-repeat;
-  text-align: center;
-  text-decoration: none;
-  font-size: 1.45em;
+  text-indent: -1000em;
 }
 
 #main ul#tools li a:hover {
