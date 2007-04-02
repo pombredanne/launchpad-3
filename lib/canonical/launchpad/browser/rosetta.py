@@ -61,7 +61,7 @@ class RosettaApplicationView:
     def batchnav(self):
         """Return a BatchNavigator for the list of translatable products."""
         products = getUtility(IProductSet)
-        return BatchNavigator(products.translatables(),
+        return BatchNavigator(products.getTranslatables(),
                               self.request)
 
     def rosettaAdminEmail(self):

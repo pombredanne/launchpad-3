@@ -16,7 +16,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -684,7 +684,7 @@ class ProductSet:
                               prejoins=["owner"],
                               clauseTables=clauseTables)
 
-    def translatables(self):
+    def getTranslatables(self):
         """See IProductSet"""
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
@@ -696,24 +696,20 @@ class ProductSet:
             distinct=True)
         return upstream
 
-    def featured_translatables(self):
+    def featuredTranslatables(self, maximumproducts=8):
         """See IProductSet"""
-        upstream = Product.select('''
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id AND
-            Product.official_rosetta
+        randomresults = Product.select('''id IN
+            (SELECT Product.id FROM Product, ProductSeries, POTemplate
+               WHERE Product.id = ProductSeries.product AND
+                     POTemplate.productseries = ProductSeries.id AND
+                     Product.official_rosetta
+               ORDER BY random())
             ''',
-            clauseTables=['ProductSeries', 'POTemplate'],
-            orderBy=SQLConstant('random()'))[:8]
+            distinct=True)
 
-        # We can't use distinct above, because then random() would have
-        # to be inside the select, which would give us two separate rows
-        # for the same ID, so we simply don't return the same product twice
-        distinct = []
-        for product in upstream:
-            if product.id not in distinct:
-                yield product
-                distinct.append(product.id)
+        results = list(randomresults[:maximumproducts])
+        results.sort(lambda a,b: cmp(a.title, b.title))
+        return results
 
     def count_all(self):
         return Product.select().count()
