@@ -1502,6 +1502,7 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}

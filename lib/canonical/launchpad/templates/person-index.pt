@@ -52,6 +52,8 @@
           <tr tal:define="project contribution/project;
                           project_categories contribution/categories">
             <th>
+              <img tal:replace="structure project/image:icon"
+                   src="/@@/product" />
               <a tal:attributes="href project/fmt:url"
                  tal:content="project/title">Project</a>
             </th>
