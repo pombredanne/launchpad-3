@@ -923,6 +923,13 @@ class IPersonSet(Interface):
     def merge(from_person, to_person):
         """Merge a person into another."""
 
+    def getTranslatorsForLanguageByCode(code):
+        """Return the list of translators for the given language.
+
+        :arg code: Language code.
+
+        Return None if there is no translator.
+        """
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""

@@ -7,7 +7,6 @@ __all__ = [
     'LanguageAddView',
     'LanguageContextMenu',
     'LanguageAdminView',
-    'LanguageNavigation',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
     'LanguageSetView',
@@ -27,13 +26,6 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
     enabled_with_permission, Link)
-
-
-class LanguageNavigation(GetitemNavigation):
-    usedfor = ILanguage
-
-    def traverse(self, name):
-        raise NotFoundError
 
 
 class LanguageSetNavigation(GetitemNavigation):
@@ -60,6 +52,8 @@ class LanguageContextMenu(ContextMenu):
         return Link('+admin', text, icon='edit')
 
 class LanguageSetView:
+    """View class to render main ILanguageSet page."""
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -78,8 +72,11 @@ class LanguageSetView:
         else:
             return 0
 
-
+# There is no easy way to remove an ILanguage from the database due all the
+# dependencies that ILanguage would have. That's the reason why we don't have
+# such functionality here.
 class LanguageAddView(LaunchpadFormView):
+    """View to handle ILanguage creation form."""
 
     schema = ILanguage
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
@@ -114,6 +111,7 @@ class LanguageAddView(LaunchpadFormView):
 
 
 class LanguageView(LaunchpadView):
+    """View class to render main ILanguage page."""
 
     @cachedproperty
     def language_name(self):
@@ -123,13 +121,14 @@ class LanguageView(LaunchpadView):
             return self.context.nativename
 
     def translation_teams(self):
-        foo = []
+        translation_teams = []
         for translation_team in self.context.translation_teams:
-            foo.append({
+            # translation_team would be either an IPerson or an ITeam.
+            translation_teams.append({
                 'expert': translation_team,
                 'groups': translation_team.translation_groups,
                 })
-        return foo
+        return translation_teams
 
     def getTopContributors(self):
         return self.context.translators[:20]

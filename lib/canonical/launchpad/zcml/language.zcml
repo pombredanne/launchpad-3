@@ -16,7 +16,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="LanguageNavigation LanguageSetNavigation"
+        classes="LanguageSetNavigation"
         />
 
     <browser:defaultView

@@ -50,7 +50,7 @@ But, with a new language, it will succeed.
 
 And the system forward us to its main page:
 
-  >>> admin_browser.url
+  >>> print admin_browser.url
   http://translations.launchpad.dev/+languages/foos
 
 

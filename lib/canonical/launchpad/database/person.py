@@ -2128,6 +2128,34 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
+    def getTranslatorsForLanguageByCode(self, code):
+        """See IPersonSet."""
+        # XXX CarlosPerelloMarin 20070331: This cached karma doesn't
+        # differentiate whether is for this language or another one.
+        query = """
+            SELECT Person.id, SUM(KarmaCache.karmavalue) AS karma
+            FROM Person
+                JOIN PersonLanguage ON
+                    PersonLanguage.person = Person.id
+                JOIN Language ON
+                    PersonLanguage.language = Language.id AND
+                    Language.code = %s
+                JOIN KarmaCache ON
+                    KarmaCache.person = Person.id
+                JOIN KarmaCategory ON
+                    KarmaCache.category = KarmaCategory.id AND
+                    KarmaCategory.name = 'translations'
+            GROUP BY Person.id
+            ORDER BY karma;
+            """ % sqlvalues(code)
+        cur = cursor()
+        cur.execute(query)
+        person_ids = [id for [id, karma] in cur.fetchall()]
+        if len(person_ids) > 0:
+            return Person.select('id IN %s' % sqlvalues(person_ids))
+        else:
+            return Person.select('FALSE')
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'

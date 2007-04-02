@@ -418,6 +418,18 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     >>> foobar.is_ubuntero
     True
 
+
+Translators for a given language
+--------------------------------
+
+We can get the list of translators that did something in Launchpad.
+
+  >>> translators = personset.getTranslatorsForLanguageByCode('es')
+  >>> for translator in translators:
+  ...     print translator.name
+  carlos
+
+
 Branches
 --------
 

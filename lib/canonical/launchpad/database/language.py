@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
     StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
@@ -13,7 +14,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import TextDirection
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError)
+    ILanguageSet, ILanguage, IPersonSet, NotFoundError)
 
 
 class Language(SQLBase):
@@ -77,27 +78,8 @@ class Language(SQLBase):
     @property
     def translators(self):
         """See ILanguage."""
-        # XXX CarlosPerelloMarin 20070331: This cached karma doesn't
-        # differentiate whether is for this language or another one.
-        from canonical.launchpad.database.person import Person
-        query = """
-            SELECT Person.id, SUM(KarmaCache.karmavalue) AS karma
-            FROM Person
-                JOIN PersonLanguage ON
-                    PersonLanguage.person = Person.id AND
-                    PersonLanguage.language = %s
-                JOIN KarmaCache ON
-                    KarmaCache.person = Person.id
-                JOIN KarmaCategory ON
-                    KarmaCache.category = KarmaCategory.id AND
-                    KarmaCategory.name = 'translations'
-            GROUP BY Person.id
-            ORDER BY karma;
-            """ % sqlvalues(self)
-        cur = cursor()
-        cur.execute(query)
-        person_ids = [id for [id, karma] in cur.fetchall()]
-        return Person.select('id IN %s' % sqlvalues(person_ids))
+        personset = getUtility(IPersonSet)
+        return personset.getTranslatorsForLanguageByCode(self.code)
 
 
 class LanguageSet:
