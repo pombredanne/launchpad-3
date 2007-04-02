@@ -70,3 +70,9 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
 
         Return the modified ISourcePackagePublishingHistory object.
         """
+
+    def copyTo(distrorelease, pocket):
+        """Copy a DistroReleaseSourcePackageRelease to another location.
+
+        Return the publishing record in the targeted location.
+        """

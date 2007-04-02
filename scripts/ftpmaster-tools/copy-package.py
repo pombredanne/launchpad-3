@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Script to synchronise publications across suites"""
+"""Copy publications across suites."""
 
 import _pythonpath
 
@@ -18,22 +18,22 @@ from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import PackagePublishingPocket
 
 
-class PackageSyncLocationError(Exception):
+class PackageLocationError(Exception):
     """XXX."""
 
 
-class PackageSyncLocation:
+class PackageLocation:
     """XXX."""
     distribution = None
     distrorelease = None
     pocket = None
 
     def __init__(self, distribution_name, suite_name):
-        """ """
+        """XXX."""
         try:
             self.distribution = getUtility(IDistributionSet)[distribution_name]
         except NotFoundError, err:
-            raise PackageSyncLocationError(
+            raise PackageLocationError(
                 "Could not find distribution %s" % err)
 
         if suite_name is not None:
@@ -44,7 +44,7 @@ class PackageSyncLocation:
             self.pocket = PackagePublishingPocket.RELEASE
 
     def __eq__(self, other):
-        """ """
+        """XXX."""
         if (self.distribution.id == other.distribution.id and
             self.distrorelease.id == other.distrorelease.id and
             self.pocket.value == other.pocket.value):
@@ -52,72 +52,78 @@ class PackageSyncLocation:
         return False
 
     def __ne__(self, other):
-        """ """
+        """XXX."""
         return not self.__eq__(other)
 
     def __str__(self):
-        """ """
+        """XXX."""
         return '%s/%s/%s' % (self.distribution.name, self.distrorelease.name,
                              self.pocket.name)
 
     def __repr__(self):
-        """ """
+        """XXX."""
         return self.__str__()
 
 
-class PackageSyncHelperError(Exception):
+class CopyPackageHelperError(Exception):
     """XXX"""
 
 
-class PackageSyncHelper:
+class CopyPackageHelper:
     synced = False
 
-    def __init__(self, logger, sourcename, sourceversion,
-                 from_distribution_name, to_distribution_name,
-                 to_suite, from_suite):
-        """ """
+    def __init__(self, logger, confirm_all, comment, sourcename,
+                 sourceversion, from_distribution_name,
+                 to_distribution_name, to_suite, from_suite):
+        """XXX."""
         self.logger = logger
+        self.confirm_all = confirm_all
+        self.comment = comment
         self.sourcename = sourcename
         self.sourceversion = sourceversion
         self.from_distribution_name = from_distribution_name
         self.to_distribution_name = to_distribution_name
         self.from_suite = from_suite
         self.to_suite = to_suite
-        self._buildLocations()
-        self._buildSource()
 
     def _buildLocations(self):
-        """ """
+        """XXX."""
         try:
-            self.from_location = PackageSyncLocation(
+            self.from_location = PackageLocation(
                 self.from_distribution_name, self.from_suite)
-            self.to_location = PackageSyncLocation(
+            self.to_location = PackageLocation(
                 self.to_distribution_name, self.to_suite)
-        except PackageSyncLocationError, err:
-            raise PackageSyncHelperError(err)
+        except PackageLocationError, err:
+            raise CopyPackageHelperError(err)
 
         if self.from_location == self.to_location:
-            raise PackageSyncHelperError(
+            raise CopyPackageHelperError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
                 self.from_location, self.to_location))
 
     def _buildSource(self):
-        """ """
+        """XXX."""
         sourcepackage = self.from_location.distrorelease.getSourcePackage(
             self.sourcename)
+
+        if sourcepackage is None:
+            raise CopyPackageHelperError(
+                "Could not find any version of '%s' in %s" % (
+                self.sourcename, self.from_location))
+
         if self.sourceversion is None:
             self.target_source = sourcepackage.currentrelease
         else:
             self.target_source = sourcepackage[self.sourceversion]
 
         if self.target_source is None:
-            raise PackageSyncHelperError(
+            raise CopyPackageHelperError(
                 "Could not find '%s/%s' in %s" % (
                 self.sourcename, self.sourceversion,
                 self.from_location))
 
     def _requestFeedback(self, question='Are you sure', valid_answers=None):
-        """ """
+        """XXX."""
         answer = None
         if valid_answers:
             display_answers = '[%s]' % (', '.join(valid_answers))
@@ -130,31 +136,37 @@ class PackageSyncHelper:
         return answer
 
     def _displayInfo(self):
-        """ """
+        """XXX."""
         self.logger.info(
             "Syncing '%s' TO '%s'" % (self.target_source.title,
                                       self.to_location))
         self.logger.info("Comment: %s" % self.comment)
 
-    def performSync(self):
-        """ """
-        self.comment = self._requestFeedback(question='Sync comment')
+    def performCopy(self):
+        """XXX."""
+        self._buildLocations()
+        self._buildSource()
+
         self._displayInfo()
 
-        confirmation = self._requestFeedback(valid_answers=['yes', 'no'])
-        if confirmation != 'yes':
-            self.logger.info("Ok, see you later")
-            return
+        if not self.confirm_all:
+            confirmation = self._requestFeedback(valid_answers=['yes', 'no'])
+            if confirmation != 'yes':
+                self.logger.info("Ok, see you later")
+                return
 
-        self.logger.info("Performing sync.")
+        self.logger.info("Performing copy.")
 
-        #self.to_location.distrorelease.createQueueEntry(
-        #    pocket=self.to_location.pocket,
-        #    changesfilename='foo_bar.changes'
-        # self.synced = True
+        copy = self.target_source.copyTo(
+            distrorelease=self.to_location.distrorelease,
+            pocket=self.to_location.pocket)
+
+        self.logger.info(
+            "Copied to %s/%s" % (copy.distrorelease.name, copy.pocket.title))
+        self.synced = True
 
 
-class PackageSync(LaunchpadScript):
+class CopyPackage(LaunchpadScript):
     usage = '%prog SRC DEST'
     description = 'MOVE or COPY a published package to another suite.'
 
@@ -163,6 +175,14 @@ class PackageSync(LaunchpadScript):
         self.parser.add_option(
             '-n', '--dry-run', dest='dryrun', default=False,
             action='store_true', help='Do not commit changes.')
+
+        self.parser.add_option(
+            '-y', '--confirm-all', dest='confirm_all', default=False,
+            action='store_true', help='Do not prompt the user for questions.')
+
+        self.parser.add_option(
+            '-c', '--comment', dest='comment', default='',
+            action='store', help='Copy comment.')
 
         self.parser.add_option(
             '-d', '--from-distribution', dest='from_distribution_name',
@@ -196,20 +216,23 @@ class PackageSync(LaunchpadScript):
                 "At least one non-option argument must be given, "
                 "the sourcename.")
 
+        copy_helper = CopyPackageHelper(
+            logger=self.logger,
+            confirm_all=self.options.confirm_all,
+            comment=self.options.comment,
+            sourcename=self.args[0],
+            sourceversion=self.options.sourceversion,
+            from_distribution_name=self.options.from_distribution_name,
+            to_distribution_name=self.options.to_distribution_name,
+            from_suite=self.options.from_suite,
+            to_suite=self.options.to_suite)
+
         try:
-            sync_helper = PackageSyncHelper(
-                logger=self.logger,
-                sourcename=self.args[0],
-                sourceversion=self.options.sourceversion,
-                from_distribution_name=self.options.from_distribution_name,
-                to_distribution_name=self.options.to_distribution_name,
-                from_suite=self.options.from_suite,
-                to_suite=self.options.to_suite)
-            sync_helper.performSync()
-        except PackageSyncHelperError, err:
+            copy_helper.performCopy()
+        except CopyPackageHelperError, err:
             raise LaunchpadScriptFailure(err)
 
-        if sync_helper.synced and not self.options.dryrun:
+        if copy_helper.synced and not self.options.dryrun:
             self.txn.commit()
         else:
             self.logger.info('Nothing to commit.')
@@ -218,6 +241,6 @@ class PackageSync(LaunchpadScript):
         self.logger.info('Done.')
 
 if __name__ == '__main__':
-    script = PackageSync('package-sync', dbuser=config.uploader.dbuser)
+    script = CopyPackage('copy-package', dbuser='lucille')
     script.lock_and_run()
 
