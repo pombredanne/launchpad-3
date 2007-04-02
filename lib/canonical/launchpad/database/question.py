@@ -23,7 +23,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from canonical.launchpad.interfaces import (
     IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
     ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
-    IQuestionSet,
+    IQuestionSet, IQuestionTarget,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -160,7 +160,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(QuestionSubscription.selectOneBy(question=self, person=person))
+        """See IQuestion."""
+        return bool(QuestionSubscription.selectOneBy(
+            question=self, person=person))
 
     # Workflow methods
 
@@ -196,8 +198,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_request_info(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
@@ -232,8 +234,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_give_answer(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
@@ -265,8 +267,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_confirm_answer(self):
         """See IQuestion."""
-        if self.status not in [
-            QuestionStatus.OPEN, QuestionStatus.ANSWERED, QuestionStatus.NEEDSINFO]:
+        if self.status not in [QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
+            QuestionStatus.NEEDSINFO]:
             return False
 
         for message in self.messages:
@@ -343,8 +345,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See IQuestion."""
-        return self.status in [
-            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
+        return self.status in [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
+            QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -359,6 +361,21 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.answerer = None
         self.dateanswered = None
         return msg
+        
+    def transfer(self, question_target):
+        """See IQuestion."""
+        assert IQuestionTarget.providedBy(question_target), (
+            "The target must be an IQuestionTarget")
+        # do trio test to assign QT
+        if IProduct.providedBy(question_target):
+            self.product = question_target
+        elif IDistribution.providedBy(question_target):
+            self.distribution = question_target
+        elif ISourcepackage.providedBy(question_target):
+            self.sourcepackagename = question_target.name
+        else:
+            raise AssertionError("Unknown IQuestionTarget type of %s" %
+                question_target)
 
     # subscriptions
     def subscribe(self, person):

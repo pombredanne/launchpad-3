@@ -103,6 +103,20 @@ It is also possible to adapt a question to its IQuestionTarget.
     >>> target = IQuestionTarget(firefox_question)
     >>> verifyObject(IQuestionTarget, target)
     True
+    
+The question can be transfered to a new IQuestionTarget
+
+    >>> thunderbird = getUtility(IProductSet)['thunderbird']
+    >>> thunderbird_question_target = IQuestionTarget(thunderbird)
+    >>> firefox_question.transfer(thunderbird_question_target)
+    >>> firefox_question.target == thunderbird
+    True
+
+And back again
+
+    >>> firefox_question.transfer(firefox)
+    >>> firefox_question.target == firefox
+    True
 
 == Subscriptions and Notifications ==
 

@@ -26,7 +26,7 @@
     <require
         permission="launchpad.AnyPerson"
         attributes="requestInfo giveAnswer expireQuestion addComment
-                    subscribe unsubscribe"
+                    transfer subscribe unsubscribe"
         set_attributes="title description datedue product distribution
                         sourcepackagename language" />
     <require

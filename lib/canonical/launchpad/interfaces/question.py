@@ -363,6 +363,9 @@ class IQuestion(IHasOwner):
         :comment: A string or IMessage containing the comment.
         :datecreated: Date for the message. Defaults to the current time.
         """
+        
+    def transfer(question_target):
+        """Transfer the question to another IQuestionTarget."""
 
     # subscription-related methods
     def subscribe(person):
