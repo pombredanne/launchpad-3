@@ -13,13 +13,14 @@
         <table>
           <tr>
             <th>
-              <label for="text">
+              <label for="language_search">
                 Search Languages in Launchpad:
               </label>
             </th>
             <td>
               <input
-                name="text" size="30" tal:attributes="value view/text" />
+                name="language_search" size="30"
+                tal:attributes="value view/language_search" />
             </td>
           </tr>
           <tr>
@@ -27,12 +28,12 @@
             <td>
               <div class="actions">
                 <input
-                  tal:condition="view/searchrequested"
+                  tal:condition="view/search_requested"
                   type="submit"
                   value="Search Again"
                   />
                 <input
-                  tal:condition="not: view/searchrequested"
+                  tal:condition="not: view/search_requested"
                   type="submit"
                   value="Search Languages"
                   />
@@ -41,17 +42,17 @@
           </tr>
         </table>
       </form>
-      <div tal:condition="view/searchrequested">
-        <tal:block tal:define="results view/searchresults">
+      <div tal:condition="view/search_requested">
+        <tal:block tal:define="results view/search_results">
           <table class="listing">
             <thead>
               <tr class="results">
                 <td colspan="0">
-                  <span tal:replace="view/matches">3</span>
-                  <span tal:condition="python: view.matches == 1">
+                  <span tal:replace="view/search_matches">3</span>
+                  <span tal:condition="python: view.search_matches == 1">
                     result
                   </span>
-                  <span tal:condition="python: view.matches != 1">
+                  <span tal:condition="python: view.search_matches != 1">
                     results
                   </span>
                 </td>
@@ -60,7 +61,7 @@
             <tbody>
               <tr>
                 <td>
-                  <dl condition="view/matches" class="languages">
+                  <dl condition="view/search_matches" class="languages">
                     <tal:block repeat="language results">
                       <dt>
                         <a tal:attributes="href language/code">
@@ -76,9 +77,9 @@
                       </dd>
                     </tal:block>
                   </dl>
-                  <p tal:condition="not: view/matches">
+                  <p tal:condition="not: view/search_matches">
                     <strong>No Languages matching &#8220;
-                      <span tal:replace="view/text">Foo</span>&#8221;
+                      <span tal:replace="view/language_search">Foo</span>&#8221;
                       were found.
                     </strong>
                   </p>

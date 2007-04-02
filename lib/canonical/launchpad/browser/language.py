@@ -21,12 +21,12 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
-    LaunchpadEditFormView, action, canonical_url)
+    LaunchpadEditFormView, action, canonical_url, ContextMenu,
+    enabled_with_permission, Link)
 
 
 class LanguageNavigation(GetitemNavigation):
@@ -40,25 +40,36 @@ class LanguageSetNavigation(GetitemNavigation):
     usedfor = ILanguageSet
 
 
-class LanguageSetContextMenu(RosettaContextMenu):
+class LanguageSetContextMenu(ContextMenu):
     usedfor = ILanguageSet
+    links = ['add']
+
+    @enabled_with_permission('launchpad.Admin')
+    def add(self):
+        text = 'Add Language'
+        return Link('+add', text, icon='add')
 
 
-class LanguageContextMenu(RosettaContextMenu):
+class LanguageContextMenu(ContextMenu):
     usedfor = ILanguage
+    links = ['administer']
 
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
 class LanguageSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
         form = self.request.form
-        self.text = form.get('text')
-        self.searchrequested = self.text is not None
+        self.language_search = form.get('language_search')
+        self.search_requested = self.language_search is not None
 
     @cachedproperty
     def search_results(self):
-        return self.context.search(text=self.text)
+        return self.context.search(text=self.language_search)
 
     @cachedproperty
     def search_matches(self):
@@ -131,7 +142,29 @@ class LanguageAdminView(LaunchpadEditFormView):
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction']
 
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        if self.context.nativename is None:
+            name = self.context.englishname
+        else:
+            name = self.context.nativename
+        self.label = 'Edit %s in Launchpad' % name
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     @action("Admin Language", name="admin")
     def admin_action(self, action, data):
         self.updateContextFromData(data)
 
+    def validate(self, data):
+        new_code = data.get('code')
+        if new_code == self.context.code:
+            # The code didn't change.
+            return
+
+        language_set = getUtility(ILanguageSet)
+        if language_set.getLanguageByCode(new_code) is not None:
+            self.setFieldError(
+                'code', 'There is already a language with that code.')

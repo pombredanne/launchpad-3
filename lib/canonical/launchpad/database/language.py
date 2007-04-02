@@ -179,8 +179,9 @@ class LanguageSet:
 
         return (language, language_variant)
 
-    def createLanguage(self, code, englishname, nativename, pluralforms,
-            pluralexpression, visible, direction):
+    def createLanguage(self, code, englishname, nativename=None,
+                       pluralforms=None, pluralexpression=None, visible=True,
+                       direction=TextDirection.LTR):
         """See ILanguageSet."""
         return Language(
             code=code, englishname=englishname, nativename=nativename,

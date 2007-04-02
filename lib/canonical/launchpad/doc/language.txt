@@ -39,6 +39,49 @@ unknown, it's ignored.
   >>> [language.englishname for language in languages]
   [u'Spanish', u'Portuguese (Brazil)']
 
+== createLanguage ==
+
+This method creates a new language in Launchpad.
+
+  >>> foos = language_set.createLanguage('foos', 'Foo language')
+  >>> print foos.code
+  foos
+  >>> print foos.englishname
+  Foo language
+
+== search ==
+
+We are able to search languages with this method.
+
+  >>> languages = language_set.search('Spanish')
+  >>> for language in languages:
+  ...     print language.code
+  es
+  es_AR
+  es_BO
+  es_CL
+  es_CO
+  es_CR
+  es_DO
+  es_EC
+  es_SV
+  es_GT
+  es_HN
+  es_MX
+  es_NI
+  es_PA
+  es_PY
+  es_PE
+  es_PR
+  es_ES
+  es_US
+  es_UY
+  es_VE
+
+= Language =
+
+Language object represent a language in Launchpad.
+
 == alt_suggestion_language ==
 
 In some languages, you could reasonably expect to find good suggestions in a
