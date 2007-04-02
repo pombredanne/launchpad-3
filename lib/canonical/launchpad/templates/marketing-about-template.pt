@@ -31,7 +31,7 @@
   <div id="about" metal:fill-slot="contents">
     <div id="primary">
       <h2 metal:define-slot="application">Translations</h2>
-      <h3 class="byline">Fact sheet</h3>
+      <h3 class="byline">Overview</h3>
     </div>
     <metal:contents define-slot="contents">
     <table id="features">
