@@ -12,17 +12,15 @@
     </a>
   </strong>
   <i tal:condition="is_focus">Current development focus</i>
-  <div>
+  <div tal:condition="series/releases">
     Releases:
-    <tal:none condition="not:series/releases">None</tal:none>
     <tal:release repeat="release series/releases">
       <a tal:attributes="href release/fmt:url" tal:content="release/version"
         >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
     </tal:release>
   </div>
-  <div>
+  <div tal:condition="series/milestones">
     Milestones:
-    <tal:none condition="not:series/milestones">None</tal:none>
     <tal:milestone repeat="milestone series/milestones">
       <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
         >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>

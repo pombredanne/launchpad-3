@@ -1,7 +1,21 @@
 = Searching for Projects, Products and Distributions =
 
 Launchpad provides a way for people to search across products, projects and
-distributions. This is done at the /projects page.
+distributions.
+
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getControl(name='text').value = 'whizzbar'
+    >>> browser.getControl('Search').click()
+
+The actual search is done at the /projects page:
+
+    >>> browser.url
+    'http://launchpad.dev/projects/?text=whizzbar'
+
+And when no matches are found, we are told so:
+
+    >>> 'No projects matching' in browser.contents
+    True
 
     >>> browser.open('http://launchpad.dev/projects')
     >>> browser.getControl(name='text').value = 'ubuntu'
@@ -35,7 +49,6 @@ user to refine his search.
     The Ubuntu Project
     Ubuntu Test
     The Evolution Groupware Application
-    The Gnome Panel Applets
 
 We can follow one of these links to go straight to the
 Product/Project/Distribution.

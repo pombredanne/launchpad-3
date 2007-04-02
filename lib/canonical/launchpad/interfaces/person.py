@@ -920,6 +920,9 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def latest_teams(limit=5):
+        """Return the latest teams registered, up to the limit specified."""
+
     def merge(from_person, to_person):
         """Merge a person into another."""
 

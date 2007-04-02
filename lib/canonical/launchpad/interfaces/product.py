@@ -345,6 +345,9 @@ class IProductSet(Interface):
 
     title = Attribute("""The set of Products registered in the Launchpad""")
 
+    people = Attribute("The PersonSet, placed here so we can easily render "
+        "the list of latest teams to register on the /products/ page.")
+
     def __iter__():
         """Return an iterator over all the products."""
 
@@ -419,6 +422,7 @@ class IProductSet(Interface):
     def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+
 
 
 class IProductLaunchpadUsageForm(Interface):

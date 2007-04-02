@@ -48,7 +48,7 @@ from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    IQuestionTarget, NotFoundError, get_supported_languages,
+    IQuestionTarget, IPersonSet, NotFoundError, get_supported_languages,
     QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot, IHasIcon)
 
 
@@ -584,6 +584,10 @@ class ProductSet:
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return iter(self._getProducts())
+
+    @property
+    def people(self):
+        return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
         return self._getProducts()[:quantity]
