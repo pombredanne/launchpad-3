@@ -85,6 +85,46 @@ has a link to the FAQs and Tour page for the application.
     FAQs about Answers: http://answers.launchpad.dev/+faq
     About Answers: http://answers.launchpad.dev/+about
 
+== Link to overview on application main page ==
+
+Each application home page features 'Learn more...' link bringing
+the user to the application overview page.
+
+=== Code ===
+
+    >>> browser.open('http://code.launchpad.dev')
+    >>> browser.getLink('Learn more').click()
+    >>> print "%s: %s" % (browser.title, browser.url)
+    About Code: http://code.launchpad.dev/+about
+
+=== Bugs ===
+
+    >>> browser.open('http://bugs.launchpad.dev')
+    >>> browser.getLink('Learn more').click()
+    >>> print "%s: %s" % (browser.title, browser.url)
+    About Bugs: http://bugs.launchpad.dev/+about
+
+=== Blueprints ===
+
+    >>> browser.open('http://blueprints.launchpad.dev')
+    >>> browser.getLink('Learn more').click()
+    >>> print "%s: %s" % (browser.title, browser.url)
+    About Blueprints: http://blueprints.launchpad.dev/+about
+
+=== Translations ===
+
+    >>> browser.open('http://translations.launchpad.dev')
+    >>> browser.getLink('Learn more').click()
+    >>> print "%s: %s" % (browser.title, browser.url)
+    About Translations: http://translations.launchpad.dev/+about
+
+=== Answers ===
+
+    >>> browser.open('http://answers.launchpad.dev')
+    >>> browser.getLink('Learn more').click()
+    >>> print "%s: %s" % (browser.title, browser.url)
+    About Answers: http://answers.launchpad.dev/+about
+
 == Link to tour on each application main page ==
 
 Each application home page features a proeminent 'Take a tour'
