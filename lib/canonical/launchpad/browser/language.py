@@ -8,7 +8,6 @@ __all__ = [
     'LanguageContextMenu',
     'LanguageAdminView',
     'LanguageNavigation',
-    'LanguageRemoveView',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
     'LanguageSetView',
@@ -56,17 +55,17 @@ class LanguageSetView:
         form = self.request.form
         self.text = form.get('text')
         self.searchrequested = self.text is not None
-        self.results = None
-        self.matches = 0
 
-    def searchresults(self):
-        if self.results is None:
-            self.results = self.context.search(text=self.text)
-        if self.results is not None:
-            self.matches = self.results.count()
+    @cachedproperty
+    def search_results(self):
+        return self.context.search(text=self.text)
+
+    @cachedproperty
+    def search_matches(self):
+        if self.search_results is not None:
+            return self.search_results.count()
         else:
-            self.matches = 0
-        return self.results
+            return 0
 
 
 class LanguageAddView(LaunchpadFormView):
@@ -74,10 +73,10 @@ class LanguageAddView(LaunchpadFormView):
     schema = ILanguage
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction']
-    label = _('Register a language in Launchpad')
+    label = 'Register a language in Launchpad'
     language = None
 
-    @action(_('Add'), name='add')
+    @action('Add', name='add')
     def add_action(self, action, data):
         """Create the new Language from the form details."""
         self.language = getUtility(ILanguageSet).createLanguage(
@@ -94,6 +93,13 @@ class LanguageAddView(LaunchpadFormView):
     def next_url(self):
         assert self.language is not None, 'No language has been created'
         return canonical_url(self.language)
+
+    def validate(self, data):
+        new_code = data.get('code')
+        language_set = getUtility(ILanguageSet)
+        if language_set.getLanguageByCode(new_code) is not None:
+            self.setFieldError(
+                'code', 'There is already a language with that code.')
 
 
 class LanguageView(LaunchpadView):
@@ -118,13 +124,8 @@ class LanguageView(LaunchpadView):
         return self.context.translators[:20]
 
 
-class LanguageRemoveView:
-
-    def removals(self):
-        pass
-
 class LanguageAdminView(LaunchpadEditFormView):
-    """Handle and admin form submission."""
+    """Handle an admin form submission."""
     schema = ILanguage
 
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',

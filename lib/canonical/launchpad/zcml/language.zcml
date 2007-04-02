@@ -45,13 +45,6 @@
         />
     <browser:page
         for="canonical.launchpad.interfaces.ILanguage"
-        class="canonical.launchpad.browser.LanguageRemoveView"
-        permission="launchpad.Admin"
-        attribute="removals"
-        name="+remove"
-        />
-    <browser:page
-        for="canonical.launchpad.interfaces.ILanguage"
         class="canonical.launchpad.browser.LanguageAdminView"
         permission="launchpad.Admin"
         template="../templates/language-admin.pt"

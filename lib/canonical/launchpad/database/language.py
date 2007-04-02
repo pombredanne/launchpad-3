@@ -115,11 +115,21 @@ class LanguageSet:
 
     def __getitem__(self, code):
         """See ILanguageSet."""
-        assert isinstance(code, basestring), code
+        language = self.getLanguageByCode(code)
+
+        if language is None:
+            raise NotFoundError, code
+
+        return language
+
+    def getLanguageByCode(self, code):
+        """See ILanguageSet."""
+        assert isinstance(code, basestring), (
+            "%s is not a valid type for 'code'" % type(code))
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
-            raise NotFoundError, code
+            return None
 
     def keys(self):
         """See ILanguageSet."""

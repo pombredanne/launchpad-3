@@ -12,6 +12,8 @@ __all__ = [
 from zope.schema import TextLine, Int, Choice, Bool, Field
 from zope.interface import Interface, Attribute
 
+from canonical.lp.dbschema import TextDirection
+
 class ILanguage(Interface):
     """A Language."""
 
@@ -97,7 +99,14 @@ class ILanguageSet(Interface):
         """Returns an iterator over all languages."""
 
     def __getitem__(code):
-        """Get a language by its code."""
+        """Return the language with the given code.
+
+        If there is no language with the give code,
+        raise NotFoundError exception.
+        """
+
+    def getLanguageByCode(code):
+        """Return the language with the given code or None."""
 
     def keys():
         """Return an iterator over the language codes."""
@@ -117,9 +126,20 @@ class ILanguageSet(Interface):
         If language_string doesn't represent a know language, return None.
         """
 
-    def createLanguage(code, englishname, nativename, pluralforms,
-                       pluralexpression, visible, direction):
-        """XXX."""
+    def createLanguage(code, englishname, nativename=None, pluralforms=None,
+                       pluralexpression=None, visible=True,
+                       direction=TextDirection.LTR):
+        """Return a new created language.
+
+        :arg code: ISO 639 language code.
+        :arg englishname: English name for the new language.
+        :arg nativename: Native language name.
+        :arg pluralforms: Number of plural forms.
+        :arg pluralexpression: Plural form expression.
+        :arg visible: Whether this language should be showed by default.
+        :arg direction: Text direction, either 'left to right' or 'right to
+            left'.
+        """
 
     def search(text):
-        """XXX."""
+        """Return a result set of ILanguage that match the search."""
