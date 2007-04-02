@@ -136,7 +136,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         default_image_resource='/@@/team',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this team in listings."))
+            "that can be used to identify this team. The icon will be "
+            "displayed whenever the team name is listed - for example "
+            "in listings of bugs or on a person's membership table."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/person-logo',

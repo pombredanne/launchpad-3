@@ -719,7 +719,7 @@ class ProductSet:
         return Product.select().count()
 
     def count_translatable(self):
-        return self.translatables().count()
+        return self.getTranslatables().count()
 
     def count_reviewed(self):
         return Product.selectBy(reviewed=True, active=True).count()

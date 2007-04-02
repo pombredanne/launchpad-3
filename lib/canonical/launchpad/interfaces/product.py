@@ -175,7 +175,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         default_image_resource='/@@/product',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project in listings."))
+            "that can be used to identify this project. The icon will be "
+            "displayed next to the project name everywhere in Launchpad that "
+            "we refer to the project and link to it."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,

@@ -112,3 +112,4 @@ whether a product is registered in Launchpad.
   >>> browser.getLink('registered with Launchpad').click()
   >>> print browser.url
   http://translations.launchpad.dev/projects
+
