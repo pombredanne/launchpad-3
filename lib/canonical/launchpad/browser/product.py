@@ -810,7 +810,7 @@ class ProductSetView(LaunchpadView):
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
                 displayname=item['title'], summary=item['description'],
-                icon_id=item['emblem'])
+                icon_id=item['icon'])
             for item in getUtility(IPillarNameSet).search(search_string, limit)
         ]
 
