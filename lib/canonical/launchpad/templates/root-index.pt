@@ -48,18 +48,25 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">Read
-                the new Feature Highlight Guide for Launchpad 1.0 (web
-                and PDF)</a>
+              <a href="https://help.launchpad.net/FeatureHighlights/">
+                Read the new Feature Highlight Guide for Launchpad 1.0 (web
+                and PDF)
+              </a>
             </li>
             <li>
-              <a
-              href="http://www.ubuntu.com/news/LaunchpadRelease">Announcement
-              of Launchpad 1.0 Public Beta</a>
+              <a href="http://www.ubuntu.com/news/LaunchpadRelease">
+                Announcement of Launchpad 1.0 Public Beta
+              </a>
             </li>
             <li>
               <a href="https://help.launchpad.net/KarmaCalculation">
                 Learn how we calculate your Launchpad karma
+              </a>
+            </li>
+            <li>
+              <a href="/~launchpad-beta-testers/">
+                Join the Launchpad Beta Testers team to help test and debug
+                new Launchpad features
               </a>
             </li>
             <li tal:replace="nothing">
