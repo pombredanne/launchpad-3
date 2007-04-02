@@ -428,17 +428,17 @@ class BaseImageUpload(Bytes):
     - max_dimensions: the maximun dimension of the image; a tuple of the
       form (width, height).
     - max_size: the maximun size of the image, in bytes.
-    - default_image_resource: the zope3 resource of the image that should be
-      used when the user hasn't yet provided one; should be a string of the
-      form /@@/<resource-name>
     """
 
     implements(IBaseImageUpload)
 
     max_dimensions = ()
     max_size = 0
-    default_image_resource = '/@@/nyet-mugshot'
 
+    def __init__(self, default_image_resource='/@@/nyet', **kw):
+        self.default_image_resource = default_image_resource
+        Bytes.__init__(self, **kw)
+ 
     def getCurrentImage(self):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")
@@ -460,12 +460,12 @@ class BaseImageUpload(Bytes):
             raise LaunchpadValidationError(_(dedent("""
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
-            image = PIL.Image.open(StringIO(image))
+            pil_image = PIL.Image.open(StringIO(image))
         except IOError:
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
-        width, height = image.size
+        width, height = pil_image.size
         max_width, max_height = self.max_dimensions
         if width > max_width or height > max_height:
             raise LaunchpadValidationError(_(dedent("""
@@ -484,6 +484,18 @@ class BaseImageUpload(Bytes):
             Bytes.set(self, object, value)
 
 
+# XXX: This field and its corresponding widget could be made slightly simpler
+# by doing what Francis suggested on
+# https://lists.ubuntu.com/mailman/private/launchpad-reviews/2007-March/004856.html
+# -- Guilherme Salgado, 2007-03-07
+# XXX: I'll rename this field on the following iteration (which is going to
+# hapen before this branch lands); I just don't want to do it now because this
+# branch is quite big already. -- Guilherme Salgado 2007-02-14
+# XXX: When renaming this field, it'll also be necessary to define new
+# attributes in our pillars (named gotchi_and_heading, probably) which will
+# then use this field, which will in turn operate in the gotchi and
+# gotchi_heading attributes (https://launchpad.net/bugs/90613).
+# -- Guilherme Salgado, 2007-03-08
 class LargeImageUpload(BaseImageUpload):
 
     # The max dimensions here is actually a bit bigger than the advertised
@@ -493,10 +505,36 @@ class LargeImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+    def __init__(self, default_image_resource='/@@/nyet',
+                 heading_name='gotchi_heading', **kw):
+        self.default_image_resource = default_image_resource
+        self.heading_name = heading_name
+        Bytes.__init__(self, **kw)
+ 
+    # Ideally this method should get a single image, resize it and store both
+    # images, but we can't do that because the widget gives us a
+    # LibraryFileAlias and we don't have access to its contents before the
+    # transaction is committed.
+    def set(self, object, value):
+        assert isinstance(value, (list, tuple))
+        original_img, small_img = value
+        if original_img is not KEEP_SAME_IMAGE:
+            assert small_img is not KEEP_SAME_IMAGE
+            BaseImageUpload.set(self, object, original_img)
+            setattr(object, self.heading_name, small_img)
+        else:
+            assert small_img is KEEP_SAME_IMAGE
+
+    # This method is not necessary on this field since it's used together with
+    # a widget which has two other subwidgets/subfields and the values stored
+    # on the subfields are the ones we actually care about.
+    def get(self, object):
+        return None
+
 
 class SmallImageUpload(BaseImageUpload):
 
-    max_dimensions = (64, 64)
-    max_size = 25*1024
-    default_image_resource = '/@@/nyet-mini'
+    max_dimensions = (16, 16)
+    max_size = 10*1024
+    default_image_resource = '/@@/nyet-icon'
 

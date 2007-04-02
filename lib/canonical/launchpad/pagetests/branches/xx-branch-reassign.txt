@@ -10,11 +10,11 @@ Impressed by his notorious fluency in foreign languages, we want to transfer
 the GNOME Terminal Klingon support branch to SABDFL.
 
     >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> browser.getLink('Change Registrant').click()
+    >>> browser.getLink('Change registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+reassign'
     >>> browser.getControl(name='field.owner').value = 'sabdfl'
-    >>> browser.getControl('Change Owner').click()
+    >>> browser.getControl('Change Registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~sabdfl/gnome-terminal/klingon'
 
@@ -26,7 +26,7 @@ Incidentally that restores the test data to its initial state.
 
     >>> admin_browser.open('http://launchpad.dev/~sabdfl/gnome-terminal/klingon/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change Owner').click()
+    >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
 
@@ -54,11 +54,11 @@ we will try to reassign to the "launchpad" team.
 
 Now, try to reassign that branch to "launchpad", that should cause an error.
 
-    >>> browser.getLink('Change Registrant').click()
+    >>> browser.getLink('Change registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
     >>> browser.getControl(name='field.owner').value = 'launchpad'
-    >>> browser.getControl('Change Owner').click()
+    >>> browser.getControl('Change Registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
 

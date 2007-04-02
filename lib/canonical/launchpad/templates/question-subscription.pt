@@ -18,6 +18,11 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <h1 tal:condition="not: view/subscription">Subscribe to question</h1>
   <h1 tal:condition="view/subscription">Unsubscribe from question</h1>
 

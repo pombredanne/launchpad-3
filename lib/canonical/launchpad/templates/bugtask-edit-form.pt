@@ -27,9 +27,70 @@
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/targetname">product</tal:context>,
+    <tal:context replace="context/targetname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
+  <table class="summary">
+    <tr>
+      <th>Affecting:</th>
+      <td><a tal:attributes="href context/target/fmt:url"
+             tal:content="context/target/displayname">Ubuntu Linux</a></td>
+    </tr>
+    <tr>
+      <th>Filed here by:</th>
+      <td><a tal:replace="structure context/owner/fmt:link">Foo Bar</a></td>
+    </tr>
+    <tr>
+      <th>When:</th>
+      <td>
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_confirmed">
+      <th>Confirmed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_confirmed/fmt:datetime"
+          tal:content="context/date_confirmed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_assigned">
+      <th>Assigned:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_assigned/fmt:datetime"
+          tal:content="context/date_assigned/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_inprogress">
+      <th>Started work:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_inprogress/fmt:datetime"
+          tal:content="context/date_inprogress/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_closed">
+      <th>Completed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_closed/fmt:datetime"
+          tal:content="context/date_closed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+  </table>
   <div class="field">
     <table>
       <tal:distrotask
@@ -56,7 +117,7 @@
             <label
               tal:attributes="for view/product_widget/name"
               tal:content="view/product_widget/label"
-            >Upstream product</label>
+            >Upstream project</label>
           </td>
         </tr>
         <tr tal:condition="view/product_widget">
@@ -87,12 +148,12 @@
       </tr>
       <tr>
         <td tal:content="structure view/status_widget" />
-        <td title="Editable only by the maintainer or bug contact of the product or distribution">
+        <td title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
           <span tal:content="structure view/importance_widget" />
         </td>
         <td tal:condition="view/milestone_widget"
-            title="Editable only by the maintainer or bug contact of the product or distribution">
+            title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
           <span tal:content="structure view/milestone_widget" />
         </td>
@@ -130,9 +191,11 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled 
-            <b tal:content="context/bugwatch/lastchecked/fmt:datetime">
-              2006-03-01 23:15 UTC
+            This information was last pulled
+            <b
+              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+              3 minutes ago
             </b>.
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 

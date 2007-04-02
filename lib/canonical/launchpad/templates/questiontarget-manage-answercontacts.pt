@@ -18,10 +18,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
@@ -72,7 +68,7 @@
 <metal:help fill-slot="help">
   <p>Being an <em>answer contact</em> is similar to being subscribed to
     <strong>every</strong> questions filed against the context
-    (product, distribution, or sourcepackage) you are an answer contact of.
+    (project or sourcepackage) you are an answer contact of.
     You will receive mail notifications about all changes to these questions,
     as well as for every new question created.
   </p>
