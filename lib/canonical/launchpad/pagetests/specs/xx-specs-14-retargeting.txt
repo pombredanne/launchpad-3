@@ -23,21 +23,16 @@ administrator:
   >>> print http(r"""
   ... POST /firefox/+spec/svg-support/+retarget HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 428
   ... Content-Type: multipart/form-data; boundary=---------------------------938091679987142812548021377
   ... 
   ... -----------------------------938091679987142812548021377
-  ... Content-Disposition: form-data; name="field.product"
+  ... Content-Disposition: form-data; name="field.target"
   ... 
   ... evolution
   ... -----------------------------938091679987142812548021377
-  ... Content-Disposition: form-data; name="field.distribution"
+  ... Content-Disposition: form-data; name="field.actions.retarget"
   ... 
-  ... 
-  ... -----------------------------938091679987142812548021377
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
+  ... Retarget Blueprint
   ... -----------------------------938091679987142812548021377--
   ... """)
   HTTP/1.1 303 See Other
@@ -52,21 +47,16 @@ evolution, to a distribution. Let's try redhat.
   >>> print http(r"""
   ... POST /evolution/+spec/svg-support/+retarget HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 433
   ... Content-Type: multipart/form-data; boundary=---------------------------73372874620216216641883523378
   ... 
   ... -----------------------------73372874620216216641883523378
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... 
-  ... -----------------------------73372874620216216641883523378
-  ... Content-Disposition: form-data; name="field.distribution"
+  ... Content-Disposition: form-data; name="field.target"
   ... 
   ... redhat
   ... -----------------------------73372874620216216641883523378
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.retarget"
   ... 
-  ... Continue
+  ... Retarget Blueprint
   ... -----------------------------73372874620216216641883523378--
   ... """)
   HTTP/1.1 303 See Other
@@ -81,22 +71,17 @@ test in the same state that it was when we started.
   >>> print http(r"""
   ... POST /redhat/+spec/svg-support/+retarget HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 430
   ... Content-Type: multipart/form-data; boundary=---------------------------4030488088664338941407918134
   ... Cookie: launchpad=Qc.v5-WHT7EgucQMiEGtj9vwGbUhNiaVW2z9GRhKPegpqV.M4BpCas
   ... 
   ... -----------------------------4030488088664338941407918134
-  ... Content-Disposition: form-data; name="field.product"
+  ... Content-Disposition: form-data; name="field.target"
   ... 
   ... firefox
   ... -----------------------------4030488088664338941407918134
-  ... Content-Disposition: form-data; name="field.distribution"
+  ... Content-Disposition: form-data; name="field.actions.retarget"
   ... 
-  ... 
-  ... -----------------------------4030488088664338941407918134
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
+  ... Retarget Blueprint
   ... -----------------------------4030488088664338941407918134--
   ... """)
   HTTP/1.1 303 See Other

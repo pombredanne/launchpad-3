@@ -49,19 +49,17 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
     IQuestionTarget, NotFoundError, get_supported_languages,
-    QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot, IHasIcon)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
+    implements(IProduct, ICalendarOwner, IQuestionTarget,
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
-    default_gotchi_resource = '/@@/product-mugshot'
-    default_gotchi_heading_resource = '/@@/product-heading'
-    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
@@ -84,12 +82,12 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
@@ -624,8 +622,8 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, gotchi_heading=None,
-                      emblem=None):
+                      reviewed=False, mugshot=None, logo=None,
+                      icon=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -634,8 +632,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed, gotchi=gotchi,
-            emblem=emblem, gotchi_heading=gotchi_heading)
+            programminglang=programminglang, reviewed=reviewed,
+            icon=icon, logo=logo, mugshot=mugshot)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '

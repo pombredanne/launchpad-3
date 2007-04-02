@@ -14,8 +14,6 @@ from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BaseImageUpload, LargeImageUpload, SmallImageUpload)
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX These import shims are actually necessary if we don't go over the
@@ -44,7 +42,9 @@ __all__ = [
     'IHasBug',
     'IHasDateCreated',
     'IHasDrivers',
-    'IHasGotchiAndEmblem',
+    'IHasIcon',
+    'IHasLogo',
+    'IHasMugshot',
     'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
@@ -331,40 +331,28 @@ class IHasSecurityContact(Interface):
         required=False, vocabulary='ValidPersonOrTeam')
 
 
-class IHasGotchiAndEmblem(Interface):
-    """An object that has a gotchi and an emblem."""
+class IHasIcon(Interface):
+    """An object that can have a custom icon."""
 
-    default_gotchi_resource = TextLine(
-        title=_("Default gotchi resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a gotchi."))
-    default_gotchi_heading_resource = TextLine(
-        title=_("Default heading resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a gotchi_heading."))
-    default_emblem_resource = TextLine(
-        title=_("Default emblem resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a emblem."))
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    icon = Attribute("The 14x14 icon.")
 
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this object."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this object. It should be "
-            "no bigger than 50k in size.")) 
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
-        description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on this "
-            "object's home page. It should be no bigger than 100k in size. "))
+
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    mugshot = Attribute("The 192x192 mugshot.")
 
 
 class IAging(Interface):

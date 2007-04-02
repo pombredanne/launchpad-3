@@ -18,6 +18,7 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductView',
     'ProductAddView',
+    'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
     'ProductReviewView',
@@ -32,6 +33,7 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductSetView',
     'ProductBranchesView',
+    'PillarSearchItem',
     ]
 
 from operator import attrgetter
@@ -44,15 +46,19 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
-from zope.interface import providedBy
+from zope.interface import alsoProvides, implements, providedBy
 
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, ISourcePackage, ICountry,
+    IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    ILaunchpadRoot, IBranchSet, RESOLVED_BUGTASK_STATUSES)
+    IBranchSet, RESOLVED_BUGTASK_STATUSES,
+    IPillarNameSet, IDistribution, IHasIcon)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
@@ -76,9 +82,8 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -120,7 +125,7 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def breadcrumb(self):
-        return 'Products'
+        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -157,16 +162,14 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     links = StandardLaunchpadFacets.links
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
-        target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         target = '+bounties'
@@ -175,22 +178,19 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def branches(self):
-        target = ''
         text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
-        target = ''
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         target = '+calendar'
@@ -205,7 +205,7 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'top_contributors',
+        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'distributions', 'packages', 'branch_add', 'series_add',
         'launchpad_usage', 'administer', 'rdf']
 
@@ -213,6 +213,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -408,7 +413,7 @@ class ProductSetContextMenu(ContextMenu):
         return Link('+all', text, icon='list')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -552,6 +557,12 @@ class ProductView:
         return get_buglisting_search_filter_url(url, status=status)
 
 
+class ProductBrandingView(BrandingChangeView):
+
+    schema = IProduct
+    field_names = ['icon', 'logo', 'mugshot']
+
+
 class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -559,12 +570,9 @@ class ProductEditView(LaunchpadEditFormView):
     label = "Edit details"
     field_names = [
         "project", "displayname", "title", "summary", "description",
-        "homepageurl", "gotchi", "emblem", "sourceforgeproject",
+        "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -694,34 +702,64 @@ class ProductDynMenu(
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
         'series': 'seriesMenu',
-        'related': 'relatedMenu',
         }
 
-    def relatedMenu(self):
-        """Show items related to this product.
-
-        If there is a project, show a link to the project, and then
-        the contents of the project menu, excluding the current
-        product from the project's list of products.
-        """
-        project = self.context.project
-        if project is not None:
-            yield self.makeLink(project.title, target=project)
-            projectdynmenu = ProjectDynMenu(project, self.request)
-            for link in projectdynmenu.mainMenu(excludeproduct=self.context):
-                yield link
-
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Product series', page='+series', submenu='series')
+        yield self.makeLink('Series', page='+series', submenu='series')
         yield self.makeLink(
-            'Related projects', submenu='related', target=self.context.project)
+            'Related', submenu='related', context=self.context.project)
+
+
+class Icon:
+    """An icon for use with image:icon."""
+
+    def __init__(self, library_id):
+        self.library_id = library_id
+
+    def getURL(self):
+        http_url = getUtility(ILibrarianClient).getURLForAlias(self.library_id)
+        if config.launchpad.vhosts.use_https:
+            return http_url.replace('http', 'https', 1)
+        else:
+            return http_url
+
+
+class PillarSearchItem:
+    """A search result item representing a Pillar."""
+
+    implements(IHasIcon)
+
+    icon = None
+
+    def __init__(self, pillar_type, name, displayname, summary, icon_id):
+        self.pillar_type = pillar_type
+        self.name = name
+        self.displayname = displayname
+        self.summary = summary
+        if icon_id is not None:
+            self.icon = Icon(icon_id)
+
+        # Even though the object doesn't implement the interface properly, we
+        # still say that it provides them so that the standard image:icon
+        # formatter works.
+        if pillar_type == 'project':
+            alsoProvides(self, IProduct)
+        elif pillar_type == 'distribution':
+            alsoProvides(self, IDistribution)
+        elif pillar_type == 'project group':
+            alsoProvides(self, IProject)
+        else:
+            raise AssertionError("Unknown pillar type: %s" % pillar_type)
 
 
 class ProductSetView(LaunchpadView):
 
     __used_for__ = IProductSet
+
+    max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
         form = self.request.form
@@ -729,12 +767,12 @@ class ProductSetView(LaunchpadView):
         self.rosetta = form.get('rosetta')
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
-        self.text = form.get('text')
+        self.search_string = form.get('text')
         self.matches = 0
         self.results = None
 
         self.searchrequested = False
-        if (self.text is not None or
+        if (self.search_string is not None or
             self.bazaar is not None or
             self.malone is not None or
             self.rosetta is not None or
@@ -746,45 +784,52 @@ class ProductSetView(LaunchpadView):
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
             try:
-                product = self.context[self.text]
+                product = self.context[self.search_string]
             except NotFoundError:
+                # No product found, perform a normal search instead.
+                pass
+            else:
+                url = canonical_url(product)
+                if form.get('malone'):
+                    url = url + "/+bugs"
+                self.request.response.redirect(url)
                 return
-            url = canonical_url(product)
-            if form.get('malone'):
-                url = url + "/+bugs"
-            self.request.response.redirect(url)
 
+        if self.searchrequested:
+            self.matches = len(self.searchresults)
+
+
+    @cachedproperty
     def searchresults(self):
-        """Use searchtext to find the list of Products that match
-        and then present those as a list. Only do this the first
-        time the method is called, otherwise return previous results.
-        """
-        if self.results is None:
-            self.results = self.context.search(
-                text=self.text,
-                bazaar=self.bazaar,
-                malone=self.malone,
-                rosetta=self.rosetta,
-                soyuz=self.soyuz)
-        self.matches = self.results.count()
-        return self.results
+        search_string = self.search_string.lower()
+        # We use a limit bigger than self.max_results_to_display so that we
+        # know when we had too many results and we can tell the user that some
+        # of them are not being displayed.
+        limit = self.max_results_to_display + 1
+        return [
+            PillarSearchItem(
+                pillar_type=item['type'], name=item['name'],
+                displayname=item['title'], summary=item['description'],
+                icon_id=item['emblem'])
+            for item in getUtility(IPillarNameSet).search(search_string, limit)
+        ]
+
+    def tooManyResultsFound(self):
+        return self.matches > self.max_results_to_display
 
 
 class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 'gotchi',
-                   'emblem', 'sourceforgeproject', 'freshmeatproject',
+                   'description', 'project', 'homepageurl', 
+                   'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.ADD_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
 
     label = "Register an upstream open source product"
     product = None
@@ -816,7 +861,6 @@ class ProductAddView(LaunchpadFormView):
             assert "reviewed" not in data
             data['owner'] = self.user
             data['reviewed'] = False
-        gotchi, gotchi_heading = data['gotchi']
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -833,9 +877,7 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=data['emblem'])
+            )
         notify(ObjectCreatedEvent(self.product))
 
     @property

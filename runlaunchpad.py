@@ -35,16 +35,19 @@ from configs import generate_overrides
 
 basepath = filter(None, sys.path)
 
+def make_abspath(path):
+    return os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        *path.split('/')
+        ))
+
 # Disgusting hack to use our extended config file schema rather than the
 # Z3 one. TODO: Add command line options or other to Z3 to enable overriding
 # this -- StuartBishop 20050406
 from zdaemon.zdoptions import ZDOptions
-ZDOptions.schemafile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'lib', 'canonical',
-        'config', 'schema.xml'))
+ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
 
-twistd_script = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), 'sourcecode', 'twisted', 'bin', 'twistd'))
+twistd_script = make_abspath('sourcecode/twisted/bin/twistd')
 
 
 class TacFile(object):
@@ -74,8 +77,7 @@ class TacFile(object):
 
         pidfile = pidfile_path(self.name)
         logfile = self.config.logfile
-        tacfile = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), self.tac_filename))
+        tacfile = make_abspath(self.tac_filename)
 
         args = [
             sys.executable,
@@ -174,6 +176,18 @@ def start_supermirrorsftp():
     sftp.launch()
 
 
+def make_css_slimmer():
+    import contrib.slimmer
+    inputfile = make_abspath(
+        'lib/canonical/launchpad/icing/style.css')
+    outputfile = make_abspath(
+        'lib/canonical/launchpad/icing/+style-slimmer.css')
+
+    cssdata = open(inputfile, 'rb').read()
+    slimmed = contrib.slimmer.slimmer(cssdata, 'css')
+    open(outputfile, 'w').write(slimmed)
+
+
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -200,6 +214,8 @@ def run(argv=list(sys.argv)):
     # Store our process id somewhere
     make_pidfile('launchpad')
 
+    # Create a new compressed +style-slimmer.css from style.css in +icing.
+    make_css_slimmer()
     main(argv[1:])
 
 

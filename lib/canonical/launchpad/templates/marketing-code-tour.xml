@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<tour next="bugs">
+  <title>Code</title>
+  <screen>
+    <title>Overview of all projects</title>
+    <summary>Overview of projects with code in Launchpad</summary>
+    <screenshot>/+icing/code-tour-screenshot1.png</screenshot>
+    <callout top="226" left="259">The darker the project's name, the more
+active it
+      is. The larger its name, the more branches it has hosted in Launchpad.
+    </callout>
+    <callout top="151" left="300">Smaller, lighter text indicates a smaller,
+      less active project.
+    </callout>
+  </screen>
+  <screen>
+    <title>Viewing a project's branches</title>
+    <summary>All of a project's branches are visible on one page</summary>
+    <screenshot>/+icing/code-tour-screenshot2.png</screenshot>
+    <callout top="8" left="73">Any Launchpad user can register a branch
+      against a project.
+    </callout>
+    <callout top="87" left="166">Some branches are created specifically to fix
+      a bug. The bug icon is a link to the bug that this branch fixes.
+    </callout>
+    <callout top="135" left="137">Each of these branches represents a major
+      version - or series - of the project.
+    </callout>
+    <callout top="211" left="300">Official project branches are listed side by
+      side with individual developer branches.
+    </callout>
+  </screen>
+  <screen>
+    <title>History of a branch</title>
+    <summary>Each branch's history is available, complete with the developer's
+      commit message.
+    </summary>
+    <screenshot>/+icing/code-tour-screenshot3.png</screenshot>
+    <callout top="7" left="61">Any Launchpad user can browse the full branch
+      history, with diffs, and subscribe to receive email notifications of
+      updates.
+    </callout>
+    <callout top="53" left="401">Commits to this branch are restricted to
+      members of the team that owns it. Anyone can create their own branch,
+      though, and make changes there.
+    </callout>
+    <callout top="111" left="262">Recent branch revisions, with the
+      developer's commit message, give an overview of recent activity.
+    </callout>
+    <callout top="256" left="251">Launchpad automatically links to related
+      branches.
+    </callout>
+  </screen>
+
+</tour>

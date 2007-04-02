@@ -14,7 +14,7 @@
       <br />
       Only the Launchpad administrators can register new project groups. You can
       register an individual application (what we call a project). To do so,
-      first <a href="/products/">search to see if your project is already in
+      first <a href="/projects/">search to see if your project is already in
       Launchpad</a>.
     </div>
   </div>
@@ -46,7 +46,7 @@
   <tal:notsearching condition="not:view/searchrequested">
     <p>
       For individual computer programs, applications or libraries,
-      see <a href="/products">projects</a>.
+      see <a href="/projects">projects</a>.
     </p>
 
     <p>
