@@ -35,6 +35,7 @@ the screenshot.
     ...         <callout top="50" left="10">A callout with <b>HTML</b> text
     ...             in. Including a <a href="/">link</a>.
     ...         </callout>
+    ...         <callout top="" left="">Item 3</callout>
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 3</title>
@@ -124,14 +125,16 @@ The screenshot contains the URI to the screenshot.
     >>> print screen['screenshot']
     /+icing/marketing-screenshot2.png
 
-The callouts is a list of dicts containg keys for the callout text, and
-position on the screenshot.
+The callouts is a list of dicts containg keys for the callout text,
+callout number and top and left position on the screenshot.
 
     >>> len(screen['callouts'])
-    2
+    3
     >>> callout = screen['callouts'][0]
     >>> print callout['text']
     Item 1
+    >>> print callout['number']
+    1
     >>> print callout['top']
     12
     >>> print callout['left']
@@ -141,6 +144,24 @@ Note that the callout content is interpreted as a proper XHTML string.
 
     >>> print screen['callouts'][1]['text']
     A callout with <b>HTML</b> text in. Including a <a href="/">link</a>.
+
+== Callouts layout ==
+
+The current_screen_callouts_layout return the screen callouts in a
+special order for layout. When there are three or four callouts, the third
+is returned before the second so that the callout #2 ends under #1. (It is
+layed out 1 3 2 4 but will look
+
+1 3
+2 4
+
+onscreen.
+
+    >>> for callout in tour_view.current_screen_callouts_layout:
+    ...     print callout['number']
+    1
+    3
+    2
 
 == Screen navigation ==
 

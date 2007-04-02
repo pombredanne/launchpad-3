@@ -71,8 +71,8 @@
         <ul class="info"
             tal:condition="screen/callouts">
           <li id="point-1"
-              tal:repeat="callout screen/callouts"
-              tal:attributes="id string:point-${repeat/callout/number};"
+              tal:repeat="callout view/current_screen_callouts_layout"
+              tal:attributes="id string:point-${callout/number};"
               tal:content="structure callout/text">Description of point 1.</li>
         </ul>
         <a class="button next" href="+tour" title="Next"

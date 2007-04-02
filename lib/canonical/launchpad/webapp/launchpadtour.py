@@ -92,6 +92,7 @@ class LaunchpadTourView(LaunchpadView):
         screen['title'] = get_node_text(node.find('title'))
         screen['summary'] = get_node_text(node.find('summary'))
         screen['screenshot'] = get_node_text(node.find('screenshot'))
+        self._callout_number = 1
         screen['callouts'] = [
             self._createCallout(callout)
             for callout in node.findall('callout')]
@@ -109,6 +110,8 @@ class LaunchpadTourView(LaunchpadView):
             callout['left'] = int(node.get('left', 0))
         except ValueError:
             callout['left'] = 0
+        callout['number'] = self._callout_number
+        self._callout_number += 1
         return callout
 
     @property
@@ -126,6 +129,19 @@ class LaunchpadTourView(LaunchpadView):
     def current_screen(self):
         """Return the currently selected screen."""
         return self._screens[self.current_screen_index]
+
+    @property
+    def current_screen_callouts_layout(self):
+        """Return the callouts of the current screen in layout order.
+
+        When there are more than two callouts, we want the callout #2 to
+        appear under #1 (not to its right side.) So tweak the callout order
+        to achieve that result.
+        """
+        callouts = list(self.current_screen['callouts'])
+        if len(callouts) > 2:
+            callouts.insert(1, callouts.pop(2))
+        return callouts
 
     @property
     def next_screen_index(self):
