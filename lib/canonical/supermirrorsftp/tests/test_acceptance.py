@@ -122,7 +122,12 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
 
 
 class SSHKeyMixin:
+    """Mixin for tests that need to do SSH key-based authentication."""
+
     def prepareTestUser(self):
+        """Prepare 'testuser' and 'testteam' Persons, giving 'testuser' a known
+        SSH key.
+        """
         # insert SSH keys for testuser -- and insert testuser!
         cur = cursor()
         cur.execute(
@@ -138,10 +143,12 @@ class SSHKeyMixin:
         commit()
 
     def getPrivateKey(self):
+        """Return the private key object used by 'testuser' for auth."""
         return keys.getPrivateKeyObject(
             data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
 
     def getPublicKey(self):
+        """Return the public key string used by 'testuser' for auth."""
         return keys.getPublicKeyString(
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
