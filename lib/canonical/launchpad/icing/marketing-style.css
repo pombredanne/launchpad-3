@@ -236,8 +236,8 @@ body#tour #header dl#navigation ul li#liTour a {
   display: block;
   float: left;
   height: 16px;
-  padding: 0 0 5px 20px;
-  margin: 0 25px 0 3px;
+  padding: 0 0 5px 15px;
+  margin: 0 15px 0 3px;
 /*  text-indent: -1000em;*/
   border-bottom: solid 1px #fff;
   background: url(bullet-arrow.gif) center left no-repeat;
@@ -261,6 +261,7 @@ body#tour #header dl#navigation ul li#liTour a {
 #header dl#sub-navigation ul#global {
   float: right;
   padding-right: 27px;
+  padding-left: 0px;
 }
 
 #header dl#sub-navigation ul#global li a {
@@ -280,7 +281,7 @@ body#tour #header dl#navigation ul li#liTour a {
 
 #header dl#sub-navigation ul#global li#liContact a {
   padding-left: 7px;
-  margin-left: 7px;
+  margin-left: 0px;
   background: url(globaldivide.gif) bottom left no-repeat;
 }
 

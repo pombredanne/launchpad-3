@@ -13,21 +13,6 @@
     </dl>
   </div>
 
-  <dl metal:fill-slot="navigation"
-      id="sub-navigation">
-    <dt>Sub-navigation<dt>
-    <dd>
-      <ul>
-        <li><a href="+about">Overview</a></li>
-        <li><a href="+tour">Application tour</a></li>
-        <li class="current"><a href="+faq">FAQs</a></li>
-      </ul>
-      <ul id="global">
-        <li><a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#102;&#101;&#101;&#100;&#98;&#97;&#99;&#107;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">Contact us</a></li>
-      </ul>
-    </dd>
-  </dl>
-
   <div id="faq" metal:fill-slot="contents">
     <div id="primary">
       <metal:left-column define-slot="left-column">

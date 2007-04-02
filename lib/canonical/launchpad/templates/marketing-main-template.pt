@@ -45,14 +45,15 @@
                     tal:condition="not: request/lp:person"
                     ><a href="+login"
                         tal:attributes="href string:${request/URL}/+login"
-                        >Log in / Register</a></li>
+                        >Log In / Register</a></li>
                 <li id="liTour"><a href="/+tour"
                                    tal:attributes="href string:${vhosts/mainsite/rooturl}+tour"
                                    >Take a tour</a></li>
               </ul>
             </dd>
           </dl>
-          <metal:navigation define-slot="navigation" />
+          <dl id="subnavigation"
+              tal:content="structure context/@@marketing_subnavigation" />
         </div> <!-- header -->
         <div id="main">
           <metal:contents define-slot="contents" />

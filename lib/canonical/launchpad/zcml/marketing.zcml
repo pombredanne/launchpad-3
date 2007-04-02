@@ -23,6 +23,12 @@
         permission="zope.Public"
         template="../templates/marketing-faq-template.pt"
         />
+    <browser:view
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        class="canonical.launchpad.browser.MarketingSubnavigationView"
+        name="marketing_subnavigation"
+        permission="zope.Public"
+        />
 
     <!-- XXX flacoste 2007/03/30 Redirect the generic +tour to the code
          +tour page which is the first page in the tour. -->
