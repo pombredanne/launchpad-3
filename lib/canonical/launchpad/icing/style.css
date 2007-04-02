@@ -102,10 +102,15 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
+  
 }
-.error {background-color: #f0cccc; color: black;}
+.error {color: #db1f22;}
 .error.message, .error .message {
   background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
@@ -279,12 +284,12 @@ hr {
  * "Home".
  */
 ul#menuroot a#homebreadcrumb span {
-  background: url(home.gif) left top no-repeat;
+  background: url(home-low-high.gif) left top no-repeat;
   padding-left: 16px;
 }
 ul#menuroot li a#homebreadcrumb:hover span,
 ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-highlight.gif) left top no-repeat;
+  background: url(home-low-high.gif) -1014px top no-repeat;
   padding-left: 16px;
 }
 /* The location bar contains menus. */
@@ -398,6 +403,13 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   padding-left: 0px;
   padding-right: 0px;
 }
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
 /* Inhibit underlines on all dyn menu items. */
 #locationbar li a:hover {
   text-decoration: none;
@@ -487,6 +499,8 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 /*- Underneath the global header and location bar is a help panel. -*/
+/* In Internet Explorer it doesn't work yet, so hide it for now. */
+* html #help_panel {display: none;}
 
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
@@ -845,7 +859,7 @@ ul#applicationchooser li#applicationchooser_selected {
   background-repeat: repeat-x;
   background-position: bottom left;
   position: relative;
-  top: -20px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces pillargotchi~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
