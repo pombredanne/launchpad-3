@@ -341,7 +341,8 @@ class ObjectFormatterAPI:
 
     def url(self):
         request = get_current_browser_request()
-        return canonical_url(self._context, request)
+        return canonical_url(
+            self._context, request, path_only_if_possible=True)
 
 
 class ObjectImageDisplayAPI:

@@ -249,7 +249,8 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
-def canonical_url(obj, request=None, rootsite=None):
+def canonical_url(
+    obj, request=None, rootsite=None, path_only_if_possible=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -323,7 +324,13 @@ def canonical_url(obj, request=None, rootsite=None):
             raise AssertionError(
                 "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
                 % rootsite)
-    return unicode(root_url + u'/'.join(reversed(urlparts)))
+    path = u'/'.join(reversed(urlparts))
+    if (path_only_if_possible and
+        request is not None and
+        root_url.startswith(request.getApplicationURL())
+        ):
+        return unicode('/' + path)
+    return unicode(root_url + path)
 
 
 def get_current_browser_request():

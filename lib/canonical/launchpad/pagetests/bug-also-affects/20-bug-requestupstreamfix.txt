@@ -13,14 +13,14 @@ redirected to +add-affected-product directly.
     ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
 
 If this wasn't what we intended, we can go back to choose another
 product.
 
     >>> user_browser.getLink('Choose another project').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 
     >>> user_browser.getControl('Product').value
     'evolution'
@@ -39,7 +39,7 @@ bug watch.
 
     >>> user_browser.getControl('Indicate bug in Mozilla Thunderbird').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product'
 
     >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
     ...     print notification.renderContents()
@@ -49,7 +49,7 @@ Let's confirm adding the task.
 
     >>> user_browser.getControl('Yes').click()
     >>> user_browser.url
-    'http://launchpad.dev/thunderbird/+bug/6'
+    'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
 Let's add the evolution task as well.
 
@@ -57,12 +57,12 @@ Let's add the evolution task as well.
     ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
 
     >>> user_browser.getControl('Indicate bug in Evolution').click()
 
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/6'
+    'http://bugs.launchpad.dev/evolution/+bug/6'
 
 == Error messages ==
 
@@ -72,13 +72,13 @@ If we try to add an upstream task without specifying a product:
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
     >>> user_browser.getControl('Product').value
     ''
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
 We get a nice error message.
 
@@ -91,7 +91,7 @@ about this and ask him to search for the product.
     >>> user_browser.getControl('Product').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
     >>> for message_tag in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message_tag.renderContents()
     There is 1 error.
@@ -169,7 +169,7 @@ space in the bug URL it will be stripped.
 Redirected to the newly created bugtask page
 
   >>> user_browser.url
-  'http://launchpad.dev/alsa-utils/+bug/3'
+  'http://bugs.launchpad.dev/alsa-utils/+bug/3'
 
   >>> print user_browser.contents
   <...
@@ -185,12 +185,12 @@ And now we try to add the same upstream again.
 
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
 
     >>> user_browser.getControl('Product').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
 
 We get a nice error message.
 
@@ -203,18 +203,18 @@ We can add another upstream to the bug.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Indicate bug in Evolution').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3'
+    'http://bugs.launchpad.dev/evolution/+bug/3'
 
 But if we try to change it to the target of an existing upstream bugtask,
 our validator springs into action.
 
     >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3/+editstatus'
+    'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
     >>> user_browser.getControl('Product').value = 'alsa-utils'
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3/+editstatus'
+    'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
     >>> print user_browser.contents
     <...
     ...Please fix it and try again...
