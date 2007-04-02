@@ -395,6 +395,10 @@ body#tour #header dl#navigation ul li#liTour a {
 #features th {
     width: 25%;
     text-align: center;
+    color: #526d00;
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 #features th, #features td {
@@ -500,8 +504,7 @@ body#tour #header dl#navigation ul li#liTour a {
   text-decoration: underline;
 }
 
-#main h3,
-#features th {
+#main h3 {
   color: #526d00;
   font-size: 1.5em;
   font-weight: normal;
