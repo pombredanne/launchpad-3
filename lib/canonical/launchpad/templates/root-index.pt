@@ -27,18 +27,18 @@
       <form
         class="central front_page"
         style="text-align: center;"
-        action="/+search"
+        action="/projects/"
         method="get"
       >
         <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="q" size="20" />
+        <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
       </form>
 
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate 
+            We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
             <a href="/+tour">Learn&nbsp;more&#8230;</a>
@@ -79,7 +79,12 @@
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
           </ul>
         </div>
-
+        <div class="three column right">
+          <h2>More about Launchpad</h2>
+          <ul>
+            <li><a href="/+about">What is Launchpad?</a></li>
+          </ul>
+        </div>
     </div><!--main-->
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.

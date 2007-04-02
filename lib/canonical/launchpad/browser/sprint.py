@@ -37,6 +37,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
+from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
@@ -55,7 +56,7 @@ class SprintFacets(StandardLaunchpadFacets):
     def specifications(self):
         text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
 
 class SprintNavigation(Navigation):
@@ -68,6 +69,7 @@ class SprintNavigation(Navigation):
 
 class SprintsMixinDynMenu:
 
+    @neverempty
     def meetingsMenu(self):
         coming_sprints = shortlist(self.context.coming_sprints, 20)
         if coming_sprints:
@@ -176,7 +178,7 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')

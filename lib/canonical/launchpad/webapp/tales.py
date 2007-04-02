@@ -341,7 +341,8 @@ class ObjectFormatterAPI:
 
     def url(self):
         request = get_current_browser_request()
-        return canonical_url(self._context, request)
+        return canonical_url(
+            self._context, request, path_only_if_possible=True)
 
 
 class ObjectImageDisplayAPI:
@@ -450,6 +451,16 @@ class ObjectImageDisplayAPI:
             <img alt="" width="192" height="192" src="%s" />
             </div>"""
         return mugshot % url
+
+
+class PillarSearchItemAPI(ObjectImageDisplayAPI):
+    """Provides image:icon for a PillarSearchItem."""
+
+    def mugshot(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
+
+    def logo(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):

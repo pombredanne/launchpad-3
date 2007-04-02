@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
@@ -426,6 +427,48 @@ class Person(SQLBase, HasSpecificationsMixin):
             )''' % sqlvalues(personID=self.id),
             clauseTables=['Ticket'], distinct=True))
 
+    def getDirectAnswerQuestionTargets(self):
+        """See IPerson."""
+        answer_contacts = AnswerContact.select(
+            '''SupportContact.person = %s''' % sqlvalues(self.id))
+        return self._assembleAnswerContacts(answer_contacts)
+        
+    def getTeamAnswerQuestionTargets(self):
+        """See IPerson."""
+        answer_contacts = AnswerContact.select(
+            '''SupportContact.person = TeamParticipation.team
+            AND TeamParticipation.person = %(personID)s
+            AND SupportContact.person != %(personID)s''' % sqlvalues(
+                personID=self.id),
+            clauseTables=['TeamParticipation'], distinct=True)
+        return self._assembleAnswerContacts(answer_contacts)
+    
+    def _assembleAnswerContacts(self, answer_contacts):
+        """Return a list of valid IQuestionTargets.
+        
+        Provided AnswerContact query results, a distinct list of Products,
+        Distributions, and SourcePackages is returned.
+        """
+        targets = []
+        for answer_contact in answer_contacts:
+            if answer_contact.product is not None:
+                target = answer_contact.product
+            elif answer_contact.sourcepackagename is not None:
+                assert answer_contact.distribution is not None, (
+                    "Missing distribution.")
+                distribution = answer_contact.distribution
+                target = distribution.getSourcePackage(
+                    answer_contact.sourcepackagename)
+            elif answer_contact.distribution is not None:
+                target = answer_contact.distribution
+            else:
+                raise AssertionError('Unknown IQuestionTarget.')
+            
+            if not target in targets:
+                targets.append(target)
+            
+        return targets      
+    
     @property
     def branches(self):
         """See IPerson."""

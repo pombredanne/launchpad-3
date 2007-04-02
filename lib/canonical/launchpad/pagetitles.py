@@ -512,6 +512,37 @@ malone_filebug = "Report a bug"
 
 # malone_template is a means to include the mainmaster template
 
+# marketing_about_template is used by the marketing pages
+
+marketing_answers_about = "About Answers"
+
+marketing_answers_faq = "FAQs about Answers"
+
+marketing_blueprints_about = "About Blueprints"
+
+marketing_blueprints_faq = "FAQs about Blueprints"
+
+marketing_bugs_about = "About Bugs"
+
+marketing_bugs_faq = "FAQs about Bugs"
+
+marketing_code_about = "About Code"
+
+marketing_code_faq = "FAQs about Code"
+
+# marketing_faq_template is used by the marketing pages
+
+marketing_home = "About Launchpad"
+
+# marketing_main_template is used by the marketing pages
+
+def marketing_tour(context, view):
+    return view.pagetitle
+
+marketing_translations_about = "About Translations"
+
+marketing_translations_faq = "FAQs about Translations"
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
@@ -551,6 +582,9 @@ people_index = 'People and teams in Launchpad'
 def people_list(context, view):
     return view.header
 
+person_answer_contact_for = ContextDisplayName(
+    'Projects for which %s is an answer contact')    
+
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):
@@ -587,7 +621,11 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-person_index = ContextDisplayName('%s in Launchpad')
+def person_index(context, view):
+    if context.is_valid_person_or_team:
+        return '%s in Launchpad' % context.displayname
+    else:
+        return "%s's contributions to Free Software" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
@@ -905,6 +943,8 @@ specification_addsubscriber = 'Subscribe someone else to this blueprint'
 specification_linkbug = ContextTitle(
   u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
+
+specification_new = 'Register a proposal as a blueprint in Launchpad'
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
