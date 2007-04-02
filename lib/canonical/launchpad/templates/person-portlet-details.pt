@@ -18,7 +18,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/locked" alt=""> 
+                <img src="/@@/locked" alt="" /> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />
@@ -29,7 +29,7 @@
           <tal:visible_emails condition="not: context/hide_email_addresses">
             <b>Preferred address:</b><br />
 
-            &nbsp;&nbsp;&nbsp;<img src="/@@/mail" alt="">
+            &nbsp;&nbsp;&nbsp;<img src="/@@/mail" alt="" />
               <span tal:replace="context/preferredemail/email">foo@bar.com</span>
             <br />
 

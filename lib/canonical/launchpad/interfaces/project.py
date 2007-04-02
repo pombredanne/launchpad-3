@@ -134,7 +134,9 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         default_image_resource='/@@/project',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project in listings."))
+            "that can be used to identify this project. The icon will be "
+            "displayed in Launchpad everywhere that we link to this "
+            "project. For example in listings or tables of active projects."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,

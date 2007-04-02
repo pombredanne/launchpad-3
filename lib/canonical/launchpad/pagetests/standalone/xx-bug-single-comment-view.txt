@@ -1,9 +1,9 @@
 Each bug comment on the main bug page contains a link to view only that
 comment.
 
-    >>> browser.open('http://localhost/bugs/2')
+    >>> browser.open('http://bugs.launchpad.dev/bugs/2')
     >>> browser.url
-    'http://localhost/ubuntu-product/+bug/2'
+    'http://bugs.launchpad.dev/ubuntu-product/+bug/2'
 
     >>> def print_comment_titles(page):
     ...     """Prints all the comment titles that are visible on the page."""
@@ -23,7 +23,7 @@ comment displayed on that page.
     >>> comment_link = browser.getLink('Strange bug with duplicate messages.')
     >>> comment_link.click()
     >>> browser.url
-    'http://localhost/ubuntu-product/+bug/2/comments/2'
+    'http://bugs.launchpad.dev/ubuntu-product/+bug/2/comments/2'
 
     >>> print_comment_titles(browser.contents)
     Strange bug with duplicate messages.

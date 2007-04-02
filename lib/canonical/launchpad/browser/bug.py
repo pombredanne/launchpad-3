@@ -931,7 +931,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
-    rootsite = 'mainsite'
+    rootsite = 'bugs'
 
     def __init__(self, context):
         self.context = context

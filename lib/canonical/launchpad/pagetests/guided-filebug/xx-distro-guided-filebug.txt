@@ -33,5 +33,5 @@ continue with filing our bug.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...
 
