@@ -22,7 +22,7 @@ will be subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/ubuntu/+source/evolution/+bug/13
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/13
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -75,7 +75,7 @@ subscriptions differ.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/ubuntu/+source/evolution/+bug/14
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/14
 
 Now only the reporter and /security contact/ are subscribed.
 

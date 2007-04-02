@@ -32,7 +32,7 @@
         Select a project to begin translating it into your own language.
         If a project for <span tal:content="context/displayname">Project
         </span> is not listed here, check that it&#8217;s
-        <a href="/products">registered with Launchpad</a>, and follow the
+        <a href="/projects">registered with Launchpad</a>, and follow the
         instructions described at
         <a href="https://help.launchpad.net/RosettaFAQ">RosettaFAQ</a>
       </p>

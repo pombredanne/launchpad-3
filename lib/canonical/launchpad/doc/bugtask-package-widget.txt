@@ -66,7 +66,7 @@ will still be returned.
     u'evolution'
 
 If we pass in a package name that doesn't exist in Launchpad, we get a
-LaunchpadValidationError saying that the package name doesn't exist.
+ConversionError saying that the package name doesn't exist.
 
     >>> request = TestRequest(form={'field.sourcepackagename': 'no-package'})
     >>> widget = BugTaskSourcePackageNameWidget(
@@ -74,4 +74,5 @@ LaunchpadValidationError saying that the package name doesn't exist.
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError...
+    ConversionError...
+

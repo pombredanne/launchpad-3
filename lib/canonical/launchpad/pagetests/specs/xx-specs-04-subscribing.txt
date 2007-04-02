@@ -66,6 +66,18 @@ We will unset the essential flag and resubmit:
   >>> 'subscriber-inessential' in browser.contents
   True
 
+It's also possible to change the essential flag clicking on the star icon in
+the Subscribers portlet.
+
+  >>> browser.getLink(url='/+subscription/carlos').click()
+  >>> browser.getControl('Participation essential').selected = True
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+
+  >>> 'subscriber-essential' in browser.contents
+  True
+
 We don't really want to be subscribed, so lets unsubscribe from that spec.
 We load the subscription page, and now the button says "Unsubscribe".
 
@@ -80,7 +92,4 @@ We load the subscription page, and now the button says "Unsubscribe".
   False
   >>> 'subscriber-essential' in browser.contents
   False
-
-
-Now, we can
 

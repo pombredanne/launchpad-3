@@ -48,7 +48,7 @@
       </thead>
       <tbody>
         <tr tal:repeat="distrorelease view/secondary_translatable_releases">
-          <td><a tal:attributes="href string:${distrorelease/fmt:url}/+translations"
+          <td><a tal:attributes="href distrorelease/fmt:url"
                  tal:content=
                     "string: ${distrorelease/version} ${distrorelease/title}"
                 >5.04 The Hoary Hedgehog Release</a>
