@@ -395,8 +395,15 @@ class IProductSet(Interface):
     def latest(quantity=5):
         """Return the latest products registered in the Launchpad."""
 
-    def translatables():
+    def getTranslatables():
         """Return an iterator over products that have resources translatables.
+        """
+
+    def featuredTranslatables(maximumproducts=8):
+        """Return an iterator over a sample of translatable products.
+
+        maximum_products is a maximum number of products to be displayed
+        on the front page (it will be less if there are no enough products).
         """
 
     def count_all():

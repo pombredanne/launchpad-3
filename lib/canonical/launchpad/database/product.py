@@ -14,8 +14,9 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -687,22 +688,32 @@ class ProductSet:
                               prejoins=["owner"],
                               clauseTables=clauseTables)
 
-    def translatables(self):
+    def getTranslatables(self):
         """See IProductSet"""
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
+            POTemplate.productseries = ProductSeries.id AND
+            Product.official_rosetta
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
+            orderBy='Product.title',
             distinct=True)
-        distro = Product.select('''
-            Product.id = ProductSeries.product AND
-            Packaging.productseries = ProductSeries.id AND
-            Packaging.sourcepackagename = POTemplate.sourcepackagename
+        return upstream
+
+    def featuredTranslatables(self, maximumproducts=8):
+        """See IProductSet"""
+        randomresults = Product.select('''id IN
+            (SELECT Product.id FROM Product, ProductSeries, POTemplate
+               WHERE Product.id = ProductSeries.product AND
+                     POTemplate.productseries = ProductSeries.id AND
+                     Product.official_rosetta
+               ORDER BY random())
             ''',
-            clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
             distinct=True)
-        return upstream.union(distro)
+
+        results = list(randomresults[:maximumproducts])
+        results.sort(lambda a,b: cmp(a.title, b.title))
+        return results
 
     def count_all(self):
         return Product.select().count()
