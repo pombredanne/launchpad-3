@@ -8,28 +8,30 @@
     <table id="features">
       <tbody>
         <tr>
-          <th>Host code</th>
-          <th>Fix bugs</th>
           <th>Give everyone version control</th>
-          <th>Import CVS and Subversion</th>
+          <th>Host and catalogue code</th>
+          <th>Import from CVS and Subversion</th>
+          <th>Fix bugs</th>
         </tr>
         <tr class="screenshots">
-          <td><img src="/+icing/code-feature-hosting.png"
-                   alt="Code hosting mini screenshot" /></td>
-          <td><img src="/+icing/code-feature-bug-branches.png"
-                   alt="Bug branches mini screenshot" /></td>
           <td><img src="/+icing/code-feature-everyone.png"
                    alt="Version control for everyone mini screenshot" /></td>
+          <td><img src="/+icing/code-feature-hosting.png"
+                   alt="Code hosting mini screenshot" /></td>
           <td><img src="/+icing/code-feature-import.png"
                    alt="SVN/CVS import mini screenshot" /></td>
+          <td><img src="/+icing/code-feature-bug-branches.png"
+                   alt="Bug branches mini screenshot" /></td>
         </tr>
         <tr>
-          <td>Host and mirror Bazaar branches from anywhere on the internet.</td>
-          <td>Link branches that fix a bug with the bug report.</td>
           <td>Anyone can create and publish their own branch of your code.</td>
-          <td>Mirror CVS and Subversion repositories and create your own
-            Bazaar branches.
+          <td>Make all your project's code accessible in one place,
+              wherever it's hosted on the internet.
           </td>
+          <td>Use Bazaar to track and hack on code in CVS and
+              Subversion repositories.
+          </td>
+          <td>Link code branches to the bugs they solve.</td>
         </tr>
       </tbody>
     </table>
@@ -41,23 +43,33 @@
       <div class="intro">
         <h3>About Launchpad Code Hosting</h3>
 
-        <p>Launchpad works with the Bazaar distributed version control system
-           to improve access to your project's code. We believe a distributed
-           approach to version control is more efficient.
+        <p>With Bazaar version control, anyone can create and publish their
+           own branches of your code. New contributors can have version
+           control of their own branch without needing special commit
+           permissions.
         </p>
 
-        <p>To help your team find all branches associated with your project,
-           Launchpad can mirror any Bazaar branch that's hosted on the
-           internet, or host branches directly. A simple web interface lets
-           anyone browse your branches' revision histories and you can manage
-           upload access with Launchpad's teams infrastructure.
-        </p>
+        <p>Launchpad's browsable branch registry helps your community track
+           all the branches of your project. Anyone can publish their branch
+           to Launchpad, or ask Launchpad to mirror branches that are hosted
+           elsewhere on the internet. Launchpad reports the progress of all
+           branches, while giving special placement to major lines of
+           development.
+         </p>
+
+        <p>You can also track the links between branches and other tools in
+           Launchpad. When a developer creates a branch to fix a particular
+           bug or implement a blueprint, they can connect the two. All the
+           discussion from the bug report or blueprint is now immediately
+           available to people browsing the code.
+         </p>
 
         <p>For projects that use Subversion or CVS for revision control,
-           Launchpad can maintain a continuous import of the development
-           trunk into Bazaar. This allows new contributors to work on the
-           code, before they get commit access.
+          Launchpad can maintain a continuous import of the development trunk
+          into Bazaar. This allows new contributors to work on the code,
+          before they get commit access.
         </p>
+
       </div>
     </div> <!-- content -->
   </metal:contents>

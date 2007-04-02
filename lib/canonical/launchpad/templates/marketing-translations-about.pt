@@ -24,8 +24,8 @@
                    alt="Translations workflow mini screenshot" /></td>
         </tr>
         <tr>
-          <td>Launchpad simplifies software translation, making it easy
-            enough for anyone to translate into hundreds of languages.
+          <td>Launchpad simplifies software translation, making it easy for
+              anyone to translate into their language.
           </td>
           <td>Automatic suggestions from 750,000 translated strings.</td>
           <td>Import .pot template files and export .po and .mo files of
