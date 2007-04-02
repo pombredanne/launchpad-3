@@ -309,6 +309,7 @@ sample_bug = '''\
   </tags>
   <subscriptions>
     <subscriber email="test@canonical.com">Sample Person</subscriber>
+    <subscriber name="nobody">Nobody (will not get imported)</subscriber>
   </subscriptions>
   <comment>
     <sender name="foo" email="foo@example.com">Foo User</sender>
