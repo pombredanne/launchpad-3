@@ -214,6 +214,41 @@ class POBasicTestCase(unittest.TestCase):
             u'"Content-Type: text/plain; charset=ASCII\\n"\n'
             u'"plural-forms: nplurals=2; plural=random()\\n"')
 
+    def testMultipartString(self):
+        self.parser.write('''
+            %s
+            msgid "foo1"
+            msgstr ""
+            "bar"
+
+            msgid "foo2"
+            msgstr "b"
+            "ar"
+
+            msgid "foo3"
+            msgstr "b""ar"
+
+            msgid "foo4"
+            msgstr "ba" "r"
+
+            msgid "foo5"
+            msgstr "b""a""r"
+            ''' % DEFAULT_HEADER)
+        self.parser.finish()
+        messages = self.parser.messages
+        self.assertEqual(len(messages), 5, "incorrect number of messages")
+        self.assertEqual(messages[0].msgid, "foo1", "incorrect msgid")
+        self.assertEqual(messages[0].msgstr, "bar", "incorrect msgstr")
+        self.assertEqual(messages[1].msgid, "foo2", "incorrect msgid")
+        self.assertEqual(messages[1].msgstr, "bar", "incorrect msgstr")
+        self.assertEqual(messages[2].msgid, "foo3", "incorrect msgid")
+        self.assertEqual(messages[2].msgstr, "bar", "incorrect msgstr")
+        self.assertEqual(messages[3].msgid, "foo4", "incorrect msgid")
+        self.assertEqual(messages[3].msgstr, "bar", "incorrect msgstr")
+        self.assertEqual(messages[4].msgid, "foo5", "incorrect msgid")
+        self.assertEqual(messages[4].msgstr, "bar", "incorrect msgstr")
+
+
 
 def test_suite():
     dt_suite = doctest.DocTestSuite(pofile)
