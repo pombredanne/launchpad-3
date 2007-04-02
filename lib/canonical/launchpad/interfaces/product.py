@@ -175,7 +175,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         default_image_resource='/@@/product',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project in listings."))
+            "that can be used to identify this project. The icon will be "
+            "displayed next to the project name everywhere in Launchpad that "
+            "we refer to the project and link to it."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -345,6 +347,9 @@ class IProductSet(Interface):
 
     title = Attribute("""The set of Products registered in the Launchpad""")
 
+    people = Attribute("The PersonSet, placed here so we can easily render "
+        "the list of latest teams to register on the /products/ page.")
+
     def __iter__():
         """Return an iterator over all the products."""
 
@@ -392,8 +397,15 @@ class IProductSet(Interface):
     def latest(quantity=5):
         """Return the latest products registered in the Launchpad."""
 
-    def translatables():
+    def getTranslatables():
         """Return an iterator over products that have resources translatables.
+        """
+
+    def featuredTranslatables(maximumproducts=8):
+        """Return an iterator over a sample of translatable products.
+
+        maximum_products is a maximum number of products to be displayed
+        on the front page (it will be less if there are no enough products).
         """
 
     def count_all():
@@ -419,6 +431,7 @@ class IProductSet(Interface):
     def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+
 
 
 class IProductLaunchpadUsageForm(Interface):
