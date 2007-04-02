@@ -2,106 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
+      i18n:domain="launchpad"
 >
   <body>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Software translations</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/translations" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-translations">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
-                        <ul class="rollover buttons">
-                          <li>
-                            <a href="+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
-                        <p id="application-summary">
-                          With Launchpad you can translate Free Software
-                          into your own language.
-                          <a href="/+tour">Learn more&#8230;</a>
-                        </p>
-                        <div class="three column middle">
-
-                            <h2>Translatable products</h2>
-
-                            <tal:block
-                              condition="not:view/batchnav/currentBatch">
-                              <div class="documentDescription">
-                                There are no programs available to be translated.
-                              </div>
-                            </tal:block>
-
-                            <tal:block
-                              condition="view/batchnav/currentBatch">
-
-			      <tal:navigation replace="structure
-                                view/batchnav/@@+navigation-links-upper" />
-                              <ul class="product">
-                                <li tal:repeat="product
-				      view/batchnav/currentBatch">
-                                  <a
-                                    tal:attributes="href
-                                      string:/${product/name}/+translations"
-                                    tal:content="product/title"
-                                  />
-                                </li>
-                              </ul>
-			      <tal:navigation replace="structure
-                                view/batchnav/@@+navigation-links-lower" />
-                            </tal:block>
-
-                        </div>
-                        <form class="central" action="/+search" method="get">
-                          <input id="text" name="q" size="50" type="text" />
-                          <input type="submit" value="Search Projects" />
-                        </form>
-                        <div
-                          id="application-footer"
-                          tal:content="structure context/@@+portlet-stats"
-                        />
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
-    </div><!--main-->
-    <div metal:fill-slot="help">
-      <p>
-        Read more <a href="+about">about Rosetta</a>, a Web-based system for
-        translating open source software into any language. All you need to
-        start translating is a Web browser, a good knowledge of the
-        application you are translating, and a knowledge of English.
-      </p>
-      <ul class="info">
-        <li>
-          <a href="https://help.launchpad.net/RosettaFAQ"
-          >Frequent asked questions</a>
-        </li>
-      </ul>
-    </div>
+      <h1>All projects</h1>
+      <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+      <div tal:repeat="product view/batchnav/currentBatch"
+         tal:replace="structure product/@@+listing-detailed" />
+      <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+     </div>
   </body>
 </html>
 </tal:layout>
-<!-- 1-0 inprogress Missing sample of translatable upstreams (bug 79674). -->
