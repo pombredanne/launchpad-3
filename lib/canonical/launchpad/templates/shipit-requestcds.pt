@@ -136,8 +136,7 @@
     <p class="informational message" tal:condition="user/is_trusted_on_shipit">
       The Ubuntu community would like to thank you for your
       contributions to the Ubuntu project. In recognition of this, we
-      offer to you an expanded set of options for your ShipIt request.
-      Congratulations!
+      offer you an expanded set of options for your ShipIt request.
     </p>
   </tal:standard-request>
 

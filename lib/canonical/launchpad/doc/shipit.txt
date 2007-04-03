@@ -217,6 +217,11 @@ of a given distrorelease (or both, obviously).
   [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
 
+  >>> edgy = ShipItDistroRelease.EDGY
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=edgy)]
+  [(u'Marilize Coetzee', 19)]
+
 
 Another way of searching is by using any part of the recipient's name or the
 beginning of his email address.
@@ -242,7 +247,7 @@ new requests, because if we give them a text field for entering the quantity,
 lots of people will just enter as many as they can, just because they can.
 
 These options are presented as a set of radio buttons and their visibility
-change according to the logged in user. That is, some users get to see all
+changes according to the logged in user. That is, some users get to see all
 options while others can see only the options with at most N CDs.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')

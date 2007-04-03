@@ -482,7 +482,7 @@ class IStandardShipItRequestSet(Interface):
     def getByFlavour(flavour, user):
         """Return the standard ShipIt requests for the given flavour and user.
 
-        If the given user is truested in Shipit, then all options of that
+        If the given user is trusted in Shipit, then all options of that
         flavour are returned. Otherwise, only the options with less than
         MAX_CDS_FOR_UNTRUSTED_PEOPLE CDs are returned.
 
@@ -499,6 +499,10 @@ class IStandardShipItRequestSet(Interface):
     def getAllGroupedByFlavour():
         """Return a dictionary mapping ShipItFlavours to the 
         StandardShipItRequests of that flavour.
+
+        This is used in the admin interface to show all StandardShipItRequests
+        to the shipit admins, so it doesn't need to check whether the user is
+        trusted on shipit or not.
         """
 
     def getByNumbersOfCDs(flavour, quantityx86, quantityamd64, quantityppc):
