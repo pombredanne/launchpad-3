@@ -165,6 +165,10 @@ class IShippingRequest(Interface):
             constraint=validate_shipit_organization,
             description=_('The Organization requesting the CDs')
             )
+    normalized_address = TextLine(
+            title=_("This request's normalized address"),
+            description=_("This request's address, city, province and "
+                          "postcode normalized and concatenated"))
 
     distrorelease = Attribute(_(
         "The ShipItDistroRelease of the CDs contained in this request"))
@@ -256,6 +260,9 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request's status is PENDING."""
 
+    def isDuplicatedAddress():
+        """Return True if this request's status is DUPLICATEDADDRESS."""
+
     def isPendingSpecial():
         """Return True if this request's status is PENDINGSPECIAL."""
 
@@ -282,6 +289,9 @@ class IShippingRequest(Interface):
         
         Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
         """
+
+    def markAsDuplicatedAddress():
+        """Mark this request as having a duplicated address."""
 
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
@@ -318,6 +328,16 @@ class IShippingRequest(Interface):
         on this request.
         This method will also set quantityx86approved, quantityppcapproved, 
         quantityamd64approved, approved and whoapproved to None.
+        """
+
+    def addressIsDuplicated():
+        """Return True if there is more than one request made from another
+        user using the same address as this one.
+        """
+
+    def getRequestsWithSameAddressFromOtherUsers():
+        """Return all non-cancelled non-denied requests with the same address
+        as this one but with a different recipient.
         """
 
 
