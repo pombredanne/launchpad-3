@@ -692,11 +692,21 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.name = sourcepackagename.name
 
         # Get the sets of binary package names, summaries, descriptions.
+
+        # XXX This bit of code needs fixing up, it is doing stuff that
+        # really needs to be done in SQL, such as sorting and uniqueness.
+        # This would also improve the performance.
+        # Julian 2007-04-03
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
+        sprchangelog = set()
         for spr in sprs:
             log.debug("Considering source version %s" % spr.version)
+            # changelog may be empty, in which case we don't want to add it
+            # to the set as the join would fail below.
+            if spr.changelog:
+                sprchangelog.add(spr.changelog)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
@@ -712,6 +722,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.binpkgnames = ' '.join(sorted(binpkgnames))
         cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
+        cache.changelog = ' '.join(sorted(sprchangelog))
 
     def searchSourcePackages(self, text):
         """See IDistribution."""

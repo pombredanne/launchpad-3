@@ -59,6 +59,7 @@ ALL_FTI = [
             ('binpkgnames', B),
             ('binpkgsummaries', C),
             ('binpkgdescriptions', D),
+            ('changelog', D),
             ]),
 
     ('distroreleasepackagecache', [
