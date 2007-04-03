@@ -8,7 +8,7 @@ We were unable to import the file because of errors in its format.
 You can check your file for correct formatting with the 'msgfmt'
 command. Please fix any errors raised by msgfmt and upload the file
 again. If you check the file and you don't find any error in it,
-please file a question under Launchpad's Answers application.
+please file a question at https://answers.launchpad.net/
 
 For your convenience, you can get the file you uploaded at:
 %(file_link)s
