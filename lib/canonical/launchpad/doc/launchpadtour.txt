@@ -32,18 +32,19 @@ the screenshot.
     ...         <summary>Summary of feature 2</summary>
     ...         <screenshot>/+icing/marketing-screenshot2.png</screenshot>
     ...         <callout top="12" left="36">Item 1</callout>
-    ...         <callout top="50" left="10">A callout with <b>HTML</b> text
-    ...             in. Including a <a href="/">link</a>.
-    ...         </callout>
+    ...         <callout top="50" left="10">Item 2</callout>
     ...         <callout top="" left="">Item 3</callout>
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 3</title>
-    ...         <summary>Summary of feature 3</summary>
+    ...         <summary><p>&lt;Summary of feature 3</p>
+    ...             <p>Other paragraph.</p></summary>
     ...         <screenshot>/+icing/marketing-screenshot3.png</screenshot>
     ...         <callout top="100" left="30">Item 1</callout>
-    ...         <callout top="5" left="5">Item 2</callout>
-    ...       </screen>5
+    ...         <callout top="5" left="5">A callout with <b>HTML</b> text
+    ...             in. Including a <a href="/">link</a>.
+    ...         </callout>
+    ...       </screen>
     ...     </tour>
     ...     ''')
 
@@ -140,7 +141,20 @@ callout number and top and left position on the screenshot.
     >>> print callout['left']
     36
 
-Note that the callout content is interpreted as a proper XHTML string.
+
+== Using HTML in summary and callout ==
+
+Note that the callout and summary content is interpreted as a proper XHTML
+string.
+
+    >>> request = LaunchpadTestRequest(form={'screen': '2'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
+    >>> screen = tour_view.current_screen
+
+    >>> print screen['summary']
+    <p>&lt;Summary of feature 3</p>
+    <p>Other paragraph.</p>
 
     >>> print screen['callouts'][1]['text']
     A callout with <b>HTML</b> text in. Including a <a href="/">link</a>.
@@ -157,6 +171,9 @@ layed out 1 3 2 4 but will look
 
 onscreen.
 
+    >>> request = LaunchpadTestRequest(form={'screen': '1'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
     >>> for callout in tour_view.current_screen_callouts_layout:
     ...     print callout['number']
     1

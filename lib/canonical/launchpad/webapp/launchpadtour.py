@@ -90,7 +90,7 @@ class LaunchpadTourView(LaunchpadView):
         """Return a dict containing the screen attributes."""
         screen = {}
         screen['title'] = get_node_text(node.find('title'))
-        screen['summary'] = get_node_text(node.find('summary'))
+        screen['summary'] = get_node_html_text(node.find('summary'))
         screen['screenshot'] = get_node_text(node.find('screenshot'))
         self._callout_number = 1
         screen['callouts'] = [
