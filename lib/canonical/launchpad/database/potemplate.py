@@ -591,8 +591,7 @@ class POTemplate(SQLBase, RosettaStats):
             template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <%s>' % (
-                config.rosetta.rosettaadmin.email)
+            fromaddress = config.rosetta.rosettaadmin.email
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
             simple_sendmail(fromaddress, toaddress, subject, message)

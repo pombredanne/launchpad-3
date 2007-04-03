@@ -187,7 +187,7 @@ There is one email and it's for the error we produced.
   For your convenience, you can get the file you uploaded at:
   http://localhost:58000/.../firefox-cy.po
   <BLANKLINE>
-  Thanks for using Rosetta.
+  Thank you,
   <BLANKLINE>
-  The Rosetta SWAT Team
+  The Launchpad team
   <BLANKLINE>
