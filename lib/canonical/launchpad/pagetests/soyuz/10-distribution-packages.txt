@@ -51,7 +51,7 @@ Now run a search for mozilla-firefox and check that it is found:
 
   >>> browser.open("http://localhost/ubuntu")
   >>> browser.getLink("Search packages").click()
-  >>> field = browser.getControl(name="text")
+  >>> field = browser.getControl(name="text", index=1)
   >>> field.value = 'mozilla-firefox'
   >>> browser.getControl("Search").click()
   >>> browser.contents
