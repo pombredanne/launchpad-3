@@ -2,16 +2,16 @@ When a bug is targeted to the current development series, the general
 product task is no longer editable. Instead the status is tracked
 in the series task.
 
-    >>> user_browser.open('http://launchpad.dev/firefox/+bug/4')
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
     >>> firefox_edit_url = (
-    ...     'http://launchpad.dev/firefox/+bug/4/+editstatus')
+    ...     'http://bugs.launchpad.dev/firefox/+bug/4/+editstatus')
     >>> user_browser.getLink(url=firefox_edit_url)
     Traceback (most recent call last):
     ...
     LinkNotFoundError...
 
     >>> firefox_trunk_edit_url = (
-    ...     'http://launchpad.dev/firefox/trunk/+bug/4/+editstatus')
+    ...     'http://bugs.launchpad.dev/firefox/trunk/+bug/4/+editstatus')
     >>> user_browser.getLink(url=firefox_trunk_edit_url) is not None
     True
 
@@ -23,7 +23,7 @@ open, while the series task is rejected.
     >>> user_browser.getControl('Status').displayValue = ['Rejected']
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/trunk/+bug/4'
+    'http://bugs.launchpad.dev/firefox/trunk/+bug/4'
 
 Now both the general and series tasks are editable.
 

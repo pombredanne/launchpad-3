@@ -11,7 +11,7 @@ This page is used to search packages in a distribution context.
 
 Search for a package and check if the result page is not broken
 
-  >>> field = browser.getControl(name="text")
+  >>> field = browser.getControl(name="text", index=1)
   >>> field.value = 'pmount'
   >>> browser.getControl("Search").click()
   >>> browser.contents
