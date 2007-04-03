@@ -8,7 +8,7 @@
       tal:content="context/displayname">Pillar displayname</a>
     </div>
     <div>
-      <tal:summary replace="context/summary/fmt:shorten/120" />
+      <tal:summary replace="context/summary/fmt:shorten/240" />
     </div>
   </td>
 </tr>

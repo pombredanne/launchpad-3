@@ -1627,6 +1627,12 @@ class PersonSet:
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
+    def latest_teams(self, limit=5):
+        """See IPersonSet."""
+        return Person.select("Person.teamowner IS NOT NULL",
+            orderBy=['-datecreated'], limit=limit)
+
+
     def merge(self, from_person, to_person):
         """Merge a person into another.
 

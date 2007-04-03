@@ -3,7 +3,7 @@
 From Launchpad's front page, you can access a "marketing microsite"
 
     >>> browser.open('http://launchpad.dev/')
-    >>> browser.getLink('What is Launchpad?').click()
+    >>> browser.getLink('Learn').click()
     >>> print browser.title
     About Launchpad
     >>> browser.url
