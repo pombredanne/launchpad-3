@@ -527,6 +527,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -8107,6 +8110,15 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
 
 
+ALTER TABLE revisionproperty DISABLE TRIGGER ALL;
+
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (1, 11, 'lp:foo', 'extended value');
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (2, 11, 'lp:bar', '455');
+
+
+ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
+
+
 
 
 
@@ -8834,6 +8846,7 @@ ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
 ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
 INSERT INTO sshkey (id, person, keytype, keytext, "comment", date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
+INSERT INTO sshkey (id, person, keytype, keytext, "comment", date_created) VALUES (2, 1, 2, 'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==', 'Private key in lib/canonical/supermirrorsftp/tests/id_dsa', '2007-03-30 03:39:27.689516');
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
@@ -8862,6 +8875,10 @@ ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE supportcontact DISABLE TRIGGER ALL;
 
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
+INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
 
 
 ALTER TABLE supportcontact ENABLE TRIGGER ALL;
@@ -9315,5 +9332,6 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
+
 
 
