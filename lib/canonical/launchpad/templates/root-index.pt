@@ -41,31 +41,38 @@
             We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+tour">Learn&nbsp;more&#8230;</a>
+            <a href="/+about">Learn&nbsp;more&#8230;</a>
           </p>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">Read
-                the new guide to the Feature Highlights in Launchpad 1.0 (web
-                and PDF)</a>
+              <a href="https://help.launchpad.net/FeatureHighlights/">
+                Read the new Feature Highlight Guide for Launchpad 1.0 (web
+                and PDF)
+              </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BugTrackingHighlights"
-                >Intro to Launchpad bug tracking</a>
+              <a href="http://www.ubuntu.com/news/LaunchpadRelease">
+                Announcement of Launchpad 1.0 Public Beta
+              </a>
             </li>
             <li>
-              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
+              <a href="https://help.launchpad.net/KarmaCalculation">
+                Learn how we calculate your Launchpad karma
+              </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/ReportingABug"
-              >Learn about reporting bugs</a>
+              <a href="/~launchpad-beta-testers/">
+                Join the Launchpad Beta Testers team to help test and debug
+                new Launchpad features
+              </a>
             </li>
-            <li>
-              <a href="https://help.launchpad.net/KarmaReductionJan07"
-              >Wondering why your karma dropped in January?</a>
+            <li tal:replace="nothing">
+              <a
+              href="">
+              </a>
             </li>
           </ul>
         </div>
@@ -77,12 +84,6 @@
             <li class="product"><a href="/jokosher">Jokosher</a></li>
             <li class="product"><a href="/upstart">Upstart</a></li>
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
-          </ul>
-        </div>
-        <div class="three column right">
-          <h2>More about Launchpad</h2>
-          <ul>
-            <li><a href="/+about">What is Launchpad?</a></li>
           </ul>
         </div>
     </div><!--main-->
