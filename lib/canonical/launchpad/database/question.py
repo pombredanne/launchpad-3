@@ -707,6 +707,9 @@ class QuestionTargetSearch(QuestionSearch):
                  sourcepackagename=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
+        # A SQLObject may produce an empty list #102357.
+        if product is not None and hasattr(product, '__iter__'):
+            assert [p for p in product] != [], ("Missing a product context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,

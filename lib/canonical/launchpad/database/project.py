@@ -250,6 +250,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                         sort=None, owner=None, needs_attention_from=None):
         """See IQuestionCollection."""
+        if not self.products:
+            return []
         return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,
             sort=sort, owner=owner, needs_attention_from=needs_attention_from,
@@ -257,6 +259,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""
+        if not self.products:
+            return set()
         product_ids = sqlvalues(*self.products)
         return set(Language.select(
             'Language.id = language AND product IN (%s)' % ', '.join(
