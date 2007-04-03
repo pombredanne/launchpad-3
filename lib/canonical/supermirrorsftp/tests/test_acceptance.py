@@ -248,7 +248,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         sftp.clear_connection_cache()
         gc.collect()
 
-    def run_and_wait_for_sftp_session_close(self, f, *a, **kw):
+    def run_and_wait_for_sftp_session_close(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
         server to acknowledge the end of the session.
         """
@@ -260,12 +260,12 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
             self.server.setConnectionMadeEvent(ever_connected)
             self.server.setConnectionLostEvent(done)
             try:
-                result = f(*a, **kw)
+                result = func(*args, **kwargs)
             finally:
                 self.closeAllConnections()
-                # If we don't have an avatar, then we aren't authenticated. If
-                # we aren't authenticated, then the disconnect event will never
-                # be fired.
+                # done.wait() can block forever if func() never actually
+                # connects, so only wait if we are sure that the client
+                # connected.
                 if ever_connected.isSet():
                     done.wait()
         finally:
@@ -273,7 +273,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         return result
 
     def push(self, remote_url):
-        """Push the local branch to the given URL and return the last revision.
+        """Push the local branch to the given URL.
 
         This method is used to test then end-to-end behaviour of pushing Bazaar
         branches to the SFTP server.
