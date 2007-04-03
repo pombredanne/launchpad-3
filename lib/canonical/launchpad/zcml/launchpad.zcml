@@ -4,17 +4,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.LaunchpadRootDynMenu"
-      attribute="__call__"
-      name="+menudata"
-      />
-
-
 <!-- Error pages -->
   <!-- System Errors -->
   <browser:page
@@ -128,13 +117,6 @@
       />
 
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -165,6 +147,15 @@
       template="../templates/launchpad-restrictedinfo.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
+  <!-- Other non-application-specific pages. -->
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -247,7 +238,7 @@
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
-  
+
 </facet>
 
 <!--

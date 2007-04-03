@@ -66,7 +66,9 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         default_image_resource='/@@/distribution',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this distribution in listings."))
+            "that can be used to identify this distribution. The icon will "
+            "be displayed everywhere we list the distribution and link "
+            "to it."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/distribution-logo',

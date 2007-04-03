@@ -32,10 +32,10 @@ attribute.
 
 
 With no breadcrumbs, we get a single <li> element for Launchpad, containing
-the sitemap.  The URL of "/" is hardcoded for the first breadcrumb.
+the sitemap.  The URL of the mainsite is hardcoded for the first breadcrumb.
 
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
 
 
 When we add a breadcrumb, it appears as a top level <li> after the
@@ -44,7 +44,7 @@ so its CSS class doesn't contain the text "container".
 
     >>> request.addCrumb('http://localhost/people', 'People', has_menu=False)
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
     <li class="item"><a href="http://localhost/people" class="breadcrumb"><em>People</em></a></li>
 
 
@@ -53,7 +53,7 @@ other two <li> elements.
 
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
     <li class="item"><a href="http://localhost/people" class="breadcrumb"><em>People</em></a></li>
     <li class="item" lpm:mid="http://localhost/people/someone/+menudata"><a href="http://localhost/people/someone" class="breadcrumb container"><em>Someone</em></a></li>
 

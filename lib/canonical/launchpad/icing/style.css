@@ -102,10 +102,15 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
+  
 }
-.error {background-color: #f0cccc; color: black;}
+.error {color: #db1f22;}
 .error.message, .error .message {
   background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
@@ -275,9 +280,17 @@ hr {
   font-weight: bold;
   color: #FFF;
 }
+/* padding-left adjusts the space between the home icon and the word
+ * "Home".
+ */
 ul#menuroot a#homebreadcrumb span {
-  background: url(home.gif) left top no-repeat;
-  padding-left: 15px;
+  background: url(home-low-high.gif) left top no-repeat;
+  padding-left: 16px;
+}
+ul#menuroot li a#homebreadcrumb:hover span,
+ul#menuroot li.selected a#homebreadcrumb span {
+  background: url(home-low-high.gif) -1014px top no-repeat;
+  padding-left: 16px;
 }
 /* The location bar contains menus. */
 ul#menuroot {
@@ -390,6 +403,13 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   padding-left: 0px;
   padding-right: 0px;
 }
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
 /* Inhibit underlines on all dyn menu items. */
 #locationbar li a:hover {
   text-decoration: none;
@@ -479,6 +499,8 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 /*- Underneath the global header and location bar is a help panel. -*/
+/* In Internet Explorer it doesn't work yet, so hide it for now. */
+* html #help_panel {display: none;}
 
 #help_panel {
   visibility: hidden; /* global.js reveals it if JavaScript is available */
@@ -553,7 +575,7 @@ table#applications td {text-align: right;}
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 12px; width: 220px;}
+#globalsearch {float: right; margin-top: 15px; width: 220px;}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -837,7 +859,7 @@ ul#applicationchooser li#applicationchooser_selected {
   background-repeat: repeat-x;
   background-position: bottom left;
   position: relative;
-  top: -20px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces pillargotchi~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
@@ -1375,8 +1397,8 @@ div#applications {padding: 1em 0; text-align: center;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.5em;
-  line-height: 1.5em;
+  font-size: 1.4em;
+  line-height: 1.4em;
   margin-top: 0;
 }
 #application-footer {
@@ -1480,6 +1502,7 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}

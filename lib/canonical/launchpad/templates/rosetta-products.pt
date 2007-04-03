@@ -1,0 +1,20 @@
+<tal:layout define="columns1 default">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+  <body>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
+    <div metal:fill-slot="main">
+      <h1>All projects</h1>
+      <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+      <div tal:repeat="product view/batchnav/currentBatch"
+         tal:replace="structure product/@@+listing-detailed" />
+      <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+     </div>
+  </body>
+</html>
+</tal:layout>
