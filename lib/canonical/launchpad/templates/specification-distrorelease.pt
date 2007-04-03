@@ -15,7 +15,7 @@
     <p metal:fill-slot="extra_info">
       Select the release of
       <span tal:replace="context/distribution/displayname">Ubuntu</span>
-      for which this specification should be a feature goal.
+      for which this blueprint should be a feature goal.
     </p>
 
   </div>

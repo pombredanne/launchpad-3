@@ -1,10 +1,5 @@
 <tal:do-this-first tal:content="view/process_form" />
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
   <head metal:fill-slot="head_epilogue">
     <meta name="robots" content="noindex">
   </head>
@@ -207,4 +202,3 @@
     </div>
   </body>
 </html>
-</tal:layout>

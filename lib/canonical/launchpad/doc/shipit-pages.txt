@@ -43,7 +43,7 @@ StandardShipItRequests.
     >>> 'ShipIt is currently closed' in html
     False
 
-    >>> myrequest_view.standardShipItRequests = lambda: []
+    >>> myrequest_view.is_open = False
     >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'How many CDs would you like?' in html
     False

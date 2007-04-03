@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
-        <tal:icon replace="structure context/fmt:icon" />
+        <tal:icon replace="structure context/image:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>

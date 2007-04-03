@@ -63,6 +63,7 @@
         </p>
 
         <form action="" method="POST" name="editactive">
+          <input type="hidden" name="editactive" value="1" />
           <table>
           <tr>
             <th>Member since:</th>
@@ -82,13 +83,13 @@
                 <label for="admin">
                   <input tal:attributes="checked python:view.adminIsSelected()
                                                  and 'checked' or ''"
-                         type="radio" value="yes" name="admin" id="admin" />
+                         type="radio" value="yes" name="admin" id="admin"/>
                   Yes
                 </label>
                 <label for="notadmin">
                   <input tal:attributes="checked python:not view.adminIsSelected()
                                                  and 'checked' or ''"
-                         type="radio" value="no" name="admin" id="notadmin" />
+                         type="radio" value="no" name="admin" id="notadmin"/>
                   No
                 </label>
               </tal:can-change>
@@ -120,8 +121,8 @@
           <tr>
             <th />
             <td>
-              <input type="submit" value="Change" id="change-submit" name="editactive" />
-              <input type="submit" value="Deactivate" id="deactivate-submit" name="editactive" />
+              <input type="submit" value="Change" name="change" />
+              <input type="submit" value="Deactivate" name="deactivate" />
             </td>
           </tr>
         </table>
@@ -144,6 +145,7 @@
         </p>
 
         <form action="" method="POST" name="editinactive">
+          <input type="hidden" name="editinactive" value="1" />
           <table>
           <tr>
             <th>Became member:</th>
@@ -201,9 +203,9 @@
           <tr>
             <td colspan="2" align="right">
               <input tal:condition="view/isExpired" type="submit" value="Renew"
-                     name="editinactive" />
+                     name="renew" />
               <input tal:condition="view/isDeactivated" type="submit"
-                     value="Reactivate" name="editinactive" />
+                     value="Reactivate" name="reactivate" />
             </td>
           </tr>
         </table>
@@ -222,6 +224,7 @@
         </p>
 
         <form action="" method="POST" name="editproposed">
+          <input type="hidden" name="editproposed" value="1" />
           <table>
             <tr>
               <th>Applied:</th>
@@ -249,8 +252,8 @@
             <tr>
               <th />
               <td>
-                <input type="submit" value="Approve" name="editproposed" />
-                <input type="submit" value="Decline" name="editproposed" />
+                <input type="submit" value="Approve" name="approve" />
+                <input type="submit" value="Decline" name="decline" />
               </td>
             </tr>
           </table>

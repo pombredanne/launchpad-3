@@ -10,17 +10,25 @@ Bug Tasks on Bug Targets
 An IBugTarget provides various attributes for manipulating its
 bugtasks. Here are some examples, using Debian mozilla-firefox:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import IBugTarget, IDistributionSet
 
     >>> distroset = getUtility(IDistributionSet)
     >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
+    >>> verifyObject(IBugTarget, debian_firefox)
+    True
 
 Open bugtasks:
 
     >>> [bugtask.bug.id for bugtask in debian_firefox.open_bugtasks]
     [1, 2, 3]
+
+Closed bugtasks:
+
+    >>> [bugtask.bug.id for bugtask in debian_firefox.closed_bugtasks]
+    [8]
 
 For the next couple of examples, we'll temporarily modify some bugtask
 values to have some sample data for examples following.

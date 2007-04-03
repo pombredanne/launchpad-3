@@ -21,10 +21,5 @@
 
   </div>
 
-  <div metal:fill-slot="help">
-    <p>This form can be used to update the summary for the
-    specification branch relationship, or to delete the
-    relationship.</p>
-  </div>
 </body>
 </html>

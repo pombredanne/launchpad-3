@@ -605,30 +605,30 @@ class TwistedLayer(LaunchpadZopelessLayer):
 
     @classmethod
     def tearDown(cls):
-        # TrialSuite._bail cleans up the threadpool and initiates a reactor
-        # shutdown event. This ensures that the process will terminate cleanly.
-
-        # XXX - this may not be necessary given the code in testSetUp and
-        # testTearDown. Experiment.
-        # -- Jonathan Lange, 2007-03-22
-        TrialSuite()._bail()
+        pass
 
     @classmethod
     def testSetUp(cls):
-        cls.testTearDown()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
         if interfaces.IReactorThreads.providedBy(reactor):
-            if hasattr(reactor, 'threadpool') and reactor.threadpool:
+            pool = getattr(reactor, 'threadpool', None)
+            # If the Twisted threadpool has been obliterated (probably by
+            # testTearDown), then re-build it using the values that Twisted
+            # uses.
+            if pool is None:
                 reactor.threadpool = threadpool.ThreadPool(0, 10)
                 reactor.threadpool.start()
 
     @classmethod
     def testTearDown(cls):
+        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
+        # threads.
         from twisted.internet import interfaces, reactor
         if interfaces.IReactorThreads.providedBy(reactor):
             reactor.suggestThreadPoolSize(0)
-            if hasattr(reactor, 'threadpool') and reactor.threadpool:
+            pool = getattr(reactor, 'threadpool', None)
+            if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
 
