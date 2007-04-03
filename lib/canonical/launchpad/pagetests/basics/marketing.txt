@@ -23,8 +23,10 @@ That features three large tabs: "Overview", "Log In / Register", and
     >>> account_link.url
     'http://launchpad.dev/+about/+login'
 
-    >>> tour_link = browser.getLink('Take a tour')
-    >>> tour_link.url
+    >>> tour_link = browser.getLink('Take a tour').click()
+    >>> print browser.title
+    Launchpad tour: ...
+    >>> browser.url
     'http://launchpad.dev/+tour'
 
 == About each application ==

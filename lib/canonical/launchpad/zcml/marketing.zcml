@@ -11,7 +11,7 @@
         permission="zope.Public"
         template="../templates/marketing-main-template.pt"
         />
-    <browser:page
+    <browser:view
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="marketing_breadcrumb_name"
         permission="zope.Public"
@@ -23,14 +23,10 @@
         name="marketing_subnavigation"
         permission="zope.Public"
         />
-
-    <!-- XXX flacoste 2007/03/30 Redirect the generic +tour to the code
-         +tour page which is the first page in the tour. -->
-    <browser:renamed-page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+    <browser:tour
         name="+tour"
-        new_name="+tour"
-        rootsite="code"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        tour="../templates/marketing-launchpad-tour.xml"
         />
 
     <!-- Marketing Microsite Home Page -->

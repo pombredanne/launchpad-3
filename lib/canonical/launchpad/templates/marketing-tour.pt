@@ -24,7 +24,7 @@
 
     <div id="secondary"
          tal:define="screen view/current_screen">
-      <p id="summary" tal:content="screen/summary">Screen summary</p>
+      <div id="summary" tal:content="structure screen/summary">Screen summary</div>
 
       <div id="pane">
         <div class="screen">
