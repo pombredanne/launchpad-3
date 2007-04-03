@@ -1,12 +1,19 @@
 <metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
   <metal:top_slot define-slot="top" />
-  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+        tal:define="
+          icingrev string:4;
+          vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs;
+          icingroot string:${vhosts/mainsite/rooturl}+icing/rev${icingrev};
+          site_message modules/canonical.config/config/launchpad/site_message;
+          ">
     <head>
       <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
       <link
         rel="stylesheet"
         href="/+icing/marketing-style.css"
+        tal:attributes="href string:${icingroot}/marketing-style.css"
         type="text/css"
         media="screen"
       />
@@ -14,13 +21,19 @@
       <link
         rel="stylesheet"
         href="/+icing/marketing-winie.css"
+        tal:attributes="href string:${icingroot}/marketing-winie.css"
         type="text/css"
         media="screen"
       />
       <![endif]-->
     </head>
-    <body tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
-      <a id="top"></a>
+    <body>
+      <div id="globalheader" tal:condition="site_message">
+        <div class="sitemessage" tal:content="structure site_message"/>
+        <img class="launchpad" width="90" height="20"
+             tal:attributes="src string:${icingroot}/globalheader_launchpad_bg.gif"
+             alt="Launchpad"/>
+      </div>
       <div id="breadcrumb">
         <dl>
           <dt>Your location:</dt>
