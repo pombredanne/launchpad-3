@@ -6,8 +6,7 @@
           icingrev string:4;
           vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs;
           icingroot string:${vhosts/mainsite/rooturl}+icing/rev${icingrev};
-          site_message modules/canonical.config/config/launchpad/site_message;
-          ">
+          site_message modules/canonical.config/config/launchpad/site_message;">
     <head>
       <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
       <link
@@ -38,15 +37,23 @@
         <dl>
           <dt>Your location:</dt>
           <dd>
-            <ul metal:define-slot="breadcrumbs">
-              <li><a href="/">Home</a></li>
+            <ul>
+              <li><a href="/"
+                     tal:attributes="href vhosts/mainsite/rooturl"
+                     >Home</a></li>
+              <li class="current"
+                  tal:content="context/@@marketing_breadcrumb_name">
+                About
+              </li>
             </ul>
           </dd>
         </dl>
       </div> <!-- breadcrumb -->
       <div id="wrapper">
         <div id="header">
-          <h1><a href="/" title="Launchpad">Launchpad</a></h1>
+          <h1><a href="/"
+                 tal:attributes="href vhosts/mainsite/rooturl"
+                 >Launchpad</a></h1>
           <dl id="navigation">
             <dt>Navigation<dt>
             <dd>

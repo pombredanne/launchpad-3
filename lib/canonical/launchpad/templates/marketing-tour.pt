@@ -1,32 +1,5 @@
 <html metal:use-macro="context/@@marketing_template/master">
 <body>
-  <div id="breadcrumb">
-    <dl>
-      <dt>Your location:</dt>
-      <dd>
-        <ul metal:fill-slot="breadcrumbs">
-          <li><a href="/">Home</a></li>
-          <li class="current">Take a tour</li>
-        </ul>
-      </dd>
-    </dl>
-  </div>
-
-  <dl metal:fill-slot="navigation"
-      id="sub-navigation">
-    <dt>Sub-navigation<dt>
-    <dd>
-      <ul>
-        <li><a href="+about">Overview</a></li>
-        <li class="current"><a href="+tour">Application tour</a></li>
-        <li><a href="+faq">FAQs</a></li>
-      </ul>
-      <ul id="global">
-        <li><a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#102;&#101;&#101;&#100;&#98;&#97;&#99;&#107;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">Contact us</a></li>
-      </ul>
-    </dd>
-  </dl>
-
   <div id="tour" metal:fill-slot="contents">
     <div id="primary">
       <h2 tal:content="view/title">App Name</h2>

@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
-__all__ = ['MarketingSubnavigationView']
+__all__ = [
+    'MarketingBreadcrumbNameView',
+    'MarketingSubnavigationView'
+    ]
 
 
 from canonical.launchpad.helpers import convertToHtmlCode
@@ -85,3 +88,20 @@ class MarketingSubnavigationView:
               'tour_selected_class': self.tour_selected_class,
               'contact_email': convertToHtmlCode(
                 'mailto:feedback@launchpad.net')}
+
+
+class MarketingBreadcrumbNameView:
+    """View helper for the breadcrumbs on the marketing pages."""
+
+    def __call__(self):
+        """Render the name that should appear in the current breadcrumb."""
+        url = str(self.request.URL)
+        if url.endswith('+about'):
+            return u'About'
+        elif url.endswith('+faq'):
+            return u'FAQs'
+        elif url.endswith('+tour'):
+            return u'Take a tour'
+        else:
+            assert False, "Can't find breadcrumb name from URL: %s" % url
+

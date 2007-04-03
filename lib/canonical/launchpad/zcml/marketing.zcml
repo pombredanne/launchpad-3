@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Marketing templates used as macros. -->
+    <!-- Marketing template master macro. -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="marketing_template"
@@ -13,15 +13,9 @@
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_about_template"
+        name="marketing_breadcrumb_name"
         permission="zope.Public"
-        template="../templates/marketing-about-template.pt"
-        />
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_faq_template"
-        permission="zope.Public"
-        template="../templates/marketing-faq-template.pt"
+        class="canonical.launchpad.browser.MarketingBreadcrumbNameView"
         />
     <browser:view
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
