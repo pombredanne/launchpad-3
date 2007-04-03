@@ -21,7 +21,6 @@ __all__ = [
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
-    'SearchProjectsView',
     'DefaultShortLink',
     'BrowserWindowDimensions',
     ]
@@ -51,6 +50,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -129,11 +129,12 @@ class MaloneApplicationNavigation(Navigation):
 
     @stepto('projects')
     def projects(self):
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):
-        return getUtility(IProductSet)
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
@@ -178,45 +179,30 @@ class Breadcrumbs(LaunchpadView):
         crumbs = list(self.request.breadcrumbs)
 
         L = []
-        firsturl = '/'
         firsttext = 'Home'
+        firsturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
-            '<li lpm:mid="root" class="item container"><a href="%s"><em>%s</em></a></li>'
+            '<li lpm:mid="root" class="item">'
+            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
+            '<em><span>%s</span></em></a></li>'
             % (firsturl, cgi.escape(firsttext)))
 
         if crumbs:
 
-            #lastcrumb = crumbs.pop()
-
             for crumb in crumbs:
-                # XXX: SteveAlexander, 2006-06-09, this is putting the
-                #      full URL in as the lpm:mid.  We want just the path
-                #      here instead.
-                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
-                ##         '<a href="%s">%s</a>'
-                ##         '</li>'
-                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
-
-                # Disable these menus for now.  To be re-enabled on the ui 1.0
-                # branch.
                 if crumb.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'item container'
+                    cssclass = 'breadcrumb container'
                 else:
                     menudata = ''
-                    cssclass = 'item'
-                L.append('<li class="%s"%s>'
-                         '<a href="%s"><em>%s</em></a>'
+                    cssclass = 'breadcrumb'
+                L.append('<li class="item"%s>'
+                         '<a href="%s" class="%s"><em>%s</em></a>'
                          '</li>'
-                         % (cssclass, menudata, crumb.url,
+                         % (menudata, crumb.url, cssclass,
                             cgi.escape(crumb.text)))
 
-            #L.append(
-            #    '<li class="item">'
-            #    '<a href="%s">%s</a>'
-            #    '</li>'
-            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
@@ -438,12 +424,12 @@ class LaunchpadRootNavigation(Navigation):
     usedfor = ILaunchpadRoot
 
     stepto_utilities = {
-        'products': IProductSet,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
-        'projects': IProjectSet,
+        'projects': IProductSet,
+        'projectgroups': IProjectSet,
         'token': ILoginTokenSet,
         'karmaaction': IKarmaActionSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -463,6 +449,11 @@ class LaunchpadRootNavigation(Navigation):
         #'malone': IMaloneApplication,
         #'rosetta': IRosettaApplication,
         }
+
+    @stepto('products')
+    def products(self):
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         if name in self.stepto_utilities:
@@ -739,11 +730,19 @@ class File:
 here = os.path.dirname(os.path.realpath(__file__))
 
 class IcingFolder:
-    """View that gives access to the files in a folder."""
+    """View that gives access to the files in a folder.
+
+    The URL to the folder can start with an optional path step like
+    /revNNN/ where NNN is one or more digits.  This path step will
+    be ignored.  It is useful for having a different path for
+    all resources being served, to ensure that we don't use cached
+    files in browsers.
+    """
 
     implements(IBrowserPublisher)
 
     folder = '../icing/'
+    rev_part_re = re.compile('rev\d+$')
 
     def __init__(self, context, request):
         """Initialize with context and request."""
@@ -752,15 +751,20 @@ class IcingFolder:
         self.names = []
 
     def __call__(self):
-        if not self.names:
+        names = list(self.names)
+        if names and self.rev_part_re.match(names[0]):
+            # We have a /revNNN/ path step, so remove it.
+            names = names[1:]
+
+        if not names:
             # Just the icing directory, so make this a 404.
             raise NotFound(self, '')
-        elif len(self.names) > 1:
+        elif len(names) > 1:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
-            name = self.names[0]
+            [name] = names
             return self.prepareDataForServing(name)
 
     def prepareDataForServing(self, name):
@@ -926,7 +930,7 @@ class Button:
             '  <img'
             '    width="64"'
             '    height="64"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -938,7 +942,7 @@ class Button:
             '  <img'
             '    width="64"'
             '    height="64"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -950,7 +954,7 @@ class Button:
             '  <img'
             '    width="146"'
             '    height="146"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -1011,30 +1015,6 @@ class ApplicationButtons(LaunchpadView):
             raise AssertionError(
                 'Max of one path item after +applicationbuttons')
         return self
-
-
-class SearchProjectsView(LaunchpadView):
-    """The page where people can search for Projects/Products/Distros."""
-
-    results = None
-    search_string = ""
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def initialize(self):
-        form = self.request.form
-        self.search_string = form.get('q')
-        if not self.search_string:
-            return
-
-        search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
-        self.results = getUtility(IPillarNameSet).search(search_string, limit)
-
-    def tooManyResultsFound(self):
-        return len(self.results) > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):

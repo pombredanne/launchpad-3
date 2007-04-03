@@ -235,7 +235,8 @@ as needed.
   ...     revision_date=date,
   ...     revision_author='ddaa@localhost',
   ...     owner=admins,
-  ...     parent_ids=['rev-1', 'rev-2'])
+  ...     parent_ids=['rev-1', 'rev-2'],
+  ...     properties={u'key': u'value'})
   >>> print revision.revision_id
   rev-3
   >>> print revision.log_body
@@ -248,6 +249,8 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
+  >>> print revision.getProperties()
+  {u'key': u'value'}
 
 == IRevisionSet.getRevisionHistoryForBranch() ==
 
@@ -267,4 +270,3 @@ This method returns a list of strings in the same way that bzrlib does.
   foo@localhost-20051031170008-098959758bf79803
   foo@localhost-20051031170239-5fce7d6bd3f01efc
   foo@localhost-20051031170357-1301ad6d387feb23
-  

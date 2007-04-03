@@ -20,7 +20,7 @@
           </a>
         </li>
         <li>
-          <a href="/+import">
+          <a href="https://help.launchpad.net/VcsImports">
             <img
               alt="Import your project"
               src="/+icing/but-lrg-importyourproject.gif"
@@ -28,7 +28,7 @@
           </a>
         </li>
       </ul>
-                        <form class="central" action="/products" method="get">
+                        <form class="central" action="/projects/" method="get">
                           <input
                             id="text"
                             type="text"

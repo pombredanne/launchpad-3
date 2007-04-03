@@ -19,7 +19,7 @@ Any user can request a fix for it.
     >>> user_browser.getControl('Distribution').value = ['gentoo']
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/gentoo/+bug/4'
+    'http://bugs.launchpad.dev/gentoo/+bug/4'
 
 == A distribution not using Malone ==
 
@@ -40,4 +40,4 @@ link to a external bug for it.
     ...     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234')
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/gentoo/+bug/7'
+    'http://bugs.launchpad.dev/gentoo/+bug/7'

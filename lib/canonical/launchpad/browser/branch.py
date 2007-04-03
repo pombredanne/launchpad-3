@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import ContextWidget
 
 
@@ -150,6 +151,22 @@ class BranchView(LaunchpadView):
             return self.context.url
         else:
             return self.supermirror_url()
+
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
+
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
+        else:
+            return self.context.mirror_failures
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""

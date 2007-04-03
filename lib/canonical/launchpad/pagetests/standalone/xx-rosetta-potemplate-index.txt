@@ -24,6 +24,6 @@ same product.
   ... """)
   HTTP/1.1 200 Ok
   ...These templates came from the same source as this one:...
-  ...<a href="http://.../evolution/trunk/+pots/evolution-2.2">evolution-2.2 in Evolution trunk</a>
+  ...<a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2 in Evolution trunk</a>
   ...
 

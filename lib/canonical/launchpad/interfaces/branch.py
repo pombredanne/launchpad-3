@@ -27,8 +27,6 @@ from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.interfaces.validation import valid_branch_url
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
@@ -114,9 +112,6 @@ class IBranch(IHasOwner):
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
-    started_at = Int(title=_('Started At'), required=False,
-        description=_("The number of the first revision"
-                      " to display on that branch."))
 
     # People attributes
     """Product owner, it can either a valid Person or Team
@@ -133,12 +128,6 @@ class IBranch(IHasOwner):
         title=_('Product'), required=False, vocabulary='Product',
         description=_("The product this branch belongs to."))
     product_name = Attribute("The name of the product, or '+junk'.")
-    branch_product_name = Attribute(
-        "The product name specified within the branch.")
-    product_locked = Bool(
-        title=_("Product Locked"),
-        description=_("Whether the product name specified within the branch "
-                      " is overriden by the product name set in Launchpad."))
 
     # Display attributes
     unique_name = Attribute(
@@ -156,12 +145,6 @@ class IBranch(IHasOwner):
         allow_userinfo=False,
         description=_("The URL of a web page describing the branch, "
                       "if there is such a page."))
-    branch_home_page = Attribute(
-        "The home page URL specified within the branch.")
-    home_page_locked = Bool(
-        title=_("Home Page Locked"),
-        description=_("Whether the home page specified within the branch "
-                      " is overriden by the home page set in Launchpad."))
 
     # Stats and status attributes
     lifecycle_status = Choice(
@@ -176,28 +159,7 @@ class IBranch(IHasOwner):
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
-    landing_target = Choice(
-        title=_('Landing Target'), vocabulary='Branch',
-        required=False, default=None,
-        description=_(
-        "The target branch the author would like to see this branch merged "
-        "into eventually"))
-
-    current_delta_url = Attribute(
-        "URL of a page showing the delta produced "
-        "by merging this branch into the landing branch.")
-    current_diff_adds = Attribute(
-        "Count of lines added in merge delta.")
-    current_diff_deletes = Attribute(
-        "Count of lines deleted in the merge delta.")
-    current_conflicts_url = Attribute(
-        "URL of a page showing the conflicts produced "
-        "by merging this branch into the landing branch.")
-    current_activity = Attribute("Current branch activity.")
-    stats_updated = Attribute("Last time the branch stats were updated.")
-
     # Mirroring attributes
-
     last_mirrored = Datetime(
         title=_("Last time this branch was successfully mirrored."),
         required=False)
@@ -229,7 +191,6 @@ class IBranch(IHasOwner):
         description=_("The number of revisions in the branch")
         )
 
-    cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
         "This is for in-datacentre services only and allows such services to "
