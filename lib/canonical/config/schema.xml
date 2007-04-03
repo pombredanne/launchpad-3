@@ -224,6 +224,12 @@ k            </description>
             only launchpad admins may access the site.
             </description>
         </key>
+        <key name="site_message" datatype="string" default="">
+            <description>
+            If this is provided, the message given in the string will appear
+            in the site status bar at the top of every page.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"

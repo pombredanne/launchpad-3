@@ -1,18 +1,8 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
-D xmlns:browser="http://namespaces.zope.org/browser"
-D xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-D i18n_domain="canonical.launchpad">
-D
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.LaunchpadRootDynMenu"
-      attribute="__call__"
-      name="+menudata"
-      />
-
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+  i18n_domain="canonical.launchpad">
 
 <!-- Error pages -->
   <!-- System Errors -->
@@ -127,20 +117,6 @@ D
       />
 
   <browser:page
-      name="+search"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.browser.SearchProjectsView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -171,6 +147,15 @@ D
       template="../templates/launchpad-restrictedinfo.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
+  <!-- Other non-application-specific pages. -->
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -253,7 +238,7 @@ D
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
-  
+
 </facet>
 
 <!--
