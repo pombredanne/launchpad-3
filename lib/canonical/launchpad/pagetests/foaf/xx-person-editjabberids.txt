@@ -3,7 +3,7 @@
 Users can register in their Launchpad profile Jabber IDs that they
 can be reached with.
 
-== Adding and dditing an ID ==
+== Adding and editing an ID ==
 
 To register a Jabber ID with his account, the user visits his
 profile page and use the 'Update Jabber IDs' action.
