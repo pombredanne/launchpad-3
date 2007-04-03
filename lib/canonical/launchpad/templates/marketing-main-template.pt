@@ -57,6 +57,20 @@
         </div> <!-- header -->
         <div id="main">
           <metal:contents define-slot="contents" />
+
+          <div id="applications-footer"
+               tal:define="page python:request.get('PATH_INFO').split('/')[-1]">
+            <a tal:attributes="href string:${vhosts/code/rooturl}$page"
+               >Code</a> |
+            <a tal:attributes="href string:${vhosts/bugs/rooturl}$page"
+               >Bugs</a> |
+            <a tal:attributes="href string:${vhosts/blueprints/rooturl}$page"
+               >Blueprints</a> |
+            <a tal:attributes="href string:${vhosts/translations/rooturl}$page"
+               >Translations</a> |
+            <a tal:attributes="href string:${vhosts/answers/rooturl}$page"
+               >Answers</a>
+          </div>
         </div> <!-- main -->
         <div id="footer">
           <p class="left">Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a></p>

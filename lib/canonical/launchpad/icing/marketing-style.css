@@ -461,29 +461,29 @@ body#tour #header dl#navigation ul li#liTour a {
   text-decoration: underline;
 }
 
-#main ul#tools li#liBlueprints a {
-    background-image: url(app-blueprints.gif);
-    color: #57A3C6;
+#tools #liCode a {
+    background-image: url(app-code.gif);
+    color: #BE7A35;
 }
 
-#main ul#tools li#liBugs a {
+#tools #liBugs a {
     background-image: url(app-bugs.gif);
     color: #B43242;
 }
 
-#main ul#tools li#liAnswers a {
-    background-image: url(app-answers.gif);
-    color: #20209D;
+#tools #liBlueprints a {
+    background-image: url(app-blueprints.gif);
+    color: #57A3C6;
 }
 
-#main ul#tools li#liTranslations a {
+#tools #liTranslations a {
     background-image: url(app-translations.gif);
     color: #A32377;
 }
 
-#main ul#tools li#liCode a {
-    background-image: url(app-code.gif);
-    color: #BE7A35;
+#tools #liAnswers a {
+    background-image: url(app-answers.gif);
+    color: #20209D;
 }
 
 #main h3.splash {
@@ -635,6 +635,21 @@ body#tour #header dl#navigation ul li#liTour a {
 }
 
 /* Footer */
+
+#applications-footer {
+    clear: both;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#applications-footer a {
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+#applications-footer a:hover {
+    text-decoration: underline;
+}
 
 #footer { letter-spacing: 1px;}
 
