@@ -24,11 +24,8 @@ managed archive.
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
   >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
-
-import logging
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, mock_options, mock_logger, mock_logger_quiet)
 
 The policy we feed to to the nascent upload needs to have its command
 line options passed in.
@@ -40,97 +37,48 @@ line options passed in.
   >>> class BuilddOptions(MockOptions):
   ...     buildid = 1
 
+
 When initially constructing a NascentUpload instance, it verifies that
 the changes file specified exists, raising FileNotFound if it does not.
 
   >>> buildd_policy = findPolicyByName('buildd')
   >>> buildd_policy.setOptions(BuilddOptions())
-  >>> NascentUpload(datadir("DOES-NOT-EXIST"), buildd_policy)
+
+  >>> NascentUpload(datadir("DOES-NOT-EXIST"), buildd_policy, mock_logger)
   Traceback (most recent call last):
   ...
   FatalUploadError:...
 
-  >>> insecure_policy = findPolicyByName('insecure')
-  >>> insecure_policy.setOptions(MockOptions())
-  >>> insecure_policy.can_upload_binaries = True
-  >>> insecure_policy.can_upload_mixed = True
-
-  >>> ed_upload = NascentUpload(
-  ...     datadir("ed_0.2-20_i386.changes"), insecure_policy)
-  DEBUG: Verifying signature on ed_0.2-20_i386.changes
-
-  >>> ed_upload.changes.filepath == datadir("ed_0.2-20_i386.changes")
-  True
-
-  >>> ed_upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Performing DSC verification.
-  DEBUG: Verifying signature on ed_0.2-20.dsc
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Verifying source file ed_0.2-20.dsc
-  DEBUG: Verifying uploaded source package by unpacking it.
-  DEBUG: Cleaning up source tree.
-  DEBUG: Done
-  DEBUG: Verifying source file ed_0.2-20.diff.gz
-  DEBUG: Verifying binary ed_0.2-20_i386.deb
-  DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
-  DEBUG: Finding and applying overrides.
-  DEBUG: Checking for ed/0.2-20 source ancestry
-  DEBUG: ed: (source) NEW
-  DEBUG: Checking for ed/0.2-20/i386 binary ancestry
-  DEBUG: ed: (binary) NEW
-  DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
-  DEBUG: Finished checking upload.
-
-  >>> print ed_upload.rejection_message
-
-Going back to the upload itself, at a very basic level a NascentUpload
-allows us to probe the contents of the changes file to see things like
-the maintainer.
-
-  >>> ed_upload.changes.maintainer['rfc822']
-  'James Troup <james@nocrew.org>'
-
-We can also extract the list of files from the upload. If this raises
-an exception then the file list is utterly broken.
-
-  >>> for uploaded_file in ed_upload.changes.files:
-  ...     print uploaded_file.filename
-  ed_0.2-20.dsc
-  ed_0.2-20.diff.gz
-  ed_0.2-20_i386.deb
-
-The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
-
-  >>> ed_upload.sourceful
-  True
-  >>> ed_upload.binaryful
-  True
-  >>> ed_upload.archindep
-  False
-  >>> ed_upload.archdep
-  True
+XXX
 
   >>> buildd_policy = findPolicyByName('buildd')
   >>> buildd_policy.setOptions(BuilddOptions())
   >>> buildd_policy.can_upload_source = True
   >>> buildd_policy.can_upload_mixed = True
+
   >>> ed_source_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
-  ...     buildd_policy)
+  ...     buildd_policy, mock_logger_quiet)
+
   >>> ed_source_upload.process()
+
   >>> ed_source_upload.sourceful
   True
+
   >>> ed_source_upload.binaryful
   False
 
+XXX
+
   >>> buildd_policy = findPolicyByName('buildd')
   >>> buildd_policy.setOptions(BuilddOptions())
+
   >>> ed_binary_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.binary-only-unsigned"),
-  ...     buildd_policy)
+  ...     buildd_policy, mock_logger_quiet)
+
   >>> ed_binary_upload.process()
+
   >>> ed_binary_upload.sourceful
   False
   >>> ed_binary_upload.binaryful
@@ -147,6 +95,25 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_binary_upload.hasorig
   False
 
+We can distinguish between the arch-indep and arch-dep binary uploads.
+
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
+  >>> quodlibet = NascentUpload(
+  ...     datadir("quodlibet_0.13.1-1_i386.changes"),
+  ...     buildd_policy, mock_logger_quiet)
+
+  >>> quodlibet.process()
+
+  >>> quodlibet.sourceful
+  False
+  >>> quodlibet.binaryful
+  True
+  >>> quodlibet.archdep
+  True
+  >>> quodlibet.archindep
+  True
+
 
 If the Architecture line does not match then we get an exception.
 
@@ -157,46 +124,12 @@ If the Architecture line does not match then we get an exception.
 
   >>> ed_mismatched_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
-  ...     buildd_policy)
+  ...     buildd_policy, mock_logger_quiet)
   >>> ed_mismatched_upload.process()
 
-  >>> ed_mismatched_upload.sourceful
-  True
   >>> print ed_mismatched_upload.rejection_message
+  ed_0.2-20_i386.deb: control file lists arch as 'i386' which isn't in the changes file.
 
-
-We can distinguish between the arch-indep and arch-dep binary uploads.
-
-  >>> buildd_policy = findPolicyByName('buildd')
-  >>> buildd_policy.setOptions(BuilddOptions())
-  >>> quodlibet = NascentUpload(
-  ...     datadir("quodlibet_0.13.1-1_i386.changes"),
-  ...     buildd_policy)
-  DEBUG: Changes file can be unsigned.
-
-  >>> quodlibet.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Verifying binary quodlibet_0.13.1-1_all.deb
-  DEBUG: Verifying timestamps in quodlibet_0.13.1-1_all.deb
-  DEBUG: Verifying binary quodlibet-ext_0.13.1-1_i386.deb
-  DEBUG: Verifying timestamps in quodlibet-ext_0.13.1-1_i386.deb
-  DEBUG: Finding and applying overrides.
-  DEBUG: Checking for quodlibet/0.13.1-1/all binary ancestry
-  DEBUG: quodlibet: (binary) NEW
-  DEBUG: Checking for quodlibet-ext/0.13.1-1/i386 binary ancestry
-  DEBUG: quodlibet-ext: (binary) NEW
-  DEBUG: No signer, therefore ACL not processed
-  DEBUG: Finished checking upload.
-  >>> quodlibet.sourceful
-  False
-  >>> quodlibet.binaryful
-  True
-  >>> quodlibet.archdep
-  True
-  >>> quodlibet.archindep
-  True
 
 Let's start a new upload, mixed-mode.
 
@@ -205,27 +138,20 @@ Let's start a new upload, mixed-mode.
   >>> insecure_policy.can_upload_binaries = True
   >>> insecure_policy.can_upload_mixed = True
 
-  >>> ed_upload = NascentUpload(
-  ...     datadir("ed_0.2-20_i386.changes"), insecure_policy)
+  >>> ed_mixed_upload = NascentUpload(
+  ...     datadir("ed_0.2-20_i386.changes"), insecure_policy, mock_logger)
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
 
 The upload can extract distributions and distroreleases if it tries
 
-  >>> ed_upload.policy.distro.name
+  >>> ed_mixed_upload.policy.distro.name
   u'ubuntu'
-  >>> ed_upload.policy.distrorelease.name
+  >>> ed_mixed_upload.policy.distrorelease.name
   u'hoary'
 
 Finally we can ask the upload to process itself.
-  >>> from canonical.launchpad.database import (
-  ...     SourcePackageName, BinaryPackageName, DistroRelease)
-  >>> hoary = DistroRelease.get(3)
-  >>> saved_list = hoary.changeslist
-  >>> hoary.changeslist = "dapper-announce@lists.ubuntu.com"
-  >>> hoary.sync()
-  >>> ed_upload.policy.distrorelease.changeslist
-  u'dapper-announce@lists.ubuntu.com'
-  >>> ed_upload.process()
+
+  >>> ed_mixed_upload.process()
   DEBUG: Beginning processing.
   DEBUG: Performing DSC verification.
   DEBUG: Verifying signature on ed_0.2-20.dsc
@@ -245,17 +171,57 @@ Finally we can ask the upload to process itself.
   DEBUG: ed: (binary) NEW
   DEBUG: Foo Bar (16) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
-  >>> print ed_upload.rejection_message+"\nEND"
+
+  >>> print ed_mixed_upload.rejection_message+"\nEND"
   END
-  >>> ed_upload.is_rejected
+
+  >>> ed_mixed_upload.is_rejected
   False
 
-  >>> [f.filename for f in ed_upload.changes.binary_package_files]
-  ['ed_0.2-20_i386.deb']
-  >>> [f.filename for f in ed_upload.changes.binary_package_files]
+Going back to the upload itself, at a very basic level a NascentUpload
+allows us to probe the contents of the changes file to see things like
+the maintainer.
+
+  >>> ed_mixed_upload.changes.maintainer['rfc822']
+  'James Troup <james@nocrew.org>'
+
+We can also extract the list of files from the upload. If this raises
+an exception then the file list is utterly broken.
+
+  >>> for uploaded_file in ed_mixed_upload.changes.files:
+  ...     print uploaded_file.filename
+  ed_0.2-20.dsc
+  ed_0.2-20.diff.gz
+  ed_0.2-20_i386.deb
+
+  >>> [f.filename for f in ed_mixed_upload.changes.binary_package_files]
   ['ed_0.2-20_i386.deb']
 
-  >>> success, msgs = ed_upload.do_accept()
+The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
+
+  >>> ed_mixed_upload.sourceful
+  True
+  >>> ed_mixed_upload.binaryful
+  True
+  >>> ed_mixed_upload.archindep
+  False
+  >>> ed_mixed_upload.archdep
+  True
+
+Tweak hoary distrorelease to have the right changeslist address:
+
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageName, BinaryPackageName, DistroRelease)
+  >>> hoary = DistroRelease.get(3)
+  >>> saved_list = hoary.changeslist
+  >>> hoary.changeslist = "dapper-announce@lists.ubuntu.com"
+  >>> hoary.sync()
+
+  >>> ed_mixed_upload.policy.distrorelease.changeslist
+  u'dapper-announce@lists.ubuntu.com'
+
+
+  >>> success, msgs = ed_mixed_upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
@@ -347,20 +313,21 @@ Finally we can ask the upload to process itself.
 We can ask sourceful uploads if they are native or not. If they are
 not native we can find out if they have an orig.tar.gz or not.
 
-  >>> ed_upload.native
+  >>> ed_mixed_upload.native
   False
-  >>> ed_upload.hasorig
+  >>> ed_mixed_upload.hasorig
   False
 
 We can parse addresses and look them up in launchpad.
 
-  >>> addr = ed_upload.changes.parse_address("Foo Bar <foo.bar@canonical.com>")
+  >>> addr = ed_mixed_upload.changes.parse_address(
+  ...     "Foo Bar <foo.bar@canonical.com>")
   >>> addr['person'].displayname
   u'Foo Bar'
 
 If the address is unparsable, we get an error.
 
-  >>> ed_upload.changes.parse_address("Cannot Parse Me <FOOO>")
+  >>> ed_mixed_upload.changes.parse_address("Cannot Parse Me <FOOO>")
   Traceback (most recent call last):
   ...
   UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
@@ -368,14 +335,14 @@ If the address is unparsable, we get an error.
 If the email address is not yet registered and policy.create_people is True,
 a new Person will be created.
 
-  >>> orig_create_people = ed_upload.policy.create_people
-  >>> ed_upload.policy.create_people = True
-  >>> addr = ed_upload.changes.parse_address("Baz <baz@canonical.com>")
+  >>> orig_create_people = ed_mixed_upload.policy.create_people
+  >>> ed_mixed_upload.policy.create_people = True
+  >>> addr = ed_mixed_upload.changes.parse_address("Baz <baz@canonical.com>")
   >>> addr['person'].creation_rationale.name
   'SOURCEPACKAGEUPLOAD'
   >>> addr['person'].creation_comment
   u'when the ed package was uploaded to Ubuntu'
-  >>> ed_upload.policy.create_people = orig_create_people
+  >>> ed_mixed_upload.policy.create_people = orig_create_people
 
 Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 (it's the only one we have, the process to retrieve a non-published
@@ -429,9 +396,10 @@ First up, construct an upload of just the ed source...
 
   >>> sync_policy = findPolicyByName('sync')
   >>> sync_policy.setOptions(MockOptions())
+
   >>> ed_src = NascentUpload(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
-  ...     sync_policy)
+  ...     sync_policy, mock_logger_quiet)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -467,7 +435,8 @@ and sourcepackageversion for the distrorelease in question.
   >>> sync_policy = findPolicyByName('sync')
   >>> sync_policy.setOptions(MockOptions())
   >>> ed_src = NascentUpload(
-  ...     datadir('split-upload-test/ed_0.2-20_source.changes'), sync_policy)
+  ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -509,11 +478,11 @@ case, see further info in bug #55774.
   >>> sync_policy = findPolicyByName('sync')
   >>> sync_policy.setOptions(MockOptions())
   >>> sync_policy.can_upload_binaries = True
+
   >>> ed_bin = NascentUpload(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
-  ...      sync_policy)
+  ...      sync_policy, mock_logger)
   DEBUG: Changes file can be unsigned.
-
 
   >>> ed_bin.process()
   DEBUG: Beginning processing.
@@ -529,6 +498,8 @@ case, see further info in bug #55774.
 
   >>> ed_bin.is_rejected
   False
+
+  >>> print ed_bin.rejection_message
 
   >>> success, msgs = ed_bin.do_accept()
   DEBUG: Building recipients list.
@@ -556,7 +527,7 @@ to upload to -UPDATES in a DEVELOPMENT release.
   >>> sync_policy.distrorelease = None # Override this by the changes
   >>> ed_src = NascentUpload(
   ...     datadir('updates-upload-test/ed_0.2-20_source.changes'),
-  ...     sync_policy)
+  ...     sync_policy, mock_logger_quiet)
   >>> ed_src.process()
   >>> ed_src.is_rejected
   False
@@ -584,7 +555,7 @@ bug # 30741.
   >>> sync_policy.setOptions(MockOptions())
   >>> ed21_src = NascentUpload(
   ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
-  ...     sync_policy)
+  ...     sync_policy, mock_logger_quiet)
   >>> ed21_src.process()
   >>> ed21_src.is_rejected
   True
@@ -603,7 +574,7 @@ information.
   >>> sync_policy.setOptions(MockOptions())
   >>> inst_src = NascentUpload(
   ...     datadir('test75874_0.1_source.changes'),
-  ...     sync_policy)
+  ...     sync_policy, mock_logger_quiet)
   >>> inst_src.process()
 
   >>> inst_src.is_rejected
@@ -652,7 +623,7 @@ sigining key reference as an IGPGKey:
   >>> insecure_policy.setOptions(MockOptions())
   >>> bar_ok = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy)
+  ...     insecure_policy, mock_logger_quiet)
   >>> bar_ok.process()
   >>> bar_ok.is_rejected
   False
@@ -695,13 +666,13 @@ This time the upload should fail because the ACLs don't let
   >>> insecure_policy.setOptions(MockOptions())
   >>> bar_failed = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy)
+  ...     insecure_policy, mock_logger_quiet)
 
   >>> bar_failed.process()
   >>> bar_failed.is_rejected
   True
-  >>> bar_failed.rejection_message
-  'Signer has no upload rights at all to this distribution.'
+  >>> print bar_failed.rejection_message
+  Signer has no upload rights at all to this distribution.
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
 and the changesfile sigining key are stored in NascentUpload instance
@@ -731,7 +702,7 @@ that constraint.
   >>> sync_policy.can_upload_mixed = True
   >>> foo_failed = NascentUpload(
   ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
-  ...     sync_policy)
+  ...     sync_policy, mock_logger_quiet)
   >>> foo_failed.process()
 
   >>> print foo_failed.rejection_message

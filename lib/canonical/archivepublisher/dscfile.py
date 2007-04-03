@@ -135,7 +135,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     files = None
 
     def __init__(self, filepath, digest, size, component_and_section, priority,
-                 package, version, changes, policy):
+                 package, version, changes, policy, logger):
         """Construct a DSCFile instance.
 
         This takes all NascentUploadFile constructor parameters plus package
@@ -145,7 +145,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         """
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
-            package, version, changes, policy)
+            package, version, changes, policy, logger)
         try:
             self._dict = parse_tagfile(
                 self.filepath, dsc_whitespace_rules=1,
@@ -210,7 +210,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             filepath = os.path.join(self.dirname, filename)
             try:
                 file_instance = DSCUploadedFile(
-                    filepath, digest, size, self.policy)
+                    filepath, digest, size, self.policy, self.logger)
             except UploadError, error:
                 yield error
             else:
@@ -416,9 +416,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_format=encoded['format'],
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version', None),
-            component=self.converted_component,
+            component=self.component,
             changelog=guess_encoding(self.changes.simulated_changelog),
-            section=self.converted_section,
+            section=self.section,
             # dateuploaded by default is UTC:now in the database
             )
 
@@ -428,7 +428,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,
-                open(uploaded_file.full_filename, "rb"),
+                open(uploaded_file.filepath, "rb"),
                 uploaded_file.content_type)
             release.addFile(library_file)
 
@@ -447,9 +447,9 @@ class DSCUploadedFile(NascentUploadFile):
           validation inside DSCFile.verify(); there is no
           store_in_database() method.
     """
-    def __init__(self, filepath, digest, size, policy):
+    def __init__(self, filepath, digest, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
-            priority, policy)
+            priority, policy, logger)
 

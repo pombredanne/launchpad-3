@@ -20,7 +20,6 @@ explanations.
 __metaclass__ = type
 
 import apt_pkg
-import logging
 
 from zope.component import getUtility
 
@@ -70,8 +69,6 @@ class NascentUpload:
     insert into the database as a queued upload to be processed.
     """
     recipients = None
-    rejections = []
-    warnings = []
 
     # Defined in check_changes_consistency()
     sourceful = False
@@ -86,7 +83,7 @@ class NascentUpload:
     # Defined if we successfully do_accept() and store_objects_in_database()
     queue_root = None
 
-    def __init__(self, changesfile_path, policy):
+    def __init__(self, changesfile_path, policy, logger):
         """Setup a ChangesFile based on given changesfile path.
 
         May raise FatalUploadError due to unrecoverable problems building
@@ -95,10 +92,15 @@ class NascentUpload:
         """
         self.changesfile_path = changesfile_path
         self.policy = policy
+        self.logger = logger
+
+        self.rejections = []
+        self.warnings = []
 
         self.librarian = getUtility(ILibraryFileAliasSet)
         try:
-            self.changes = ChangesFile(changesfile_path, self.policy)
+            self.changes = ChangesFile(
+                changesfile_path, self.policy, self.logger)
         except UploadError, e:
             # We can't run reject() because unfortunately we don't have
             # the address of the uploader to notify -- we broke in that
@@ -138,7 +140,6 @@ class NascentUpload:
 
         self.run_and_collect_errors(self.changes.verify)
 
-
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
@@ -149,16 +150,16 @@ class NascentUpload:
         else:
             if self.sourceful and not self.policy.can_upload_source:
                 self.reject("Upload is sourceful, but policy refuses "
-                            "sourceful uploads. Policy (%r)" % self.policy)
+                            "sourceful uploads.")
 
             if self.binaryful and not self.policy.can_upload_binaries:
                 self.reject("Upload is binaryful, but policy refuses "
-                            "binaryful uploads. Policy (%r)" % self.policy)
+                            "binaryful uploads.")
 
             if (self.sourceful and self.binaryful and
                 not self.policy.can_upload_mixed):
                 self.reject("Upload is source/binary but policy refuses "
-                            "mixed uploads. Policy (%r)" % self.policy)
+                            "mixed uploads.")
 
             if self.sourceful and not self.changes.dsc:
                 self.reject(
@@ -192,12 +193,6 @@ class NascentUpload:
     #
     # Minor helpers
     #
-
-    @property
-    def logger(self):
-        """Return the common logger object."""
-        return logging.getLogger('process-upload')
-
     @property
     def filename(self):
         """Return the changesfile name."""
@@ -266,7 +261,7 @@ class NascentUpload:
             if isinstance(uploaded_file, CustomUploadFile):
                 files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
-                files_binaryful = files_binaryfull or True
+                files_binaryful = files_binaryful or True
                 files_archindep = files_archindep or uploaded_file.is_archindep
                 files_archdep = files_archdep or not uploaded_file.is_archindep
             elif isinstance(uploaded_file, SourceUploadFile):
@@ -749,7 +744,7 @@ class NascentUpload:
                 interpolations['MAINTAINERFROM'] = self.changes.changed_by[
                     'rfc2047']
 
-            recipients = self.build_recipients()
+            recipients = self.getRecipients()
 
             interpolations['RECIPIENT'] = ", ".join(recipients)
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient

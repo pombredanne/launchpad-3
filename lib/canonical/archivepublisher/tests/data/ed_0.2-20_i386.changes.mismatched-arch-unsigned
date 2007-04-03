@@ -2,7 +2,7 @@ Format: 1.7
 Date: Wed,  2 Apr 2003 17:19:47 +0100
 Source: ed
 Binary: ed
-Architecture: source
+Architecture: source amd64
 Version: 0.2-20
 Distribution: unstable
 Urgency: low

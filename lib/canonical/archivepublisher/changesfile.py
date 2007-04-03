@@ -5,7 +5,6 @@ Classes representing Changes and DSC files, which encapsulate collections of
 files uploaded.
 """
 
-import logging
 import os
 import re
 
@@ -45,7 +44,7 @@ class ChangesFile(SignableTagFile):
     filename_archtag = None
     files = None
 
-    def __init__(self, filepath, policy):
+    def __init__(self, filepath, policy, logger):
         """Process the given changesfile.
 
         Does:
@@ -62,9 +61,9 @@ class ChangesFile(SignableTagFile):
         Logger and Policy are instances built in uploadprocessor.py passed
         via NascentUpload class.
         """
-        self.policy = policy
-
         self.filepath = filepath
+        self.policy = policy
+        self.logger = logger
 
         try:
             self._dict = parse_tagfile(
@@ -130,33 +129,33 @@ class ChangesFile(SignableTagFile):
                     # with source_match.
                     file_instance = CustomUploadFile(
                         filepath, digest, size, component_and_section,
-                        priority_name, self.policy)
+                        priority_name, self.policy, self.logger)
                 elif source_match:
                     package = source_match.group(1)
                     if filename.endswith("dsc"):
                         file_instance = DSCFile(
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
-                            self.policy)
+                            self.policy, self.logger)
                         # Store the DSC because it is very convenient
                         self.dsc = file_instance
                     else:
                         file_instance = SourceUploadFile(
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
-                            self.policy)
+                            self.policy, self.logger)
                 elif binary_match:
                     package = binary_match.group(1)
                     if filename.endswith("udeb"):
                         file_instance = UdebBinaryUploadFile(
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
-                            self.policy)
+                            self.policy, self.logger)
                     else:
                         file_instance = DebBinaryUploadFile(
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
-                            self.policy)
+                            self.policy, self.logger)
                 else:
                     yield UploadError(
                         "Unable to identify file %s (%s) in changes."
@@ -195,12 +194,6 @@ class ChangesFile(SignableTagFile):
     #
     # useful properties
     #
-
-    @property
-    def logger(self):
-        """Return the common logger object."""
-        return logging.getLogger('process-upload')
-
     @property
     def filename(self):
         """Return the changesfile name."""

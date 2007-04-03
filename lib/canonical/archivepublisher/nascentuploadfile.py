@@ -17,7 +17,6 @@ __all__ = [
 
 import apt_inst
 import apt_pkg
-import logging
 import os
 import md5
 import re
@@ -108,11 +107,12 @@ class NascentUploadFile:
         }
 
     def __init__(self, filepath, digest, size, component_and_section,
-                 priority_name, policy):
+                 priority_name, policy, logger):
         self.filepath = filepath
         self.digest = digest
         self.priority_name = priority_name
         self.policy = policy
+        self.logger = logger
 
         self.size = int(size)
         self.component_name, self.section_name = (
@@ -136,12 +136,6 @@ class NascentUploadFile:
     #
     # Useful properties.
     #
-
-    @property
-    def logger(self):
-        """Return the common logger object."""
-        return logging.getLogger('process-upload')
-
     @property
     def filename(self):
         """Return the NascentUpload filename."""
@@ -275,7 +269,7 @@ class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """
 
     def __init__(self, filepath, digest, size, component_and_section,
-                 priority_name, package, version, changes, policy):
+                 priority_name, package, version, changes, policy, logger):
         """Check presence of the component and section from an uploaded_file.
 
         They need to satisfy at least the NEW queue constraints that includes
@@ -284,7 +278,7 @@ class PackageUploadFile(NascentUploadFile):
         """
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
-            priority_name, policy)
+            priority_name, policy, logger)
         self.package = package
         self.version = version
         self.changes = changes
@@ -378,11 +372,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
     source_version = None
 
     def __init__(self, filepath, digest, size, component_and_section,
-                 priority_name, package, version, changes, policy):
+                 priority_name, package, version, changes, policy, logger):
 
         PackageUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
-            priority_name, package, version, changes, policy)
+            priority_name, package, version, changes, policy, logger)
 
         if self.priority_name not in self.priority_map:
             default_priority = 'extra'
@@ -544,6 +538,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         control_arch = self.control.get("Architecture", '')
         valid_archs = [a.architecturetag
                        for a in self.policy.distrorelease.architectures]
+
         if control_arch not in valid_archs and control_arch != "all":
             yield UploadError(
                 "%s: Unknown architecture: %r" % (self.filename, control_arch))
