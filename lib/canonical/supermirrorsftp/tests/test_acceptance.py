@@ -15,12 +15,11 @@ import threading
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
-from bzrlib.tests import blackbox
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 # XXX -- Unused, but needed to work-around bug in bzr 0.11
 # Jonathan Lange, 2007-03-22
-from bzrlib.tests import blackbox
+##from bzrlib.tests import blackbox
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp, ssh
@@ -161,6 +160,10 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
 
         # XXX spiv 2005-01-13:
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
+        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
+        def restore_vendor_manager():
+            ssh._ssh_vendor_manager._cached_ssh_vendor = _old_vendor_manager
+        self.addCleanup(restore_vendor_manager)
         ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
@@ -195,7 +198,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
-        ssh._ssh_vendor_manager._cached_ssh_vendor = None
+
         shutil.rmtree(self.userHome)
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
