@@ -8,7 +8,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
@@ -70,6 +70,3 @@ class IRevisionSet(Interface):
     def new(revision_id, log_body, revision_date, revision_author, owner,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
-
-    def getRevisionHistoryForBranch(branch):
-        """Return the revision id list for a branch."""

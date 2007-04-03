@@ -251,22 +251,3 @@ as needed.
   rev-2
   >>> print revision.getProperties()
   {u'key': u'value'}
-
-== IRevisionSet.getRevisionHistoryForBranch() ==
-
-When syncing branches that have been uploaded to the supermirror
-you want to be able to easily get the revision ids that are stored
-in the database for the revision history of any particular branch.
-
-This method returns a list of strings in the same way that bzrlib does.
-
-  >>> branch = getUtility(IBranchSet).getByUniqueName(
-  ...     '~name12/+junk/junk.contrib')
-  >>> for rev_id in getUtility(IRevisionSet).getRevisionHistoryForBranch(branch):
-  ...     print rev_id
-  test@canonical.com-20051031165248-6f1bb97973c2b4f4
-  test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
-  foo@localhost-20051031165758-48acedf2b6a2e898
-  foo@localhost-20051031170008-098959758bf79803
-  foo@localhost-20051031170239-5fce7d6bd3f01efc
-  foo@localhost-20051031170357-1301ad6d387feb23
