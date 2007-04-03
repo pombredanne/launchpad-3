@@ -2131,7 +2131,8 @@ class PersonSet:
     def getTranslatorsForLanguageByCode(self, code):
         """See IPersonSet."""
         # XXX CarlosPerelloMarin 20070331: This cached karma doesn't
-        # differentiate whether is for this language or another one.
+        # differentiate whether is for this language or another one. See bug
+        # #102257 for more info.
         return Person.select('''
             PersonLanguage.person = Person.id AND
             PersonLanguage.language = Language.id AND
