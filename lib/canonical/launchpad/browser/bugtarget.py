@@ -52,6 +52,8 @@ class FileBugData:
 
     def __init__(self):
         self.initial_summary = None
+        self.initial_summary = None
+        self.initial_tags = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -60,6 +62,7 @@ class FileBugData:
         """Set the extra file bug data from a MIME multipart message.
 
             * The Subject header is the initial bug summary.
+            * The Tags header specifies the initial bug tags.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -67,6 +70,8 @@ class FileBugData:
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
             self.initial_summary = mime_msg.get('Subject')
+            tags = mime_msg.get('Tags', '')
+            self.initial_tags = tags.lower().split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -122,6 +127,9 @@ class FileBugViewBase(LaunchpadFormView):
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
                     self.extra_data.initial_summary)
+            if self.extra_data.initial_tags:
+                self.widgets['tags'].setRenderedValue(
+                    self.extra_data.initial_tags)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
