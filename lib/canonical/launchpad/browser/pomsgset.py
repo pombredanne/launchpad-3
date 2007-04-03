@@ -5,7 +5,7 @@ __all__ = [
     'POMsgSetIndexView',
     'POMsgSetView',
     'POMsgSetPageView',
-    'POMsgSetFacets',
+    'POMsgSetSOP',
     'POMsgSetAppMenus',
     'POMsgSetSuggestions',
     'POMsgSetZoomedView',
@@ -33,15 +33,48 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
-    canonical_url)
+    ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+
+class POMsgSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        potemplate = self.context.pofile.potemplate
+        if potemplate.productseries is not None:
+            return '%s %s template %s language:' % (
+                potemplate.productseries.product.displayname,
+                potemplate.productseries.displayname,
+                potemplate.name)
+        else:
+            # It's for a distribution source package.
+            return '%s %s %s template %s language:' % (
+                potemplate.distrorelease.distribution.displayname,
+                potemplate.distrorelease.version,
+                potemplate.sourcepackagename.name,
+                potemplate.name)
+
+    def getMainHeading(self):
+        return self.context.pofile.language.englishname
+
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 #
@@ -275,38 +308,6 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-
-class POMsgSetFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
-    # inherit all navigation from its product or distro release.
-
-    usedfor = IPOMsgSet
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
-
-    def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-        potemplate = self.context.pofile.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
-
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
-
-    def translations(self):
-        target = '+translate'
-        text = 'Translations'
-        return Link(target, text)
-
-
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'

@@ -5,10 +5,10 @@ __metaclass__ = type
 
 __all__ = [
     'POFileNavigation',
-    'POFileFacets',
     'POFileAppMenus',
     'POFileView',
     'POFileUploadView',
+    'POFileSOP',
     'POFileTranslateView',
     'BaseExportView',
     'POFileAppMenus',
@@ -26,11 +26,11 @@ from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
-    LaunchpadView, Navigation)
+    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad import _
 
@@ -43,6 +43,9 @@ class CustomDropdownWidget(DropdownWidget):
 class POFileNavigation(Navigation):
 
     usedfor = IPOFile
+
+    def breadcrumb(self):
+        return self.context.language.englishname
 
     def traverse(self, name):
         """Return the IPOMsgSet associated with the given name."""
@@ -90,32 +93,36 @@ class POFileNavigation(Navigation):
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
 
-class POFileFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POFile is not a structural object. It should
-    # inherit all navigation from its product or source package.
-    usedfor = IPOFile
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
+class POFileSOP(StructuralObjectPresentation):
 
-    def _parent_url(self):
-        """Return URL of whatever POTemplate of this POFile is attached to."""
-        potemplate = self.context.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
+    def getIntroHeading(self):
+        if self.context.potemplate.productseries is not None:
+            return '%s %s template %s language:' % (
+                self.context.potemplate.productseries.product.displayname,
+                self.context.potemplate.productseries.displayname,
+                self.context.potemplate.name)
         else:
-            return canonical_url(potemplate.productseries)
+            # It's for a distribution source package.
+            return '%s %s %s template %s language:' % (
+                self.context.potemplate.distrorelease.distribution.displayname,
+                self.context.potemplate.distrorelease.version,
+                self.context.potemplate.sourcepackagename.name,
+                self.context.potemplate.name)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
+    def getMainHeading(self):
+        return self.context.language.englishname
 
-    def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class POFileAppMenus(ApplicationMenu):

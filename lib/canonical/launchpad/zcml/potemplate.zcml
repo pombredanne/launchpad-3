@@ -28,6 +28,13 @@
                  POTemplateSetNavigation"
         />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPOTemplate"
+      factory="canonical.launchpad.browser.POTemplateSOP"
+      permission="zope.Public"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplate"
         name="+index"
@@ -114,7 +121,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.potemplate"
-        classes="POTemplateFacets POTemplateAppMenus"
+        classes="POTemplateAppMenus"
         />
 
     <content class="canonical.launchpad.database.POTemplateSubset">

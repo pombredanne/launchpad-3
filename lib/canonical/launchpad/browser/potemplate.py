@@ -8,7 +8,7 @@ __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateViewPreferred',
     'POTemplateEditView', 'POTemplateAdminView', 'POTemplateExportView', 
     'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
-    'POTemplateSubsetNavigation', 'POTemplateNavigation'
+    'POTemplateSubsetNavigation', 'POTemplateNavigation', 'POTemplateSOP'
     ]
 
 import operator
@@ -24,15 +24,19 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation, LaunchpadView)
+    Link, canonical_url, enabled_with_permission, GetitemNavigation,
+    Navigation, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class POTemplateNavigation(Navigation):
 
     usedfor = IPOTemplate
+
+    def breadcrumb(self):
+        return 'Template %s' % self.context.name
 
     def traverse(self, name):
         """Return the IPOFile associated with the given name."""
@@ -60,35 +64,34 @@ class POTemplateNavigation(Navigation):
             return self.context.newPOFile(name, requester=user)
 
 
-class POTemplateFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POTemplate is not a structural object. It should
-    # inherit all navigation from its product or distro release.
+class POTemplateSOP(StructuralObjectPresentation):
 
-    usedfor = IPOTemplate
-
-    defaultlink = 'translations'
-
-    enable_only = ['overview', 'translations']
-
-    def _parent_url(self):
-        """Return the URL of the thing this PO template is attached to."""
-
-        if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackage(
-                self.context.sourcepackagename)
-            return canonical_url(source_package)
+    def getIntroHeading(self):
+        if self.context.productseries is not None:
+            return '%s %s template:' % (
+                self.context.productseries.product.displayname,
+                self.context.productseries.displayname)
         else:
-            return canonical_url(self.context.productseries)
+            # It's for a distribution source package.
+            return '%s %s %s template:' % (
+                self.context.distrorelease.distribution.displayname,
+                self.context.distrorelease.version,
+                self.context.sourcepackagename.name)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
+    def getMainHeading(self):
+        return self.context.name
 
-    def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+    def listChildren(self, num):
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
 
 
 class POTemplateAppMenus(POFileAppMenus):
