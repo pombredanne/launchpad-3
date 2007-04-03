@@ -120,6 +120,7 @@ class LanguageView(LaunchpadView):
         else:
             return self.context.nativename
 
+    @cachedproperty
     def translation_teams(self):
         translation_teams = []
         for translation_team in self.context.translation_teams:
