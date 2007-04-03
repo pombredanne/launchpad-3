@@ -21,6 +21,7 @@ from zope.app.session.interfaces import ISession
 import zope.i18n
 from zope.publisher.interfaces.browser import IBrowserRequest
 
+from canonical.config import config
 from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
@@ -187,17 +188,39 @@ class NotificationResponse:
         # just return it
         if self._notifications is not None:
             return self._notifications
-
-        session = ISession(self)[SESSION_KEY]
-        try:
-            # Use notifications stored in the session.
-            self._notifications = session['notifications']
-            # Remove them from the session so they don't propogate to
-            # subsequent pages, unless redirect() is called which will
-            # push the notifications back into the session.
-            del session['notifications']
-        except KeyError:
-            # No stored notifications - create a new NotificationList
+        # XXX: SteveAlexander 2007-04-01:
+        #      If there is no session currently then there can be no
+        #      notifications.  However, ISession(self)[SESSION_KEY] creates
+        #      a session whether one is needed or not.
+        #      Options are to refactor the session code so that it makes a
+        #      session only when necessary, or to check for the presence of
+        #      the session cookie at call-sites like this one.
+        #      A get_session() helper would help here.
+        #      Maybe a get_or_create_session() to go with it.
+        cookie_name = config.launchpad.session.cookie
+        request = self._request
+        response = self
+        # Do some getattr sniffing so that the doctests in this module
+        # still pass.  Doing this rather than improving the Mock classes
+        # that the mixins are used with, as we'll be moving this hack to
+        # the sesions machinery in due course.
+        if (not (getattr(request, 'cookies', None) and
+                 getattr(response, 'getCookie', None))
+            or
+            (request.cookies.get(cookie_name) is not None or
+             response.getCookie(cookie_name) is not None)):
+            session = ISession(self)[SESSION_KEY]
+            try:
+                # Use notifications stored in the session.
+                self._notifications = session['notifications']
+                # Remove them from the session so they don't propogate to
+                # subsequent pages, unless redirect() is called which will
+                # push the notifications back into the session.
+                del session['notifications']
+            except KeyError:
+                # No stored notifications - create a new NotificationList
+                self._notifications = NotificationList()
+        else:
             self._notifications = NotificationList()
 
         return self._notifications

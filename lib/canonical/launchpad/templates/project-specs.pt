@@ -96,6 +96,9 @@
                  tal:attributes="
                    href spec/fmt:url;
                    title spec/title">foo-bar-baz</a>
+              <img src="/@@/branch" alt="Branch"
+                   title="Branch is available"
+                   tal:condition="spec/branch_links/count" />
               <img src="/@@/info" alt="Informational specification"
                    title="Informational specification"
                    tal:condition="spec/informational" />

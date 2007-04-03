@@ -28,7 +28,7 @@
           </a>
         </li>
       </ul>
-                        <form class="central" action="/products" method="get">
+                        <form class="central" action="/projects/" method="get">
                           <input
                             id="text"
                             type="text"

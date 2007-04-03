@@ -36,7 +36,7 @@ name appears in the 'Subscribers' portlet:
     >>> portlet.first('ul')
     <ul class="person">
       <li>
-        <a href="http://answers.launchpad.dev/~no-priv">No Privileges
+        <a href="/~no-priv">No Privileges
             Person</a>
       </li>
     </ul>
@@ -76,7 +76,7 @@ It is also possible to subscribe at the same time than posting a message
 on an existing question. The user can simply check the 'E-mail me future
 discussion about this question' checkbox:
 
-    >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/6')
+    >>> user_browser.open('http://launchpad.dev/projects/firefox/+ticket/6')
     >>> user_browser.getControl('Message').value = (
     ...     "Try starting firefox from the command-line. Are there any "
     ...     "messages appearing?")

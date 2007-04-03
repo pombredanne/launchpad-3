@@ -71,7 +71,23 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
 class ProjectDynMenu(DynMenu):
 
+    menus = {
+        '': 'mainMenu',
+        'related': 'relatedMenu',
+        }
+
     MAX_SUB_PROJECTS = 8
+
+    def relatedMenu(self):
+        """Show items related to this project.
+
+        Show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
+        yield self.makeLink(self.context.title, target=self.context)
+        for link in self.mainMenu():
+            yield link
 
     def mainMenu(self, excludeproduct=None):
         """List products within this project.
@@ -80,7 +96,9 @@ class ProjectDynMenu(DynMenu):
         number of products, list up to MAX_SUB_PROJECTS products with
         releases, and give a link to a page showing all products.
 
-        XXX: describe excludeproduct.
+        Pass a Product instance in as 'excludeproduct' so that it will be
+        excluded from the menu.
+
         """
         products = shortlist(self.context.products, 25)
         num_products = len(products)

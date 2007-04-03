@@ -31,9 +31,9 @@ The approve/decline links and buttons aren't visible to unprivileged users.
 
 But an admin can see them.
 
-    >>> admin_browser.open("http://launchpad.dev/bugs/1")
+    >>> admin_browser.open("http://bugs.launchpad.dev/bugs/1")
     >>> approve_decline_link = admin_browser.getLink(
-    ...     url="http://launchpad.dev/firefox/+bug/1/nominations/"
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/nominations/"
     ...         "1/+editstatus")
     >>> print approve_decline_link.text
     approve/decline

@@ -140,7 +140,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         default_image_resource='/@@/team',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this team in listings."))
+            "that can be used to identify this team. The icon will be "
+            "displayed whenever the team name is listed - for example "
+            "in listings of bugs or on a person's membership table."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/person-logo',
@@ -692,6 +694,20 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         will be equal to union of all the languages known by its members.
         """
 
+    def getDirectAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that a person is subscribed to.
+        
+        This will return IQuestionTargets that the person is registered as an 
+        answer contact because he subscribed himself.
+        """
+
+    def getTeamAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that are indirectly subscribed to.
+        
+        This will return IQuestionTargets that the person or is registered as an 
+        answer contact because of his membership in a team.
+        """
+            
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
@@ -911,6 +927,9 @@ class IPersonSet(Interface):
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
         """
+
+    def latest_teams(limit=5):
+        """Return the latest teams registered, up to the limit specified."""
 
     def merge(from_person, to_person):
         """Merge a person into another."""

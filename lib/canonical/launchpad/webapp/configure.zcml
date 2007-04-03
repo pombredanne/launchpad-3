@@ -160,6 +160,13 @@
         name="image"
         />
 
+    <adapter
+        for="canonical.launchpad.browser.PillarSearchItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
+        name="image"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only
@@ -361,7 +368,7 @@
         permission="zope.Public"
         template="../templates/rdf-macros.pt"
         />
-
+<!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
         <factory id="zope.da.LaunchpadDA" />
@@ -374,7 +381,7 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
-
+-->
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->

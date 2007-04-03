@@ -14,12 +14,13 @@
     <table>
       <tr>
         <th>
-          <label for="text">
+          <label for="template-name">
             Search PO template names:
           </label>
         </th>
         <td>
-          <input name="text" size="30" tal:attributes="value view/text" />
+          <input id="template-name" name="text" size="30"
+                 tal:attributes="value view/text" />
         </td>
       </tr>
       <tr>

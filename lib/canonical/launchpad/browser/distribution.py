@@ -40,7 +40,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
+    NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -54,11 +54,11 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView, custom_widget)
+    stepthrough, stepto, LaunchpadFormView)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
 
@@ -134,10 +134,9 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'translations']
 
     def specifications(self):
-        target = '+specs'
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
 
 class DistributionSetSOP(StructuralObjectPresentation):
@@ -171,7 +170,7 @@ class DistributionSetContextMenu(ContextMenu):
         return Link('/distros/', 'View distributions')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def people(self):
         return Link('/people/', 'View people')
@@ -668,6 +667,7 @@ class DistributionDynMenu(
         'milestones': 'milestoneMenu',
         }
 
+    @neverempty
     def milestoneMenu(self):
         """Show milestones more recently than one month ago,
         or with no due date.
@@ -679,6 +679,7 @@ class DistributionDynMenu(
                 yield self.makeLink(milestone.title, context=milestone)
         yield self.makeLink('Show all milestones...', page='+milestones')
 
+    @neverempty
     def mainMenu(self):
         yield self.makeLink('Releases', page='+releases', submenu='releases')
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')

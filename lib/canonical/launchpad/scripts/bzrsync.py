@@ -255,7 +255,8 @@ class BzrSync:
                 revision_date=revision_date,
                 revision_author=bzr_revision.committer,
                 owner=self._admin,
-                parent_ids=bzr_revision.parent_ids)
+                parent_ids=bzr_revision.parent_ids,
+                properties=bzr_revision.properties)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.

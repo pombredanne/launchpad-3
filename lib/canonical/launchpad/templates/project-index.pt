@@ -15,19 +15,19 @@
         summarising the project's purpose.
       </div>
 
-    <div tal:replace="structure context/description/fmt:text-to-html">
-    This is the Project Description,
-    which is a much more substantial description of the project. It should
-    be several paragraphs long, and give you a very clear insight into the
-    work of the Project, and the people behind it. It should describe the
-    project history, and organisation.
+      <div tal:replace="structure context/description/fmt:text-to-html">
+        This is the Project Description,
+        which is a much more substantial description of the project. It should
+        be several paragraphs long, and give you a very clear insight into the
+        work of the Project, and the people behind it. It should describe the
+        project history, and organisation.
 
-    The Project Description should also mention the major project or
-    projects that make up the aggregate project. For example, the Apache
-    Project description
-    would highlight its work on the Apache Server, and mention other
-    projects such as APR.
-    </div>
+        The Project Description should also mention the major project or
+        projects that make up the aggregate project. For example, the Apache
+        Project description
+        would highlight its work on the Apache Server, and mention other
+        projects such as APR.
+      </div>
 
       <ul tal:condition="context/homepageurl">
         <li class="external link">
@@ -65,16 +65,14 @@
             tal:condition="context/products"
             tal:repeat="product context/products"
             class="project"
-          >
-            <h3>
-              <a
+            >
+            <img src="/@@product" tal:replace="structure product/image:icon" />
+            <strong><a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/title"
-              >Project title</a>
-            </h3>
-            <div>
-              <strong>Releases:</strong>
-              <tal:none condition="not:product/releases">None</tal:none>
+              >Project title</a></strong>
+            <div tal:condition="product/releases">
+              Releases:
               <tal:release repeat="release product/releases">
                 <a
                   tal:attributes="href release/fmt:url"
@@ -83,9 +81,8 @@
                 condition="not:repeat/release/end">,</tal:comma>
               </tal:release>
             </div>
-            <div>
-              <strong>Milestones:</strong>
-              <tal:none condition="not:product/milestones">None</tal:none>
+            <div tal:condition="product/milestones">
+              Milestones:
               <tal:milestone repeat="milestone product/milestones">
                 <a
                   tal:attributes="href milestone/fmt:url"
