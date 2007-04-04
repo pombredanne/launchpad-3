@@ -2,7 +2,7 @@ Check if the Distribution Members page is not broken.
 
   >>> anon_browser.open("http://localhost/ubuntu")
   >>> anon_browser.getLink(
-  ...     url="http://localhost/ubuntu/+members").click()
+  ...     url="/ubuntu/+members").click()
   >>> anon_browser.url
   'http://localhost/ubuntu/+members'
 

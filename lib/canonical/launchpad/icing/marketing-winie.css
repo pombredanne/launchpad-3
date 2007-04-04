@@ -1,0 +1,13 @@
+/*
+-----------------------------------------------
+Launchpad IE Style Sheet
+----------------------------------------------- 
+*/
+
+body {
+	font-size: .7em;
+}
+
+#header dl#sub-navigation ul#global li#liContact a {
+  background: url(/+icing/globaldivide.gif) center left no-repeat;
+}

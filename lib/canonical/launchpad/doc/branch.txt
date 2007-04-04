@@ -196,6 +196,9 @@ interesting results.
 >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
 >>> branch.last_scanned = today - timedelta(1)
 >>> syncUpdate(branch)
+>>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+>>> branch.last_scanned = today
+>>> syncUpdate(branch)
 
 >>> for branch in branchset.getRecentlyChangedBranches(5):
 ...   print branch.unique_name
@@ -360,14 +363,32 @@ True
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
+Branch subscriptions now have extra attributes associated with them.
+The notification_level is used to control what email is sent to the
+subscribed user, and max_diff_lines is used to control the size of
+any generated diffs between revisions that are emailed out.
+
+Both of these attributes are contolled through the UI through the use
+of the enumerated types: BranchSubscriptionDiffSize, and 
+BranchSubscriptionNotificationLevel.
+
 >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
+>>> from canonical.lp.dbschema import (
+...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 >>> sabdfl = personset.getByName('sabdfl')
 >>> sabdfl.subscribed_branches.count()
 0
->>> subscription = gterm_dev.subscribe(sabdfl)
+>>> subscription = gterm_dev.subscribe(
+...     sabdfl,
+...     BranchSubscriptionNotificationLevel.FULL, 
+...     BranchSubscriptionDiffSize.FIVEKLINES)
 >>> verifyObject(IBranchSubscription, subscription)
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
+True
+>>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
+True
+>>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
 True
 >>> gterm_dev.subscriptions[0] == subscription
 True
@@ -393,7 +414,8 @@ the branches registered, authored and subscribed to by this person.
 ...     title, summary=title, date_created=now.next())
 >>> junkcode.author = lifeless
 >>> syncUpdate(junkcode)
->>> unused = gterm_dev.subscribe(lifeless)
+>>> unused = gterm_dev.subscribe(lifeless, 
+...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
 >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
 True
 
@@ -418,13 +440,18 @@ IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
 >>> from canonical.launchpad.interfaces import IBranchRevision
->>> count = junk.revision_count
->>> count
+>>> junk.revision_count
 6
 >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
 [True, True, True, True, True, True]
->>> [revno.sequence for revno in junk.revision_history]
-[6, 5, 4, 3, 2, 1]
+>>> for branch_revision in junk.revision_history:
+...     print branch_revision.sequence, branch_revision.revision.id
+6 9
+5 8
+4 7
+3 6
+2 5
+1 4
 
 There are two methods for getting only the the latest items of the revision
 history.
@@ -493,6 +520,33 @@ database. getByRevisionId returns None.
 
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
+
+== Getting the tip revision for a Branch ==
+
+The last revision that we have stored in the database for any given branch
+is identified by the branch attribute "last_scanned_id".  This is the textual
+revision_id for the bzr revision.  The reason that it is a text id rather than
+an integer foreign key is so it can easily be compared to the
+"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
+used to identify when a scan is needed for a branch.
+
+>>> branch = branchset.get(1)
+>>> branch.last_scanned_id
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'null:'
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
+>>> rev = branch.getTipRevision()
+>>> print rev.owner.name
+admins
+>>> print rev.date_created
+2005-10-31 17:21:47.381770+00:00
+>>> print rev.log_body
+initial import (empty)
 
 
 == Branch Scan List ==
@@ -581,17 +635,17 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
-  >>> summary = branchset.getBranchSummaryForProducts(products)
+  >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
   >>> for product in products:
   ...     print "%s %s %s" % (
   ...         product.name,
   ...         summary[product]['branch_count'],
   ...         summary[product]['last_commit'])
-  evolution      2  None
-  firefox        5  2005-03-09 15:50:00
-  gnome-terminal 10 None
-  iso-codes      1  None
-  thunderbird    1  None
+  evolution      1 None
+  firefox        5 2005-03-09 15:50:00
+  gnome-terminal 8 None
+  iso-codes      1 None
+  thunderbird    1 None
 
 
 == Getting branches by owner ==
@@ -623,9 +677,8 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForPerson method on IBranchSet will 
 return all branches associated with that person:
-  - subscribed branches by person or team the person is a member of
-  - person is author of the branch
-  - owner is person or team the person is a member of
+  - subscribed branches by person
+  - person is author or owner of the branch
 
   >>> from canonical.launchpad.interfaces import (
   ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
@@ -633,7 +686,6 @@ return all branches associated with that person:
   ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
-  New ~vcs-imports/evolution/main
   New ~ddaa/gnome-terminal/dev
   New ~ddaa/+junk/junkcode
 

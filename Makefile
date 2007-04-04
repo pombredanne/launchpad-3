@@ -33,8 +33,8 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
-	[ ! -f database-frozen.txt \
-	    -o `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
+	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
+	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -79,7 +79,7 @@ check: build
 	${PYTHON} -t ./test_on_merge.py -vv
 
 lint:
-	@sh ./utilities/lint.sh
+	@bash ./utilities/lint.sh
 
 #lintmerge:
 #	@# Thank Stuart, not me!
