@@ -234,6 +234,38 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+== Milestones ==
+
+We can use IProduct.milestones to get all milestones associated with any
+ProductSeries of a product.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+    >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> firefox_milestone = firefox_one_zero.newMilestone(
+    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0-rc1', '2018-10-01'), (u'1.0', '2056-10-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> firefox_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+To get all milestones of a given product we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in firefox.all_milestones]
+    [u'1.0-rc1', u'1.0']
+
 == Products With Branches ==
 
 We can also find all the products that have branches.

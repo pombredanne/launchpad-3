@@ -5,7 +5,7 @@ application.
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
-    Launchpad Answer Tracker
+    Launchpad Answers
 
 It shows the 5 latest questions asked:
 

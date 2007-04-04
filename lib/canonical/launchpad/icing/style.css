@@ -63,7 +63,7 @@ html {
   position: relative;
   font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
   font-size: 8.5pt;
-  color: #606060;
+  color: #505050;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
@@ -102,10 +102,15 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
+  
 }
-.error {background-color: #f0cccc; color: black;}
+.error {color: #db1f22;}
 .error.message, .error .message {
   background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
@@ -210,73 +215,388 @@ strong span {
   overflow: hidden;
   display: none;
 }
-hr, #globalheader label {
+hr {
   display: none;
 }
-#globalheader .logo {
-  float: left;
-}
+
+/* === Page layout === */
+
+/* All pages begin with a global header or a topline. */
 #globalheader {
   position: relative;
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0 auto;
-  background-color: #EEEEEE;
+  margin: 0;
+  background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
   background-position: top center;
-  text-align: left;
 }
-#central_column {
+/* Home icon and link. */
+#globalheader a.home {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
+/* Site-specific message. */
+#globalheader .sitemessage {
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
+}
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+/* Thin line at the top, when we don't have a global header site message */
+#topline {
   position: relative;
   width: 100%;
-  margin: 0 auto;
-  background-color: #EEEEEE;
-  text-align: left;
+  height: 1px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #6D6D6D;
 }
-#content_left {
-  position: relative;
+/* Next is a location bar. */
+#locationbar {
   float: left;
-  width: 175px;
-  background-color: #DDDDDD;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: #AFDB1F;
+  font-size: 11px;
+  font-weight: bold;
+  color: #FFF;
 }
-#content_right {
-  position: relative;
+/* padding-left adjusts the space between the home icon and the word
+ * "Home".
+ */
+ul#menuroot a#homebreadcrumb span {
+  background: url(home-low-high.gif) left top no-repeat;
+  padding-left: 16px;
+}
+ul#menuroot li a#homebreadcrumb:hover span,
+ul#menuroot li.selected a#homebreadcrumb span {
+  background: url(home-low-high.gif) -1014px top no-repeat;
+  padding-left: 16px;
+}
+/* The location bar contains menus. */
+ul#menuroot {
+  display: inline;
   float: left;
-  width: 175px;
-  background-color: #CCCCCC;
+  margin: 0;
 }
-#content_center {
+/* XXX: needs explanation */
+ul#menuroot li {
+  display: inline;
+}
+/* Style for breadcrumb items.
+ *
+ * XXX: background stuff needs explanation.
+ *
+ * Negative right margin for breadcrumbs.
+ * This is part of how we make them look like arrows.
+ */
+ul#menuroot a.breadcrumb {
   position: relative;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1000px 0px;
+  display: block;
   float: left;
-  width: 410px;
-  background-color: #BBBBBB;
+  margin-right: -16px;
 }
-.content {
+/* "Your location:" text.
+ *
+ * The 1px negative right margin is to bring the first breadcrumb a little
+ * closer to the "Your location:" text.  It makes it look visually tighter
+ * because of the chevron shape of the highlights.
+ */
+#yourlocation {
+  float: left;
+  display: block;
+  background-image: url(locationbar_a_bg.gif);
+  background-repeat: no-repeat;
+  background-position: -1100px 0px;
+  padding: 6px 0 6px 10px;
+  margin-right: -1px;
+}
+/* IE6 specific rule to make the location bar look better. */
+* html #yourlocation {padding-bottom: 4px;}
+/* Display dyn menu items and breadcrumbs with black text and as blocks. */
+#locationbar li a,
+#locationbar li span {
+  display: block;
+  color: #000000;
+}
+/* Unlinked items.  Same colour as the overview actions menu. */
+#locationbar li .unlinked {
+  color: #83AD23;
+}
+/* XXX: needs explanation */
+ul#menuroot a.breadcrumb em { /* should be changed to not need em */
+  font-style: normal;
+  float: left;
+  display: block;
+  background-image: url(locationbar_nodrop_em_bg.gif);
+  background-repeat: no-repeat;
+  background-position: right top;
+  padding: 6px 26px 6px 20px;
+  cursor: hand;
+  cursor: pointer;
+}
+* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
+/* When a breadcrumb has a submenu, show a down-arrow. */
+ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
+  background-image: url(locationbar_em_bg.gif);
+}
+/* Undo more generic formatting around ul elements. */
+#locationbar ul {
+    margin: 0;
+    padding: 0;
+}
+/* General appearance of a dynamic menu item.
+ * The area we actually see on the page is an <a> element.
+ * The <li> element takes up no space.
+ */
+#locationbar ul.menu li a,
+#locationbar ul.menu li .unlinked {
+  background-image: none;
+  background-color: #AFDB1F;
+  float: none;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  height: auto;
+}
+/* General appearance of a dynamic menu item. */
+#locationbar ul.menu li {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
+/* Appearance of a dynamic menu or submenu.
+ * Note the 3d-effect border.
+ * Note the z-index so that they appear above all other content.
+ */
+#locationbar ul.menu {
+  background-color: #AFDB1F;
+  position: absolute;
+  z-index: 2000;
+  margin-left: 0px;
+  border-right: 1px solid #90B51A;
+  border-bottom: 1px solid #90B51A;
+  border-top: 1px solid #DCF58B;
+  border-left: 1px solid #DCF58B;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
+/* Inhibit underlines on all dyn menu items. */
+#locationbar li a:hover {
+  text-decoration: none;
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * on mouse-over.
+ * The colour #EEE is sometimes used for debugging.
+ */
+#locationbar ul#rootmenu ul.menu li a:hover {
+  /* color: #EEE; */
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * when selected and potentially opened.
+ * This works, but has the > that makes IE unhappy.
+ * #locationbar ul.menu li.selected>a {
+ *   background-color: #C8EF48;
+ *   color: #000;
+ * }
+ * So instead, we have the following two rules.
+*/
+#locationbar ul.menu li a {
+  background-color: #AFDB1F;
+  color: #000;
+}
+#locationbar ul.menu li.selected>a {
+  background-color: #C8EF48;
+  color: #000;
+}
+/* Set the appearance of breadcrumb items on mouse-over.
+ * This is the same as how they look when selected, so that
+ * they look right during the deliberate delay between being
+ * moused-over and actually activated.
+ */
+ul#menuroot li a.breadcrumb:hover {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Set the appearance of breadcrumb items when selected for opening. */
+ul#menuroot li.selected a.breadcrumb {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Make dyn menu items that are the source of submenus have a right-arrow
+ * on the far right, to show they can be opened.
+ *
+ * Does not include the breadcrumbs.
+ */
+#locationbar ul.menu a.container {
+  background-image: url(/@@/arrowRight);
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+/* Allow dyn menus to appear ouside of the locationbar, even though they
+ * overflow its bounds.
+ */
+#locationbar {
+  overflow: visible;
+}
+/* Prevent the text in links in menu items from wrapping.
+ * Apply appropriate formatting to links in menu items.
+ */
+#locationbar li a,
+#locationbar li .unlinked {
+  left: auto;
+  margin: 0px 0px 0px 0px;
+  white-space: pre;
+}
+/* Login control goes on the right, taking up the full height of the
+ * locationbar.
+ */
+#logincontrol {
+  float: right;
+  height: 100%;
+}
+/* The control itself is actually in a table cell, vertically aligned to
+ * the middle of the locationbar.
+ */
+#logincontrol td {
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: bold;
+  vertical-align: middle;
+}
+/* Link text is black. */
+#logincontrol a {
+    color: #000000;
+}
+
+/*- Underneath the global header and location bar is a help panel. -*/
+/* In Internet Explorer it doesn't work yet, so hide it for now. */
+* html #help_panel {display: none;}
+
+#help_panel {
+  visibility: hidden; /* global.js reveals it if JavaScript is available */
+}
+#help_panel.open,
+#help_panel.closed {
+  position: absolute;
+  float: left;
+  top: 47px;
+  left: 0px;
+  width: 350px;
+  z-index: 100;
+}
+#help_panel.closed {
+  left: -318px !important;
+}
+.help1 {
+  width: 350px;
+  background-color: #FFFFFF;
+  background-image: url(help_bg.gif);
+  background-repeat: repeat-y;
+  background-position: top right;
+}
+.help2 {
+  float: left;
+  width: 286px;
+  padding: 16px;
+}
+#help_panel.open .bottom,
+#help_panel.closed .bottom {
   clear: both;
-  padding: 12px 14px 14px 14px;
+  width: 350px;
+  height: 14px;
+  position: relative;
+  top: -2px;
+  background-color: transparent;
+  background-image: url(help_bottom_bg.gif);
+  background-repeat: no-repeat;
+  background-position: bottom right;
 }
-#content_left .content {
-  width: 146px;
+#help_panel.open a.open-close, #help_panel.closed a.open-close,
+a.open, a.closed {
+  float: left;
+  display: block;
+  width: 28px;
+  height: 120px;
+  text-indent: -9999px;
+  overflow: hidden;
 }
-#content_right .content {
-  width: 146px;
+
+#help_panel.open a.open-close, a.open {
+  background-image: url(help_ttl_open.gif);
+  background-repeat: no-repeat;
+  background-position: top left;
 }
-#content_center .content {
-  width: 380px;
+
+#help_panel.closed a.open-close, a.closed {
+	background-image: url(help_ttl_closed.gif);
+	background-repeat: no-repeat;
+	background-position: 0px 0px;
 }
-#globalfooter {
+
+/*- The rest of the page is indented to keep clear of the help panel. -*/
+#nonhelp {margin: 0 20px 0 38px;}
+
+/*- App home pages and pillar indexes both have a heading and app buttons, -*/
+table#applications {margin-bottom: -0.5em;}
+table#applications th, table#applications td {vertical-align: baseline;}
+table#applications th {padding-left: 60px; text-align: left;}
+table#applications td {text-align: right;}
+/* though the pillar indexes have no watermark, so no heading indenting. */
+body.pillarindex table#applications th {padding-left: 0;}
+
+/* Other page types have a global search field. */
+#globalsearch {float: right; margin-top: 12px; width: 220px;}
+#globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
+#globalsearch #searchbutton {
+  position: relative;
+  top: 6px;
+  border: 0;
+  width: 20px;
+  height: 20px;
+  cursor: hand;
+  cursor: pointer;
+}
+#globalsearchscope {padding: 4px 0 0;}
+#globalsearchscope label {display: block; padding: 0 0 2px;}
+
+/* The last element is a standard footer. */
+#globalfooter {clear: both;}
+/* It has a top border if the page doesn't already have a rounded border. */
+body.freeform #globalfooter {
   border-top: 1px solid #ccc;
-  clear: both;
-  position: relative;
-  margin: 0px 22px 0px 40px;
-  padding-top: 10px;
-  padding-bottom: 20px;
+  padding-top: 0.5em;
 }
-#globalfooter.extraspacing {
-  padding-top: 50px;
-}
+
 #colophon {
   float: left;
   width: 49%;
@@ -296,112 +616,6 @@ hr, #globalheader label {
   height: 0px;
   overflow: hidden;
 }
-.clear_content {
-  clear: both;
-}
-.align_r {
-  text-align: right;
-}
-.align_c {
-  text-align: center;
-}
-.float_l {
-  float: left;
-}
-.float_r {
-  float: right;
-}
-.content_img_left {
-  float: left;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-right: 12px;
-  margin-bottom: 8px;
-}
-.content_img_right {
-  float: right;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-left: 12px;
-  margin-bottom: 8px;
-}
-#locationbar {
-  float: left;
-  width: 100%;
-  height: 26px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFFFFF;
-}
-#locationbar strong {
-  margin-right: 16px;
-}
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-}
-ul#menuroot li {
-  display: inline;
-}
-ul#menuroot em {
-  margin-top: 0px;
-}
-#locationbar li a {
-  position: relative;
-  left: -16px;
-  margin: 0px -16px 0px 0px;
-  float: left;
-  height: 26px;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  color: #000000;
-}
-#locationbar li a:hover {
-  background-position: 0px 0px;
-  text-decoration: none;
-  color: #000000;
-}
-#locationbar li em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 10px 20px;
-  cursor: hand;
-  cursor: pointer;
-}
-#locationbar strong {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 10px 10px !important;
-  padding: 5px 0 10px 10px;
-}
-#logincontrol {
-  position: absolute;
-  top: 21px;
-  right: 0px;
-  padding: 6px 16px 10px 10px !important;
-  padding: 5px 16px 10px 10px;
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: bold;
-}
-#logincontrol a {color: #000000;}
 ul#applicationchooser {
   float: right;
   width: 510px;
@@ -431,12 +645,50 @@ ul#applicationchooser li {
   text-align: center;
   font-weight: bold;
   color: #000000;
-  padding: 8px 0px 0px 0px;
 }
+
+/* We make the anchor display block, and use the same height as the li,
+ * to ensure the whole tab area is clickable. */
+ul#applicationchooser li a {
+  display: block;
+  padding: 8px 0px 0px 0px;
+  height: 40px;
+}
+
+/* For the selected and unavailable tabs, we need to provide the padding
+ * (since there's no anchor), and change the cursor to avoid it being an
+ * i-beam when hovering over the text of the tab. */
+ul#applicationchooser li span.selected,
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  display: block;
+  padding: 8px 0px 0px 0px;
+  cursor: default;
+}
+
+/* Disabled icons shouldn't hover up */
+ul#applicationchooser li span.disabled:hover,
+ul#applicationchooser li.unavailable:hover
+{
+  background-position: -100px 0px;
+}
+
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  color: lightgrey;
+}
+
 ul#applicationchooser li:hover {
   background-position: 0px 0px;
+}
+
+/* Avoid underlining anchors inside the tabs */
+ul#applicationchooser a:hover {
   text-decoration: none;
 }
+
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
@@ -547,115 +799,22 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#actions ul {
-  width: 192px;
-  overflow: hidden;
-  margin: 0;
-  padding: 4px;
-}
+#actions ul {list-style-type: none; margin: 0; padding: 4px; width: 192px;}
 #actions li {
-  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
-  list-style-image: url(/+icing/action.png);
-  list-style-type: circle; /* A fallback in case the image can't be found. */
-  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
+  margin: 0; /* neutralizes UA list item indenting */
+  padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions li:hover {background-color: #fff; text-decoration: underline;}
 #actions a {
-  display: block; /* Makes the clickable area equal to the highlighted area. */
-  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
-  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
+  background: url(action.png) 4px center no-repeat;
+  display: block; /* makes the clickable area equal to the highlighted area */
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
 }
-#globalsearch {
-  width: 220px;
-  float: right;
-  margin-top: 12px;
-}
-#globalsearch #q {
-  width: 170px;
-  border: 1px solid #A7C2CE;
-}
-#globalsearch #searchbutton {
-  position: relative;
-  top: 6px !important;
-  top: 5px;
-  border: 0;
-  width: 20px;
-  height: 20px;
-  cursor: hand;
-  cursor: pointer;
-}
-#globalsearchscope {
-  padding: 4px 0px 0px 0px;
-}
-#globalsearchscope label {
-  display: block;
-  padding: 0px 0px 2px 0px;
-}
-#content_center input,
-#content_center select,
-#content_center textarea {
-  width: 200px;
-  border: 1px solid #A5A5A5;
-  margin-bottom: 10px;
-}
-#content_center select {
-  width: 202px !important;
-  width: 204px;
-}
-#content_center label {
-  clear: both;
-  width: 110px;
-  display: block;
-  float: left;
-  padding-top: 2px;
-  font-weight: bold;
-}
+#actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,
 .radio {
   background: transparent;
   width: auto !important;
   border: 0 !important;
-}
-#globalheader,
-#locationbar {
-  min-width: 760px;
-}
-#globalheader img {
-  display: none;
-}
-#globalheader div.launchpad a {
-  float: right;
-  display: block;
-  width: 90px;
-  height: 20px;
-  background-image: url(globalheader_launchpad_bg.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#globalheader ul.home {
-  float: left;
-  width: 30px;
-  height: 20px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-#globalheader ul.home li a {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  float: left;
-  display: block;
-  width: 30px;
-  height: 20px;
-  background-image: url(globalheader_home.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
 }
 #structuralobject, #applications {
   position: relative;
@@ -665,7 +824,7 @@ ul#applicationchooser li#applicationchooser_selected {
   background: none;
   color: black;
   float: left;
-  margin: 10px 0px 0px 38px;
+  margin: 10px 0 0;
   width: 70%;
 }
 #structuralobjectheading img {
@@ -696,24 +855,15 @@ ul#applicationchooser li#applicationchooser_selected {
 #mainarea {
   clear: both;
   min-width: 712px;
-  margin: 0 20px 0 38px;
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+  position: relative;
+  top: -15px; /*- reduces pillargotchi~tab gap -*/
 }
-#singlecolumn #mainarea {
-  margin-left: 0;
-  margin-right: 0;
-}
-#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
+body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
-#singlecolumn #mainarea {top: -20px;}
-* html #singlecolumn #mainarea {top: 0;}
-#singlecolumn h1 {
-  padding-bottom: 0;
-  padding-top: 1em;
-}
-* html #singlecolumn h1 {padding-top: 0;}
+body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
 #mainarea div.t {
   width: 100%;
   background-image: url(mainarea_left.gif);
@@ -759,67 +909,6 @@ ul#applicationchooser li#applicationchooser_selected {
 #singlecolumn div.z {
   padding: 0 0 20px; /* XXX Makes the top right corner disappear */
 }
-#help_panel {
-  visibility: hidden; /* global.js reveals it if JavaScript is available */
-}
-#help_panel.open,
-#help_panel.closed {
-  position: absolute;
-  float: left;
-  top: 47px;
-  left: 0px;
-  width: 350px;
-  z-index: 100;
-}
-#help_panel.closed {
-  left: -318px !important;
-}
-.help1 {
-  width: 350px;
-  background-color: #FFFFFF;
-  background-image: url(help_bg.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
-.help2 {
-  float: left;
-  width: 286px;
-  padding: 16px;
-}
-#help_panel.open .bottom,
-#help_panel.closed .bottom {
-  clear: both;
-  width: 350px;
-  height: 14px;
-  position: relative;
-  top: -2px;
-  background-color: transparent;
-  background-image: url(help_bottom_bg.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
-}
-#help_panel.open a.open-close, #help_panel.closed a.open-close,
-a.open, a.closed {
-  float: left;
-  display: block;
-  width: 28px;
-  height: 120px;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-
-#help_panel.open a.open-close, a.open {
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
-
-#help_panel.closed a.open-close, a.closed {
-	background-image: url(help_ttl_closed.gif);
-	background-repeat: no-repeat;
-	background-position: 0px 0px;
-}
-
 /* --- Various custom list formats --- */
 
 #maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
@@ -842,6 +931,7 @@ ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
+ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news                     {list-style-image: url(/@@/news);}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -851,7 +941,6 @@ ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
-ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
@@ -916,6 +1005,8 @@ body.tab-overview #actions, body.tab-overview .results {
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
+
+.product.series, .project {margin-bottom: 1em;}
 
 /* --- Code --- */
 
@@ -1023,6 +1114,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   background: none;
   color: #9f2b33;
 }
+
 
 .statusUNCONFIRMED  { color: #993300; }
 .statusNEEDSINFO    { color: Red; }
@@ -1247,6 +1339,7 @@ body {
   padding-left: 240px;
   padding-right: 20px;
 }
+body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
   padding-top: 50px;
@@ -1272,7 +1365,7 @@ body {
 #portlets .portlet {
   width: 200px;
 }
-#singlecolumn {margin: 20px 20px 0 38px;} /* test: front page, FAQ page */
+#singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 
 /* ====== Content area styles ====== */
@@ -1281,10 +1374,6 @@ body {
 
 #applications {clear: both; width: 100%;}
 div#applications {padding: 1em 0; text-align: center;}
-table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 100px; text-align: left;}
-table#applications td {padding-right: 20px; text-align: right;}
 #applications span {
   display: inline-block;
   float: right;
@@ -1295,7 +1384,7 @@ table#applications td {padding-right: 20px; text-align: right;}
 .central {
   clear: left; /* Bugs FP */
   font-size: 1.5em;
-  margin: auto;
+  margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
@@ -1303,8 +1392,9 @@ table#applications td {padding-right: 20px; text-align: right;}
 .central input {
   font-size: 1em;
 }
-div.bordered {
-  padding: 2em 4em;
+.front_page label {
+  color: #303030;
+  font-size: 1.2em;
 }
 #application-summary, #application-footer {
   font-size: 1.5em;
@@ -1368,6 +1458,8 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
 /*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
 ul.buttons li {display: inline; margin-right: 1em;}
+body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
+body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 #singlecolumn ul.buttons {float: right; margin: 0;}
 #singlecolumn ul.buttons li {margin: 0;}
 #singlecolumn ul.buttons li {display: block;}
@@ -1465,54 +1557,7 @@ th.descending {
 /* Used to indicate a value to be used to sort cells in a row */
 .sortkey, .revsortkey {display: none;}
 
-
-/* SteveA's fix-ups for the dynamic menu */
-#locationbar ul {margin: 0; padding: 0;}
-#locationbar ul.menuroot li a {
-  margin-right: -16px;
-}
-#locationbar ul.menu li a {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 16px;
-}
-#locationbar ul.menu li.selected a {
-  background-color: #C8EF48;
-}
-#locationbar {
-  overflow: visible;
-}
-#locationbar li a {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-}
-#locationbar strong {
-  margin-right: -5px;
-}
-#locationbar {
-  overflow: visible;
-}
+/* Clouds of links. */
 .cloud-size-small { 
   font-size: 1em;
 }

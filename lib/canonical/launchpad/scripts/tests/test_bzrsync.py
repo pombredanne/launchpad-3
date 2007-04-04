@@ -169,7 +169,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None):
+                       timestamp=None, timezone=None, revprops=None):
         if message is None:
             message = self.LOG
         if committer is None:
@@ -178,7 +178,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
             message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True)
+            timestamp=timestamp, timezone=timezone, allow_pointless=True,
+            revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
@@ -585,6 +586,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = old_timestamp
             timezone = 0
+            properties = {}
 
         # sync the revision
         self.bzrsync.syncOneRevision(FakeRevision)
@@ -604,6 +606,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             message = self.LOG
             timestamp = 1000000000.0
             timezone = 0
+            properties = {}
         # synchronise the fake revision:
         counts = self.getCounts()
         self.bzrsync.syncOneRevision(FakeRevision)
@@ -633,6 +636,23 @@ class TestBzrSyncModified(BzrSyncTestCase):
         FakeRevision.parent_ids = ['rev2', 'rev1']
         self.assertRaises(RevisionModifiedError,
                           self.bzrsync.syncOneRevision, FakeRevision)
+
+
+class TestRevisionProperty(BzrSyncTestCase):
+    """Tests for storting revision properties."""
+
+    def test_revision_properties(self):
+        # Revisions with properties should have records stored in the
+        # RevisionProperty table, accessible through Revision.getProperties().
+        properties = {'name': 'value'}
+        self.commitRevision(rev_id='rev1', revprops=properties)
+        self.syncBranch()
+        # Check that properties were saved to the revision.
+        bzr_revision = self.bzr_branch.repository.get_revision('rev1')
+        self.assertEquals(properties, bzr_revision.properties)
+        # Check that properties are stored in the database.
+        db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
+        self.assertEquals(properties, db_revision.getProperties())
 
 
 def test_suite():

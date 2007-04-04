@@ -1,5 +1,5 @@
 <tr>
-  <td class="icon left" tal:content="structure context/fmt:icon" />
+  <td class="icon left" tal:content="structure context/image:icon" />
   <td>
     <div>
       #<span tal:replace="context/bug/id">4</span>
