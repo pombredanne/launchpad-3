@@ -6,12 +6,15 @@
   <body>
     <metal:portlets fill-slot="portlets">
       <tal:portlet replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet condition="context/milestones"
+                   replace="structure context/@@+portlet-milestones"
+        />
     </metal:portlets>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
 
       <h1 tal:content="context/displayname">Luix 5.10</h1>
-      <span tal:replace="structure context/distribution/fmt:icon" />
+      <span tal:replace="structure context/distribution/image:icon" />
       <div tal:replace="structure context/summary/fmt:text-to-html" />
       <div tal:replace="structure context/description/fmt:text-to-html" />
       <ul class="buttons">
@@ -46,11 +49,6 @@
     </tal:block>
 
       <div class="left">
-        <div
-          class="section"
-          tal:condition="context/milestones"
-          tal:content="structure context/@@+portlet-milestones"
-        />
         <div
           class="section"
           tal:condition="context/getLastUploads"

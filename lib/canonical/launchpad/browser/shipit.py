@@ -10,6 +10,7 @@ __all__ = [
     'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
     'ShippingRequestSetNavigation', 'ShipitFrontPageView']
 
+from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
@@ -84,6 +85,15 @@ class ShipitFrontPageView(LaunchpadView):
             return 'http://www.edubuntu.org/Download'
 
 
+def shipit_is_open(flavour):
+    """Return True if shipit is open.
+
+    Shipit is considered open if we have at least one standard option of
+    the given flavour.
+    """
+    return bool(getUtility(IStandardShipItRequestSet).getByFlavour(flavour))
+
+
 # XXX: The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
 # class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
@@ -101,6 +111,9 @@ class ShipItLoginView(LoginOrRegister):
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
         self.origin = self.possible_origins[self.flavour]
+
+    def is_open(self):
+        return shipit_is_open(self.flavour)
 
     def getApplicationURL(self):
         return 'https://launchpad.net'
@@ -196,6 +209,9 @@ class ShipItRequestView(GeneralFormView):
         self._extra_fields = self.quantity_fields_mapping.values()
         self.fieldNames.append('reason')
         self.fieldNames.extend(self._extra_fields)
+
+    def is_open(self):
+        return shipit_is_open(self.flavour)
 
     @property
     def dvds_section(self):
@@ -317,7 +333,7 @@ class ShipItRequestView(GeneralFormView):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
             self.flavour)
-        return sorted(requests, key=lambda request: request.totalCDs)
+        return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
     def current_order_standard_id(self):
@@ -501,7 +517,9 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
-        if shipped_orders.count() >= 2:
+        if current_order.addressIsDuplicated():
+            current_order.markAsDuplicatedAddress()
+        elif shipped_orders.count() >= 2:
             # User has more than 2 shipped orders. Now we need to check if any
             # of the flavours contained in this order is also contained in two
             # or more of this user's previous orders and, if so, mark this

@@ -54,9 +54,8 @@ SourcePackage page:
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox'
 
-This page provides its versions publications organised by pocket, as
-we can see 'mozilla-firefox' is published twice in pocket RELEASE
-(brain-dead sampledata):
+This page provides its versions publications organised by pocket.
+We can see 'mozilla-firefox' is published once in pocket RELEASE:
 
   >>> print find_tag_by_id(browser.contents, 'publishings')
   <dl id="publishings">
@@ -69,10 +68,7 @@ we can see 'mozilla-firefox' is published twice in pocket RELEASE
       </p>
       <ul>
         <li>
-         <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
-        </li>
-        <li>
-           <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
+         <a href="/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
         </li>
       </ul>
     </dd>
@@ -91,9 +87,9 @@ Product and Branches:
       <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>
-      <a href="http://localhost/firefox/trunk">trunk</a><br />
+      <a href="/firefox/trunk">trunk</a><br />
     </li>
-    <small>(<a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
+    <small>(<a href="/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
   </ul>
 
 The user can also download the files for the "currentrelease" (last

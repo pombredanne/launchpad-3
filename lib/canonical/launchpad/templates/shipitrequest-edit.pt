@@ -26,6 +26,24 @@
     <tr>
     <td width="80%">
 
+    <div tal:condition="context/addressIsDuplicated"
+         tal:define="dupe_requests context/getRequestsWithSameAddressFromOtherUsers"
+         class="informational message">
+      <p>
+        There are two or more requests made by other users with this address.
+      </p>
+      <ul>
+        <li tal:repeat="request dupe_requests">
+          <a tal:attributes="href request/fmt:url">
+            <span tal:replace="request/daterequested/fmt:date" />:
+            <span tal:replace="request/getTotalCDs" />
+            CDs requested by
+            <span tal:replace="request/recipientdisplayname" />
+          </a>
+        </li>
+      </ul>
+    </div>
+
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests
                      context/recipient/shippedShipItRequestsOfCurrentRelease"
