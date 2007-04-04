@@ -393,6 +393,27 @@ ShipItConstants.current_distrorelease.
   ...     current_release_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
+                          Country: Antarctica
+             Total Shipped Ubuntu: 50
+            Total Shipped Kubuntu: 50
+           Total Shipped Edubuntu: 50
+                    Total Shipped: 150
+           Shipped Ubuntu x86 CDs: 50
+         Shipped Ubuntu AMD64 CDs: 0
+           Shipped Ubuntu PPC CDs: 0
+          Shipped Kubuntu x86 CDs: 50
+        Shipped Kubuntu AMD64 CDs: 0
+          Shipped Kubuntu PPC CDs: 0
+         Shipped Edubuntu x86 CDs: 50
+       Shipped Edubuntu AMD64 CDs: 0
+         Shipped Edubuntu PPC CDs: 0
+            Normal-prio shipments: 1
+              High-prio shipments: 0
+             Average request size: 150
+        Approved CDs (percentage): 100.00%
+  Percentage of total shipped CDs: 59.52%
+                        Continent: Antarctica
+  ------------------------------------------------------------ Line 2
                           Country: Bermuda
              Total Shipped Ubuntu: 10
             Total Shipped Kubuntu: 0
@@ -413,7 +434,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 3.97%
                         Continent: North America
-  ------------------------------------------------------------ Line 2
+  ------------------------------------------------------------ Line 3
                           Country: British Indian Ocean Territory
              Total Shipped Ubuntu: 25
             Total Shipped Kubuntu: 11
@@ -434,7 +455,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 16.27%
                         Continent: Asia
-  ------------------------------------------------------------ Line 3
+  ------------------------------------------------------------ Line 4
                           Country: Burkina Faso
              Total Shipped Ubuntu: 10
             Total Shipped Kubuntu: 0
@@ -455,7 +476,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 3.97%
                         Continent: Africa
-  ------------------------------------------------------------ Line 4
+  ------------------------------------------------------------ Line 5
                           Country: China
              Total Shipped Ubuntu: 1
             Total Shipped Kubuntu: 0
@@ -476,7 +497,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 0.40%
                         Continent: Asia
-  ------------------------------------------------------------ Line 5
+  ------------------------------------------------------------ Line 6
                           Country: France
              Total Shipped Ubuntu: 0
             Total Shipped Kubuntu: 10
@@ -497,7 +518,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 4.37%
                         Continent: Europe
-  ------------------------------------------------------------ Line 6
+  ------------------------------------------------------------ Line 7
                           Country: Heard Island and McDonald Islands
              Total Shipped Ubuntu: 5
             Total Shipped Kubuntu: 0
@@ -518,7 +539,7 @@ ShipItConstants.current_distrorelease.
         Approved CDs (percentage): 100.00%
   Percentage of total shipped CDs: 1.98%
                         Continent: Antarctica
-  ------------------------------------------------------------ Line 7
+  ------------------------------------------------------------ Line 8
                           Country: United States
              Total Shipped Ubuntu: 24
             Total Shipped Kubuntu: 0
@@ -696,6 +717,9 @@ ShipItConstants.current_distrorelease.
   ------------------------------------------------------------ Line 5
         Number of CDs: 24
   Number of Shipments: 2
+  ------------------------------------------------------------ Line 6
+        Number of CDs: 150
+  Number of Shipments: 1
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
   ...     current_release_only=True)

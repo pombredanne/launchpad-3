@@ -91,7 +91,8 @@ def shipit_is_open(flavour):
     Shipit is considered open if we have at least one standard option of
     the given flavour.
     """
-    return bool(getUtility(IStandardShipItRequestSet).getByFlavour(flavour))
+    return bool(getUtility(IStandardShipItRequestSet).getByFlavour(
+        flavour, getUtility(ILaunchBag).user))
 
 
 # XXX: The LoginOrRegister class is not really designed to be reused. That

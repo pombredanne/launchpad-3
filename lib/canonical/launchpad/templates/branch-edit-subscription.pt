@@ -7,8 +7,8 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>
-        Subscribe to &ldquo;<tal:branch replace="context/displayname" />&rdquo;
+      <h1>Edit subscription to branch 
+      &ldquo;<tal:branch replace="context/displayname" />&rdquo;
       </h1>
     </metal:heading>
 
@@ -19,20 +19,20 @@
 
 <div metal:fill-slot="main">
 
-<tal:not_subscribed condition="not: view/user_is_subscribed">
+<tal:subscribed condition="view/user_is_subscribed">
 
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
       <p class="documentDescription">
-        If you subscribe to a branch it will show up on your
+        If you unsubscribe from a branch it will no longer show up on your
         personal pages.
       </p>
     </metal:extra>
   </div>
 
-</tal:not_subscribed>
+</tal:subscribed>
 
-<tal:subscribed condition="view/user_is_subscribed">
+<tal:not_subscribed condition="not: view/user_is_subscribed">
 
   <tal:comment condition="nothing">
     This occurs if the user is hacking the URLs, 
@@ -42,15 +42,14 @@
     is using a tabbed browser and hasn't refreshed the page.
   </tal:comment>
 
-
   <p class="documentDescription">
-    You are already subscribed to this branch
+    You are not currently subscribed to this branch.
   </p>
 
-</tal:subscribed>
+</tal:not_subscribed>
 
 </div>
 
 </body>
 </html>
-<!-- 1-0 done -->
+
