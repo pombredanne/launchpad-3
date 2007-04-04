@@ -76,6 +76,7 @@
       factory=".bootstrap.bootStrapSubscriber"
       />
     -->
+    <!--
   <include file="browser.zcml" />
-
+  -->
 </configure>

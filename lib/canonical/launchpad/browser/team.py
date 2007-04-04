@@ -2,8 +2,15 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
-           'TeamMemberAddView', 'ProposedTeamMembersEditView']
+__all__ = [
+    'ProposedTeamMembersEditView',
+    'TeamAddView',
+    'TeamBrandingView',
+    'TeamEditView',
+    'TeamEmailView',
+    'TeamMemberAddView',
+    'TeamMembersView',
+    ]
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -14,10 +21,9 @@ from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.validators.email import valid_email
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
     ITeam, ITeamMembershipSet)
@@ -27,12 +33,9 @@ class TeamEditView(LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
-        'name', 'displayname', 'teamdescription', 'gotchi', 'emblem',
+        'name', 'displayname', 'teamdescription',
         'defaultmembershipperiod', 'defaultrenewalperiod',
         'subscriptionpolicy']
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -230,6 +233,12 @@ class ProposedTeamMembersEditView:
         # displayed on the page that calls this method.
         flush_database_updates()
         self.request.response.redirect('%s/+members' % canonical_url(team))
+
+
+class TeamBrandingView(BrandingChangeView):
+
+    schema = ITeam
+    field_names = ['icon', 'logo', 'mugshot']
 
 
 class TeamMemberAddView(AddView):

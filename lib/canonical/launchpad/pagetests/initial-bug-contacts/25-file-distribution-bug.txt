@@ -17,7 +17,7 @@ bug contacts, if there are any.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/15
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/15
 
 We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
@@ -61,7 +61,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/16
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/16
 
     >>> login("mark@hbd.com")
 
