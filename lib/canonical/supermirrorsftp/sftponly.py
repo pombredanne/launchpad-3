@@ -211,11 +211,16 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self._ebBadAuth(ConchError('auth returned none'))
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
+        if self.method == 'publickey':
+            d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
         return d
 
-    def _ebBadAuth(self, reason):
+    def _ebLogToBanner(self, reason):
         self.sendBanner(reason.getErrorMessage())
+        return reason
+
+    def _ebBadAuth(self, reason):
         return userauth.SSHUserAuthServer._ebBadAuth(self, reason)
 
 

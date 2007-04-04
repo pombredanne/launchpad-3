@@ -262,6 +262,21 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
                              MockChecker.error_message + u'\r\n')
         return d.addCallback(check)
 
+    def test_unsupportedAuthMethodNotLogged(self):
+        # Trying various authentication methods is a part of the normal
+        # operation of the SSH authentication protocol. We should not spam the
+        # client with warnings about this, as whenever it becomes a problem, we
+        # can rely on the SSH client itself to report it to the user.
+        d = self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('jml') + NS('') + NS('none') + NS(''))
+
+        def check(ignored):
+            # Check that we received only a FAILRE.
+            [(message_type, data)] = self.transport.packets
+            self.assertEqual(message_type, userauth.MSG_USERAUTH_FAILURE)
+
+        return d.addCallback(check)
+
 
 class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
     """Tests for the SFTP server authentication mechanism.
