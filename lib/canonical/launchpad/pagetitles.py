@@ -649,21 +649,15 @@ person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-pofile_edit = 'Rosetta: Edit PO file details'
-# XXX mpt 20051209: This should be more context-sensitive
+pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-pofile_export = ContextTitle('%s file exports')
+pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
-def pofile_index(context, view):
-    return 'Rosetta: %s in %s' % (
-        context.potemplate.title, context.language.englishname)
+pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
-def pofile_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.potemplate.displayname,
-        context.language.englishname)
+pofile_translate = ContextTitle(smartquote('Edit "%s"'))
 
-pofile_upload = ContextTitle('%s upload in Rosetta')
+pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -685,20 +679,17 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-def pomsgset_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
+pomsgset_translate = ContextTitle(smartquote('Edit "%s"'))
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-potemplate_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
-potemplate_upload = ContextTitle(smartquote('"%s" upload in Rosetta'))
+potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
-potemplate_export = ContextTitle(smartquote('Export translations of "%s"'))
+potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
 potemplatename_add = 'Add a new template name to Rosetta'
 

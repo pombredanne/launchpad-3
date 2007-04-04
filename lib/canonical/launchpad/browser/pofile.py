@@ -28,12 +28,11 @@ from canonical.launchpad.browser.pomsgset import (
 from canonical.launchpad.browser.potemplate import (
     BaseExportView, POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ITranslationImportQueue,
-    UnexpectedFormData, NotFoundError)
+    IPOFile, ITranslationImportQueue, UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import RosettaFileFormat
+
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):

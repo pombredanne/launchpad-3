@@ -35,12 +35,13 @@ from canonical.launchpad.browser.productseries import (
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, 
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
     IPOTemplateSubset, ITranslationImportQueue, IProductSeries, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lp.dbschema import RosettaFileFormat
 
 
 class POTemplateNavigation(Navigation):
