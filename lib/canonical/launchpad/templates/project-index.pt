@@ -71,9 +71,8 @@
                 tal:attributes="href product/fmt:url"
                 tal:content="product/title"
               >Project title</a></strong>
-            <div>
+            <div tal:condition="product/releases">
               Releases:
-              <tal:none condition="not:product/releases">None</tal:none>
               <tal:release repeat="release product/releases">
                 <a
                   tal:attributes="href release/fmt:url"
@@ -82,9 +81,8 @@
                 condition="not:repeat/release/end">,</tal:comma>
               </tal:release>
             </div>
-            <div>
+            <div tal:condition="product/milestones">
               Milestones:
-              <tal:none condition="not:product/milestones">None</tal:none>
               <tal:milestone repeat="milestone product/milestones">
                 <a
                   tal:attributes="href milestone/fmt:url"
