@@ -494,7 +494,7 @@ class QuestionTargetFacetMixin:
     def answers(self):
         summary = (
             'Questions for %s' % self.context.displayname)
-        return Link('+tickets', 'Answers', summary)
+        return Link('', 'Answers', summary)
 
 
 class QuestionTargetTraversalMixin:

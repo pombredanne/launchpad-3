@@ -1,27 +1,40 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;"
-    tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl">
+    tal:define="
+        icingrev string:5;
+        rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+        icingroot string:${rooturl}+icing/rev${icingrev};
+        site_message modules/canonical.config/config/launchpad/site_message;
+        devmode modules/canonical.config/config/devmode">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
       media="screen, print"
-      tal:content="string:@import url(${rooturl}+icing/style.css?rev=2);"/>
+      tal:condition="not: devmode"
+      tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
+    <style
+      type="text/css"
+      media="screen, print"
+      tal:condition="devmode"
+      tal:content="string:@import url(${icingroot}/style.css);"/>
     <style
       tal:define="dbname modules/canonical.config/config/dbname"
       tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
+    <style tal:condition="not: site_message" type="text/css"
+    >#help_panel {top: 28px !important;}</style>
     <!-- Launchpad JS code -->
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/lpmenu.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/sorttable.js"></script>
-    <link rel="shortcut icon" tal:attributes="href string:${rooturl}@@/launchpad" />
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
@@ -34,12 +47,11 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
-    <div id="globalheader">
-      <a tal:attributes="href rooturl" title="Home"><img width="30" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_home.gif" alt="Home" /></a>
-      <div class="sitemessage">This is a private beta. Please do not post screenshots publicly. Bug reports and feedback welcome.</div>
+    <div id="globalheader" tal:condition="site_message">
+      <div class="sitemessage" tal:content="structure site_message"/>
       <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
-
+    <div id="topline" tal:condition="not: site_message"></div>
     <div id="locationbar">
       <strong id="yourlocation">Your location:</strong>
       <ul id="menuroot">
@@ -86,14 +98,14 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
-        action="/+search"
+        action="/projects/"
         method="get"
       >
         <div>
           <input
             type="text"
-            id="q"
-            name="q"
+            id="text"
+            name="text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />
@@ -231,7 +243,7 @@
           <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
         </div>
         <div id="colophon">
-          <a href="/legal">Conditions&nbsp;of&nbsp;Use</a> |
+          <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
           <a href="/faq">FAQ</a>
         </div>
@@ -241,28 +253,31 @@
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
-          </tal:block> |
-          <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+          </tal:block>
+          <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
         </div>
-        <ul style="clear: both;" tal:condition="nothing">
-          <li>Page type: <tal:pagetype replace="view/macro:pagetype" /></li>
-
+        <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
+            <li>Facet name:
+              <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+            </li>
+            <li>Page type:
+               <tal:pagetype replace="view/macro:pagetype" />
+            </li>
             <li>Has portlet column:
-                <span tal:replace="view/macro:pagehas/portlets" />
+               <span tal:replace="view/macro:pagehas/portlets" />
             </li>
             <li>Has application tabs:
-                <span tal:replace="view/macro:pagehas/applicationtabs" />
+               <span tal:replace="view/macro:pagehas/applicationtabs" />
             </li>
             <li>Has application border:
-                <span tal:replace="view/macro:pagehas/applicationborder" />
+               <span tal:replace="view/macro:pagehas/applicationborder" />
             </li>
             <li>Has application buttons:
-                <span tal:replace="view/macro:pagehas/applicationbuttons" />
+               <span tal:replace="view/macro:pagehas/applicationbuttons" />
             </li>
             <li>Has heading:
-                <span tal:replace="view/macro:pagehas/heading" />
+               <span tal:replace="view/macro:pagehas/heading" />
             </li>
-
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
@@ -281,7 +296,9 @@
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">
-          <li class="item container" lpm:mid="/+menudata/contributions"><a href="/products">Projects</a></li>
+          <li class="item"
+              tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
+          class="container" href="/products">Projects</a></li>
         </tal:condition>
         <tal:condition condition="not: request/lp:person">
           <li class="item"><a href="/products">Projects</a></li>

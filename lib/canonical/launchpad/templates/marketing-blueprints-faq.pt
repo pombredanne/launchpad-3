@@ -1,0 +1,36 @@
+<html metal:use-macro="context/@@marketing_faq_template/master">
+<body>
+ <metal:left-column fill-slot="left-column">
+    <h2>Blueprints</h2>
+    <h3 class="byline">FAQs</h3>
+
+    <img src="/+icing/app-blueprints-wm.gif" alt="Blueprints"/>
+
+    <blockquote>
+      <p>Launchpad's Blueprint Tracker helps your community map out ideas for
+         future work, then coordinate that work when a feature is ready to be
+         implemented.
+      </p>
+    </blockquote>
+ </metal:left-column>
+ <metal:right-column fill-slot="right-column">
+    <h4>Develop, implement and track the progress of your software's
+        features.</h4>
+    <ul id="faqs">
+      <li><a href="#q1">What does the Blueprint Tracker do that my wiki
+                        can't?</a></li>
+    </ul>
+
+    <h5 id="q1">What does the Blueprint Tracker do that my wiki
+                can't?</h5>
+    <p>Wikis are ideal for describing the meat of an idea or specification,
+       but they're largely unstructured. Launchpad's Blueprint Tracker helps
+       you turn ideas into features by tracking what role and responsibilities
+       relevant people have, prioritising blueprints and tying them to
+       development sprints and specific releases.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+  </metal:right-column>
+</body>
+</html>

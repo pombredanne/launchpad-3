@@ -70,7 +70,7 @@ calculated daily. That's why it's still 0.
 == Projects a person is most active on ==
 
 Using our karma records we can also tell in which projects a person is most
-active on, including the type of work the person does on each project.
+active on, including the type of work the person does on each project. We only show the 5 most active projects.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
@@ -81,7 +81,6 @@ active on, including the type of work the person does on each project.
     Gnome Baker [u'bugs']
     Mozilla Thunderbird [u'bugs']
     Mozilla Firefox [u'bugs']
-    Bazaar [u'bugs']
 
 As we can see, the results are ordered descending by the karma of the person
 on that project.

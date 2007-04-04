@@ -23,7 +23,7 @@ first source package found in the "Affects" list.
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu-product/+bug/2/+distrotask'
+    'http://bugs.launchpad.dev/ubuntu-product/+bug/2/+distrotask'
     >>> user_browser.getControl('Source Package').value
     'mozilla-firefox'
 
