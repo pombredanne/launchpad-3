@@ -78,7 +78,7 @@ The distribution home page also has a link to the 'Answers' facet:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/+tickets'
+    'http://answers.launchpad.dev/ubuntu/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for Ubuntu
@@ -124,7 +124,7 @@ the Answers facet.
 
     >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/hoary/+source/evolution/+tickets'
+    'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for Hoary evolution...
@@ -145,7 +145,7 @@ page:
 
     >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/+source/mozilla-firefox/+tickets'
+    'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for mozilla-firefox in ubuntu
@@ -187,7 +187,7 @@ The 'Answers' facet link will display a page listing all the questions
 involving that person.
 
     >>> browser.getLink('Answers').url
-    '.../~name16/+tickets'
+    'http://answers.launchpad.dev/~name16/'
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions involving Foo Bar'

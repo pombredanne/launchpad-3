@@ -768,8 +768,9 @@ class BugTargetBugTagsView(LaunchpadView):
 
     def _getSearchURL(self, tag):
         """Return the search URL for the tag."""
+        # Use path_only here to reduce the size of the rendered page.
         return "%s?field.tag=%s" % (
-            self.request.getURL(), urllib.quote(tag))
+            self.request.getURL(path_only=True), urllib.quote(tag))
 
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""
