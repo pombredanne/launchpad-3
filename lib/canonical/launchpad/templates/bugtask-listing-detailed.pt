@@ -1,5 +1,5 @@
 <tr>
-  <td class="icon left" tal:content="structure context/fmt:icon" />
+  <td class="icon left" tal:content="structure context/image:icon" />
   <td>
     <div>
       #<span tal:replace="context/bug/id">4</span>
@@ -15,12 +15,13 @@
             <b tal:content="pillar/displayname" />,
           </tal:per_pillar>
         </tal:affected_pillars>
-      reported by
-      <a tal:attributes="href context/owner/fmt:url"
-         tal:content="context/owner/browsername">Foo Bar</a>
+      reported
       <span
         tal:attributes="title context/datecreated/fmt:datetime"
         tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+      by
+      <a tal:attributes="href context/owner/fmt:url"
+         tal:content="context/owner/browsername">Foo Bar</a>
     </div>
   </td>
 </tr>

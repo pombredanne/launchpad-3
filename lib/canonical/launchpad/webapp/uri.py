@@ -420,6 +420,14 @@ class URI:
             otherpath += '/'
         return otherpath.startswith(basepath)
 
+    def underDomain(self, domain):
+        """Return True if the given domain name a parent of the URL's host."""
+        if len(domain) == 0:
+            return True
+        our_segments = self.host.split('.')
+        domain_segments = domain.split('.')
+        return our_segments[-len(domain_segments):] == domain_segments
+
     def ensureSlash(self):
         """Return a URI with the path normalised to end with a slash."""
         if self.path.endswith('/'):

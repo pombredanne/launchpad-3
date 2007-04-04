@@ -72,7 +72,7 @@
             <p>
               If you&#8217;re <tal:person replace="context/owner/displayname" />,
               <a tal:attributes=
-              "href string:${context/fmt:url}/+translations/+login">log in</a>
+              "href string:${context/fmt:url}/+login">log in</a>
               to begin the setup process.
             </p>
             <p>

@@ -1233,6 +1233,8 @@ COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to 
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
 COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
+COMMENT ON COLUMN ShippingRequest.normalized_address IS 'The normalized
+address of this request. It is maintained by a trigger because it''s safer than hacking sqlobject''s internals (specially because we sometimes update data behind sqlobject''s back).';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1408,4 +1410,17 @@ COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent su
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+
+-- ScriptActivity
+COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
+COMMENT ON COLUMN ScriptActivity.name IS 'The name of the script';
+COMMENT ON COLUMN ScriptActivity.hostname IS 'The hostname of the machine where the script was run';
+COMMENT ON COLUMN ScriptActivity.date_started IS 'The date at which the script started';
+COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed';
+
+-- RevisionProperty
+COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that appear on a revision.';
+COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
+COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
+COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
 

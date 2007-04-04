@@ -1,31 +1,11 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="malone">
   <body>
+    <h1 metal:fill-slot="heading">Bug tracking</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Bug tracking</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/bugs" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-bugs">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                         <ul class="rollover buttons">
                           <li>
-                            <a href="+tour">
+                            <a href="/+tour">
                               <img
                                 alt="Take a tour"
                                 src="/+icing/but-lrg-takeatour.gif"
@@ -144,15 +124,8 @@
                           id="application-footer"
                           tal:content="structure context/@@+portlet-stats"
                         />
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
+
+
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
@@ -169,5 +142,4 @@
     </div>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 done -->

@@ -39,7 +39,7 @@
       <h2>How to get started</h2>
       <p>
         To use Malone for your project, first
-        <a href="/products">check whether it&#8217;s registered already</a>.
+        <a href="/projects">check whether it&#8217;s registered already</a>.
         The admin for a project can set that project to use Malone
         (this is off by default so that people don&#8217;t report bugs that
         nobody reads).

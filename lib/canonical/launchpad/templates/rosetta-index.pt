@@ -1,31 +1,11 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
   <body>
+    <h1 metal:fill-slot="heading">Software translations</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Software translations</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/translations" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-translations">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                         <ul class="rollover buttons">
                           <li>
-                            <a href="+tour">
+                            <a href="/+tour">
                               <img
                                 alt="Take a tour"
                                 src="/+icing/but-lrg-takeatour.gif"
@@ -33,6 +13,10 @@
                             </a>
                           </li>
                         </ul>
+                        <form class="central" action="/projects/" method="get">
+                          <input id="text" name="text" size="50" type="text" />
+                          <input type="submit" value="Search Projects" />
+                        </form>
                         <p id="application-summary">
                           Launchpad helps you build a community to
                           translate your project into into almost any
@@ -65,13 +49,15 @@
 
                             <h2>Translatable projects</h2>
                             <ul class="product">
-                              <li tal:repeat="product context/translatable_products">
+                              <li tal:repeat="product context/featured_products">
                                 <a
                                   tal:attributes="href string:/${product/name}/+translations"
                                   tal:content="product/title"
                                 />
                               </li>
                             </ul>
+                            <a href="+products-with-translations">
+                              &raquo; List all translatable projects...</a>
 
                         </div>
                         <div class="three column right demo">
@@ -79,23 +65,11 @@
                             <h2>Languages</h2>
 
                         </div>
-                        <form class="central" action="/+search" method="get">
-                          <input id="text" name="q" size="50" type="text" />
-                          <input type="submit" value="Search Projects" />
-                        </form>
                         <div
                           id="application-footer"
                           tal:content="structure context/@@+portlet-stats"
                         />
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
+
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
@@ -113,5 +87,4 @@
     </div>
   </body>
 </html>
-</tal:layout>
-<!-- 1-0 inprogress Missing sample of translatable upstreams (bug 79674). -->
+

@@ -20,6 +20,9 @@
               >Uses Answers</li>
               <li tal:condition="not: context/official_answers"
               >Doesn&rsquo;t use Answers</li>
+              <li tal:condition="context/icon">Branded
+                <tal:icon replace="structure context/image:icon" />
+              </li>
             </ul>
           </td>
           <td tal:condition="not:context/active">Not active</td>
