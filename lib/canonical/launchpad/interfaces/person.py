@@ -17,7 +17,6 @@ __all__ = [
     'IPersonClaim',
     'INewPerson',
     'JoinNotAllowed',
-    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     ]
 
 
@@ -48,9 +47,6 @@ from canonical.launchpad.interfaces.validation import (
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
-
-
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class PersonNameField(BlacklistableContentNameField):

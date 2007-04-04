@@ -6,7 +6,8 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
+           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -31,6 +32,7 @@ from canonical.launchpad import _
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
 MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 def _validate_positive_int(value):
