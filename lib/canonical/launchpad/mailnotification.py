@@ -19,18 +19,21 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, ILanguageSet, ISpecification, ITeamMembershipSet,
-    IUpstreamBugTask, IEmailAddressSet)
+    IBranch, IBugTask, IEmailAddressSet, ILanguageSet, ISpecification,
+    ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, QuestionAction
+from canonical.lp.dbschema import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    TeamMembershipStatus, QuestionAction)
 
 CC = "CC"
 
@@ -1394,3 +1397,97 @@ def notify_specification_modified(spec, event):
 
     for address in spec.notificationRecipientAddresses():
         simple_sendmail_from_person(event.user, address, subject, body)
+
+
+def email_branch_modified_notifications(branch, to_addresses,
+                                        from_address, contents):
+    """Send notification emails using the branch email template.
+
+    Emails are sent one at a time to the listed addresses.
+    """
+    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    headers = {'X-Launchpad-Branch': branch.unique_name}
+    body = get_email_template('branch-modified.txt') % {
+        'contents': contents,
+        'branch_title': branch.title,
+        'branch_url': canonical_url(branch),
+        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+    for address in to_addresses:
+        simple_sendmail(from_address, address, subject, body, headers)
+        
+
+def send_branch_revision_notifications(branch, from_address, message, diff):
+    """Notify subscribers that a revision has been added (or removed)."""
+    diff_size = diff.count('\n') + 1
+    details = branch.getRevisionNotificationDetails()
+    for max_diff in sorted(details.keys()):
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = message
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (message, diff_msg)
+            else:
+                contents = "%s\n%s" % (message, diff)
+        else:
+            contents = "%s\n%s" % (message, diff)
+        addresses = details[max_diff]
+        email_branch_modified_notifications(
+            branch, addresses, from_address, contents)
+
+
+def send_branch_modified_notifications(branch, event):
+    """Notify the related people that a branch has been modifed."""
+    branch_delta = BranchDelta.construct(
+        event.object_before_modification, branch, event.user)
+    if branch_delta is None:
+        return
+    # If there is no one interested, then bail out early.
+    to_addresses = branch.getAttributeNotificationAddresses()
+    if not to_addresses:
+        return
+
+    indent = ' '*4
+    info_lines = []
+
+    # Fields for which we have old and new values.
+    for field_name in ('name', 'title', 'url'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            old_item = delta['old']
+            new_item = delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, str(old_item), str(new_item)))
+
+    # lifecycle_status is different as it is an Enum type.
+    if branch_delta.lifecycle_status is not None:
+        old_item = branch_delta.lifecycle_status['old']
+        new_item = branch_delta.lifecycle_status['new']
+        title = IBranch['lifecycle_status'].title
+        info_lines.append("%s%s: %s => %s" % (
+            indent, title, old_item.title, new_item.title))
+        
+            
+    # Fields for which we only have the new value.
+    for field_name in ('summary', 'whiteboard'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            if info_lines:
+                info_lines.append('')
+            info_lines.append('%s changed to:\n\n%s' % (title, delta))
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+
+    from_address = format_address(
+        event.user.displayname, event.user.preferredemail.email)
+    contents = '\n'.join(info_lines)
+    email_branch_modified_notifications(
+        branch, to_addresses, from_address, contents)

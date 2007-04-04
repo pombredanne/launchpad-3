@@ -10,6 +10,9 @@ an account on Launchpad.
 First, check that the edit link is visible on the branch page and click on
 that link to load the +edit form for the branch.
 
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails = []
+
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon')
@@ -41,18 +44,21 @@ slash to the URL.
 We should be redirected to the branch page, check that our changes were taken
 into account. The trailing slash added to the URL must have been ignored.
 
+Since the details have been changed, emails should have been sent out.
+Emails go out to the all the subscribers.  Now there
+are no subscribers so there whould be no emails.
+
+  >>> len(stub.test_emails)
+  0
+
   >>> browser.url
   'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
-  >>> print http(r"""
-  ... GET /~name12/gnome-terminal/klingon HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...>http://trekkies.example.com/gnome-terminal/klingon<...
-  ...Warriors' branch for developping and testing Klingon support in GNOME Terminal....
-  ...>Ubuntu Gnome Team<...
+  >>> div = find_tag_by_id(browser.contents, 'maincontent')
+  >>> print div.renderContents()
+  <div...
+  ...http://trekkies.example.com/gnome-terminal/klingon...
+  ...Warriors' branch for developping and testing Klingon support in GNOME Terminal...
+  ...Other branches authored by Ubuntu Gnome Team...
 
 Finally, set the author and summary back to their previous values.
 
