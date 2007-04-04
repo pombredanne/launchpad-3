@@ -215,6 +215,21 @@ class POBasicTestCase(unittest.TestCase):
             u'"plural-forms: nplurals=2; plural=random()\\n"')
 
     def testMultipartString(self):
+        """
+        Test concatenated message strings on the same line.
+
+        There seems to be nothing in the PO file format that forbids closing
+        a string and re-opening it on the same line.  One wouldn't normally
+        want to make use of this, but in bug #49599 two lines in a message had
+        been accidentally concatenated at column 80, possibly because the
+        author's editor happened to break the line there and the missing line
+        feed became unnoticeable.
+
+        Make sure this works.  The strings should be concatenated.  If there
+        is any whitespace between the lines, it should be ignored.  This is
+        how the ability to close and re-open strings is normally used: to
+        break up long strings into multiple lines in the PO file.
+        """
         foos = 9
         self.parser.write('''
             %s
