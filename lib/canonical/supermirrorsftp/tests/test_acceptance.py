@@ -24,6 +24,7 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 from bzrlib.builtins import cmd_push
 
+from twisted.conch.ssh import keys
 from twisted.internet import defer, threads
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -120,15 +121,13 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
         return d
 
 
-class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
+class SSHKeyMixin:
+    """Mixin for tests that need to do SSH key-based authentication."""
 
-    def setUp(self):
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        super(SFTPTestCase, self).setUp()
-
+    def prepareTestUser(self):
+        """Prepare 'testuser' and 'testteam' Persons, giving 'testuser' a known
+        SSH key.
+        """
         # insert SSH keys for testuser -- and insert testuser!
         cur = cursor()
         cur.execute(
@@ -142,6 +141,28 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository):
             'testuser');
             """)
         commit()
+
+    def getPrivateKey(self):
+        """Return the private key object used by 'testuser' for auth."""
+        return keys.getPrivateKeyObject(
+            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
+
+    def getPublicKey(self):
+        """Return the public key string used by 'testuser' for auth."""
+        return keys.getPublicKeyString(
+            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
+
+
+class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
+
+    def setUp(self):
+        # Install the default SIGCHLD handler so that read() calls don't get
+        # EINTR errors when child processes exit.
+        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        super(SFTPTestCase, self).setUp()
+
+        self.prepareTestUser()
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())

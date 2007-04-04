@@ -179,9 +179,8 @@ class Breadcrumbs(LaunchpadView):
         crumbs = list(self.request.breadcrumbs)
 
         L = []
-        firsturl = '/'
         firsttext = 'Home'
-        rooturl = allvhosts.configs['mainsite'].rooturl
+        firsturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
             '<li lpm:mid="root" class="item">'

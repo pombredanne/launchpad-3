@@ -269,9 +269,6 @@ Check the content IDRSPR binaries & builds attributes:
    >>> bumpy_firefox_sp.currentrelease.binaries.count()
    1
 
-   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
-   2
-
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchrelease.title
    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)

@@ -768,7 +768,6 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
-        self.matches = 0
         self.results = None
 
         self.searchrequested = False
@@ -795,17 +794,18 @@ class ProductSetView(LaunchpadView):
                 self.request.response.redirect(url)
                 return
 
-        if self.searchrequested:
-            self.matches = len(self.searchresults)
 
+    @cachedproperty
+    def matches(self):
+        if not self.searchrequested:
+            return None
+        pillarset = getUtility(IPillarNameSet)
+        return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
     def searchresults(self):
         search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
+        limit = self.max_results_to_display
         return [
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
