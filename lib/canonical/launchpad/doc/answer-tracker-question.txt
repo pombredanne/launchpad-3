@@ -244,7 +244,7 @@ Questions in languages that are not supported
     >>> sorted([question.title for question in unsupported_questions])
     [u'Problemas de Impress\xe3o no Firefox']
    
-    >>> unsupported_questions = firefox_package.searchQuestions(
+    >>> unsupported_questions = evolution_package.searchQuestions(
     ...     unsupported=True)
     >>> sorted([question.title for question in unsupported_questions])
     []
