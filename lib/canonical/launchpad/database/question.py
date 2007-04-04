@@ -540,7 +540,8 @@ class QuestionSearch:
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, needs_attention_from=None, sort=None,
-                 product=None, distribution=None, sourcepackagename=None):
+                 product=None, distribution=None, sourcepackagename=None,
+                 project=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -562,6 +563,7 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
+        self.project = project
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -586,24 +588,40 @@ class QuestionSearch:
                 constraints.append(
                     'Ticket.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
-
+        elif self.project:
+            constraints.append("""
+                Ticket.product = Product.id AND 
+                Product.project = %s""" % sqlvalues(self.project))
+        
         return constraints
 
     def getTableJoins(self):
         """Return the tables that should be joined for the constraints."""
         if self.needs_attention_from:
             return self.getMessageJoins(self.needs_attention_from)
+        elif self.project:
+            return self.getProductJoins()
         else:
             return []
 
     def getMessageJoins(self, person):
         """Create the joins needed to select constraints on the messages by a
         particular person."""
-        return [
+        joins = [
             ('LEFT OUTER JOIN TicketMessage '
              'ON TicketMessage.ticket = Ticket.id'),
             ('LEFT OUTER JOIN Message ON TicketMessage.message = Message.id '
              'AND Message.owner = %s' % sqlvalues(person))]
+        if self.project:
+            joins.extend(self.getProductJoins())
+            
+        return joins
+             
+    def getProductJoins(self):
+        """Create the joins needed to select contrains on progects by a
+        particular project."""
+        return [('JOIN Product '
+                 'ON Ticket.product = Product.id')]
 
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
@@ -649,6 +667,8 @@ class QuestionSearch:
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
             return ['owner', 'sourcepackagename']
+        elif self.project:
+            return ['owner', 'product']
         else:
             # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
@@ -704,17 +724,14 @@ class QuestionTargetSearch(QuestionSearch):
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None):
-        assert product is not None or distribution is not None, (
-            "Missing a product or distribution context.")
-        # A SQLObject may produce an empty list #102357.
-        if product is not None and hasattr(product, '__iter__'):
-            assert [p for p in product] != [], ("Missing a product context.")
+                 sourcepackagename=None, project=None):
+        assert (product is not None or distribution is not None or
+            project is not None), ("Missing a product or distribution context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
             product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename, project=project)
 
         if owner:
             assert IPerson.providedBy(owner), (
