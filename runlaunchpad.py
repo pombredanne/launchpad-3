@@ -25,10 +25,7 @@ if sys.version_info < (2, 4, 0):
     sys.exit(1)
 
 import os
-import grp
-import pwd
 import time
-import errno
 import atexit
 import random
 import signal
@@ -109,88 +106,24 @@ def start_librarian():
 
 
 def start_mailman():
-    # Build and install Mailman if it is enabled and not yet built.
     from canonical.config import config
-
-    mailman_path = os.path.abspath(config.mailman.build.prefix)
-    mailman_bin  = os.path.join(mailman_path, 'bin')
-    var_dir      = os.path.abspath(config.mailman.build.var_dir)
-
-    # If we can import the package, we assume Mailman is properly built and
-    # installed.  This does not catch re-installs that might be necessary
-    # should our copy in sourcecode be updated.  Do that manually.
-    sys.path.append(mailman_path)
-    try:
-        import Mailman
-    except ImportError:
-        Mailman = None
-
-    if Mailman is None and config.mailman.build.build:
-        # Make sure the target directories exist and have the correct
-        # permissions, otherwise configure will complain.
-        user_group = config.mailman.build.user_group
-        if not user_group:
-            user  = pwd.getpwuid(os.getuid()).pw_name
-            group = grp.getgrgid(os.getgid()).gr_name
-        else:
-            user, group = user_group.split(':', 1)
-
-        # Now work backwards to get the uid and gid
-        uid = pwd.getpwnam(user).pw_uid
-        gid = grp.getgrnam(group).gr_gid
-
-        # Ensure that the var_dir exists, is owned by the user:group, and has
-        # the necessary permissions.  Set the mode separately after the
-        # makedirs() call because some platforms ignore mkdir()'s mode (though
-        # I think Linux does not ignore it -- better safe than sorry).
-        try:
-            os.makedirs(config.mailman.build.var_dir)
-        except OSError, e:
-            if e.errno <> errno.EEXIST:
-                raise
-        os.chown(config.mailman.build.var_dir, uid, gid)
-        os.chmod(config.mailman.build.var_dir, 02775)
-
-        if config.mailman.build.host_name:
-            hostname = config.mailman.build.host_name
-        else:
-            hostname = socket.getfqdn()
-
-        mailman_source = os.path.join('sourcecode', 'mailman')
-
-        # Build and install the Mailman software.  Note that we don't care
-        # about --with-mail-gid or --with-cgi-gid because we're not going to
-        # use those Mailman subsystems.
-        configure_args = (
-            './configure',
-            '--prefix', mailman_path,
-            '--with-var-prefix=' + config.mailman.build.var_dir,
-            '--with-python=' + sys.executable,
-            '--with-username=' + user,
-            '--with-groupname=' + group,
-            '--with-mailhost=' + hostname,
-            )
-        retcode = subprocess.call(configure_args, cwd=mailman_source)
-        if retcode:
-            print >> sys.stderr, 'Could not configure Mailman:'
-            sys.exit(retcode)
-        retcode = subprocess.call(('make',), cwd=mailman_source)
-        if retcode:
-            print >> sys.stderr, 'Could not make Mailman.'
-            sys.exit(retcode)
-        retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
-        if retcode:
-            print >> sys.stderr, 'Could not install Mailman.'
-            sys.exit(retcode)
-        # Try again to import the package.
-        try:
-            import Mailman
-        except ImportError:
-            print >> sys.stderr, 'Could not import the Mailman package'
-            sys.exit(1)
-
     if not config.mailman.launch:
         return
+
+    # Add the directory containing the Mailman package to our sys.path.
+    if not config.mailman.build.prefix:
+        mailman_path = os.path.abspath(os.path.join('lib', 'mailman'))
+    else:
+        mailman_path = os.path.abspath(config.mailman.build.prefix)
+
+    # We need the Mailman bin directory so we can run some of Mailman's
+    # command line scripts.
+    mailman_bin = os.path.join(mailman_path, 'bin')
+
+    if config.mailman.build.host_name:
+        hostname = config.mailman.build.host_name
+    else:
+        hostname = socket.getfqdn()
 
     # Monkey-patch the installed Mailman 2.1 tree.
     from canonical.mailman.monkeypatches import monkey_patch
@@ -200,7 +133,9 @@ def start_mailman():
     # operationally, but it's required by Mailman 2.1.  This is the cheapest
     # way to do this.  Throw away the actual output, since we only care about
     # the return code.
+    sys.path.append(mailman_path)
     import Mailman.mm_cfg
+
     retcode = subprocess.call(('./config_list', '-o', '/dev/null',
                                Mailman.mm_cfg.MAILMAN_SITE_LIST),
                               cwd=mailman_bin,

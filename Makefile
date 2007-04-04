@@ -97,6 +97,8 @@ inplace: build
 build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
+		 $(PYTHON) -t buildmailman.py
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
