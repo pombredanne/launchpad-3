@@ -45,20 +45,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-
-class POMsgSetFacets(POTemplateFacets):
-    usedfor = IPOMsgSet
-
-    def __init__(self, context):
-        POTemplateFacets.__init__(self, context.pofile.potemplate)
-
-
-class POMsgSetSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
-
-
 #
 # Translation-related formatting functions
 #
@@ -290,6 +276,19 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
+class POMsgSetFacets(POTemplateFacets):
+    usedfor = IPOMsgSet
+
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
+
+
+class POMsgSetSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
+
+
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
