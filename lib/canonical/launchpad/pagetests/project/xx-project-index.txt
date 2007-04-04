@@ -46,9 +46,9 @@ the project, the overview page is also displayed:
 The home page of a project contains a list of all products which are part of that project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> products = find_tag_by_id(browser.contents, 'products')
-    >>> for h3 in products.findAll('h3'):
-    ...     print h3.a.renderContents()
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
     Mozilla Firefox
     Mozilla Thunderbird
  
@@ -60,9 +60,9 @@ Inactive products are not included in that list, though.
     >>> firefox.syncUpdate()
  
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> products = find_tag_by_id(browser.contents, 'products')
-    >>> for h3 in products.findAll('h3'):
-    ...     print h3.a.renderContents()
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
     Mozilla Thunderbird
  
     >>> firefox.active = True
