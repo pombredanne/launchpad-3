@@ -1,20 +1,5 @@
 = Answer Tracker Email Notifications =
 
-    # Let's define a helper function which commits the transaction, so
-    # that the notifications are queued in stub.test_emails and pops these
-    # notifications from the queue.
-    >>> from canonical.launchpad.mail import stub
-    >>> import email
-    >>> import transaction
-    >>> def pop_notifications():
-    ...     transaction.commit()
-    ...     notifications = [
-    ...         email.message_from_string(raw_message)
-    ...         for fromaddr, toaddrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    ...     stub.test_emails = []
-    ...     return notifications
-
 When a question is created or changed, an email notification is sent out,
 informing the subscribers and the answer contacts about the change.
 Let's start with creating a question, and see what the resulting
@@ -23,6 +8,7 @@ notification looks like:
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -251,8 +237,8 @@ A notification is also sent when a bug is unlinked from the ticket:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+ticket/...
     <BLANKLINE>
-        Removed link to bug: #11
-        http://.../bugs/11
+        Removed link to bug: #13
+        http://.../bugs/13
     <BLANKLINE>
 
 == Workflow Notifications ==
@@ -922,6 +908,7 @@ address if Spanish is among its preferred languages:
     # stub.test_emails after it
     >>> admins.addMember(guadamen, reviewer=foobar)
     >>> transaction.commit()
+    >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
     >>> guadamen.addLanguage(spanish)

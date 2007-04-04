@@ -42,3 +42,8 @@ class QuestionMessage(SQLBase):
 
     new_status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
+
+    def __iter__(self):
+        """See IMessage."""
+        # Decorates do not proxy __ methods, because of the name mangling.
+        return iter(self.chunks)

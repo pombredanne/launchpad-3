@@ -24,14 +24,6 @@ details of that team.
     'This Team is responsible for the Ubuntu Distribution'
     >>> browser.getControl('Subscription Policy').value
     ['Moderated Team']
-    >>> browser.getControl(name='field.gotchi.action').value
-    ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-    u'/@@/nyet-mugshot'
-    >>> browser.getControl(name='field.emblem.action').value
-    ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
-    u'/@@/nyet-mini'
 
 Now we'll change some values.
 
@@ -39,9 +31,6 @@ Now we'll change some values.
     >>> browser.getControl('Display Name').value = 'The Ubuntu Team'
     >>> browser.getControl('Team Description').value = ''
     >>> browser.getControl('Subscription Policy').value = ['Restricted Team']
-
-    >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-    >>> set_gotchi_and_emblem(browser)
 
     >>> browser.getControl('Save').click()
 
@@ -59,12 +48,4 @@ Here we see the updated values.
     ''
     >>> browser.getControl('Subscription Policy').value
     ['Restricted Team']
-    >>> browser.getControl(name='field.gotchi.action').value
-    ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-    u'.../icon.png'
-    >>> browser.getControl(name='field.emblem.action').value
-    ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
-    u'.../emblem.png'
 

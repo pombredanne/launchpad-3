@@ -35,9 +35,9 @@ available from the 'Answers' facet.
     >>> browser.getLink('Firefox loses focus and gets stuck').url
     '.../firefox/+ticket/4'
 
-There is also a 'Ask Question' link to open a new question.
+There is also an 'Ask a question' link to ask a new question.
 
-    >>> browser.getLink('Ask question').url
+    >>> browser.getLink('Ask a question').url
     'http://answers.launchpad.dev/firefox/+addticket'
 
 There are links to some common listing of questions:
@@ -78,11 +78,11 @@ The distribution home page also has a link to the 'Answers' facet:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/+tickets'
+    'http://answers.launchpad.dev/ubuntu/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for Ubuntu
-    >>> browser.getLink('Ask question')
+    >>> browser.getLink('Ask a question')
     <Link...>
 
 On that facet, we will find the same common listings:
@@ -119,16 +119,16 @@ home page, which also links to the related distribution page.
 
 == Source packages ==
 
-On a source package, the 'Ask Question' link is accessible through
+On a source package, the 'Ask a question' link is accessible through
 the Answers facet.
 
     >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/hoary/+source/evolution/+tickets'
+    'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for Hoary evolution...
-    >>> browser.getLink('Ask question').url
+    >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addticket'
 
 As are the common listings:
@@ -145,11 +145,11 @@ page:
 
     >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Answers').url
-    '.../ubuntu/+source/mozilla-firefox/+tickets'
+    'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for mozilla-firefox in ubuntu
-    >>> browser.getLink('Ask question').url
+    >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addticket'
     >>> browser.getLink('Open').url
     '.../ubuntu/+source/mozilla-firefox/+tickets?...'
@@ -165,7 +165,7 @@ Project also have the 'Ask a question' button on their overview page.
     >>> user_browser.open('http://launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    Ask a question about a product from the Mozilla Project
+    Ask a question about a project in the Mozilla Project
 
 == Persons ==
 
@@ -187,7 +187,7 @@ The 'Answers' facet link will display a page listing all the questions
 involving that person.
 
     >>> browser.getLink('Answers').url
-    '.../~name16/+tickets'
+    'http://answers.launchpad.dev/~name16/'
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions involving Foo Bar'

@@ -99,11 +99,11 @@ class CanonicalConfig(object):
         for branch in root.canonical:
             if branch.getSectionName() == section:
                 setattr(self._cache, section, branch)
-                self._magic_settings(branch)
+                self._magic_settings(branch, root)
                 return branch
         raise KeyError, section
 
-    def _magic_settings(self, config):
+    def _magic_settings(self, config, root_options):
         """Modify the config, adding automatically generated settings"""
 
         # Root of the launchpad tree so code can stop jumping through hoops
@@ -116,6 +116,10 @@ class CanonicalConfig(object):
         # variable
         config.name = os.environ.get(
                 CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+
+        # Devmode from the zope.app.server.main config, copied here for
+        # ease of access.
+        config.devmode = root_options.devmode
 
     def __getattr__(self, name):
         return getattr(self.getConfig(), name)

@@ -172,7 +172,7 @@ If a non-existant product name is entered, a widget error is raised.
     >>> selected_product = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no product named 'non-existant'
+    LaunchpadValidationError: There is no project named 'non-existant'
                               registered in Launchpad
 
 If no product name is given at all, a widget error is raised.
@@ -185,7 +185,7 @@ If no product name is given at all, a widget error is raised.
     >>> selected_distribution = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a product name
+    LaunchpadValidationError: Please enter a project name
 
 == setRenderedValue() ==
 
@@ -208,9 +208,11 @@ well as displaying the product name in the product widget.
              id="field.bugtarget.option.product"
              name="field.bugtarget" type="radio" value="product" />
     ...
-      <input type="text" name="field.bugtarget.product"
-             onkeypress="selectWidget('field.bugtarget.option.product', event)"
-             value="firefox" id="field.bugtarget.product"
+      <input type="text" value="firefox" id="field.bugtarget.product"
+             name="field.bugtarget.product" size="20"
+             maxlength=""
+             onKeyPress="selectWidget('field.bugtarget.option.product', event)"
+             style="" class="" />
     ...
 
 Passing a distribution will select the 'package' radio button and select
@@ -252,9 +254,11 @@ package widget to the package name.
     ...
       <option selected="selected" value="debian">Debian GNU/Linux</option>
     ...
-      <input type="text" name="field.bugtarget.package"
-             onkeypress="selectWidget('field.bugtarget.option.package', event)"
-             value="evolution" id="field.bugtarget.package" size="20" />
+      <input type="text" value="evolution" id="field.bugtarget.package"
+             name="field.bugtarget.package" size="20"
+             maxlength=""
+             onKeyPress="selectWidget('field.bugtarget.option.package', event)"
+             style="" class="" />
     ...
       <input class="radioType"
              id="field.bugtarget.option.product"

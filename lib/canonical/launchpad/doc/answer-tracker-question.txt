@@ -20,9 +20,9 @@ distributions and sourcepackages.
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
 
-    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
-    ...     'mozilla-firefox')
-    >>> verifyObject(IQuestionTarget, firefox_package)
+    >>> evolution_package = ubuntu.currentrelease.getSourcePackage(
+    ...     'evolution')
+    >>> verifyObject(IQuestionTarget, evolution_package)
     True
 
 Altough distribution release do not implement the IQuestionTarget
@@ -33,6 +33,16 @@ the distrorelease's distribution.)
     >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
     >>> questiontarget = IQuestionTarget(ubuntu_warty)
+    >>> verifyObject(IQuestionTarget, questiontarget)
+    True
+
+Similarly, it is possible to adapt an ISourcePackageRelease into an
+IQuestionTarget.
+
+    >>> firefox_in_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_release_in_warty = firefox_in_warty.currentrelease
+
+    >>> questiontarget = IQuestionTarget(firefox_release_in_warty)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
@@ -149,16 +159,16 @@ source package are part of the indirect subscribers list.
     # the package.
     >>> list(ubuntu.answer_contacts)
     []
-    >>> list(firefox_package.answer_contacts)
+    >>> list(evolution_package.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
-    >>> firefox_package.addAnswerContact(no_priv)
+    >>> evolution_package.addAnswerContact(no_priv)
     True
-    >>> package_question = firefox_package.newQuestion(
-    ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
-    ...     "The FnordsHighlighter theme doesn't work after upgrade.")
+    >>> package_question = evolution_package.newQuestion(
+    ...     sample_person, 'Upgrading to Evolution 1.4 breaks plug-ins',
+    ...     "The FnordsHighlighter plug-in doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_question.subscriptions]
     [u'Sample Person']
     >>> [person.displayname

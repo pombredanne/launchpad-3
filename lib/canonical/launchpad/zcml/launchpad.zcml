@@ -117,20 +117,6 @@
       />
 
   <browser:page
-      name="+search"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.browser.SearchProjectsView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -161,6 +147,15 @@
       template="../templates/launchpad-restrictedinfo.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
+  <!-- Other non-application-specific pages. -->
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -234,8 +229,20 @@
 
 </facet>
 
+<facet facet="branches">
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+project-cloud"
+      class="canonical.launchpad.browser.BazaarProductView"
+      template="../templates/product-code-index.pt"
+      permission="zope.Public"
+      />
+
+</facet>
+
 <!--
-Operational statistics. Note that these are publicly available, 
+Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
 these URLs in Apache.
 -->
@@ -284,20 +291,21 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
-<browser:pages
+<browser:page
   for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralObjectPresentationView"
+  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
   permission="zope.Public"
->
-  <browser:page
-    name="+structural-header"
-    template="../templates/launchpad-structuralheader.pt"
+  name="+structural-header"
+  template="../templates/launchpad-structuralheader.pt"
   />
-  <browser:page
-    name="+structural-footer"
-    template="../templates/launchpad-structuralfooter.pt"
+
+<browser:page
+  for="zope.interface.Interface"
+  class="canonical.launchpad.browser.StructuralFooterPresentationView"
+  permission="zope.Public"
+  name="+structural-footer"
+  template="../templates/launchpad-structuralfooter.pt"
   />
-</browser:pages>
 
 <browser:page
   for="*"
@@ -322,5 +330,11 @@ these URLs in Apache.
   class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
+
+<class class="canonical.launchpad.webapp.publisher.RenamedView">
+  <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+          attributes="__call__"
+    />
+</class>
 
 </configure>

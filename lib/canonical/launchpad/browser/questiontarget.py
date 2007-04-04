@@ -11,6 +11,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
+    'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
     'QuestionTargetTraversalMixin',
@@ -31,8 +32,8 @@ from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IManageAnswerContactsForm, IProject,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionTarget,
-    NotFoundError)
+    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionCollection,
+    IQuestionTarget, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -91,6 +92,23 @@ class QuestionCollectionLatestQuestionsView:
         is used by the +portlet-latestquestions view.
         """
         return self.context.searchQuestions()[:quantity]
+
+
+class QuestionCollectionOpenCountView:
+    """View used to render the number of open questions.
+    
+    This view is used to render the number of open questions on 
+    each ISourcePackageRelease on the person-packages-templates.pt.
+    It is simpler to define generic view and an adapter (since
+    SourcePackageRelease does not provide IQuestionCollection), than
+    to write a specific view for that template.
+    """
+
+    def __call__(self):
+        questiontarget = IQuestionCollection(self.context)
+        open_questions = questiontarget.searchQuestions(
+            status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
+        return unicode(open_questions.count())
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
@@ -434,7 +452,7 @@ class QuestionTargetFacetMixin:
     def answers(self):
         summary = (
             'Questions for %s' % self.context.displayname)
-        return Link('+tickets', 'Answers', summary)
+        return Link('', 'Answers', summary)
 
 
 class QuestionTargetTraversalMixin:
@@ -493,10 +511,9 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         return Link('+addticket', text, icon='add')
 
     def answer_contact(self):
-        text = 'Answer contact'
+        text = 'Set answer contact'
         return Link('+support-contact', text, icon='edit')
-

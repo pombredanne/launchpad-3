@@ -4,13 +4,12 @@
   class="portlet"
 >
 
-    <h2>Latest proposed features</h2>
-    <div class="portletBody portletContent">
-      <ul class="blueprint">
-        <li tal:repeat="spec specs">
-          <a tal:content="spec/title"
-             tal:attributes="href spec/fmt:url">spec title</a>
-        </li>
-      </ul>
-    </div>
-  </div>
+  <h2>Latest proposed features</h2>
+  <table>
+    <tbody>
+      <tr tal:repeat="spec specs"
+          tal:replace="structure spec/@@+listing-compact">
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -5,7 +5,7 @@ automatically chosen if a packaging link is found.
     ...  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8')
     >>> user_browser.getLink('Upstream').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8/+add-affected-product?field.product=firefox'
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8/+add-affected-product?field.product=firefox'
 
 If the source package has no upstream link. like thunderbird in Ubuntu,
 then the product widget will have no initial value.
@@ -17,7 +17,7 @@ then the product widget will have no initial value.
     >>> user_browser.getControl('Source Package').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
+    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
 
     >>> user_browser.getLink('Upstream').click()
     >>> user_browser.getControl('Product').value
@@ -28,7 +28,7 @@ information.
 
     >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
     ...     print notification.renderContents()
-    Please select the appropriate upstream product. This step...
+    Please select the appropriate upstream project. This step...
 
 Let's follow the link and specify the packaging information.
 
@@ -44,4 +44,4 @@ thunderbird.
     ...     'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8')
     >>> user_browser.getLink('Upstream').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8/+add-affected-product?field.product=thunderbird'
+    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8/+add-affected-product?field.product=thunderbird'

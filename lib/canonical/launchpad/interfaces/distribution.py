@@ -17,11 +17,12 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField)
+    ISpecificationTarget, IHasSecurityContact, PillarNameField,
+    IHasLogo, IHasMugshot, IHasIcon)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    LargeImageUpload, BaseImageUpload, SmallImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class DistributionNameField(PillarNameField):
@@ -60,25 +61,28 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "The content of this distribution's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this distribution."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this distribution. It should "
-            "be no bigger than 50k in size."))
-    gotchi = LargeImageUpload(
+    icon = IconImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/distribution',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this distribution's home page. It should be no bigger than 100k "
-            "in size. "))
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this distribution. The icon will "
+            "be displayed everywhere we list the distribution and link "
+            "to it."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/distribution-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this distribution. It "
+            "should be no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/distribution-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this distribution's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),
@@ -109,6 +113,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    date_created = Attribute("The date this distribution was registered.")
     bugcontact = Choice(
         title=_("Bug Contact"),
         description=_(
@@ -151,9 +156,11 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
-        "The release milestones associated with this distribution. "
-        "Release milestones are primarily used by the QA team to assign "
-        "specific bugs for fixing by specific milestones."))
+        "The visible release milestones associated with this distribution, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this distribution, ordered "
+        "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
     is_read_only = Attribute(
@@ -222,7 +229,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                   rsync_base_url=None, enabled=False,
                   official_candidate=False):
         """Create a new DistributionMirror for this distribution.
-        
+
         At least one of http_base_url or ftp_base_url must be provided in
         order to create a mirror.
         """
@@ -323,6 +330,6 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, gotchi_heading, emblem):
+            members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""
 

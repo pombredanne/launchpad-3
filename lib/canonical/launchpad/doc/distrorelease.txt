@@ -167,6 +167,7 @@ other things) the uploader for validating incoming uploads.
    editors
    admin
    devel
+   translations
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
@@ -190,6 +191,7 @@ other things) the uploader for validating incoming uploads.
    admin
    devel
    python
+   translations
 
 
 DistroReleases can be initialised from their parents
@@ -266,9 +268,6 @@ Check the content IDRSPR binaries & builds attributes:
 
    >>> bumpy_firefox_sp.currentrelease.binaries.count()
    1
-
-   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
-   2
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchrelease.title

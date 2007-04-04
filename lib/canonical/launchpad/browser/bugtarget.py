@@ -23,8 +23,7 @@ import email
 import urllib
 
 from zope.app.form.browser import TextWidget
-from zope.app.form.interfaces import IInputWidget, WidgetsError, InputErrors
-from zope.app.form.utility import setUpWidgets
+from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -38,16 +37,14 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, BugTaskSearchParams, ILaunchpadCelebrities,
-    IProjectBugAddForm, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm)
+    CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
+    ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
+    IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.widgets.bug import FileBugTargetWidget
+from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
 
 
 class FileBugData:
@@ -111,6 +108,7 @@ class FileBugViewBase(LaunchpadFormView):
     implements(IBrowserPublisher)
 
     extra_data_token = None
+    advanced_form = False
     can_decide_security_contact = True
 
     def __init__(self, context, request):
@@ -138,6 +136,9 @@ class FileBugViewBase(LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
+
+    def contextIsProduct(self):
+        return IProduct.providedBy(self.context)
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -248,6 +249,10 @@ class FileBugViewBase(LaunchpadFormView):
             private = False
 
         notifications = ["Thank you for your bug report."]
+        params = CreateBugParams(
+            title=title, comment=comment, owner=self.user,
+            security_related=security_related, private=private,
+            tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -264,23 +269,14 @@ class FileBugViewBase(LaunchpadFormView):
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
                     % (packagename, context.displayname))
-                comment += ("\r\n\r\nNote: the original reporter indicated "
-                            "the bug was in package %r; however, that package "
-                            "was not published in %s."
-                            % (packagename, context.displayname))
-                params = CreateBugParams(
-                    title=title, comment=comment, owner=self.user,
-                    security_related=security_related, private=private)
+                params.comment += (
+                    "\r\n\r\nNote: the original reporter indicated "
+                    "the bug was in package %r; however, that package "
+                    "was not published in %s." % (
+                        packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params = CreateBugParams(
-                    title=title, comment=comment, owner=self.user,
-                    security_related=security_related, private=private,
-                    binarypackagename=binarypackagename)
-        else:
-            params = CreateBugParams(
-                title=title, comment=comment, owner=self.user,
-                security_related=security_related, private=private)
+                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -367,6 +363,24 @@ class FileBugViewBase(LaunchpadFormView):
         """See IBrowserPublisher."""
         return self, ()
 
+    def getProductOrDistroFromContext(self):
+        """Return the product or distribution relative to the context.
+
+        For instance, if the context is an IDistroRelease, return the
+        distribution related to it. Will return None if the context is
+        not related to a product or a distro.
+        """
+        context = self.context
+        if IProduct.providedBy(context) or IDistribution.providedBy(context):
+            return context
+        elif IProductSeries.providedBy(context):
+            return context.product
+        elif (IDistroRelease.providedBy(context) or
+              IDistributionSourcePackage.providedBy(context)):
+            return context.distribution
+        else:
+            return None
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
@@ -382,21 +396,22 @@ class FileBugAdvancedView(FileBugViewBase):
     # class!
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
     template = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-advanced.pt")
+    advanced_form = True
 
     @property
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        if IProduct.providedBy(context):
-            return ['title', 'comment', 'security_related']
-        else:
-            assert (
-                IDistribution.providedBy(context) or
-                IDistributionSourcePackage.providedBy(context))
-
-            return ['title', 'comment', 'security_related', 'packagename']
+        field_names = ['title', 'comment', 'security_related', 'tags']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
+        return field_names
 
     def showFileBugForm(self):
         return self.template()
@@ -408,6 +423,7 @@ class FileBugGuidedView(FileBugViewBase):
     # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
     custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
 
     _MATCHING_BUGS_LIMIT = 10
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
@@ -423,18 +439,21 @@ class FileBugGuidedView(FileBugViewBase):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        if IProduct.providedBy(context):
-            return ['title', 'comment']
-        else:
-            assert (
-                IDistribution.providedBy(context) or
-                IDistributionSourcePackage.providedBy(context))
+        field_names = ['title', 'comment', 'tags']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
 
-            return ['title', 'comment', 'packagename']
+        return field_names
 
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
         return self.showFileBugForm()
 
     def getSearchContext(self):
@@ -543,7 +562,6 @@ class FileBugGuidedView(FileBugViewBase):
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
 
-
 class ProjectFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProject."""
 
@@ -552,7 +570,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment']
+    field_names = ['product', 'title', 'comment', 'tags']
 
     @cachedproperty
     def most_common_bugs(self):
@@ -573,7 +591,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'security_related']
+    field_names = ['product', 'title', 'comment', 'security_related', 'tags']
 
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
@@ -590,7 +608,7 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
 
     @property
     def field_names(self):
-        return ['title', 'comment', 'bugtarget']
+        return ['title', 'comment', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
@@ -621,7 +639,7 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
 
     @property
     def field_names(self):
-        return ['title', 'comment', 'security_related', 'bugtarget']
+        return ['title', 'comment', 'security_related', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
@@ -750,8 +768,9 @@ class BugTargetBugTagsView(LaunchpadView):
 
     def _getSearchURL(self, tag):
         """Return the search URL for the tag."""
+        # Use path_only here to reduce the size of the rendered page.
         return "%s?field.tag=%s" % (
-            self.request.getURL(), urllib.quote(tag))
+            self.request.getURL(path_only=True), urllib.quote(tag))
 
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""

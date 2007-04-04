@@ -18,7 +18,6 @@
 </metal:rightportlets>
 
     <metal:heading fill-slot="pageheading">
-      <h3 tal:content="context/title">Context title goes here</h3>
       <h1 tal:condition="context/primary_translatable">Translation overview</h1>
       <tal:untranslatable condition="not: context/primary_translatable">
         <h1 tal:condition="context/required:launchpad.Edit"
@@ -73,7 +72,7 @@
             <p>
               If you&#8217;re <tal:person replace="context/owner/displayname" />,
               <a tal:attributes=
-              "href string:${context/fmt:url}/+translations/+login">log in</a>
+              "href string:${context/fmt:url}/+login">log in</a>
               to begin the setup process.
             </p>
             <p>

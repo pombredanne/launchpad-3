@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Specification title</h1>
+  <h1>Blueprint overview</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -27,9 +27,9 @@
   </p>
 
   <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
+    This blueprint has been superseded. See the newer blueprint
     "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
+           tal:attributes="href context/superseded_by/fmt:url">new blueprint
     title</a></b>" for updated plans.
   </p>
 
@@ -115,20 +115,13 @@
         >
           <th>Sprints:</th>
           <td>
-            <ul>
+            <ul class="sprint">
               <li tal:repeat="sprint_link sprint_links">
                 <a
                   tal:attributes="href sprint_link/sprint/fmt:url"
                   tal:content="sprint_link/sprint/name"
                 />
-                (<a
-                  tal:condition="sprint_link/required:launchpad.Driver"
-                  tal:content="sprint_link/status/title"
-                  tal:attributes="href string:${sprint_link/fmt:url}"
-                >Approved</a><span
-                  tal:condition="not: sprint_link/required:launchpad.Driver"
-                  tal:replace="sprint_link/status/title"
-                >Proposed</span>)
+                <tal:approval replace="structure sprint_link/@@+icon-status" />
               </li>
             </ul>
           </td>
@@ -136,7 +129,7 @@
       </tbody>
     </table>
     <tal:desc replace="structure context/summary/fmt:text-to-html">
-      The spec summary will go here.
+      The blueprint summary will go here.
     </tal:desc>
     <ul class="menu">
       <li class="link">
@@ -168,7 +161,7 @@
     <tal:block tal:replace="structure context/@@+deptreeimgtag" />
 
     <p class="discreet">
-      * Specifications in grey have been implemented.
+      * Blueprints in grey have been implemented.
     </p>
 
   </tal:deptree>
@@ -176,7 +169,7 @@
       <ul class="nearby menu" tal:condition="context/goal">
         <li>
           <a tal:attributes="href context/goal/fmt:url">
-            Other <tal:goal replace="context/goal/displayname" /> specifications
+            Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>

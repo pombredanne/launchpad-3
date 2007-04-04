@@ -4,7 +4,7 @@
 application."""
 
 from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
-from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
+from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
 
@@ -84,7 +84,7 @@ def extref_added(extref, event):
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user
-    task_delta = get_task_delta(event.object_before_modification, event.object)
+    task_delta = event.object.getDelta(event.object_before_modification)
 
     assert task_delta is not None
 
