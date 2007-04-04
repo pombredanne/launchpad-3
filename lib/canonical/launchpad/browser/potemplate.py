@@ -171,10 +171,10 @@ class POTemplateSOP(StructuralObjectPresentation):
 class POTemplateAppMenus(ApplicationMenu):
     usedfor = IPOTemplate
     facet = 'translations'
-    links = ['overview', 'upload', 'download', 'edit', 'administer']
+    links = ['status', 'upload', 'download', 'edit', 'administer']
 
-    def overview(self):
-        text = 'Overview'
+    def status(self):
+        text = 'Show translation status'
         return Link('', text)
 
     def upload(self):

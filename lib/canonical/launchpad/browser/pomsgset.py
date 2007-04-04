@@ -293,8 +293,7 @@ class CustomDropdownWidget(DropdownWidget):
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -304,10 +303,6 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -315,10 +310,6 @@ class POMsgSetAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('../+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../../', text, icon='languages')
 
 #
 # Views

@@ -679,7 +679,8 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-pomsgset_translate = ContextTitle(smartquote('Edit "%s"'))
+def pomsgset_translate(context, view):
+    return smartquote('Edit "%s"' % context.pofile.title)
 
 # potemplate_chart is a fragment
 
