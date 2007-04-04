@@ -54,6 +54,10 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 from canonical.launchpad import _
 
 
+def quote(text):
+    return cgi.escape(text, quote=True)
+
+
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
@@ -228,8 +232,8 @@ def get_series_branch_error(product, branch):
     """
     if branch.product != product:
         return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), cgi.escape(branch.unique_name),
-                   canonical_url(product), cgi.escape(product.displayname)))
+                % (canonical_url(branch), quote(branch.unique_name),
+                   canonical_url(product), quote(product.displayname)))
     return None
 
 
@@ -492,33 +496,39 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             # are unset.
             if not (cvsroot or self.getWidgetError('cvsroot')):
                 self.setFieldError('cvsroot',
-                                   'Please enter a CVS root.')
+                                   'Enter a CVS root.')
             if not (cvsmodule or self.getWidgetError('cvsmodule')):
                 self.setFieldError('cvsmodule',
-                                   'Please enter a CVS module.')
+                                   'Enter a CVS module.')
             if not (cvsbranch or self.getWidgetError('cvsbranch')):
                 self.setFieldError('cvsbranch',
-                                   'Please enter a CVS branch.')
+                                   'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
                 series = getUtility(IProductSeriesSet).getByCVSDetails(
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
-                    self.addError('CVS repository details already in use '
-                                  'by another product.')
+                    self.addError(
+                        "Those CVS details are already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
             if not (svnrepository or self.getWidgetError('svnrepository')):
                 self.setFieldError('svnrepository',
-                                   'Please give valid Subversion server '
-                                   'details.')
+                    "Enter the URL of a Subversion branch.")
             if svnrepository:
                 series = getUtility(IProductSeriesSet).getBySVNDetails(
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
-                                       'Subversion repository details '
-                                       'already in use by another product.')
+                        "This Subversion branch URL is already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None:

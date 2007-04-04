@@ -97,7 +97,7 @@ class ContextBugId(SubstitutionHelper):
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
-bazaar_index = 'The Launchpad Bazaar'
+bazaar_index = 'Launchpad Code'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
@@ -120,6 +120,9 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
+
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
@@ -127,7 +130,8 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -337,6 +341,8 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
+distribution_releases = ContextTitle("%s releases")
+
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = ContextTitle(
@@ -502,13 +508,44 @@ malone_about = 'About Malone'
 
 malone_distros_index = 'Report a bug about a distribution'
 
-malone_index = 'Malone: the Launchpad bug tracker'
+malone_index = 'Launchpad Bugs'
 
 malone_filebug = "Report a bug"
 
 # malone_people_index is a redirect
 
 # malone_template is a means to include the mainmaster template
+
+# marketing_about_template is used by the marketing pages
+
+marketing_answers_about = "About Answers"
+
+marketing_answers_faq = "FAQs about Answers"
+
+marketing_blueprints_about = "About Blueprints"
+
+marketing_blueprints_faq = "FAQs about Blueprints"
+
+marketing_bugs_about = "About Bugs"
+
+marketing_bugs_faq = "FAQs about Bugs"
+
+marketing_code_about = "About Code"
+
+marketing_code_faq = "FAQs about Code"
+
+# marketing_faq_template is used by the marketing pages
+
+marketing_home = "About Launchpad"
+
+# marketing_main_template is used by the marketing pages
+
+def marketing_tour(context, view):
+    return view.pagetitle
+
+marketing_translations_about = "About Translations"
+
+marketing_translations_faq = "FAQs about Translations"
 
 # messagechunk_snippet is a fragment
 
@@ -524,15 +561,20 @@ milestone_edit = ContextTitle('Edit %s')
 
 notification_test = 'Notification test'
 
+object_branding = ContextDisplayName('Change the images used to represent '
+    '%s in Launchpad')
+
+object_driver = ContextTitle('Appoint the driver for %s')
+
+object_launchpadusage = ContextTitle('Launchpad usage by %s')
+
+object_milestones = ContextTitle(smartquote("%s's milestones"))
+
 # object_pots is a fragment.
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
-
-object_driver = ContextTitle('Appoint the driver for %s')
-
-object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
 oops = 'Oops!'
 
@@ -543,6 +585,9 @@ people_index = 'People and teams in Launchpad'
 
 def people_list(context, view):
     return view.header
+
+person_answer_contact_for = ContextDisplayName(
+    'Projects for which %s is an answer contact')    
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -580,7 +625,11 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-person_index = ContextDisplayName('%s in Launchpad')
+def person_index(context, view):
+    if context.is_valid_person_or_team:
+        return '%s in Launchpad' % context.displayname
+    else:
+        return "%s's contributions to Free Software" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
@@ -769,7 +818,9 @@ root_index = 'Launchpad'
 
 rosetta_about = 'About Rosetta'
 
-rosetta_index = 'Rosetta'
+rosetta_index = 'Launchpad Translations'
+
+rosetta_products = 'Products with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
@@ -812,7 +863,7 @@ question_subscription = ContextId('Subscription to question #%s')
 
 question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
-questions_index = 'Launchpad Answer Tracker'
+questions_index = 'Launchpad Answers'
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
@@ -898,6 +949,8 @@ specification_addsubscriber = 'Subscribe someone else to this blueprint'
 specification_linkbug = ContextTitle(
   u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
+
+specification_new = 'Register a proposal as a blueprint in Launchpad'
 
 specification_unlinkbugs = 'Remove links to bug reports'
 

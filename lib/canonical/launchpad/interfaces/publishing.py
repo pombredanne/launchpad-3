@@ -261,6 +261,10 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
+    meta_distroreleasesourcepackagerelease = Attribute(
+        "Return an IDistroReleaseSourcePackageRelease meta object "
+        "correspondent to the sourcepackagerelease attribute inside "
+        "a specific distrorelease")
 
     def publishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.

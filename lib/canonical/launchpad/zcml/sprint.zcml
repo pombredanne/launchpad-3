@@ -7,9 +7,6 @@
   <!-- Sprint -->
   <content class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
-    <allow attributes="
-        default_gotchi_resource default_gotchi_heading_resource
-        default_emblem_resource" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />
@@ -95,6 +92,14 @@
       permission="launchpad.Edit"
       facet="overview"
       template="../templates/sprint-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintBrandingView"
+      permission="launchpad.Edit"
+      facet="overview"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+attend"

@@ -127,6 +127,25 @@ looks sane:
   >>> os.readlink(the_link_path)
   'ubuntu-installer/i386/pxelinux.cfg.serial-9600/default'
 
+  >>> the_dir_link = "current/images/netboot/link_to_dir"
+  >>> the_dir_link_path = os.path.join(installer_path, the_dir_link)
+  >>> os.readlink(the_dir_link_path)
+  'ubuntu-installer/i386/pxelinux.cfg.serial-9600/'
+
+Check permissions of created files and directories:
+
+  >>> the_file = ("current/images/netboot/ubuntu-installer/i386/"
+  ...             "pxelinux.cfg.serial-9600/default")
+  >>> the_file_path = os.path.join(installer_path, the_file)
+  >>> oct(os.stat(the_file_path).st_mode & 0777)
+  '0644'
+
+  >>> the_dir = ("current/images/netboot/ubuntu-installer/i386/"
+  ...            "pxelinux.cfg.serial-9600/")
+  >>> the_dir_path = os.path.join(installer_path, the_dir)
+  >>> oct(os.stat(the_dir_path).st_mode & 0777)
+  '0755'
+
 
 Remove local archive contents:
 
