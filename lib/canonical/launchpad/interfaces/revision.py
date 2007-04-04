@@ -8,7 +8,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _

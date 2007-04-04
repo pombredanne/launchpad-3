@@ -4,6 +4,8 @@
 #         David Allouche <david@allouche.net>
 
 import datetime
+import email
+import os
 import shutil
 import sys
 import time
@@ -16,9 +18,13 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lp import initZopeless
+from canonical.lp.dbschema import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
-from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
+from canonical.launchpad.mail import stub
+from canonical.launchpad.interfaces import IBranchSet, IPersonSet, IRevisionSet
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
@@ -62,13 +68,14 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.txn = LaunchpadZopelessLayer.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.txn = LaunchpadZopelessLayer.txn
         self.setUpAuthor()
+        stub.test_emails = []
         self.bzrsync = None
 
     def tearDown(self):
@@ -90,7 +97,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
-        self.txn.begin()
+        LaunchpadZopelessLayer.txn.begin()
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
             name="test",
@@ -99,7 +106,12 @@ class BzrSyncTestCase(TestCaseWithTransport):
             url=self.bzr_branch_url,
             title="Test branch",
             summary="Branch for testing")
-        self.txn.commit()
+        test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        self.db_branch.subscribe(
+            test_user,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.FIVEKLINES)
+        LaunchpadZopelessLayer.txn.commit()
 
     def setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
@@ -166,6 +178,22 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
+
+    def writeToFile(self, filename="file", contents=None):
+        """Set the contents of the specified file.
+
+        This also adds the file to the bzr working tree if
+        it isn't already there.
+        """
+        file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
+        if contents is None:
+            file.write(str(time.time()+random.random()))
+        else:
+            file.write(contents)
+        file.close()
+        inventory = self.bzr_tree.read_working_inventory()
+        if not inventory.has_filename(filename):
+            self.bzr_tree.add(filename)
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
@@ -241,32 +269,74 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing an empty branch does nothing.
         self.syncAndCount()
         self.assertEqual(self.db_branch.revision_count, 0)
-
+        self.assertEqual(len(stub.test_emails), 1)
+        expected = 'First scan of the branch detected 0 revisions'
+        email_body = email.message_from_string(
+            stub.test_emails[0][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
+            
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
+        self.assertEqual(len(stub.test_emails), 1)
+        expected = ('First scan of the branch detected 1 revision'
+                    ' in the revision history of the=\n branch.')
+        email_body = email.message_from_string(
+            stub.test_emails[0][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
+
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEqual(len(stub.test_emails), 1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
+        self.assertEqual(len(stub.test_emails), 2)
+        expected = '1 revision was removed from the branch.'
+        email_body = email.message_from_string(
+            stub.test_emails[1][2]).get_payload()
+        self.failUnless(
+            expected in email_body, '%r not in %r' % (expected, email_body))
 
     def test_import_recommit(self):
         # Second import honours uncommit followed by commit.
+        # When scanning the uncommit and new commit
+        # there should be an email generated saying that
+        # 1 (in this case) revision has been removed,
+        # and another email with the diff and log message.
         self.commitRevision('first')
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEqual(self.db_branch.revision_count, 1)
+        self.assertEqual(len(stub.test_emails), 1)
         self.uncommitRevision()
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n")
         self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
+        self.assertEqual(len(stub.test_emails), 3)
+        self.failUnless('1 revision was removed from the branch.'
+                        in stub.test_emails[1][2])
+        body = stub.test_emails[2][2]
+        body_bits = [
+            'revno: 1',
+            'committer: Revision Author <author@example.com>',
+            'branch nick: bzr_branch',
+            'message:\n  second',
+            'added:\n  hello.txt',
+            "=3D=3D=3D added file 'hello.txt'",
+            ]
+        for bit in body_bits:
+            self.failUnless(bit in body, '%s missing from %s' % (bit, body))
 
     def test_import_revision_with_url(self):
         # Importing a revision passing the url parameter works.
@@ -341,6 +411,84 @@ class TestBzrSync(BzrSyncTestCase):
         dt = datetime.datetime.fromtimestamp(1000000000.0, UTC)
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
+
+    def assertTextEqual(self, text1, text2):
+        if text1 != text2:
+            # find the first point of difference
+            for pos in xrange(len(text1)):
+                if text1[pos] != text2[pos]:
+                    raise AssertionError("Text differs at position %d\n"
+                                         "  text1[%d:]: %s\n"
+                                         "  text2[%d:]: %s\n"
+                                         % (pos, pos, repr(text1[pos:]),
+                                            pos, repr(text2[pos:])))
+
+    def test_email_format(self):
+        first_revision = 'rev-1'
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n")
+        self.commitRevision(rev_id=first_revision,
+                            message="Log message",
+                            committer="Joe Bloggs <joe@example.com>",
+                            timestamp=1000000000.0,
+                            timezone=0)
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n\nFoo Bar\n")
+        second_revision = 'rev-2'
+        self.commitRevision(rev_id=second_revision,
+                            message="Extended contents",
+                            committer="Joe Bloggs <joe@example.com>",
+                            timestamp=1000100000.0,
+                            timezone=0)
+        
+        sync = BzrSync(self.txn, self.db_branch)
+        try:
+            revision = sync.bzr_branch.repository.get_revision(first_revision)
+            diff = sync.getDiff(revision)
+
+            expected = ("=== added file 'hello.txt'\n"
+                        "--- a/hello.txt\t1970-01-01 00:00:00 +0000\n"
+                        "+++ b/hello.txt\t2001-09-09 01:46:40 +0000\n@@ -0,0 +1,1 @@\n"
+                        "+Hello World\n\n")
+            self.assertTextEqual(diff, expected)
+                             
+            expected = (u"-"*60 + "\n"
+                        "revno: 1\n"
+                        "committer: Joe Bloggs <joe@example.com>\n"
+                        "branch nick: bzr_branch\n"
+                        "timestamp: Sun 2001-09-09 01:46:40 +0000\n"
+                        "message:\n"
+                        "  Log message\n"
+                        "added:\n"
+                        "  hello.txt\n")
+            self.assertTextEqual(sync.getRevisionMessage(revision), expected)
+
+
+            revision = sync.bzr_branch.repository.get_revision(second_revision)
+            diff = sync.getDiff(revision)
+
+            expected = ("=== modified file 'hello.txt'\n"
+                        "--- a/hello.txt\t2001-09-09 01:46:40 +0000\n"
+                        "+++ b/hello.txt\t2001-09-10 05:33:20 +0000\n"
+                        "@@ -1,1 +1,3 @@\n"
+                        " Hello World\n"
+                        "+\n"
+                        "+Foo Bar\n\n")
+            self.assertTextEqual(diff, expected)
+                             
+            expected = (u"-"*60 + "\n"
+                        "revno: 2\n"
+                        "committer: Joe Bloggs <joe@example.com>\n"
+                        "branch nick: bzr_branch\n"
+                        "timestamp: Mon 2001-09-10 05:33:20 +0000\n"
+                        "message:\n"
+                        "  Extended contents\n"
+                        "modified:\n"
+                        "  hello.txt\n")
+            self.assertTextEqual(sync.getRevisionMessage(revision), expected)
+
+        finally:
+            sync.close()
 
     def test_get_revisions_empty(self):
         # An empty branch should have no revisions.
