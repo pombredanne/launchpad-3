@@ -151,7 +151,15 @@ table.form {width: 100%;}
 
 /* --- Other --- */
 
+/* No border on images that are links. */
 a img {
+  border: none;
+}
+/* No border on images that have link maps.
+ * There's nothing special for this, as the image and map
+ * may be separate.  So, just set no border for all images.
+ */
+img {
   border: none;
 }
 
