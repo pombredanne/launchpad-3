@@ -280,7 +280,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
-        
+
         if self.request.form.get('all_languages'):
             self.search_params['language'] = None
         else:
@@ -420,12 +420,13 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        # forge the request form to set the all_languages checkbox to the
-        # same state as state as the search
+        # Forge the request form to set the all_languages checkbox to the
+        # same state as state as the search. The all_languages checkbox is
+        # not a widget so we cannot set the default value.
         if self.request.form.get('field.actions.search') is None:
             self.request.form['all_languages'] = True
         
-        return {'language':None, 'unsupported': True}
+        return dict(language=None, unsupported=self.context)
 
 
 class ManageAnswerContactView(GeneralFormView):

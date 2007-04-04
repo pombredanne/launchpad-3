@@ -197,7 +197,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_request_info(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+        return self.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
@@ -233,7 +234,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_give_answer(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+        return self.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
@@ -266,7 +268,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_confirm_answer(self):
         """See IQuestion."""
-        if self.status not in [QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
+        if self.status not in [
+            QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
             QuestionStatus.NEEDSINFO]:
             return False
 
@@ -344,7 +347,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, 
+        return self.status in [
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, 
             QuestionStatus.SOLVED]
 
     @notify_question_modified()
@@ -542,7 +546,7 @@ class QuestionSearch:
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, needs_attention_from=None, sort=None,
                  product=None, distribution=None, sourcepackagename=None,
-                 unsupported=False):
+                 unsupported=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -708,7 +712,7 @@ class QuestionTargetSearch(QuestionSearch):
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None, unsupported=False):
+                 sourcepackagename=None, unsupported=None):
         assert product is not None or distribution is not None, (
             "Missing a product or distribution context.")
         QuestionSearch.__init__(
@@ -729,17 +733,9 @@ class QuestionTargetSearch(QuestionSearch):
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Ticket.owner = %s' % self.owner.id)
-
         if self.unsupported:
-            if self.product:
-                question_target = self.product
-            elif self.distribution:
-                question_target = self.distribution
-            elif self.sourcepackagename:
-                question_target = self.sourcepackagename
-                
-            langs = [str(lang.id) for lang in (
-                    question_target.getSupportedLanguages())]
+            langs = [str(lang.id) 
+                     for lang in (self.unsupported.getSupportedLanguages())]
             constraints.append('Ticket.language NOT IN (%s)' % ', '.join(langs))
 
         return constraints
@@ -783,7 +779,7 @@ class QuestionPersonSearch(QuestionSearch):
     def __init__(self, person, search_text=None,
                  status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                  sort=None, participation=None, needs_attention=False,
-                 unsupported=False):
+                 unsupported=None):
         if needs_attention:
             needs_attention_from = person
         else:

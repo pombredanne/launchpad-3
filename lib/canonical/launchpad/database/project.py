@@ -249,7 +249,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                         sort=None, owner=None, needs_attention_from=None,
-                        unsupported=False):
+                        unsupported=None):
         """See IQuestionCollection."""
         return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,

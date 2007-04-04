@@ -711,18 +711,14 @@ And also with products:
 
 == Popular searches ==
 
-The action menu provides links to predefined searches that
+The action menu provides links to predefined searches; Unsupported is one
+of those searches.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+tickets')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> portlet = soup.first('div', id='actions')
-    >>> portlet.first('ul')
-    <ul>
-    ...<a href=".../+mytickets">My questions</a>...
-    ...<a href=".../+need-attention">Need attention</a>...
-    ...<a href=".../+unsupported">Unsupported</a>...
+    >>> portlet = find_portlet(browser.contents, 'Actions')
+    >>> portlet.find(name='a', text='Unsupported')
+    u'Unsupported'
 
 Each product and distro can have questions asked in languages that 
 none of the Answer Contacts speak.
