@@ -69,9 +69,7 @@ class TacFile(object):
         # Imported here as path is not set fully on module load
         from canonical.pidfile import make_pidfile, pidfile_path
 
-        # Don't run the server if it wasn't asked for. We only want it started
-        # up developer boxes really, as the production server doesn't use this
-        # startup script.
+        # Don't run the server if it wasn't asked for. 
         if not self.config.launch:
             return
 
@@ -118,9 +116,9 @@ def start_librarian():
     # Imported here as path is not set fully on module load
     from canonical.config import config
 
-    # Don't run the Librarian if it wasn't asked for. We only want it
-    # started up developer boxes really, as the production Librarian
-    # doesn't use this startup script.
+    # Don't run the Librarian if it wasn't asked for. Although launch() guards
+    # against this, we also need to make sure that the Librarian directories
+    # are not created if we are not running the Librarian.
     if not config.librarian.server.launch:
         return
 
@@ -136,12 +134,6 @@ def start_buildsequencer():
     # Imported here as path is not set fully on module load
     from canonical.config import config
 
-    # Don't run the sequencer if it wasn't asked for. We only want it
-    # started up developer boxes and dogfood really, as the production
-    # sequencer doesn't use this startup script.
-    if not config.buildsequencer.launch:
-        return
-
     buildsequencer = TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
                              config.librarian.server)
     buildsequencer.launch()
@@ -151,12 +143,6 @@ def start_authserver():
     # Imported here as path is not set fully on module load
     from canonical.config import config
 
-    # Don't run the authserver if it wasn't asked for. We only want it
-    # started up developer boxes and dogfood really, as the production
-    # authserver doesn't use this startup script.
-    if not config.authserver.launch:
-        return
-
     authserver = TacFile(
         'authserver', 'daemons/authserver.tac', config.authserver)
     authserver.launch()
@@ -165,12 +151,6 @@ def start_authserver():
 def start_supermirrorsftp():
     # Imported here as path is not set fully on module load
     from canonical.config import config
-
-    # Don't run the authserver if it wasn't asked for. We only want it
-    # started up developer boxes and dogfood really, as the production
-    # authserver doesn't use this startup script.
-    if not config.supermirrorsftp.launch:
-        return
 
     sftp = TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp)
     sftp.launch()
