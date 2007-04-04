@@ -48,7 +48,7 @@ class ShipitReporter(LaunchpadScript):
 
         # XXX: For now this will be hardcoded as the date when a new ShipIt is
         # opened. -- Guilherme Salgado, 2005-11-24
-        start_date = date(2006, 5, 17)
+        start_date = date(2007, 4, 5)
         csv_file = requestset.generateWeekBasedReport(start_date, date.today())
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByWeek'))
         self.txn.commit()
