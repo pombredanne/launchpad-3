@@ -326,11 +326,11 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
     def test_noKeys(self):
         # When you sign into an existing account with no SSH keys, the SFTP
         # server should inform you that the account has no keys.
-        creds = SSHPrivateKey('sabdfl', 'ssh-dss', self.public_key,
+        creds = SSHPrivateKey('lifeless', 'ssh-dss', self.public_key,
                               self.sigData, self.signature)
         return self.assertLoginError(
             creds,
-            "Launchpad user %r doesn't have a registered SSH key" % 'sabdfl')
+            "Launchpad user %r doesn't have a registered SSH key" % 'lifeless')
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you
