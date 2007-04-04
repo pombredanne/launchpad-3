@@ -93,19 +93,12 @@ class SignableTagFile:
         person = getUtility(IPersonSet).getByEmail(email)
         if person is None and self.policy.create_people:
             package = self._dict['source']
-            # XXX: The distrorelease property may raise an UploadError
-            # in case there's no distrorelease with a name equal to
-            # ChangesFile.suite_name() or even a raw Exception in some
-            # tests, but we don't want the upload to fail at this point
-            # nor catch the exception here, so we'll hardcode the distro
-            # here for now and leave the rationale without a specific
-            # release.
-            # -- Guilherme Salgado, 2006-10-03
-            release = 'Ubuntu'
+            version = self._dict['version']
             person = getUtility(IPersonSet).ensurePerson(
                 email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
-                comment=('when the %s package was uploaded to %s'
-                         % (package, release)))
+                comment=('when the %s_%s package was uploaded to %s/%s'
+                         % (package, version, self.policy.distrorelease.name,
+                            self.policy.pocket.name)))
 
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"

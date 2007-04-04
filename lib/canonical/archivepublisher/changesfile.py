@@ -219,6 +219,11 @@ class ChangesFile(SignableTagFile):
         return self._getFilesByType(BaseBinaryUploadFile)
 
     @property
+    def source_package_files(self):
+        """Return a list of SourceUploadFile initialized in this context."""
+        return self._getFilesByType(SourceUploadFile)
+
+    @property
     def custom_files(self):
         """Return a list of CustomUploadFile initialized in this context."""
         return self._getFilesByType(CustomUploadFile)

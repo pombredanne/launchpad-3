@@ -1,37 +1,101 @@
+= NascentUploadFiles =
 
-The nascent upload contains files (assuming it's sane) and as such we
-have a NascentUploadedFile type to represent them.
+XXX .....
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUploadedFile
-  >>> from canonical.archivepublisher.tests import datadir
+Import the test keys so we have them ready for verification
 
-To construct a nascentuploadedfile we need an fsroot and a line from a
-Files section of a changes file.
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
 
-  >>> nuf = NascentUploadedFile(
-  ...     datadir(''),
-  ...     ' 0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important '
-  ...     'ed_0.2-20_i386.deb')
-  >>> nuf.filename
-  'ed_0.2-20_i386.deb'
-  >>> nuf._size
-  44718
-  >>> nuf._digest
-  '0c466ce6a160c62fa558fbbb46a4ea45'
-  >>> nuf.section
-  'editors'
-  >>> nuf.priority
-  'important'
+We need to be logged into the security model in order to get any further
 
-When we ask the object for its size or digest through the properties,
-it will check them. If they're correct, no exception will be raised.
+  >>> login('foo.bar@canonical.com')
 
-  >>> nuf.size
-  44718
-  >>> nuf.digest
-  '0c466ce6a160c62fa558fbbb46a4ea45'
-  >>> nuf.sha_digest
-  'e5c467ca14ab67f73f8cbb9bb9016f670b14c8b7'
-  >>> nuf._values_checked
+  >>> from canonical.archivepublisher.changesfile import ChangesFile
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+
+
+
+XXX .....
+
+
+
+== ChangesFile  ==
+
+XXX: summary
+
+  >>> modified_insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distrorelease='hoary')
+  >>> modified_insecure_policy.can_upload_binaries = True
+  >>> modified_insecure_policy.can_upload_mixed = True
+
+  >>> ed_mixed_changes = ChangesFile(
+  ...     datadir('ed_0.2-20_i386.changes'),
+  ...     modified_insecure_policy, mock_logger_quiet)
+
+  >>> modified_insecure_policy.setDistroReleaseAndPocket(
+  ...      ed_mixed_changes.suite_name)
+
+  >>> errors = ed_mixed_changes.process_files()
+  >>> errors
+  <generator ...>
+  >>> len(list(errors))
+  0
+
+XXX: explain why
+
+We can also extract the list of files from the upload.
+
+  >>> for uploaded_file in ed_mixed_changes.files:
+  ...     print uploaded_file.filename
+  ed_0.2-20.dsc
+  ed_0.2-20.diff.gz
+  ed_0.2-20_i386.deb
+
+  >>> [f.filename for f in ed_mixed_changes.binary_package_files]
+  ['ed_0.2-20_i386.deb']
+
+  >>> [f.filename for f in ed_mixed_changes.source_package_files]
+  ['ed_0.2-20.dsc', 'ed_0.2-20.diff.gz']
+
+=== Parsing Addresses ===
+
+Going back to the upload itself, at a very basic level a NascentUpload
+allows us to probe the contents of the changes file to see things like
+the maintainer.
+
+  >>> ed_mixed_changes.maintainer['rfc822']
+  'James Troup <james@nocrew.org>'
+
+
+We can parse addresses and look them up in launchpad.
+
+  >>> addr = ed_mixed_changes.parse_address(
+  ...     "Foo Bar <foo.bar@canonical.com>")
+  >>> addr['person'].displayname
+  u'Foo Bar'
+  >>> addr['person'].creation_comment is None
   True
 
+
+If the address is unparsable, we get an error.
+
+  >>> ed_mixed_changes.parse_address("Cannot Parse Me <FOOO>")
+  Traceback (most recent call last):
+  ...
+  UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
+
+If the email address is not yet registered and policy.create_people is True,
+a new Person will be created.
+
+  >>> ed_mixed_changes.policy.create_people
+  True
+
+  >>> addr = ed_mixed_changes.parse_address("Baz <baz@canonical.com>")
+  >>> addr['person'].creation_rationale.name
+  'SOURCEPACKAGEUPLOAD'
+
+  >>> addr['person'].creation_comment
+  u'when the ed_0.2-20 package was uploaded to hoary/RELEASE'
