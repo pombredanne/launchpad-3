@@ -524,7 +524,8 @@ class AffectsEmailCommand(EmailCommand):
                 "Unknown release target: %r" % release)
             assert sourcepackagename is None, (
                 "A product series can't have a source package.")
-            general_target = release.product
+            product = release.product
+            general_target = product
         general_task = self.getBugTask(bug, general_target)
         if general_task is None:
             # A release task has to have a corresponding

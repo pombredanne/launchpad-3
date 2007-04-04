@@ -805,8 +805,11 @@ Change the state of a bug in a specific context. $path can be of
 the following form:
 
     $productname
+    $productname/$series
     $distroname
     $distroname/$sourcepackagename
+    $distroname/$release
+    $distroname/$release/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -973,7 +976,7 @@ specific distrorelease.
     ...     print bugtask.targetname
     firefox (upstream)
 
-    >>> submit_commands(bug, 'affects ubuntu/hoary/evolution')
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
 Now we can see that two tasks were created; both the general Ubuntu
 task, and the release specific task.
@@ -981,8 +984,8 @@ task, and the release specific task.
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
-    evolution (Ubuntu)
-    evolution (Ubuntu Hoary)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Hoary)
 
 As with the example with no source package above; if the user isn't a
 driver of the release, only a nomination will be created.
@@ -997,12 +1000,12 @@ driver of the release, only a nomination will be created.
     ...     print bugtask.targetname
     firefox (upstream)
 
-    >>> submit_commands(bug, 'affects ubuntu/hoary/evolution')
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
     firefox (upstream)
-    evolution (Ubuntu)
+    mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
     ...     print nomination.target.bugtargetname
@@ -1024,12 +1027,31 @@ nomination is automatically approved.
     ...     print bugtask.targetname
     firefox (upstream)
     firefox trunk (upstream)
-    evolution (Ubuntu)
+    mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
     ...     print nomination.target.bugtargetname
     firefox trunk (upstream)
     Ubuntu Hoary
+
+If the user doesn't have permission to approve the nomination, no series
+bug task will be created, only a nomination. A general product bugtask
+will be created if one doesn't exist.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'affects /evolution/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    evolution trunk (upstream)
+
+    >>> login('test@canonical.com')
 
 Let's take on the upstream task on bug four as well. This time we'll
 sneak in a 'subscribe' command between the 'affects' and the other
