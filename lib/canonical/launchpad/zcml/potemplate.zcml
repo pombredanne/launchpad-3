@@ -121,7 +121,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.potemplate"
-        classes="POTemplateAppMenus"
+        classes="POTemplateFacets POTemplateAppMenus"
         />
 
     <content class="canonical.launchpad.database.POTemplateSubset">

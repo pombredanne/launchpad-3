@@ -2,14 +2,15 @@
 
 __metaclass__ = type
 __all__ = [
+    'BaseTranslationView',
+    'POMsgSetAppMenus',
+    'POMsgSetFacets',
     'POMsgSetIndexView',
-    'POMsgSetView',
     'POMsgSetPageView',
     'POMsgSetSOP',
-    'POMsgSetAppMenus',
     'POMsgSetSuggestions',
+    'POMsgSetView',
     'POMsgSetZoomedView',
-    'BaseTranslationView',
     ]
 
 import cgi
@@ -34,6 +35,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
@@ -42,6 +44,13 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+
+class POMsgSetFacets(POTemplateFacets):
+    usedfor = IPOMsgSet
+
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
 class POMsgSetSOP(StructuralObjectPresentation):

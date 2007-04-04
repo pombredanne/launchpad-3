@@ -40,7 +40,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.pomsgset"
-        classes="POMsgSetAppMenus"
+        classes="POMsgSetFacets POMsgSetAppMenus"
         />
 
     <browser:defaultView

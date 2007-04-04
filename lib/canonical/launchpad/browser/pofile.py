@@ -4,15 +4,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'POFileNavigation',
+    'POExportView',
     'POFileAppMenus',
-    'POFileView',
-    'POFileUploadView',
+    'POFileFacets',
+    'POFileNavigation',
     'POFileSOP',
     'POFileTranslateView',
-    'BaseExportView',
-    'POFileAppMenus',
-    'POExportView']
+    'POFileUploadView',
+    'POFileView',
+    ]
 
 import re
 from zope.app.form.browser import DropdownWidget
@@ -20,19 +20,20 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.launchpad import _
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.pomsgset import (
+    BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.potemplate import (
+    BaseExportView, POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.browser.pomsgset import (
-    BaseTranslationView, POMsgSetView)
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-
-from canonical.launchpad import _
+from canonical.lp.dbschema import RosettaFileFormat
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
@@ -43,9 +44,6 @@ class CustomDropdownWidget(DropdownWidget):
 class POFileNavigation(Navigation):
 
     usedfor = IPOFile
-
-    def breadcrumb(self):
-        return self.context.language.englishname
 
     def traverse(self, name):
         """Return the IPOMsgSet associated with the given name."""
@@ -92,44 +90,23 @@ class POFileNavigation(Navigation):
             # information.
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
+class POFileFacets(POTemplateFacets):
+    usedfor = IPOFile
 
-class POFileSOP(StructuralObjectPresentation):
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.potemplate)
 
-    def getIntroHeading(self):
-        if self.context.potemplate.productseries is not None:
-            return '%s %s template %s language:' % (
-                self.context.potemplate.productseries.product.displayname,
-                self.context.potemplate.productseries.displayname,
-                self.context.potemplate.name)
-        else:
-            # It's for a distribution source package.
-            return '%s %s %s template %s language:' % (
-                self.context.potemplate.distrorelease.distribution.displayname,
-                self.context.potemplate.distrorelease.version,
-                self.context.potemplate.sourcepackagename.name,
-                self.context.potemplate.name)
 
-    def getMainHeading(self):
-        return self.context.language.englishname
+class POFileSOP(POTemplateSOP):
 
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.potemplate)
 
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages', 'upload', 'download',
-        'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -139,10 +116,6 @@ class POFileAppMenus(ApplicationMenu):
         text = 'Translate'
         return Link('+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('+upload', text, icon='edit')
@@ -150,52 +123,6 @@ class POFileAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../', text, icon='languages')
-
-
-class BaseExportView(LaunchpadView):
-    """Base class for PO export views."""
-
-    def initialize(self):
-        self.request_set = getUtility(IPOExportRequestSet)
-        self.processForm()
-
-    def processForm(self):
-        """Override in subclass."""
-        raise NotImplementedError
-
-    def nextURL(self):
-        self.request.response.addInfoNotification(_(
-            "Your request has been received. Expect to receive an email "
-            "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
-
-    def validateFileFormat(self, format_name):
-        try:
-            return RosettaFileFormat.items[format_name]
-        except KeyError:
-            self.request.response.addErrorNotification(_(
-                'Please select a valid format for download.'))
-            return
-
-    def formats(self):
-        """Return a list of formats available for translation exports."""
-
-        class BrowserFormat:
-            def __init__(self, title, value):
-                self.title = title
-                self.value = value
-
-        formats = [
-            RosettaFileFormat.PO,
-            RosettaFileFormat.MO,
-        ]
-
-        for format in formats:
-            yield BrowserFormat(format.title, format.name)
 
 
 class POFileView(LaunchpadView):
