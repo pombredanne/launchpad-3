@@ -111,10 +111,10 @@ ELEMENTS_INTRODUCING_NEWLINE = [
     'address', 'li', 'dt', 'dd', 'th', 'td', 'caption', 'br']
 
 
-NORMALIZE_NEWLINES_RE = re.compile(u'\n+')
-STRIP_LINES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
-NORMALIZE_WHITESPACE_RE = re.compile(u'[ \t]+')
-REPLACE_NBSP_RE = re.compile(u'&nbsp;|&#160;')
+NEWLINES_RE = re.compile(u'\n+')
+LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
+NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
 
 def extract_text(content):
@@ -147,10 +147,10 @@ def extract_text(content):
             nodes[0:0] = list(node)
 
     text = u''.join(result)
-    text = REPLACE_NBSP_RE.sub(' ', text)
-    text = NORMALIZE_WHITESPACE_RE.sub(' ', text)
-    text = STRIP_LINES_RE.sub('', text)
-    text = NORMALIZE_NEWLINES_RE.sub('\n', text)
+    text = NBSP_RE.sub(' ', text)
+    text = TABS_AND_SPACES_RE.sub(' ', text)
+    text = LEADING_AND_TRAILING_SPACES_RE.sub('', text)
+    text = NEWLINES_RE.sub('\n', text)
 
     # Remove possible newlines at beginning and end.
     return text.strip()
