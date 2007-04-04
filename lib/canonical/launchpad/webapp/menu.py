@@ -2,23 +2,34 @@
 """Menus and facets."""
 
 __metaclass__ = type
-__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'Link', 'LinkData', 'FacetLink', 'MenuLink',
-           'structured', 'enabled_with_permission']
+__all__ = [
+    'nearest_context_with_adapter',
+    'nearest_adapter',
+    'FacetMenu',
+    'ApplicationMenu',
+    'ContextMenu',
+    'Link',
+    'LinkData',
+    'FacetLink',
+    'MenuLink',
+    'structured',
+    'enabled_with_permission',
+    ]
 
 import cgi
 from zope.interface import implements
 from canonical.lp import decorates
-from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.interfaces import (
+
+from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
     IFacetLink, ILink, ILinkData, IStructuredString
     )
+
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
-from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -46,21 +57,38 @@ class structured:
         return "<structured-string '%s'>" % self.text
 
 
-def nearest_menu(obj, menuinterface):
-    """Return the menu adapter of the nearest object up the canonical url chain
-    that has such a menu defined for it.
+def nearest_context_with_adapter(obj, interface):
+    """Return the tuple (context, adapter) of the nearest object up the
+    canonical url chain that has an adapter of the type given.
 
-    This might be the menu for the object given as an argument.
+    This might be an adapter for the object given as an argument.
 
-    Return None if there is no object that has such a menu in the url chain.
+    Return (None, None) if there is no object that has such an adapter
+    in the url chain.
 
-    menuinterface will typically be IFacetMenu.
     """
     for current_obj in canonical_url_iterator(obj):
-        facetmenu = menuinterface(current_obj, None)
-        if facetmenu is not None:
-            return facetmenu
-    return None
+        adapter = interface(current_obj, None)
+        if adapter is not None:
+            return (current_obj, adapter)
+    return (None, None)
+
+
+def nearest_adapter(obj, interface):
+    """Return the adapter of the nearest object up the canonical url chain
+    that has an adapter of the type given.
+
+    This might be an adapter for the object given as an argument.
+
+    Return None if there is no object that has such an adapter in the url chain.
+
+    This will often be used with an interface of IFacetMenu, when looking up
+    the facet menu for a particular context.
+
+    """
+    context, adapter = nearest_context_with_adapter(obj, interface)
+    # Will be None, None if not found.
+    return adapter
 
 
 class LinkData:
@@ -84,7 +112,8 @@ class LinkData:
         The 'enabled' argument is boolean for whether this link is enabled.
 
         The 'icon' is the name of the icon to use, or None if there is no
-        icon.
+        icon. This is currently unused in the Actions menu, but will likely
+        be used when menu links are embedded in the page (bug 5313).
 
         The 'site' is None for whatever the current site is, and 'main' or
         'blueprint' for a specific site.

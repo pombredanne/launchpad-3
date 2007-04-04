@@ -10,8 +10,7 @@ export information about all bug tasks -- only those for the product
 in question.
 
 The export is also limited to bug information -- it does not include
-links to other Launchpad features such as specifications or support
-tickets.
+links to other Launchpad features such as specifications or questions.
 
 
 Exporting one bug
@@ -122,8 +121,8 @@ the file when we later serialise the bug:
   >>> bug1 = getUtility(IBugSet).get(1)
   >>> sampleperson = getUtility(IPersonSet).getByEmail('test@canonical.com')
   >>> bug1.addAttachment(sampleperson, StringIO('Hello World'),
-  ...                    '"Hello World" attachment', 'Added attachment',
-  ...                    'hello.txt')
+  ...                    'Added attachment', 'hello.txt',
+  ...                    description='"Hello World" attachment')
   <BugAttachment ...>
   >>> ztm.commit()
 

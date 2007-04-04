@@ -12,31 +12,42 @@ from zope.interface import implements
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
         SQLMultipleJoin, SQLRelatedJoin)
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
+    IHasIcon)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter)
+    TranslationPermission, ImportStatus, SpecificationSort,
+    SpecificationFilter, SprintSpecificationStatus)
+
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import HasSprintsMixin
+from canonical.launchpad.database.question import QuestionTargetSearch
 
 
-class Project(SQLBase, BugTargetBase, KarmaContextMixin):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              HasSprintsMixin, KarmaContextMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = "Project"
 
@@ -53,10 +64,12 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    logo = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -103,6 +116,27 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    def translatables(self):
+        """See IProject."""
+        return Product.select('''
+            Product.project = %s AND
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''' % sqlvalues(self),
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
+
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        query = """
+            Product.project = %s
+            AND Specification.product = Product.id
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            AND SprintSpecification.status = %s
+            """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
+        return query, ['Product', 'Specification', 'SprintSpecification']
 
     @property
     def has_any_specifications(self):
@@ -206,6 +240,29 @@ class Project(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
+
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                        sort=None, owner=None, needs_attention_from=None):
+        """See IQuestionCollection."""
+        return QuestionTargetSearch(
+            search_text=search_text, status=status, language=language,
+            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
+            product=self.products).getResults()
+
+    def getQuestionLanguages(self):
+        """See IQuestionCollection."""
+        product_ids = sqlvalues(*self.products)
+        return set(Language.select(
+            'Language.id = language AND product IN (%s)' % ', '.join(
+                product_ids),
+            clauseTables=['Ticket'], distinct=True))
+
 
 class ProjectSet:
     implements(IProjectSet)
@@ -249,7 +306,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, emblem):
+            description, owner, mugshot=None, logo=None, icon=None):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -260,8 +317,9 @@ class ProjectSet:
             homepageurl=homepageurl,
             owner=owner,
             datecreated=UTC_NOW,
-            gotchi=gotchi,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 
     def count_all(self):
         return Project.select().count()

@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+from zope.publisher.publish import mapply
+
 from new import instancemethod
 import thread
 import traceback
@@ -18,7 +20,7 @@ from zope.component import getUtility, queryView
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from zope.publisher.interfaces import IPublishTraverse, Retry, Redirect
+from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 
 from zope.security.interfaces import Unauthorized
@@ -26,9 +28,9 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
-    IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interfaces import (
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
+    BeforeTraverseEvent)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -178,6 +180,9 @@ class LaunchpadBrowserPublication(
         self.maybeRestrictToTeam(request)
 
     def maybeRestrictToTeam(self, request):
+
+        from canonical.launchpad.interfaces import (
+            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -215,6 +220,23 @@ class LaunchpadBrowserPublication(
         request.response.redirect(location, temporary_if_possible=True)
         # Quash further traversal.
         request.setTraversalStack([])
+
+    def callObject(self, request, ob):
+
+        # Don't render any content on a redirect.
+        if request.response.getStatus() in [301, 302, 303, 307]:
+            return ''
+
+        # Set the launchpad user-id and page-id (if available) in the
+        # wsgi environment, so that the request logger can access it.
+        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
+        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
+        if usedfor is not None:
+            name = getattr(removeSecurityProxy(ob), '__name__', '')
+            pageid = '%s:%s' % (usedfor.__name__, name)
+            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        return mapply(ob, request.getPositionalArguments(), request)
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does

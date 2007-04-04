@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
@@ -10,7 +10,6 @@ import _pythonpath
 import logging
 
 from canonical.config import config
-
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.branch_scanner import BranchScanner
 
@@ -20,6 +19,14 @@ class UpdateBranches(LaunchpadScript):
         # We don't want debug messages from bzr at that point.
         bzr_logger = logging.getLogger("bzr")
         bzr_logger.setLevel(logging.INFO)
+
+        # Customize the oops reporting config
+        oops_prefix = config.branchscanner.errorreports.oops_prefix
+        config.launchpad.errorreports.oops_prefix = oops_prefix
+        errordir = config.branchscanner.errorreports.errordir
+        config.launchpad.errorreports.errordir = errordir
+        copy_to_zlog = config.branchscanner.errorreports.copy_to_zlog
+        config.launchpad.errorreports.copy_to_zlog = copy_to_zlog
 
         BranchScanner(self.txn, self.logger).scanAllBranches()
 

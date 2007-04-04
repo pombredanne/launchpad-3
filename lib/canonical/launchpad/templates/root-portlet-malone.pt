@@ -10,7 +10,7 @@
         tal:attributes="href vhosts/bugs/rooturl"
         href="/bugs" i18n:translate="">Malone</a> is a
     <strong>collaborative bug tracker</strong> that allows the same bug to be
-    tracked in different distributions and products.
+    tracked in different projects.
     </p>
 
     <p>You can use Malone as your primary bug tracker. It offers both web-based

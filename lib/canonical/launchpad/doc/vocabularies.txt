@@ -78,19 +78,19 @@ Reflects the available distribution releases.  Results are ordered by
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
-            ubuntu/breezy-autotest Breezy Badger Autotest
-                     ubuntu/grumpy The Grumpy Groundhog Release
-                      ubuntu/hoary The Hoary Hedgehog Release
-                      ubuntu/warty The Warty Warthog Release
-                      debian/sarge Sarge
-                        debian/sid Sid
-                      debian/woody WOODY
-                    guadalinex/2k5 Guada 2005
-                    kubuntu/krunch The Krunchy Kangaroo
-                        redhat/7.0 Seven
-                        redhat/six Six Six Six
-        ubuntutest/breezy-autotest Breezy Badger Autotest
-             ubuntutest/hoary-test Mock Hoary
+            ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest
+                     ubuntu/grumpy Ubuntu: The Grumpy Groundhog Release
+                      ubuntu/hoary Ubuntu: The Hoary Hedgehog Release
+                      ubuntu/warty Ubuntu: The Warty Warthog Release
+                      debian/sarge Debian: Sarge
+                        debian/sid Debian: Sid
+                      debian/woody Debian: WOODY
+                    guadalinex/2k5 GuadaLinex: Guada 2005
+                    kubuntu/krunch Kubuntu: The Krunchy Kangaroo
+                        redhat/7.0 Red Hat: Seven
+                        redhat/six Red Hat: Six Six Six
+        ubuntutest/breezy-autotest ubuntutest: Breezy Badger Autotest
+             ubuntutest/hoary-test ubuntutest: Mock Hoary
 
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
     u'The Hoary Hedgehog Release'
@@ -202,6 +202,27 @@ All the teams the person is an active member of.
     ...
     LookupError:...
 
+== PersonTeamParticipations ==
+
+This vocabulary contains all the teams a person participates in. Either
+through direct or indirect participations.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> [membership.team.name
+    ...  for membership in sample_person.myactivememberships]
+    [u'landscape-developers', u'name20']
+    >>> [team.name for team in sample_person.teams_participated_in]
+    [u'landscape-developers', u'name18', u'name20']
+
+    >>> sample_person_teams_vocabulary = vocabulary_registry.get(
+    ...     sample_person, 'PersonTeamParticipations')
+
+    >>> for term in sample_person_teams_vocabulary:
+    ...     print "%s: %s (%s)" % (term.token, term.title, term.value.name)
+    landscape-developers: Landscape Developers (landscape-developers)
+    name18: Ubuntu Gnome Team (name18)
+    name20: Warty  Security Team (name20)
+
 Milestone
 ---------
 All the milestone in a context.
@@ -211,10 +232,11 @@ vocabulary.
 
     >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> len(all_milestones)
-    2
+    3
     >>> for term in all_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     debian: 3.1
+    debian: 3.1-rc1
     firefox: 1.0
 
 If the context is a product, only the product's milestones are in the
@@ -249,9 +271,36 @@ in the vocabulary.
     ...     debian_woody_task, 'Milestone')
     >>> debian_woody = debian_woody_task.distrorelease
     >>> len(debian_woody_milestones)
-    0
-    >>> debian_woody.milestones.count()
-    0
+    2
+
+If one of the milestones is disabled, it won't be included in the vocabulary
+anymore.
+
+    >>> milestone = debian_woody.milestones[0]
+    >>> milestone.visible = False
+    >>> flush_database_updates()
+    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    1
+
+If the milestone was used in a bugtask before it was marked invisible, though,
+it'll still show up on the vocabulary so that users can change it.
+
+    >>> debian_woody_task.milestone = milestone
+    >>> flush_database_updates()
+    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    2
+
+If the context is a specification, only milestones from that specification
+target are in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> spec_target_milestones = vocabulary_registry.get(
+    ...     canvas_spec, 'Milestone')
+    >>> for term in spec_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
 
 The vocabulary contains only visible milestones.
 
@@ -317,8 +366,11 @@ It has however been nominated for 1.0:
 This means that if we iterate through the vocabulary with bug one, only
 the trunk will be nominatable:
 
+    >>> firefox_bug_one = bug_one.bugtasks[0]
+    >>> firefox_bug_one.target.name
+    u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     bug_one, 'BugNominatableReleases')
+    ...     firefox_bug_one, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     trunk: Trunk
@@ -335,8 +387,11 @@ No series is targeted or nominated on bug 4:
 
 So if we give bug four to the vocabulary, all releases will be returned:
 
+    >>> firefox_bug_four = bug_four.bugtasks[0]
+    >>> firefox_bug_four.target.name
+    u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     bug_four, 'BugNominatableReleases')
+    ...     firefox_bug_four, 'BugNominatableReleases')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     1.0: 1.0
@@ -362,8 +417,11 @@ Bug one is nominated for Ubuntu Hoary:
 
 So Hoary isn't included in the vocabulary:
 
+    >>> ubuntu_bug_one = bug_one.bugtasks[1]
+    >>> ubuntu_bug_one.distribution.name
+    u'ubuntu'
     >>> releases_vocabulary = vocabulary_registry.get(
-    ...     bug_one, 'BugNominatableReleases')
+    ...     ubuntu_bug_one, 'BugNominatableReleases')
     >>> for term in releases_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest
@@ -385,8 +443,11 @@ The same is true for bug two, where the bug is targeted to Hoary.
     ...     print nomination.target.name
     hoary
 
+    >>> ubuntu_bug_two = bug_two.bugtasks[1]
+    >>> ubuntu_bug_two.distribution.name
+    u'ubuntu'
     >>> releases_vocabulary = vocabulary_registry.get(
-    ...     bug_two, 'BugNominatableReleases')
+    ...     ubuntu_bug_two, 'BugNominatableReleases')
     >>> for term in releases_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest
@@ -418,6 +479,23 @@ All the products in a project.
     ...     print "%s: %s" %(term.token, term.title)
     firefox: Mozilla Firefox
     thunderbird: Mozilla Thunderbird
+
+ProjectProductsVocabularyUsingMalone
+-----------------------------------
+All the products in a project using Malone.
+
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> for product in mozilla_project.products:
+    ...     print "%s: %s" % (product.name, product.official_malone)
+    firefox: True
+    thunderbird: False
+
+    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    ...     mozilla_project,'ProjectProductsUsingMalone')
+    >>> for term in mozilla_products_vocabulary:
+    ...     print "%s: %s" %(term.token, term.title)
+    firefox: Mozilla Firefox
 
 Non-Enumerable Vocabularies
 ===========================
@@ -491,7 +569,7 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    14
+    15
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
@@ -1014,7 +1092,10 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1022,7 +1103,10 @@ Inactive products and projects are not available
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu Test (Distribution) - class Distribution
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = True
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_product.active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
     >>> for term in vocab:
@@ -1031,6 +1115,14 @@ Inactive products and projects are not available
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu (Product) - class Product
     Ubuntu Test (Distribution) - class Distribution
+    >>> ubuntu_product in vocab
+    True
+
+Projects are not contained in this vocabulary:
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    False
 
 DistributionOrProductOrProjectVocabulary
 ----------------------------------------
@@ -1048,9 +1140,23 @@ heterogeneous.
 
 Inactive products and projects are not available
 
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = False
-    >>> getUtility(IProjectSet).getByName('ubuntu-project').active = False
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product in vocab
+    True
+    >>> ubuntu_product.active = False
+    >>> syncUpdate(ubuntu_product)
+    >>> ubuntu_product in vocab
+    False
+
+    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
+    >>> ubuntu_project in vocab
+    True
+    >>> ubuntu_project.active = False
+    >>> syncUpdate(ubuntu_project)
+    >>> ubuntu_project in vocab
+    False
+
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:

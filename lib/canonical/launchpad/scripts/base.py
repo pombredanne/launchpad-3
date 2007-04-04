@@ -1,5 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+import os
 import sys
 import logging
 from optparse import OptionParser
@@ -8,7 +9,9 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
-from canonical.launchpad.ftests import login
+
+
+LOCK_PATH = "/var/lock/"
 
 
 class LaunchpadScriptFailure(Exception):
@@ -60,55 +63,34 @@ class LaunchpadScript:
     txn = None
     usage = None
     description = None
+    lockfilepath = None
     loglevel = logging.INFO
+
     def __init__(self, name, dbuser=None):
         """Construct new LaunchpadScript.
 
-        Name is a short name for this script; it will be used in
-        the lock filename and to identify the logger object.
+        Name is a short name for this script; it will be used to
+        assemble a lock filename and to identify the logger object.
 
         Use dbuser to specify the user to connect to the database; if
         not supplied a default will be used.
         """
         self.name = name
         self.dbuser = dbuser
-        self.lockfile = "/var/lock/launchpad-%s.lock" % name
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
         # we add options that our logger object uses, then call our
         # option-parsing hook, and finally pull out and store the
         # supplied options and args.
-        self.parser = OptionParser(usage=self.usage, 
+        self.parser = OptionParser(usage=self.usage,
                                    description=self.description)
         scripts.logger_options(self.parser, default=self.loglevel)
-        self.build_standard_options()
-        self.options, self.args = self.parser.parse_args()
-        if getattr(self.options, "lockfilename"):
-            # I have no clue how to check if lockfilename is actually
-            # present in self.options other than doing the getattr
-            # above; it's a weird optparse.Values instance that has no
-            # relevant methods.
-            self.lockfile = self.options.lockfilename
-
-        # Store logger and create lockfile. Note that this will create a
-        # lockfile even if you don't actually use it; GlobalLock.__del__
-        # is meant to clean it up though.
-        self.logger = scripts.logger(self.options, name)
-        self.lock = GlobalLock(self.lockfile, logger=self.logger)
-
-    def build_standard_options(self):
-        """Construct standard options. Right now this means --lockfile.
-
-        You should use the add_my_options() hook to customize options.
-        Override this only if you for some reason don't want the
-        --lockfile option present.
-        """
-        self.parser.add_option("-l", "--lockfile", dest="lockfilename",
-            default=self.lockfile,
-            help="The file the script should use to lock the process.")
         self.add_my_options()
+        self.options, self.args = self.parser.parse_args()
+        self.logger = scripts.logger(self.options, name)
 
+        self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
     #
     # Hooks that we expect users to redefine.
     #
@@ -130,7 +112,7 @@ class LaunchpadScript:
 
             self.parser.add_option("-f", "--foo", dest="foo",
                 default="foobar-makes-the-world-go-round",
-                help="You're joking right")
+                help="You are joking, right?")
         """
 
     #
@@ -139,6 +121,9 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
+        # This import is actually quite expensive, and causes us to
+        # import circularly in pathological cases.
+        from canonical.launchpad.ftests import login
         login(user)
 
     #
@@ -147,31 +132,48 @@ class LaunchpadScript:
     # script carefully.
     #
 
+    @property
+    def lockfilename(self):
+        """Return lockfilename.
+
+        May be overridden in targeted scripts in order to have more specific
+        lockfilename.
+        """
+        return "launchpad-%s.lock" % self.name
+
+    def setup_lock(self):
+        """Create lockfile.
+
+        Note that this will create a lockfile even if you don't actually use it.
+        GlobalLock.__del__ is meant to clean it up though.
+        """
+        self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
+
     def lock_or_die(self, blocking=False):
         """Attempt to lock, and sys.exit(1) if the lock's already taken.
 
         Say blocking=True if you want to block on the lock being
         available.
         """
+        self.setup_lock()
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.error('Lockfile %s in use' % self.lockfilename)
+            self.logger.error('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
-    # XXX: I'm not sure this is actually necessary; if it is remove the
-    # underscore, if not, remove the method. -- kiko, 2007-01-31
-    def _lock_or_quit(self, blocking=False):
+    def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
         For certain scripts the fact that a lock may already be acquired
         is a normal condition that does not warrant an error log or a
         non-zero exit code. Use this method if this is your case.
         """
+        self.setup_lock()
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.info('Lockfile %s in use' % self.lockfilename)
+            self.logger.info('Lockfile %s in use' % self.lockfilepath)
             sys.exit(0)
 
     def unlock(self, skip_delete=False):
@@ -186,8 +188,9 @@ class LaunchpadScript:
     def run(self, use_web_security=False, implicit_begin=True):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
-        self.txn = initZopeless(dbuser=self.dbuser,
-                                implicitBegin=implicit_begin)
+        self.txn = initZopeless(
+            dbuser=self.dbuser, implicitBegin=implicit_begin)
+
         try:
             self.main()
         except LaunchpadScriptFailure, e:

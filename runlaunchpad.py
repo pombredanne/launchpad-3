@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/python2.4
 ##############################################################################
 #
 # Copyright (c) 2001, 2002 Zope Corporation and Contributors.
@@ -35,16 +35,19 @@ from configs import generate_overrides
 
 basepath = filter(None, sys.path)
 
+def make_abspath(path):
+    return os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        *path.split('/')
+        ))
+
 # Disgusting hack to use our extended config file schema rather than the
 # Z3 one. TODO: Add command line options or other to Z3 to enable overriding
 # this -- StuartBishop 20050406
 from zdaemon.zdoptions import ZDOptions
-ZDOptions.schemafile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'lib', 'canonical',
-        'config', 'schema.xml'))
+ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
 
-twistd_script = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), 'sourcecode', 'twisted', 'bin', 'twistd'))
+twistd_script = make_abspath('sourcecode/twisted/bin/twistd')
 
 def start_librarian():
     # Imported here as path is not set fully on module load
@@ -62,9 +65,7 @@ def start_librarian():
 
     pidfile = pidfile_path('librarian')
     logfile = config.librarian.server.logfile
-    tacfile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'daemons', 'librarian.tac'
-        ))
+    tacfile = make_abspath('daemons/librarian.tac')
 
     args = [
         sys.executable,
@@ -115,9 +116,7 @@ def start_buildsequencer():
 
     pidfile = pidfile_path('buildsequencer')
     logfile = config.buildsequencer.logfile
-    tacfile = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'daemons', 'buildd-sequencer.tac'
-        ))
+    tacfile = make_abspath('daemons/buildd-sequencer.tac')
 
     args = [
         sys.executable,
@@ -154,6 +153,18 @@ def start_buildsequencer():
     atexit.register(stop_sequencer)
 
 
+def make_css_slimmer():
+    import contrib.slimmer
+    inputfile = make_abspath(
+        'lib/canonical/launchpad/icing/style.css')
+    outputfile = make_abspath(
+        'lib/canonical/launchpad/icing/+style-slimmer.css')
+
+    cssdata = open(inputfile, 'rb').read()
+    slimmed = contrib.slimmer.slimmer(cssdata, 'css')
+    open(outputfile, 'w').write(slimmed)
+
+
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -178,6 +189,8 @@ def run(argv=list(sys.argv)):
     # Store our process id somewhere
     make_pidfile('launchpad')
 
+    # Create a new compressed +style-slimmer.css from style.css in +icing.
+    make_css_slimmer()
     main(argv[1:])
         
 

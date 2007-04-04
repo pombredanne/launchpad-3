@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Runs pyflakes and pylint on files changed in tree
 #
@@ -60,8 +60,6 @@ PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
 # W0613 (Unused argument)
 # R0911 (Too many return statements)
 PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
-
-export PYTHONPATH=lib:$PYTHONPATH
 
 if [ -z "$1" ]; then
     files=`bzr added ; bzr modified`

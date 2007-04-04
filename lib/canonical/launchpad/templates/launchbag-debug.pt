@@ -11,11 +11,11 @@
             <td tal:content="bag/person/browsername|nothing" />
         </tr>
         <tr>
-            <td>Project</td>
+            <td>Project Group</td>
             <td tal:content="bag/project/name|nothing" />
         </tr>
         <tr>
-            <td>Product</td>
+            <td>Project</td>
             <td tal:content="bag/product/name|nothing" />
         </tr>
         <tr>

@@ -26,12 +26,71 @@ count:len gives you a number which is len(thing).
 
 == The fmt: namespace to get strings ==
 
-To display the icon for a milestone, use fmt:icon:
+To display the icon for a milestone, use image:icon:
 
    >>> from canonical.launchpad.database import MilestoneSet
    >>> milestone = MilestoneSet().get(1)
-   >>> test_tales("milestone/fmt:icon", milestone=milestone)
-   '<img alt="" src="/@@/milestone" />'
+   >>> test_tales("milestone/image:icon", milestone=milestone)
+   '<img ... src="/@@/milestone" />'
+
+The same image:icon, as well as a image:logo and a image:logo is also
+available for Person, Product, Project, Sprint and Distributions, since
+they all implement IHasLogo,.IHasMugshot and IHasIcon.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> test_tales("person/image:icon", person=person)
+    '<img ... src="/@@/person" />'
+    >>> test_tales("person/image:logo", person=person)
+    '<img ... src="/@@/person-logo" />'
+
+The Mugshot is presented in a div, floating right, with the mugshot inside
+it:
+
+    >>> test_tales("person/image:mugshot", person=person)
+    '<div...<img...src="/@@/person-mugshot" />.../div>'
+
+For people we even have different images in case the person in question is not
+an actual launchpad user.
+
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> spiv.is_valid_person
+    False
+    >>> test_tales("person/image:icon", person=spiv)
+    '<img ... src="/@@/person-inactive" />'
+    >>> test_tales("person/image:logo", person=spiv)
+    '<img ... src="/@@/person-inactive-logo" />'
+    >>> test_tales("person/image:mugshot", person=spiv)
+    '...<img...src="/@@/person-inactive-mugshot" />...'
+
+One other thing we have for people is fmt:link, which gives us a link to that
+person's page, containing the person name and an icon.
+
+    >>> test_tales("person/fmt:link", person=person)
+    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
+
+    >>> test_tales("person/fmt:link", person=spiv)
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> test_tales("person/fmt:link", person=ubuntu_team)
+    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
+
+The fmt:link formatter uses additional path components to extend the
+link:
+
+    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
+    u'<a href=".../~spiv/foo/bar">...'
+
+We also have image:icon for KarmaCategory:
+
+    >>> from canonical.launchpad.database import KarmaCategory
+    >>> for category in KarmaCategory.select(orderBy='title'):
+    ...     print test_tales("category/image:icon", category=category)
+    <img ... title="Bug Management" src="/@@/bug" />
+    <img ... title="Specification Tracking" src="/@@/blueprint" />
+    <img ... title="Support Tracker" src="/@@/question" />
+    <img ... title="Translations in Rosetta" src="/@@/translation" />
 
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
@@ -96,7 +155,7 @@ information to distinguish a page template CONTEXTS dict from any other dict.
 
 Test the 'fmt:url' namespace for canonical urls.
 
-    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import implements
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)
@@ -129,8 +188,11 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> login(ANONYMOUS, participation)
 
+Note how the URL has only a path part, because it is for the same site
+as the current request.
+
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'https://mandrill.example.org:23/bonobo/saki'
+    u'/bonobo/saki'
 
 
 == The some_string/fmt:something helper ==
@@ -174,7 +236,7 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
-    >>> test_tales('foo/fmt:icon', foo=None)
+    >>> test_tales('foo/image:icon', foo=None)
     ''
 
 == The lp: namespace for presenting DBSchema items ==
@@ -196,8 +258,6 @@ Test the 'lp:' namespace for presenting DBSchema items.
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
 and anonymous users can't edit any person:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> person = getUtility(IPersonSet).getByName('sabdfl')
     >>> test_tales('person/required:launchpad.Edit', person=person)
     False
 

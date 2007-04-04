@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
@@ -14,17 +14,23 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+from canonical.launchpad.database.question import (
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -44,7 +50,6 @@ from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
@@ -52,24 +57,29 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
-    TICKET_STATUS_DEFAULT_SEARCH, get_supported_languages)
+    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
+    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
+    IHasLogo, IHasMugshot, IHasIcon)
 
 from sourcerer.deb.version import Version
 
 from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
-class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
+class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                   HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords, ITicketTarget)
+    implements(
+        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IHasLogo, IHasMugshot, IHasIcon)
 
+    _table = 'Distribution'
     _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
@@ -78,10 +88,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    logo = ForeignKey(
+        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
@@ -108,8 +120,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
-        orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
     official_malone = BoolCol(dbName='official_malone', notNull=True,
@@ -122,6 +132,19 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
+    @property
+    def all_milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -256,6 +279,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distribution = %s' % sqlvalues(self)
+
     @property
     def currentrelease(self):
         # XXX: this should be just a selectFirst with a case in its
@@ -287,24 +314,24 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def __iter__(self):
         return iter(self.releases)
 
+    @property
     def bugCounter(self):
         counts = []
 
-        severities = [BugTaskStatus.NEW,
-                      BugTaskStatus.ACCEPTED,
+        severities = [BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.CONFIRMED,
                       BugTaskStatus.REJECTED,
-                      BugTaskStatus.FIXED]
+                      BugTaskStatus.FIXRELEASED]
 
-        query = ("BugTask.distribution = %s AND "
-                 "BugTask.bugstatus = %i")
+        querystr = ("BugTask.distribution = %s AND "
+                 "BugTask.status = %s")
 
         for severity in severities:
-            query = query % (quote(self.id), severity)
+            query = querystr % sqlvalues(self.id, severity.value)
             count = BugTask.select(query).count()
             counts.append(count)
 
         return counts
-    bugCounter = property(bugCounter)
 
     def getRelease(self, name_or_version):
         """See IDistribution."""
@@ -353,10 +380,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     @property
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
@@ -448,73 +471,79 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         return Specification.selectOneBy(distribution=self, name=name)
 
     def getSupportedLanguages(self):
-        """See ITicketTarget."""
+        """See IQuestionTarget."""
         return get_supported_languages(self)
 
-    def newTicket(self, owner, title, description, language=None,
+    def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
+        """See IQuestionTarget."""
+        return QuestionSet.new(
             title=title, description=description, owner=owner,
             distribution=self, datecreated=datecreated, language=language)
 
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # First see if there is a ticket with that number.
+    def getQuestion(self, question_id):
+        """See IQuestionTarget."""
         try:
-            ticket = Ticket.get(ticket_id)
+            question = Question.get(question_id)
         except SQLObjectNotFound:
             return None
-        # Now verify that that ticket is actually for this distribution.
-        if ticket.distribution != self:
+        # Verify that the question is actually for this distribution.
+        if question.distribution != self:
             return None
-        return ticket
+        return question
 
-    def searchTickets(self, **search_criteria):
-        """See ITicketTarget."""
-        return TicketTargetSearch(
-            distribution=self, **search_criteria).getResults()
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None):
+        """See IQuestionTarget."""
+        return QuestionTargetSearch(
+            distribution=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from).getResults()
 
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return SimilarTicketsSearch(title, distribution=self).getResults()
 
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
+    def findSimilarQuestions(self, title):
+        """See IQuestionTarget."""
+        return SimilarQuestionsSearch(title, distribution=self).getResults()
+
+    def addAnswerContact(self, person):
+        """See IQuestionTarget."""
+        if person in self.answer_contacts:
             return False
-        SupportContact(
+        AnswerContact(
             product=None, person=person,
             sourcepackagename=None, distribution=self)
         return True
 
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
+    def removeAnswerContact(self, person):
+        """See IQuestionTarget."""
+        if person not in self.answer_contacts:
             return False
-        support_contact_entry = SupportContact.selectOne(
+        answer_contact_entry = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
-        support_contact_entry.destroySelf()
+        answer_contact_entry.destroySelf()
         return True
 
     @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.select(
+    def answer_contacts(self):
+        """See IQuestionTarget."""
+        answer_contacts = AnswerContact.select(
             """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
         return sorted(
-            [support_contact.person for support_contact in support_contacts],
+            [answer_contact.person for answer_contact in answer_contacts],
             key=attrgetter('displayname'))
 
     @property
-    def direct_support_contacts(self):
-        """See ITicketTarget."""
-        return self.support_contacts
+    def direct_answer_contacts(self):
+        """See IQuestionTarget."""
+        return self.answer_contacts
 
-    def getTicketLanguages(self):
-        """See ITicketTarget."""
+    def getQuestionLanguages(self):
+        """See IQuestionTarget."""
         return set(Language.select(
             'Language.id = language AND distribution = %s AND '
             'sourcepackagename IS NULL' % sqlvalues(self),
@@ -801,7 +830,7 @@ class DistributionSet:
     implements(IDistributionSet)
 
     def __init__(self):
-        self.title = "Distributions registered in Launchpad"
+        self.title = "Registered Distributions"
 
     def __iter__(self):
         """Return all distributions sorted with Ubuntu preferentially
@@ -837,7 +866,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, emblem):
+            members, owner, mugshot=None, logo=None, icon=None):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -848,6 +877,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            gotchi=gotchi,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 

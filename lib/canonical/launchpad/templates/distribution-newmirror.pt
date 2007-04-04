@@ -11,18 +11,17 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1>Register a new mirror</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
   <tal:full-functionality tal:condition="context/full_functionality">
-    <div metal:use-macro="context/@@launchpad_generalform/generalform">
-      <div metal:fill-slot="extra_info">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <p metal:fill-slot="extra_info">
         To register a new mirror you have to provide at least an HTTP or FTP
         URL (or both).
-      </div>
+      </p>
     </div>
   </tal:full-functionality>
 

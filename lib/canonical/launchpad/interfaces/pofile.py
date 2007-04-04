@@ -61,32 +61,12 @@ class IPOFile(IRosettaStats):
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
-    latest_sighting = Attribute("""Of all the translation sightings belonging
-        to PO messages sets belonging to this PO file, return the one which
-        was most recently modified (greatest datelastactive), or None if
-        there are no sightings belonging to this PO file.""")
-
     datecreated = Attribute("The fate this file was created.")
 
-    # We keep track of latestsubmission, which is the last submission
-    # to receive any change.  POSubmission interface also has a join on
-    # all active_selections (poselection.active_submission=posubmission.id)
-    # and published_selections.
-    #
-    # What we do with latestsubmission is to use any of the either active
-    # or published submissions to get POMsgSet they refer to, and loop through
-    # all POSelections for that POMsgSet, looking at date_reviewed.
-    #
-    # If latestsubmission is neither neither active nor published for any of
-    # the POSelections, it means that this is about a deactivated translation.
-    #
-    # XXX DaniloSegan 20070115: doing this with latestsubmission is just
-    # a workaround; see bug #78501 for suggestion about using latestselection
-    latestsubmission = Field(
-        title=u'Translation submission which was most recently added.',
-        description=(u'Translation submission which was most recently added,'
-            u' or None if there are no submissions belonging to this IPOFile.'
-            ),
+    last_touched_pomsgset = Field(
+        title=u'Translation message which was most recently touched.',
+        description=(u'Translation message which was most recently touched,'
+            u' or None if there are no translations active in this IPOFile.'),
         required=False)
 
     translators = Attribute("A list of Translators that have been "
@@ -279,9 +259,6 @@ class IPOFile(IRosettaStats):
         If a logger argument is given, any problem found with the
         import will be logged there.
         """
-
-    def recalculateLatestSubmission():
-        """Update IPOFile.latestsubmission with latest submission."""
 
 
 class IPOFileAlternativeLanguage(Interface):

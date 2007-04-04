@@ -29,6 +29,9 @@ Now let's look at the sent email:
     'Subject'
     >>> msg.get_payload(decode=True)
     'Content'
+    >>> # Make sure bulk headers are set for vacation programs
+    >>> msg['Precedence']
+    'bulk'
 
 In cases where the sender is a Person with a preferred email address,
 it's better to use simple_sendmail_from_person. It works just like
@@ -56,6 +59,8 @@ the person's name is encoded properly.
     'Subject'
     >>> msg.get_payload(decode=True)
     'Content'
+    >>> msg['Precedence']
+    'bulk'
 
 simple_sendmail_from_person uses the Person's preferred email address:
 
@@ -243,6 +248,12 @@ provide better bounce handling.
     True
     >>> sent_msg['Errors-To'] == config.bounce_address
     True
+
+It must also add a Precedence: bulk header so that automatic replies
+(e.g. vacation programs) don't try to respond to them.
+
+    >>> sent_msg['Precedence']
+    'bulk'
 
 It's possible to set Return-Path manually if needed.
 

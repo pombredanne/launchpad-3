@@ -22,18 +22,22 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
+
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour,
+    ShippingService, ShippingRequestStatus)
+
 from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
-    ShippingService, ShippingRequestStatus)
 from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
@@ -70,6 +74,9 @@ class ShippingRequest(SQLBase):
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
 
+    # This is maintained by a DB trigger, so it can be None here even though
+    # the DB won't allow that.
+    normalized_address = StringCol(default=None)
     city = StringCol(notNull=True)
     phone = StringCol(default=None)
     country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
@@ -248,6 +255,8 @@ class ShippingRequest(SQLBase):
                     % self.shipment.shippingrun.datecreated.date())
         elif self.isPendingSpecial():
             return ShippingRequestStatus.PENDINGSPECIAL.title.lower()
+        elif self.isDuplicatedAddress():
+            return ShippingRequestStatus.DUPLICATEDADDRESS.title.lower()
         elif self.isDenied():
             return ShippingRequestStatus.DENIED.title.lower()
         elif self.isCancelled():
@@ -279,6 +288,10 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
 
+    def isDuplicatedAddress(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.DUPLICATEDADDRESS
+
     def isPendingSpecial(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
@@ -287,6 +300,7 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.DENIED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
 
@@ -294,8 +308,13 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.APPROVED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
+
+    def markAsDuplicatedAddress(self):
+        """See IShippingRequest"""
+        self.status = ShippingRequestStatus.DUPLICATEDADDRESS
 
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
@@ -335,6 +354,23 @@ class ShippingRequest(SQLBase):
             self.clearApproval()
         self.status = ShippingRequestStatus.CANCELLED
         self.whocancelled = whocancelled
+
+    def addressIsDuplicated(self):
+        """See IShippingRequest"""
+        return self.getRequestsWithSameAddressFromOtherUsers().count() > 1
+
+    def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
+        """See IShippingRequest"""
+        query = """
+            normalized_address = %(address)s
+            AND country = %(country)s
+            AND recipient != %(recipient)s
+            AND status NOT IN (%(cancelled)s, %(denied)s)
+            """ % sqlvalues(
+                address=self.normalized_address, recipient=self.recipient,
+                denied=ShippingRequestStatus.DENIED, country=self.country,
+                cancelled=ShippingRequestStatus.CANCELLED)
+        return ShippingRequest.select(query, limit=limit)
 
 
 class ShippingRequestSet:
@@ -606,8 +642,7 @@ class ShippingRequestSet:
             'Shipped Kubuntu PPC CDs', 'Shipped Edubuntu x86 CDs',
             'Shipped Edubuntu AMD64 CDs', 'Shipped Edubuntu PPC CDs',
             'Normal-prio shipments', 'High-prio shipments',
-            'Average request size',
-            'Percentage of requested CDs that were approved',
+            'Average request size', 'Approved CDs (percentage)',
             'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
         requested_cd_count = self._getRequestedCDCount(

@@ -1,34 +1,40 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Event handlers that send email notifications."""
 
 __metaclass__ = type
 
 from difflib import unified_diff
+
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
+from email.Utils import formatdate
+import rfc822
 import re
 import textwrap
+import datetime
 
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
+from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroReleaseBugTask, ILanguageSet, IProductSeriesBugTask,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
+    IBranch, IBugTask, IEmailAddressSet, ILanguageSet, ISpecification,
+    ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
-from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus, TicketAction
+from canonical.lp.dbschema import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    TeamMembershipStatus, QuestionAction)
 
-GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
 
 
@@ -100,6 +106,34 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def construct_bug_notification(bug, from_address, address, body, subject,
+        email_date, rationale_header=None, references=None, msgid=None):
+    """Constructs a MIMEText message based on a bug and a set of headers."""
+    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg['From'] = from_address
+    msg['To'] = address
+    msg['Reply-To'] = get_bugmail_replyto_address(bug)
+    if references is not None:
+        msg['References'] = ' '.join(references)
+    msg['Sender'] = config.bounce_address
+    msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    if msgid is not None:
+        msg['Message-Id'] = msgid
+    subject_prefix = "[Bug %d]" % bug.id
+    if subject_prefix in subject:
+        msg['Subject'] = subject
+    else:
+        msg['Subject'] = "%s %s" % (subject_prefix, subject)
+
+    # Add X-Launchpad-Bug headers.
+    for bugtask in bug.bugtasks:
+        msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+
+    if rationale_header is not None:
+        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
+    return msg
+
+
 def _send_bug_details_to_new_bugcontacts(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
@@ -110,17 +144,30 @@ def _send_bug_details_to_new_bugcontacts(
     """
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
-
     new_subs = cur_subs_set.difference(prev_subs_set)
 
-    # Send a notification to the new bug contacts that weren't subscribed to the
-    # bug before, which looks identical to a new bug report.
-    subject, contents = generate_bug_add_email(bug)
-    new_bugcontact_addresses = sorted([contactEmailAddresses(p) for p in new_subs])
-    if new_bugcontact_addresses:
-        send_bug_notification(
-            bug=bug, user=bug.owner, subject=subject, contents=contents,
-            to_addrs=new_bugcontact_addresses)
+    to_addrs = set()
+    for new_sub in new_subs:
+        to_addrs.update(contactEmailAddresses(new_sub))
+
+    if not to_addrs:
+        return
+
+    # XXX: We send this notification as if it was from the bug owner. I
+    # hope this isn't too confusing to people receiving this
+    # notification; it may be better to use a celebrity. See bug 94321.
+    #   -- kiko, 2007-03-20
+    from_addr = get_bugmail_from_address(bug.owner, bug)
+    # Now's a good a time as any for this email; don't use the original
+    # reported date for the bug as it will just confuse mailer and
+    # recipient.
+    email_date = datetime.datetime.now()
+
+    subject, contents = generate_bug_add_email(bug, new_recipients=True)
+    for to_addr in sorted(to_addrs):
+        msg = construct_bug_notification(bug, from_addr, to_addr,
+                                         contents, subject, email_date)
+        sendmail(msg)
 
 
 def update_security_contact_subscriptions(modified_bugtask, event):
@@ -143,6 +190,33 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
                 new_product.security_contact)
+
+
+def get_bugmail_from_address(person, bug):
+    """Returns the right From: address to use for a bug notification."""
+    if person.preferredemail is not None:
+        return format_address(person.displayname, person.preferredemail.email)
+
+    # XXX: The person doesn't have a preferred email set, but he
+    # added a comment (either via the email UI, or because he was
+    # imported as a deaf reporter). It shouldn't be possible to use the
+    # email UI if you don't have a preferred email set, but work around
+    # it for now by trying hard to find the right email address to use.
+    #   -- Bjorn Tillenius, 2006-04-05
+    email_addresses = shortlist(
+        getUtility(IEmailAddressSet).getByPerson(person))
+    if not email_addresses:
+        # XXX: A user should always have at least one email
+        # address, but due to bug 33427, this isn't always the
+        # case. -- Bjorn Tillenius, 2006-05-21
+        return format_address(person.displayname,
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
+    # At this point we have no validated emails to use: if any of the
+    # person's emails had been validated the preferredemail would be
+    # set. Since we have no idea of which email address is best to use,
+    # we choose the first one.
+    return format_address(person.displayname, email_addresses[0].email)
 
 
 def get_bugmail_replyto_address(bug):
@@ -212,11 +286,12 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug):
+def generate_bug_add_email(bug, new_recipients=False):
     """Generate a new bug notification from the given IBug.
 
-    IBug is assumed to be a bug that was just added. The return value
-    is (subject, body).
+    If new_recipients is supplied we generate a notification explaining
+    that the new recipients have been subscribed to the bug. Otherwise
+    it's just a notification of a new bug report.
     """
     subject = u"[Bug %d] %s" % (bug.id, bug.title)
 
@@ -227,22 +302,38 @@ def generate_bug_add_email(bug):
         # This is a public bug.
         visibility = u"Public"
 
-    bug_info = ''
+    bug_info = []
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info += u"** Affects: %s\n" % bugtask.targetname
-        bug_info += u"     Importance: %s\n" % bugtask.importance.title
+        bug_info.append(u"** Affects: %s" % bugtask.targetname)
+        bug_info.append(u"     Importance: %s" % bugtask.importance.title)
 
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
-            bug_info += u"     Assignee: %s\n" % bugtask.assignee.displayname
-        bug_info += u"         Status: %s\n" % bugtask.status.title
+            bug_info.append(u"     Assignee: %s" % bugtask.assignee.displayname)
+        bug_info.append(u"         Status: %s\n" % bugtask.status.title)
+
+    if bug.tags:
+        bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
     mailwrapper = MailWrapper(width=72)
-    contents = get_email_template('bug-add-notification-contents.txt') % {
-        'visibility' : visibility, 'bugurl' : canonical_url(bug),
-        'bug_info': bug_info,
+    if new_recipients:
+        contents = ("You have been subscribed to a %(visibility)s bug:\n\n"
+                    "%(description)s\n\n%(bug_info)s")
+        # The visibility appears mid-phrase so.. hack hack.
+        visibility = visibility.lower()
+        # XXX: we should really have a centralized way of adding this
+        # footer, but right now we lack a INotificationRecipientSet for this
+        # particular situation. -- kiko, 2007-03-21
+        contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
+    else:
+        contents = ("%(visibility)s bug reported:\n\n"
+                    "%(description)s\n\n%(bug_info)s")
+
+    contents = contents % {
+        'visibility' : visibility, 'bug_url' : canonical_url(bug),
+        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
         'description': mailwrapper.format(bug.description)}
 
     contents = contents.rstrip()
@@ -402,7 +493,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
             change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.targetname)
+                bugtask_delta.targetname)
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -490,89 +581,6 @@ def _get_task_change_values(task_change, displayattrname):
     return (oldval_display, newval_display)
 
 
-def send_bug_notification(bug, user, subject, contents, to_addrs=None,
-                          headers=None):
-    """Sends a bug notification.
-
-    :bug: The bug the notification concerns.
-    :user: The user that did that action that caused a notification to
-           be sent.
-    :subject: The subject of the notification.
-    :contents: The content of the notification.
-    :to_addrs: The addresses the notification should be sent to. If none
-               are provided, the default bug cc list will be used.
-    :headers: Any additional headers that should get added to the
-              message.
-
-    If no References header is given, one will be constructed to ensure
-    that the notification gets grouped together with other notifications
-    concerning the same bug (if the email client supports threading).
-    """
-
-    assert user is not None, 'user is None'
-
-    if headers is None:
-        headers = {}
-    if to_addrs is None:
-        to_addrs = get_cc_list(bug)
-
-    if not to_addrs:
-        # No recipients for this email means there's no point generating an
-        # email.
-        return
-
-    if ('Message-Id' not in headers or
-            headers['Message-Id'] != bug.initial_message.rfc822msgid):
-        # It's not the initial, message. Let's add the inital message id
-        # to the References header, so that it will be threaded properly.
-        if not 'References' in headers:
-            headers['References'] = ''
-        references = headers['References'].split()
-        if bug.initial_message.rfc822msgid not in references:
-            references.insert(0, bug.initial_message.rfc822msgid)
-        headers['References'] = ' '.join(references)
-
-    # Use zope_isinstance, to ensure that this Just Works with
-    # security-proxied objects.
-    if not zope_isinstance(to_addrs, (list, tuple)):
-        to_addrs = [to_addrs]
-
-    if "Reply-To" not in headers:
-        headers["Reply-To"] = get_bugmail_replyto_address(bug)
-
-    # Add a header for each task on this bug, to help users organize
-    # their incoming mail in a way that's convenient for them.
-    x_launchpad_bug_values = []
-    for bugtask in bug.bugtasks:
-        x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
-
-    headers["X-Launchpad-Bug"] = x_launchpad_bug_values
-
-    body = get_email_template('bug-notification.txt') % {
-        'content': contents,
-        'bug_title': bug.title,
-        'bug_url': canonical_url(bug)}
-
-    for to_addr in to_addrs:
-        simple_sendmail_from_person(
-            person=user, to_addrs=to_addr, subject=subject,
-            body=body, headers=headers)
-
-
-def get_cc_list(bug):
-    """Return the list of people that are CC'd on this bug.
-
-    This also includes global subscribers, like the IRC bot.
-    """
-    subscriptions = []
-    if not bug.private:
-        subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
-
-    subscriptions += bug.notificationRecipientAddresses()
-
-    return subscriptions
-
-
 def get_bug_delta(old_bug, new_bug, user):
     """Compute the delta from old_bug to new_bug.
 
@@ -597,55 +605,6 @@ def get_bug_delta(old_bug, new_bug, user):
         changes["user"] = user
 
         return BugDelta(**changes)
-    else:
-        return None
-
-
-def get_task_delta(old_task, new_task):
-    """Compute the delta from old_task to new_task.
-
-    old_task and new_task are either both IDistroBugTask's or both
-    IUpstreamBugTask's, otherwise a TypeError is raised.
-
-    Returns an IBugTaskDelta or None if there were no changes between
-    old_task and new_task.
-    """
-    changes = {}
-    if ((IUpstreamBugTask.providedBy(old_task) and
-         IUpstreamBugTask.providedBy(new_task)) or
-        (IProductSeriesBugTask.providedBy(old_task) and
-         IProductSeriesBugTask.providedBy(new_task))):
-        if old_task.product != new_task.product:
-            changes["product"] = {}
-            changes["product"]["old"] = old_task.product
-            changes["product"]["new"] = new_task.product
-    elif ((IDistroBugTask.providedBy(old_task) and
-           IDistroBugTask.providedBy(new_task)) or
-          (IDistroReleaseBugTask.providedBy(old_task) and
-           IDistroReleaseBugTask.providedBy(new_task))):
-        if old_task.sourcepackagename != new_task.sourcepackagename:
-            changes["sourcepackagename"] = {}
-            changes["sourcepackagename"]["old"] = old_task.sourcepackagename
-            changes["sourcepackagename"]["new"] = new_task.sourcepackagename
-    else:
-        raise TypeError(
-            "Can't calculate delta on bug tasks of incompatible types: "
-            "[%s, %s]" % (repr(old_task), repr(new_task)))
-
-    # calculate the differences in the fields that both types of tasks
-    # have in common
-    for field_name in ("status", "importance",
-                       "assignee", "bugwatch", "milestone"):
-        old_val = getattr(old_task, field_name)
-        new_val = getattr(new_task, field_name)
-        if old_val != new_val:
-            changes[field_name] = {}
-            changes[field_name]["old"] = old_val
-            changes[field_name]["new"] = new_val
-
-    if changes:
-        changes["bugtask"] = old_task
-        return BugTaskDelta(**changes)
     else:
         return None
 
@@ -706,8 +665,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     modified_bugtask must be an IBugTask. event must be an
     ISQLObjectModifiedEvent.
     """
-    bugtask_delta = get_task_delta(
-        event.object_before_modification, event.object)
+    bugtask_delta = event.object.getDelta(event.object_before_modification)
     bug_delta = BugDelta(
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
@@ -849,9 +807,20 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    # Include the URL, since it will still be downloadable until the
+    # Librarian garbage collector removes it.
+    change_info = '\n'.join([
+        '** Attachment removed: "%s"\n' % bugattachment.title,
+        '   %s' %  bugattachment.libraryfile.http_url])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_team_join(event):
     """Notify team administrators that a new joined (or tried to) the team.
-    
+
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
@@ -878,7 +847,7 @@ def notify_team_join(event):
             templatename = 'new-member-notification-for-teams.txt'
         else:
             templatename = 'new-member-notification.txt'
-        
+
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
@@ -916,21 +885,29 @@ def notify_team_join(event):
     simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
 
 
-class TicketNotification:
-    """Base class for a notification related to a ticket.
+def dispatch_linked_question_notifications(bugtask, event):
+    """Send notifications to linked questitn subscribers when the bugtask
+    status change.
+    """
+    for question in bugtask.bug.questions:
+        QuestionLinkedBugStatusChangeNotification(question, event)
+
+
+class QuestionNotification:
+    """Base class for a notification related to a question.
 
     Creating an instance of that class will build the notification and
     send it to the appropriate recipients. That way, subclasses of
-    TicketNotification can be registered as event subscribers.
+    QuestionNotification can be registered as event subscribers.
     """
 
-    def __init__(self, ticket, event):
+    def __init__(self, question, event):
         """Base constructor.
 
-        It saves the ticket and event in attributes and then call
+        It saves the question and event in attributes and then call
         the initialize() and send() method.
         """
-        self.ticket = ticket
+        self.question = question
         self.event = event
         self.initialize()
         if self.shouldNotify():
@@ -938,21 +915,21 @@ class TicketNotification:
 
     def getFromAddress(self):
         """Return a formatted email address suitable for user in the From
-        header of the ticket notification.
+        header of the question notification.
 
-        Default is Event Person Display Name <ticket#@tickettracker_domain>
+        Default is Event Person Display Name <ticket#@answertracker_domain>
         """
         return format_address(
             self.event.user.displayname,
             'ticket%s@%s' % (
-                self.ticket.id, config.tickettracker.email_domain))
+                self.question.id, config.answertracker.email_domain))
 
     def getSubject(self):
         """Return the subject of the notification.
 
-        Default to [Support #dd]: Title
+        Default to [Question #dd]: Title
         """
-        return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+        return '[Question #%s]: %s' % (self.question.id, self.question.title)
 
     def getBody(self):
         """Return the content of the notification message.
@@ -961,29 +938,57 @@ class TicketNotification:
         """
         raise NotImplementedError
 
+    def getHeaders(self):
+        """Return additional headers to add to the email.
+
+        Default implementation adds a X-Launchpad-Question header.
+        """
+        question = self.question
+        headers = dict()
+        if self.question.distribution:
+            if question.sourcepackagename:
+                sourcepackage = question.sourcepackagename.name
+            else:
+                sourcepackage = 'None'
+            target = 'distribution=%s; sourcepackage=%s;' % (
+                question.distribution.name, sourcepackage)
+        else:
+            target = 'product=%s;' % question.product.name
+        if question.assignee:
+            assignee = question.assignee.name
+        else:
+            assignee = 'None'
+
+        headers['X-Launchpad-Question'] = (
+            '%s status=%s; assignee=%s; priority=%s; language=%s' % (
+                target, question.status.title, assignee,
+                question.priority.title, question.language.code))
+
+        return headers
+
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the ticket's subscribers that speaks the request languages.
-        If the ticket owner is subscribed, he's always consider to speak the
+        Default to the question's subscribers that speaks the request languages.
+        If the question owner is subscribed, he's always consider to speak the
         language. When a subscriber is a team and it doesn't have an email
         set nor supported languages, only contacts the members that speaks
         the supported language.
         """
         # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
-        ticket_language = self.ticket.language
-        if ticket_language == english:
-            return self.ticket.getSubscribers()
+        question_language = self.question.language
+        if question_language == english:
+            return self.question.getSubscribers()
 
         recipients = set()
         skipped = set()
-        subscribers = set(self.ticket.getSubscribers())
+        subscribers = set(self.question.getSubscribers())
         while subscribers:
             person = subscribers.pop()
-            if person == self.ticket.owner:
+            if person == self.question.owner:
                 recipients.add(person)
-            elif ticket_language not in person.getSupportedLanguages():
+            elif question_language not in person.getSupportedLanguages():
                skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
@@ -1018,59 +1023,60 @@ class TicketNotification:
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
+        headers = self.getHeaders()
         for notified_person in self.getRecipients():
             for address in contactEmailAddresses(notified_person):
                 if address not in sent_addrs:
                     simple_sendmail(
-                        from_address, address, subject, body)
+                        from_address, address, subject, body, headers)
                     sent_addrs.add(address)
 
     @property
     def unsupported_language(self):
-        """Whether the ticket language is unsupported or not."""
-        supported_languages = self.ticket.target.getSupportedLanguages()
-        return self.ticket.language not in supported_languages
+        """Whether the question language is unsupported or not."""
+        supported_languages = self.question.target.getSupportedLanguages()
+        return self.question.language not in supported_languages
 
     @property
     def unsupported_language_warning(self):
-        """Warning about the fact that the ticket is written in an
+        """Warning about the fact that the question is written in an
         unsupported language."""
         return get_email_template(
-                'ticket-unsupported-language-warning.txt') % {
-                'ticket_language': self.ticket.language.englishname,
-                'target_name': self.ticket.target.displayname}
+                'question-unsupported-language-warning.txt') % {
+                'question_language': self.question.language.englishname,
+                'target_name': self.question.target.displayname}
 
 
-class TicketAddedNotification(TicketNotification):
-    """Notification sent when a ticket is added."""
+class QuestionAddedNotification(QuestionNotification):
+    """Notification sent when a question is added."""
 
     def getBody(self):
-        """See TicketNotification."""
-        ticket = self.ticket
-        body = get_email_template('ticket_added.txt') % {
-            'target_name': ticket.target.displayname,
-            'ticket_id': ticket.id,
-            'ticket_url': canonical_url(ticket),
-            'comment': ticket.description}
+        """See QuestionNotification."""
+        question = self.question
+        body = get_email_template('question-added-notification.txt') % {
+            'target_name': question.target.displayname,
+            'question_id': question.id,
+            'question_url': canonical_url(question),
+            'comment': question.description}
         if self.unsupported_language:
             body += self.unsupported_language_warning
         return body
 
 
-class TicketModifiedDefaultNotification(TicketNotification):
-    """Base implementation of a notification when a ticket is modified."""
+class QuestionModifiedDefaultNotification(QuestionNotification):
+    """Base implementation of a notification when a question is modified."""
 
     # Email template used to render the body.
-    body_template = "ticket_modified.txt"
+    body_template = "question-modified-notification.txt"
 
     def initialize(self):
-        """Save the old ticket for comparison. It also set the new_message
+        """Save the old question for comparison. It also set the new_message
         attribute if a new message was added.
         """
-        self.old_ticket = self.event.object_before_modification
+        self.old_question = self.event.object_before_modification
 
         new_messages = set(
-            self.ticket.messages).difference(self.old_ticket.messages)
+            self.question.messages).difference(self.old_question.messages)
         assert len(new_messages) <= 1, (
                 "There shouldn't be more than one message for a notification.")
         if new_messages:
@@ -1082,17 +1088,17 @@ class TicketModifiedDefaultNotification(TicketNotification):
 
     @cachedproperty
     def metadata_changes_text(self):
-        """Textual representation of the changes to the ticket metadata."""
-        ticket = self.ticket
-        old_ticket = self.old_ticket
+        """Textual representation of the changes to the question metadata."""
+        question = self.question
+        old_question = self.old_question
         indent = 4*' '
         info_fields = []
-        if ticket.status != old_ticket.status:
+        if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
-                old_ticket.status.title, ticket.status.title))
+                old_question.status.title, question.status.title))
 
-        old_bugs = set(old_ticket.bugs)
-        bugs = set(ticket.bugs)
+        old_bugs = set(old_question.bugs)
+        bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
             info_fields.append(
                 indent + 'Linked to bug: #%s\n' % linked_bug.id +
@@ -1102,25 +1108,48 @@ class TicketModifiedDefaultNotification(TicketNotification):
                 indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
                 indent + canonical_url(unlinked_bug))
 
-        if ticket.title != old_ticket.title:
-            info_fields.append('Summary changed to:\n%s' % ticket.title)
-        if ticket.description != old_ticket.description:
+        if question.title != old_question.title:
+            info_fields.append('Summary changed to:\n%s' % question.title)
+        if question.description != old_question.description:
             info_fields.append(
                 'Description changed to:\n%s' % (
-                    self.wrapper.format(ticket.description)))
+                    self.wrapper.format(question.description)))
 
-        ticket_changes = '\n\n'.join(info_fields)
-        return ticket_changes
+        question_changes = '\n\n'.join(info_fields)
+        return question_changes
 
     def getSubject(self):
         """When a comment is added, its title is used as the subject,
-        otherwise the ticket title is used.
+        otherwise the question title is used.
         """
+        prefix = '[Question #%s]: ' % self.question.id
         if self.new_message:
-            return '[Support #%s]: %s' % (
-                self.ticket.id, self.new_message.subject)
+            # Migrate old prefix.
+            subject = self.new_message.subject.replace(
+                '[Support #%s]: ' % self.question.id, prefix)
+            if prefix in subject:
+                return subject
+            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
+                # Place prefix after possible reply prefix.
+                return subject[0:4] + prefix + subject[4:]
+            else:
+                return prefix + subject
         else:
-            return '[Support #%s]: %s' % (self.ticket.id, self.ticket.title)
+            return prefix + self.question.title
+
+    def getHeaders(self):
+        """Add a References header."""
+        headers = QuestionNotification.getHeaders(self)
+        if self.new_message:
+            # XXX flacoste 2007/02/02 The first message cannot contain
+            # a References because we don't create a Message instance
+            # for the question description, so we don't have a Message-ID.
+            # Bug #83846
+            index = list(self.question.messages).index(self.new_message)
+            if index > 0:
+                headers['References'] = (
+                    self.question.messages[index-1].rfc822msgid)
+        return headers
 
     def shouldNotify(self):
         """Only send a notification when a message was added or some
@@ -1129,51 +1158,51 @@ class TicketModifiedDefaultNotification(TicketNotification):
         return self.new_message or self.metadata_changes_text
 
     def getBody(self):
-        """See TicketNotification."""
+        """See QuestionNotification."""
         body = self.metadata_changes_text
         replacements = dict(
-            ticket_id=self.ticket.id,
-            target_name=self.ticket.target.displayname,
-            ticket_url=canonical_url(self.ticket))
+            question_id=self.question.id,
+            target_name=self.question.target.displayname,
+            question_url=canonical_url(self.question))
 
         if self.new_message:
             if body:
                 body += '\n\n'
             body += self.getNewMessageText()
             replacements['new_message_id'] = list(
-                self.ticket.messages).index(self.new_message)
+                self.question.messages).index(self.new_message)
 
         replacements['body'] = body
 
         return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
-        """The default notification goes to all ticket susbcribers that
+        """The default notification goes to all question susbcribers that
         speaks the request language, except the owner.
         """
-        return [person for person in TicketNotification.getRecipients(self)
-                if person != self.ticket.owner]
+        return [person for person in QuestionNotification.getRecipients(self)
+                if person != self.question.owner]
 
-    # Header template used when a new message is added to the ticket.
+    # Header template used when a new message is added to the question.
     action_header_template = {
-        TicketAction.REQUESTINFO:
+        QuestionAction.REQUESTINFO:
             '%(person)s requested for more information:',
-        TicketAction.CONFIRM:
-            '%(person)s confirmed that the request is solved:',
-        TicketAction.COMMENT:
+        QuestionAction.CONFIRM:
+            '%(person)s confirmed that the question is solved:',
+        QuestionAction.COMMENT:
             '%(person)s posted a new comment:',
-        TicketAction.GIVEINFO:
-            '%(person)s gave more information on the request:',
-        TicketAction.REOPEN:
+        QuestionAction.GIVEINFO:
+            '%(person)s gave more information on the question:',
+        QuestionAction.REOPEN:
             '%(person)s is still having a problem:',
-        TicketAction.ANSWER:
+        QuestionAction.ANSWER:
             '%(person)s proposed the following answer:',
-        TicketAction.EXPIRE:
-            '%(person)s expired the request:',
-        TicketAction.REJECT:
-            '%(person)s rejected the request:',
-        TicketAction.SETSTATUS:
-            '%(person)s changed the request status:',
+        QuestionAction.EXPIRE:
+            '%(person)s expired the question:',
+        QuestionAction.REJECT:
+            '%(person)s rejected the question:',
+        QuestionAction.SETSTATUS:
+            '%(person)s changed the question status:',
     }
 
     def getNewMessageText(self):
@@ -1189,78 +1218,122 @@ class TicketModifiedDefaultNotification(TicketNotification):
             header, self.wrapper.format(self.new_message.text_contents)])
 
 
-class TicketModifiedOwnerNotification(TicketModifiedDefaultNotification):
-    """Notification sent to the owner when his ticket is modified."""
+class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
+    """Notification sent to the owner when his question is modified."""
 
     # These actions will be done by the owner, so use the second person.
     action_header_template = dict(
-        TicketModifiedDefaultNotification.action_header_template)
+        QuestionModifiedDefaultNotification.action_header_template)
     action_header_template.update({
-        TicketAction.CONFIRM:
-            'You confirmed that the request is solved:',
-        TicketAction.GIVEINFO:
-            'You gave more information on the request:',
-        TicketAction.REOPEN:
+        QuestionAction.CONFIRM:
+            'You confirmed that the question is solved:',
+        QuestionAction.GIVEINFO:
+            'You gave more information on the question:',
+        QuestionAction.REOPEN:
             'You are still having a problem:',
         })
 
-    body_template = 'ticket-modified-owner-notification.txt'
+    body_template = 'question-modified-owner-notification.txt'
 
     body_template_by_action = {
-        TicketAction.ANSWER: "ticket-answered-owner-notification.txt",
-        TicketAction.EXPIRE: "ticket-expired-owner-notification.txt",
-        TicketAction.REJECT: "ticket-rejected-owner-notification.txt",
-        TicketAction.REQUESTINFO: (
-            "ticket-info-requested-owner-notification.txt"),
+        QuestionAction.ANSWER: "question-answered-owner-notification.txt",
+        QuestionAction.EXPIRE: "question-expired-owner-notification.txt",
+        QuestionAction.REJECT: "question-rejected-owner-notification.txt",
+        QuestionAction.REQUESTINFO: (
+            "question-info-requested-owner-notification.txt"),
     }
 
     def initialize(self):
         """Set the template that will be used based on the new comment action."""
-        TicketModifiedDefaultNotification.initialize(self)
+        QuestionModifiedDefaultNotification.initialize(self)
         if self.new_message:
             self.body_template = self.body_template_by_action.get(
                 self.new_message.action, self.body_template)
 
     def getRecipients(self):
-        """Return the owner of the ticket if he's still subscribed."""
-        if self.ticket.isSubscribed(self.ticket.owner):
-            return [self.ticket.owner]
+        """Return the owner of the question if he's still subscribed."""
+        if self.question.isSubscribed(self.question.owner):
+            return [self.question.owner]
         else:
             return []
 
     def getBody(self):
-        """See TicketNotification."""
-        body = TicketModifiedDefaultNotification.getBody(self)
+        """See QuestionNotification."""
+        body = QuestionModifiedDefaultNotification.getBody(self)
         if self.unsupported_language:
             body += self.unsupported_language_warning
         return body
 
 
-class TicketUnsupportedLanguageNotification(TicketNotification):
+class QuestionUnsupportedLanguageNotification(QuestionNotification):
     """Notification sent to support contacts for unsupported languages."""
 
     def getSubject(self):
-        """See TicketNotification."""
-        return '[Support #%s]: (%s) %s' % (
-            self.ticket.id, self.ticket.language.englishname,
-            self.ticket.title)
+        """See QuestionNotification."""
+        return '[Question #%s]: (%s) %s' % (
+            self.question.id, self.question.language.englishname,
+            self.question.title)
 
     def shouldNotify(self):
         return self.unsupported_language
 
     def getRecipients(self):
         """Notify all the support contacts."""
-        return self.ticket.target.support_contacts
+        return self.question.target.answer_contacts
 
     def getBody(self):
-        """See TicketNotification."""
-        ticket = self.ticket
-        return get_email_template('ticket-unsupported-languages-added.txt') % {
-            'target_name': ticket.target.displayname,
-            'ticket_id': ticket.id,
-            'ticket_url': canonical_url(ticket),
-            'ticket_language': ticket.language.englishname,
-            'comment': ticket.description}
+        """See QuestionNotification."""
+        question = self.question
+        return get_email_template('question-unsupported-languages-added.txt') % {
+            'target_name': question.target.displayname,
+            'question_id': question.id,
+            'question_url': canonical_url(question),
+            'question_language': question.language.englishname,
+            'comment': question.description}
+
+
+class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
+    """Notification sent when a linked bug status is changed."""
+
+    def initialize(self):
+        assert ISQLObjectModifiedEvent.providedBy(self.event), (
+            "Should only be subscribed for ISQLObjectModifiedEvent.")
+        assert IBugTask.providedBy(self.event.object), (
+            "Should only be subscribed for IBugTask modification.")
+        self.bugtask = self.event.object
+        self.old_bugtask = self.event.object_before_modification
+
+    def shouldNotify(self):
+        """Only send notification when the status changed."""
+        return self.bugtask.status != self.old_bugtask.status
+
+    def getSubject(self):
+        """See QuestionNotification."""
+        return "[Question #%s]: Status of bug #%s changed to '%s' in %s" % (
+            self.question.id, self.bugtask.bug.id, self.bugtask.status.title,
+            self.bugtask.target.displayname)
+
+    def getBody(self):
+        """See QuestionNotification."""
+        if self.bugtask.statusexplanation:
+            wrapper = MailWrapper()
+            statusexplanation = (
+                'Status change explanation given by %s:\n\n%s\n' % (
+                    self.event.user.displayname,
+                    wrapper.format(self.bugtask.statusexplanation)))
+        else:
+            statusexplanation = ''
+
+        return get_email_template('question-linked-bug-status-updated.txt') % {
+            'bugtask_target_name': self.bugtask.target.displayname,
+            'question_id': self.question.id,
+            'question_title':self.question.title,
+            'question_url': canonical_url(self.question),
+            'bugtask_url':canonical_url(self.bugtask),
+            'bug_id': self.bugtask.bug.id,
+            'old_status': self.old_bugtask.status.title,
+            'new_status': self.bugtask.status.title,
+            'statusexplanation': statusexplanation}
 
 
 def notify_specification_modified(spec, event):
@@ -1324,3 +1397,97 @@ def notify_specification_modified(spec, event):
 
     for address in spec.notificationRecipientAddresses():
         simple_sendmail_from_person(event.user, address, subject, body)
+
+
+def email_branch_modified_notifications(branch, to_addresses,
+                                        from_address, contents):
+    """Send notification emails using the branch email template.
+
+    Emails are sent one at a time to the listed addresses.
+    """
+    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    headers = {'X-Launchpad-Branch': branch.unique_name}
+    body = get_email_template('branch-modified.txt') % {
+        'contents': contents,
+        'branch_title': branch.title,
+        'branch_url': canonical_url(branch),
+        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+    for address in to_addresses:
+        simple_sendmail(from_address, address, subject, body, headers)
+        
+
+def send_branch_revision_notifications(branch, from_address, message, diff):
+    """Notify subscribers that a revision has been added (or removed)."""
+    diff_size = diff.count('\n') + 1
+    details = branch.getRevisionNotificationDetails()
+    for max_diff in sorted(details.keys()):
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = message
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (message, diff_msg)
+            else:
+                contents = "%s\n%s" % (message, diff)
+        else:
+            contents = "%s\n%s" % (message, diff)
+        addresses = details[max_diff]
+        email_branch_modified_notifications(
+            branch, addresses, from_address, contents)
+
+
+def send_branch_modified_notifications(branch, event):
+    """Notify the related people that a branch has been modifed."""
+    branch_delta = BranchDelta.construct(
+        event.object_before_modification, branch, event.user)
+    if branch_delta is None:
+        return
+    # If there is no one interested, then bail out early.
+    to_addresses = branch.getAttributeNotificationAddresses()
+    if not to_addresses:
+        return
+
+    indent = ' '*4
+    info_lines = []
+
+    # Fields for which we have old and new values.
+    for field_name in ('name', 'title', 'url'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            old_item = delta['old']
+            new_item = delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, str(old_item), str(new_item)))
+
+    # lifecycle_status is different as it is an Enum type.
+    if branch_delta.lifecycle_status is not None:
+        old_item = branch_delta.lifecycle_status['old']
+        new_item = branch_delta.lifecycle_status['new']
+        title = IBranch['lifecycle_status'].title
+        info_lines.append("%s%s: %s => %s" % (
+            indent, title, old_item.title, new_item.title))
+        
+            
+    # Fields for which we only have the new value.
+    for field_name in ('summary', 'whiteboard'):
+        delta = getattr(branch_delta, field_name)
+        if delta is not None:
+            title = IBranch[field_name].title
+            if info_lines:
+                info_lines.append('')
+            info_lines.append('%s changed to:\n\n%s' % (title, delta))
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+
+    from_address = format_address(
+        event.user.displayname, event.user.preferredemail.email)
+    contents = '\n'.join(info_lines)
+    email_branch_modified_notifications(
+        branch, to_addresses, from_address, contents)

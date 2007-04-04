@@ -10,7 +10,6 @@ __all__ = [
     'IKarmaActionSet',
     'IKarmaCache',
     'IKarmaCacheManager',
-    'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
     'IKarmaContext',
@@ -110,7 +109,7 @@ class IKarmaCache(Interface):
                       "category, and thus got the karma."))
 
     category = Choice(
-        title=_("Category"), required=True, readonly=True,
+        title=_("Category"), required=False, readonly=True,
         vocabulary='KarmaCategory')
 
     karmavalue = Int(
@@ -120,6 +119,8 @@ class IKarmaCache(Interface):
 
     product = Attribute(_("Product"))
 
+    project = Attribute(_("Project"))
+
     distribution = Attribute(_("Distribution"))
 
     sourcepackagename = Attribute(_("Source Package"))
@@ -128,7 +129,7 @@ class IKarmaCache(Interface):
 class IKarmaCacheManager(Interface):
 
     def new(value, person_id, category_id, product_id=None,
-            distribution_id=None, sourcepackagename_id=None):
+            distribution_id=None, sourcepackagename_id=None, project_id=None):
         """Create and return a new KarmaCache.
 
         We expect the objects IDs (instead of the real objects) here because
@@ -136,7 +137,8 @@ class IKarmaCacheManager(Interface):
         """
 
     def updateKarmaValue(value, person_id, category_id, product_id=None,
-                         distribution_id=None, sourcepackagename_id=None):
+                         distribution_id=None, sourcepackagename_id=None,
+                         project_id=None):
         """Update the karmavalue attribute of the KarmaCache with the given
         person_id, category_id, product_id, distribution_id and
         sourcepackagename_id.
@@ -146,35 +148,6 @@ class IKarmaCacheManager(Interface):
         We expect the objects IDs (instead of the real objects) here because
         foaf-update-karma-cache.py (our only client) only has them.
         """
-
-    def deleteEntry(person_id, category_id, product_id=None, distribution_id=None,
-                    sourcepackagename_id=None):
-        """Delete the KarmaCache with the given person_id, category_id, product_id,
-        distribution_id and sourcepackagename_id.
-        
-        Raise NotFoundError if there's no KarmaCache with those attributes.
-
-        We expect the objects IDs (instead of the real objects) here because
-        foaf-update-karma-cache.py (our only client) only has them.
-        """
-
-
-class IKarmaPersonCategoryCacheView(Interface):
-    """A cached value of a person's karma, grouped by category."""
-
-    person = Int(
-        title=_("Person"), required=True, readonly=True,
-        description=_("The person which performed the actions of this "
-                      "category, and thus got the karma."))
-
-    category = Choice(
-        title=_("Category"), required=True, readonly=True,
-        vocabulary='KarmaCategory')
-
-    karmavalue = Int(
-        title=_("Karma Points"), required=True, readonly=True,
-        description=_("The karma points of all actions of this category "
-                      "performed by this person."))
 
 
 class IKarmaTotalCache(Interface):

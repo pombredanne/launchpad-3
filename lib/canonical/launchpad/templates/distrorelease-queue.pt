@@ -12,13 +12,12 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Upload and build queue</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="message view/performQueueAction;
-                 setup view/setupQueueList;
+     tal:define="setup view/setupQueueList;
+                 message view/performQueueAction;
                  error view/error|nothing">
 
   <p class="informational message"
@@ -82,7 +81,7 @@
              Pocket
            </th>
            <th>
-             Age
+             When
            </th>
            <th>
              Changes File
@@ -108,7 +107,7 @@
                      alt="[Installer]" src="/@@/ubuntu-icon"
                      title="Installer"/>
                 <img tal:condition="queue/containsTranslation"
-                     alt="[Translation]" src="/@@/translations"
+                     alt="[Translation]" src="/@@/translation-file"
                      title="Translation"/>
                 <img tal:condition="queue/containsUpgrader"
                      alt="[Upgrader]" src="/@@/topic"
@@ -120,8 +119,14 @@
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>
-              <td tal:content="queue/datecreated/fmt:datetime">
-                2006-03-15
+              <td>
+                <span class="sortkey"
+                  tal:content="queue/datecreated/fmt:datetime" />
+                <span
+                  tal:attributes="title queue/datecreated/fmt:datetime"
+                  tal:content="queue/datecreated/fmt:approximatedate">
+                  2006-03-15
+                </span>
               </td>
               <td>[<a tal:attributes="
                 href queue/changesfile/http_url">view</a>]

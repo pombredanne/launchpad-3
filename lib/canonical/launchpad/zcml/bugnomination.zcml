@@ -1,10 +1,9 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-
+<facet facet="bugs">
     <content class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"
                attributes="id date_created date_decided distrorelease productseries
@@ -49,5 +48,5 @@
         provides="canonical.launchpad.interfaces.IBugNominationSet">
         <allow interface="canonical.launchpad.interfaces.IBugNominationSet" />
     </securedutility>
-
+</facet>
 </configure>

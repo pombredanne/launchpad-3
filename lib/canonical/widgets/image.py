@@ -38,12 +38,18 @@ class ImageChangeWidget(SimpleInputWidget):
     """
 
     implements(IAlwaysSubmittedWidget)
-    
+
+    EDIT_STYLE = 'editview'
+    ADD_STYLE = 'addview'
+
     # The LibraryFileAlias representing the user-uploaded image, if any.
     _image_file_alias = None
+    # The user-uploaded image itself, if any.
+    _image = None
 
-    def __init__(self, context, request):
+    def __init__(self, context, request, style):
         SimpleInputWidget.__init__(self, context, request)
+        self.style = style
         fields = form.Fields(
             Choice(__name__='action', source=self._getActionsVocabulary(),
                    title=_('Action')),
@@ -76,13 +82,22 @@ class ImageChangeWidget(SimpleInputWidget):
         return self.action_widget.hasInput()
 
     def _getActionsVocabulary(self):
-        if self.context.getCurrentImage() is not None:
-            action_names = [('keep', 'Keep your selected image'),
-                            ('delete', 'Change back to default image'),
-                            ('change', 'Change to')]
+        if self.style == self.ADD_STYLE:
+            action_names = [
+                ('keep', 'Leave as default image (you can change it later)'),
+                ('change', 'Use this one')]
+        elif self.style == self.EDIT_STYLE:
+            if self.context.getCurrentImage() is not None:
+                action_names = [('keep', 'Keep your selected image'),
+                                ('delete', 'Change back to default image'),
+                                ('change', 'Change to')]
+            else:
+                action_names = [('keep', 'Leave as default image'),
+                                ('change', 'Change to')]
         else:
-            action_names = [('keep', 'Leave as default image'),
-                            ('change', 'Change to')]
+            raise AssertionError(
+                "Style must be one of EDIT_STYLE or ADD_STYLE, got %s"
+                % self.style)
         terms = [SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
@@ -97,17 +112,26 @@ class ImageChangeWidget(SimpleInputWidget):
                     _('Please specify the image you want to use.')))
             raise self._error
         if action == "keep":
-            return KEEP_SAME_IMAGE
+            if self.style == self.ADD_STYLE:
+                # It doesn't make any sense to return KEEP_SAME_IMAGE in this
+                # case, since there's nothing to keep.
+                return None
+            elif self.style == self.EDIT_STYLE:
+                return KEEP_SAME_IMAGE
+            else:
+                raise AssertionError(
+                    "Style must be one of EDIT_STYLE or ADD_STYLE, got %s"
+                    % self.style)
         elif action == "change":
-            image = form.get(self.image_widget.name)
+            self._image = form.get(self.image_widget.name)
             try:
-                self.context.validate(image)
+                self.context.validate(self._image)
             except ValidationError, v:
                 self._error = WidgetInputError(self.name, self.label, v)
                 raise self._error
-            image.seek(0)
-            content = image.read()
-            filename = image.filename
+            self._image.seek(0)
+            content = self._image.read()
+            filename = self._image.filename
             type, dummy = guess_content_type(name=filename, body=content)
 
             # This method may be called more than once in a single request. If
@@ -134,16 +158,59 @@ class ImageChangeWidget(SimpleInputWidget):
             return None
 
 
-class ImageAddWidget(ImageChangeWidget):
-    """Widget for adding an image.
+class GotchiTiedWithHeadingWidget(ImageChangeWidget):
+    """Widget for adding an image which also returns a copy of the uploaded
+    image.
 
-    This widget should be used only on add forms.
+    If the uploaded image's width is bigger than resized_image_width or its
+    height is bigger than resized_image_height, the copy image will be scaled
+    down, otherwise the copy image will be the same as the original one.
     """
 
-    def _getActionsVocabulary(self):
-        action_names = [
-            ('keep', 'Leave as default image (you can change it later)'),
-            ('change', 'Use this one')]
-        terms = [SimpleTerm(name, name, label) for name, label in action_names]
-        return SimpleVocabulary(terms)
+    resized_image_width = float(64)
+    resized_image_height = float(64)
+
+    def getInputValue(self):
+        retval = ImageChangeWidget.getInputValue(self)
+        if retval is None or retval is KEEP_SAME_IMAGE:
+            # This is just for consistency, so that our callsites can always
+            # unpack the value we return.
+            return (retval, retval)
+
+        file_alias_orig = retval
+        import PIL.Image
+        self._image.seek(0)
+        original_content = StringIO(self._image.read())
+        image = PIL.Image.open(original_content)
+        width, height = image.size
+        if (width <= self.resized_image_width and 
+            height <= self.resized_image_height):
+            # No resize needed.
+            content = original_content
+        else:
+            # Get the new (width, height), keeping the original scale.
+            if width > height:
+                new_width = self.resized_image_width
+                new_height = (self.resized_image_height / width) * height
+            else:
+                new_height = self.resized_image_height
+                new_width = (self.resized_image_width / height) * width
+
+            new_image = image.resize(
+                (int(new_width), int(new_height)), PIL.Image.ANTIALIAS)
+            content = StringIO()
+            format = None
+            for key, mime in PIL.Image.MIME.items():
+                if mime == file_alias_orig.mimetype:
+                    format = key
+                    break
+            assert format is not None, (
+                "No format found for mimetype '%s'" % file_alias_orig.mimetype)
+            new_image.save(content, format=format)
+
+        content.seek(0)
+        file_alias_small = getUtility(ILibraryFileAliasSet).create(
+            name=file_alias_orig.filename, size=content.len,
+            file=content, contentType=file_alias_orig.mimetype)
+        return file_alias_orig, file_alias_small
 

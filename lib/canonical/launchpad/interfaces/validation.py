@@ -5,9 +5,6 @@ __metaclass__ = type
 __all__ = [
     'can_be_nominated_for_releases',
     'validate_url',
-    'valid_http_url',
-    'valid_ftp_url',
-    'valid_rsync_url',
     'valid_webref',
     'valid_branch_url',
     'non_duplicate_bug',
@@ -16,7 +13,6 @@ __all__ = [
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -270,30 +266,6 @@ def valid_branch_url(branch_url):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
-def valid_ftp_url(url):
-    if validate_url(url, ['ftp']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid FTP URL. Please enter the full URL, including the
-            ftp:// part.""")))
-
-def valid_rsync_url(url):
-    if validate_url(url, ['rsync']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid Rsync URL. Please enter the full URL, including the
-            rsync:// part.""")))
-
-def valid_http_url(url):
-    if validate_url(url, ['http']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid HTTP URL. Please enter the full URL, including the
-            http:// part.""")))
-
 def non_duplicate_bug(value):
     """Prevent dups of dups.
 
@@ -399,26 +371,6 @@ def validate_new_person_email(email):
             "The profile you're trying to create already exists: "
             '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
     return True
-
-
-def validate_distribution_mirror_schema(form_values):
-    """Perform schema validation according to IDistributionMirror constraints.
-
-    This validation will take place after the values of individual widgets
-    are validated. It's necessary because we have some constraints where we
-    need to take into account the value of multiple widgets.
-
-    :form_values: A dictionary mapping IDistributionMirror attributes to the
-                  values suplied by the user.
-    """
-    errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
-        errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least an HTTP or FTP URL to be "
-            "specified.")))
-
-    if errors:
-        raise WidgetsError(errors)
 
 
 def valid_distrotask(bug, distribution, sourcepackagename=None,

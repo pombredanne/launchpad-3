@@ -1,5 +1,26 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-  <content class="canonical.launchpad.browser.PackageRelationship">
-    <allow interface="canonical.launchpad.interfaces.IPackageRelationship"/>
-  </content>
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- PackageRelationship -->
+    <content class="canonical.launchpad.browser.PackageRelationship">
+      <allow interface="canonical.launchpad.interfaces.IPackageRelationship"/>
+    </content>
+
+    <!-- PackageRelationshipSet -->
+    <content class="canonical.launchpad.browser.PackageRelationshipSet">
+      <allow interface="canonical.launchpad.interfaces.IPackageRelationshipSet"/>
+    </content>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPackageRelationshipSet"
+        permission="zope.Public">
+        <browser:page
+            name="+render-list"
+            template="../templates/packagerelationship-list.pt"
+         />
+    </browser:pages>
+
 </configure>

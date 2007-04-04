@@ -1,4 +1,0 @@
-New support request #%(ticket_id)s on %(target_name)s:
-%(ticket_url)s
-
-%(comment)s

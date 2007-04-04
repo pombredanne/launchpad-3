@@ -1,15 +1,38 @@
-This is the Rosetta homepage (/rosetta).
+The Translations front page
 
-  >>> print http(r"""
-  ... GET /translations HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <h1>Welcome to Rosetta</h1>
-  ...
+  >>> browser.open('http://translations.launchpad.dev/')
+  >>> browser.url
+  'http://translations.launchpad.dev/'
+
+includes a list of translatable distribution releases,
+
+  >>> '>Translatable operating systems</h2>' in browser.contents
+  True
+  >>> '5.04' in browser.contents
+  True
+  >>> '4.10' in browser.contents
+  False
+
+products,
+
+  >>> '>Translatable projects</h2>' in browser.contents
+  True
+
+ALSA is listed in the page among featured projects:
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> projects = soup.fetchText('Translatable projects')[0].parent.parent
+  >>> projects.find(text='ALSA utilities')
+  u'ALSA utilities'
+
+Homepage also includes a list of languages.
+
+  >>> '>Languages</h2>' in browser.contents
+  True
+
+(XXX This should include a test that the list includes various languages.)
+
 
 There is also an "About" page that talks about how Rosetta works.
 

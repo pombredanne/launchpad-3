@@ -150,6 +150,12 @@ class IHostedBranchStorage(Interface):
         :returns: the ID for the new branch.
         """
 
+    def requestMirror(branchID):
+        """Mark a branch as needing to be mirrored.
+
+        :param branchID: a branch ID.
+        """
+
 
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad.
@@ -160,7 +166,9 @@ class IBranchDetailsStorage(Interface):
     def getBranchPullQueue():
         """Get the list of branches to be pulled by the supermirror.
 
-        :returns: a list of (branch_id, pull_url) pairs.
+        :returns: a list of (branch_id, pull_url, unique_name) triples, where
+        unique_name is owner_name/product_name/branch_name, and product_name is
+        '+junk' if there is no product associated with the branch.
         """
 
     def startMirroring(branchID):
@@ -176,9 +184,9 @@ class IBranchDetailsStorage(Interface):
     def mirrorComplete(branchID, lastRevisionID):
         """Notify Launchpad that the branch has been successfully mirrored.
 
-        In the Launchpad database, the last_mirrored field will be updated
-        to match the last_mirror_attempt value, and mirror_failures counter
-        will be reset to zero.
+        In the Launchpad database, the last_mirrored field will be updated to
+        match the last_mirror_attempt value, the mirror_failures counter will
+        be reset to zero and the mirror_request_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param lastRevisionID: The last revision ID mirrored.
@@ -189,7 +197,7 @@ class IBranchDetailsStorage(Interface):
         """Notify Launchpad that the branch could not be mirrored.
 
         The mirror_failures counter for the given branch record will be
-        incremented
+        incremented and the mirror_request_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.

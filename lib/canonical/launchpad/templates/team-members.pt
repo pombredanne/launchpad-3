@@ -19,6 +19,15 @@
     &#8220;<span tal:replace="context/browsername" />&#8221;
   </h1>
 
+      <p tal:condition="view/allMembersCount">
+        There are <span tal:replace="context/active_member_count">15</span>
+        direct members of the 
+        "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+        and <span tal:replace="context/all_member_count">23</span> people are
+        members in total, directly and indirectly through other team
+        memberships.
+      </p>
+
   <p tal:condition="not: view/allMembersCount">
     This team currently has no members.
   </p>
@@ -45,19 +54,32 @@
                 <a tal:attributes="href member/fmt:url"
                    tal:content="member/browsername" />
               </td>
-              <td
-                tal:content="membership/datejoined/fmt:date"
-              >2005-06-14</td>
-              <td
-                tal:condition="not: membership/dateexpires"
-              >&ndash;</td>
-              <td
-                tal:condition="membership/dateexpires"
-                tal:content="membership/dateexpires/fmt:date"
-              >2006-06-13</td>
+              <td>
+                <span class="sortkey"
+                  tal:content="membership/datejoined/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/datejoined/fmt:datetime"
+                  tal:content="membership/datejoined/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
+              <td>
+                <tal:block condition="not: membership/dateexpires">
+                  &ndash;
+                </tal:block>
+                <span class="sortkey"
+                  tal:content="membership/dateexpires/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/dateexpires/fmt:datetime"
+                  tal:content="membership/dateexpires/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
               <td tal:content="membership/statusname"></td>
               <td tal:condition="context/required:launchpad.Edit">
-                [<a tal:attributes="href membership/fmt:url">Edit</a>]
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
               </td>
             </tal:block>
           </tr>
@@ -88,11 +110,19 @@
               <a tal:attributes="href member/fmt:url"
                  tal:content="member/browsername" />
             </td>
-            <td
-              tal:content="membership/datejoined/fmt:date"
-            >2005-04-01</td>
+              <td>
+                <span class="sortkey"
+                  tal:content="membership/datejoined/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/datejoined/fmt:datetime"
+                  tal:content="membership/datejoined/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
             <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
+              <a tal:attributes="href membership/fmt:url"
+                ><img src="/@@/edit"
+                      title="Change membership duration or status" /></a>
             </td>
             </tal:block>
           </tr>
@@ -142,7 +172,9 @@
               tal:condition="not: membership/isExpired"
               tal:content="membership/statusname" />
             <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
+              <a tal:attributes="href membership/fmt:url"
+                ><img src="/@@/edit"
+                      title="Change membership duration or status" /></a>
             </td>
             </tal:block>
           </tr>

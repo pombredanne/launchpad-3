@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    <browser:page
+      name="+driver"
+      for="canonical.launchpad.interfaces.IHasAppointedDriver"
+      class="canonical.launchpad.browser.driver.AppointDriverView"
+      facet="overview"
+      permission="launchpad.Edit"
+      template="../templates/object-driver.pt"
+      />
+</configure>

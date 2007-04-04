@@ -15,10 +15,12 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-    IBugTarget, IHasOwner, IHasSpecifications, IKarmaContext, PillarNameField,
-    valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
+from canonical.launchpad.fields import (
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -28,7 +30,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext, IHasSprints, IHasIcon, IHasLogo, IHasMugshot):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -126,18 +129,30 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this project."))
-
-    gotchi = LargeImageUpload(
+    icon = IconImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/project',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this project's home page. It should be no bigger than 100k in "
-            "size. "))
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this project. The icon will be "
+            "displayed in Launchpad everywhere that we link to this "
+            "project. For example in listings or tables of active projects."))
+
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/project-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this project. It should be "
+            "no bigger than 50kb in size."))
+
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/project-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this project's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -182,6 +197,12 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications, IKarmaContext):
         """Ensure that the bounty is linked to this project. Return None.
         """
 
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
+        """
+
 
 # Interfaces for set
 
@@ -205,12 +226,12 @@ class IProjectSet(Interface):
     def getByName(name, default=None, ignore_inactive=False):
         """Return the project with the given name, ignoring inactive projects
         if ignore_inactive is True.
-        
+
         Return the default value if there is no such project.
         """
 
     def new(name, displayname, title, homepageurl, summary, description,
-            owner, gotchi, emblem):
+            owner, mugshot=None, logo=None, icon=None):
         """Create and return a project with the given arguments."""
 
     def count_all():
