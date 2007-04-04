@@ -135,7 +135,7 @@ def start_buildsequencer():
     from canonical.config import config
 
     buildsequencer = TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
-                             config.librarian.server)
+                             config.buildsequencer)
     buildsequencer.launch()
 
 
