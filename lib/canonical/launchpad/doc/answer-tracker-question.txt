@@ -1,8 +1,10 @@
-= Support Tracker System =
+= Launchpad Answer Tracker =
 
-Launchpad includes a tech support question tracker. Questions are created
-and accessed using the IQuestionTarget interface. This interface is
-available on products, distributions and sourcepackages.
+Launchpad includes an Answer Tracker where users can post questions
+(usually about problems they encounter with projects) and other can
+answer them.) Questions are created and accessed using the
+IQuestionTarget interface. This interface is available on products,
+distributions and sourcepackages.
 
     >>> login('test@canonical.com')
 
@@ -18,9 +20,9 @@ available on products, distributions and sourcepackages.
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
 
-    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
-    ...     'mozilla-firefox')
-    >>> verifyObject(IQuestionTarget, firefox_package)
+    >>> evolution_package = ubuntu.currentrelease.getSourcePackage(
+    ...     'evolution')
+    >>> verifyObject(IQuestionTarget, evolution_package)
     True
 
 Altough distribution release do not implement the IQuestionTarget
@@ -31,6 +33,16 @@ the distrorelease's distribution.)
     >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
     >>> questiontarget = IQuestionTarget(ubuntu_warty)
+    >>> verifyObject(IQuestionTarget, questiontarget)
+    True
+
+Similarly, it is possible to adapt an ISourcePackageRelease into an
+IQuestionTarget.
+
+    >>> firefox_in_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_release_in_warty = firefox_in_warty.currentrelease
+
+    >>> questiontarget = IQuestionTarget(firefox_release_in_warty)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
@@ -126,10 +138,10 @@ the getDirectSubscribers() method.
 
 There is also a list of 'indirect' subscribers to the question. These
 are persons that didn't explicitely subscribed to the question, but that
-will receive notifications for other reason. Support contacts for the
+will receive notifications for other reason. Answer contacts for the
 question target are part of the indirect subscribers list.
 
-    # There is no support contact on the firefox product.
+    # There are no answer contacts on the firefox product.
     >>> [person.displayname
     ...     for person in firefox_question.getIndirectSubscribers()]
     []
@@ -139,24 +151,24 @@ question target are part of the indirect subscribers list.
     ...  for person in firefox_question.getIndirectSubscribers()]
     [u'No Privileges Person']
 
-There is a special case for when the question's is associated to a source
-package. The support contacts for both the distribution and the source
-package are part of the indirect subscribers list.
+There is a special case for when the question's is associated to a
+source package. The answer contacts for both the distribution and the
+source package are part of the indirect subscribers list.
 
-    # Let's register some support contacts for the distribution and
+    # Let's register some answer contacts for the distribution and
     # the package.
     >>> list(ubuntu.answer_contacts)
     []
-    >>> list(firefox_package.answer_contacts)
+    >>> list(evolution_package.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
-    >>> firefox_package.addAnswerContact(no_priv)
+    >>> evolution_package.addAnswerContact(no_priv)
     True
-    >>> package_question = firefox_package.newQuestion(
-    ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
-    ...     "The FnordsHighlighter theme doesn't work after upgrade.")
+    >>> package_question = evolution_package.newQuestion(
+    ...     sample_person, 'Upgrading to Evolution 1.4 breaks plug-ins',
+    ...     "The FnordsHighlighter plug-in doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_question.subscriptions]
     [u'Sample Person']
     >>> [person.displayname
@@ -180,7 +192,7 @@ getSubscribers() method.
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the question notifications can be found in
-'support-tracker-notifications.txt'.)
+'answer-tracker-notifications.txt'.)
 
 == Workflow ==
 
@@ -188,7 +200,7 @@ A question status should not be manipulated directly but through the
 workflow methods.
 
 The complete question workflow is documented in
-'support-tracker-workflow.txt'.
+'answer-tracker-workflow.txt'.
 
 == Bug Linking ==
 

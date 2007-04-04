@@ -4,6 +4,10 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="malone"
 >
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
+    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+  </metal:block>
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
@@ -12,9 +16,20 @@
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
+
       <div class="columns">
-        <div class="two column left">
-          <img alt="" src="/@@/nyet-mugshot" title="pie chart here" />
+          <script type="text/javascript"
+               tal:content="structure view/getChartJavascript">
+          </script>
+        <div id="bugs-chart" class="two column left" height="200" width="200">
+          <noscript>
+          <ul>
+            <li tal:repeat="bug_count view/bug_count_items"
+                tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+              12 Unconfirmed bugs
+            </li>
+          </ul>
+          </noscript>
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>
@@ -64,10 +79,9 @@
                 bugs fixed elsewhere
               </a>
             </li>
-            <!-- Waiting for bug 79034. -->
-            <li tal:condition="nothing">
-              <a href="">
-                <strong tal:content="nothing"></strong>
+            <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
+              <a tal:attributes="href cve_bugs/url">
+                <strong tal:content="cve_bugs/count"></strong>
                 open CVE bugs
               </a>
             </li>
@@ -86,8 +100,10 @@
         </div><!-- two column right -->
       </div><!-- columns -->
       <div class="clear"></div>
-      <div class="section">
+      <div class="left">
         <tal:reported replace="structure context/@@+portlet-latestbugs" />
+      </div>
+      <div class="right">
         <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
       </div>
     </div><!-- main -->

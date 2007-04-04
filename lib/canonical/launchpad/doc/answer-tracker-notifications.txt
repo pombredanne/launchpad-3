@@ -1,28 +1,14 @@
-= Support Tracker Email Notifications =
-
-    # Let's define a helper function which commits the transaction, so
-    # that the notifications are queued in stub.test_emails and pops these
-    # notifications from the queue.
-    >>> from canonical.launchpad.mail import stub
-    >>> import email
-    >>> import transaction
-    >>> def pop_notifications():
-    ...     transaction.commit()
-    ...     notifications = [
-    ...         email.message_from_string(raw_message)
-    ...         for fromaddr, toaddrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    ...     stub.test_emails = []
-    ...     return notifications
+= Answer Tracker Email Notifications =
 
 When a question is created or changed, an email notification is sent out,
-informing the subscribers and the support contacts about the change.
+informing the subscribers and the answer contacts about the change.
 Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -32,9 +18,9 @@ notification looks like:
     >>> notify(SQLObjectCreatedEvent(ubuntu_question))
 
 The notifications get sent to the question's subscribers, the question's
-target support contacts as well as to the question's assignee. Initially,
+target answer contacts as well as to the question's assignee. Initially,
 only the submitter, Sample Person, is subscribed to the question and there
- is no support contact registered on Ubuntu, so only 1 notification is
+ is no answer contact registered on Ubuntu, so only 1 notification is
 sent:
 
     >>> ubuntu.answer_contacts
@@ -67,7 +53,7 @@ contains information about the question.
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
 
-Register the Ubuntu Team as Ubuntu's support contact, so that they get
+Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -83,7 +69,7 @@ notifications:
 
 == Edit Notifications ==
 
-If we edit the title and description of the request, a notification will be
+If we edit the title and description of the question, a notification will be
 sent.
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
@@ -152,8 +138,8 @@ After receiving that notification, Foo Bar unassigned himself:
 
 === Bug link Notification ===
 
-If we create a bug from the support request, it will be reported as a
-bug that has been linked to the request:
+If we create a bug from the question, it will be reported as a
+bug that has been linked to it:
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
 
@@ -251,8 +237,8 @@ A notification is also sent when a bug is unlinked from the ticket:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Removed link to bug: #11
-        http://.../bugs/11
+        Removed link to bug: #13
+        http://.../bugs/13
     <BLANKLINE>
 
 == Workflow Notifications ==
@@ -272,10 +258,10 @@ workflow action done.
     "Re: [Question #...]: Installer doesn't work on a Mac"
 
 For workflow notifications, the content of the notification is slightly
-different based on whether you are the request owner or somebody else.
+different based on whether you are the question owner or somebody else.
 
-For example, the notification to the support contacts and every other
-subscribers except the request owner will look like this:
+For example, the notification to the answer contacts and every other
+subscribers except the question owner will look like this:
 
     >>> notification_body = support_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -307,7 +293,7 @@ an extra footer.
     http://.../ubuntu/+question/...
     <BLANKLINE>
 
-Of course, if the owner unsubscribe from the request, he won't receives
+Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
 
     >>> login('test@canonical.com')
@@ -355,7 +341,7 @@ giveInfo() transitions, let's see the other ones.
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
 
-Default notification when the request is expired:
+Default notification when the question is expired:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -414,7 +400,7 @@ Notice also how the 'Re' handling is handled nicely:
     >>> print notifications[0]['Subject']
     Re: [Question #...]: Installer doesn't work on a Mac
 
-Default notification when the owner reopens the request:
+Default notification when the owner reopens the question:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -589,7 +575,7 @@ Notification received by the owner:
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
 
-Default notification when the request is rejected:
+Default notification when the question is rejected:
 
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -691,12 +677,12 @@ will receives only one notification:
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-== Notifications and Localized Requests ==
+== Notifications and Localized Questions ==
 
 In general, only subscribers speaking the language of the question will
 receive notifications related to it.
 
-    # Register salgado as support, this makes the pt_BR language
+    # Register salgado as answer contact, this makes the pt_BR language
     # supported in Ubuntu.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> ubuntu.addAnswerContact(salgado)
@@ -736,14 +722,14 @@ the notifications.
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']
 
-The exception to these general rules is that when a request is created
-in language spoken by none of the support contacts, each support
-contact will receive an email notifying them that a request was posted
-in an unsupported language.
+The exception to these general rules is that when a question is created
+in language spoken by none of the answer contacts, each one will receive
+an email notifying them that a question was posted in an unsupported
+language.
 
-For example, the French language is not spoken by any Ubuntu support
-contacts. So after posting a request in French, a notification will be
-sent to the support list about that request:
+For example, the French language is not spoken by any Ubuntu answer
+contacts. So after posting a question in French, a notification will be
+sent to the support list about that question:
 
     >>> french = getUtility(ILanguageSet)['fr']
     >>> french_question = ubuntu.newQuestion(
@@ -767,7 +753,7 @@ sent to the support list about that request:
     http://.../ubuntu/+question/...
 
 The notification received by the question owner contain a warning that
-the request is in a language spoken by none of the support contacts:
+the question is in a language spoken by none of the answer contacts:
 
     >>> notifications[-1]['Subject']
     "[Question #...]: Impossible d'installer Ubuntu"
@@ -793,9 +779,9 @@ the request is in a language spoken by none of the support contacts:
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
 
-No notification will be sent to the support contacts when this question is
-modified. Only the owner will receive a modification notification with a
-warning appended to it.
+No notification will be sent to the answer contacts when this question
+is modified. Only the owner will receive a modification notification
+with a warning appended to it.
 
     >>> unmodified_question = Snapshot(
     ...     french_question, providing=providedBy(french_question))
@@ -820,20 +806,20 @@ warning appended to it.
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
 
-=== Localized Support Requests and Teams ===
+=== Localized Questions and Teams ===
 
 There are some tricky issues when sending notifications to teams about a
-support request. There are some cases to consider.
+question. There are some cases to consider.
 
 First, when the team has an explicit email address (which will be a
-mailing list usually), we will notify the team only if the support
-request language is in one of the team spoken languages. The team spoken
+mailing list usually), we will notify the team only if the question
+language is in one of the team spoken languages. The team spoken
 languages is either the list of languages associated to the team or
 the list of the languages spoken by the team members.
 
 For example, the rosetta admins team doesn't have any languages
 configured. But among its members, Carlos speaks Spanish. So, the team
-will be notified if a Spanish support request is created.
+will be notified if a Spanish question is created.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]
@@ -858,7 +844,7 @@ will be notified if a Spanish support request is created.
 
 But if the team languages attribute is set, this set of languages will
 be used. So, if the team only officially speaks French, it will only
-receives notifications about French (and English) requests.
+receives notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
     >>> notify(SQLObjectCreatedEvent(french_question))
@@ -888,10 +874,10 @@ if the team supported languages includes the question language:
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 But when the team didn't configured its supported language set, only the
-team members that speaks the language of the request will be notified.
+team members that speaks the language of the question will be notified.
 For example, Carlos is a member of the admins team which doesn't have
 a preferred address. So, he'll be the only member of the admin team
-to be notified when a request in Spanish is posted.
+to be notified when a question in Spanish is posted.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
     >>> list(admins.languages)
@@ -922,6 +908,7 @@ address if Spanish is among its preferred languages:
     # stub.test_emails after it
     >>> admins.addMember(guadamen, reviewer=foobar)
     >>> transaction.commit()
+    >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
     >>> guadamen.addLanguage(spanish)

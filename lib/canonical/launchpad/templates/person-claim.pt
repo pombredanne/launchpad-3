@@ -24,7 +24,10 @@
     <metal:extra-info fill-slot="extra_info">
     <p>
       Launchpad's record for <span tal:replace="context/browsername" /> was
-      created on <span tal:replace="context/datecreated/fmt:date" />
+      created
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate" />
       <tal:user-created
         condition="context/creation_rationale/enumvalue:USER_CREATED">
           by <a tal:attributes="href context/registrant/fmt:url">
@@ -43,7 +46,7 @@
       If you're <span tal:replace="context/browsername" />, relax! You don't
       need to do anything, and we'll never spam you. But claiming this
       profile will let you edit your contact details, register your own
-      products and code branches in Launchpad, and use Launchpad to
+      projects and code branches in Launchpad, and use Launchpad to
       <strong>collaborate with other developers</strong>.
     </p>
     <p>

@@ -78,6 +78,13 @@
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.BugsBugTaskSearchListingView"
+        permission="zope.Public"
+        name="+bugs"
+        facet="bugs"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
 
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
@@ -102,4 +109,5 @@
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
         />
+
 </configure>

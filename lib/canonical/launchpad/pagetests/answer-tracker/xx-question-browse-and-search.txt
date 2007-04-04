@@ -625,3 +625,88 @@ When no results are found, a message informs the user of this fact:
     >>> print find_main_content(
     ...     browser.contents).first('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
+
+== Searching in a Selected Project ==
+
+From the Answers front page, the user can select to search questions
+only in a particular project. In this context a "project" means either
+a distribution, product or project.
+
+He must enter the project's name in the text field:
+
+    >>> anon_browser.open('http://answers.launchpad.dev')
+    >>> anon_browser.getControl('One project').selected = True
+    >>> anon_browser.getControl('Find Answers').click()
+
+    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
+    ...     print message.renderContents()
+    Please enter a project name
+
+Entering an invalid project also displays an error message:
+
+    >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
+    >>> anon_browser.getControl('Find Answers').click()
+
+    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is no project named 'invalid' registered in Launchpad
+
+There is a 'Choose' link available to help the user find an existing
+project. (Since this is a JavaScript link, we will need to extract it
+to mimick the user clicking on it.)
+
+    >>> choose_link = anon_browser.getLink('Choose')
+    >>> print choose_link.url
+    javascript:popup_window('@@popup-window?...
+    >>> [search_url] = re.findall(
+    ...     "popup_window\('([^']*')", choose_link.url)
+
+    # XXX flacoste 2007/02/21 We should use directly search_url here but
+    # can't because of bug #
+    # >>> anon_browser.open(search_url)
+    >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
+    >>> print anon_browser.title
+    Select a project
+
+The user can enter a search term and can select one of the matching
+item.
+
+    >>> anon_browser.getControl(name='search').value = 'mozilla'
+    >>> anon_browser.getControl('Search').click()
+    >>> print anon_browser.getLink('mozilla').text
+    mozilla
+    >>> print anon_browser.getLink('mozilla').attrs['onclick']
+    update('mozilla')
+
+(Since the resulting link is also a JavaScript link, simply copy the
+value in the text field.)
+
+
+    >>> anon_browser.open('http://answers.launchpad.dev')
+    >>> anon_browser.getControl(name='field.search_text').value = 'plugins'
+    >>> anon_browser.getControl('One project').selected = True
+    >>> anon_browser.getControl(name='field.scope.target').value = 'mozilla'
+    >>> anon_browser.getControl('Find Answers').click()
+    >>> print anon_browser.title
+    Questions matching "plugins" for the Mozilla Project
+
+This works also with distributions:
+
+    >>> anon_browser.open('http://answers.launchpad.dev')
+    >>> anon_browser.getControl(name='field.search_text').value = 'firefox'
+    >>> anon_browser.getControl('One project').selected = True
+    >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
+    >>> anon_browser.getControl('Find Answers').click()
+    >>> print anon_browser.title
+    Questions matching "firefox" for Ubuntu
+
+And also with products:
+
+    >>> anon_browser.open('http://answers.launchpad.dev')
+    >>> anon_browser.getControl(name='field.search_text').value = 'plugins'
+    >>> anon_browser.getControl('One project').selected = True
+    >>> anon_browser.getControl(name='field.scope.target').value = 'firefox'
+    >>> anon_browser.getControl('Find Answers').click()
+    >>> print anon_browser.title
+    Questions matching "plugins" for Mozilla Firefox
+

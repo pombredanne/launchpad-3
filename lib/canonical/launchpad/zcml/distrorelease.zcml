@@ -50,6 +50,14 @@
     classes="DistroReleaseNavigation"
     />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.DistroReleaseDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <browser:url
     for="canonical.launchpad.interfaces.IDistroRelease"
     path_expression="name"
@@ -76,6 +84,12 @@
     layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs-index" />
 
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
     class="canonical.launchpad.browser.BugTargetBugListingView"
@@ -90,7 +104,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IDistroRelease"
     name="+bugs-index"
-    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    class="canonical.launchpad.browser.BugTargetBugsView"
     permission="zope.Public"
     facet="bugs"
     template="../templates/bugtarget-bugs.pt"
@@ -152,16 +166,6 @@
       template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/distrorelease-portlet-translations.pt"
-      />
-    <browser:page
-      name="+portlet-langstats"
-      facet="translations"
-      template="../templates/distrorelease-portlet-langstats.pt"
-      />
-    <browser:page
       name="+portlet-aboutlangs"
       facet="translations"
       template="../templates/distrorelease-portlet-aboutlangs.pt" />
@@ -170,8 +174,12 @@
       template="../templates/object-portlet-milestones.pt"
       />
     <browser:page
-      name="+last-uploads"
-      template="../templates/distrorelease-last-uploads.pt"
+      name="+milestones"
+      template="../templates/object-milestones.pt"
+      />
+    <browser:page
+      name="+latest-uploads"
+      template="../templates/distrorelease-latest-uploads.pt"
       />
   </browser:pages>
 

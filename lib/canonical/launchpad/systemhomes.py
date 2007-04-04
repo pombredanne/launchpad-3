@@ -33,6 +33,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
+    def searchTasks(self, search_params):
+        """See IMaloneApplication."""
+        return getUtility(IBugTaskSet).search(search_params)
+
     @property
     def bug_count(self):
         user = getUtility(ILaunchBag).user
@@ -55,6 +59,14 @@ class MaloneApplication:
     @property
     def bugtracker_count(self):
         return getUtility(IBugTrackerSet).search().count()
+
+    @property
+    def projects_with_bugs_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('projects_with_bugs')
+
+    @property
+    def shared_bug_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('shared_bug_count')
 
     @property
     def top_bugtrackers(self):
@@ -89,7 +101,12 @@ class RosettaApplication:
     def translatable_products(self):
         """See IRosettaApplication."""
         products = getUtility(IProductSet)
-        return products.translatables()
+        return products.getTranslatables()
+
+    def featured_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.featuredTranslatables()
 
     def translatable_distroreleases(self):
         """See IRosettaApplication."""

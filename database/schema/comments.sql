@@ -229,6 +229,7 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
+COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -396,23 +397,6 @@ COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 
--- POSelection
-COMMENT ON TABLE POSelection IS 'This table captures the full set
-of all the translations ever submitted for a given pomsgset and pluralform.
-It also indicates which of those is currently active.';
-COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
-which we are recording a selection.';
-COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
-this selected translation.';
-COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
-this the active translation in rosetta for this pomsgset and pluralform.';
-COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
-we noted this as the current translation published in revision control (or
-in the public po files for this translation template, in the package or
-tarball or branch which is considered the source of it).';
-COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
-COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
-
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
 that we saw, or someone submitted, a particular translation for a particular
@@ -433,6 +417,8 @@ translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
 COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
+COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
+COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -451,7 +437,8 @@ same status for the last published pofile we pulled in.';
 COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
-
+COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
+COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -581,6 +568,8 @@ COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically s
 COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
+COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
+
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 
 /* DistroRelease */
@@ -1244,6 +1233,8 @@ COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to 
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
 COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
+COMMENT ON COLUMN ShippingRequest.normalized_address IS 'The normalized
+address of this request. It is maintained by a trigger because it''s safer than hacking sqlobject''s internals (specially because we sometimes update data behind sqlobject''s back).';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1419,4 +1410,17 @@ COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent su
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+
+-- ScriptActivity
+COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
+COMMENT ON COLUMN ScriptActivity.name IS 'The name of the script';
+COMMENT ON COLUMN ScriptActivity.hostname IS 'The hostname of the machine where the script was run';
+COMMENT ON COLUMN ScriptActivity.date_started IS 'The date at which the script started';
+COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed';
+
+-- RevisionProperty
+COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that appear on a revision.';
+COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
+COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
+COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
 

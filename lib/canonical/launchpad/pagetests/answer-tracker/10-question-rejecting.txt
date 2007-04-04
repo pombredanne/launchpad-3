@@ -94,7 +94,7 @@ The form has a select widget displaying the current status.
 The user needs to select a status and enter a message explaining the
 status change:
 
-    >>> admin_browser.getControl('Change status').click()
+    >>> admin_browser.getControl('Change Status').click()
     >>> soup = BeautifulSoup(admin_browser.contents)
     >>> for error in soup.fetch('div', 'message'):
     ...     print error.renderContents()
@@ -108,7 +108,7 @@ select back the 'Open' status and provide an appropriate message:
     >>> admin_browser.getControl('Message').value = (
     ...     "Setting status back to 'Open'. Questions similar to a bug "
     ...     "report should be linked to it, not rejected.")
-    >>> admin_browser.getControl('Change status').click()
+    >>> admin_browser.getControl('Change Status').click()
 
 Once the operation is completed, a confirmation message is displayed;
 

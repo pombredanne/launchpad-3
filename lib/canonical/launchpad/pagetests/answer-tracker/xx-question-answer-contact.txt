@@ -21,9 +21,9 @@ distro.
     </p>
 
 Anybody can become an answer contact. To register as an answer contact,
-the user clicks on the 'Answer Contact' link:
+the user clicks on the 'Set answer Contact' link:
 
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('h1')
     <h1>Manage answer contacts</h1>
@@ -58,7 +58,7 @@ new answer contacts appear in the 'Answer Contacts' portlet:
     Ubuntu Gnome Team has been added as an answer contact for Ubuntu.
 
     >>> soup.first('div', id='portlet-answer-contacts').first('ul')
-     <ul class="people">
+     <ul class="person">
       <li>
         <a href=".../~landscape-developers">Landscape Developers</a>
       </li>
@@ -71,10 +71,10 @@ new answer contacts appear in the 'Answer Contacts' portlet:
     </ul>
 
 To remove oneself from the answer contacts, the user uses the same
-'Answer Contact' link and uncheck himself or the team he want to remove
+'Set answer contact' link and uncheck himself or the team he want to remove
 from the answer contact list.
 
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl(
     ...     "I want to be an answer contact for Ubuntu").selected
     True
@@ -106,7 +106,7 @@ question.
     >>> also_notified
     <b>Also notified:</b>
     >>> also_notified.findNextSibling('ul')
-    <ul class="people">
+    <ul class="person">
       <li>
         <a href=".../~name12">Sample Person</a>
       </li>

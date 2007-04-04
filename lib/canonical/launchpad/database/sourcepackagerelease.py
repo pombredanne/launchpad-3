@@ -189,18 +189,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
-    @property
-    def open_ticket_count(self):
-        """See ISourcePackageRelease."""
-        results = Question.select("""
-            status = %s AND
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(QuestionStatus.OPEN,
-                            self.uploaddistrorelease.distribution.id,
-                            self.sourcepackagename.id))
-        return results.count()
-
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
         upload_distro = self.uploaddistrorelease.distribution
@@ -212,24 +200,6 @@ class SourcePackageRelease(SQLBase):
         #   -- kiko, 2006-03-07
         params.omit_dupes = True
         return upload_distro.searchTasks(params).count()
-
-    @property
-    def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
-                        'Build']
-        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackageRelease.build = Build.id '
-                 ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackageRelease.select(query,
-                                           prejoinClauseTables=['Build'],
-                                           clauseTables=clauseTables)
-
-    @property
-    def meta_binaries(self):
-        """See ISourcePackageRelease."""
-        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
-                                    binary.binarypackagename)
-                for binary in self.binaries]
 
     @property
     def current_publishings(self):

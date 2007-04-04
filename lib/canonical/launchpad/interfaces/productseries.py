@@ -17,7 +17,7 @@ from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
     IHasDrivers, validate_url)
@@ -68,13 +68,6 @@ def validate_cvs_branch(branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
-
-def validate_svn_repo(repo):
-    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
-        return True
-    else:
-        raise LaunchpadValidationError(
-            'Please give valid Subversion server details.')
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -133,8 +126,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(
-        'The milestones associated with this series.')
+    milestones = Attribute(_(
+        "The visible milestones associated with this productseries, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this productseries, ordered by "
+        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
@@ -210,25 +207,30 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
-    cvsroot = TextLine(title=_("Repository root"), required=False,
+    cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
-        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
-                      '/cvs/gnome'))
+        description=_('The CVSROOT. '
+            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
     cvsmodule = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module)
+        constraint=validate_cvs_module,
+        description=_('The path to import within the repository.'
+            ' Usually, it is the name of the product.'))
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
-    cvsbranch = TextLine(title=_("Branch name"), required=False,
+    cvsbranch = TextLine(title=_("Branch"), required=False,
         constraint=validate_cvs_branch,
-        description=_('The branch representing the upstream codebase for '
-                      'this product series.'))
-    svnrepository = TextLine(title=_("Repository"), required=False,
-        constraint=validate_svn_repo,
-        description=_('The URL (Internet address) of the repository and '
-                      'branch to be imported, in svn:// or http(s):// '
-                      'format. This must be the correct upstream branch '
-                      'for the trunk series of Evolution.'))
+        description=_("The branch in this module."
+            " Only MAIN branches are imported."))
+    svnrepository = URIField(title=_("Branch"), required=False,
+        description=_("The URL of a Subversion branch, starting with svn:// or"
+            " http(s)://. Only trunk branches are imported."),
+        allowed_schemes=["http", "https", "svn", "svn+ssh"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,

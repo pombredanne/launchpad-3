@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Initialise a new distrorelease from its parent
 
 It performs two additional tasks before call initialiseFromParent:

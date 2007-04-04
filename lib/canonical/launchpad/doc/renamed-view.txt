@@ -11,7 +11,7 @@ redirection.
     >>> from canonical.launchpad.webapp.publisher import RenamedView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-Let's say we rename the '+tickets' view on IQuestionTarget to
+Let's say we rename the '+old_tickets_page' view on IQuestionTarget to
 '+questions'. A RenamedView redirecting to the new name would be created
 like this:
 
@@ -19,6 +19,10 @@ like this:
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> view = RenamedView(ubuntu, request, '+questions')
+
+(Note that the RenamedView class doesn't need to be aware of the
+previous name. The old name will be hooked up with the RenamedView
+via ZCML.)
 
 When the view is called, it redirects to the same context but with
 the new name. The redirection status is 301 (Moved permently) which

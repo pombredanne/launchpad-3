@@ -31,9 +31,9 @@ We are wanting to have badges for associated branches.
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bugs')
   >>> names_and_branches(browser.contents)
-  http://bugs.launchpad.dev/firefox/+bug/5
-    Branch: http://bugs.launchpad.dev/~name12/+branch/firefox/main
-  http://bugs.launchpad.dev/firefox/+bug/4
-    Branch: http://bugs.launchpad.dev/~sabdfl/+branch/firefox/release-0.9.2
-    Branch: http://bugs.launchpad.dev/~name12/+branch/firefox/main
-  http://bugs.launchpad.dev/firefox/+bug/1
+  /firefox/+bug/5
+    Branch: http://code.launchpad.dev/~name12/firefox/main
+  /firefox/+bug/4
+    Branch: http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2
+    Branch: http://code.launchpad.dev/~name12/firefox/main
+  /firefox/+bug/1

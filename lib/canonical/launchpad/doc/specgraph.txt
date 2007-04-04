@@ -102,7 +102,7 @@ want a link to the spec we're currently looking at.
    digraph "deptree" {
    graph
        [
-       "bgcolor"="#fcfcfc",
+       "bgcolor"="#ffffff",
        "mode"="hier",
        "nodesep"="0.25",
        "ranksep"="0.25",

@@ -19,7 +19,7 @@
                             translationgroup translationpermission
                             official_malone official_rosetta
                             releaseroot development_focus bugtracker
-                            homepage_content emblem gotchi"
+                            homepage_content icon logo mugshot"
         />
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
              with Bazaar now in place, lots of people can have personal
@@ -34,8 +34,8 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
-	    />
+            getQuestionLanguages"
+        />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
@@ -100,7 +100,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"
@@ -126,6 +126,11 @@
             template="../templates/product-packages.pt"
             />
         <browser:page
+            name="+series"
+            facet="overview"
+            template="../templates/product-series.pt"
+            />
+        <browser:page
             name="+distributions"
             facet="overview"
             template="../templates/product-distros.pt"
@@ -136,7 +141,7 @@
             />
         <browser:page
             name="+listing-simple"
-            template="../templates/product-listing-simple.pt"
+            template="../templates/pillar-listing-simple.pt"
             />
         <!-- Products Portlets -->
         <browser:page
@@ -163,6 +168,11 @@
             name="+portlet-milestones"
             facet="overview"
             template="../templates/object-portlet-milestones.pt"
+            />
+        <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-bounties"
@@ -202,18 +212,13 @@
          template="../templates/product-portlet-latestbranches.pt" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.BranchTargetView"
+        class="canonical.launchpad.browser.ProductBranchesView"
         facet="branches"
-        permission="zope.Public">
-        <browser:page
-            name="+branches"
-            template="../templates/product-branches.pt" />
-        <browser:page
-            name="+branchlisting"
-            template="../templates/branchtarget-branchlisting.pt" />
-    </browser:pages>
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/product-branches.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
@@ -263,26 +268,21 @@
             />
     </browser:pages>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IProduct"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
-        label="Edit details"
-        fields="project displayname title summary description homepageurl
-                gotchi emblem sourceforgeproject freshmeatproject wikiurl
-                screenshotsurl downloadurl programminglang development_focus"
         permission="launchpad.Edit"
-        template="../templates/product-edit.pt"
-        >
-        <browser:widget
-           field="emblem"
-           class="canonical.widgets.ImageChangeWidget" />
-        <browser:widget
-           field="gotchi"
-           class="canonical.widgets.ImageChangeWidget" />
-    </browser:editform>
+        template="../templates/product-edit.pt" />
+
+    <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProduct"
+        facet="overview"
+        class="canonical.launchpad.browser.ProductBrandingView"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt" />
 
     <browser:editform
         name="+bugcontact"
@@ -295,25 +295,20 @@
         template="../templates/product-bugcontact.pt"
         />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProduct"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductEditView"
-        label="Administer product details"
-        fields="name owner active autoupdate reviewed "
+        class="canonical.launchpad.browser.ProductReviewView"
         permission="launchpad.Admin"
         template="../templates/product-admin.pt"
         />
 
-    <browser:editform
+    <browser:page
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
         facet="translations"
-        class="canonical.launchpad.browser.ProductEditView"
-        fields="translationgroup translationpermission"
+        class="canonical.launchpad.browser.ProductChangeTranslatorsView"
         permission="launchpad.Edit"
         template="../templates/product-translators.pt"
         />
@@ -402,21 +397,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSet"
-        path_expression="string:products"
+        path_expression="string:projects"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductSetDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductDynMenu"
+        class="canonical.launchpad.browser.ProductDynMenu"
         attribute="__call__"
         name="+menudata"
         />

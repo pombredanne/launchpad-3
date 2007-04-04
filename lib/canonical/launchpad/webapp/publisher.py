@@ -1,7 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """Publisher of objects as web pages.
 
-XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
@@ -12,7 +11,7 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'RenamedView']
 
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import getUtility, queryMultiAdapter
 from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
@@ -28,7 +27,8 @@ from canonical.launchpad.layers import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    IBreadcrumb, ILaunchBag, IOpenLaunchBag, NotFoundError)
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+from canonical.launchpad.webapp.url import urlappend
 
 
 class DecoratorAdvisor:
@@ -249,7 +249,8 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
-def canonical_url(obj, request=None, rootsite=None):
+def canonical_url(
+    obj, request=None, rootsite=None, path_only_if_possible=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -323,7 +324,13 @@ def canonical_url(obj, request=None, rootsite=None):
             raise AssertionError(
                 "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
                 % rootsite)
-    return unicode(root_url + u'/'.join(reversed(urlparts)))
+    path = u'/'.join(reversed(urlparts))
+    if (path_only_if_possible and
+        request is not None and
+        root_url.startswith(request.getApplicationURL())
+        ):
+        return unicode('/' + path)
+    return unicode(root_url + path)
 
 
 def get_current_browser_request():
@@ -376,9 +383,10 @@ rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 class Breadcrumb:
     implements(IBreadcrumb)
 
-    def __init__(self, url, text):
+    def __init__(self, url, text, has_menu=False):
         self.url = url
         self.text = text
+        self.has_menu = has_menu
 
 
 class Navigation:
@@ -410,6 +418,20 @@ class Navigation:
         """
         raise NotFoundError(name)
 
+    def redirectSubTree(self, target, status=301):
+        """Redirect the subtree to the given target URL."""
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            target = urlappend(target, nextstep)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            target = target + '?' + query_string
+
+        return RedirectionView(target, self.request, status)
+ 
     # The next methods are for use by the Zope machinery.
 
     def publishTraverse(self, request, name):
@@ -444,8 +466,15 @@ class Navigation:
         request.getURL(1) represents the path traversed so far, but without
         the step we're currently working out how to traverse.
         """
+        # If self.context has a view called +menudata, it has a menu.
+        menuview = queryMultiAdapter(
+            (self.context, self.request), name="+menudata")
+        if menuview is None:
+            has_menu = False
+        else:
+            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1), text))
+            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -556,20 +585,20 @@ class RedirectionView:
 
     def __call__(self):
         self.request.response.redirect(self.target, status=self.status)
-        return ''
+        return u''
 
     def browserDefault(self, request):
         return self, ()
 
 
 class RenamedView:
-    """Redirect permently to the new name of the view.
+    """Redirect permanently to the new name of the view.
 
     This view should be used when pages are renamed.
 
-    The 'new_name' parameter contain the new page name.
-    The optional 'rootsite' can be used to redirect to an alternative
-    virtual host.
+    :param new_name: the new page name.
+    :param rootsite: (optional) the virtual host to redirect to,
+            e.g. 'answers'.
     """
     implements(IBrowserPublisher)
 
@@ -594,7 +623,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound, name
+        raise NotFound(name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

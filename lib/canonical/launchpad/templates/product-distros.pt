@@ -14,7 +14,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Product Title</h3>
   <h1>Packages by distribution</h1>
 </metal:heading>
 

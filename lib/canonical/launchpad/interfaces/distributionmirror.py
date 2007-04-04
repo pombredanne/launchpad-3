@@ -9,6 +9,8 @@ __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad.fields import ContentNameField, URIField
@@ -91,7 +93,7 @@ class IDistributionMirror(Interface):
         description=_('A short and unique name for this mirror.'),
         constraint=name_validator)
     displayname = TextLine(
-        title=_('Organisation Name'), required=False, readonly=False,
+        title=_('Organisation'), required=False, readonly=False,
         description=_('The name of the organization hosting this mirror.'))
     description = TextLine(
         title=_('Description'), required=False, readonly=False)
@@ -117,7 +119,7 @@ class IDistributionMirror(Interface):
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
     country = Choice(
-        title=_('Location (Country)'), required=True, readonly=False,
+        title=_('Location'), required=True, readonly=False,
         vocabulary='CountryName')
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
@@ -144,6 +146,13 @@ class IDistributionMirror(Interface):
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
+    @invariant
+    def mirrorMustHaveHTTPOrFTPURL(mirror):
+        if not (mirror.http_base_url or mirror.ftp_base_url):
+            raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
@@ -288,6 +297,14 @@ class IDistributionMirrorSet(Interface):
         If ignore_last_probe is True, then all official mirrors of the given
         content type will be probed even if they were probed in the last 
         PROBE_INTERVAL hours.
+        """
+
+    def getBestMirrorsForCountry(country, mirror_type):
+        """Return the best mirrors to be used by someone in the given country.
+
+        The list of mirrors is composed by the official mirrors located in
+        the given country (or in the country's continent if the country
+        doesn't have any) plus the main mirror of that type.
         """
 
     def getByName(name):

@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
 from canonical.launchpad.interfaces.branchref import *
+from canonical.launchpad.interfaces.branchrevision import *
 from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
@@ -98,7 +99,6 @@ from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *
-from canonical.launchpad.interfaces.poselection import *
 from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
