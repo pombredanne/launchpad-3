@@ -163,9 +163,13 @@ class BzrSyncTestCase(TestCaseWithTransport):
         else:
             file.write(contents)
         file.close()
-        inventory = self.bzr_tree.read_working_inventory()
-        if not inventory.has_filename(filename):
-            self.bzr_tree.add(filename)
+        self.bzr_tree.lock_write()
+        try:
+            inventory = self.bzr_tree.read_working_inventory()
+            if not inventory.has_filename(filename):
+                self.bzr_tree.add(filename)
+        finally:
+            self.bzr_tree.unlock()
 
     def commitRevision(self, message=None, committer=None,
                        extra_parents=None, rev_id=None,
