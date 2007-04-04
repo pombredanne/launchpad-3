@@ -13,6 +13,14 @@
       classes="TeamNavigation PersonNavigation"
       />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <adapter
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IPerson"
@@ -23,9 +31,6 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <allow attributes="
-          default_gotchi_resource default_gotchi_heading_resource
-          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
@@ -118,6 +123,13 @@
       class="canonical.launchpad.browser.PersonEditView"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+edithomepage"
@@ -428,6 +440,13 @@
       template="../templates/team-edit.pt" />
 
   <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/team-edit.pt" />
+
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Admin"
       class="canonical.launchpad.browser.TeamReassignmentView"
@@ -708,7 +727,14 @@
     name="+subscribedtickets"
     permission="zope.Public"
     />
-
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
+      
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"

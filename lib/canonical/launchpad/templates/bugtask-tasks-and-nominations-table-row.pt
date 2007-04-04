@@ -98,9 +98,8 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <img tal:attributes="src context/assignee/default_emblem_resource"
-                 style="padding-bottom: 2px"
-                 alt="" />
+            <img tal:replace="structure context/assignee/image:icon"
+                 src="/@@/person" />
             <span tal:replace="context/assignee/browsername">
               assignee.browsername
             </span>

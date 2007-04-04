@@ -7,29 +7,20 @@ We should be able to create a new branch from a product.
 First, check that the +addbranch link is visible on product overview page and
 the product code facet page.
 
-  >>> print http(r"""
-  ... GET /applets/ HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../applets/+addbranch"...
+  >>> user_browser.open('http://launchpad.dev/applets')
+  >>> link = user_browser.getLink('Register branch')
+  >>> print link.url
+  http://launchpad.dev/applets/+addbranch
 
-  >>> print http(r"""
-  ... GET /applets/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../applets/+addbranch"...
+  >>> user_browser.getLink('Code').click()
+  >>> print user_browser.url
+  http://code.launchpad.dev/applets/
 
 Let's make sure we can load the branch creation form on a product.
 
-  >>> print http(r"""
-  ... GET /applets/+addbranch HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getLink('Register branch').click()
+  >>> print user_browser.url
+  http://code.launchpad.dev/applets/+addbranch
 
 
 == Adding a branch to a product ==
@@ -81,12 +72,10 @@ with that product, and a link to other branches maintained by that person.
 We can also create a branch from a person's page. First, check that the
 +addbranch link is present in the code facet of a person.
 
-  >>> print http(r"""
-  ... GET /~lifeless/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../~lifeless/+addbranch"...
+  >>> user_browser.open('http://launchpad.dev/~lifeless')
+  >>> user_browser.getLink('Code').click()
+  >>> print user_browser.getLink('Register branch').url
+  http://code.launchpad.dev/~lifeless/+addbranch
 
 
 == Adding a branch to a person ==
