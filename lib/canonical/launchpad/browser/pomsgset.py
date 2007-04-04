@@ -34,8 +34,8 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.potemplate import POTemplateFacets
+from canonical.launchpad.browser.potemplate import (
+    POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
@@ -53,37 +53,10 @@ class POMsgSetFacets(POTemplateFacets):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
-class POMsgSetSOP(StructuralObjectPresentation):
+class POMsgSetSOP(POTemplateSOP):
 
-    def getIntroHeading(self):
-        potemplate = self.context.pofile.potemplate
-        if potemplate.productseries is not None:
-            return '%s %s template %s language:' % (
-                potemplate.productseries.product.displayname,
-                potemplate.productseries.displayname,
-                potemplate.name)
-        else:
-            # It's for a distribution source package.
-            return '%s %s %s template %s language:' % (
-                potemplate.distrorelease.distribution.displayname,
-                potemplate.distrorelease.version,
-                potemplate.sourcepackagename.name,
-                potemplate.name)
-
-    def getMainHeading(self):
-        return self.context.pofile.language.englishname
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 #

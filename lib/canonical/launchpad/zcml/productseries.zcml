@@ -128,7 +128,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+potlist"

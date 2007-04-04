@@ -107,7 +107,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/sourcepackage-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+builds"

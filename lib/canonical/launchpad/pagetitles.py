@@ -572,6 +572,8 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+object_translations = ContextTitle('Translation templates for %s')
+
 oops = 'Oops!'
 
 def package_bugs(context, view):
@@ -753,8 +755,6 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import a stable or development branch to Bazaar'
 
-productseries_translations = ContextTitle('Translation templates for %s')
-
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
@@ -921,9 +921,6 @@ def sourcepackage_index(context, view):
 sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
-
-sourcepackage_translations = ContextTitle(
-    'Rosetta translation templates for %s')
 
 sourcepackagenames_index = 'Source package name set'
 

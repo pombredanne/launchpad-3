@@ -92,7 +92,7 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
         # From an IPOTemplate URL, we reach its translationtarget (either
         # ISourcePackage or IProductSeries using self.target.
-        sef.target = '../../'
+        self.target = '../../'
 
     def overview(self):
         overview_link = self.parent.overview()
