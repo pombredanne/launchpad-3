@@ -13,7 +13,7 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
+        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
         CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject)
@@ -333,6 +333,24 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
+class CVEEmailCommand(EmailCommand):
+    """Links a CVE to a bug."""
+
+    implements(IBugEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def execute(self, bug, current_event):
+        """See IEmailCommand."""
+        [cve_sequence] = self.string_args
+        cve = getUtility(ICveSet)[cve_sequence]
+        if cve is None:
+            raise EmailProcessingError(
+                'Launchpad can\'t find the CVE "%s".' % cve_sequence)
+        bug.linkCVE(cve, getUtility(ILaunchBag).user)
+        return bug, current_event
+
+
 class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
@@ -626,6 +644,7 @@ class EmailCommands:
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,

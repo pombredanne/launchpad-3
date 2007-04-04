@@ -40,10 +40,15 @@
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
                  ProjectSpecificationsMenu ProjectSetContextMenu
                  ProjectAnswersMenu ProjectTranslationsMenu"
-	 />
+        />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+bugs"
+        layer="canonical.launchpad.layers.BugsLayer"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
