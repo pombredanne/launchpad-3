@@ -26,11 +26,6 @@ class BugMessageAddFormView(LaunchpadFormView):
     def initial_values(self):
         return dict(subject=self.context.bug.followup_subject())
 
-    @property
-    def next_url(self):
-        """Redirect to the bug's main page."""
-        return canonical_url(self.context)
-
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
 
@@ -38,18 +33,17 @@ class BugMessageAddFormView(LaunchpadFormView):
         # page for processing instead of the default which would be the
         # bug index page.
         self.action_url = "%s/+addcomment" % canonical_url(self.context)
-        #self.action_url = "/".join(self.request.getURL().split('/')[:-1] + ["+addcomment"])
         
     def validate(self, data):
-        """Validate the form."""
 
-        # ensure either a comment or filecontent was provide, but only
+        # Ensure either a comment or filecontent was provide, but only
         # if no errors have already been noted.
         if len(self.errors) == 0:
             comment = data.get('comment', None)
             filecontent = data.get('filecontent', None)
             if not comment and not filecontent:
-                self.addError("Either a comment or attachment must be provided.")
+                self.addError("Either a comment or attachment "
+                              "must be provided.")
     
     @action(u"Save Changes", name='save')
     def save_action(self, action, data):
@@ -57,13 +51,13 @@ class BugMessageAddFormView(LaunchpadFormView):
         
         bug = self.context.bug
 
-        # subscribe to this bug if the checkbox exists and was selected
-        if 'email_me' in data and data['email_me']:
+        # Subscribe to this bug if the checkbox exists and was selected
+        if data.get('email_me'):
             bug.subscribe(self.user)
 
         # XXX: Write proper FileUpload field and widget instead of this
         # hack. -- Bjorn Tillenius, 2005-06-16
-        file_ = self.request.form.get('field.filecontent')
+        file_ = self.request.form.get(self.widgets['filecontent'].name)
 
         message = None
         if data['comment'] or file_:
@@ -100,6 +94,8 @@ class BugMessageAddFormView(LaunchpadFormView):
 
             self.request.response.addNotification(
                 "Attachment %(filename)s added to bug.", filename=filename)
+
+        self.next_url = canonical_url(self.context)
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""

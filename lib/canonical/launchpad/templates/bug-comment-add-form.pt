@@ -14,9 +14,16 @@
             <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
           </tal:comment>
         </table>
+
+        <tal:email_me
+             tal:define="widget nocall:view/widgets/email_me|nothing"
+             tal:condition="python: widget and view.shouldShowEmailMeWidget()">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:email_me>
+
         <fieldset style="border: 1px solid;">
           <legend style="margin-left: 1em; font-weight: normal;">
-	    <span class="fieldRequired">Include an attachment (Optional)</span>
+            <span class="fieldRequired">Include an attachment (Optional)</span>
           </legend>
 
           <table>
@@ -38,11 +45,6 @@
               <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
             </tal:attachment_description>
 
-            <tal:email_me
-                tal:define="widget nocall:view/widgets/email_me|nothing"
-                tal:condition="python: widget and view.shouldShowEmailMeWidget()">
-              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-            </tal:email_me>
           </table>
         </fieldset>
 
