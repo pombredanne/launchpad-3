@@ -103,6 +103,8 @@ class LanguageAddView(LaunchpadFormView):
         return canonical_url(self.language)
 
     def validate(self, data):
+        # XXX CarlosPerelloMarin 20070404: Pluralform expression should be
+        # validated. See bug #102898 for more info.
         new_code = data.get('code')
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
@@ -124,7 +126,7 @@ class LanguageView(LaunchpadView):
     def translation_teams(self):
         translation_teams = []
         for translation_team in self.context.translation_teams:
-            # translation_team would be either an IPerson or an ITeam.
+            # translation_team would be either a person or a team.
             translation_teams.append({
                 'expert': translation_team,
                 'groups': translation_team.translation_groups,

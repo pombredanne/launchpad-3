@@ -15,9 +15,8 @@ Following the link, there is a form to add new languages.
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages/+add
 
-Which detect a duplicated Language.
-
-For this example, there is already an Spanish language:
+Which detects an attempt to create duplicate Languages, such as Spanish,
+which is already registered:
 
   >>> browser.open('http://translations.launchpad.dev/+languages/es')
   >>> print browser.url
@@ -48,7 +47,7 @@ But, with a new language, it will succeed.
   >>> admin_browser.getControl('English name').value = 'Foos'
   >>> admin_browser.getControl('Add').click()
 
-And the system forward us to its main page:
+And the system forwards us to its main page:
 
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages/foos

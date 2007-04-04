@@ -79,7 +79,7 @@ class Language(SQLBase):
     def translators(self):
         """See ILanguage."""
         personset = getUtility(IPersonSet)
-        return personset.getTranslatorsForLanguageByCode(self.code)
+        return personset.getTranslatorsByLanguage(self)
 
 
 class LanguageSet:

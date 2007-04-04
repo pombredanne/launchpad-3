@@ -923,10 +923,11 @@ class IPersonSet(Interface):
     def merge(from_person, to_person):
         """Merge a person into another."""
 
-    def getTranslatorsForLanguageByCode(code):
+    def getTranslatorsByLanguage(language):
         """Return the list of translators for the given language.
 
-        :arg code: Language code.
+        :arg language: ILanguage object for which we want to get the
+            translators.
 
         Return None if there is no translator.
         """

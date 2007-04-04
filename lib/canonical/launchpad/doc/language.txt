@@ -80,7 +80,7 @@ We are able to search languages with this method.
 
 = Language =
 
-Language object represent a language in Launchpad.
+The Language object represents a language in Launchpad.
 
 == alt_suggestion_language ==
 

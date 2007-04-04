@@ -59,10 +59,12 @@
             </p>
           </tal:has_pluralforms>
           <tal:has_not_pluralforms condition="not:context/pluralexpression">
-            Unfortunately, Launchpad doesn't know the plural form information
-            for this language. If you know it, please open a
-            <a href="/rosetta/+addticket">ticket</a> with that information, so
-            we can add it to Launchpad.
+            <p class="helpwanted">
+              Unfortunately, Launchpad doesn't know the plural form
+              information for this language. If you know it, please open a
+              <a href="/rosetta/+addticket">ticket</a> with that information,
+              so we can add it to Launchpad.
+            </p>
           </tal:has_not_pluralforms>
         </div>
       </div>
@@ -130,7 +132,7 @@
             </ul>
           </tal:has_countries>
           <tal:has_not_countries condition="not:context/countries">
-          <p>
+          <p class="helpwanted">
             <tal:language replace="view/language_name">
               Espa&ntilde;ol
             </tal:language>
