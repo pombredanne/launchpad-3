@@ -16,7 +16,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -45,24 +45,22 @@ from canonical.launchpad.database.question import (
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    IQuestionTarget, NotFoundError, get_supported_languages,
-    QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
+    IQuestionTarget, IPersonSet, NotFoundError, get_supported_languages,
+    QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot, IHasIcon)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
+class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasGotchiAndEmblem)
+    implements(IProduct, ICalendarOwner, IQuestionTarget,
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
-    default_gotchi_resource = '/@@/product-mugshot'
-    default_gotchi_heading_resource = '/@@/product-heading'
-    default_emblem_resource = '/@@/product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
@@ -85,12 +83,12 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
@@ -154,20 +152,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
 
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Specification.product = %s AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
-
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
@@ -211,25 +195,59 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 drivers.add(self.owner)
         return sorted(drivers, key=lambda driver: driver.browsername)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
-        orderBy=['dateexpected', 'name'])
-
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
     @property
+    def all_milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProduct."""
+        return Milestone.selectBy(
+            product=self, visible=True, orderBy=['dateexpected', 'name'])
+
+    @property
     def sourcepackages(self):
-        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
                     ProductSeries.product = %s
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables)
-        return [SourcePackage(sourcepackagename=r.sourcepackagename,
-                              distrorelease=r.distrorelease)
-                for r in ret]
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
+                             distrorelease=r.distrorelease) for r in ret]
+        return sorted(sps, key=lambda x:
+            (x.sourcepackagename.name, x.distrorelease.name,
+             x.distrorelease.distribution.name))
+
+    @property
+    def distrosourcepackages(self):
+        from canonical.launchpad.database.distributionsourcepackage \
+            import DistributionSourcePackage
+        clause = """ProductSeries.id=Packaging.productseries AND
+                    ProductSeries.product = %s
+                    """ % sqlvalues(self.id)
+        clauseTables = ['ProductSeries']
+        ret = Packaging.select(clause, clauseTables,
+            prejoins=["sourcepackagename", "distrorelease.distribution"])
+        distros = set()
+        dsps = []
+        for packaging in ret:
+            distro = packaging.distrorelease.distribution
+            if distro in distros:
+                continue
+            distros.add(distro)
+            dsps.append(DistributionSourcePackage(
+                sourcepackagename=packaging.sourcepackagename,
+                distribution=distro))
+        return sorted(dsps, key=lambda x:
+            (x.sourcepackagename.name, x.distribution.name))
 
     @property
     def bugtargetname(self):
@@ -568,6 +586,10 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return iter(self._getProducts())
 
+    @property
+    def people(self):
+        return getUtility(IPersonSet)
+
     def latest(self, quantity=5):
         return self._getProducts()[:quantity]
 
@@ -605,8 +627,8 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, gotchi=None, gotchi_heading=None,
-                      emblem=None):
+                      reviewed=False, mugshot=None, logo=None,
+                      icon=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -615,8 +637,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed, gotchi=gotchi,
-            emblem=emblem, gotchi_heading=gotchi_heading)
+            programminglang=programminglang, reviewed=reviewed,
+            icon=icon, logo=logo, mugshot=mugshot)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
@@ -666,28 +688,38 @@ class ProductSet:
                               prejoins=["owner"],
                               clauseTables=clauseTables)
 
-    def translatables(self):
+    def getTranslatables(self):
         """See IProductSet"""
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
+            POTemplate.productseries = ProductSeries.id AND
+            Product.official_rosetta
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
+            orderBy='Product.title',
             distinct=True)
-        distro = Product.select('''
-            Product.id = ProductSeries.product AND
-            Packaging.productseries = ProductSeries.id AND
-            Packaging.sourcepackagename = POTemplate.sourcepackagename
+        return upstream
+
+    def featuredTranslatables(self, maximumproducts=8):
+        """See IProductSet"""
+        randomresults = Product.select('''id IN
+            (SELECT Product.id FROM Product, ProductSeries, POTemplate
+               WHERE Product.id = ProductSeries.product AND
+                     POTemplate.productseries = ProductSeries.id AND
+                     Product.official_rosetta
+               ORDER BY random())
             ''',
-            clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
             distinct=True)
-        return upstream.union(distro)
+
+        results = list(randomresults[:maximumproducts])
+        results.sort(lambda a,b: cmp(a.title, b.title))
+        return results
 
     def count_all(self):
         return Product.select().count()
 
     def count_translatable(self):
-        return self.translatables().count()
+        return self.getTranslatables().count()
 
     def count_reviewed(self):
         return Product.selectBy(reviewed=True, active=True).count()

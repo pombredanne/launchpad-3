@@ -46,6 +46,9 @@ class IPillarNameSet(Interface):
         If no pillar is found, return None.
         """
 
+    def count_search_matches(text):
+        """Return the total number of Pillars matching :text:"""
+
     def search(text, limit):
         """Return at most limit Products/Projects/Distros matching :text:.
 
@@ -63,7 +66,7 @@ class IPillarNameSet(Interface):
 class PillarNameField(BlacklistableContentNameField):
 
     errormessage = _(
-            "%s is already in use by another product, project or distribution"
+            "%s is already in use by another project"
             )
 
     def _getByName(self, name):

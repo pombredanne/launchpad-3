@@ -20,6 +20,15 @@ ALTER TABLE Branch DROP COLUMN cache_url;
 ALTER TABLE Branch DROP COLUMN started_at;
   -- confirm none not null
 
+  -- dropping landing target and diff columns as they will
+  -- be implemented in a separate table
+ALTER TABLE Branch DROP COLUMN landing_target;
+ALTER TABLE Branch DROP COLUMN current_delta_url;
+ALTER TABLE Branch DROP COLUMN current_conflicts_url;
+ALTER TABLE Branch DROP COLUMN current_diff_adds;
+ALTER TABLE Branch DROP COLUMN current_diff_deletes;
+ALTER TABLE Branch DROP COLUMN stats_updated;
+ALTER TABLE Branch DROP COLUMN current_activity;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 10, 0);
 

@@ -452,7 +452,7 @@ class QuestionTargetFacetMixin:
     def answers(self):
         summary = (
             'Questions for %s' % self.context.displayname)
-        return Link('+tickets', 'Answers', summary)
+        return Link('', 'Answers', summary)
 
 
 class QuestionTargetTraversalMixin:
@@ -511,10 +511,9 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
     links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
-        text = 'Ask question'
+        text = 'Ask a question'
         return Link('+addticket', text, icon='add')
 
     def answer_contact(self):
-        text = 'Answer contact'
+        text = 'Set answer contact'
         return Link('+support-contact', text, icon='edit')
-

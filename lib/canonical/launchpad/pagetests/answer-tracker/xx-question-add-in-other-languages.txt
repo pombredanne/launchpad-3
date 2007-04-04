@@ -1,11 +1,11 @@
 = Asking questions in languages other than English =
 
 It is possible to ask questions in a language other than English. The
-'Ask Quesiton' page has a pop-up where the user can select the language
+'Ask a question' page has a pop-up where the user can select the language
 of the question. By default, the question language is 'English'.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
-    >>> user_browser.getLink('Ask question').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.getControl('Language').value
     ['en']
 

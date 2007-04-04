@@ -92,8 +92,8 @@ edit the Status Whiteboard using the 'Edit Question' page.
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
   Some note
-  >>> print soup.first('b', text='Assignee:').findNext('a').renderContents()
-  Foo Bar
+  >>> 'Foo Bar' in extract_text(soup.first('b', text='Assignee:').findNext('a'))
+  True
   >>> print soup.first('b', text='Priority:').next.strip()
   Wishlist
 
@@ -105,7 +105,7 @@ appears under the 'Also notified' list in the 'Subscribers' portlet:
     >>> also_notified
     <b>Also notified:</b>
     >>> also_notified.findNextSibling('ul')
-    <ul class="people">
+    <ul class="person">
       <li>
         <a href=".../~name16">Foo Bar</a>
       </li>

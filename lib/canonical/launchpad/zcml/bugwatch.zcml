@@ -6,35 +6,42 @@
 
 <facet facet="bugs">
 
-    <!-- BugWatch -->
-    <content class="canonical.launchpad.database.BugWatch">
-        <allow interface="canonical.launchpad.interfaces.IBugWatch" />
-        <require permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugWatch" />
-    </content>
+  <!-- BugWatch -->
+  <content class="canonical.launchpad.database.BugWatch">
+    <allow interface="canonical.launchpad.interfaces.IBugWatch" />
+    <require permission="zope.Public"
+      set_schema="canonical.launchpad.interfaces.IBugWatch" />
+  </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugWatch"
-        name="+edit" />
+  <!-- https://launchpad.net/bugs/98639 -->
+  <browser:url
+    for="canonical.launchpad.interfaces.IBugWatch"
+    path_expression="string:+watch/${id}"
+    attribute_to_parent="bug"
+    />
 
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IBugWatch"
+    name="+edit" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IBugWatch"
+    name="+edit"
+    class="canonical.launchpad.browser.BugWatchEditView"
+    permission="launchpad.AnyPerson"
+    template="../templates/bugwatch-editform.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IBugWatch"
+    permission="launchpad.AnyPerson">
     <browser:page
-        for="canonical.launchpad.interfaces.IBugWatch"
-        name="+edit"
-        class="canonical.launchpad.browser.BugWatchEditView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugwatch-editform.pt"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugWatch"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+portlet-bugtasks"
-            template="../templates/bugwatch-portlet-bugtasks.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/bugwatch-portlet-details.pt" />
-    </browser:pages>
+      name="+portlet-bugtasks"
+      template="../templates/bugwatch-portlet-bugtasks.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/bugwatch-portlet-details.pt" />
+  </browser:pages>
 
     <!--BugWatchSet -->
     <content class="canonical.launchpad.database.BugWatchSet">

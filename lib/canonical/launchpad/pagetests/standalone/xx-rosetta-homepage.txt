@@ -15,12 +15,18 @@ includes a list of translatable distribution releases,
 
 products,
 
-  >>> '>Translatable products</h2>' in browser.contents
+  >>> '>Translatable projects</h2>' in browser.contents
   True
 
-(XXX This should include a test that the list includes any products.)
+ALSA is listed in the page among featured projects:
 
-and languages.
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> projects = soup.fetchText('Translatable projects')[0].parent.parent
+  >>> projects.find(text='ALSA utilities')
+  u'ALSA utilities'
+
+Homepage also includes a list of languages.
 
   >>> '>Languages</h2>' in browser.contents
   True

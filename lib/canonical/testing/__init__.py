@@ -8,7 +8,7 @@ __all__ = [
     'reset_logging',
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer',
+    'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer'
     ]
 
 import logging
@@ -49,7 +49,7 @@ def reset_logging():
 from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer,
+    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer,
     )
 
 

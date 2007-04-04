@@ -165,8 +165,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
-        # have one push branch: a branch named "pushed" on the "gnome-terminal"
-        # product.
+        # have three push branches: "pushed", "mirrored" and "scanned" on the
+        # "gnome-terminal" product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
         self.assertEqual(1, len(branches))
@@ -174,7 +174,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
         self.assertEqual(6, gnomeTermID)
         self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+        self.assertEqual(
+            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
+            set(gnomeTermBranches))
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
@@ -333,16 +335,9 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # FIXME: there should probably be some SSH keys in the sample data,
         #        so that this test wouldn't need to add some.
 
-        # Add test SSH keys
         self.cursor.execute(
-            "INSERT INTO SSHKey (person, keytype, keytext, comment) "
-            "VALUES ("
-            "  1, "
-            "  %d,"
-            "  'garbage123',"
-            "  'mark@hbd.com')"
-            % (dbschema.SSHKeyType.DSA.value, )
-        )
+            "SELECT keytext FROM SSHKey WHERE person = 1")
+        [keytext] = self.cursor.fetchone()
 
         # Add test push mirror access
         self.cursor.execute(
@@ -356,18 +351,18 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'marks-archive@example.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive with his email
         # address
         keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive whose name
         # starts with his email address + '--'.
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'mark@hbd.com--2005')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # No-one should have access to wilma@hbd.com
         keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@hbd.com')
