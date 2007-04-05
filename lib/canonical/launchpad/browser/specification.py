@@ -783,6 +783,7 @@ class SpecificationNewView(LaunchpadFormView):
     asking for the spec details."""
 
     schema = ISpecification
+    label = "Register a new Blueprint"
 
     @property
     def field_names(self):
