@@ -35,12 +35,14 @@
         <div class="screen">
           <ol class="callouts"
               tal:condition="screen/callouts">
-            <li id="p1" style="top: 0px; left: 0px"
-                tal:repeat="callout screen/callouts"
-                tal:attributes="id string:p${repeat/callout/number};
-                                style string:top: ${callout/top}px;; left: ${callout/left}px;; ;"
-                tal:content="repeat/callout/number"
-                >One</li>
+            <tal:callout repeat="callout screen/callouts">
+              <li id="p1" style="top: 0px; left: 0px"
+                  tal:condition="callout/left"
+                  tal:attributes="id string:p${repeat/callout/number};
+                                  style string:top: ${callout/top}px;; left: ${callout/left}px;; ;"
+                  tal:content="repeat/callout/number"
+                  >One</li>
+            </tal:callout>
           </ol>
           <img src="#" alt="Screenshot"
                tal:attributes="src screen/screenshot;
