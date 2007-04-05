@@ -673,7 +673,7 @@ class QuestionSearch:
             
     def getPrejoinClauseTables(self):
         """Return a list of tables that are in the contraints"""
-        if self.project:
+        if self.getConstraints().count('Ticket.product = Product.id'):
             return ['product']
         return []
 
