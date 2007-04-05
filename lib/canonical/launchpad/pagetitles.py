@@ -1062,6 +1062,8 @@ team_leave = ContextBrowsername('Leave %s')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
+team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
+
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)

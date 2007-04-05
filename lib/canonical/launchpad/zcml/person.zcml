@@ -425,6 +425,13 @@
       />
 
   <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+mugshots"
+    template="../templates/team-mugshots.pt"
+    />
+
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Edit"
       class="canonical.launchpad.browser.TeamEmailView"
