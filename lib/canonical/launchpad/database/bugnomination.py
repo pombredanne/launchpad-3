@@ -29,7 +29,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IBugNomination, IBugTaskSet, IBugNominationSet, NotFoundError)
+    IBugNomination, IBugTaskSet, IBugNominationSet,
+    ILaunchpadCelebrities, NotFoundError)
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -105,6 +106,8 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
+        if person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
         for driver in self.target.drivers:
             if person.inTeam(driver):
                 return True
