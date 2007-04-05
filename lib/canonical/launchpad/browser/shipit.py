@@ -62,8 +62,6 @@ class ShipItUnauthorizedView(SystemErrorView):
 class ShipitFrontPageView(LaunchpadView):
 
     def initialize(self):
-        if not config.shipit.switch_to_edgy:
-            self.request.response.redirect('login')
         self.flavour = _get_flavour_from_layer(self.request)
 
     @property
