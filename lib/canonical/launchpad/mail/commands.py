@@ -16,7 +16,8 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject)
+        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
+        ISourcePackage, IProductSeries)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -503,6 +504,56 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
+    def _targetBug(self, user, bug, release, sourcepackagename=None):
+        """Try to target the bug the the given distrorelease.
+
+        If the user doesn't have permission to target the bug directly,
+        only a nomination will be created.
+        """
+        product = None
+        distribution = None
+        if IDistroRelease.providedBy(release):
+            distribution = release.distribution
+            if sourcepackagename:
+                general_target = distribution.getSourcePackage(
+                    sourcepackagename)
+            else:
+                general_target = distribution
+        else:
+            assert IProductSeries.providedBy(release), (
+                "Unknown release target: %r" % release)
+            assert sourcepackagename is None, (
+                "A product series can't have a source package.")
+            product = release.product
+            general_target = product
+        general_task = self.getBugTask(bug, general_target)
+        if general_task is None:
+            # A release task has to have a corresponding
+            # distribution/product task.
+            general_task = getUtility(IBugTaskSet).createTask(
+                bug, user, distribution=distribution,
+                product=product, sourcepackagename=sourcepackagename)
+        if not bug.canBeNominatedFor(release):
+            # A nomination has already been created.
+            nomination = bug.getNominationFor(release)
+            # Automatically approve an existing nomination if a release
+            # manager targets it.
+            if not nomination.isApproved() and nomination.canApprove(user):
+                nomination.approve(user)
+        else:
+            nomination = bug.addNomination(target=release, owner=user)
+
+        if nomination.isApproved():
+            if sourcepackagename:
+                return self.getBugTask(
+                    bug, release.getSourcePackage(sourcepackagename))
+            else:
+                return self.getBugTask(bug, release)
+        else:
+            # We can't return a nomination, so return the
+            # distribution/product bugtask instead.
+            return general_task
+
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
         # XXX kiko: we could fix this by making createTask be a method on
@@ -511,10 +562,16 @@ class AffectsEmailCommand(EmailCommand):
         user = getUtility(ILaunchBag).user
         if IProduct.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, product=bug_target)
+        elif IProductSeries.providedBy(bug_target):
+            return self._targetBug(user, bug, bug_target)
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distrorelease=bug_target)
+            return self._targetBug(user, bug, bug_target)
+        elif ISourcePackage.providedBy(bug_target):
+            return self._targetBug(
+                user, bug, bug_target.distrorelease,
+                bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
                 bug, user, distribution=bug_target.distribution,
