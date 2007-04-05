@@ -928,15 +928,21 @@ class Person(SQLBase, HasSpecificationsMixin):
     #
     def getSuperTeams(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.team AND '
-                 'TeamParticipation.person = %d' % self.id)
+        query = """
+            Person.id = TeamParticipation.team AND
+            TeamParticipation.person = %s AND
+            TeamParticipation.team <> %s
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getSubTeams(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d AND '
-                 'Person.teamowner IS NOT NULL' % self.id)
+        query = """
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person <> %s AND
+            Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getTeamAdminsEmailAddresses(self):
@@ -1044,8 +1050,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def allmembers(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d' % self.id)
+        query = """
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person != %s
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     @property
