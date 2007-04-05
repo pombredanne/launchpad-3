@@ -13,6 +13,8 @@ import signal
 import subprocess
 from zope.app.server.main import main
 
+from canonical.config import config
+
 from canonical.pidfile import make_pidfile, pidfile_path
 
 
@@ -25,7 +27,7 @@ def make_abspath(path):
 
 class TacFile(object):
 
-    def __init__(self, name, tac_filename, configuration):
+    def __init__(self, name, tac_filename, configuration, pre_launch=None):
         """Create a TacFile object.
 
         :param name: A short name for the service. Used to name the pid file.
@@ -33,15 +35,25 @@ class TacFile(object):
             script.
         :param configuration: A config object with launch, logfile and spew
             attributes.
+        :param pre_launch: A callable that is called before the launch process.
         """
         self.name = name
         self.tac_filename = tac_filename
         self.config = configuration
+        if pre_launch is None:
+            self.pre_launch = lambda: None
+        else:
+            self.pre_launch = pre_launch
+
+    def shouldLaunch(self):
+        return self.config.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for. 
         if not self.config.launch:
             return
+
+        self.pre_launch()
 
         twistd_script = make_abspath('sourcecode/twisted/bin/twistd')
         pidfile = pidfile_path(self.name)
@@ -83,48 +95,20 @@ class TacFile(object):
         atexit.register(stop_process)
 
 
-def start_librarian():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-
-    # Don't run the Librarian if it wasn't asked for. Although launch() guards
-    # against this, we also need to make sure that the Librarian directories
-    # are not created if we are not running the Librarian.
-    if not config.librarian.server.launch:
-        return
-
+def prepare_for_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
 
-    librarian = TacFile(
-        'librarian', 'daemons/librarian.tac', config.librarian.server)
-    librarian.launch()
 
-
-def start_buildsequencer():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-
-    buildsequencer = TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
-                             config.buildsequencer)
-    buildsequencer.launch()
-
-
-def start_authserver():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-
-    authserver = TacFile(
-        'authserver', 'daemons/authserver.tac', config.authserver)
-    authserver.launch()
-
-
-def start_supermirrorsftp():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-
-    sftp = TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp)
-    sftp.launch()
+SERVICES = {
+    'librarian': TacFile('librarian', 'daemons/librarian.tac',
+                         config.librarian.server, prepare_for_librarian),
+    'buildsequencer': TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
+                              config.buildsequencer),
+    'authserver': TacFile('authserver', 'daemons/authserver.tac',
+                          config.authserver),
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp)
+    }
 
 
 def make_css_slimmer():
@@ -139,6 +123,30 @@ def make_css_slimmer():
     open(outputfile, 'w').write(slimmed)
 
 
+def get_services_to_run(requested_services):
+    """Return a list of services (i.e. TacFiles) given a list of service names.
+
+    If no names are given, then the list of services to run comes from the
+    launchpad configuration.
+
+    If names are given, then only services matching those names are given.
+    """
+    if len(requested_services) == 0:
+        return [svc for svc in SERVICES.values() if svc.shouldLaunch()]
+    return [SERVICES[name] for name in requested_services]
+
+
+def process_arguments(args):
+    """Split the given command-line arguments into services to start and Zope
+    arguments.
+
+    Returns a tuple of the form ([service_name, ...], remaining_argv).
+    """
+    if len(args) > 1 and args[0] == '-r':
+        return args[1].split(','), args[2:]
+    return [], args
+
+
 def start_launchpad(argv=list(sys.argv)):
     global ROCKETFUEL_ROOT
     ROCKETFUEL_ROOT = os.path.dirname(os.path.abspath(argv[0]))
@@ -149,13 +157,12 @@ def start_launchpad(argv=list(sys.argv)):
     from zdaemon.zdoptions import ZDOptions
     ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
 
-
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
-    start_librarian()
-    start_buildsequencer()
-    start_authserver()
-    start_supermirrorsftp()
+    services, argv = process_arguments(argv)
+    services = get_services_to_run(services)
+    for service in services:
+        service.launch()
 
     # Store our process id somewhere
     make_pidfile('launchpad')
