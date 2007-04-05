@@ -97,7 +97,6 @@
         </li>
       </ul>
 
-
       <h2>Why register?</h2>
 
       <p id="application-summary">
@@ -140,7 +139,7 @@
             </tr>
           </tbody>
         </table>
-
+        <p><a href="/projects/+all">&raquo; Show all teams</a></p>
       </div>
 
     </div>
@@ -149,17 +148,18 @@
 
       <div class="portlet">
         <h2>Latest projects registered</h2>
-          <table>
-            <tr tal:repeat="product context/latest">
-              <td tal:content="structure product/image:icon" />
-              <td>
-              <a
-                tal:attributes="href product/fmt:url"
-                tal:content="product/displayname"
-                /> registered
-              <tal:date replace="product/datecreated/fmt:approximatedate" />
-            </tr>
-          </table>
+        <table>
+          <tr tal:repeat="product context/latest">
+            <td tal:content="structure product/image:icon" />
+            <td>
+            <a
+              tal:attributes="href product/fmt:url"
+              tal:content="product/displayname"
+              /> registered
+            <tal:date replace="product/datecreated/fmt:approximatedate" />
+          </tr>
+        </table>
+        <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
     </div>
   </tal:no_search>
