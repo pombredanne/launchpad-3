@@ -162,7 +162,7 @@ def start_launchpad(argv=list(sys.argv)):
 
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
-    services, argv = process_arguments(argv)
+    services, argv = process_arguments(argv[1:])
     services = get_services_to_run(services)
     for service in services:
         service.launch()
@@ -172,5 +172,5 @@ def start_launchpad(argv=list(sys.argv)):
 
     # Create a new compressed +style-slimmer.css from style.css in +icing.
     make_css_slimmer()
-    main(argv[1:])
+    main(argv)
 

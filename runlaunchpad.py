@@ -29,9 +29,8 @@ if sys.version_info < (2, 4, 0):
 from configs import generate_overrides
 
 
-basepath = filter(None, sys.path)
-
 def set_up_sys_path(program):
+    basepath = filter(None, sys.path)
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))
     srcdir = os.path.join(here, src)
