@@ -49,38 +49,23 @@
   
     <h1>Requesting free CDs from ShipIt</h1>
 
-    <p>There are now <strong>two versions of
-    <span tal:replace="flavour_name">Ubuntu</span>
-    available</strong>. <span tal:replace="flavour_name">Ubuntu</span>
-    6.06 LTS is the long-term supported version that provides 3 years of
-    support on the desktop and 5 years of support on the server.
-    Additionally, there are newer versions of 
-    <span tal:replace="flavour_name">Ubuntu</span> that may provide more
-    advanced features but do not include long-term support.</p>
-
-    <p>ShipIt remains committed to providing <strong>free CDs of 
-    <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS</strong>. 
-    You can request these CDs here. Please note that <strong>these CDs will NOT
-    be the latest version</strong> of
-    <span tal:replace="flavour_name">Ubuntu</span>, they are
-    <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS, also known
-    as "Dapper Drake."</p>
-
-    <p>If you would like to install the newest version of
-    <span tal:replace="flavour_name">Ubuntu</span> you should instead choose
-    the first of the options below.</p>
+    <p>Ubuntu is available free of charge and we can send you CDs of the
+    latest version (7.04) with no extra cost, but the delivery may take up to
+    ten weeks, so you should consider downloading the CD images if you have a
+    fast Internet connection.
+    </p>
     
     <div id="chooseLinks">
       <div>
       <a tal:attributes="href view/download_or_buy_link">
-        I want to <span>download or buy the <strong>newest</strong>
-        version </span> of <span tal:replace="flavour_name">Ubuntu</span></a>
+        I want to <span>download</span>
+        <span tal:replace="flavour_name">Ubuntu</span> 7.04 (Feisty Fawn)</a>
       </div>
       <div>
       <a href="login">
-        I want to <span>request free CDs of the <strong>older</strong>
-        <span tal:replace="flavour_name">Ubuntu</span> 6.06 LTS</span>
-        release</a>
+        I want to <span>request free CDs of
+        <span tal:replace="flavour_name">Ubuntu</span> 7.04 (Feisty Fawn)
+        </span></a>
       </div>
     </div>
   
