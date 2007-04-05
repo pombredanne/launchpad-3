@@ -83,6 +83,25 @@ getByName() also accepts an argument to ignore inactive projects.
     >>> print getUtility(IProjectSet).getByName('gnome', ignore_inactive=True)
     None
 
+== Products which are part of a project ==
+
+The products which are part of a given project are given by a project's
+.products property. Note that only active products are included and they're
+ordered by their names.
+
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+
+    >>> netapplet = gnome.getProduct('netapplet')
+    >>> netapplet.active = False
+    >>> flush_database_updates()
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+
+    # Re-activate netapplet so that we don't interfere in other tests below.
+    >>> netapplet.active = True
+    >>> flush_database_updates()
+
 
 == Specification Listings ==
 
