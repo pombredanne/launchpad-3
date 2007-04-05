@@ -11,9 +11,9 @@
     <table id="features">
       <tbody>
         <tr>
-          <th>Give everyone version control</th>
+          <th>Give everyone<br />version control</th>
           <th>Host and catalogue code</th>
-          <th>Import from CVS and Subversion</th>
+          <th>Import from<br />CVS and Subversion</th>
           <th>Fix bugs</th>
         </tr>
         <tr class="screenshots">
