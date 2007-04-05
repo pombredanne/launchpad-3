@@ -2,7 +2,10 @@
 <tour next="code">
   <title>Launchpad</title>
   <screen>
-    <title>Getting your way around</title>
+    <title>Launchpad overview</title>
+    <headline>Collaboration and project hosting for free software
+        projects
+    </headline>
     <summary>
       <p>Collaboration is crucial to free software projects.
           Traditionally, it has been difficult for communities to exchange
@@ -19,48 +22,48 @@
     </summary>
 
     <screenshot>/+icing/launchpad-tour-screenshot1.png</screenshot>
-    <callout top="" left="">You can always see which project you're currently
-      working on in the top-left of the page.
+    <callout top="13" left="15">You can always see which project you're
+      currently working on in the top-left of the page.
     </callout>
-    <callout top="" left="">Use the tabs to switch between Launchpad's
+    <callout top="13" left="285">Use the tabs to switch between Launchpad's
       applications.
     </callout>
-    <callout top="" left="">The Actions menu gives you different options,
+    <callout top="57" left="100">The Actions menu gives you different options,
       depending on which application you're using.
     </callout>
-    <callout top="" left="">You can find additional information in the
+    <callout top="143" left="28">You can find additional information in the
       expandable boxes below the Actions menu.
     </callout>
   </screen>
 
   <screen>
-    <title>Member details</title>
+    <title>People</title>
     <summary>Launchpad makes it easy to find out what work someone is involved
       in. Each individual's home page shows their team memberships, the
       projects that they're most active in and their contact details.
     </summary>
     <screenshot>/+icing/launchpad-tour-screenshot2.png</screenshot>
-    <callout top="" left="">Knowing who you're working with is an important
-      part of community building and may help you find people to collaborate
-      with. Each Launchpad user can post a short description of themselves and
-      a photo.
+    <callout top="53" left="305">Knowing who you're working with is an
+      important part of community building and may help you find people to
+      collaborate with. Each Launchpad user can post a short description of
+      themselves and a photo.
     </callout>
-    <callout top="" left="">Launchpad shows you which projects a user is most
-      active in and the Launchpad applications they've used for those
+    <callout top="146" left="202">Launchpad shows you which projects a user is
+      most active in and the Launchpad applications they've used for those
       projects.
     </callout>
-    <callout top="" left="">Similarly, you can see all the teams that a person
-      has joined.
+    <callout top="223" left="220">Similarly, you can see all the teams that a
+      person has joined.
     </callout>
-    <callout top="" left="">It's important to be able to contact people you
-      want to work with. Launchpad shows you how to contact them and where
+    <callout top="148" left="369">It's important to be able to contact people
+      you want to work with. Launchpad shows you how to contact them and where
       to find a wiki page with more information.
     </callout>
   </screen>
 
   <screen>
-    <title>Team management</title>
-    <screenshot>/+icing/launchpad-tour-screenshot3.png</screenshot>
+    <title>Teams</title>
+    <headline>Spontaneous team creation</headline>
     <summary>
       <p>Strong communities are built on teams. Launchpad helps communities to
         develop rich structures, through the spontaneous creation of teams
@@ -71,19 +74,32 @@
         team, as a project's bug contact or to access a shared Bazaar branch.
       </p>
     </summary>
-    <callout top="" left="">Your team's description is an important way to let
-      potential members know what the team plans to do and how it is
+    <screenshot>/+icing/launchpad-tour-screenshot3.png</screenshot>
+    <callout top="50" left="360">Your team's description is an important way
+      to let potential members know what the team plans to do and how it is
       organised.
     </callout>
-    <callout top="" left="">You can choose from three membership policies for
-      your team. Open membership means anyone can join, anyone can apply to a
-      moderated team but a team administrator must approve their membership
-      and restricted teams are invitation-only.
+    <callout top="150" left="220">You can choose from three membership
+      policies for your team. Open membership means anyone can join, anyone
+      can apply to a moderated team but a team administrator must approve
+      their membership and restricted teams are invitation-only.
     </callout>
-    <callout top="" left="">Teams can own teams and be a member of other
+    <callout top="150" left="430">Teams can own teams and be a member of other
       teams. The row of small icons shows which other teams this team belongs
       to.
     </callout>
   </screen>
 
+  <screen>
+    <title>Registering a project</title>
+    <summary>Registering your project with Launchpad is the first step to
+      improving your collaboration. It's free, quick and easy.
+    </summary>
+    <screenshot>/+icing/launchpad-tour-screenshot4.png</screenshot>
+    <callout>
+      Once you've told Launchpad about your project, you're ready to start
+      using each of its five tools.
+    </callout>
+    <callout>Let's start with Code Hosting.</callout>
+  </screen>
 </tour>

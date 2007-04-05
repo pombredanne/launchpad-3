@@ -1,87 +1,52 @@
 <?xml version="1.0"?>
 <tour next="blueprints">
   <title>Bugs</title>
+
   <screen>
-    <title>Searching for bugs</title>
-    <summary>Anyone can search, view and comment on tens of thousands of
-      bugs filed in Launchpad.
+    <title>Multi-project bugs</title>
+    <summary>Launchpad's bug tracker is unique. It helps you track the status
+      of the same bug as it affects multiple projects and to work with those
+      projects to find a solution.
     </summary>
     <screenshot>/+icing/bugs-tour-screenshot1.png</screenshot>
-    <callout top="45" left="320">Search bugs filed against hundreds of
-      projects and packages.
+    <callout>Launchpad knows about four occurrences of this bug and tracks its
+      status in each community. Those communities that use Launchpad's bug
+      tracker share this single bug report, with a common comment history and
+      bug number.
     </callout>
-    <callout top="110" left="90">Get a snapshot of issues currently affecting
-      Launchpad communities.
+    <callout>Launchpad's openoffice.org (Ubuntu) community use Launchpad's bug
+      tracker directly. They have assigned Matthias Klose to take
+      responsibility for solving the bug as it affects them.
     </callout>
-    <callout top="110" left="290">And see which issues have recently been
-      solved.
+    <callout>The upstream OpenOffice.org community and Debian's neon26 team
+      use external bug trackers. Launchpad tracks the status of the bug in
+      their trackers but also links to their bug reports, making it easy to
+      follow the detail of their progress.
+    </callout>
+    <callout>If you discover another community affected by this bug, it's easy
+      to include them in the conversation.
     </callout>
   </screen>
 
   <screen>
-    <title>Viewing a bug</title>
-    <summary>Individual bug pages show how a bug affects other communities,
-      who is working on the bug and what discussion has taken place.
+    <title>Discussing bugs</title>
+    <summary>Anyone who is interested can participate in the discussion of a
+      bug. Launchpad's bug tracker offers both web and email interfaces,
+      making it ideal for both newer users and experienced
+      developers.
     </summary>
-    <screenshot>/+icing/bugs-tour-screenshot2.png</screenshot>
-    <callout top="86" left="280">You can track a bug's status across different
-      communities, even if they use external bug trackers.
+    <screenshot>/+icing/bugs-tour-screenshot1.png</screenshot>
+    <callout>You can attach files - such as screen shots and logs - to help
+      bug triagers understand the cause of a bug.
     </callout>
-    <callout top="117" left="450">See which individual or team each community
-      has assigned to work on a bug. Or link to the bug in an external
-      tracker.
+    <callout>Subscribing to a bug lets you follow its progress by email.
+      Launchpad users and teams can choose to subscribe to a bug, while a
+      project's bug contact is automatically notified of new bug reports and
+      changes to existing bugs.
     </callout>
-    <callout top="237" left="440">If other projects or distributions are
-      affected by this bug, sharing it with them takes just a few clicks.
-    </callout>
-    <callout top="214" left="72">Any Launchpad user or team can subscribe to
-      a bug, giving them email notification of status changes and new
-      comments.
-    </callout>
+    <transition>In some projects, bug reports are used to request new
+      features. Let's look at Launchpad's Blueprint Tracker, which is helps
+      you track ideas for your software.
+    </transition>
   </screen>
-
-  <screen>
-    <title>Listing project bugs</title>
-    <screenshot>/+icing/bugs-tour-screenshot3.png</screenshot>
-    <summary>A project's bug listing gives a quick overview of how many issues
-      are outstanding.
-    </summary>
-    <callout top="113" left="122">Coloured bug icons make it easy to see how
-      important the project considers each bug to be.
-    </callout>
-    <callout top="152" left="307">A yellow Bazaar icon shows that a bug is
-      linked to a branch of code that is intended to fix it.
-    </callout>
-    <callout top="172" left="74">Tags help communities spontaneously
-      categorise their bugs.
-    </callout>
-  </screen>
-
-  <screen>
-    <title>Assigning a bug</title>
-    <screenshot>/+icing/bugs-tour-screenshot4.png</screenshot>
-    <summary>Launchpad makes it easy to keep bug reports up to date.</summary>
-
-    <callout top="44" left="118">Each community affected by a bug can choose
-      their own assignee and status, but all communities share the same
-      comment history.
-    </callout>
-    <callout top="145" left="70">Quick-links to that community's bug contact
-      and the current user, speed up bug assignment.
-    </callout>
-  </screen>
-
-  <screen>
-    <title>Commenting on a bug</title>Commenting on a bug
-    <screenshot>/+icing/bugs-tour-screenshot5.png</screenshot>
-    <summary>Shared comment histories helps communities solve common bugs.</summary>
-
-    <callout top="0" left="356">Bug comments can have subjects, to make long
-      comment histories easier to scan.
-    </callout>
-    <callout top="23" left="185">Attachments - such as screen shots, code
-      patches or logs - make comments much more useful.
-    </callout>
-  </screen>
-
 </tour>

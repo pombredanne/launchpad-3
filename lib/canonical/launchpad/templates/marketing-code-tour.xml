@@ -2,54 +2,71 @@
 <tour next="bugs">
   <title>Code</title>
   <screen>
-    <title>Overview of all projects</title>
-    <summary>Overview of projects with code in Launchpad</summary>
+    <title>Code hosting</title>
+    <summary><p>Bazaar version control lets anyone create their own branch of
+      your project's code.
+      </p>
+      <p>Launchpad helps you keep track of all the branches of your code. It
+        can even continuously import most CVS and Subversion repositories,
+        giving you a Bazaar branch of the code.
+      </p>
+      <p>First, you need to tell Launchpad about your code.
+      </p>
+    </summary>
     <screenshot>/+icing/code-tour-screenshot1.png</screenshot>
-    <callout top="226" left="259">The darker the project's name, the more
-active it
-      is. The larger its name, the more branches it has hosted in Launchpad.
+    <callout>If your code is in a Bazaar branch, simply give Launchpad its URL
+      and a short summary.
     </callout>
-    <callout top="151" left="300">Smaller, lighter text indicates a smaller,
-      less active project.
+    <callout>If you want to use Bazaar to access code in a Subversion or CVS
+      repository, you can request an import.
     </callout>
   </screen>
   <screen>
-    <title>Viewing a project's branches</title>
-    <summary>All of a project's branches are visible on one page</summary>
+    <title>Browsing branches</title>
+    <summary>Browsing all the branches associated with your project is easy.
+      Launchpad catalogues each branch, including its full revision history,
+      and displays major project branches alongside those created by
+      individuals.
+    </summary>
     <screenshot>/+icing/code-tour-screenshot2.png</screenshot>
-    <callout top="8" left="73">Any Launchpad user can register a branch
-      against a project.
+    <callout>Here the trunk branch is owned by Bazaar Developers, a Launchpad
+      team. Launchpad team branches work like Subversion repositories: they're
+      hosted centrally and only members of that team have commit access. The
+      other branches shown here have been registered by individual developers.
     </callout>
-    <callout top="87" left="166">Some branches are created specifically to fix
-      a bug. The bug icon is a link to the bug that this branch fixes.
+    <callout>Launchpad Code Hosting integrates with Launchpad's other
+      applications. If a branch fixes a bug or implements a blueprint,
+      Launchpad links the two.
     </callout>
-    <callout top="135" left="137">Each of these branches represents a major
-      version - or series - of the project.
+    <callout>Each branch's owner can set the status of their branch. This
+      status and the branch description help new developers choose which line
+      of development to branch.
     </callout>
-    <callout top="211" left="300">Official project branches are listed side by
-      side with individual developer branches.
-    </callout>
+    <transition>Let's take a look at one of the branches in detail.
+    </transition>
   </screen>
   <screen>
-    <title>History of a branch</title>
-    <summary>Each branch's history is available, complete with the developer's
-      commit message.
+    <title>Branch detail</title>
+    <summary>Launchpad shows you the detail of each branch it knows
+      about.
     </summary>
     <screenshot>/+icing/code-tour-screenshot3.png</screenshot>
-    <callout top="7" left="61">Any Launchpad user can browse the full branch
-      history, with diffs, and subscribe to receive email notifications of
-      updates.
+    <callout>The branch owner's image appears beside the branch name, in the
+      top-left corner of the page. This makes it easy to identify the
+      individual or team responsible for the branch.
     </callout>
-    <callout top="53" left="401">Commits to this branch are restricted to
-      members of the team that owns it. Anyone can create their own branch,
-      though, and make changes there.
+    <callout>Launchpad shows you where the branch is hosted, making it easy to
+      branch.
     </callout>
-    <callout top="111" left="262">Recent branch revisions, with the
-      developer's commit message, give an overview of recent activity.
+    <callout>Details of the branch's most recent revisions, complete with the
+      developer's commit messages, give you a flavour of this line of
+      development.
     </callout>
-    <callout top="256" left="251">Launchpad automatically links to related
-      branches.
+    <callout>For more detail, you can browse the code itself, with complete
+      revision history and diffs.
     </callout>
+    <transition>Next, let's look at how you can use Launchpad to manage bugs
+      and collaborate with other projects you share code with.
+    </transition>
   </screen>
-
 </tour>
