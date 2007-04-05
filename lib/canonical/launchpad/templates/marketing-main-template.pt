@@ -50,16 +50,18 @@
         </dl>
       </div> <!-- breadcrumb -->
       <div id="wrapper">
-        <div id="header">
+        <div id="header"
+             tal:define="mainsite_url vhosts/mainsite/rooturl">
           <h1><a href="/"
-                 tal:attributes="href vhosts/mainsite/rooturl"
+                 tal:attributes="href mainsite_url"
                  >Launchpad</a></h1>
           <dl id="navigation">
             <dt>Navigation<dt>
             <dd>
               <ul>
                 <li id="liHome"><a href="/+about"
-                                   tal:attributes="href string:${vhosts/mainsite/rooturl}+about"
+                                   tal:attributes="href string:${mainsite_url}+about;
+                                   class python:request.getURL() == mainsite_url + '+about' and 'current' or ''"
                                    >Overview</a></li>
                 <li id="liAccount"
                     tal:condition="not: request/lp:person"
@@ -67,7 +69,8 @@
                         tal:attributes="href string:${request/URL}/+login"
                         >Log In / Register</a></li>
                 <li id="liTour"><a href="/+tour"
-                                   tal:attributes="href string:${vhosts/mainsite/rooturl}+tour"
+                                   tal:attributes="href string:${mainsite_url}+tour;
+                                   class python:request.getURL().startswith(mainsite_url + '+tour') and 'current' or ''"
                                    >Take a tour</a></li>
               </ul>
             </dd>
