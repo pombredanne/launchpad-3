@@ -661,17 +661,21 @@ class QuestionSearch:
         # The idea is to prejoin all dependant tables, except if the
         # object will be the same in all rows because it is used as a
         # search criteria.
-        if self.product or self.sourcepackagename:
-            # Will always be the same product or sourcepackage.
+        if self.product or self.sourcepackagename or self.project:
+            # Will always be the same product, sourcepackage, or project.
             return ['owner']
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
             return ['owner', 'sourcepackagename']
-        elif self.project:
-            return ['owner', 'product']
         else:
             # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
+            
+    def getPrejoinClauseTables(self):
+        """Return a list of tables that are in the contraints"""
+        if self.project:
+            return ['product']
+        return []
 
     def getOrderByClause(self):
         """Return the ORDER BY clause to use to order this search's results."""
@@ -711,7 +715,8 @@ class QuestionSearch:
                     '\n'.join(self.getTableJoins()),
                     ' AND '.join(constraints)))
         return Question.select(
-            query, prejoins=self.getPrejoins(),
+            query, prejoins=self.getPrejoins(), 
+            prejoinClauseTables=self.getPrejoinClauseTables(),
             orderBy=self.getOrderByClause())
 
 
