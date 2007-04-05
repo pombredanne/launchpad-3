@@ -33,7 +33,7 @@ class BugMessageAddFormView(LaunchpadFormView):
         # page for processing instead of the default which would be the
         # bug index page.
         self.action_url = "%s/+addcomment" % canonical_url(self.context)
-        
+
     def validate(self, data):
 
         # Ensure either a comment or filecontent was provide, but only
@@ -44,11 +44,11 @@ class BugMessageAddFormView(LaunchpadFormView):
             if not comment and not filecontent:
                 self.addError("Either a comment or attachment "
                               "must be provided.")
-    
+
     @action(u"Save Changes", name='save')
     def save_action(self, action, data):
         """Add the comment and/or attachment."""
-        
+
         bug = self.context.bug
 
         # Subscribe to this bug if the checkbox exists and was selected
@@ -99,7 +99,4 @@ class BugMessageAddFormView(LaunchpadFormView):
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""
-        print ">>> show me email widget: ", not self.context.bug.isSubscribed(self.user)
         return not self.context.bug.isSubscribed(self.user)
-    
-    
