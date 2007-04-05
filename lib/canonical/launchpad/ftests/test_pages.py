@@ -120,11 +120,9 @@ NBSP_RE = re.compile(u'&nbsp;|&#160;')
 def extract_text(content):
     """Return the text stripped of all tags.
 
-    >>> soup = BeautifulSoup(
-    ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
-    >>> extract_text(soup)
-    u'''Title
-    foo bar'''
+    All runs of tabs and spaces are replaced by a single space and runs of
+    newlines are replaced by a single newline. Leading and trailing white
+    spaces is stripped.
     """
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
@@ -333,7 +331,6 @@ def test_suite():
 
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
-    suite.addTest(doctest.DocTestSuite())
     return suite
 
 if __name__ == '__main__':
