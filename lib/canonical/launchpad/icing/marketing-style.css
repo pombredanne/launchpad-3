@@ -600,14 +600,20 @@ body#tour #header dl#navigation ul li#liTour a {
     background: #dadada url(bg-pane-bottom.png) bottom left no-repeat;
     padding-bottom: 15px;
     color: #000;
-    text-align: center;
 }
 
 #main #secondary #pane #summary {
     background: #dadada url(bg-pane-top.png) top left no-repeat;
     padding: 15px;
-    text-align: left;
-    font-size: 1em;
+}
+
+#main #secondary #pane #screen {
+    text-align: center;
+}
+
+#main #secondary #pane #transition {
+    clear: left;
+    padding: 15px;
 }
 
 #main #secondary #pane ol.callouts,

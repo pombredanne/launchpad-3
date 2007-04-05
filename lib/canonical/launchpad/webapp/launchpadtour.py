@@ -45,6 +45,8 @@ def get_node_html_text(node):
 
     The node subelements are considered XHTML elements.
     """
+    if node is None:
+        return None
     content = []
     if node.text:
         content.append(node.text)
@@ -98,6 +100,7 @@ class LaunchpadTourView(LaunchpadView):
         screen['callouts'] = [
             self._createCallout(callout)
             for callout in node.findall('callout')]
+        screen['transition'] = get_node_html_text(node.find('transition'))
         return screen
 
     def _createCallout(self, node):

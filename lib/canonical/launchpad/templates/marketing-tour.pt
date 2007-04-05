@@ -32,7 +32,7 @@
         <div id="summary"
              tal:content="structure screen/summary">Screen summary</div>
 
-        <div class="screen">
+        <div id="screen">
           <ol class="callouts"
               tal:condition="screen/callouts">
             <tal:callout repeat="callout screen/callouts">
@@ -56,6 +56,13 @@
                               class python:repeat['callout'].index() == 2 and 'newline' or '';"
               tal:content="structure callout/text">Description of point 1.</li>
         </ul>
+
+        <div id="transition"
+             tal:condition="screen/transition"
+             tal:content="structure screen/transition">
+          Next screen is about...
+        </div>
+
         <a class="button next" href="+tour" title="Next"
            tal:condition="view/next_screen_index"
            tal:attributes="href string:${request/URL}?screen=${view/next_screen_index}"

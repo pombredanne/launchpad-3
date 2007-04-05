@@ -35,6 +35,7 @@ the screenshot.
     ...         <callout top="12" left="36">Item 1</callout>
     ...         <callout top="50" left="10">Item 2</callout>
     ...         <callout top="" left="">Item 3</callout>
+    ...         <transition>Let's now look at <i>feature 3</i>.</transition>
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 3</title>
@@ -198,6 +199,12 @@ the tour.
 
     >>> tour_view.next_screen_index
     2
+
+The transition element can be used for text that will be displayed
+along the 'Next' button. It usually contain text about the next screen.
+
+    >>> print tour_view.current_screen['transition']
+    Let's now look at <i>feature 3</i>.
 
 It is None when the current screen is the last one.
 
