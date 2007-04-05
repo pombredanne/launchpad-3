@@ -78,6 +78,11 @@ is not mentioned in anything else that is indexed.
   >>> field.value = 'placeholder'
   >>> browser.getControl("Search").click()
   >>> browser.contents
-  '...2 results...
-  ...Source Package "pmount" in...
-  ...Source Package "libstdc++" in...'
+  '...2 results...'
+
+Can't be sure of the order of the returned results, so this takes care of that:
+
+  >>> 'Source Package "libstdc++" in' in browser.contents
+  True
+  >>> 'Source Package "pmount" in' in browser.contents
+  True

@@ -7,5 +7,5 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE distributionsourcepackagecache ADD COLUMN changelog TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (79, 21, 0);
 
