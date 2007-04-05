@@ -386,7 +386,7 @@ body#tour #header dl#navigation ul li#liTour a {
   margin-bottom: 25px;
 }
 
-#tour #secondary #summary {
+#tour #secondary h4#tour-headline {
   color: #159cc8;
   font-size: 1.8em;
   font-weight: normal;
@@ -601,9 +601,11 @@ body#tour #header dl#navigation ul li#liTour a {
     text-align: center;
 }
 
-#main #secondary #pane .screen {
+#main #secondary #pane #summary {
     background: #dadada url(bg-pane-top.png) top left no-repeat;
-    padding-top: 15px;
+    padding: 15px;
+    text-align: left;
+    font-size: 1em;
 }
 
 #main #secondary #pane ol.callouts,

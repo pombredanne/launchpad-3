@@ -29,6 +29,7 @@ the screenshot.
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 2</title>
+    ...         <headline>Feature 2 is hot</headline>
     ...         <summary>Summary of feature 2</summary>
     ...         <screenshot>/+icing/marketing-screenshot2.png</screenshot>
     ...         <callout top="12" left="36">Item 1</callout>
@@ -110,7 +111,7 @@ Passing an invalid screen reference will raise UnexpectedFormData.
 
 The currently displayed screen is available in the current_screen
 attribute. The screen is described as a dict containing a title,
-summary, screenshot and callouts keys.
+headline, summary, screenshot and callouts keys.
 
     >>> request = LaunchpadTestRequest(form={'screen': '1'})
     >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
@@ -118,6 +119,8 @@ summary, screenshot and callouts keys.
     >>> screen = tour_view.current_screen
     >>> print screen['title']
     Feature 2
+    >>> print screen['headline']
+    Feature 2 is hot
     >>> print screen['summary']
     Summary of feature 2
 
@@ -141,7 +144,6 @@ callout number and top and left position on the screenshot.
     >>> print callout['left']
     36
 
-
 == Using HTML in summary and callout ==
 
 Note that the callout and summary content is interpreted as a proper XHTML
@@ -158,6 +160,15 @@ string.
 
     >>> print screen['callouts'][1]['text']
     A callout with <b>HTML</b> text in. Including a <a href="/">link</a>.
+
+== Default headline ==
+
+If no headline element is present, the content of title is reused.
+
+    >>> print screen['title']
+    Feature 3
+    >>> print screen['headline']
+    Feature 3
 
 == Callouts layout ==
 

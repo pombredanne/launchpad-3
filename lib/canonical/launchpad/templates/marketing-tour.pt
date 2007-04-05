@@ -24,9 +24,14 @@
 
     <div id="secondary"
          tal:define="screen view/current_screen">
-      <div id="summary" tal:content="structure screen/summary">Screen summary</div>
+
+      <h4 id="tour-headline"
+          tal:content="screen/headline">Headline</h4>
 
       <div id="pane">
+        <div id="summary"
+             tal:content="structure screen/summary">Screen summary</div>
+
         <div class="screen">
           <ol class="callouts"
               tal:condition="screen/callouts">
