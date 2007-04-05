@@ -593,12 +593,17 @@ body#tour #header dl#navigation ul li#liTour a {
 /* Screen and callouts for application tour */
 
 #main #secondary #pane {
-  width: 480px; height: 567px;
-  margin-left: -10px;
-  padding: 13px;
-  background: #dadada url(bg-pane.gif) top left no-repeat;
-  color: #000;
-  text-align: center;
+    width: 506px;
+    margin-left: -10px;
+    background: #dadada url(bg-pane-bottom.png) bottom left no-repeat;
+    padding-bottom: 15px;
+    color: #000;
+    text-align: center;
+}
+
+#main #secondary #pane .screen {
+    background: #dadada url(bg-pane-top.png) top left no-repeat;
+    padding-top: 15px;
 }
 
 #main #secondary #pane ol.callouts,
@@ -616,16 +621,21 @@ body#tour #header dl#navigation ul li#liTour a {
 #main #secondary #pane .callouts #p4 { background-image: url(marker-4.gif); }
 
 #main #secondary #pane ul.info {
-  margin: 20px 0 0 0;
-  text-align: left;
+    text-align: left;
+    margin: 15px;
 }
 
 #main #secondary #pane ul.info li {
-  float: left;
-  width: 178px; height: 85px;
-  padding-left: 45px;
-  background-position: top left;
-  background-repeat: no-repeat;
+    float: left;
+    width: 178px;
+    padding-left: 45px;
+    padding-bottom: 15px;
+    background-position: top left;
+    background-repeat: no-repeat;
+}
+
+#main #secondary #pane ul.info li.newline {
+    clear: left;
 }
 
 #main #secondary #pane ul.info li#point-1 {
@@ -645,12 +655,13 @@ body#tour #header dl#navigation ul li#liTour a {
 }
 
 #main #secondary #pane a.button.next {
-  display: block;
-  float: right;
-  clear: both;
-  width: 84px; height: 27px;
-  background: url(button-next.gif) top left no-repeat;
-  text-indent: -1000em;
+    float: right;
+    display: block;
+    clear: both;
+    width: 84px; height: 27px;
+    background: url(button-next.gif) top left no-repeat;
+    text-indent: -1000em;
+    padding-right: 15px;
 }
 
 /* Footer */
