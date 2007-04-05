@@ -8,11 +8,9 @@ __all__ = ['start_launchpad']
 
 import sys
 import os
-import os.path
 import atexit
 import signal
 import subprocess
-import time
 from zope.app.server.main import main
 
 from canonical.pidfile import make_pidfile, pidfile_path
@@ -41,9 +39,6 @@ class TacFile(object):
         self.config = configuration
 
     def launch(self):
-        # Imported here as path is not set fully on module load
-        from canonical.pidfile import make_pidfile, pidfile_path
-
         # Don't run the server if it wasn't asked for. 
         if not self.config.launch:
             return
