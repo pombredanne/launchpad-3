@@ -353,6 +353,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             new_submission = self._makeSubmission(
                 person=person,
                 text=newtran,
+                is_fuzzy=fuzzy,
                 pluralform=index,
                 published=published,
                 validation_status=validation_status,
@@ -378,19 +379,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             if published:
                 self.publishedfuzzy = fuzzy
                 self.publishedcomplete = complete
-                # Now is time to check if the fuzzy flag should be copied to
-                # the web flag
-                matches = 0
-                for pluralform in range(self.pluralforms):
-                    if (self.getActiveSubmission(pluralform) ==
-                        self.getPublishedSubmission(pluralform)):
-                        matches += 1
-                if matches == self.pluralforms:
-                    # The active submission is exactly the same as the
-                    # published one, so the fuzzy and complete flags should be
-                    # also the same.
-                    self.isfuzzy = self.publishedfuzzy
-                    self.iscomplete = self.publishedcomplete
+                if has_changed or self.isfuzzy:
+                    # We would need to update isfuzzy and iscomplete because
+                    # either the translations in Launchpad changed or are
+                    # fuzzy so we would got some improved information from
+                    # upstream.
+                    matches = 0
+                    for pluralform in range(self.pluralforms):
+                        if (self.getActiveSubmission(pluralform) ==
+                            self.getPublishedSubmission(pluralform)):
+                            matches += 1
+                    if matches == self.pluralforms:
+                        # The active submission is exactly the same as the
+                        # published one, so the fuzzy and complete flags should be
+                        # also the same.
+                        self.isfuzzy = self.publishedfuzzy
+                        self.iscomplete = self.publishedcomplete
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
@@ -398,7 +402,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # update the pomsgset flags
         self.updateFlags()
 
-    def _makeSubmission(self, person, text, pluralform, published,
+    def _makeSubmission(self, person, text, is_fuzzy, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
             force_edition_rights=False, force_suggestion=False):
         """Record a translation submission by the given person.
@@ -587,10 +591,25 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
-            if not force_suggestion:
-                # Now that we assigned all karma, is time to update the active
-                # submission, the person that reviewed it and when it was done.
+
+            if published:
+                if (self.isfuzzy or active_submission is None or
+                    (not is_fuzzy and
+                     published_submission == active_submission and
+                     self.isfuzzy == self.publishedfuzzy)):
+                    # We must update the translation in Rosetta.
+                    self.setActiveSubmission(pluralform, submission)
+            elif not force_suggestion:
+                # It's not a published submission and we are not forcing the
+                # submission to be a suggestion, so we should apply the active
+                # submission change.
                 self.setActiveSubmission(pluralform, submission)
+
+        # We need this syncUpdate so we don't set self.isfuzzy to the wrong
+        # value because cache problems. See bug #102382 as an example of what
+        # happened without having this flag + broken code. Our tests were not
+        # able to find the problem.
+        submission.syncUpdate()
 
         # return the submission we have just made
         return submission
