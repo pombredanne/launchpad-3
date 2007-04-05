@@ -1,6 +1,9 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Start script for Launchpad: loads configuration and starts the server."""
+"""Start script for Launchpad: loads configuration and starts the server.
+
+Usage: runlaunchpad.py [-r librarian,sftp,authserver,buildsequencer] [<zope args>]
+"""
 
 __metaclass__ = type
 __all__ = ['start_launchpad']
