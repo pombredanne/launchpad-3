@@ -543,7 +543,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
         'bugs': '/@@/bug',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
-        'support': '/@@/question'}
+        'answers': '/@@/question'}
 
     def icon(self):
         icon = self.icons_for_karma_categories[self._context.name]
@@ -1249,7 +1249,7 @@ class FormattersAPI:
         (?: # fragment
           \#
           [%(unreserved)s:@/\?]*
-        )?          
+        )?
       ) |
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
