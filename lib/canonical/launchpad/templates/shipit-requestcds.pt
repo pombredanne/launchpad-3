@@ -22,7 +22,7 @@
 <tr>
 <td width="75%" style="vertical-align: top;" id="main-content">
 
-<tal:shipit-is-open condition="view/is_open">
+<tal:shipit-is-open condition="view/is_open" define="user view/user">
 
   <p class="informational message"
      tal:define="status view/process_status"
@@ -55,8 +55,7 @@
     </div>
   </tal:current_request>
 
-  <tal:pastrequests condition="view/user/pastShipItRequests"
-                    define="user view/user">
+  <tal:pastrequests condition="user/pastShipItRequests">
     <h1>Shipped/Cancelled requests</h1>
 
     <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
