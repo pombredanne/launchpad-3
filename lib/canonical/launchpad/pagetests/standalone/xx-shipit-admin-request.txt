@@ -5,10 +5,10 @@
   >>> browser.url
   'http://shipit.ubuntu.dev/requests'
 
-  Let's see the two pending requests we have for Dapper CDs.
+  Let's see the two pending requests we have for Feisty CDs.
 
   >>> browser.getControl(name='statusfilter').value = ['PENDING']
-  >>> browser.getControl(name='releasefilter').value = ['DAPPER']
+  >>> browser.getControl(name='releasefilter').value = ['FEISTY']
   >>> browser.getControl('Show').click()
   >>> print browser.contents
   <!DOCTYPE...

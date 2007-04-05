@@ -1,4 +1,8 @@
 
+XXX: This test and the config variable it talks about are obsolete. We're now
+shipping only Feisty CDs and the frontpage is always displayed, telling people
+that they can download the CD images as well, which is much faster.
+
 The new front page of shipit will make it clear that we're not shipping
 Edgy CDs (but we keep shipping Dapper ones) and give options for people
 who want to obtain Edgy CDs/DVDs.

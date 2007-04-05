@@ -965,10 +965,10 @@ class StandardShipItRequestSet:
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
                 isdefault=isdefault)
 
-    def getByFlavour(self, flavour, user):
+    def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""
         query = "flavour = %s" % sqlvalues(flavour)
-        if not user.is_trusted_on_shipit:
+        if user is None or not user.is_trusted_on_shipit:
             query += (" AND quantityx86 + quantityppc + quantityamd64 <= %s"
                       % sqlvalues(MAX_CDS_FOR_UNTRUSTED_PEOPLE))
         orderBy = SQLConstant("quantityx86 + quantityppc + quantityamd64, id")
