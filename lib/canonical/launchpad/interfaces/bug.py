@@ -302,6 +302,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         :owner: An IPerson.
         :target: An IDistroRelease or IProductSeries.
 
+        The nomination will be automatically approved, if the user has
+        permission to approve it.
+
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
         """

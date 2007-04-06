@@ -46,6 +46,9 @@ class IPillarNameSet(Interface):
         If no pillar is found, return None.
         """
 
+    def count_search_matches(text):
+        """Return the total number of Pillars matching :text:"""
+
     def search(text, limit):
         """Return at most limit Products/Projects/Distros matching :text:.
 

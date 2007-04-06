@@ -841,12 +841,13 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # should be revisited after we've unblocked users.
         if target is not None:
             if IProject.providedBy(target):
-                milestones = shortlist((milestone
-                                        for product in target.products
-                                        for milestone in product.milestones),
-                                       longest_expected=40)
+                milestones = shortlist(
+                    (milestone for product in target.products
+                     for milestone in product.all_milestones),
+                    longest_expected=40)
             else:
-                milestones = shortlist(target.milestones, longest_expected=40)
+                milestones = shortlist(
+                    target.all_milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
             # milestones, so let's just grab all of them.
@@ -1230,7 +1231,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
-    displayname = 'Select a distribution or product'
+    displayname = 'Select a project'
     _filter = AND(OR(
             PillarName.q.distributionID != None,
             PillarName.q.productID != None
@@ -1254,3 +1255,4 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+

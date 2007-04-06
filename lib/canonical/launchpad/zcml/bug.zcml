@@ -54,6 +54,11 @@
             />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugFacets"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBug"
         name="+index" />
@@ -61,6 +66,11 @@
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
         urldata="canonical.launchpad.browser.bug.BugURL" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugNavigation"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
