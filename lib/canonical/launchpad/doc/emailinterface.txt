@@ -30,6 +30,11 @@ specific source package in a distribution:
 
     affects $distribution_name/$sourcepackage_name
 
+You can also file bugs on specific distribution releases:
+
+    affects $distribution_name/$release_name
+    affects $distribution_name/$release_name/$sourcepackage_name
+
 But if you want you can use any of the available commands as well.
 
 Let's take an example where we file a bug on Firefox:
@@ -800,8 +805,11 @@ Change the state of a bug in a specific context. $path can be of
 the following form:
 
     $productname
+    $productname/$series
     $distroname
     $distroname/$sourcepackagename
+    $distroname/$release
+    $distroname/$release/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -877,10 +885,178 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-Let's take on the upstream task as well. This time we'll sneak in a
-'subscribe' command between the 'affects' and the other commands, to
-show that the commands acting on the bug task don't have to be grouped
-together:
+It's also possible to add tasks for specific distribution releases as
+well.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary')
+
+This caused one bugtask to be added to the bug. The added bug task is a
+generic Ubuntu task, though.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+Because Sample Person isn't a driver of Ubuntu, he's not allowed to
+target a bug directly, instead a nomination was created.
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+
+The same happens if we try to target another release.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+Targeting an existing nomination won't create another nomination.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+If Sample Person would be the Ubuntu driver, he'll be able to target
+bugs directly to releases.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> login('test@canonical.com')
+
+Now a new bugtask for the release will be create directly.
+
+    >>> submit_commands(bug, 'affects ubuntu/grumpy')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+    Ubuntu Grumpy
+
+He can also approve existing nominations.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+    Ubuntu Warty
+    Ubuntu Grumpy
+
+It works the same when specifying a source package while targeting a
+specific distrorelease.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+Now we can see that two tasks were created; both the general Ubuntu
+task, and the release specific task.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Hoary)
+
+As with the example with no source package above; if the user isn't a
+driver of the release, only a nomination will be created.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = None
+    >>> login('test@canonical.com')
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+
+Nominating product series work the same way as for distro releases.
+Sample person is a driver for the Firefox trunk series, so the
+nomination is automatically approved.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for driver in firefox.getSeries('trunk').drivers:
+    ...     print driver.displayname
+    Sample Person
+
+    >>> login('test@canonical.com')
+    >>> submit_commands(bug, 'affects /firefox/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    firefox trunk (upstream)
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    firefox trunk (upstream)
+    Ubuntu Hoary
+
+If the user doesn't have permission to approve the nomination, no series
+bug task will be created, only a nomination. A general product bugtask
+will be created if one doesn't exist.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'affects /evolution/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    evolution trunk (upstream)
+
+    >>> login('test@canonical.com')
+
+Let's take on the upstream task on bug four as well. This time we'll
+sneak in a 'subscribe' command between the 'affects' and the other
+commands, to show that the commands acting on the bug task don't have to
+be grouped together:
 
     >>> submit_commands(
     ...     bug_four,
