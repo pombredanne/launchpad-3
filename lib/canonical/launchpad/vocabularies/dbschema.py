@@ -14,6 +14,7 @@ __all__ = [
     'BranchLifecycleStatusVocabulary',
     'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
+    'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -55,7 +56,9 @@ __all__ = [
 
 from canonical.lp import dbschema
 
-from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.webapp.vocabulary import (
+    sortkey_ordered_vocab_factory, vocab_factory)
+
 
 # DB Schema Vocabularies
 
@@ -66,6 +69,8 @@ BranchLifecycleStatusVocabulary = \
 BranchLifecycleStatusFilterVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
+BranchSubscriptionDiffSizeVocabulary = \
+    sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)

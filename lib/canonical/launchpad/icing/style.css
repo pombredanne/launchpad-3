@@ -151,7 +151,15 @@ table.form {width: 100%;}
 
 /* --- Other --- */
 
+/* No border on images that are links. */
 a img {
+  border: none;
+}
+/* No border on images that have link maps.
+ * There's nothing special for this, as the image and map
+ * may be separate.  So, just set no border for all images.
+ */
+img {
   border: none;
 }
 
@@ -575,7 +583,7 @@ table#applications td {text-align: right;}
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 12px; width: 220px;}
+#globalsearch {float: right; margin-top: 15px; width: 220px;}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -1397,8 +1405,8 @@ div#applications {padding: 1em 0; text-align: center;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.5em;
-  line-height: 1.5em;
+  font-size: 1.4em;
+  line-height: 1.4em;
   margin-top: 0;
 }
 #application-footer {
@@ -1502,6 +1510,7 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
