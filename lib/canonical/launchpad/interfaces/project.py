@@ -134,7 +134,9 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         default_image_resource='/@@/project',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project in listings."))
+            "that can be used to identify this project. The icon will be "
+            "displayed in Launchpad everywhere that we link to this "
+            "project. For example in listings or tables of active projects."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -186,7 +188,8 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    products = Attribute(_("An iterator over the Products for this project."))
+    products = Attribute(
+        _("An iterator over the active Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""

@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import ContextWidget
 
 
@@ -83,13 +84,17 @@ class BranchContextMenu(ContextMenu):
         text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
-        user = self.user
-        if user is not None and self.context.has_subscription(user):
-            text = 'Unsubscribe'
+        if self.context.hasSubscription(self.user):
+            url = '+edit-subscription'
+            text = 'Edit Subscription'
+            icon = 'edit'
         else:
+            url = '+subscribe'
             text = 'Subscribe'
-        return Link('+subscribe', text, icon='edit')
+            icon = 'add'
+        return Link(url, text, icon=icon)
 
 
 class BranchView(LaunchpadView):
@@ -115,7 +120,7 @@ class BranchView(LaunchpadView):
         """Is the current user subscribed to this branch?"""
         if self.user is None:
             return False
-        return self.context.has_subscription(self.user)
+        return self.context.hasSubscription(self.user)
 
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
@@ -136,6 +141,22 @@ class BranchView(LaunchpadView):
         #  -- DavidAllouche 2005-12-02
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
+
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
+
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
+        else:
+            return self.context.mirror_failures
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""

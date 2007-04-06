@@ -188,8 +188,11 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> login(ANONYMOUS, participation)
 
+Note how the URL has only a path part, because it is for the same site
+as the current request.
+
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'https://mandrill.example.org:23/bonobo/saki'
+    u'/bonobo/saki'
 
 
 == The some_string/fmt:something helper ==
