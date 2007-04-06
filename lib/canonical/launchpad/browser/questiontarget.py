@@ -24,17 +24,22 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import DropdownWidget
+from zope.app.form.browser import DropdownWidget, RadioWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
-
+from zope.formlib import form
+from zope.interface import implements
+from zope.schema import Choice
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+    
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IManageAnswerContactsForm, IProject,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionCollection,
-    IQuestionTarget, NotFoundError)
+    IQuestion, IQuestionCollection, IQuestionTarget,
+    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, redirection, stepthrough,
     ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
@@ -111,21 +116,61 @@ class QuestionCollectionOpenCountView:
             status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
         return unicode(open_questions.count())
 
+        
+class LanguageFilterVocabularyFactory:
+    """Create a vocabulary for filtering Question search results.
+    
+    The vocabulary will contain All for viewing All languages, or a
+    list of the languages "interesting" for the user, plus English.
+    These will be guessed from the request when the preferred languages 
+    weren't configured.
+    """
+    
+    implements(IContextSourceBinder)
+    
+    def __init__(self, request):
+        """Create a LanguageFilterVocabularyFactory.
+
+        :param request: The request in which the vocabulary will be used. This
+        will be used to determine the user languages.
+        """
+        self.request = request
+        
+    def __call__(self, context):
+        languages = set()
+        for lang in request_languages(self.request):
+            if not is_english_variant(lang):
+                languages.add(lang.displayname)
+        if (context is not None and IQuestion.providedBy(context) and
+            context.language.code != 'en'):
+            languages.add(context.language.displayname)
+        languages = list(languages)
+
+        # XXX sinzui 2007-04-06 Insert English as the first element, to make 
+        # it the default one.We probably want to remove English because 
+        # of #81369 to show only user preferred languages
+        languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
+
+        terms = [SimpleTerm('ALL', 'ALL', _('All Languages')), 
+             SimpleTerm('PREFERRED', 'PREFERRED', ', '.join(languages))]
+        return SimpleVocabulary(terms)
+
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View that can filter the target's question in a batched listing.
 
     This view provides a search form to filter the displayed questions.
     """
-
+    
     schema = ISearchQuestionsForm
 
+    custom_widget('language_filter', RadioWidget, orientation='horizontal')
+    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
-    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
-
+                  
     template = ViewPageTemplateFile('../templates/question-listing.pt')
-
+    
     # Set to true to display a column showing the question's target.
     @property
     def display_target_column(self):
@@ -133,6 +178,12 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     # Will contain the parameters used by searchResults
     search_params = None
+    
+    def setUpFields(self):
+        # Add our language_filter field with a vocabulary specialized for
+        # display purpose.
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields = self.createLanguageFilterField() + self.form_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -144,6 +195,23 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             if widget and not widget.hasValidInput():
                 widget.setRenderedValue(value)
 
+    def createLanguageFilterField(self):
+        """Create a field to choose a set language using a special vocabulary.
+
+        :param the_form: The form that will use this field.
+        :return: A form.Fields instance containing the language field.
+        """
+        field_name = 'language_filter'
+        return form.Fields(
+                Choice(
+                    __name__=field_name,
+                    source=LanguageFilterVocabularyFactory(self.request),
+                    title=_('View Languages'),
+                    description=_(
+                        'The languages to filter the search results by.')),
+                custom_widget=self.custom_widgets[field_name],
+                render_context=self.render_context)
+        
     @cachedproperty
     def status_title_map(self):
         """Return a dictionary mapping set of statuses to their title.
@@ -198,6 +266,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             context=self.context.displayname,
             search_text=self.search_text)
         # Check if the set of selected status has a special title.
+        # XXX sinzui 2007-04-06 revise the no results messages to include lang
         status_set_title = self.status_title_map.get(
             frozenset(self.status_filter))
         if status_set_title:
@@ -220,7 +289,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     def getDefaultFilter(self):
         """Hook for subclass to provide a default search filter."""
-        return {}
+        return dict(language_filter='PREFERRED')
 
     @property
     def search_text(self):
@@ -244,23 +313,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return self.context.getQuestionLanguages()
 
     @property
-    def all_languages_shown(self):
-        """Return whether all the used languages are displayed."""
-        if self.request.form.get('all_languages'):
-            return True
-        return self.context_question_languages.issubset(
-            self.user_support_languages)
-
-    @property
-    def displayed_languages(self):
-        """Return the question languages displayed ordered by language name."""
-        displayed_languages = self.user_support_languages.intersection(
-            self.context_question_languages)
-        return sorted(displayed_languages, key=attrgetter('englishname'))
-
-    @property
-    def show_all_languages_checkbox(self):
-        """Whether to show the 'All Languages' checkbox or not."""
+    def show_language_filter_radio(self):
+        """Whether to show the 'View Languages' radio buttons or not."""
         return not self.context_question_languages.issubset(
             self.user_support_languages)
 
@@ -281,10 +335,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
 
-        if self.request.form.get('all_languages'):
+        if self.search_params.get('language_filter', None) == 'ALL':
             self.search_params['language'] = None
         else:
             self.search_params['language'] = self.user_support_languages
+        
+        # XXX sinzui 2007-04-06 Refactor this.
+        self.search_params.pop('language_filter', None)
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
@@ -312,7 +369,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 question.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), question.sourcepackagename.name)
-
+    
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My questions' report.
@@ -348,7 +405,8 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
         return {'owner': self.user,
-                'status': set(QuestionStatus.items)}
+                'status': set(QuestionStatus.items),
+                'language_filter': 'PREFERRED'}
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
@@ -384,7 +442,8 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'needs_attention_from': self.user}
+        return {'needs_attention_from': self.user, 
+                'language_filter': 'PREFERRED'}
 
 
 class QuestionCollectionUnsupportedView(SearchQuestionsView):
@@ -420,13 +479,8 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        # Forge the request form to set the all_languages checkbox to the
-        # same state as state as the search. The all_languages checkbox is
-        # not a widget so we cannot set the default value.
-        if self.request.form.get('field.actions.search') is None:
-            self.request.form['all_languages'] = True
-        
-        return dict(language=None, unsupported=self.context)
+        return dict(language=None, language_filter='ALL', 
+                    unsupported=self.context)
 
 
 class ManageAnswerContactView(GeneralFormView):

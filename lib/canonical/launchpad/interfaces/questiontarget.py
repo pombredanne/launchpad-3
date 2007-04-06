@@ -17,6 +17,8 @@ import sets
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Bool, Choice, List, Set, TextLine
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
@@ -129,8 +131,8 @@ class IManageAnswerContactsForm(Interface):
         title=_("Team answer contacts"),
         value_type=Choice(vocabulary="PersonTeamParticipations"),
         required=False)
-
-
+        
+        
 class ISearchQuestionsForm(Interface):
     """Schema for the search question form."""
 
@@ -139,7 +141,7 @@ class ISearchQuestionsForm(Interface):
     sort = Choice(title=_('Sort order'), required=True,
                   vocabulary='QuestionSort',
                   default=QuestionSort.RELEVANCY)
-
+    
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary='QuestionStatus'),
                  default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
