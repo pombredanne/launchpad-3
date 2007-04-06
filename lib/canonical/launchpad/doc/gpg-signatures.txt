@@ -135,7 +135,7 @@ signed text can not be attributed solely to either key:
     >>> master_sig = gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: Single signature expected, found multiple signatures
+    GPGVerificationError: Bad data
 
 
 The text below was signed by  key that's is not part of the
