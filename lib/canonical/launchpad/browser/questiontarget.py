@@ -205,8 +205,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return form.Fields(
                 Choice(
                     __name__=field_name,
-                    source=LanguageFilterVocabularyFactory(self.request),
                     title=_('View Languages'),
+                    source=LanguageFilterVocabularyFactory(self.request),
+                    required=False,
                     description=_(
                         'The languages to filter the search results by.')),
                 custom_widget=self.custom_widgets[field_name],

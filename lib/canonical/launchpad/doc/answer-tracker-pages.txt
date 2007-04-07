@@ -663,6 +663,8 @@ By default, that class provides widgets to search by text and by status.
     >>> search_view = search_view_harness.view
     >>> search_view.widgets.get('search_text') is not None
     True
+    >>> search_view.widgets.get('language_filter') is not None
+    True
     >>> search_view.widgets.get('status') is not None
     True
 
@@ -670,7 +672,7 @@ It also includes a widget to select the sort order.
 
     >>> search_view.widgets.get('sort') is not None
     True
-
+    
 The questions matching the search are available by using the
 searchResults() method. The returned results are batched.
 

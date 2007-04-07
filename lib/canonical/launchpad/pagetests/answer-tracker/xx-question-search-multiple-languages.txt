@@ -27,15 +27,14 @@ questions will be shown.
     ...     print question.first('a').renderContents()
     Installation failed
 
-Since there are some question languages that are not displayed, a message
-is displayed to that effect.
+The questions match the Person's preferred language settings, or in
+the case of the anonymous user, the prefferred languages in the 
+request made by the browser
 
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
-    Only questions in English are displayed. To see questions in other
-    languages, either
-    <a href="/+editmylanguages">change your preferred</a> languages
-    or select the &ldquo;All Languages&rdquo; option.
+    >>> anon_browser.getControl('All Languages').selected
+    False
+    >>> anon_browser.getControl('English (en)').selected
+    True
 
 If the user selects the 'All Languages' option, then all questions,
 whatever the language they are written in are displayed:
