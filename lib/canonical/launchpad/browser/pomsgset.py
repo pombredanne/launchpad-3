@@ -975,7 +975,7 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or
                              count_lines(self.msgid_plural) > 1)
-            self.translation_dictionaries.append({
+            translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
@@ -984,7 +984,18 @@ class POMsgSetView(LaunchpadView):
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line
-                })
+                }
+
+            if self.hide_private_content:
+                # We must hide the translation because it may have private
+                # info that we don't want to show to anoymous users.
+                translation_entry['active_translation'] = u'''
+                    To prevent privacy issues, this translation is not
+                    available to anonymous users,<br />
+                    if you want to see it, please, <a href="+login">log in</a>
+                    first.'''
+
+            self.translation_dictionaries.append(translation_entry)
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -1024,6 +1035,15 @@ class POMsgSetView(LaunchpadView):
                 pruners_merged = pruners_merged.union(pruner)
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
+
+        if self.hide_private_content:
+            # We must hide all suggestions because it may have private
+            # info that we don't want to show to anoymous users.
+            non_editor = self._buildSuggestions(None, [])
+            elsewhere = self._buildSuggestions(None, [])
+            wiki = self._buildSuggestions(None, [])
+            alt_lang_suggestions = self._buildSuggestions(None, [])
+            return non_editor, elsewhere, wiki, alt_lang_suggestions
 
         wiki = self.context.getWikiSubmissions(index)
         wiki_translations = build_dict(wiki)
@@ -1114,6 +1134,18 @@ class POMsgSetView(LaunchpadView):
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
+
+    @cachedproperty
+    def hide_private_content(self):
+        """Whether this message should be hidden due private information."""
+        if (self.user is None and
+            self.msgid in (
+                u'translation-credits',
+                u'_: EMAIL OF TRANSLATORS<img alt=""'
+                u' src="/@@/translation-newline" /><br/>\nYour emails')):
+            return True
+        else:
+            return False
 
     @cachedproperty
     def sequence(self):
