@@ -75,7 +75,6 @@ class LaunchpadFormView(LaunchpadView):
         self.errors = []
         self.form_wide_errors = []
         self.widget_errors = {}
-        self.action_url = self.request.getURL()
 
     def initialize(self):
         self.setUpFields()
@@ -144,6 +143,15 @@ class LaunchpadFormView(LaunchpadView):
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
             data=self.initial_values, ignore_request=False)
+
+    @property
+    def action_url(self):
+        """ Set the default action URL for the form.
+
+        This must be done after instantiation as the URL can be different
+        when called via a page template.
+        """
+        return self.request.getURL()
 
     @property
     def initial_values(self):

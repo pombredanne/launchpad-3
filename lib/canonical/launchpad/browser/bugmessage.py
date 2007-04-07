@@ -26,13 +26,12 @@ class BugMessageAddFormView(LaunchpadFormView):
     def initial_values(self):
         return dict(subject=self.context.bug.followup_subject())
 
-    def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
-
+    @property
+    def action_url(self):
         # override the default form action url to to go the addcomment
         # page for processing instead of the default which would be the
         # bug index page.
-        self.action_url = "%s/+addcomment" % canonical_url(self.context)
+        return "%s/+addcomment" % canonical_url(self.context)
 
     def validate(self, data):
 
