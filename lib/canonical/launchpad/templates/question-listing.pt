@@ -44,8 +44,8 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <span tal:condition="view/show_language_filter_radio">
-        <tal:language_filter replace="structure view/widgets/language_filter" />
+      <span tal:condition="view/show_languages_radio">
+        <br /><tal:languages replace="structure view/widgets/languages" />
         (<a href="/+editmylanguages">change your preferred languages</a>)
       </span>
       

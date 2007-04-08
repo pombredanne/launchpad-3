@@ -24,13 +24,11 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import DropdownWidget, RadioWidget
+from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
-from zope.interface import implements
 from zope.schema import Choice
-from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
     
 from canonical.cachedproperty import cachedproperty
@@ -46,6 +44,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 class AskAQuestionButtonView:
@@ -116,44 +115,32 @@ class QuestionCollectionOpenCountView:
             status=[QuestionStatus.OPEN, QuestionStatus.NEEDSINFO])
         return unicode(open_questions.count())
 
-        
-class LanguageFilterVocabularyFactory:
-    """Create a vocabulary for filtering Question search results.
+
+class NotRequiredRadioWidget(LaunchpadRadioWidget):
+    """A radio widget that does not create a '(no value)' item.
     
-    The vocabulary will contain All for viewing All languages, or a
-    list of the languages "interesting" for the user, plus English.
-    These will be guessed from the request when the preferred languages 
-    weren't configured.
+    Create a radio widget that only displays the vocabulary items when the
+    required param is set to False for the Field.
     """
-    
-    implements(IContextSourceBinder)
-    
-    def __init__(self, request):
-        """Create a LanguageFilterVocabularyFactory.
 
-        :param request: The request in which the vocabulary will be used. This
-        will be used to determine the user languages.
-        """
-        self.request = request
-        
-    def __call__(self, context):
-        languages = set()
-        for lang in request_languages(self.request):
-            if not is_english_variant(lang):
-                languages.add(lang.displayname)
-        if (context is not None and IQuestion.providedBy(context) and
-            context.language.code != 'en'):
-            languages.add(context.language.displayname)
-        languages = list(languages)
+    def renderItems(self, value):
+        """Render the items in the vocabulary only."""
 
-        # XXX sinzui 2007-04-06 Insert English as the first element, to make 
-        # it the default one.We probably want to remove English because 
-        # of #81369 to show only user preferred languages
-        languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
+        if value == self._missing:
+            value = self.context.missing_value
 
-        terms = [SimpleTerm('ALL', 'ALL', _('All Languages')), 
-             SimpleTerm('PREFERRED', 'PREFERRED', ', '.join(languages))]
-        return SimpleVocabulary(terms)
+        if (value == self.context.missing_value
+            and getattr(self, 'firstItem', False)
+            and len(self.vocabulary) > 0
+            and self.context.required):
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
+        else:
+            values = [value]
+
+        items = self.renderItemsWithValues(values)
+
+        return items
 
 
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
@@ -164,7 +151,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     
     schema = ISearchQuestionsForm
 
-    custom_widget('language_filter', RadioWidget, orientation='horizontal')
+    custom_widget('languages', NotRequiredRadioWidget, 
+                  orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
@@ -180,10 +168,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     search_params = None
     
     def setUpFields(self):
-        # Add our language_filter field with a vocabulary specialized for
-        # display purpose.
+        """See LaunchpadFormView."""
         LaunchpadFormView.setUpFields(self)
-        self.form_fields = self.createLanguageFilterField() + self.form_fields
+        self.form_fields = self.createLanguagesField() + self.form_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -195,22 +182,38 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             if widget and not widget.hasValidInput():
                 widget.setRenderedValue(value)
 
-    def createLanguageFilterField(self):
+    def createLanguagesField(self):
         """Create a field to choose a set language using a special vocabulary.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
         """
-        field_name = 'language_filter'
+        # XXX: sinzui 2007-04-06 Insert English as the first element, to make 
+        # it the default one. We probably want to remove English because 
+        # of Bug #81369 to show only user preferred languages        
+        languages = set()
+        for lang in request_languages(self.request):
+            if not is_english_variant(lang):
+                languages.add(lang.displayname)
+        if (self.context is not None and IQuestion.providedBy(self.context) and
+            self.context.language.code != 'en'):
+            languages.add(self.context.language.displayname)
+        languages = list(languages)
+        languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
+        preferred_term = SimpleTerm('Preferred', ', '.join(languages))
+        all_term = SimpleTerm('All', _('All Languages'))
+        
         return form.Fields(
                 Choice(
-                    __name__=field_name,
+                    __name__='languages',
                     title=_('View Languages'),
-                    source=LanguageFilterVocabularyFactory(self.request),
+                    vocabulary=SimpleVocabulary([all_term, preferred_term]),
+                    default='Preferred',
+                    missing_value='Preferred',
                     required=False,
                     description=_(
                         'The languages to filter the search results by.')),
-                custom_widget=self.custom_widgets[field_name],
+                custom_widget=self.custom_widgets['languages'],
                 render_context=self.render_context)
         
     @cachedproperty
@@ -267,7 +270,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             context=self.context.displayname,
             search_text=self.search_text)
         # Check if the set of selected status has a special title.
-        # XXX sinzui 2007-04-06 revise the no results messages to include lang
+        # XXX: sinzui 2007-04-06 Revise the no results messages to include lang
         status_set_title = self.status_title_map.get(
             frozenset(self.status_filter))
         if status_set_title:
@@ -290,7 +293,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     def getDefaultFilter(self):
         """Hook for subclass to provide a default search filter."""
-        return dict(language_filter='PREFERRED')
+        return dict(languages='Preferred')
 
     @property
     def search_text(self):
@@ -314,7 +317,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return self.context.getQuestionLanguages()
 
     @property
-    def show_language_filter_radio(self):
+    def show_languages_radio(self):
         """Whether to show the 'View Languages' radio buttons or not."""
         return not self.context_question_languages.issubset(
             self.user_support_languages)
@@ -336,13 +339,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
 
-        if self.search_params.get('language_filter', None) == 'ALL':
-            self.search_params['language'] = None
+        if (self.search_params.get('languages', 'Preferred') == 'Preferred'):
+            self.search_params['language'] = self.user_support_languages 
         else:
-            self.search_params['language'] = self.user_support_languages
+            self.search_params['language'] = None
         
-        # XXX sinzui 2007-04-06 Refactor this.
-        self.search_params.pop('language_filter', None)
+        # Remove the 'languages' param since it is only used by the view.
+        self.search_params.pop('languages', None)
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
@@ -407,7 +410,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
         """See SearchQuestionsView."""
         return {'owner': self.user,
                 'status': set(QuestionStatus.items),
-                'language_filter': 'PREFERRED'}
+                'languages': 'Preferred'}
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
@@ -444,7 +447,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
         return {'needs_attention_from': self.user, 
-                'language_filter': 'PREFERRED'}
+                'languages': 'Preferred'}
 
 
 class QuestionCollectionUnsupportedView(SearchQuestionsView):
@@ -480,8 +483,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return dict(language=None, language_filter='ALL', 
-                    unsupported=self.context)
+        return dict(language=None, languages='All', unsupported=self.context)
 
 
 class ManageAnswerContactView(GeneralFormView):
