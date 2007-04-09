@@ -88,7 +88,7 @@ class BranchContextMenu(ContextMenu):
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit Subscription'
+            text = 'Edit subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
