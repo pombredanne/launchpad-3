@@ -58,7 +58,7 @@ class EditBugNominationStatus(AuthorizationBase):
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        return check_permission("launchpad.Driver", self.obj.target)
+        return self.obj.canApprove(user)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):

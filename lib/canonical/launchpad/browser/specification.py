@@ -547,7 +547,7 @@ class SpecGraph:
         graph_attrs = dict(
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
-            bgcolor='#fcfcfc',  # Same as Launchpad page background.
+            bgcolor='#ffffff',  # Same as Launchpad page background.
             size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
             ratio='auto',
             ranksep=0.25,
@@ -783,6 +783,7 @@ class SpecificationNewView(LaunchpadFormView):
     asking for the spec details."""
 
     schema = ISpecification
+    label = "Register a new Blueprint"
 
     @property
     def field_names(self):

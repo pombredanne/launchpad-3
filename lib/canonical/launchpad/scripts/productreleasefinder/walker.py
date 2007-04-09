@@ -342,8 +342,11 @@ class HTTPWalker(WalkerBase):
         # Collect set of URLs that are below the base URL
         urls = set()
         for anchor in soup("a"):
+            href = anchor.get("href")
+            if href is None:
+                continue
             try:
-                url = base.resolve(anchor.get("href"))
+                url = base.resolve(href)
             except InvalidURIError:
                 continue
             # Only add the URL if it is strictly inside the base URL.
