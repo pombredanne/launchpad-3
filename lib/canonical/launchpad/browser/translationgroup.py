@@ -119,7 +119,6 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     def add_action(self, action, data):
         language = data.get('language')
         translator = data.get('translator')
-        file('/tmp/add.log','a').write("lang='%s' trans='%s'\n"%(language,translator))
         getUtility(ITranslatorSet).new(self.context, language, translator)
 
     def validate(self, data):
