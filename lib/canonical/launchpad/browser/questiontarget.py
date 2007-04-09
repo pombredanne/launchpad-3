@@ -408,9 +408,8 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'owner': self.user,
-                'status': set(QuestionStatus.items),
-                'languages': 'Preferred'}
+        return dict(owner=self.user, status=set(QuestionStatus.items),
+                    languages='Preferred')
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
@@ -446,8 +445,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'needs_attention_from': self.user, 
-                'languages': 'Preferred'}
+        return dict(needs_attention_from=self.user, languages='Preferred')
 
 
 class QuestionCollectionUnsupportedView(SearchQuestionsView):
