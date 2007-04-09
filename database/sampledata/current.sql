@@ -8890,6 +8890,7 @@ INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person
 INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
 INSERT INTO supportcontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
 
+
 ALTER TABLE supportcontact ENABLE TRIGGER ALL;
 
 
